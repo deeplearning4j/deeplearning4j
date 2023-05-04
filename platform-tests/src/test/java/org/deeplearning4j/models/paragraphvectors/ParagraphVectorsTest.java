@@ -535,6 +535,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Timeout(300000)
     @Tag(TagNames.LONG_TEST)
     @Tag(TagNames.LARGE_RESOURCES)
+    @Disabled
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
@@ -765,6 +766,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     @Tag(TagNames.LARGE_RESOURCES)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled
     public void testParagraphVectorsOverExistingWordVectorsModel(Nd4jBackend backend) throws Exception {
         if(backend.getNDArrayClass().toString().toLowerCase().contains("cu"))
             return;

@@ -75,8 +75,8 @@
         <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>34g</test.heap.size>
-        <test.offheap.size>34g</test.offheap.size>
+        <test.heap.size>10g</test.heap.size>
+        <test.offheap.size>10g</test.offheap.size>
         <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
@@ -86,8 +86,8 @@
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
-        <jemalloc.mallocconf></jemalloc.mallocconf>
-        <preload>/usr/lib64/libasan.so.8</preload>
+        <jemalloc.mallocconf>/usr/lib64/libasan.so.6</jemalloc.mallocconf>
+        <preload></preload>
     </properties>
 
     <dependencyManagement>

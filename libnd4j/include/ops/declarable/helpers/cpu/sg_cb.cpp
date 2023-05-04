@@ -761,7 +761,6 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
             (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
         SD_FLOAT_TYPES);
   } else if (ngStarter.isVector() || target.isVector()) {
-    sd_printf("SkipGram: batch mode exec\n",0);
     // batch mode
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
                           (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter,

@@ -178,9 +178,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
         # * CMAKE_INSTALL_INCLUDEDIR
         include(GNUInstallDirs)
 
-        #find_package(Dwarf REQUIRED)
-        include(BackwardConfig.cmake)
-
         # check if compiler is nvcc or nvcc_wrapper
         set(COMPILER_IS_NVCC false)
         get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
@@ -333,7 +330,7 @@ if(SD_CUDA)
         elseif("${COMPUTE_CMP}" STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
         elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
-            #matches USER COMPUTE old way 
+            #matches USER COMPUTE old way
             set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE} ")
         else()
             #matches numbers NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX

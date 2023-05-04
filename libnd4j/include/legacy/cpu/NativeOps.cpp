@@ -728,7 +728,6 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
   try {
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
-    sd_printf("dimension length is %d\n",dimensionLength);
     std::vector<sd::LongType> dimensions;
     for(sd::LongType i = 0; i < dimensionLength; i++) {
       dimensions.push_back(dimension[i]);
