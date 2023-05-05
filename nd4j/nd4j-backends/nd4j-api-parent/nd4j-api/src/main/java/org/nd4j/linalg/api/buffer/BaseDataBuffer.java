@@ -2251,8 +2251,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void release() {
         this.released = true;
         this.indexer = null;
-    /*    if(this.pointer != null)
-            this.pointer.close();*/
         this.pointer = null;
         //note: also calls ptrDataBuffer.deallocate()
         /*     this.ptrDataBuffer.closeBuffer();

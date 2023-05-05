@@ -75,8 +75,8 @@
         <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>10g</test.heap.size>
-        <test.offheap.size>10g</test.offheap.size>
+        <test.heap.size>34g</test.heap.size>
+        <test.offheap.size>34g</test.offheap.size>
         <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
@@ -87,7 +87,7 @@
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf>/usr/lib64/libasan.so.6</jemalloc.mallocconf>
-        <preload></preload>
+        <preload>/usr/lib64/libasan.so.8</preload>
     </properties>
 
     <dependencyManagement>
@@ -301,11 +301,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -320,11 +315,7 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-parallelwrapper-parameter-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -362,11 +353,6 @@
             </exclusions>
         </dependency>
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
 
 
@@ -399,11 +385,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark-parameterserver_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.derby</groupId>

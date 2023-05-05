@@ -1565,9 +1565,9 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
 
         INDArray z = x.match(y, c);
         INDArray exp = Nd4j.createFromArray(new boolean[][]{
+                {true, false, false},
                 {false, false, false},
-                {false, false, false},
-                {true,  false, false}
+                {false,  false, false}
         });
 
         assertEquals(exp, z);

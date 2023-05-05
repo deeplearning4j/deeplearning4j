@@ -276,7 +276,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     SDValue value = out.valueWithKeyAtIndex(i, false);
                     //append either the list of associated array ids or the singular one similar to the singular array case
                     String append = value != null && value.getSdValueType() == SDValueType.LIST ? StringUtil.concatEntries(value.getListValue().stream()
-                            .map(input -> input.getId()).collect(Collectors.toList()),",",",") : value != null ? String.valueOf(value.getTensorValue().getId()) : null;
+                            .map(input -> input == null ? "" : input.getId()).collect(Collectors.toList()),",",",") : value != null ? String.valueOf(value.getTensorValue().getId()) : null;
                     sb.append("(").append(i).append(" - ").append(opOutNames.get(i)).append(" = ").append(
                             value == null ? null : append).append(")");
 

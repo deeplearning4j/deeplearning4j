@@ -84,7 +84,7 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
                 {0},{1}
         });
 
-        INDArray assertion = Nd4j.create(new double[]{5,6,7,8}).reshape('f',1,2,2);
+        INDArray assertion = Nd4j.create(new double[]{5,6,7,8}).reshape('c',1,2,2);
         INDArray getTest = x.get(indexes);
         assertEquals(assertion,getTest);
 

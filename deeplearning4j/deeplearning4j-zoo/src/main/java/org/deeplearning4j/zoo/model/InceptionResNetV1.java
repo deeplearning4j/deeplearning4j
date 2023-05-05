@@ -83,7 +83,7 @@ public class InceptionResNetV1 extends ZooModel {
                         .addLayer("bottleneck", new DenseLayer.Builder().nIn(5376).nOut(embeddingSize).build(),
                                         "avgpool")
                         // Embeddings
-                        .addVertex("embeddings", new L2NormalizeVertex(new int[] {1}, 1e-10), "bottleneck")
+                        .addVertex("embeddings", new L2NormalizeVertex(new long[] {1}, 1e-10), "bottleneck")
                         // Output
                         .addLayer("outputLayer",
                                         new CenterLossOutputLayer.Builder()

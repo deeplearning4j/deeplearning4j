@@ -33,16 +33,10 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer&
 const sd::LongType* TadPack::primaryShapeInfo() const {
   if(_tadShape.primary() == nullptr)
     throw std::runtime_error("TadPack::primaryShapeInfo: primary shape info is nullptr!");
-  if(_tadShape.primary()[0] < 0 || _tadShape.primary()[0] > SD_MAX_RANK)
-    throw std::runtime_error("Invalid primary shape!");
   return _tadShape.primary();
 }
 
 const sd::LongType* TadPack::primaryOffsets() const {
-  if(_tadOffsets.primary() == nullptr)
-    throw std::runtime_error("TadPack::primaryShapeInfo: primary shape info is nullptr!");
-  if(_tadOffsets.primary()[0] < 0 || _tadOffsets.primary()[0] > SD_MAX_RANK)
-    throw std::runtime_error("Invalid primary offsets!");
   return _tadOffsets.primary();
 }
 

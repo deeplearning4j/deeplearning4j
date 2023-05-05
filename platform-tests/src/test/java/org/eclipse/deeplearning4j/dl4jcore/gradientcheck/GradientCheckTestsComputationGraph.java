@@ -1326,8 +1326,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     @Test
     public void testL2NormalizeVertex2d() {
         Nd4j.getRandom().setSeed(12345);
-        int[][] definitions = {null,new int[]{1}};
-        for(int[] definition : definitions) {
+        long[][] definitions = {null,new long[]{1}};
+        for(long[] definition : definitions) {
             log.info("Testing definition {}",definition);
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                     .dataType(DataType.DOUBLE)

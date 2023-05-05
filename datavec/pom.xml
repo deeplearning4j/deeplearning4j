@@ -43,7 +43,6 @@
     <modules>
         <module>datavec-api</module>
         <module>datavec-data</module>
-        <module>datavec-spark</module>
         <module>datavec-local</module>
         <module>datavec-jdbc</module>
         <module>datavec-excel</module>
@@ -156,8 +155,6 @@
                         <directory>datavec-jdbc</directory>
                         <directory>datavec-local</directory>
                         <directory>datavec-python</directory>
-                        <directory>datavec-spark</directory>
-                        <directory>datavec-spark-inference-parent</directory>
                     </directories>
                 </configuration>
             </plugin>

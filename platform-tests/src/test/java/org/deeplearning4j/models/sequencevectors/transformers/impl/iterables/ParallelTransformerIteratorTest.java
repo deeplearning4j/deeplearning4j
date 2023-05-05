@@ -156,7 +156,9 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         lai.reset();
 
 
-        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(true)
+        transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(lai).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();

@@ -107,17 +107,21 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(iter)
+                .vocabCache(cache)
+                .tokenizerFactory(t).build();
 
 
         /*
             And we pack that transformer into AbstractSequenceIterator
          */
         AbstractSequenceIterator<VocabWord> sequenceIterator =
-                        new AbstractSequenceIterator.Builder<>(transformer).build();
+                new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(cache).build();
+                .setTargetVocabCache(cache)
+                .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(cache).build();
 
         constructor.buildJointVocabulary(true, false);
 
@@ -141,10 +145,10 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
-                        new AbstractSequenceIterator.Builder<>(transformer).build();
+                new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 5).useAdaGrad(false).setTargetVocabCache(cache).build();
+                .addSource(sequenceIterator, 5).useAdaGrad(false).setTargetVocabCache(cache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -198,7 +202,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
         SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
+                .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -247,7 +251,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
         SequenceIterator<VocabWord> sequenceIterator = new AbstractSequenceIterator.Builder<>(iterable).build();
 
         VocabConstructor<VocabWord> constructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
+                .addSource(sequenceIterator, 0).useAdaGrad(false).setTargetVocabCache(vocabCache).build();
 
         constructor.buildJointVocabulary(false, true);
 
@@ -272,15 +276,15 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder()
-                                .vocabCache(cacheSource)
-                                .iterator(underlyingIterator).tokenizerFactory(t).build();
+                new SentenceTransformer.Builder()
+                        .vocabCache(cacheSource)
+                        .iterator(underlyingIterator).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
-                        new AbstractSequenceIterator.Builder<>(transformer).build();
+                new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
+                .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
@@ -289,7 +293,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
+                .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
 
         vocabTransfer.buildMergedVocabulary(cacheSource, false);
 
@@ -308,15 +312,15 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder()
-                                .vocabCache(cacheSource)
-                                .iterator(underlyingIterator).tokenizerFactory(t).build();
+                new SentenceTransformer.Builder()
+                        .vocabCache(cacheSource)
+                        .iterator(underlyingIterator).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
-                        new AbstractSequenceIterator.Builder<>(transformer).build();
+                new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabConstructor = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
+                .addSource(sequenceIterator, 1).setTargetVocabCache(cacheSource).build();
 
         vocabConstructor.buildJointVocabulary(false, true);
 
@@ -328,7 +332,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
-                        .addSourceFolder(dir).build();
+                .addSourceFolder(dir).build();
 
         transformer = new SentenceTransformer.Builder()
                 .vocabCache(cacheSource)
@@ -337,7 +341,7 @@ public class VocabConstructorTest extends BaseDL4JTest {
         sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
         VocabConstructor<VocabWord> vocabTransfer = new VocabConstructor.Builder<VocabWord>()
-                        .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
+                .addSource(sequenceIterator, 1).setTargetVocabCache(cacheTarget).build();
 
         vocabTransfer.buildMergedVocabulary(cacheSource, true);
 
