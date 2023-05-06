@@ -2036,7 +2036,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         SameDiff sameDiff = SameDiff.create();
 
-        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1, 12, 1).reshape(3, 4);
+        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1, 12, 12).reshape(3, 4);
         SDVariable sdInput = sameDiff.var(in);
 
         INDArray expected = Nd4j.createFromArray(new double[]{

@@ -958,7 +958,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdjustContrast(Nd4jBackend backend) {
-        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4 * 4* 3).reshape(4,4,3);
+        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 48.0, 4 * 4* 3).reshape(4,4,3);
         INDArray out = Nd4j.zeros(DataType.DOUBLE,4, 4, 3);
 
         INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
@@ -1024,7 +1024,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBitCast(Nd4jBackend backend) {
-        INDArray in = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 8).reshape(2,2,2);
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1.0f, 8.0f, 8).reshape(2,2,2);
         INDArray out = Nd4j.createUninitialized(2,2);
 
         Nd4j.exec(new BitCast(in, DataType.DOUBLE.toInt(), out));
@@ -1120,7 +1120,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testResizeArea2(Nd4jBackend backend) {
 
-        INDArray image = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 9 ).reshape(1,3,3,1);
+        INDArray image = Nd4j.linspace(DataType.FLOAT, 1.0f, 9.0f, 9 ).reshape(1,3,3,1);
         INDArray output = Nd4j.createUninitialized(DataType.FLOAT, 1, 6, 6, 1);
         INDArray expected = Nd4j.createFromArray(new float[]{
                 1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
@@ -1362,7 +1362,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPolygamma(Nd4jBackend backend) {
-        INDArray n = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3,3);
+        INDArray n = Nd4j.linspace(DataType.DOUBLE, 1.0, 9.0, 9).reshape(3,3);
         INDArray x = Nd4j.create(DataType.DOUBLE, 3,3);
         x.assign(0.5);
         INDArray expected = Nd4j.createFromArray(new double[]{4.934802, -16.828796, 97.409088, -771.474243,
