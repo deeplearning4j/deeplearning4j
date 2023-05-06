@@ -3670,6 +3670,7 @@ std::string NDArray::e(const sd::LongType i) const {
   auto offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
   auto start = offsets[i];
   auto end = offsets[i + 1];
+  sd_printf("Start %d end %d\n", start, end);
   auto data = bufferAsT<int8_t>() + offsetsLength + start;
 
   std::string r(reinterpret_cast<const char *>(data), (end - start));

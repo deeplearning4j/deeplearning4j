@@ -313,6 +313,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                                void *extraParams, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                bool allowParallelism = true);
 
+
   static void execTransformStrict(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                   const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                   const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,

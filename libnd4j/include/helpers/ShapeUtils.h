@@ -200,7 +200,7 @@ class SD_LIB_EXPORT ShapeUtils {
   static void updateStridesAndType(sd::LongType* dest, const DataType dtype, const char order);
 
   /**
-   * This method retuns number of bytes required for string tensor
+   * This method returns number of bytes required for string tensor
    * @param numStrings
    * @return
    */
@@ -210,11 +210,11 @@ class SD_LIB_EXPORT ShapeUtils {
   }
 
   /**
-   * This method selects strides based on dimentions required for broadcasting
+   * This method selects strides based on dimensions required for broadcasting
    * @param const pointer to input (Y) shape info for strides selection
    * @param rank of input (X) to broadcasting
-   * @param dimentions size
-   * @param const pointer to dimentions for broadcasting
+   * @param dimensions size
+   * @param const pointer to dimensions for broadcasting
    * @param pointer to output strides have to be pre allocated by 0
    * @return
    */

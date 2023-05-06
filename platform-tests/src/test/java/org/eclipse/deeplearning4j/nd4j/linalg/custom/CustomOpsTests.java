@@ -958,7 +958,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testAdjustContrast(Nd4jBackend backend) {
-        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4*4*3).reshape(4,4,3);
+        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4 * 4* 3).reshape(4,4,3);
         INDArray out = Nd4j.zeros(DataType.DOUBLE,4, 4, 3);
 
         INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,

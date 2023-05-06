@@ -33,7 +33,7 @@
 #include <types/uint8.h>
 #include <types/utf8string.h>
 /**
- * @brief type related Macrosses to help with template instantiations.
+ * @brief type related macros to help with template instantiations.
  *
  *  To restrict certain types one should define SD_SELECTIVE_TYPES and desired types using HAS_${TYPENAME}
  *  where ${TYPENAME} is a type name written in capital letters:
@@ -375,6 +375,7 @@
       (sd::DataType::INT16, int16_t), (sd::DataType::INT32, int32_t), (sd::DataType::INT64, sd::LongType),          \
       (sd::DataType::UINT16, uint16_t), (sd::DataType::UINT64, sd::UnsignedLong), (sd::DataType::UINT32, uint32_t), \
       (sd::DataType::BFLOAT16, bfloat16)
+
 
 ///////////TRIPLES GENERATED MANUALLY USING REGEX /////////////////////////
 #if defined(HAS_BFLOAT16)
@@ -1333,7 +1334,7 @@
 #define SD_PAIRWISE_TYPES_LL_12 TTYPE_UINT16_UINT16_UINT16 TTYPE_UINT16_BOOL_UINT16
 #endif
 
-// TO SUPPORT THE CURRENT CMAKE GENERATION WE WILL MANUALLY ADD TYPES_$INDEX definations
+// TO SUPPORT THE CURRENT CMAKE GENERATION WE WILL MANUALLY ADD TYPES_$INDEX definitions
 
 // for pairwise we are not using GET_ELEMENT
 #if COUNT_NARG(SD_PAIRWISE_TYPES_LL_0) > 1
