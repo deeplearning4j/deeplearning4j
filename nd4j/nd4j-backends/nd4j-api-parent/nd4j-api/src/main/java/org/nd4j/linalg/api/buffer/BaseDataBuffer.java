@@ -39,7 +39,9 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.*;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -661,7 +663,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case UINT64:
                 //Treat unsigned long (UINT64) as 8 bytes
-                byte[] temp2 = new byte[(int)(8*length)];
+                byte[] temp2 = new byte[(int)(8 * length)];
                 asNio().get(temp2);
                 try {
                     if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
@@ -687,8 +689,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
                         //Switch endianness to big endian
                         for (int i = 0; i < temp3.length / 4; i++) {
-                            for( int j=0; j<4; j++ ){
-                                dos.write(temp3[4 * i + (3-j)]);
+                            for( int j = 0; j < 4; j++) {
+                                dos.write(temp3[4 * i + (3 - j)]);
                             }
                         }
                     } else {
@@ -778,6 +780,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case SHORT:
                 return ((ShortIndexer) indexer).get(i);
             case UINT64:
+                return ((ULongIndexer) indexer).get(i).doubleValue();
             case LONG:
                 return ((LongIndexer) indexer).get(i);
             case BOOL:
@@ -808,13 +811,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case HALF:
                 return (long) ((HalfIndexer) indexer).get( i);
             case UINT64:    //Fall through
-                if(indexer instanceof LongIndexer) {
-                    LongIndexer longIndexer = (LongIndexer) indexer;
-                    return longIndexer.get(i);
-                } else if(indexer instanceof LongIndexer) {
-                    LongIndexer LongIndexer = (LongIndexer) indexer;
-                    return LongIndexer.get(i);
-                }
+                return  ((ULongIndexer) indexer).get(i).longValue();
             case LONG:
                 return ((LongIndexer) indexer).get(i);
             case UINT32:
@@ -864,6 +861,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
             case UINT64:
+                return (short) ((ULongIndexer) indexer).get(i).shortValue();
             case LONG:
                 return (short) ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -909,7 +907,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
             case UINT64:  //Fall through
-                return ((LongIndexer) indexer).get(i);
+                return ((ULongIndexer) indexer).get(i).floatValue();
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -946,6 +944,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
             case UINT64:
+                return ((ULongIndexer) indexer).get(i).intValue();
             case LONG:
                 return (int) ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -1017,7 +1016,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(i, (long) element);
+                ((ULongIndexer) indexer).put(i,  BigInteger.valueOf((long) element));
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(i, (long) element);
@@ -1067,7 +1066,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(i, (long) element);
+                ((ULongIndexer) indexer).put(i,BigInteger.valueOf((long) element));
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(i, (long) element);
@@ -1117,6 +1116,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, element);
                 break;
             case UINT64: //Fall through
+                ((ULongIndexer) indexer).put(i,BigInteger.valueOf(element));
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(i,element);
                 break;
@@ -1165,6 +1166,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, element ? 1 : 0);
                 break;
             case UINT64:
+                ((ULongIndexer) indexer).put(i, BigInteger.valueOf(element ? 1 : 0));
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(i, element ? 1 : 0);
                 break;
@@ -1213,7 +1216,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(i, element);
+                ((ULongIndexer) indexer).put(i, ULongIndexer.toBigInteger(element));
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(i, element);
@@ -1264,7 +1267,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(0,ArrayUtil.toLongs(element));
+                BigInteger[] bigIntegers = ArrayUtil.toBigInteger(element);
+                ((ULongIndexer) indexer).put(0,bigIntegers);
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongs(element));
@@ -1314,7 +1318,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                BigInteger[] bigIntegers = ArrayUtil.toBigInteger(element);
+                ((ULongIndexer) indexer).put(0,bigIntegers);
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
@@ -1364,6 +1369,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0, element);
                 break;
             case UINT64: //Fall through
+                BigInteger[] map = ArrayUtil.toBigInteger(element);
+                ((ULongIndexer) indexer).put(0,map);
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
                 break;
@@ -1412,6 +1420,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
                 break;
             case UINT64:
+                ((ULongIndexer) indexer).put(0,ArrayUtil.toBigInteger(element));
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
                 break;
@@ -1461,8 +1471,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
                 break;
             case UINT64:
+                ((ULongIndexer) indexer).put(0,ArrayUtil.toBigInteger(element));
+                break;
             case LONG:
-                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                ((LongIndexer) indexer).put(0,ArrayUtil.toLongs(element));
                 break;
             case BFLOAT16:
                 ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
@@ -1495,10 +1507,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ByteIndexer) indexer).put(0,element);
                 break;
             case UBYTE:
-                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArraySimple(element));
                 break;
             case UINT16:
-                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                ((UShortIndexer) indexer).put(0,ArrayUtil.toIntArraySimple(element));
                 break;
             case SHORT:
                 ((ShortIndexer) indexer).put(0,ArrayUtil.toShorts(element));
@@ -1507,23 +1519,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((UIntIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
                 break;
             case INT:
-                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
+                ((IntIndexer) indexer).put(0,ArrayUtil.toIntArraySimple(element));
                 break;
             case UINT64:
+                ((ULongIndexer) indexer).put(0,ArrayUtil.toBigInteger(element));
+                break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
                 break;
             case BFLOAT16:
-                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                ((Bfloat16Indexer) indexer).put(0,ArrayUtil.toFloatArraySimple(element));
                 break;
             case HALF:
-                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                ((HalfIndexer) indexer).put(0,ArrayUtil.toFloatArraySimple(element));
                 break;
             case FLOAT:
-                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArray(element));
+                ((FloatIndexer) indexer).put(0,ArrayUtil.toFloatArraySimple(element));
                 break;
             case DOUBLE:
-                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArray(element));
+                ((DoubleIndexer) indexer).put(0,ArrayUtil.toDoubleArraySimple(element));
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported data type: " + dataType());
@@ -1540,7 +1554,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((BooleanIndexer) indexer).put(0,ArrayUtil.toBooleanArray(element));
                 break;
             case BYTE:
-                ((ByteIndexer) indexer).put(0,ArrayUtil.toByteArray(element));
+                ((ByteIndexer) indexer).put(0,ArrayUtil.toByteArraySimple(element));
                 break;
             case UBYTE:
                 ((UByteIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
@@ -1558,7 +1572,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((IntIndexer) indexer).put(0,ArrayUtil.toIntArray(element));
                 break;
             case UINT64:
-                ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
+                ((ULongIndexer) indexer).put(0,ArrayUtil.toBigInteger(element));
                 break;
             case LONG:
                 ((LongIndexer) indexer).put(0,ArrayUtil.toLongArray(element));
@@ -1604,7 +1618,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (offset() == 0) {
             return wrappedBuffer().asIntBuffer();
         } else
-            return (IntBuffer) wrappedBuffer().asIntBuffer().position((int) offset());
+            return wrappedBuffer().asIntBuffer().position((int) offset());
     }
 
     @Override
@@ -2149,7 +2163,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             deallocator().logEvent().setConstant(reallyConstant);
 
         this.constant = reallyConstant;
-
+        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
     }
 
@@ -2237,14 +2251,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void release() {
         this.released = true;
         this.indexer = null;
-        if(this.pointer != null)
-            this.pointer.close();
         this.pointer = null;
         //note: also calls ptrDataBuffer.deallocate()
-        this.ptrDataBuffer.closeBuffer();
+        /*     this.ptrDataBuffer.closeBuffer();
+         */
 
-
-        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
+        //  Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
 
     }
 

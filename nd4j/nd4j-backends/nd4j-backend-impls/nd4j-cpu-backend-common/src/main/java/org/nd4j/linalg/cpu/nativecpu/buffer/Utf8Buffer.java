@@ -175,8 +175,8 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         if (index > numWords)
             throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");
 
-        val headerPointer = new LongPointer(getPointer());
-        val dataPointer = (BytePointer) (getPointer());
+        val headerPointer = new LongPointer(this.ptrDataBuffer.primaryBuffer());
+        val dataPointer = new BytePointer(this.ptrDataBuffer.primaryBuffer());
 
         val start = headerPointer.get(index);
         val end = headerPointer.get(index + 1);

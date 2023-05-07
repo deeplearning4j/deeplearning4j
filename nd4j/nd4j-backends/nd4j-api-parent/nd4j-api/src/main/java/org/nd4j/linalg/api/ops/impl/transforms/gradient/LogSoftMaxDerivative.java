@@ -81,9 +81,7 @@ public class LogSoftMaxDerivative extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inTypes){
-        Preconditions.checkState(inTypes != null && inTypes.size() == 2, "Expected 2 input datatypes for %s, got %s",
-                getClass(), inTypes);
+    public List<DataType> calculateOutputDataTypes(List<DataType> inTypes) {
         return Collections.singletonList(inTypes.get(0));
     }
 }

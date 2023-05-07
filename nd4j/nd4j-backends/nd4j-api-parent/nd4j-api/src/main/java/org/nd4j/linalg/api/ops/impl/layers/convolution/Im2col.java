@@ -41,7 +41,7 @@ public class Im2col extends DynamicCustomOp {
     protected Conv2DConfig conv2DConfig;
 
     @Builder(builderMethodName = "builder")
-    public Im2col(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
+    public Im2col(SameDiff sameDiff,  INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
         super(null, inputArrays, outputs);
         if (sameDiff != null) {
             this.sameDiff = sameDiff;
@@ -52,7 +52,7 @@ public class Im2col extends DynamicCustomOp {
         addArgs();
     }
 
-    public Im2col(SameDiff sd, SDVariable input, Conv2DConfig config){
+    public Im2col(SameDiff sd, SDVariable input, Conv2DConfig config) {
         super(null, sd, new SDVariable[]{input});
         this.conv2DConfig = config;
         addArgs();

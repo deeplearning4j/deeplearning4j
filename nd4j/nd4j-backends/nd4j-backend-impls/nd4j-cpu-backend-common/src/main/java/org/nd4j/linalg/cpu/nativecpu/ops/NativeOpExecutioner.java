@@ -361,7 +361,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                             getPointerForExtraArgs(op, z.dataType()),
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                            (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                            null,
                             var.isBiasCorrected(), null, null);
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
@@ -702,7 +704,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
             val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
             val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-
+            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
+            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
             switch (op.getOpType()) {
                 case TRANSFORM_ANY:
                 case TRANSFORM_FLOAT:
@@ -1323,25 +1326,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * @param op Operation to execute
      */
     @Override
-    public INDArray[] exec(@NonNull CustomOp op) {
-        boolean shapeOverride = false;
-        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
-            try {
-                val list = this.calculateOutputShape(op);
-                if (list.isEmpty())
-                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to calculate output shape and data types.");
-
-                for (LongShapeDescriptor shape : list)
-                    op.addOutputArgument(Nd4j.create(shape, false));
-
-                shapeOverride = true;
-            } catch (ND4JIllegalStateException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
-            }
-        }
-
+    public  INDArray[] exec(@NonNull CustomOp op) {
+        boolean shapeOverride = op.initializeOutputs(null);
         val name = op.opName();
         try (val context = buildContext()) {
             long start = profilingConfigurableHookIn(op,context);
@@ -1350,16 +1336,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             val result = exec(op, context);
             val states = context.getRngStates();
 
-            // check if input & output needs update
-            for (val in:op.inputArguments()) {
-                if (!in.isEmpty())
-                    ((BaseCpuDataBuffer) in.data()).actualizePointerAndIndexer();
-            }
-
-            for (val out:op.outputArguments()) {
-                if (!out.isEmpty())
-                    ((BaseCpuDataBuffer) out.data()).actualizePointerAndIndexer();
-            }
 
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
@@ -1714,8 +1690,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
             else
-                return op.isInplaceCall() ? context.getInputArrays().toArray(new INDArray[context.getInputArrays().size()])
-                        :context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
+                return context.getOutputArrays().toArray(new INDArray[context.getOutputArrays().size()]);
         } catch (Exception e) {
             val sb = new StringBuilder();
             sb.append("Inputs: [(");
@@ -1819,10 +1794,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        shapePointer.deallocate();
-        stridePointer.deallocate();
-        shapePointer.releaseReference();
-        stridePointer.releaseReference();
         loop.deleteConstantShapeBuffer(dbf);
 
         return result;
@@ -1842,7 +1813,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
         val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
 
-        loop.deleteTadPack(pack);
+        //    loop.deleteTadPack(pack);
 
         return new TadPack(tadShape, tadOffsets);
     }

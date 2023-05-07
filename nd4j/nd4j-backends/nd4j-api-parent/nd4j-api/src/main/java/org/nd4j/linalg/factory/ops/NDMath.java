@@ -672,6 +672,23 @@ public class NDMath {
   }
 
   /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray divNoNan(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("divNoNan", "x", x);
+    NDValidation.validateNumerical("divNoNan", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.DivideNoNan(x, y))[0];
+  }
+
+  /**
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
@@ -1202,6 +1219,17 @@ public class NDMath {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, keepDims, condition, dimensions));
+  }
+
+  /**
+   * Calculate the absolute value of gamma(x).<br>
+   *
+   * @param input Input to calculate lgamma for (NUMERIC type)
+   * @return output the absolute value of gamma x elemnt wise. (NUMERIC type)
+   */
+  public INDArray lgamma(INDArray input) {
+    NDValidation.validateNumerical("lgamma", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Lgamma(input))[0];
   }
 
   /**

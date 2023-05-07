@@ -355,15 +355,13 @@ public class Variance extends BaseReduceOp {
     }
 
     public Variance(INDArray x, boolean biasCorrected, long... dimensions) {
-        super(x);
+        super(x,dimensions);
         this.biasCorrected = biasCorrected;
-        defineDimensions(dimensions);
     }
 
     public Variance(INDArray x, INDArray z, boolean biasCorrected, boolean keepDims, long... dimensions) {
         super(x, null, z, keepDims, dimensions);
         this.biasCorrected = biasCorrected;
-        defineDimensions(dimensions);
     }
 
     @Override
@@ -423,7 +421,7 @@ public class Variance extends BaseReduceOp {
     }
 
     @Override
-    public DataType resultType(OpContext oc){
+    public DataType resultType(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if (x != null && x.isR())
             return x.dataType();

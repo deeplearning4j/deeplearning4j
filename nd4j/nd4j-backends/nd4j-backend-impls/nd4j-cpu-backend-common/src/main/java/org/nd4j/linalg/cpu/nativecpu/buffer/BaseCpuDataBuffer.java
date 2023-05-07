@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.nio.ByteBuffer;
@@ -146,7 +147,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(UIntIndexer.create((IntPointer) pointer));
         } else if (dataType() == DataType.UINT64) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            setIndexer(ULongIndexer.create((LongPointer) pointer));
         }
 
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
@@ -290,7 +291,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         if (dataType() != DataType.UTF8)
             ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, dataType(), false);
-
         if (dataType() == DataType.DOUBLE) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asDoublePointer();
 
@@ -371,7 +371,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (dataType() == DataType.UINT64) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
 
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            setIndexer(ULongIndexer.create((LongPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
@@ -397,6 +397,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public void actualizePointerAndIndexer() {
+        if(ptrDataBuffer.isNull())
+            throw new IllegalArgumentException("Ptr data buffer was released!");
         val cptr = ptrDataBuffer.primaryBuffer();
 
         // skip update if pointers are equal
@@ -427,7 +429,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(IntIndexer.create((IntPointer) pointer));
         } else if (t == DataType.UINT64) {
             pointer = new PagedPointer(cptr, length).asLongPointer();
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            setIndexer(ULongIndexer.create((LongPointer) pointer));
         } else if (t == DataType.LONG) {
             pointer = new PagedPointer(cptr, length).asLongPointer();
             setIndexer(LongIndexer.create((LongPointer) pointer));
@@ -461,7 +463,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         // we're fetching actual pointer right from C++
         PagedPointer tempPtr = new PagedPointer(ptrDataBuffer.primaryBuffer());
-        tempPtr = (PagedPointer) tempPtr;
 
         switch (this.type) {
             case DOUBLE:
@@ -550,16 +551,14 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer();
             setIndexer(UIntIndexer.create((IntPointer) pointer));
 
         } else if (dataType() == DataType.UINT64) {
             attached = true;
             parentWorkspace = workspace;
-
-            // FIXME: need unsigned indexer here
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new IntPointer(length());
-            setIndexer(LongIndexer.create((LongPointer) pointer));
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer();
+            setIndexer(ULongIndexer.create((LongPointer) pointer));
 
         } else if (dataType() == DataType.LONG) {
             attached = true;
@@ -873,12 +872,12 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-        ptrDataBuffer.closeBuffer();
-        if(pointer != null && !pointer.isNull())
-            pointer.close();
-        if(addressPointer != null)
-            addressPointer.deallocate();
-        super.release();
+       // ptrDataBuffer.closeBuffer();
+     /*   if(pointer != null && !pointer.isNull())
+            pointer.close();*/
+   /*     if(addressPointer != null)
+            addressPointer.deallocate();*/
+      //  super.release();
     }
 
     /**
@@ -936,6 +935,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                     indexer = Bfloat16Indexer.create((ShortPointer) pointer);
                     break;
                 case UINT64:
+                    pointer = nPtr.asLongPointer();
+                    indexer = ULongIndexer.create((LongPointer) pointer);
+                    break;
                 case LONG:
                     pointer = nPtr.asLongPointer();
                     indexer = LongIndexer.create((LongPointer) pointer);

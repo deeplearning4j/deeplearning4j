@@ -77,10 +77,14 @@ public class CosineDistance extends BaseReduce3Op {
 
     public CosineDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sd,x,y,keepDims,isComplex,dimensions);
+        extraArgs = new Object[]{0.0f, 0.0f};
+
     }
 
     public CosineDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(x,y,null,keepDims,isComplex,dimensions);
+        extraArgs = new Object[]{0.0f, 0.0f};
+
     }
 
 
