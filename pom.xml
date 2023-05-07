@@ -174,7 +174,7 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <!-- Must not be empty. Otherwise the command line will fail. Put all arguments here needed for customization. If overridden, ensure not empty.-->
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
-        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
         <javacpp.version>1.5.8</javacpp.version>
@@ -235,7 +235,7 @@
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.14.2</jackson.version>
         <jackson.databind.version>2.14.2</jackson.databind.version>
-        <shaded.snakeyaml.version>1.26</shaded.snakeyaml.version>
+        <shaded.snakeyaml.version>1.33</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.24</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>

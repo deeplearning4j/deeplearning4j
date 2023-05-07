@@ -17,6 +17,11 @@ option(SD_STATIC_LIB "Build static library" OFF)
 option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
+# GCC specific flag: 	 -finstrument-functions enables call stack logging. Useful for debugging segfaults.
+# TODO: from https://sii.pl/blog/en/call-stack-logger-function-instrumentation-as-a-way-to-trace-programs-flow-of-execution/?category=hard-development&tag=binutils-en,cpp-en,embedded-competency-center-en,function-instrumentation-en,gcc-en,logging-en,trace-en
+# from: https://github.com/TomaszAugustyn/call-stack-logger/blob/master/src/trace.cpp
+#TODO: add missing linker flags to gcc specific section for reliable back traces.
+option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
@@ -257,6 +262,7 @@ elseif (APPLE)
         set(CMAKE_OSX_ARCHITECTURES "arm64")
     endif()
 
+
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
@@ -284,7 +290,15 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
         set(OPENBLAS_LIBRARIES cblas blas_sequential)
     endif()
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    # set this as a separate flag. profiler won't work with anything higher than -O0
+    # we also have to do this for release because libnd4j has issues when working with java
+    # ideally debug builds would work but since it's not consistent it's better to just
+    # set this for release flags so we can debug code even from the java level
+    if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true")
+    else()
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    endif()
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
     if (SD_CPU AND SD_SANITIZE)
@@ -520,11 +534,6 @@ if (${HELPERS_cudnn})
             PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
 
 
-    #find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
-    #        HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-    #        PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
-
-
     if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
         message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
         include_directories(${CUDNN_INCLUDE_DIR})
@@ -575,9 +584,7 @@ if(SD_BUILD_TESTS)
 endif()
 
 
-if (MSVC_DEV)
-    set(SD_BUILD_MINIFIER false)
-endif ()
+
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)
 
