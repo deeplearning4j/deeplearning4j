@@ -48,16 +48,6 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
     @Override
     public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
-        if (accumulator != null) {
-            // before going FF, we're checking if there are any updates available
-            if (accumulator.hasAnything()) {
-                log.info("Applying external updates before FF...");
-
-                // we'll just fire off params update process
-                accumulator.applyUpdate(stepFunction, model.params(), Nd4j.createUninitialized(model.params().shape(), model.params().ordering()), false);
-            }
-        }
-
         Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
 
         Gradient gradient = pair.getFirst();
@@ -65,32 +55,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
         INDArray params = model.params();
         INDArray fullGrad = gradient.gradient();
         fullGrad = fullGrad.reshape(fullGrad.length());
-        // if optimizer has GradientsAccumulator defined - go for it
-        if (accumulator != null) {
-            // we're propagating current update
-            int epochNum = 0;
-            int iterationNum = 0;
+        stepFunction.step(params, fullGrad);
 
-            if (model instanceof MultiLayerNetwork) {
-                iterationNum = ((MultiLayerNetwork) model).getIterationCount();
-                epochNum = ((MultiLayerNetwork) model).getEpochCount();
-            } else if (model instanceof ComputationGraph) {
-                iterationNum = ((ComputationGraph) model).getIterationCount();
-                epochNum = ((ComputationGraph) model).getEpochCount();
-            }
-
-            accumulator.storeUpdate(fullGrad, iterationNum, epochNum);
-
-            // and getting (possible) pending update from accumulator
-            //INDArray pendingUpdate = accumulator.getUpdate();
-            //stepFunction.step(params, pendingUpdate);
-            accumulator.applyUpdate(stepFunction, params, fullGrad, true);
-
-            // if there's no update available - just go on then
-        } else {
-            // if accumulator isn't used - we just to for direct updates application
-            stepFunction.step(params, fullGrad);
-        }
 
         //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
         //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary

@@ -21,7 +21,6 @@
 package org.deeplearning4j.optimize.solvers;
 
 import lombok.Getter;
-import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -37,7 +36,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -78,9 +76,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     protected Map<String, Object> searchState = new ConcurrentHashMap<>();
 
 
-    protected GradientsAccumulator accumulator;
-
-
     /**
      *
      * @param conf
@@ -96,20 +91,10 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         this.model = model;
     }
 
-    @Override
-    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
-        this.accumulator = accumulator;
-    }
 
-    @Override
-    public GradientsAccumulator getGradientsAccumulator() {
-        return accumulator;
-    }
 
     @Override
     public double score() {
-//        model.computeGradientAndScore();
-//        return model.score();
         throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
