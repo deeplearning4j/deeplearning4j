@@ -50,10 +50,6 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
     }
 
 
-    @Override
-    void initializeHelper() {
-        //No op - no separable conv implementation in cudnn
-    }
 
 
     @Override

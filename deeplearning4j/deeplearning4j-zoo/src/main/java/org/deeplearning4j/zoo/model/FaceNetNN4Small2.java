@@ -336,7 +336,7 @@ public class FaceNetNN4Small2 extends ZooModel {
                         "inception-5b")
                         .addLayer("bottleneck",new DenseLayer.Builder().nOut(embeddingSize)
                                         .activation(Activation.IDENTITY).build(),"avgpool")
-                        .addVertex("embeddings", new L2NormalizeVertex(new int[] {}, 1e-6), "bottleneck")
+                        .addVertex("embeddings", new L2NormalizeVertex(new long[] {}, 1e-6), "bottleneck")
                         .addLayer("lossLayer", new CenterLossOutputLayer.Builder()
                                         .lossFunction(LossFunctions.LossFunction.SQUARED_LOSS)
                                         .activation(Activation.SOFTMAX).nOut(numClasses).lambda(1e-4).alpha(0.9)
