@@ -56,6 +56,7 @@ sd::NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
     std::pair<int, int> pair(ctx.nodeId(), inputId);
 
     if (ctx.isInplace()) {
+      sd_printf("Before platform helper getZ validate and execute\n",0);
       z = ctx.variable(inputId)->getNDArray();
 
       // hypothetically it's possible to have no variable. chances are low, but who knows. let's just create it for now

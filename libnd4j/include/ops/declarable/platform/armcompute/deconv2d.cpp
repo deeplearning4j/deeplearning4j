@@ -106,40 +106,25 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
     // lets premute
     if (wFormat == 0) {
       if (isNCHW) {
-#if 0
-                sd_printf("perm choise %d\n", 0);
-#endif
         // reshape
         permuteVector = arm_compute::PermutationVector(2U, 3U, 0U, 1U);
       } else {
-#if 0
-                sd_printf("perm choise %d\n", 1);
-#endif
         // reshape
         permuteVector = arm_compute::PermutationVector(0U, 2U, 3U, 1U);
       }
     } else if (wFormat == 1) {
-#if 0
-            sd_printf("perm choise %d\n", 2);
-#endif
+
       permuteVector = arm_compute::PermutationVector(3U, 0U, 1U, 2U);
     } else {
-#if 0
-            sd_printf("perm choise %d\n", 3);
-#endif
+
       permuteVector = arm_compute::PermutationVector(1U, 2U, 3U, 0U);
     }
   } else {
     // fix weight
     if (isNCHW) {
-#if 0
-        sd_printf("perm choise %d\n", 4);
-#endif
       permuteVector = arm_compute::PermutationVector(0U, 1U, 3U, 2U);
     } else {
-#if 0
-        sd_printf("perm choise %d\n", 5);
-#endif
+
       permuteVector = arm_compute::PermutationVector(3U, 1U, 2U, 0U);
     }
   }

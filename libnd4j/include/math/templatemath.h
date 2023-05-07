@@ -476,7 +476,6 @@ namespace sd {
 #else
             return std::isinf(value);
 #endif
-            // return value < -DOUBLE_MAX_VALUE || value > DOUBLE_MAX_VALUE;
         }
 
         template <>
@@ -709,13 +708,6 @@ namespace sd {
  **/
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_lgamma(X x) {
-            //            if (x <= X(0.0))
-            //            {
-            //                std::stringstream os;
-            //                os << "Logarithm of Gamma has sence only for positive values, but " << x <<  " was given.";
-            //                throw std::invalid_argument( os.str() );
-            //            }
-
             if (x < X(12.0)) {
                 return sd_log<Z, Z>(sd_gamma<X, Z>(x));
             }
@@ -837,8 +829,6 @@ namespace sd {
 
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_gamma(X a) {
-            //            sd_lgamma<X,Z>(a);
-            //            return (Z)std::tgamma(a);
             // Split the function domain into three intervals:
             // (0, 0.001), [0.001, 12), and (12, infinity)
 

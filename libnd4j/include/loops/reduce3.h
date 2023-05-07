@@ -149,34 +149,32 @@ class SD_LIB_HIDDEN Reduce3 {
   template <typename OpType>
   static void exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, long long int *dimension,
-                   int dimensionLength, int64_t start, int64_t stop);
+                   long long int dimensionLength, int64_t start, int64_t stop);
 
   template <typename OpType>
   static void exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, long long int *dimension,
-                   int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, int64_t start,
+                   long long int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, int64_t start,
                    int64_t stop);
 
   template <typename OpType>
   static void execAll(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                      long long int *dimension,
-                      int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
+                      long long int *dimension, long long int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
                       const sd::LongType *yTadShapeInfo, const sd::LongType *yOffsets, int64_t start, int64_t stop);
 
   static void exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, long long int *dimension,
-                   int dimensionLength, int64_t start, int64_t stop);
+                   long long int dimensionLength, long long int start, long long int stop);
 
   static void exec(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals, const void *vy,
                    const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo, long long int *dimension,
-                   int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, int64_t start,
+                   long long int dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, int64_t start,
                    int64_t stop);
 
   static void execAll(int opNum, const void *vx, const sd::LongType *xShapeInfo, void *extraParamsVals, const void *vy,
                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                      long long int *dimension,
-                      int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
+                      long long int *dimension, long long int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
                       const sd::LongType *yTadShapeInfo, const sd::LongType *yOffsets, int64_t start, int64_t stop);
 #endif
 };

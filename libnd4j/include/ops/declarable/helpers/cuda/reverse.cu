@@ -56,8 +56,7 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const sd::LongType* i
     // now finding out element within tad
     auto idx = e % div;
 
-    // printf("TID: %i; numTads: %lld; tadLength: %lld; tadId: %i, idx: %lld\n", tid, numTads, numOfElemsToReverse,
-    // tadId, idx);
+
 
     auto tadInput = input + inputTadOffsets[tadId];
     auto tadOutput = output + outputTadOffsets[tadId];

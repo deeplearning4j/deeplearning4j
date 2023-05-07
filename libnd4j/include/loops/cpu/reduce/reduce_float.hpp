@@ -135,7 +135,6 @@ template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                              void *vresult, const sd::LongType *resultShapeInfo) {
-  // FIXME: wtf???
   auto z = reinterpret_cast<Z *>(vresult);
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
 }
@@ -190,7 +189,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
                                  ? sd::DataTypeUtils::nanOrZero<Z>()
                                  : static_cast<Z>(OpType::startingValue(x));
     const auto zLen = shape::length(zShapeInfo);
-
+    if( z != nullptr)
     for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
     return;
   }

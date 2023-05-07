@@ -65,7 +65,7 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
                                          const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                          void *extraParams, void *vz, const sd::LongType *zShapeInfo,
                                          const sd::LongType *hZShapeInfo, long long int *dimension,
-                                         long long int dimensionLength,
+                                         sd::LongType dimensionLength,
                                          void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
   template <typename OpType>
