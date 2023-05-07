@@ -44,17 +44,17 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 
   PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
   auto pTadShape = Environment::getInstance().isCPU()
-                   ? packX.primaryShapeInfo()
-                   : packX.specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
+                   ? packX->primaryShapeInfo()
+                   : packX->specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
   //shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
   auto pTadOffsets = Environment::getInstance().isCPU()
-                     ? packX.primaryOffsets()
-                     : packX.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
+                     ? packX->primaryOffsets()
+                     : packX->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
   //tad.numTads * sizeof(sd::LongType));
 
-  REQUIRE_TRUE(shape::length(packX.primaryShapeInfo()) == y->lengthOf(), 0,
+  REQUIRE_TRUE(shape::length(packX->primaryShapeInfo()) == y->lengthOf(), 0,
                "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",
-               (int)shape::length(packX.primaryShapeInfo()), (int)y->lengthOf());
+               (int)shape::length(packX->primaryShapeInfo()), (int)y->lengthOf());
 
   if (x == z)
     NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
@@ -69,11 +69,11 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
 
     auto zTadShape = Environment::getInstance().isCPU()
-                     ? packZ.primaryShapeInfo()
-                     : packZ.specialShapeInfo();
+                     ? packZ->primaryShapeInfo()
+                     : packZ->specialShapeInfo();
     auto zTadOffsets = Environment::getInstance().isCPU()
-                       ? packZ.primaryOffsets()
-                       : packZ.specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
+                       ? packZ->primaryOffsets()
+                       : packZ->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
 
     NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                        x->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),

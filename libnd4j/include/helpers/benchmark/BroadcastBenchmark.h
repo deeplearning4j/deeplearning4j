@@ -22,6 +22,8 @@
 
 #include <helpers/OpBenchmark.h>
 
+#include <utility>
+
 #ifndef DEV_TESTS_BROADCASTBENCHMARK_H
 #define DEV_TESTS_BROADCASTBENCHMARK_H
 
@@ -33,7 +35,7 @@ class SD_LIB_EXPORT BroadcastBenchmark : public OpBenchmark {
   }
 
   BroadcastBenchmark(broadcast::Ops op, std::string testName, NDArray *x, NDArray *y, NDArray *z, std::vector<sd::LongType> axis)
-      : OpBenchmark(testName, x, y, z, axis) {
+      : OpBenchmark(std::move(testName), x, y, z, axis) {
     _opNum = (int)op;
   }
 
@@ -77,11 +79,11 @@ class SD_LIB_EXPORT BroadcastBenchmark : public OpBenchmark {
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(_x->shapeInfo(), _axis);
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(_z->shapeInfo(), _axis);
 
-    auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
-    auto tadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets();
+    auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? packX->primaryShapeInfo() : packX->specialShapeInfo();
+    auto tadOffsets = Environment::getInstance().isCPU() ? packX->primaryOffsets() : packX->specialOffsets();
 
-    auto tadOnlyShapeInfoZ = Environment::getInstance().isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo();
-    auto tadOffsetsZ = Environment::getInstance().isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets();
+    auto tadOnlyShapeInfoZ = Environment::getInstance().isCPU() ? packZ->primaryShapeInfo() : packZ->specialShapeInfo();
+    auto tadOffsetsZ = Environment::getInstance().isCPU() ? packZ->primaryOffsets() : packZ->specialOffsets();
 
     NativeOpExecutioner::execBroadcast(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(),
                                        _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(),

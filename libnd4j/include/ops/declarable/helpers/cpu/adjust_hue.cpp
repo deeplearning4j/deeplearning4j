@@ -59,14 +59,14 @@ static void adjustHue_(const NDArray *input, const NDArray *deltaScalarArr, NDAr
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
-    const sd::LongType numOfTads = packX.numberOfTads();
+    const sd::LongType numOfTads = packX->numberOfTads();
     const sd::LongType xDimCstride = input->stridesOf()[dimC];
     const sd::LongType zDimCstride = output->stridesOf()[dimC];
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        const T *xTad = x + packX.platformOffsets()[i];
-        T *zTad = z + packZ.platformOffsets()[i];
+        const T *xTad = x + packX->platformOffsets()[i];
+        T *zTad = z + packZ->platformOffsets()[i];
 
         T h, s, v;
 
