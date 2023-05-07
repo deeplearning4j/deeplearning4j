@@ -1238,6 +1238,7 @@ public class Nd4j {
     private static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
         switch (dataType) {
             case UINT64:
+                return ULongIndexer.create((LongPointer) pointer);
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
             case UINT32:
@@ -2158,7 +2159,7 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
-        return linspace(dtype, (double) lower,(double) upper,  num);
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, upper,num, dtype,true))[0];
     }
 
     /**

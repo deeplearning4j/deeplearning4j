@@ -239,7 +239,7 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDiagPart() {
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 4.0, 4).reshape(2,2);
+        INDArray x = Nd4j.linspace( 1.0, 4.0, 4,DataType.DOUBLE).reshape(2,2);
         INDArray expected = Nd4j.createFromArray(new double[]{1,4});
 
         SDVariable sdx = sameDiff.var(x);

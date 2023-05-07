@@ -811,7 +811,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case HALF:
                 return (long) ((HalfIndexer) indexer).get( i);
             case UINT64:    //Fall through
-                return (long) ((ULongIndexer) indexer).get(i).longValue();
+                return  ((ULongIndexer) indexer).get(i).longValue();
             case LONG:
                 return ((LongIndexer) indexer).get(i);
             case UINT32:
