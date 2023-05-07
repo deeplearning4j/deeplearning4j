@@ -1,4 +1,4 @@
-open module nd4j.parameter.server {
+open module nd4j.profiler {
     requires guava;
     requires jcommander;
     requires json;
