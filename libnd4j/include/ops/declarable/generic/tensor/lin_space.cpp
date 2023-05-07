@@ -33,14 +33,14 @@ CUSTOM_OP_IMPL(lin_space, 0, 1, false, 0, 0) {
 
   const int nInputs = block.width();
   bool bInputs = (3 == nInputs || 3 == block.numI() || (2 == block.numT() && block.numI() > 0));
-
+  auto endSpecified = block.numB() > 0 ? B_ARG(0) : false;
   REQUIRE_TRUE(bInputs, 0,
                "lin_space OP: Have to be supplied correct inputs, input size or T_ARG size have to be equal 3, but got "
                "inputs - %i, T_ARGS - %i!",
                nInputs, block.numT());
 
   auto start = (nInputs > 0) ? INPUT_VARIABLE(0)->e<double>(0) : static_cast<double>(T_ARG(0));
-  auto finish = (nInputs > 0) ? INPUT_VARIABLE(1)->e<double>(0) : static_cast<double>(T_ARG(1));
+  auto stepOrEndNum = (nInputs > 0) ? INPUT_VARIABLE(1)->e<double>(0) : static_cast<double>(T_ARG(1));
   auto numOfElements = (nInputs > 0) ? INPUT_VARIABLE(2)->e<sd::LongType>(0) : static_cast<sd::LongType>(I_ARG(0));
 
   if (numOfElements == 1) {
@@ -48,7 +48,12 @@ CUSTOM_OP_IMPL(lin_space, 0, 1, false, 0, 0) {
     return sd::Status::OK;
   }
 
-  output->linspace(start, (finish - start) / (numOfElements - 1.0));
+  //end specified convert to step
+  if (endSpecified) {
+    stepOrEndNum = (stepOrEndNum - start) / (numOfElements - 1.0);
+  }
+
+  output->linspace(start, stepOrEndNum);
   return sd::Status::OK;
 }
 

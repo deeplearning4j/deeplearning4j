@@ -194,7 +194,7 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
         MultiDataSet mds = new MultiDataSet(new INDArray[]{Nd4j.rand(DataType.FLOAT, 3,4), Nd4j.rand(DataType.FLOAT, 3,2)}, new INDArray[0]);
 
         sd.fit(new SingletonMultiDataSetIterator(mds), 3);
-        //note this test used to check loss variable proapgation, we just want this to be equal now
+        //note this test used to check loss variable propagation, we just want this to be equal now
         assertEquals(w1Before, w1.getArr());
         assertEquals(b1Before, b1.getArr());
         assertEquals(w2Before, w2.getArr());

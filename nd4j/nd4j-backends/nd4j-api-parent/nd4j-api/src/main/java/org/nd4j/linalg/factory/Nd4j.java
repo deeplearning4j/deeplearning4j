@@ -1958,13 +1958,10 @@ public class Nd4j {
              * This allows us to retain the indices
              * and how they were rearranged.
              */
-            Arrays.sort(index, new Comparator<Double>() {
-                @Override
-                public int compare(Double o1, Double o2) {
-                    int o = (int) o1.doubleValue();
-                    int oo2 = (int) o2.doubleValue();
-                    return Double.compare(data[o], data[oo2]);
-                }
+            Arrays.sort(index, (o1, o2) -> {
+                int o = (int) o1.doubleValue();
+                int oo2 = (int) o2.doubleValue();
+                return Double.compare(data[o], data[oo2]);
             });
 
             if (ascending)
@@ -1994,7 +1991,7 @@ public class Nd4j {
     /**
      * Sort all elements of an array.
      *
-     * sorts all elements of an array. For multi dimansional arrays the result depends on the array ordering]
+     * sorts all elements of an array. For multidimensional arrays the result depends on the array ordering]
      *
      * Nd4j.factory().setOrder('f');
      * INDArray x = Nd4j.arange(4).reshape(2,2);
@@ -2052,14 +2049,11 @@ public class Nd4j {
         ArrayList<Integer> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++)
             list.add(i);
-        Collections.sort(list, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                if (ascending)
-                    return Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
-                else
-                    return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
-            }
+        Collections.sort(list, (o1, o2) -> {
+            if (ascending)
+                return Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
+            else
+                return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
         });
         for (int i = 0; i < nRows; i++) {
             out.putRow(i, in.getRow(list.get(i)));
@@ -2129,25 +2123,18 @@ public class Nd4j {
      * Generate a linearly spaced vector
      *
      * @param lower  lower bound
-     * @param finish upper bound
-     * @param num    number of items in returned vector
+     * @param num upper bound
+     * @param step    number of items in returned vector
      * @return the linearly spaced vector
      */
-    public static INDArray linspace(@NonNull DataType dtype, long lower, long finish, long num) {
+    public static INDArray linspace(@NonNull DataType dtype, long lower, long num, long step) {
         // for now we'll temporarily keep original impl
-        if(finish == 1) {
+        if(num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
+        
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double) lower, (double)step, num, dtype, false))[0];
 
-        if (dtype.isIntType()) {
-            long upper = lower + finish * num;
-            return linspaceWithCustomOpByRange( lower, upper, finish, num, dtype);
-        } else if (dtype.isFPType()) {
-            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double) num, (double) lower, (long) finish, dtype))[0];
-        }
-        else {
-            throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
-        }
     }
 
     /**
@@ -2185,7 +2172,8 @@ public class Nd4j {
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, step,num, dataType))[0];
+
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, step,num, dataType,false))[0];
     }
 
     /**
@@ -2203,35 +2191,8 @@ public class Nd4j {
         return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, upper, num, dataType))[0];
     }
 
-    private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
-        if (num == 1)
-            return Nd4j.scalar(dataType, lower);
 
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
-        val op = DynamicCustomOp.builder("lin_space")
-                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(num))
-                .addOutputs(result)
-                .build();
-
-        Nd4j.getExecutioner().execAndReturn(op);
-        return result;
-    }
-
-    private static INDArray linspaceWithCustomOpByRange(long lower, long upper, long num, long step, DataType dataType) {
-        if (num == 1)
-            return Nd4j.scalar(dataType, lower);
-
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
-
-        val op = DynamicCustomOp.builder("range")
-                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(step))
-                .addOutputs(result)
-                .build();
-
-        Nd4j.getExecutioner().execAndReturn(op);
-        return result;
-    }
 
     /**
      * Meshgrid op. Returns a pair of arrays where values are broadcast on a 2d grid.<br>
