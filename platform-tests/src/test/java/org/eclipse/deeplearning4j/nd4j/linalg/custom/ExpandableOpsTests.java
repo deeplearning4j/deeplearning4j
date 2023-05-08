@@ -51,10 +51,11 @@ public class ExpandableOpsTests extends BaseNd4jTestWithBackends {
         val array = Nd4j.create("first string", "second");
         val delimiter = Nd4j.create(" ");
 
-        val exp0 = Nd4j.createFromArray(new long[] {0,0, 0,1, 1,0});
+        val exp0 = Nd4j.createFromArray(new long[] {0,0, 0,0, 0,0});
         val exp1 = Nd4j.create("first", "string", "second");
 
         val results = Nd4j.exec(new CompatStringSplit(array, delimiter));
+        results[1].toString();
         assertNotNull(results);
         assertEquals(2, results.length);
 

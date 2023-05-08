@@ -1180,14 +1180,13 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 {{11, 21}, {31,41}}}));
         expected.add(Nd4j.create(new double[][]{{30,40},{11,21}}));
 
-        for( int i=0; i<indices.size(); i++ ){
+        for( int i = 0; i < indices.size(); i++) {
             SameDiff sd = SameDiff.create();
             SDVariable p = sd.var("p", params.get(i));
             SDVariable ind = sd.constant("i", indices.get(i));
             SDVariable g = sd.gatherNd(p, ind);
 
             INDArray exp = expected.get(i);
-            //INDArray act = sd.execAndEndResult();
 
             String err = OpValidation.validate(new TestCase(sd)
                     .expected(g, exp)
@@ -2201,7 +2200,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatEmpty(Nd4jBackend backend) {
         /*
-        TF behaviour with concatenatioun of empty arrays:
+        TF behaviour with concatenation of empty arrays:
         concat(empty,empty,empty) -> empty
         cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
 

@@ -7868,10 +7868,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testLinspaceWithStep(){
-
+    public void testLinspaceWithStep() {
         double lower = -0.9, upper = 0.9, step = 0.2;
-        INDArray in = Nd4j.linspace(lower, upper, 10, DataType.DOUBLE);
+        INDArray in = Nd4j.linspace(DataType.DOUBLE,lower,step,10);
         for (int i = 0; i < 10; ++i) {
             assertEquals(lower + step * i, in.getDouble(i), 1e-5);
         }

@@ -750,7 +750,6 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
     public void testAllocation5(Nd4jBackend backend) {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "testAllocation5");
 
-        Nd4j.getProfiler().start();
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
         assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -785,7 +784,6 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
 
         workspace.close();
-        Nd4j.getProfiler().stop();
     }
 
 

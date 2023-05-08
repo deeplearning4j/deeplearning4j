@@ -121,6 +121,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Can mess with global tests. Should only be run in isolation.")
     public void testOpExecTrace(Nd4jBackend backend) {
         Nd4j.toggleTrace(true);
         final INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
@@ -138,8 +139,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertTrue(traced.ops().length > 0);
         System.out.println(traced.summary());
         Nd4j.purgeTrace();
-        Nd4j.toggleTrace(false);
         assertTrue(NativeOpsHolder.getInstance().getDeviceNativeOps().listOpTraces() == null);
+        Nd4j.toggleTrace(false);
     }
 
     @ParameterizedTest

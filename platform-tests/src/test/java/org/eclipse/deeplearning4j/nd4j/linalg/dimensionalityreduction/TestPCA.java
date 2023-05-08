@@ -57,8 +57,8 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         INDArray Factor = PCA.pca_factor(A1, 3, true);
         A1 = A.subiRowVector(A.mean(0));
 
-        INDArray Reduced = A1.mmul(Factor);
-        INDArray Reconstructed = Reduced.mmul(Factor.transpose());
+        INDArray Reduced = A1.mmul(Factor.transpose());
+        INDArray Reconstructed = Reduced.mmul(Factor);
         INDArray Diff = Reconstructed.sub(A1);
         for (int i = 0; i < m * n; i++) {
             assertEquals(0.0, Diff.getDouble(i), 1.0,"Reconstructed matrix is very different from the original.");
@@ -81,8 +81,8 @@ public class TestPCA extends BaseNd4jTestWithBackends {
         INDArray factor = PCA.pca_factor(A1, 3, true);
         A1 = A.subiRowVector(A.mean(0));
 
-        INDArray reduced = A1.mmul(factor);
-        INDArray reconstructed = reduced.mmul(factor.transpose());
+        INDArray reduced = A1.mmul(factor.transpose());
+        INDArray reconstructed = reduced.mmul(factor);
         INDArray diff = reconstructed.sub(A1);
         for (int i = 0; i < m * n; i++) {
             assertEquals(0.0, diff.getDouble(i), 1.0,"Reconstructed matrix is very different from the original.");

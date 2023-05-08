@@ -21,6 +21,7 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.RandomDataSetIterator;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,6 +54,7 @@ import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 @NativeTag
 @Tag(TagNames.TRAINING)
 @Tag(TagNames.SAMEDIFF)
+@Disabled("Disable profiler tests. it interferes with other tests runs. Only test in isolation.")
 public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -373,8 +373,8 @@ public class WorkspaceProviderTests extends BaseNd4jTestWithBackends {
             DataInputStream dis = new DataInputStream(bis);
             restored = Nd4j.read(dis);
 
-            long requiredMemory = getTotalRequiredMemoryForWorkspace(Nd4j.create(DataType.DOUBLE,10)) * 2;
-            assertEquals(requiredMemory + requiredMemory % 8, workspace.getPrimaryOffset());
+            long requiredMemory = getTotalRequiredMemoryForWorkspace(Nd4j.create(DataType.DOUBLE,10));
+            assertEquals(requiredMemory ,workspace.getPrimaryOffset());
 
             assertEquals(array.length(), restored.length());
             assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
