@@ -45,7 +45,7 @@ public class SigmoidDerivative extends DynamicCustomOp {
     }
 
     public SigmoidDerivative(INDArray x, INDArray y, INDArray z) {
-        super(null, new INDArray[]{x,y}, new INDArray[]{z}, null,  (int[])null);
+        super(null, new INDArray[]{x,y}, new INDArray[]{z}, null,  (long[])null);
     }
 
     public SigmoidDerivative() {

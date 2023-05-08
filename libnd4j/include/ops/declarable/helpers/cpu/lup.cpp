@@ -289,7 +289,7 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
     auto compoundBuf = compound->bufferAsT<T>();
     auto compoundShape = compound->shapeInfo();
     auto permutationShape = permutation->shapeInfo();
-    for (auto i = 0; i < rowNum - 1; i++) {
+    for (sd::LongType i = 0; i < rowNum - 1; i++) {
       auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
       if (pivotIndex < 0) {
         throw std::runtime_error("helpers::luNN_: input matrix is singular.");

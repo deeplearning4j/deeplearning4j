@@ -31,24 +31,24 @@ import java.util.List;
 
 public class CountZero extends BaseReduceLongOp {
 
-    public CountZero(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public CountZero(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
 
-    public CountZero(INDArray x, int... dimensions) {
+    public CountZero(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public CountZero(INDArray x, boolean keepDims, int... dimensions) {
+    public CountZero(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public CountZero(INDArray x, INDArray z, int... dimensions) {
+    public CountZero(INDArray x, INDArray z, long... dimensions) {
         super(x, z, dimensions);
     }
 
-    public CountZero(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public CountZero(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -63,11 +63,11 @@ public class CountZero extends BaseReduceLongOp {
     public CountZero() {
     }
 
-    public CountZero(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public CountZero(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -83,11 +83,11 @@ public class CountZero extends BaseReduceLongOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public CountZero(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public CountZero(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public CountZero(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -95,11 +95,11 @@ public class CountZero extends BaseReduceLongOp {
         super(sameDiff, i_v);
     }
 
-    public CountZero(SameDiff sd, SDVariable in, boolean keepDims, int[] dimensions) {
+    public CountZero(SameDiff sd, SDVariable in, boolean keepDims, long[] dimensions) {
         super(sd,in,dimensions,keepDims);
     }
 
-    public CountZero(INDArray in, int[] dimensions, boolean keepDims) {
+    public CountZero(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

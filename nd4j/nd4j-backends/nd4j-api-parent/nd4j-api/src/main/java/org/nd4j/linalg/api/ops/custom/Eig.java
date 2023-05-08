@@ -41,11 +41,11 @@ public class Eig extends DynamicCustomOp {
 
 
 
-    public Eig(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+    public Eig(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);
     }
 
-    public Eig(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public Eig(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(null, inputs, outputs, tArguments, iArguments);
     }
 

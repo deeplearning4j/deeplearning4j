@@ -57,16 +57,17 @@ class ScalarBoolTransform {
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(const void *scalar, const void *vy, const sd::LongType *shapeInfo, void *vparams,
-                                      void *vresult, const sd::LongType *resultShapeInfo, int *allocationBuffer);
+                                      void *vresult, const sd::LongType *resultShapeInfo,
+                                      long long int *allocationBuffer);
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(sd::LongType n, const void *vx, const void *vy, sd::LongType yEWS, void *vparams,
-                                      void *vz, sd::LongType zEWS, int *allocationBuffer);
+                                      void *vz, sd::LongType zEWS, long long int *allocationBuffer);
 
   template <typename OpType>
   SD_DEVICE static void transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                      const sd::LongType *zShapeInfo, const void *vscalars, int *dimension,
-                                      int dimensionLength, const sd::LongType *tadShapeInfo,
+                                      const sd::LongType *zShapeInfo, const void *vscalars, long long int *dimension,
+                                      long long int dimensionLength, const sd::LongType *tadShapeInfo,
                                       const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ,
                                       const sd::LongType *tadOffsetsZ);
 
@@ -74,14 +75,14 @@ class ScalarBoolTransform {
   SD_HOST static void intermediateAlongDimension(dim3 &launchDims, cudaStream_t *stream, const void *x,
                                                  const sd::LongType *xShapeInfo, void *z,
                                                  const sd::LongType *zShapeInfo, const void *scalars, void *extraParams,
-                                                 int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                                                 long long int *dimension, long long int dimensionLength, const sd::LongType *tadShapeInfo,
                                                  const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ,
                                                  const sd::LongType *tadOffsetsZ);
 
   template <typename OpType>
   SD_HOST static void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,
                                          const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                         const void *vscalar, void *vextraParams, int *allocPointer);
+                                         const void *vscalar, void *vextraParams, long long int *allocPointer);
 
   SD_HOST
   static void executeCudaShaped(dim3 &launchDims, cudaStream_t *stream, int opNum, const void *x,
@@ -91,7 +92,8 @@ class ScalarBoolTransform {
   SD_HOST
   static void executeCudaAlongDimension(dim3 &launchDims, cudaStream_t *stream, int opNum, const void *x,
                                         const sd::LongType *xShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                        const void *scalars, void *extraParams, int *dimension, int dimensionLength,
+                                        const void *scalars, void *extraParams, sd::LongType *dimension,
+                                        sd::LongType dimensionLength,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ);
 

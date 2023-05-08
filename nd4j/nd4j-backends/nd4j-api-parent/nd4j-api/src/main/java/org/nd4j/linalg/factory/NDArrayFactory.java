@@ -342,7 +342,7 @@ public interface NDArrayFactory {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    void shuffle(INDArray array, Random rnd, int... dimension);
+    void shuffle(INDArray array, Random rnd, long... dimension);
 
     /**
      * Symmetric in place shuffle of an ndarray
@@ -352,7 +352,7 @@ public interface NDArrayFactory {
      * @param dimension the dimension to do the shuffle
      * @return
      */
-    void shuffle(Collection<INDArray> array, Random rnd, int... dimension);
+    void shuffle(Collection<INDArray> array, Random rnd, long... dimension);
 
     /**
      * Symmetric in place shuffle of an ndarray
@@ -362,7 +362,7 @@ public interface NDArrayFactory {
      * @param dimensions the dimensions to do the shuffle
      * @return
      */
-    void shuffle(List<INDArray> array, Random rnd, List<int[]> dimensions);
+    void shuffle(List<INDArray> array, Random rnd, List<long[]> dimensions);
 
     /**
      * This method averages input arrays, and returns averaged array
@@ -1428,7 +1428,7 @@ public interface NDArrayFactory {
      * @param dimensions
      * @return
      */
-    INDArray[] tear(INDArray tensor, int... dimensions);
+    INDArray[] tear(INDArray tensor, long... dimensions);
 
     /**
      *
@@ -1438,7 +1438,7 @@ public interface NDArrayFactory {
      */
     INDArray sort(INDArray x, boolean descending);
 
-    INDArray sort(INDArray x, boolean descending, int... dimensions);
+    INDArray sort(INDArray x, boolean descending, long... dimensions);
 
     INDArray sortCooIndices(INDArray x);
 

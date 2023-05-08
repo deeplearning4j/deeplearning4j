@@ -411,6 +411,8 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 }
 
 void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
+ if(vdatabuffer == nullptr)
+   throw std::runtime_error("Input data buffer is null!");
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
 
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);

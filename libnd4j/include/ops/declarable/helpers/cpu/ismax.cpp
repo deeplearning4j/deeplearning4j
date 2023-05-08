@@ -162,11 +162,11 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<Long
           }
 
           PRAGMA_OMP_SIMD
-          for (int i = 0; i < tadLength; i++) {
+          for (sd::LongType i = 0; i < tadLength; i++) {
             rZ[i * zEWS] = maxIdx == i ? (Z)1 : (Z)0;
           }
         } else {
-          for (int i = 0; i < tadLength; i++) {
+          for (sd::LongType i = 0; i < tadLength; i++) {
             auto xOffset = shape::getIndexOffset(i, tadShapeShapeInfo);
             if (rX[xOffset] > maxValue) {
               maxIdx = i;
@@ -175,7 +175,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<Long
           }
 
           PRAGMA_OMP_SIMD
-          for (int i = 0; i < tadLength; i++) {
+          for (sd::LongType i = 0; i < tadLength; i++) {
             auto zOffset = shape::getIndexOffset(i, tadPackZ.primaryShapeInfo());
             rZ[zOffset] = maxIdx == i ? (Z)1 : (Z)0;
           }

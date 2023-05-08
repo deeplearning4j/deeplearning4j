@@ -195,7 +195,7 @@ void printOpTrace() {
       sd_printf("Op name: %s\n", curr->opName->c_str());
     }
     sd_printf(" Input buffers:\n",0);
-   if(curr->inputShapeBuffers == nullptr || curr->inputShapeBuffers->size() == 0) {
+    if(curr->inputShapeBuffers == nullptr || curr->inputShapeBuffers->size() == 0) {
       sd_printf("No input buffers\n",0);
       continue;
     } else {
@@ -413,11 +413,11 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataB
 void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer* shapeInfo,
                                   sd::Pointer * specialShapeInfo) {
   auto inputShapeBuffers = (void **) shapeInfo;
-
   for(int i = 0; i < numArrays; i++) {
-    if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextOutputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
-    else {
+    if(buffer != nullptr && buffer[i] != nullptr) {
+      setGraphContextOutputBuffer(ptr, i, buffer[i], inputShapeBuffers[i],
+                                  specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    } else {
       setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
     }
 
@@ -1175,7 +1175,7 @@ void setGridLimit(int gridSize) {
   // no-op
 }
 
-sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, int dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimension, sd::LongType dimensionLength) {
   auto pack = new TadPack();
   try {
     *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
@@ -1662,7 +1662,7 @@ void sort(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo,
 }
 
 void sortTad(sd::Pointer *extraPointers, void *hX, const sd::LongType *hXShapeInfo, void *dX,
-             const sd::LongType *dXShapeInfo, LongType *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+             const sd::LongType *dXShapeInfo, LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
              const sd::LongType *tadOffsets, bool descending) {
   try {
     NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -2953,9 +2953,9 @@ void sortByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShape
   }
 }
 
-void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
-                  const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                  const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
+void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dX,
+                  const sd::LongType *dXShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
+                  const sd::LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);
@@ -2971,7 +2971,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, const sd::LongType *xShap
 
 void sortTadByValue(sd::Pointer *extraPointers, void *x, const sd::LongType *xShapeInfo, void *dx,
                     const sd::LongType *dxShapeInfo, void *y, const sd::LongType *yShapeInfo, void *dy,
-                    const sd::LongType *dyShapeInfo, LongType *dimension, int dimensionLength, bool descending) {
+                    const sd::LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);

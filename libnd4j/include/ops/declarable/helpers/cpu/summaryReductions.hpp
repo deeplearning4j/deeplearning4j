@@ -463,7 +463,7 @@ class Deviation {
   }
 
   template <bool LastIndexFaster = true>
-  static SD_INLINE void updateGeneralLoop1b(int rank, const X* buff, DeviationAggregate& agg, const sd::LongType* bases,
+  static SD_INLINE void updateGeneralLoop1b(LongType rank, const X* buff, DeviationAggregate& agg, const sd::LongType* bases,
                                             const sd::LongType* strides, const sd::LongType& outerLoopStart,
                                             const sd::LongType& outerLoopStop, const sd::LongType& innerLoopCount) {
     agg = {};

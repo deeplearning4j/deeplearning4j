@@ -90,15 +90,15 @@ public abstract class UserDefinedCustomOp extends DynamicCustomOp {
         super(opName, sameDiff, args);
     }
 
-    public UserDefinedCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments) {
+    public UserDefinedCustomOp(String opName, INDArray input, INDArray output, List<Double> tArguments, long[] iArguments) {
         super(opName, input, output, tArguments, iArguments);
     }
 
-    public UserDefinedCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments) {
+    public UserDefinedCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 
-    public UserDefinedCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public UserDefinedCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 

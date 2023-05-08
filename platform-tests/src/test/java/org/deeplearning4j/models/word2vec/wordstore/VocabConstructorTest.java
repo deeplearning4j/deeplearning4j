@@ -135,7 +135,9 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
         VocabCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(iter).tokenizerFactory(t).build();
 
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
@@ -146,7 +148,6 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
         constructor.buildJointVocabulary(false, true);
 
-        //        assertFalse(cache.hasToken("including"));
 
         assertEquals(242, cache.numWords());
 
@@ -271,7 +272,9 @@ public class VocabConstructorTest extends BaseDL4JTest {
 
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
+                        new SentenceTransformer.Builder()
+                                .vocabCache(cacheSource)
+                                .iterator(underlyingIterator).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
                         new AbstractSequenceIterator.Builder<>(transformer).build();
@@ -325,7 +328,9 @@ public class VocabConstructorTest extends BaseDL4JTest {
         FileLabelAwareIterator labelAwareIterator = new FileLabelAwareIterator.Builder()
                         .addSourceFolder(dir).build();
 
-        transformer = new SentenceTransformer.Builder().iterator(labelAwareIterator).tokenizerFactory(t).build();
+        transformer = new SentenceTransformer.Builder()
+                .vocabCache(cacheSource)
+                .iterator(labelAwareIterator).tokenizerFactory(t).build();
 
         sequenceIterator = new AbstractSequenceIterator.Builder<>(transformer).build();
 
@@ -444,8 +449,11 @@ public class VocabConstructorTest extends BaseDL4JTest {
     public void testParallelTokenizationDisabled_Completes() throws Exception {
         File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile);
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iter).tokenizerFactory(t).build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .vocabCache(vocabCache)
+                .iterator(iter).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
                 new AbstractSequenceIterator.Builder<>(transformer).build();

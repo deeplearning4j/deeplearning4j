@@ -920,6 +920,11 @@ public class AtomicAllocator implements Allocator {
     }
 
     @Override
+    public DataBuffer getConstantBuffer(long[] array) {
+        return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.LONG);
+    }
+
+    @Override
     public DataBuffer getConstantBuffer(float[] array) {
         return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.FLOAT);
     }

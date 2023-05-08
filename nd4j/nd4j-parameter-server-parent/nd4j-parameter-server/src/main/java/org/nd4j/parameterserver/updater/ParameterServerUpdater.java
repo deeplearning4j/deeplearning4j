@@ -116,7 +116,7 @@ public interface ParameterServerUpdater {
      * @param idx the index to update
      * @param dimensions the dimensions to update
      */
-    void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions);
+    void partialUpdate(INDArray arr, INDArray result, long idx, long... dimensions);
 
     /**
      * Updates result

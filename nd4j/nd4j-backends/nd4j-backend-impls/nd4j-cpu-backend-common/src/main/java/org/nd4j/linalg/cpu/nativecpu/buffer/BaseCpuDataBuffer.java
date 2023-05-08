@@ -289,7 +289,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
         if (dataType() != DataType.UTF8)
-            ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, dataType(), false).retainReference();
+            ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, dataType(), false);
 
         if (dataType() == DataType.DOUBLE) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asDoublePointer();
@@ -874,6 +874,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     @Override
     protected void release() {
         ptrDataBuffer.closeBuffer();
+        if(pointer != null && !pointer.isNull())
+            pointer.close();
+        if(addressPointer != null)
+            addressPointer.deallocate();
         super.release();
     }
 

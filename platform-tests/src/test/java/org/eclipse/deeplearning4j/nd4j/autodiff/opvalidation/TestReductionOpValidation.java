@@ -669,7 +669,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         //{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}
-        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
+        for (long[] reduceDims : new long[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
             for (int i = 1; i < 7; i++) {
 
                 SameDiff sd = SameDiff.create();
@@ -769,7 +769,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
     public void testMoments(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        for (int[] axes : new int[][]{{0}, {1}, {0, 1}}) {
+        for (long[] axes : new long[][]{{0}, {1}, {0, 1}}) {
             INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4);
 
             SameDiff sd = SameDiff.create();
@@ -802,7 +802,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMomentsOp(Nd4jBackend backend) {
-        int[] axes = new int[]{0};
+        long[] axes = new long[]{0};
         INDArray input = Nd4j.linspace(1, 12, 12).reshape(3, 4).castTo(DataType.DOUBLE);
         INDArray assertionMean = input.mean(axes).reshape(4);
         INDArray outMean = Nd4j.createUninitialized(new long[]{4}).castTo(DataType.DOUBLE);
@@ -871,15 +871,15 @@ public class TestReductionOpValidation extends BaseOpValidation {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIndexAccum(Nd4jBackend backend) {
         List<String> failed = new ArrayList<>();
-        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1} /*, new int[0]*/);
+        List<long[]> dims = Arrays.asList(new long[]{0}, new long[]{1}, new long[]{0, 1} /*, new int[0]*/);
 
         INDArray in = Nd4j.rand(DataType.DOUBLE,3, 4);
 
         for (int t = 0; t < 3; t++) {
-            int[] d = dims.get(t);
+            long[] d = dims.get(t);
             for (int i = 0; i < 7; i++) {
 
-                int[] dim = d.length == 0 ? new int[0] : d;
+                long[] dim = d.length == 0 ? new long[0] : d;
 
                 SameDiff sd = SameDiff.create();
                 SDVariable s = sd.var("in", in);
@@ -967,7 +967,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         int d1 = 4;
         int d2 = 5;
 
-        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
+        for (long[] reduceDims : new long[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
             for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
@@ -983,7 +983,6 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 INDArray expOut;
                 SDVariable reduced;
                 String name;
-//                System.out.println(i);
                 switch (i) {
                     case 0:
                         reduced = sd.math().manhattanDistance(in, in2, reduceDims);
@@ -1018,25 +1017,24 @@ public class TestReductionOpValidation extends BaseOpValidation {
                     default:
                         throw new RuntimeException();
                 }
-//                System.out.println(i + " - end");
 
 
                 long[] expShape;
-                if (Arrays.equals(new int[]{0}, reduceDims)) {
+                if (Arrays.equals(new long[]{0}, reduceDims)) {
                     expShape = new long[]{4, 5};
-                } else if (Arrays.equals(new int[]{1}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{1}, reduceDims)) {
                     expShape = new long[]{3, 5};
-                } else if (Arrays.equals(new int[]{2}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{2}, reduceDims)) {
                     expShape = new long[]{3, 4};
-                } else if (Arrays.equals(new int[]{Integer.MAX_VALUE}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{Integer.MAX_VALUE}, reduceDims)) {
                     expShape = new long[]{};
-                } else if (Arrays.equals(new int[]{0, 1}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{0, 1}, reduceDims)) {
                     expShape = new long[]{5};
-                } else if (Arrays.equals(new int[]{0, 2}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{0, 2}, reduceDims)) {
                     expShape = new long[]{4};
-                } else if (Arrays.equals(new int[]{1, 2}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{1, 2}, reduceDims)) {
                     expShape = new long[]{3};
-                } else if (Arrays.equals(new int[]{0, 1, 2}, reduceDims)) {
+                } else if (Arrays.equals(new long[]{0, 1, 2}, reduceDims)) {
                     expShape = new long[]{};
                 } else {
                     throw new RuntimeException();
@@ -1680,7 +1678,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 expected = expected.reshape(1,4);
             }
 
-            SDVariable output = new StandardDeviation(sameDiff, input, false, keepDims, new int[]{0}).outputVariable();
+            SDVariable output = new StandardDeviation(sameDiff, input, false, keepDims, new long[]{0}).outputVariable();
 
             TestCase tc = new TestCase(sameDiff)
                     .gradCheckMaxRelativeError(1)
@@ -1706,7 +1704,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
             if(keepDims)
                 expected = expected.reshape(1);
 
-            SDVariable output = new SquaredNorm(sameDiff, input, keepDims, new int[]{0}).outputVariable();
+            SDVariable output = new SquaredNorm(sameDiff, input, keepDims, new long[]{0}).outputVariable();
 
             TestCase tc = new TestCase(sameDiff)
                     .gradientCheck(true)
@@ -1726,7 +1724,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable input = sameDiff.var(in);
         INDArray expected = Nd4j.scalar(-69.68162);
 
-        SDVariable output = new ShannonEntropy(sameDiff, input, new int[]{0}).outputVariable();
+        SDVariable output = new ShannonEntropy(sameDiff, input, new long[]{0}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
@@ -1746,7 +1744,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
         SDVariable input = sameDiff.var(in);
         double expected = -10.2273;
 
-        SDVariable output = new Entropy(sameDiff, input, new int[]{0}).outputVariable();
+        SDVariable output = new Entropy(sameDiff, input, new long[]{0}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
@@ -1768,7 +1766,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 5.0000,    6.0000,    7.0000,    8.0000
         });
 
-        SDVariable output = new AMean(sameDiff, input, new int[]{0}).outputVariable();
+        SDVariable output = new AMean(sameDiff, input, new long[]{0}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
@@ -1793,7 +1791,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 5.0000,    6.0000,    7.0000,    8.0000
         }).reshape(1,4);
 
-        SDVariable output = new Mean(sameDiff, input, true, new int[]{0}).outputVariable();
+        SDVariable output = new Mean(sameDiff, input, true, new long[]{0}).outputVariable();
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
                 .expectedOutput(output.name(), expected);
@@ -1814,7 +1812,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 15.0000,   18.0000,   21.0000,   24.0000
         });
 
-        SDVariable output = new Norm1(sameDiff, input, false, new int[]{0}).outputVariable();
+        SDVariable output = new Norm1(sameDiff, input, false, new long[]{0}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
@@ -1836,7 +1834,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 10.3441,   11.8322,   13.3791,   14.9666
         });
 
-        SDVariable output = new Norm2(sameDiff, input, false, new int[]{0}).outputVariable();
+        SDVariable output = new Norm2(sameDiff, input, false, new long[]{0}).outputVariable();
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
@@ -1859,7 +1857,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
                 9.0000,   10.0000,   11.0000,   12.0000
         });
 
-        SDVariable output = new NormMax(sameDiff, input, false, new int[]{0}).outputVariable();
+        SDVariable output = new NormMax(sameDiff, input, false, new long[]{0}).outputVariable();
         //note that we only get max relative error of 1.0 on cases where the gradient is exactly 0,
         //in a 12 length array only 3 tests fail
         TestCase tc = new TestCase(sameDiff)

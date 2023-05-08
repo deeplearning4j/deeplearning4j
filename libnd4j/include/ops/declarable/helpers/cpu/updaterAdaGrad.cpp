@@ -65,7 +65,7 @@ static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, N
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType  i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
 
       const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);

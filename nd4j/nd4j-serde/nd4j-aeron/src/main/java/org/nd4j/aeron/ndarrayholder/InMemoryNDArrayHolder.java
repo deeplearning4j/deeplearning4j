@@ -94,7 +94,7 @@ public class InMemoryNDArrayHolder implements NDArrayHolder {
      * from the master array.
      */
     @Override
-    public INDArray getTad(int idx, int... dimensions) {
+    public INDArray getTad(int idx, long... dimensions) {
         return arr.get().tensorAlongDimension(idx, dimensions);
     }
 }

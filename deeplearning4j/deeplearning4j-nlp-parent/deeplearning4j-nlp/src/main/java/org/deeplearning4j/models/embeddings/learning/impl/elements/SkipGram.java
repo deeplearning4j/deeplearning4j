@@ -23,6 +23,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -40,9 +41,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.shade.guava.cache.Cache;
 import org.nd4j.shade.guava.cache.CacheBuilder;
+import org.nd4j.shade.guava.cache.Weigher;
+
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -58,8 +62,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected double sampling;
     protected int[] variableWindows;
     protected int vectorLength;
+    protected int maxQueueSize = Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_QUEUE_SIZE,"1000"));
 
-    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder().build();
+    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder()
+            .maximumSize(Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_CACHE_SIZE,"10000")))
+            .build();
+
     protected int workers = Runtime.getRuntime().availableProcessors();
 
 
@@ -297,10 +305,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     public  Double doExec(List<BatchItem<T>> items,INDArray inferenceVector) {
         try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             if (items.size() > 1) {
-                INDArray targetArray;
-                INDArray ngStarterArray;
-                INDArray alphasArray;
-                INDArray randomValuesArr;
+                INDArray targetArray = null;
+                INDArray ngStarterArray = null;
+                INDArray alphasArray = null;
+                INDArray randomValuesArr = null;
                 int maxCols = 1;
                 for (int i = 0; i < items.size(); i++) {
                     int curr = items.get(i).getWord().getCodeLength();
@@ -322,8 +330,12 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         iterationArrays1 = new IterationArrays(items.size(),maxCols);
 
                     }else {
-                        iterationArrays1 = iterationArraysQueue.remove();
-                        iterationArrays1.initCodes();
+                        try {
+                            iterationArrays1 = iterationArraysQueue.remove();
+                            iterationArrays1.initCodes();
+                        }catch(NoSuchElementException e) {
+                            iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                        }
                     }
                 }
 
@@ -331,8 +343,8 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 int[][] indicesArr = iterationArrays1.indicesArr;
                 int[][]  codesArr = iterationArrays1.codesArr;
                 //use -1 as padding for codes that are not actually valid for a given row
-                INDArray codes;
-                INDArray indices;
+                INDArray codes = null;
+                INDArray indices = null;
 
                 long[] randomValues = iterationArrays1.randomValues;
                 double[] alphas = iterationArrays1.alphas;
@@ -383,13 +395,15 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                     }
                 }
 
-
                 alphasArray = Nd4j.createFromArray(alphas);
-                ngStarterArray = Nd4j.createFromArray(ngStarters);
+                if(negative > 0)
+                    ngStarterArray = Nd4j.createFromArray(ngStarters);
                 randomValuesArr = Nd4j.createFromArray(randomValues);
                 targetArray = Nd4j.createFromArray(targets);
-                codes = Nd4j.createFromArray(codesArr);
-                indices = Nd4j.createFromArray(indicesArr);
+                if(configuration.isUseHierarchicSoftmax())
+                    codes = Nd4j.createFromArray(codesArr);
+                if(configuration.isUseHierarchicSoftmax())
+                    indices = Nd4j.createFromArray(indicesArr);
 
                 SkipGramRound sg = SkipGramRound.builder()
                         .target(targetArray)
@@ -412,9 +426,10 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                 Nd4j.getExecutioner().exec(sg);
                 items.clear();
 
+                sg.inputArguments().clear();
                 Nd4j.close(targetArray,codes,indices,alphasArray,ngStarterArray,randomValuesArr);
-
-                iterationArraysQueue.add(iterationArrays1);
+                if(iterationArraysQueue.size() < maxQueueSize)
+                    iterationArraysQueue.add(iterationArrays1);
 
             } else {
                 int cnt = 0;

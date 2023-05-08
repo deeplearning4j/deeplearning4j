@@ -42,7 +42,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public BaseIndexAccumulation(SameDiff sameDiff,
                                  SDVariable i_v,
                                  boolean keepDims,
-                                 int[] dimensions) {
+                                 long[] dimensions) {
         super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
@@ -60,7 +60,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                                  SDVariable i_v,
                                  SDVariable i_v2,
                                  boolean keepDims,
-                                 int[] dimensions) {
+                                 long[] dimensions) {
         super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
@@ -80,17 +80,17 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
     public BaseIndexAccumulation() {}
 
 
-    public BaseIndexAccumulation(INDArray x, int[] dimensions) {
+    public BaseIndexAccumulation(INDArray x, long[] dimensions) {
         this(x, null, dimensions);
     }
 
-    public BaseIndexAccumulation(INDArray x, boolean keepDims, int[] dimensions) {
+    public BaseIndexAccumulation(INDArray x, boolean keepDims, long[] dimensions) {
         this(x, null, dimensions);
         this.keepDims = keepDims;
         defineDimensions(dimensions);
     }
 
-    public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
+    public BaseIndexAccumulation(INDArray x, INDArray z, long[] dimensions) {
         super(x, z);
         defineDimensions(dimensions);
     }

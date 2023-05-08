@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -40,17 +41,17 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties({"hasLeadingDimension"})
 public class PermutePreprocessor extends BaseInputPreProcessor {
 
-    private int[] permutationIndices;
+    private long[] permutationIndices;
     private boolean hasLeadingDimension = false;
 
     public PermutePreprocessor(@JsonProperty("permutationIndices") int... permutationIndices) {
-        this.permutationIndices = permutationIndices;
+        this.permutationIndices = ArrayUtil.toLongArray(permutationIndices);
     }
 
 
-    private static int[] prependZero(int[] shape) {
+    private static long[] prependZero(long[] shape) {
         int shapeLength = shape.length;
-        int[] augmentedShape = new int[shapeLength + 1];
+        long[] augmentedShape = new long[shapeLength + 1];
         for (int i = 0; i < augmentedShape.length; i++) {
             if (i == 0)
                 augmentedShape[i] = 0;

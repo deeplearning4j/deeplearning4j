@@ -28,7 +28,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -159,12 +158,12 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
     @Override
-    public int[] getDimension() {
+    public long[] getDimension() {
         return dimensions;
     }
 
     @Override
-    public void setDimension(int... dimension) {
+    public void setDimension(long... dimension) {
         defineDimensions(dimension);
     }
 

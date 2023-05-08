@@ -27,31 +27,31 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class Norm1Bp extends BaseReductionBp {
 
-    public Norm1Bp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public Norm1Bp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         addArgs();
 
     }
 
-    public Norm1Bp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public Norm1Bp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput1, origInput2, gradAtOutput, keepDims, dimensions);
         addArgs();
 
     }
 
-    public Norm1Bp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions){
+    public Norm1Bp(INDArray origInput, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions){
         super(origInput, gradAtOutput, output, keepDims, dimensions);
         addArgs();
 
     }
 
-    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, int... dimensions) {
+    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output, boolean keepDims, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
         addArgs();
 
     }
 
-    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions) {
+    public Norm1Bp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, long... dimensions) {
         super(origInput1, origInput2, gradAtOutput, output1, output2, keepDims, dimensions);
         addArgs();
 

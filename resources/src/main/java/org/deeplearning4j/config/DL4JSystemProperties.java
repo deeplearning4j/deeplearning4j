@@ -113,4 +113,18 @@ public class DL4JSystemProperties {
      */
     public static final String DISABLE_HELPER_PROPERTY = "org.eclipse.deeplearning4j.helpers.disable";
     public final static String HELPER_DISABLE_DEFAULT_VALUE = "true";
+
+    /**
+     * Applicability: NLP SkipGram and CBOW
+     * modules controlling the max cache size
+     * for on heap parameters such as learning rates and random values.
+     */
+    public static final String NLP_CACHE_SIZE = "org.eclipse.deeplearning4j.nlp.cachesize";
+
+    /**
+     * Applicability: NLP SkipGram and CBOW
+     * modules controlling the max queue size
+     * for each cache value.
+     */
+    public static final String NLP_QUEUE_SIZE = "org.eclipse.deeplearning4j.nlp.queuesize";
 }

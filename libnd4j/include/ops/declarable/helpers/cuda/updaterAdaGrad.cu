@@ -58,10 +58,10 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
   }
   __syncthreads();
 
-  int coords[SD_MAX_RANK];
+  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    auto xOffset = i, zOffset = i, initOffset = i, stOffset = i;
+    sd::LongType  xOffset = i, zOffset = i, initOffset = i, stOffset = i;
 
     if (!bEWS || !bOrdering) {
       shape::index2coords(i, xShapeInfo, coords);

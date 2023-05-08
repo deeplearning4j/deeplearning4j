@@ -310,9 +310,9 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         }
         for (int i = 0; i < result.numExamples(); i++) {
             INDArray newFeatures = result.get(i).getFeatures();
-            newFeatures.tensorAlongDimension(0, new int[] {0, 2, 3}).divi(255);
-            newFeatures.tensorAlongDimension(1, new int[] {0, 2, 3}).subi(uMean).divi(uStd);
-            newFeatures.tensorAlongDimension(2, new int[] {0, 2, 3}).subi(vMean).divi(vStd);
+            newFeatures.tensorAlongDimension(0, new long[] {0, 2, 3}).divi(255);
+            newFeatures.tensorAlongDimension(1, new long[] {0, 2, 3}).subi(uMean).divi(uStd);
+            newFeatures.tensorAlongDimension(2, new long[] {0, 2, 3}).subi(vMean).divi(vStd);
             result.get(i).setFeatures(newFeatures);
         }
         result.save(fileName);
@@ -367,8 +367,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         for (DataSet data : result) {
             try {
                 if (useSpecialPreProcessCifar) {
-                    INDArray uChannel = data.getFeatures().tensorAlongDimension(1, new int[] {0, 2, 3});
-                    INDArray vChannel = data.getFeatures().tensorAlongDimension(2, new int[] {0, 2, 3});
+                    INDArray uChannel = data.getFeatures().tensorAlongDimension(1, new long[] {0, 2, 3});
+                    INDArray vChannel = data.getFeatures().tensorAlongDimension(2, new long[] {0, 2, 3});
                     uTempMean = uChannel.meanNumber().doubleValue();
                     // TODO INDArray.var result is incorrect based on dimensions passed in thus using manual
                     uStd += varManual(uChannel, uTempMean);

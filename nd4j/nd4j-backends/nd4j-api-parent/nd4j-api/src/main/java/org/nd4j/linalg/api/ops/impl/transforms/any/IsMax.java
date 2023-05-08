@@ -51,12 +51,12 @@ public class IsMax extends DynamicCustomOp {
         this(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
     }
 
-    public IsMax(INDArray x, INDArray z, int... dimensions) {
+    public IsMax(INDArray x, INDArray z, long... dimensions) {
         this(x, z);
         this.addIArgument(dimensions);
     }
 
-    public IsMax(INDArray x, int... dimensions) {
+    public IsMax(INDArray x, long... dimensions) {
         this(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()), dimensions);
     }
 

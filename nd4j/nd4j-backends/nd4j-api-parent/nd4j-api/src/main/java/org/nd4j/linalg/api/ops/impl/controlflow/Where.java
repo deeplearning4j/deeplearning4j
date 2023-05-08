@@ -40,7 +40,7 @@ public class Where extends DynamicCustomOp {
         super(null, sameDiff, args);
     }
 
-    public Where(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public Where(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 

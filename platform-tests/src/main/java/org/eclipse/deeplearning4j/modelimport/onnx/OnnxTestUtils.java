@@ -7,8 +7,7 @@ import org.nd4j.shade.protobuf.TextFormat;
 
 public class OnnxTestUtils {
 
-    @SneakyThrows
-    public static Onnx.ModelProto loadFromString(String input) {
+    public static Onnx.ModelProto loadFromString(String input) throws Exception {
         return TextFormat.parse(input, Onnx.ModelProto.class);
     }
 

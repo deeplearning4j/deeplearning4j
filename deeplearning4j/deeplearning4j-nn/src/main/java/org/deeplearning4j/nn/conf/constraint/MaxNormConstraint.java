@@ -47,7 +47,7 @@ public class MaxNormConstraint extends BaseConstraint {
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MaxNormConstraint(double maxNorm, Set<String> paramNames, int... dimensions){
+    public MaxNormConstraint(double maxNorm, Set<String> paramNames, long... dimensions){
         super(paramNames, DEFAULT_EPSILON, dimensions);
         this.maxNorm = maxNorm;
     }
@@ -60,7 +60,7 @@ public class MaxNormConstraint extends BaseConstraint {
      *                       be dimension 1. For CNNs, this should be dimensions [1,2,3] corresponding to last 3 of
      *                       parameters which have order [depthOut, depthIn, kH, kW]
      */
-    public MaxNormConstraint(double maxNorm, int... dimensions) {
+    public MaxNormConstraint(double maxNorm, long... dimensions) {
 
         this(maxNorm, Collections.<String>emptySet(), dimensions);
     }

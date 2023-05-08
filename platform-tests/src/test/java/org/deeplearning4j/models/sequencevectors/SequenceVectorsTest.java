@@ -112,7 +112,9 @@ public class SequenceVectorsTest extends BaseDL4JTest {
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
+                        new SentenceTransformer.Builder()
+                                .vocabCache(vocabCache)
+                                .iterator(underlyingIterator).tokenizerFactory(t).build();
 
 
         /*
@@ -233,9 +235,12 @@ public class SequenceVectorsTest extends BaseDL4JTest {
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
+        AbstractCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
         SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
+                        new SentenceTransformer.Builder()
+                                .vocabCache(vocabCache)
+                                .iterator(underlyingIterator).tokenizerFactory(t).build();
 
         AbstractSequenceIterator<VocabWord> sequenceIterator =
                         new AbstractSequenceIterator.Builder<>(transformer).build();

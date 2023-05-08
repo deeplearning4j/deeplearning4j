@@ -784,7 +784,7 @@ public interface NativeOps {
 
     void setGridLimit(int gridSize);
 
-    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, LongPointer dimension, int dimensionLength);
+    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, LongPointer dimension, long dimensionLength);
 
     LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
     LongPointer getPrimaryOffsets(OpaqueTadPack pack);
@@ -1135,15 +1135,42 @@ public interface NativeOps {
               boolean descending);
 
 
-    void sortTad(PointerPointer extraPointers, Pointer hX, LongPointer hXShapeInfo, Pointer dX,
-                 LongPointer dXShapeInfo, LongPointer dimension, int dimensionLength,
-                 LongPointer tadShapeInfo, LongPointer tadOffsets, boolean descending);
-    void sortTad(@Cast("sd::Pointer*") PointerPointer extraPointers, Pointer hX,  LongBuffer hXShapeInfo, Pointer dX,
-                 @Cast("const sd::LongType*") LongBuffer dXShapeInfo, LongBuffer dimension, int dimensionLength,
-                 @Cast("const sd::LongType*") LongBuffer tadShapeInfo,  LongBuffer tadOffsets, @Cast("bool") boolean descending);
-    void sortTad( PointerPointer extraPointers, Pointer hX, long[] hXShapeInfo, Pointer dX,
-                  long[] dXShapeInfo, long[] dimension, int dimensionLength,
-                  long[] tadShapeInfo, long[] tadOffsets,  boolean descending);
+
+     void sortTad( PointerPointer extraPointers, Pointer hX, LongPointer hXShapeInfo, Pointer dX,
+                               LongPointer dXShapeInfo, LongPointer dimension,  long dimensionLength,
+                               LongPointer tadShapeInfo, LongPointer tadOffsets,  boolean descending);
+     void sortTad( PointerPointer extraPointers, Pointer hX, LongBuffer hXShapeInfo, Pointer dX,
+                               LongBuffer dXShapeInfo, LongBuffer dimension,  long dimensionLength,
+                               LongBuffer tadShapeInfo, LongBuffer tadOffsets,  boolean descending);
+     void sortTad( PointerPointer extraPointers, Pointer hX, long[] hXShapeInfo, Pointer dX,
+                               long[] dXShapeInfo, long[] dimension,long dimensionLength,
+                               long[] tadShapeInfo, long[] tadOffsets, boolean descending);
+
+     void sortTadByKey( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dX,
+                                    LongPointer dXShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
+                                    LongPointer dyShapeInfo,  LongPointer dimension, long dimensionLength,boolean descending);
+     void sortTadByKey(PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dX,
+                                     LongBuffer dXShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
+                                    LongBuffer dyShapeInfo,LongBuffer dimension, long dimensionLength,  boolean descending);
+     void sortTadByKey( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dX,
+                                     long[] dXShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
+                                  long[] dyShapeInfo,  long[] dimension, long dimensionLength,  boolean descending);
+
+     void sortTadByValue( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dx,
+                                      LongPointer dxShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
+                                      LongPointer dyShapeInfo,  LongPointer dimension,
+                                       long dimensionLength,
+                                       boolean descending);
+     void sortTadByValue( PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dx,
+                                      LongBuffer dxShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
+                                      LongBuffer dyShapeInfo,  LongBuffer dimension,
+                                       long dimensionLength,
+                                       boolean descending);
+     void sortTadByValue( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dx,
+                                      long[] dxShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
+                                      long[] dyShapeInfo,  long[] dimension,
+                                       long dimensionLength,
+                                       boolean descending);
 
 
     void sortCooIndices(PointerPointer extraPointers, @Cast("sd::LongType *") LongPointer indices, Pointer x, long length, @Cast("sd::LongType *") LongPointer shapeInfo);
@@ -1335,11 +1362,11 @@ public interface NativeOps {
     OpaqueRandomGenerator createRandomGenerator(long rootSeed, long nodeSeed);
     long getRandomGeneratorRootState(OpaqueRandomGenerator ptr);
     long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
-    void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("sd::LongType") long rootSeed/*=0*/, @Cast("sd::LongType") long nodeSeed/*=0*/);
-    float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-    double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-    int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
-    long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("sd::LongType") long index);
+    void setRandomGeneratorStates(OpaqueRandomGenerator ptr,  long rootSeed/*=0*/,  long nodeSeed/*=0*/);
+    float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr,  long index);
+    double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr,  long index);
+    int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr,  long index);
+    long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr,  long index);
     float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr);
     double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr);
     int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr);

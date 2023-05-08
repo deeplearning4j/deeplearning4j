@@ -75,7 +75,7 @@ public class Unstack extends DynamicCustomOp {
     }
 
     public Unstack(INDArray in, INDArray[] out, int axis){
-        super(null, new INDArray[]{in}, out, null, (int[])null);
+        super(null, new INDArray[]{in}, out, null, (long[])null);
         this.jaxis = axis;
         addArgs();
     }

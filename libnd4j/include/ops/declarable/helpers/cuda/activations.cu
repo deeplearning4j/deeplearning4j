@@ -565,7 +565,7 @@ void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *v
 void softmaxDerivative(sd::LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
-  int temp;
+  sd::LongType temp;
 
   if (shape::isCommonVector(input.shapeInfo(), temp)) {
     BUILD_SINGLE_SELECTOR(

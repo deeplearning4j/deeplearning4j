@@ -89,7 +89,7 @@ class SD_LIB_EXPORT OpExecTrace {
 
   OpExecTrace() = default;
 
-  ~OpExecTrace();
+  ~OpExecTrace() = default;
 
   std::vector<const sd::LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
   void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffers) {

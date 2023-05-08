@@ -34,7 +34,7 @@ public interface TADManager {
      * @param dimension
      * @return
      */
-    Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, int... dimension);
+    Pair<DataBuffer, DataBuffer> getTADOnlyShapeInfo(INDArray array, long... dimension);
 
     /**
      * This method removes all cached shape buffers

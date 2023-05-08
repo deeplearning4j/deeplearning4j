@@ -49,19 +49,21 @@ class TransformAny {
 
   template <typename OpType>
   static SD_DEVICE void transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *params, void *vz,
-                                      const sd::LongType *zShapeInfo, int *allocationPointer, void *reductionPointer,
+                                      const sd::LongType *zShapeInfo, long long int *allocationPointer, void *reductionPointer,
                                       const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets);
 
   template <typename OpType>
   static SD_HOST void intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
-                                         const sd::LongType *xShape, int xRank, void *extraParams, void *z,
-                                         const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                         const sd::LongType *xShape, long long int xRank, void *extraParams, void *z,
+                                         const sd::LongType *zShape, long long int zRank,
+                                         long long int *allocationPointer,
                                          void *reductionPointer, const sd::LongType *tadShapeInfo,
                                          const sd::LongType *tadOffsets);
 
-  static SD_HOST void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, const void *x,
-                                             const sd::LongType *xShape, int xRank, void *extraParams, void *z,
-                                             const sd::LongType *zShape, int zRank, int *allocationPointer,
+  static SD_HOST void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x,
+                                             const sd::LongType *xShape, long long int xRank, void *extraParams, void *z,
+                                             const sd::LongType *zShape, long long int zRank,
+                                             long long int *allocationPointer,
                                              void *reductionPointer, const sd::LongType *tadShapeInfo,
                                              const sd::LongType *tadOffsets);
 

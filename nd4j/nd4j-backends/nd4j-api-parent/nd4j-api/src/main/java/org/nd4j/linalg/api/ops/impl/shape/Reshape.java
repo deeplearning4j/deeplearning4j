@@ -107,7 +107,7 @@ public class Reshape extends DynamicCustomOp {
 
 
     public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out) {
-        super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
+        super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Long>)null);
         if(iArguments.isEmpty())
             addIArgument(C_ORDER);
     }

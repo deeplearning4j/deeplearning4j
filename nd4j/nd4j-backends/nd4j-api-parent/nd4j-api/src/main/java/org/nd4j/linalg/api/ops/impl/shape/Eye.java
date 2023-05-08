@@ -38,7 +38,7 @@ public class Eye extends DynamicCustomOp {
 
     private int numRows;
     private int numCols;
-    private int[] batchDimension = new int[] {};
+    private long[] batchDimension = new long[] {};
     private DataType dataType = DEFAULT_DTYPE;
 
     public Eye() {
@@ -83,7 +83,7 @@ public class Eye extends DynamicCustomOp {
         this(sameDiff, numRows, numCols, dataType, null);
     }
 
-    public Eye(int numRows, int numCols, DataType dataType, int[] batchDimension) {
+    public Eye(int numRows, int numCols, DataType dataType, long[] batchDimension) {
         this.numRows = numRows;
         this.numCols = numCols;
         this.batchDimension = batchDimension;
@@ -99,19 +99,14 @@ public class Eye extends DynamicCustomOp {
         this(numRows, numCols, dataType, null);
     }
 
-    public Eye(SameDiff sameDiff,  int numRows, int numCols, DataType dataType, int[] batchDimension) {
-        super(null, sameDiff, new SDVariable[] {}, false);
+
+
+    public Eye(SameDiff sameDiff, int numRows, int numCols, DataType dataType, long[] batchDimension) {
+        super(null, sameDiff, new SDVariable[] {});
+        this.batchDimension = batchDimension;
+        this.dataType = dataType;
         this.numRows = numRows;
         this.numCols = numCols;
-        this.batchDimension = batchDimension;
-        this.dataType = dataType;
-        addArgs();
-    }
-
-    public Eye(SameDiff sameDiff,  SDVariable numRows, SDVariable numCols, DataType dataType, int[] batchDimension) {
-        super(null, sameDiff, new SDVariable[] {numRows, numCols}, false);
-        this.batchDimension = batchDimension;
-        this.dataType = dataType;
         addArgs();
     }
 
@@ -122,7 +117,7 @@ public class Eye extends DynamicCustomOp {
         addIArgument(numRows);
         addIArgument(numCols);
         if(batchDimension != null) {
-            for (int dim : batchDimension) {
+            for (long dim : batchDimension) {
                 addIArgument(dim);
             }
         }

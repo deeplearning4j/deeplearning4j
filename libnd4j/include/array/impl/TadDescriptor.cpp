@@ -33,7 +33,7 @@ TadDescriptor::TadDescriptor(const TadDescriptor &other) {
   _unitiesInShape = other._unitiesInShape;
 }
 #endif
-TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const int length,
+TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
   ShapeDescriptor descriptor(originalShape);
 

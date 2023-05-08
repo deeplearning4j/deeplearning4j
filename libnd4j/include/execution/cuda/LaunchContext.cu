@@ -114,7 +114,7 @@ void* LaunchContext::getReductionPointer() const { return contextBuffers.reducti
 
 void* LaunchContext::getScalarPointer() const { return contextBuffers.scalarBuffer(); };
 
-int* LaunchContext::getAllocationPointer() const { return reinterpret_cast<int*>(contextBuffers.allocationBuffer()); };
+LongType* LaunchContext::getAllocationPointer() const { return reinterpret_cast<sd::LongType *>(contextBuffers.allocationBuffer()); };
 
 void* LaunchContext::getCublasHandle() const { return CublasHelper::getInstance().handle(); };
 

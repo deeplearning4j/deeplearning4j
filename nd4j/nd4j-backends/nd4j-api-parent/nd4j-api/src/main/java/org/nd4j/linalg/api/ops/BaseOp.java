@@ -301,7 +301,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     y = args[1].getArr();
                 else if(opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL) {
                     this.dimensionz = args[1].getArr();
-                    this.dimensions = args[1].getArr().toIntVector();
+                    this.dimensions = args[1].getArr().toLongVector();
                 }
             }
 
@@ -411,7 +411,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         return result;
     }
 
-    protected void defineDimensions(int... dimensions){
+    protected void defineDimensions(long... dimensions) {
         if (dimensions != null && dimensions.length > 0) {
             if(x != null) {
                 dimensions = Shape.normalizeAxis(x.rank(), dimensions);
@@ -419,10 +419,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
 
         if (dimensions == null || dimensions.length == 0)
-            dimensions = new int[]{Integer.MAX_VALUE};
+            dimensions = new long[]{Integer.MAX_VALUE};
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
+            this.dimensionz = Shape.ndArrayDimFromLong(dimensions);
         }
     }
 

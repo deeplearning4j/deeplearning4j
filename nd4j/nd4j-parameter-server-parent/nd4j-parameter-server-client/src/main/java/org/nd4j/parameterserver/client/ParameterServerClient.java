@@ -291,7 +291,7 @@ public class ParameterServerClient implements NDArrayCallback {
     public void onNDArrayMessage(NDArrayMessage message) {
         INDArray arr = message.getArr();
         //of note for ndarrays
-        int[] dimensions = message.getDimensions();
+        long[] dimensions = message.getDimensions();
         boolean whole = dimensions.length == 1 && dimensions[0] == -1;
 
         if (!whole)
@@ -308,7 +308,7 @@ public class ParameterServerClient implements NDArrayCallback {
      * @param dimensions the dimensions to act on for the tensor along dimension
      */
     @Override
-    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+    public void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
         INDArray get = this.arr.get();
         get.tensorAlongDimension((int) idx, dimensions).assign(arr);
 

@@ -83,9 +83,9 @@ class SD_LIB_EXPORT DoubleMethods {
                           bool descending);
 
   static void sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                           sd::LongType  *dimension, int dimensionLength, bool descending);
+                           sd::LongType  *dimension, LongType dimensionLength, bool descending);
   static void sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                             sd::LongType  *dimension, int dimensionLength, bool descending);
+                             sd::LongType  *dimension, LongType dimensionLength, bool descending);
 };
 }  // namespace sd
 

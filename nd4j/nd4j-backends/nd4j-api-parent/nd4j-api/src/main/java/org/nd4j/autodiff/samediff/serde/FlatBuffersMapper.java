@@ -429,7 +429,7 @@ public class FlatBuffersMapper {
             extraStrings[i] = fn.extraStrings(i);
         }
 
-        int[] dimensions = new int[fn.dimensionsLength()];
+        long[] dimensions = new long[fn.dimensionsLength()];
         for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = fn.dimensions(i);
         }
@@ -512,14 +512,14 @@ public class FlatBuffersMapper {
                     || opType == Type.REDUCE_SAME) {
                 val ba = (BaseReduceOp) op; //Reduce3 ops are also all BaseAccumulations
                 ba.setDimensions(dimensions);
-                ba.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                ba.setDimensionz(Shape.ndArrayDimFromLong(dimensions));
                 if(extraBools.length > 0)
                     ba.setKeepDims(extraBools[0]);
 
             } else if (opType == Type.INDEXREDUCE) {
                 BaseIndexAccumulation bia = (BaseIndexAccumulation) op;
                 bia.setDimensions(dimensions);
-                bia.setDimensionz(Shape.ndArrayDimFromInt(dimensions));
+                bia.setDimensionz(Shape.ndArrayDimFromLong(dimensions));
                 if(extraBools.length > 0)
                     bia.setKeepDims(extraBools[0]);
             }
@@ -924,11 +924,20 @@ public class FlatBuffersMapper {
             }
         }
 
+        //Note this is for backwards compatibility.
+        //At the api level we standardized on 64 bit ints in c++ but
+        //otherwise should never care if the numbers are ints or longs.
+        //all dimensions should be between 0 and 32  99% of the time
+        //or Integer.MAX_VALUE for the old one.
         int[] dims;
         Type t = node.opType();
         if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL
                 || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
-            dims = node.getDimensions();
+            dims = new int[node.getDimensions().length];
+            //here we save longs as ints for compatibility
+            for(int i = 0; i < dims.length; i++) {
+                dims[i] = (int) node.getDimensions()[i];
+            }
             if (dims == null)
                 dims = new int[0];
         } else {

@@ -69,7 +69,7 @@ public class PublishingListener implements NDArrayCallback {
      * @param dimensions the dimensions to act on for the tensor along dimension
      */
     @Override
-    public void onNDArrayPartial(INDArray arr, long idx, int... dimensions) {
+    public void onNDArrayPartial(INDArray arr, long idx, long... dimensions) {
         try (AeronNDArrayPublisher publisher = AeronNDArrayPublisher.builder().streamId(streamId).ctx(aeronContext)
                         .channel(masterUrl).build()) {
             publisher.publish(NDArrayMessage.builder().arr(arr).dimensions(dimensions).index(idx).build());

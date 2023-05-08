@@ -29,11 +29,11 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp;
 import java.util.List;
 
 public class Prod extends BaseReduceSameOp {
-    public Prod(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Prod(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
-    public Prod(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Prod(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -49,11 +49,11 @@ public class Prod extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2);
     }
 
-    public Prod(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Prod(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Prod(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims) {
+    public Prod(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
     }
 
@@ -61,30 +61,30 @@ public class Prod extends BaseReduceSameOp {
         super(sameDiff, i_v);
     }
 
-    public Prod(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public Prod(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
     public Prod() {
     }
 
-    public Prod(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions) {
+    public Prod(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public Prod(INDArray x, int... dimensions) {
+    public Prod(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Prod(INDArray x, INDArray z, int... dimensions) {
+    public Prod(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public Prod(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public Prod(INDArray x, INDArray z, boolean keepDims, long... dimensions) {
         super(x, z, keepDims, dimensions);
     }
 
-    public Prod(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Prod(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
@@ -96,11 +96,11 @@ public class Prod extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Prod(INDArray x, boolean keepDims, int... dimensions) {
+    public Prod(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
-    public Prod(INDArray in, int[] dimensions, boolean keepDims) {
+    public Prod(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

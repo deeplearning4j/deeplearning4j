@@ -537,7 +537,7 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
   sd::LongType len = 1;
   // left over index cursor for initializing elements
   int leftOverIndex = 0;
-  for (int i = 0; i < rank; i++) {
+  for (sd::LongType i = 0; i < rank; i++) {
     // look for dimensions NOT found in dimension length (basically compute shape - dimension (set difference)
     bool found = false;
     for (int j = 0; j < originalDimensionLength; j++) {
@@ -562,9 +562,6 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
   }
 
   // sub for indices
-  /* int *sub = new int[leftOverIndexLen];
-   shape::ind2subOrder(tadShape,index,len,sub);
-  */
   shape::index2coords(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {

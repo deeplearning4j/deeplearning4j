@@ -78,12 +78,12 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
         auto idx = static_cast<int>(indices[e]);
         if (idx < 0 || idx >= tLen) {
           PRAGMA_OMP_SIMD
-          for (unsigned int t = 0; t < tLen; t++) {
+          for (sd::LongType t = 0; t < tLen; t++) {
             cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = zero;
           }
         } else {
           PRAGMA_OMP_SIMD
-          for (unsigned int t = 0; t < tLen; t++) {
+          for (sd::LongType t = 0; t < tLen; t++) {
             cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = idx == t ? one : zero;
           }
         }

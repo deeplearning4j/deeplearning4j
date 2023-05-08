@@ -549,9 +549,9 @@ public class SDVariable implements Serializable {
 
 
     /**
-     * See {@link #dot(String, SDVariable, int...)}
+     * See {@link #dot(String, SDVariable, long...)}
      */
-    public SDVariable dot(SDVariable other, int... dimensions){
+    public SDVariable dot(SDVariable other, long... dimensions){
         return dot(null, other, dimensions);
     }
 
@@ -562,7 +562,7 @@ public class SDVariable implements Serializable {
      * @param other Other variable to perform matrix multiplication with
      * @return Output variable (result of mmul)
      */
-    public SDVariable dot(String name, SDVariable other, int... dimensions){
+    public SDVariable dot(String name, SDVariable other, long... dimensions){
         return sameDiff.dot(name, this, other, dimensions);
     }
 
@@ -930,23 +930,23 @@ public class SDVariable implements Serializable {
     }
 
     /**
-     * See {@link #sum(String, boolean, int...)}
+     * See {@link #sum(String, boolean, long...)}
      */
-    public SDVariable sum(int... dimensions){
+    public SDVariable sum(long... dimensions){
         return sum(null, dimensions);
     }
 
     /**
-     * See {@link #sum(String, boolean, int...)}
+     * See {@link #sum(String, boolean, long...)}
      */
-    public SDVariable sum(boolean keepDims, int... dimensions){
+    public SDVariable sum(boolean keepDims, long... dimensions){
         return sum(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #sum(String, boolean, int...)}
+     * See {@link #sum(String, boolean, long...)}
      */
-    public SDVariable sum(String name, int... dimensions){
+    public SDVariable sum(String name, long... dimensions){
         return sum(name, false, dimensions);
     }
 
@@ -965,28 +965,28 @@ public class SDVariable implements Serializable {
      * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
      * of rank (input rank) if keepdims = true
      */
-    public SDVariable sum(String name, boolean keepDims, int... dimensions){
+    public SDVariable sum(String name, boolean keepDims, long... dimensions){
         return sameDiff.sum(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #mean(String, boolean, int...)}
+     * See {@link #mean(String, boolean, long...)}
      */
-    public SDVariable mean(boolean keepDims, int... dimensions){
+    public SDVariable mean(boolean keepDims, long... dimensions){
         return mean(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #mean(String, boolean, int...)}
+     * See {@link #mean(String, boolean, long...)}
      */
-    public SDVariable mean(String name, int... dimensions){
+    public SDVariable mean(String name, long... dimensions){
         return mean(name, false, dimensions);
     }
 
     /**
-     * See {@link #mean(String, boolean, int...)}
+     * See {@link #mean(String, boolean, long...)}
      */
-    public SDVariable mean(int... dimensions){
+    public SDVariable mean(long... dimensions){
         return mean(null, false, dimensions);
     }
 
@@ -1005,21 +1005,21 @@ public class SDVariable implements Serializable {
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable mean(String name, boolean keepDims, int... dimensions){
+    public SDVariable mean(String name, boolean keepDims, long... dimensions){
         return sameDiff.mean(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #std(String, boolean, boolean, int...)}
+     * See {@link #std(String, boolean, boolean, long...)}
      */
-    public SDVariable std(boolean biasCorrected, int... dimensions){
+    public SDVariable std(boolean biasCorrected, long... dimensions){
         return std(null, biasCorrected, dimensions);
     }
 
     /**
-     * See {@link #std(String, boolean, boolean, int...)}
+     * See {@link #std(String, boolean, boolean, long...)}
      */
-    public SDVariable std(String name, boolean biasCorrected, int... dimensions){
+    public SDVariable std(String name, boolean biasCorrected, long... dimensions){
         return sameDiff.standardDeviation(name, this, biasCorrected, dimensions);
     }
 
@@ -1037,28 +1037,28 @@ public class SDVariable implements Serializable {
      * @param dimensions    Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable std(String name, boolean biasCorrected, boolean keepDims, int... dimensions){
+    public SDVariable std(String name, boolean biasCorrected, boolean keepDims, long... dimensions){
         return sameDiff.standardDeviation(name, this, biasCorrected, keepDims, dimensions);
     }
 
     /**
-     * See {@link #prod(String, boolean, int...)}
+     * See {@link #prod(String, boolean, long...)}
      */
-    public SDVariable prod(int... dimensions){
+    public SDVariable prod(long... dimensions){
         return prod(null, dimensions);
     }
 
     /**
-     * See {@link #prod(String, boolean, int...)}
+     * See {@link #prod(String, boolean, long...)}
      */
-    public SDVariable prod(boolean keepDims, int... dimensions){
+    public SDVariable prod(boolean keepDims, long... dimensions){
         return prod(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #prod(String, boolean, int...)}
+     * See {@link #prod(String, boolean, long...)}
      */
-    public SDVariable prod(String name, int... dimensions){
+    public SDVariable prod(String name, long... dimensions){
         return sameDiff.prod(name, this, dimensions);
     }
 
@@ -1076,28 +1076,28 @@ public class SDVariable implements Serializable {
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Output variable: reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable prod(String name, boolean keepDims, int... dimensions){
+    public SDVariable prod(String name, boolean keepDims, long... dimensions){
         return sameDiff.prod(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #min(String, boolean, int...)}
+     * See {@link #min(String, boolean, long...)}
      */
-    public SDVariable min(int... dimensions){
+    public SDVariable min(long... dimensions){
         return min(null, dimensions);
     }
 
     /**
-     * See {@link #min(String, boolean, int...)}
+     * See {@link #min(String, boolean, long...)}
      */
-    public SDVariable min(boolean keepDims, int... dimensions){
+    public SDVariable min(boolean keepDims, long... dimensions){
         return min(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #min(String, boolean, int...)}
+     * See {@link #min(String, boolean, long...)}
      */
-    public SDVariable min(String name, int... dimensions){
+    public SDVariable min(String name, long... dimensions){
         return min(name, false, dimensions);
     }
 
@@ -1115,28 +1115,28 @@ public class SDVariable implements Serializable {
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable min(String name, boolean keepDims, int... dimensions){
+    public SDVariable min(String name, boolean keepDims, long... dimensions){
         return sameDiff.min(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #max(String, boolean, int...)}
+     * See {@link #max(String, boolean, long...)}
      */
-    public SDVariable max(int... dimensions) {
+    public SDVariable max(long... dimensions) {
         return max(null, dimensions);
     }
 
     /**
-     * See {@link #max(String, boolean, int...)}
+     * See {@link #max(String, boolean, long...)}
      */
-    public SDVariable max(String name, int... dimensions) {
+    public SDVariable max(String name, long... dimensions) {
         return max(name, false, dimensions);
     }
 
     /**
-     * See {@link #max(String, boolean, int...)}
+     * See {@link #max(String, boolean, long...)}
      */
-    public SDVariable max(boolean keepDims, int... dimensions) {
+    public SDVariable max(boolean keepDims, long... dimensions) {
         return max(null, keepDims, dimensions);
     }
 
@@ -1154,28 +1154,28 @@ public class SDVariable implements Serializable {
      * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed
      * @return Reduced array of rank (input rank - num dimensions)
      */
-    public SDVariable max(String name, boolean keepDims, int... dimensions) {
+    public SDVariable max(String name, boolean keepDims, long... dimensions) {
         return sameDiff.max(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #norm1(String, boolean, int...)}
+     * See {@link #norm1(String, boolean, long...)}
      */
-    public SDVariable norm1(int... dimensions){
+    public SDVariable norm1(long... dimensions){
         return norm1(null, dimensions);
     }
 
     /**
-     * See {@link #norm1(String, boolean, int...)}
+     * See {@link #norm1(String, boolean, long...)}
      */
-    public SDVariable norm1(boolean keepDims, int... dimensions){
+    public SDVariable norm1(boolean keepDims, long... dimensions){
         return norm1(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #norm1(String, boolean, int...)}
+     * See {@link #norm1(String, boolean, long...)}
      */
-    public SDVariable norm1(String name, int... dimensions){
+    public SDVariable norm1(String name, long... dimensions){
         return norm1(name, false, dimensions);
     }
 
@@ -1194,28 +1194,28 @@ public class SDVariable implements Serializable {
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm1(String name, boolean keepDims, int... dimensions) {
+    public SDVariable norm1(String name, boolean keepDims, long... dimensions) {
         return sameDiff.norm1(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #norm2(String, boolean, int...)}
+     * See {@link #norm2(String, boolean, long...)}
      */
-    public SDVariable norm2(int... dimensions){
+    public SDVariable norm2(long... dimensions){
         return norm2(null, dimensions);
     }
 
     /**
-     * See {@link #norm2(String, boolean, int...)}
+     * See {@link #norm2(String, boolean, long...)}
      */
-    public SDVariable norm2(boolean keepDims, int... dimensions){
+    public SDVariable norm2(boolean keepDims, long... dimensions){
         return norm2(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #norm2(String, boolean, int...)}
+     * See {@link #norm2(String, boolean, long...)}
      */
-    public SDVariable norm2(String name, int... dimensions){
+    public SDVariable norm2(String name, long... dimensions){
         return norm2(name, false, dimensions);
     }
 
@@ -1234,28 +1234,28 @@ public class SDVariable implements Serializable {
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable norm2(String name, boolean keepDims, int... dimensions){
+    public SDVariable norm2(String name, boolean keepDims, long... dimensions){
         return sameDiff.norm2(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #normmax(String, boolean, int...)}
+     * See {@link #normmax(String, boolean, long...)}
      */
-    public SDVariable normmax(int... dimensions){
+    public SDVariable normmax(long... dimensions){
         return normmax(null, dimensions);
     }
 
     /**
-     * See {@link #normmax(String, boolean, int...)}
+     * See {@link #normmax(String, boolean, long...)}
      */
-    public SDVariable normmax(boolean keepDims, int... dimensions){
+    public SDVariable normmax(boolean keepDims, long... dimensions){
         return normmax(null, keepDims, dimensions);
     }
 
     /**
-     * See {@link #normmax(String, boolean, int...)}
+     * See {@link #normmax(String, boolean, long...)}
      */
-    public SDVariable normmax(String name, int... dimensions){
+    public SDVariable normmax(String name, long... dimensions){
         return normmax(name, false, dimensions);
     }
 
@@ -1275,21 +1275,21 @@ public class SDVariable implements Serializable {
      * @param dimensions dimensions to reduce over
      * @return Output variable
      */
-    public SDVariable normmax(String name, boolean keepDims, int... dimensions){
+    public SDVariable normmax(String name, boolean keepDims, long... dimensions){
         return sameDiff.normmax(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #argmax(String, boolean, int...)}
+     * See {@link #argmax(String, boolean, long...)}
      */
-    public SDVariable argmax(int... dimensions){
+    public SDVariable argmax(long... dimensions){
         return argmax(null, dimensions);
     }
 
     /**
-     * See {@link #argmax(String, boolean, int...)}
+     * See {@link #argmax(String, boolean, long...)}
      */
-    public SDVariable argmax(String name, int... dimensions){
+    public SDVariable argmax(String name, long... dimensions){
         return sameDiff.argmax(name, this, dimensions);
     }
 
@@ -1310,21 +1310,21 @@ public class SDVariable implements Serializable {
      * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
      * of rank (input rank) if keepdims = true
      */
-    public SDVariable argmax(String name, boolean keepDims, int... dimensions) {
+    public SDVariable argmax(String name, boolean keepDims, long... dimensions) {
         return sameDiff.argmax(name, this, keepDims, dimensions);
     }
 
     /**
-     * See {@link #argmin(String, boolean, int...)}
+     * See {@link #argmin(String, boolean, long...)}
      */
-    public SDVariable argmin(int... dimensions){
+    public SDVariable argmin(long... dimensions){
         return argmin(null, dimensions);
     }
 
     /**
-     * See {@link #argmin(String, boolean, int...)}
+     * See {@link #argmin(String, boolean, long...)}
      */
-    public SDVariable argmin(String name, int... dimensions){
+    public SDVariable argmin(String name, long... dimensions){
         return sameDiff.argmin(name, this, dimensions);
     }
 
@@ -1345,7 +1345,7 @@ public class SDVariable implements Serializable {
      * @return Output variable: reduced array of rank (input rank - num dimensions) if keepDims = false, or
      * of rank (input rank) if keepdims = true
      */
-    public SDVariable argmin(String name, boolean keepDims, int... dimensions) {
+    public SDVariable argmin(String name, boolean keepDims, long... dimensions) {
         return sameDiff.argmax(name, this, keepDims, dimensions);
     }
 
@@ -1429,7 +1429,7 @@ public class SDVariable implements Serializable {
      * @param dimensions The new dimension order
      * @return Output variable (permuted input)
      */
-    public SDVariable permute(int... dimensions){
+    public SDVariable permute(long... dimensions){
         return sameDiff.permute(this, dimensions);
     }
 

@@ -47,7 +47,7 @@ public class RandomBernoulli extends DynamicCustomOp {
     }
 
     public RandomBernoulli(INDArray shape, INDArray out, double p){
-        super(null, new INDArray[]{shape}, new INDArray[]{out}, Collections.singletonList(p), (List<Integer>)null);
+        super(null, new INDArray[]{shape}, new INDArray[]{out}, Collections.singletonList(p), (List<Long>)null);
         Preconditions.checkState(p >= 0 && p <= 1.0, "Probability must be between 0 and 1 - got %s", p);
     }
 

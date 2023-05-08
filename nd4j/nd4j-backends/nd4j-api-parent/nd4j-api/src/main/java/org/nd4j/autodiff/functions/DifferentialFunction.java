@@ -71,7 +71,7 @@ public abstract class DifferentialFunction {
     @Getter
     @Setter
     @JsonIgnore
-    protected int[] dimensions;
+    protected long[] dimensions;
 
     @JsonIgnore
     protected Object[] extraArgs;

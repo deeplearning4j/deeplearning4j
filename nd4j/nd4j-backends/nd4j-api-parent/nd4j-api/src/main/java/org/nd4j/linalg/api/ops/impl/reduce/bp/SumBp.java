@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class SumBp extends BaseReductionBp {
 
-    public SumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
+    public SumBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, long... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);
         addArgs();
     }

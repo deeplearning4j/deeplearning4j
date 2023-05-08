@@ -474,7 +474,7 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     @Override
-    public INDArray permutei(int... rearrange) {
+    public INDArray permutei(long... rearrange) {
         Nd4j.getExecutioner().push();
 
         return super.permutei(rearrange);

@@ -154,11 +154,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions().toIntVector());
+        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions().toLongVector());
 
         if (x.isEmpty()) {
             for (val d:dimension) {
-                Preconditions.checkArgument(x.shape()[d] != 0, "IndexReduce can't be issued along axis with 0 in shape");
+                Preconditions.checkArgument(x.size(d) != 0, "IndexReduce can't be issued along axis with 0 in shape");
             }
         }
 
@@ -244,7 +244,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         // FIXME: this should be moved down to C++ on per-op basis
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toIntVector() : null);
+        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toLongVector() : null);
         // reduce to scalar case, ReduceBool ops require special treatment
         if (op instanceof BaseReduceBoolOp && x.isEmpty() && (dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE))) {
             if (z == null) {
@@ -496,7 +496,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
-        val dimension = op.dimensions().toIntVector();
+        val dimension = op.dimensions().toLongVector();
         // do tad magic
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -661,7 +661,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * dimension to do the ismax along
          */
         if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
-            int[] dimension = new int[(int) op.extraArgs()[0]];
+            long[] dimension = new long[(int) op.extraArgs()[0]];
 
             for (int i = 0; i < dimension.length; i++) {
                 dimension[i] = (int) op.extraArgs()[i + 1];
@@ -815,7 +815,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op,oc);
         op.validateDataTypes(experimentalMode.get());
 
-        val dimension = op.dimensions().toIntVector();
+        val dimension = op.dimensions().toLongVector();
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -1325,7 +1325,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
         boolean shapeOverride = false;
-        Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
                 val list = this.calculateOutputShape(op);
@@ -1365,7 +1364,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
             profilingConfigurableHookOut(op,context,start);
-            Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
 
             return result;
         } catch (ND4JOpProfilerException e) {
@@ -1673,7 +1671,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, @NonNull int[] axis) {
+    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long[] axis) {
         val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
         val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
 
@@ -1831,7 +1829,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
+    public TadPack tadShapeInfoAndOffsets(INDArray array, long[] dimension) {
         long[] inputDimensions = new long[dimension.length];
         for(int i = 0; i < inputDimensions.length; i++) {
             inputDimensions[i] = dimension[i];

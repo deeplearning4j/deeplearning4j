@@ -28,21 +28,21 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 import java.util.List;
 
 public class BroadcastAddOp extends BaseBroadcastOp {
-    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension) {
+    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension) {
         super(sameDiff, i_v1, i_v2, dimension);
     }
 
-    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, int[] dimension) {
+    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, long[] dimension) {
         super(sameDiff, i_v1, i_v2, inPlace, dimension);
     }
 
-    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension, Object[] extraArgs) {
+    public BroadcastAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, dimension, extraArgs);
     }
 
     public BroadcastAddOp() {}
 
-    public BroadcastAddOp(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public BroadcastAddOp(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z, dimension);
     }
 

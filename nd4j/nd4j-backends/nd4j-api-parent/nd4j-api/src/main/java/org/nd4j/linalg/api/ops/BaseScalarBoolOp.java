@@ -135,12 +135,12 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
 
     @Override
-    public int[] getDimension() {
+    public long[] getDimension() {
         return dimensions;
     }
 
     @Override
-    public void setDimension(int... dimension) {
+    public void setDimension(long... dimension) {
         defineDimensions(dimension);
     }
 

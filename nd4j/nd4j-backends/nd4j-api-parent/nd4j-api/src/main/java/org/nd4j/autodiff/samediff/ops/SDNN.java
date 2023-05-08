@@ -532,7 +532,7 @@ public class SDNN extends SDOps {
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias,
-      boolean channelsFirst, int... dimensions) {
+      boolean channelsFirst, long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
     SDValidation.validateNumerical("layerNorm", "bias", bias);
@@ -554,7 +554,7 @@ public class SDNN extends SDOps {
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, SDVariable bias,
-      boolean channelsFirst, int... dimensions) {
+      boolean channelsFirst, long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
     SDValidation.validateNumerical("layerNorm", "bias", bias);
@@ -575,7 +575,7 @@ public class SDNN extends SDOps {
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable layerNorm(SDVariable input, SDVariable gain, boolean channelsFirst,
-      int... dimensions) {
+      long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
@@ -595,7 +595,7 @@ public class SDNN extends SDOps {
    * @return output Output variable (NUMERIC type)
    */
   public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, boolean channelsFirst,
-      int... dimensions) {
+      long... dimensions) {
     SDValidation.validateNumerical("layerNorm", "input", input);
     SDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);

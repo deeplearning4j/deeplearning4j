@@ -1148,32 +1148,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 //1s for non-leading/non-trailing dimensions
                 {4, 1, 3, 2}, {4, 3, 1, 2}, {4, 1, 1, 2}};
 
-        int[][] sumDims = {{0}, {1}, {2}, {3}, {0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {0, 1, 2}, {0, 1, 3}, {0, 2, 3},
+        long[][] sumDims = {{0}, {1}, {2}, {3}, {0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {0, 1, 2}, {0, 1, 3}, {0, 2, 3},
                 {0, 1, 2, 3}};
-        /*        for( int[] shape : shapes) {
-            for (int[] dims : sumDims) {
-                System.out.println("Shape");
-                System.out.println(Arrays.toString(shape));
-                System.out.println("Dimensions");
-                System.out.println(Arrays.toString(dims));
-                int length = ArrayUtil.prod(shape);
-                INDArray inC = Nd4j.linspace(1, length, length).reshape('c', shape);
-                System.out.println("TAD shape");
-                System.out.println(Arrays.toString((inC.tensorAlongDimension(0,dims).shape())));
 
-                INDArray inF = inC.dup('f');
-                System.out.println("C stride " + Arrays.toString(inC.tensorAlongDimension(0,dims).stride()) + " and f stride " + Arrays.toString(inF.tensorAlongDimension(0,dims).stride()));
-                for(int i = 0; i < inC.tensorsAlongDimension(dims); i++) {
-                    System.out.println(inC.tensorAlongDimension(i,dims).ravel());
-                }
-                for(int i = 0; i < inF.tensorsAlongDimension(dims); i++) {
-                    System.out.println(inF.tensorAlongDimension(i,dims).ravel());
-                }
-            }
-        }*/
         for (val shape : shapes) {
-            for (int[] dims : sumDims) {
-//                System.out.println("Shape: " + Arrays.toString(shape) + ", sumDims=" + Arrays.toString(dims));
+            for (long[] dims : sumDims) {
                 int length = ArrayUtil.prod(shape);
                 INDArray inC = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape);
                 INDArray inF = inC.dup('f');
@@ -1389,17 +1368,15 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     public void testSum2dv2(Nd4jBackend backend) {
         INDArray in = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape('c', 2, 2, 2);
 
-        val dims = new int[][] {{0, 1}, {1, 0}, {0, 2}, {2, 0}, {1, 2}, {2, 1}};
+        val dims = new long[][] {{0, 1}, {1, 0}, {0, 2}, {2, 0}, {1, 2}, {2, 1}};
         double[][] exp = new double[][] {{16, 20}, {16, 20}, {14, 22}, {14, 22}, {10, 26}, {10, 26}};
 
-//        System.out.println("dims\texpected\t\tactual");
         for (int i = 0; i < dims.length; i++) {
             val d = dims[i];
             double[] e = exp[i];
 
             INDArray out = in.sum(d);
 
-//            System.out.println(Arrays.toString(d) + "\t" + Arrays.toString(e) + "\t" + out);
             assertEquals(Nd4j.create(e, out.shape()), out);
         }
     }
@@ -1414,11 +1391,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray arrC = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape);
         INDArray arrF = Nd4j.create(arrC.shape()).assign(arrC);
 
-        int[][] dimsToSum = new int[][] {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+        long[][] dimsToSum = new long[][] {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
         double[][] expD = new double[][] {{64, 72}, {60, 76}, {52, 84}, {36, 100}};
 
         for (int i = 0; i < dimsToSum.length; i++) {
-            int[] d = dimsToSum[i];
+            long[] d = dimsToSum[i];
 
             INDArray outC = arrC.sum(d);
             INDArray outF = arrF.sum(d);
@@ -1464,7 +1441,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             zC.setData(Nd4j.linspace(1, 24, 24, DataType.DOUBLE).data());
             for (int tad = 0; tad < zC.tensorsAlongDimension(dim); tad++) {
                 INDArray javaTad = zC.tensorAlongDimension(tad, dim);
-//                System.out.println("Tad " + tad + " is " + zC.tensorAlongDimension(tad, dim));
+
             }
 
             INDArray zF = Nd4j.create(shape, 'f');
@@ -1476,10 +1453,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             INDArray exp = Nd4j.create(expLinspaced[i], shape, 'c');
             INDArray expF = Nd4j.create(shape, 'f');
             expF.assign(exp);
-//            for (int tad = 0; tad < zC.tensorsAlongDimension(dim); tad++) {
-//                System.out.println(zC.tensorAlongDimension(tad, dim).offset() + " and f offset is "
-//                        + zF.tensorAlongDimension(tad, dim).offset());
-//            }
 
             Nd4j.getExecutioner().exec(opc);
             Nd4j.getExecutioner().exec(opf);
@@ -1497,11 +1470,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray arrC = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape('c', shape);
         INDArray arrF = Nd4j.create(arrC.shape()).assign(arrC);
 
-        int[][] dimsToSum = new int[][] {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
+        long[][] dimsToSum = new long[][] {{0, 1, 2}, {0, 1, 3}, {0, 2, 3}, {1, 2, 3}};
         double[][] expD = new double[][] {{324, 342}, {315, 351}, {174, 222, 270}, {78, 222, 366}};
 
         for (int i = 0; i < dimsToSum.length; i++) {
-            int[] d = dimsToSum[i];
+            long[] d = dimsToSum[i];
 
             INDArray outC = arrC.sum(d);
             INDArray outF = arrF.sum(d);
@@ -4347,7 +4320,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
         }
 
-        INDArray out = Nd4j.exec(new ArgMax(arr, false,new int[]{1,2}))[0];
+        INDArray out = Nd4j.exec(new ArgMax(arr, false,new long[]{1,2}))[0];
 
         assertEquals(DataType.LONG, out.dataType());
 
@@ -4390,8 +4363,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new int[]{0,1}))[0].castTo(DataType.DOUBLE);
-        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  false,new int[]{0,1}))[0].castTo(DataType.DOUBLE);
+        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new long[]{0,1}))[0].castTo(DataType.DOUBLE);
+        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  false,new long[]{0,1}))[0].castTo(DataType.DOUBLE);
         //
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4424,8 +4397,8 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new int[]{2, 3}))[0];
-        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), false,new int[]{2, 3}))[0];
+        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), false,new long[]{2, 3}))[0];
+        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), false,new long[]{2, 3}))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);

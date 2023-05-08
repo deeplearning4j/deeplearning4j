@@ -62,10 +62,10 @@ public class MeshGrid extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         SDVariable[] args = args();
         List<SDVariable> out = new ArrayList<>(args.length);
-        for( int i=0; i<args.length; i++ ){
-            int[] dims = new int[args.length-1];
+        for( int i = 0; i < args.length; i++) {
+            long[] dims = new long[args.length-1];
             int x=0;
-            for( int j=0; j<args.length; j++){
+            for( int j = 0; j < args.length; j++) {
                 if(i == j)
                     continue;
                 dims[x++] = j;

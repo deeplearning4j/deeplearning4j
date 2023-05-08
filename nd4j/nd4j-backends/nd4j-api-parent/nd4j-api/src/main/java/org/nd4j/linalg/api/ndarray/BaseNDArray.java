@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
-import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -82,7 +81,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
-import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.io.*;
@@ -110,7 +108,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     // this field holds jvm copy of shapeInfo
     protected transient JvmShapeInfo jvmShapeInfo;
-
+    private DataBuffer shapeInfoDataBuffer;
 
     private static final AtomicLong arrayCounter = new AtomicLong(0);
     protected transient long arrayId = arrayCounter.getAndIncrement();
@@ -954,7 +952,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public long tensorsAlongDimension(int... dimension) {
+    public long tensorsAlongDimension(long... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
         if (dimension.length >= rank() || dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
@@ -973,7 +971,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray tensorAlongDimension(long index, int... dimension) {
+    public INDArray tensorAlongDimension(long index, long... dimension) {
         if (dimension == null || dimension.length == 0)
             throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
@@ -987,7 +985,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //dedup
         if (dimension.length > 1)
-            dimension = Ints.toArray(new ArrayList<>(new TreeSet<>(Ints.asList(dimension))));
+            dimension = Longs.toArray(new ArrayList<>(new TreeSet<>(Longs.asList(dimension))));
 
         if (dimension.length > 1) {
             Arrays.sort(dimension);
@@ -1023,94 +1021,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
+        this.shapeInfoDataBuffer = shapeInfo.getFirst();
     }
 
 
-    private INDArray doTad(int index, int... dimension) {
-        if (dimension == null || dimension.length == 0)
-            throw new IllegalArgumentException("Invalid input: dimensions not specified (null or length 0)");
 
-        if (dimension.length >= rank())
-            return this;
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] < 0)
-                dimension[i] += rank();
-
-        if (dimension.length > 1)
-            Arrays.sort(dimension);
-
-        long tads = tensorsAlongDimension(dimension);
-        if (index >= tads)
-            throw new IllegalArgumentException("Illegal index " + index + " out of tads " + tads);
-
-
-        if (dimension.length == 1) {
-            if (dimension[0] == 0 && isColumnVector()) {
-                return this.transpose();
-            } else if (dimension[0] == 1 && isRowVector()) {
-                return this;
-            }
-        }
-
-
-        long[] tensorShape = ArrayUtil.keep(shape(), dimension);
-        int[] reverseDimensions = ArrayUtil.reverseCopy(dimension);
-        int[] remove = ArrayUtil.removeIndex(ArrayUtil.range(0, rank()), dimension);
-        int[] newPermuteDims = Ints.concat(remove, reverseDimensions);
-        int[] finalPermuteDims = tadFinalPermuteDimensions[dimension.length];
-
-        INDArray permuted = permute(newPermuteDims);
-        long sliceIdx = NDArrayMath.sliceOffsetForTensor(index, permuted, tensorShape);
-
-        INDArray ret2 = permuted.slice(sliceIdx);
-        if (dimension.length == tensorShape.length && ArrayUtil.prodLong(tensorShape) == ret2.length()) {
-            if (dimension.length == 1 && ret2.isRowVector())
-                return ret2;
-            if (finalPermuteDims.length != ret2.rank()) {
-                finalPermuteDims = new int[ret2.rank()];
-                int count = 0;
-                for (int i = finalPermuteDims.length - 1; i >= 0; i--)
-                    finalPermuteDims[count++] = i;
-            }
-            return ret2.permutei(finalPermuteDims);
-        }
-
-
-        int length = ArrayUtil.prod(tensorShape);
-        int tensorLength = ArrayUtil.prod(tensorShape);
-        long offset = index * tensorLength / NDArrayMath.lengthPerSlice(ret2);
-
-        if (sliceIdx == 0 && length == NDArrayMath.lengthPerSlice(ret2)) {
-            if (offset > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-            ret2 = ret2.slice((int) offset);
-            if (dimension.length == 1 && ret2.isRowVectorOrScalar())
-                return ret2;
-            return ret2.permutei(finalPermuteDims);
-        }
-
-        else if (length == NDArrayMath.lengthPerSlice(ret2)) {
-            offset -= ret2.slices() * (offset / ret2.slices());
-
-            if (offset > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-            ret2 = ret2.slice((int) offset);
-            if (dimension.length == 1 && ret2.isRowVectorOrScalar())
-                return ret2;
-            return ret2.permutei(finalPermuteDims);
-        }
-
-        while (ret2.length() > length) {
-            sliceIdx = NDArrayMath.sliceOffsetForTensor(index, ret2, tensorShape);
-            sliceIdx -= ret2.slices() * (sliceIdx / ret2.slices());
-            ret2 = ret2.slice(sliceIdx);
-        }
-
-        if (dimension.length == 1 && ret2.isRowVectorOrScalar())
-            return ret2;
-
-        return ret2.permutei(finalPermuteDims);
-    }
 
     @Override
     public long vectorsAlongDimension(int dimension) {
@@ -2216,7 +2131,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray swapAxes(int dimension, int with) {
-        int[] shape = ArrayUtil.range(0, shape().length);
+        long[] shape = ArrayUtil.range(0, (long) shape().length);
         shape[dimension] = with;
         shape[with] = dimension;
         return permute(shape);
@@ -3262,13 +3177,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray normmax(boolean keepDims, int... dimension) {
+    public INDArray normmax(boolean keepDims, long... dimension) {
         validateNumericalArray("normmax", false);
         return Nd4j.getExecutioner().exec(new NormMax(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray normmax(int... dimension) {
+    public INDArray normmax(long... dimension) {
         return normmax(false, dimension);
     }
 
@@ -3696,7 +3611,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray transpose() {
         Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
 
-        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
+        return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, (long) rank())));
     }
 
     /**
@@ -3709,7 +3624,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray transposei() {
         Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
 
-        return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
+        return permutei(ArrayUtil.reverseCopy(ArrayUtil.range(0, (long) rank())));
     }
 
     protected INDArray create(DataBuffer data, int[] shape, int[] strides) {
@@ -3773,154 +3688,154 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray prod(boolean keepDims, int... dimension) {
+    public INDArray prod(boolean keepDims, long... dimension) {
         validateNumericalArray("prod", false);
         return Nd4j.getExecutioner().exec(new Prod(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray prod(int... dimension) {
+    public INDArray prod(long... dimension) {
         return prod(false, dimension);
     }
 
     @Override
-    public INDArray mean(boolean keepDims, int... dimension) {
+    public INDArray mean(boolean keepDims, long... dimension) {
         validateNumericalArray("mean", false);
         return Nd4j.getExecutioner().exec(new Mean(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray mean(int... dimension) {
+    public INDArray mean(long... dimension) {
         return mean(false, dimension);
     }
 
     @Override
-    public INDArray amean(int... dimension) {
+    public INDArray amean(long... dimension) {
         validateNumericalArray("amean", false);
         return Nd4j.getExecutioner().exec(new AMean(this, dimension));
     }
 
     @Override
-    public INDArray mean(@NonNull INDArray result, boolean keepDims, int... dimension) {
+    public INDArray mean(@NonNull INDArray result, boolean keepDims, long... dimension) {
         validateNumericalArray("mean", false);
         return Nd4j.getExecutioner().exec(new Mean(this, result, keepDims, dimension));
     }
 
     @Override
-    public INDArray mean(@NonNull INDArray result, int... dimension) {
+    public INDArray mean(@NonNull INDArray result, long... dimension) {
         return mean(result, false, dimension);
     }
 
     @Override
-    public INDArray var(int... dimension) {
+    public INDArray var(long... dimension) {
         validateNumericalArray("var", false);
         return Nd4j.getExecutioner().exec(new Variance(this, dimension));
     }
 
     @Override
-    public INDArray var(boolean biasCorrected, int... dimension) {
+    public INDArray var(boolean biasCorrected, long... dimension) {
         validateNumericalArray("var", false);
         return Nd4j.getExecutioner().exec(new Variance(this, biasCorrected, dimension));
     }
 
     @Override
-    public INDArray max(boolean keepDims, int... dimension) {
+    public INDArray max(boolean keepDims, long... dimension) {
         validateNumericalArray("max", false);
         return Nd4j.getExecutioner().exec(new Max(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray max(int... dimension) {
+    public INDArray max(long... dimension) {
         return max(false, dimension);
     }
 
     @Override
-    public INDArray amax(int... dimension) {
+    public INDArray amax(long... dimension) {
         validateNumericalArray("amax", false);
         return Nd4j.getExecutioner().exec(new AMax(this, dimension));
     }
 
     @Override
-    public INDArray min(boolean keepDims, int... dimension) {
+    public INDArray min(boolean keepDims, long... dimension) {
         validateNumericalArray("min", false);
         return Nd4j.getExecutioner().exec(new Min(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray min(int... dimension) {
+    public INDArray min(long... dimension) {
         return min(false, dimension);
     }
 
     @Override
-    public INDArray amin(int... dimension) {
+    public INDArray amin(long... dimension) {
         validateNumericalArray("amin", false);
         return Nd4j.getExecutioner().exec(new AMin(this, dimension));
     }
 
     @Override
-    public INDArray sum(int... dimension) {
+    public INDArray sum(long... dimension) {
         validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
     }
 
     @Override
-    public INDArray sum(boolean keepDim, int... dimension) {
+    public INDArray sum(boolean keepDim, long... dimension) {
         validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
     @Override
-    public INDArray entropy(int... dimension) {
+    public INDArray entropy(long... dimension) {
         validateNumericalArray("entropy", false);
         return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
     @Override
-    public INDArray shannonEntropy(int... dimension) {
+    public INDArray shannonEntropy(long... dimension) {
         validateNumericalArray("shannonEntropy", false);
         return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));
     }
 
     @Override
-    public INDArray logEntropy(int... dimension) {
+    public INDArray logEntropy(long... dimension) {
         validateNumericalArray("logEntropy", false);
         return Nd4j.getExecutioner().exec(new LogEntropy(this, dimension));
     }
 
     @Override
-    public INDArray sum(@NonNull INDArray result, boolean keepDims, int... dimension) {
+    public INDArray sum(@NonNull INDArray result, boolean keepDims, long... dimension) {
         validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, result, keepDims, dimension));
     }
 
     @Override
-    public INDArray sum(@NonNull INDArray result, int... dimension) {
+    public INDArray sum(@NonNull INDArray result, long... dimension) {
         return sum(result, false, dimension);
     }
 
     @Override
-    public INDArray norm1(int... dimension) {
+    public INDArray norm1(long... dimension) {
         return norm1(false, dimension);
     }
 
     @Override
-    public INDArray norm1(boolean keepDims, int... dimension) {
+    public INDArray norm1(boolean keepDims, long... dimension) {
         validateNumericalArray("norm1", false);
         return Nd4j.getExecutioner().exec(new Norm1(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray std(int... dimension) {
+    public INDArray std(long... dimension) {
         return std(true, dimension);
     }
 
     @Override
-    public INDArray std(boolean biasCorrected, int... dimension) {
+    public INDArray std(boolean biasCorrected, long... dimension) {
         return std(biasCorrected, false, dimension);
     }
 
     @Override
-    public INDArray std(boolean biasCorrected, boolean keepDims, int... dimension) {
+    public INDArray std(boolean biasCorrected, boolean keepDims, long... dimension) {
         validateNumericalArray("std", false);
         return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected, keepDims, dimension));
     }
@@ -3932,13 +3847,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray norm2(boolean keepDims, int... dimension) {
+    public INDArray norm2(boolean keepDims, long... dimension) {
         validateNumericalArray("norm2", false);
         return Nd4j.getExecutioner().exec(new Norm2(this, keepDims, dimension));
     }
 
     @Override
-    public INDArray norm2(int... dimension) {
+    public INDArray norm2(long... dimension) {
         return norm2(false, dimension);
     }
 
@@ -4433,8 +4348,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public DataBuffer shapeInfoDataBuffer() {
         Nd4j.getCompressor().autoDecompress(this);
+        if(this.shapeInfoDataBuffer != null)
+            return shapeInfoDataBuffer;
         val si = Nd4j.getShapeInfoProvider().createShapeInformation(jvmShapeInfo.shape, jvmShapeInfo.stride,  jvmShapeInfo.ews, jvmShapeInfo.order, ArrayOptionsHelper.dataType(jvmShapeInfo.javaShapeInformation), Shape.isEmpty(jvmShapeInfo.javaShapeInformation));
-        return si.getFirst();
+        this.shapeInfoDataBuffer = si.getFirst();
+        return this.shapeInfoDataBuffer;
     }
 
     @Override
@@ -4654,7 +4572,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //just do permute
         if (!broadcast) {
-            int[] ret = new int[rearrange.length];
+            long[] ret = new long[rearrange.length];
             for (int i = 0; i < ret.length; i++)
                 ret[i] = (Integer) rearrange[i];
             return permute(ret);
@@ -4693,7 +4611,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             count = 0;
 
             int dropIdx = 0;
-            int[] newShape = new int[shuffle.length + drop.size()];
+            long[] newShape = new long[shuffle.length + drop.size()];
             for (int i = 0; i < newShape.length; i++) {
                 if (i < shuffle.length) {
                     newShape[count++] = shuffle[i];
@@ -4702,7 +4620,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
 
             INDArray ret;   //TODO is this correct? This was old behaviour before adding permute input check
-            if(newShape.length == this.rank()){
+            if(newShape.length == this.rank()) {
                 ret = permute(newShape);
             } else {
                 ret = dup();
@@ -4729,7 +4647,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray permute(int... rearrange) {
+    public INDArray permute(long... rearrange) {
         Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
                 " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         Nd4j.getCompressor().autoDecompress(this);
@@ -4757,7 +4675,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray permutei(int... rearrange) {
+    public INDArray permutei(long... rearrange) {
         Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
                 " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
         boolean alreadyInOrder = true;
@@ -4824,17 +4742,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
-    protected long[] doPermuteSwap(long[] shape, int[] rearrange) {
+    protected long[] doPermuteSwap(long[] shape, long[] rearrange) {
         val ret = new long[rearrange.length];
         for (int i = 0; i < rearrange.length; i++) {
-            ret[i] = shape[rearrange[i]];
+            ret[i] = shape[(int) rearrange[i]];
         }
 
         return ret;
     }
 
 
-    protected void checkArrangeArray(int[] arr) {
+    protected void checkArrangeArray(long[] arr) {
         Preconditions.checkArgument(arr.length == jvmShapeInfo.rank, "Invalid rearrangement: number of arrangement (%s) != rank (%s)",
                 arr.length, jvmShapeInfo.rank);
         for (int i = 0; i < arr.length; i++) {
@@ -5111,7 +5029,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray argMax(int... dimension) {
+    public INDArray argMax(long... dimension) {
         return Nd4j.argMax(this, dimension);
     }
 
@@ -5346,14 +5264,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray median(int... dimension) {
+    public INDArray median(long... dimension) {
         validateNumericalArray("median", false);
         //Check edge case: size 1 element. No dimension == full array
         if(dimension.length == 0){
             return Nd4j.scalar(dataType(), medianNumber().doubleValue());
         }
         long shapeProd = 1;
-        for (int d : dimension) {
+        for (long d : dimension) {
             shapeProd *= size(d);
         }
         if (shapeProd == 1) {
@@ -5388,7 +5306,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray percentile(Number quantile, int... dimension) {
+    public INDArray percentile(Number quantile, long... dimension) {
         validateNumericalArray("percentile", false);
         if (quantile.doubleValue() < 0 || quantile.doubleValue() > 100)
             throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");

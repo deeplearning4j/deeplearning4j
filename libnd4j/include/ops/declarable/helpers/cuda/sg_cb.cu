@@ -642,16 +642,14 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
   const auto numTargets = context.sizeAt(0);
   const int contextWidth = context.sizeAt(1);
-  // const auto bContext = reinterpret_cast<int*>(context.buffer()); //bufferAsT<int>();
-  const auto dContext = context.dataBuffer()->specialAsT<int>();  // bufferAsT<int>();
-  //                const auto bLocker = reinterpret_cast<int*>(lockedWords.buffer()); //lockedWords.bufferAsT<int>();
+  const auto dContext = context.dataBuffer()->specialAsT<int>();
   const auto dLocker =
-      lockedWords.dataBuffer()->specialAsT<int>();                //.specialBuffer()); //lockedWords.bufferAsT<int>();
-  const auto bIndices = indices.dataBuffer()->primaryAsT<int>();  // buffer());//AsT<int>();
+      lockedWords.dataBuffer()->specialAsT<int>();
+  const auto bIndices = indices.dataBuffer()->primaryAsT<int>();
   const auto bCodes =
-      codes.dataBuffer()->primaryAsT<int8_t>();  // reinterpret_cast<int8_t*>(codes.buffer()); //bufferAsT<int8_t>();
+      codes.dataBuffer()->primaryAsT<int8_t>();
   const auto bStarters =
-      negStarters.dataBuffer()->primaryAsT<int>();  // reinterpret_cast<int*>(negStarters.buffer()); //AsT<int>();
+      negStarters.dataBuffer()->primaryAsT<int>();
   const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
   lr.syncToHost();
   nLabels.syncToHost();

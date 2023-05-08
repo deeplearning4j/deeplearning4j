@@ -40,20 +40,20 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
 
   T max = -DataTypeUtils::max<T>();
   T sum = 0.;
-  int length = shape::length(inShapeInfo);
+  sd::LongType length = shape::length(inShapeInfo);
 
-  for (int i = 0; i < length; i++) {
+  for (sd::LongType i = 0; i < length; i++) {
     const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
     max = sd::math::sd_max<T>(max, inBuff[offset]);
   }
 
-  for (int i = 0; i < length; i++) {
+  for (sd::LongType i = 0; i < length; i++) {
     const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
     outBuff[offset] = sd::math::sd_exp<T, T>(inBuff[offset] - max);
     sum += outBuff[offset];
   }
 
-  for (int i = 0; i < length; i++) {
+  for (sd::LongType i = 0; i < length; i++) {
     const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
     outBuff[offset] /= sum;
     outBuff[offset] *= (1.f - outBuff[offset]);  // derivative
@@ -63,7 +63,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
 ///////////////////////////////////////////////////////////////////
 void softmaxDerivative(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
   const int rank = input.rankOf();
-  int temp;
+  sd::LongType temp;
 
   if (shape::isCommonVector(input.shapeInfo(), temp)) {
     BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector,
@@ -139,7 +139,7 @@ void prelu(sd::LaunchContext* context, const NDArray& input, const NDArray& alph
   const sd::LongType* alphaShapeInfo = alpha.shapeInfo();
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       // FIXME: double!
       double x = input.e<double>(i);
       if (x < 0.0) {

@@ -57,5 +57,5 @@ public interface NDArrayHolder extends Serializable {
      * @return the tensor along dimension based on the index and dimensions
      * from the master array.
      */
-    INDArray getTad(int idx, int... dimensions);
+    INDArray getTad(int idx, long... dimensions);
 }

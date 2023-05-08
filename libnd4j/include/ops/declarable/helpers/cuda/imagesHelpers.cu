@@ -161,11 +161,11 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const sd::LongType* xShapeInfo, void
   auto z = reinterpret_cast<T*>(vz);
 
   __shared__ sd::LongType zLen;
-  __shared__ int rank, *sharedMem;  // xRank == zRank
+  __shared__ sd::LongType rank, *sharedMem;  // xRank == zRank
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
 
     zLen = shape::length(zShapeInfo);
     rank = shape::rank(zShapeInfo);

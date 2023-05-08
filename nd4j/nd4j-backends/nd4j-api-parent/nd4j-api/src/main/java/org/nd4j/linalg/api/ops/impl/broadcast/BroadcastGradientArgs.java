@@ -30,21 +30,21 @@ import java.util.Collections;
 import java.util.List;
 
 public class BroadcastGradientArgs extends BaseBroadcastOp {
-    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension) {
+    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension) {
         super(sameDiff, i_v1, i_v2, dimension);
     }
 
-    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, int[] dimension) {
+    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, long[] dimension) {
         super(sameDiff, i_v1, i_v2, inPlace, dimension);
     }
 
-    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension, Object[] extraArgs) {
+    public BroadcastGradientArgs(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, long[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, dimension, extraArgs);
     }
 
     public BroadcastGradientArgs() {}
 
-    public BroadcastGradientArgs(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public BroadcastGradientArgs(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z, dimension);
     }
 

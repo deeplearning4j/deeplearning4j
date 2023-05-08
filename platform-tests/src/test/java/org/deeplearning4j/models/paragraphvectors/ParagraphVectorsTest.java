@@ -688,8 +688,11 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public void testParallelIterator() throws IOException {
         TokenizerFactory factory = new DefaultTokenizerFactory();
         SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
+        AbstractCache<VocabWord> cacheTarget = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
+                .vocabCache(cacheTarget)
+                .allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
         BasicTransformerIterator iter = (BasicTransformerIterator)transformer.iterator();

@@ -29,8 +29,9 @@
 using namespace simdOps;
 
 template <typename X, typename Z, typename OpType>
-SD_KERNEL void transformFloatSimple(const void *x, const sd::LongType *xShapeInfo, int xRank, void *params, void *z,
-                                    const sd::LongType *zShapeInfo, int zRank, int *allocationPointer,
+SD_KERNEL void transformFloatSimple(const void *x, const sd::LongType *xShapeInfo, long long int xRank, void *params, void *z,
+                                    const sd::LongType *zShapeInfo, long long int zRank,
+                                    long long int *allocationPointer,
                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                     const sd::LongType *tadOffsets) {
   functions::transform::TransformFloat<X, Z>::template transformCuda<OpType>(
@@ -42,9 +43,10 @@ namespace transform {
 
 template <typename X, typename Y>
 SD_HOST void TransformFloat<X, Y>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum,
-                                                          const void *x, const sd::LongType *xShape, int xRank,
+                                                          const void *x, const sd::LongType *xShape, sd::LongType xRank,
                                                           void *extraParams, void *z, const sd::LongType *zShape,
-                                                          int zRank, int *allocationPointer, void *reductionPointer,
+                                                          sd::LongType zRank, sd::LongType *allocationPointer,
+                                                          void *reductionPointer,
                                                           const sd::LongType *tadShapeInfo,
                                                           const sd::LongType *tadOffsets) {
   DISPATCH_BY_OPNUM_TT(intermediateShaped,
@@ -58,7 +60,8 @@ SD_HOST void TransformFloat<X, Y>::executeTransformShaped(dim3 launchDims, cudaS
 template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void TransformFloat<X, Z>::transformCuda(const void *vx, const sd::LongType *xShapeInfo, void *vparams,
-                                                   void *vz, const sd::LongType *zShapeInfo, int *allocationPointer,
+                                                   void *vz, const sd::LongType *zShapeInfo,
+                                                   long long int *allocationPointer,
                                                    void *vreductionPointer, const sd::LongType *tadShapeInfo,
                                                    const sd::LongType *tadOffsets) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -111,7 +114,7 @@ SD_DEVICE void TransformFloat<X, Z>::transformCuda(const void *vx, const sd::Lon
 template <typename X, typename Y>
 SD_DEVICE void TransformFloat<X, Y>::transformCudaLegacy(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                                          void *params, void *z, const sd::LongType *zShapeInfo,
-                                                         int *allocationPointer, void *reductionPointer,
+                                                         long long int *allocationPointer, void *reductionPointer,
                                                          const sd::LongType *tadShapeInfo,
                                                          const sd::LongType *tadOffsets) {
   DISPATCH_BY_OPNUM_TT(
@@ -123,8 +126,9 @@ SD_DEVICE void TransformFloat<X, Y>::transformCudaLegacy(const int opNum, const 
 template <typename X, typename Z>
 template <typename OpType>
 SD_HOST void TransformFloat<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,
-                                                      const sd::LongType *xShape, int xRank, void *extraParams, void *z,
-                                                      const sd::LongType *zShape, int zRank, int *allocationPointer,
+                                                      const sd::LongType *xShape, long long int xRank, void *extraParams, void *z,
+                                                      const sd::LongType *zShape,
+                                                      long long int zRank, long long int *allocationPointer,
                                                       void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                       const sd::LongType *tadOffsets) {
   transformFloatSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

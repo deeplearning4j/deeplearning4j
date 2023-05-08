@@ -32,13 +32,12 @@ static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* we
   int lLen = labels->lengthOf();
 
   auto func = PRAGMA_THREADS_FOR {
-    for (int j = start; j < stop; j++) {
+    for (sd::LongType j = start; j < stop; j++) {
       auto label = labels->e<sd::LongType>(j);
       auto pred = predictions->e<sd::LongType>(j);
       T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
       T curr = arrs.at(label)->e<T>(pred);
       arrs.at(label)->p<T>(pred, curr + value);
-      auto idx = shape::getIndexOffset(pred, arrs[0]->shapeInfo());
     }
   };
 

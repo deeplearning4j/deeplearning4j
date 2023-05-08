@@ -41,13 +41,13 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xSha
   const auto y = reinterpret_cast<const T*>(vy);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ int xRank, *sharedMem;  // xRank = zRank, xRank = yRank + 1
+  __shared__ sd::LongType xRank, *sharedMem;  // xRank = zRank, xRank = yRank + 1
   __shared__ sd::LongType xLen;      // xLen = zLen
   __shared__ bool areSameOffsets;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<int*>(shmem);
+    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
 
     areSameOffsets = shape::haveSameShapeAndStrides(
         xShapeInfo, zShapeInfo);  // shapes are definitely the same, but strides might not

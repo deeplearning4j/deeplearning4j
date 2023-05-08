@@ -57,7 +57,6 @@ class ParametersBatch {
       xShape[e] = values.size();
     }
 
-    // sd_printf("Total Iterations: %i\n", totalIterations);
 
     for (int i = 0; i < totalIterations; i++) {
       if (xRank > 0) shape::index2coords(i, xRank, xShape, xCoords);

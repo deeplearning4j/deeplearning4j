@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,34 +44,34 @@ public class LayerNorm extends DynamicCustomOp {
     private boolean noBias = false;
     private boolean channelsFirst;
 
-    public LayerNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
+    public LayerNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, boolean channelsFirst, long... dimensions) {
         super(null, sameDiff, wrapFilterNull(input, gain, bias), false);
         this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, boolean channelsFirst, int... dimensions) {
+    public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, boolean channelsFirst, long... dimensions) {
         this(sameDiff, input, gain, null, channelsFirst, dimensions);
     }
 
-    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, boolean channelsFirst, int... dimensions) {
+    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, boolean channelsFirst, long... dimensions) {
         super("layer_norm", wrapFilterNull(input, gain, bias), wrapOrNull(result));
         this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNorm(@NonNull INDArray input, @NonNull INDArray gain, boolean channelsFirst, int... dimensions) {
+    public LayerNorm(@NonNull INDArray input, @NonNull INDArray gain, boolean channelsFirst, long... dimensions) {
         this(input, gain, null, channelsFirst, dimensions);
     }
 
-    public LayerNorm(INDArray input, INDArray gain, INDArray result, boolean channelsFirst, int... dimensions) {
+    public LayerNorm(INDArray input, INDArray gain, INDArray result, boolean channelsFirst, long... dimensions) {
         this(input, gain, null, result, channelsFirst, dimensions);
     }
 
     @Override
-    public void setDimensions(int[] dimensions) {
+    public void setDimensions(long[] dimensions) {
         Preconditions.checkArgument(dimensions != null, "LayerNorm: You have to provide dimensions");
         Preconditions.checkArgument(dimensions.length > 0, "LayerNorm: You have to provide dimensions");
 
@@ -107,7 +108,7 @@ public class LayerNorm extends DynamicCustomOp {
         }
 
         if(!iArguments.isEmpty()) {
-            this.dimensions = Ints.toArray(iArguments);
+            this.dimensions = Longs.toArray(iArguments);
         }
     }
 
@@ -125,9 +126,9 @@ public class LayerNorm extends DynamicCustomOp {
 
         if(properties.containsKey("dimensions") && properties.get("dimensions") instanceof Long) {
             Long dimension = (Long) properties.get("dimensions");
-            this.dimensions = new int[]{dimension.intValue()};
+            this.dimensions = new long[]{dimension.intValue()};
         } else if(properties.containsKey("dimensions") && properties.get("dimensions") instanceof int[]) {
-            int[] dimensions = (int[]) properties.get("dimensions");
+            long[] dimensions = (long[]) properties.get("dimensions");
             this.dimensions = dimensions;
         }
     }

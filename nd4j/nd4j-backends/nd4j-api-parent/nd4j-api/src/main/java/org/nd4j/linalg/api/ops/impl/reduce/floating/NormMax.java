@@ -36,19 +36,19 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class NormMax extends BaseReduceFloatOp {
-    public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public NormMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);
     }
 
-    public NormMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public NormMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public NormMax(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public NormMax(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public NormMax(SameDiff sameDiff, SDVariable input, int... dimensions) {
+    public NormMax(SameDiff sameDiff, SDVariable input, long... dimensions) {
         super(sameDiff, input, dimensions);
     }
 
@@ -68,26 +68,26 @@ public class NormMax extends BaseReduceFloatOp {
         super(sameDiff, input, dimensions);
     }
 
-    public NormMax(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+    public NormMax(INDArray input, INDArray output, boolean keepDims, long... dimensions) {
         super(input, output, keepDims, dimensions);
     }
 
-    public NormMax(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public NormMax(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
     public NormMax() {
     }
 
-    public NormMax(INDArray x, INDArray z, int... dimensions) {
+    public NormMax(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public NormMax(INDArray x, int... dimensions) {
+    public NormMax(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public NormMax(INDArray x, boolean keepDims, int... dimensions) {
+    public NormMax(INDArray x, boolean keepDims, long... dimensions) {
         super(x, keepDims, dimensions);
     }
 
@@ -95,11 +95,11 @@ public class NormMax extends BaseReduceFloatOp {
         super(in,indArray,keepDims);
     }
 
-    public NormMax(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public NormMax(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public NormMax(INDArray in, int[] dimensions, boolean keepDims) {
+    public NormMax(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 

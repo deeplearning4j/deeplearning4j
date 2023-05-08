@@ -38,7 +38,7 @@ namespace helpers {
 template <typename T>
 SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, void* vx, const sd::LongType* xShapeInfo,
                                         const sd::LongType* xOffsets, void* vy, const sd::LongType* yShapeInfo,
-                                        const sd::LongType* yOffsets, const int* indexes) {
+                                        const sd::LongType* yOffsets, const LongType* indexes) {
   __shared__ T *x, *y;
   __shared__ sd::LongType arrLenX, arrLenY;
 
@@ -96,24 +96,24 @@ template <typename T>
 SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfInd,
                                               void* vx, const sd::LongType* xShapeInfo, const sd::LongType* xOffsets,
                                               void* vy, const sd::LongType* yShapeInfo, const sd::LongType* yOffsets,
-                                              const int* indexes) {
+                                              const LongType* indexes) {
   scatterUpdateCuda<T><<<512, 256, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
                                                                   yShapeInfo, yOffsets, indexes);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<sd::LongType>* intArgs) {
   const int opCode = (*intArgs)[0];
   const int numOfDims = (*intArgs)[1];
   const int numOfInd = (*intArgs)[2 + numOfDims];
 
-  std::vector<int> tadDimensions(numOfDims);
+  std::vector<sd::LongType> tadDimensions(numOfDims);
   for (int e = 2; e < 2 + numOfDims; e++) tadDimensions[e - 2] = (*intArgs)[e];
 
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), tadDimensions);
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(updates.shapeInfo(), tadDimensions);
 
-  NDArray indices(const_cast<int*>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, sd::DataType::INT32, context);
+  NDArray indices(const_cast<sd::LongType *>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, sd::DataType::INT32, context);
 
   PointersManager manager(context, "scatterUpdate");
 
@@ -121,7 +121,7 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
   BUILD_SINGLE_SELECTOR(input.dataType(), scatterUpdateCudaLauncher,
                         (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX.platformShapeInfo(),
                          packX.platformOffsets(), updates.specialBuffer(), packY.platformShapeInfo(),
-                         packY.platformOffsets(), reinterpret_cast<int*>(indices.specialBuffer())),
+                         packY.platformOffsets(), reinterpret_cast<sd::LongType *>(indices.specialBuffer())),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&input}, {&input, &updates, &indices});
 

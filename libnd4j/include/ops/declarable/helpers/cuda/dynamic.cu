@@ -125,7 +125,7 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
   PointersManager pm(context, "dynamicPartition");
 
   if (sourceDimsLen) {  // non-linear case
-    std::vector<int> sourceDims(sourceDimsLen);
+    std::vector<sd::LongType> sourceDims(sourceDimsLen);
 
     for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
     // compute tad array for given dimensions
@@ -138,7 +138,7 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
     // fill up dimensions array for before kernel
     for (unsigned int i = 0; i < outSize; i++) {
       outputs[i].first = outputList[i];
-      std::vector<int> outDims(outputs[i].first->rankOf() - 1);
+      std::vector<sd::LongType> outDims(outputs[i].first->rankOf() - 1);
 
       int r = outputs[i].first->rankOf();
 
@@ -280,7 +280,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
         dInputBuffers, dInputShapes, dIndicesBuffers, dIndicesShapes, inputSize, output->specialBuffer(),
         output->specialShapeInfo(), output->lengthOf());
   } else {
-    std::vector<int> restDims(output->rankOf() - 1);
+    std::vector<sd::LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
 
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims);
@@ -293,7 +293,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     std::vector<const sd::LongType *> indicesShapes(inputSize);
 
     for (int e = 0; e < inputSize; e++) {
-      std::vector<int> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
+      std::vector<sd::LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
       for (int i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), sourceDims);

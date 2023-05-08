@@ -73,8 +73,8 @@ public class TADTests extends BaseNd4jTestWithBackends {
         char[] order = new char[] {'c', 'f'};
         int[] dim_e = new int[] {0, 2};
         int[] dim_x = new int[] {1, 3};
-        List<int[]> dim_3 = Arrays.asList(new int[] {0, 2, 3}, new int[] {0, 1, 2}, new int[] {1, 2, 3},
-                new int[] {0, 1, 3});
+        List<long[]> dim_3 = Arrays.asList(new long[] {0, 2, 3}, new long[] {0, 1, 2}, new long[] {1, 2, 3},
+                new long[] {0, 1, 3});
 
 
         for (char o : order) {
@@ -82,42 +82,25 @@ public class TADTests extends BaseNd4jTestWithBackends {
             for (int e : dim_e) {
                 for (int x : dim_x) {
 
-                    int[] shape = new int[] {e, x};
+                    long[] shape = new long[] {e, x};
                     Arrays.sort(shape);
                     INDArray assertion = array.tensorAlongDimension(0, shape);
                     INDArray test = array.tensorAlongDimension(0, shape);
 
                     assertEquals(assertion, test);
-                    //assertEquals(assertion.shapeInfoDataBuffer(), test.shapeInfoDataBuffer());
-                    /*DataBuffer tadShape_N = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(array, shape).getFirst();
-                    DataBuffer tadShape_J = array.tensorAlongDimension(0, shape).shapeInfoDataBuffer();
-                    log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
-                    log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
-                    System.out.println();
-                    assertEquals("TAD asertadShape_J,tadShape_N);*/
+
                 }
             }
         }
 
-//        log.info("3D TADs:");
         for (char o : order) {
             INDArray array = Nd4j.create(new int[] {9, 7, 5, 3}, o);
-            for (int[] shape : dim_3) {
+            for (long[] shape : dim_3) {
                 Arrays.sort(shape);
-//                log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape "
-//                                + array.shapeInfoToString());
+
                 INDArray assertion = array.tensorAlongDimension(0, shape);
                 INDArray test = array.tensorAlongDimension(0, shape);
                 assertEquals(assertion, test);
-                //assertEquals(assertion.shapeInfoDataBuffer(), test.shapeInfoDataBuffer());
-
-                /*
-                
-                
-                log.info("Original order: {}; Dimensions: {}; Original shape: {};", o, Arrays.toString(shape), Arrays.toString(array.shapeInfoDataBuffer().asInt()));
-                log.info("Java shape: {}; Native shape: {}", Arrays.toString(tadShape_J.asInt()), Arrays.toString(tadShape_N.asInt()));
-                System.out.println();
-                assertEquals(true, compareShapes(tadShape_N, tadShape_J));*/
             }
         }
     }

@@ -217,5 +217,8 @@ public class OpaqueDataBuffer extends Pointer {
      */
     public void closeBuffer() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(this);
+        if(this.primaryBuffer() != null && !this.primaryBuffer().isNull())
+            this.primaryBuffer().deallocate();
+        this.deallocate();
     }
 }

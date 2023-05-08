@@ -360,10 +360,24 @@ public class TestMultiOpReduce extends BaseND4JTest {
 
         public static class AggregableSecond<T> implements IAggregableReduceOp<T, Writable> {
 
-            @Getter
             private T firstMet = null;
-            @Getter
             private T elem = null;
+
+            public T getFirstMet() {
+                return firstMet;
+            }
+
+            public void setFirstMet(T firstMet) {
+                this.firstMet = firstMet;
+            }
+
+            public T getElem() {
+                return elem;
+            }
+
+            public void setElem(T elem) {
+                this.elem = elem;
+            }
 
             @Override
             public void accept(T element) {

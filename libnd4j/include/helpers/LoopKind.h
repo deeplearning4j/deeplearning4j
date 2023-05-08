@@ -76,7 +76,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXZ(const sd::LongType* xShapeInfo, cons
   const char xOrder = shape::order(xShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  int temp;
+  sd::LongType temp;
   const bool xVectorOrC = shape::isCommonVector(xShapeInfo, temp) || xOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
   const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
@@ -161,7 +161,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const sd::LongType* xShapeInfo, con
   const char yOrder = shape::order(yShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  int temp;
+  sd::LongType temp;
   const bool xVectorOrC = shape::isCommonVector(xShapeInfo, temp) || xOrder == 'c';
   const bool yVectorOrC = shape::isCommonVector(yShapeInfo, temp) || yOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
@@ -200,10 +200,10 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const sd::LongType* xShapeInfo, c
 
   const bool allC = (tOrder == zOrder && zOrder == 'c');
 
-  int temp;
+  sd::LongType temp;
   const bool tVectorOrC = shape::isCommonVector(tadShapeInfo, temp) || tOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
-  ;
+
 
   if (shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance().elementwiseThreshold() &&
       xEws == 1 && xOrder == 'c' && xRank == 2 && tEws > 1 && zEws == 1 && (allC || (tVectorOrC && zVectorOrC)))
@@ -235,7 +235,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXYZ(const sd::LongType* xTadShapeInf
   const char yTadOrder = shape::order(xTadShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  int position;
+  sd::LongType position;
   const bool xTadVectorOrC = shape::isCommonVector(xTadShapeInfo, position) || xTadOrder == 'c';
   const bool yTadVectorOrC = shape::isCommonVector(yTadShapeInfo, position) || yTadOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, position) || zOrder == 'c';

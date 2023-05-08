@@ -46,9 +46,9 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
   sd::LongType inLength = shape::length(inShapeBuffer);
   sd::LongType outLength = shape::length(outShapeBuffer);
   if (numOfElemsToReverse == 0) numOfElemsToReverse = inLength;
-  int inEWS = shape::elementWiseStride(inShapeBuffer);
+  sd::LongType inEWS = shape::elementWiseStride(inShapeBuffer);
   char inOrder = shape::order(inShapeBuffer);
-  auto sLength = numOfElemsToReverse - 1;
+  sd::LongType sLength = numOfElemsToReverse - 1;
 
   // two step phase here
   if (inArr == outArr) {
@@ -72,7 +72,7 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
       samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
     } else {
       auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (sd::LongType e = start; e < stop; e++) {
           auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
           auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
           swap(outArr, inOffset, outOffset);
@@ -112,7 +112,7 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
       }
     } else {
       auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (sd::LongType e = start; e < stop; e++) {
           auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
           auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
           outArr[outOffset] = inArr[inOffset];
@@ -122,7 +122,7 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
 
       if (inLength != numOfElemsToReverse) {
         auto f2 = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) {
+          for (sd::LongType e = start; e < stop; e++) {
             auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
             auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
             outArr[outOffset] = inArr[inOffset];

@@ -48,11 +48,14 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CPU_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
 
+
     private transient DoublePointer tArgs;
     private transient BooleanPointer bArgs;
     private transient IntPointer dArgs;
     private transient LongPointer iArgs;
     private transient  long deallocationId;
+
+
     public CpuOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         if(OpContextTracker.getInstance().isEnabled()) {
@@ -64,6 +67,30 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void close() {
         // no-op
+        nativeOps.ctxPurge(context);
+
+        Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
+        if(OpContextTracker.getInstance().isEnabled()) {
+            OpContextTracker.getInstance().deallocateContext(this);
+            Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
+        }
+        if(this.iArgs != null) {
+            this.iArgs.deallocate();
+        }
+
+        if(this.tArgs != null) {
+            this.tArgs.deallocate();
+        }
+
+        if(this.bArgs != null) {
+            this.bArgs.deallocate();
+        }
+
+        if(this.dArgs != null) {
+            this.dArgs.deallocate();
+        }
+
+
     }
 
     @Override
@@ -214,7 +241,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             }
         }
 
-        buffers.retainReference();
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
 
     }
@@ -234,9 +260,9 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             }
         }
 
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
-        PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
+        PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
+        PointerPointer<LongPointer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
+        nativeOps.setGraphContextOutputBuffers(context,arrays.size(),outputBuffers,shapeInfoOutputBuffer,null);
 
     }
 
@@ -250,6 +276,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
             shapeInfoBufers2[i] = (LongPointer) array.shapeInfoDataBuffer().addressPointer();
         }
+
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
         PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
@@ -268,9 +295,11 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             shapeInfoBufers2[i] = (LongPointer) array.shapeInfoDataBuffer().addressPointer();
         }
 
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
-        PointerPointer<LongPointer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.length,buffers,shapeInfoBuffer,null);
+
+        PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
+
+        PointerPointer<LongPointer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
+        nativeOps.setGraphContextOutputBuffers(context,arrays.length,shapeInfoOutputBuffer,shapeInfoOutputBuffer,null);
         super.setOutputArrays(arrays);
     }
 

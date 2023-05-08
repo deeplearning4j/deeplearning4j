@@ -41,7 +41,7 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
 
     }
 
-    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, long[] dimensions) {
         super(sameDiff, args, keepDims, dimensions);
         addDArgument(DataType.INT64);
     }
@@ -50,7 +50,7 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
         super(sameDiff, args, keepDims, isComplex);
     }
 
-    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sameDiff, args, keepDims, isComplex, dimensions);
     }
 
@@ -64,91 +64,91 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
     }
 
 
-    public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims,int...dimensions) {
+    public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims,long...dimensions) {
         super(inputs, outputs, keepDims,dimensions);
         addDArgument(DataType.INT64);
     }
 
-    public BaseDynamicCustomIndexReduction(INDArray[] inputs, boolean keepDims, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(INDArray[] inputs, boolean keepDims, long[] dimensions) {
         super(inputs, keepDims, dimensions);
         addDArgument(DataType.INT64);
 
 
     }
 
-    public BaseDynamicCustomIndexReduction(boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable arg, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, arg, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, sameDiff, args, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, INDArray input, INDArray output, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, INDArray input, INDArray output, List<Double> tArguments, long[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, input, output, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, int[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, long[] iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Long> iArguments, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs, tArguments, iArguments, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, INDArray[] inputs, INDArray[] outputs, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, inputs, outputs, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(SameDiff sameDiff, SDVariable[] args, boolean inPlace, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(sameDiff, args, inPlace, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(String opName, boolean keepDims, boolean isComplex, boolean isEmptyReduce, long[] dimensions) {
         super(opName, keepDims, isComplex, isEmptyReduce, dimensions);
         addDArgument(DataType.INT64);
 
     }
 
-    public BaseDynamicCustomIndexReduction(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public BaseDynamicCustomIndexReduction(INDArray[] input, INDArray[] output, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(input, output, keepDims, isComplex, dimensions);
         addDArgument(DataType.INT64);
 

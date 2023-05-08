@@ -223,11 +223,11 @@ public class ShufflesTests extends BaseNd4jTestWithBackends {
         arrays.add(featuresMask);
         arrays.add(labelsMask);
 
-        List<int[]> dimensions = new ArrayList<>();
-        dimensions.add(ArrayUtil.range(1, features.rank()));
-        dimensions.add(ArrayUtil.range(1, labels.rank()));
-        dimensions.add(ArrayUtil.range(1, featuresMask.rank()));
-        dimensions.add(ArrayUtil.range(1, labelsMask.rank()));
+        List<long[]> dimensions = new ArrayList<>();
+        dimensions.add(ArrayUtil.range(1, (long) features.rank()));
+        dimensions.add(ArrayUtil.range(1,(long) labels.rank()));
+        dimensions.add(ArrayUtil.range(1, (long)featuresMask.rank()));
+        dimensions.add(ArrayUtil.range(1, (long) labelsMask.rank()));
 
         Nd4j.shuffle(arrays, new Random(11), dimensions);
 

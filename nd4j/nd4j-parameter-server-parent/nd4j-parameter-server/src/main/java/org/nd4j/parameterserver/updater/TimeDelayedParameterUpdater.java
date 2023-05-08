@@ -106,7 +106,7 @@ public class TimeDelayedParameterUpdater extends BaseParameterUpdater {
      * @param dimensions the dimensions to update
      */
     @Override
-    public void partialUpdate(INDArray arr, INDArray result, long idx, int... dimensions) {
+    public void partialUpdate(INDArray arr, INDArray result, long idx, long... dimensions) {
 
     }
 

@@ -392,7 +392,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
   const bool channel_atTheEnd = !isNCHW;
   const bool same_stride = inplaceOp || shape::strideEquals(x_shapeInfo, z_shapeInfo);
   bool isContinuous = false;
-  int posOfNonUnityDim;
+  sd::LongType posOfNonUnityDim;
   bias.isCommonVector(posOfNonUnityDim);
   const sd::LongType yStrideC = bias.strideAt(posOfNonUnityDim);
   char order = input.ordering();

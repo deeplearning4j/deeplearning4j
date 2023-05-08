@@ -39,7 +39,6 @@ class SD_LIB_EXPORT LegacyReduce3Op : public LegacyOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
   LegacyOp* clone() override;
-  void traceExecIfNeeded(Context& block);
 };
 }  // namespace ops
 }  // namespace sd

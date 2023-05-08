@@ -29,7 +29,7 @@ import java.util.List;
 
 public class CosineDistance extends BaseReduce3Op {
 
-    public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
+    public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
@@ -48,38 +48,38 @@ public class CosineDistance extends BaseReduce3Op {
         this(x, y, z, null);
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, int... dimension) {
+    public CosineDistance(INDArray x, INDArray y, INDArray z, long... dimension) {
         super(x, y, z, dimension);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineDistance(INDArray x, INDArray y, int... dimension) {
+    public CosineDistance(INDArray x, INDArray y, long... dimension) {
         this(x, y, null, dimension);
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, int... dimension) {
+    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances, long... dimension) {
         this(x, y, z, dimension);
         this.isComplex = allDistances;
     }
 
-    public CosineDistance(INDArray x, INDArray y, boolean allDistances, int... dimension) {
+    public CosineDistance(INDArray x, INDArray y, boolean allDistances, long... dimension) {
         this(x, y, null, allDistances, dimension);
     }
 
-    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, int... dimensions){
+    public CosineDistance(INDArray x, INDArray y, INDArray z, boolean keepDims, boolean allDistances, long... dimensions){
         super(x, y, z, keepDims, allDistances, dimensions);
         extraArgs = new Object[]{0.0f, 0.0f};
     }
 
-    public CosineDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public CosineDistance(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
-    public CosineDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public CosineDistance(SameDiff sd, SDVariable x, SDVariable y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(sd,x,y,keepDims,isComplex,dimensions);
     }
 
-    public CosineDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, int[] dimensions) {
+    public CosineDistance(INDArray x, INDArray y, boolean keepDims, boolean isComplex, long[] dimensions) {
         super(x,y,null,keepDims,isComplex,dimensions);
     }
 

@@ -230,13 +230,15 @@ class SummaryStatsReduce {
 
   template <typename OpType>
   static SD_DEVICE void transform(void const* dx, sd::LongType const* xShapeInfo, void* extraParams, void* vz,
-                                  sd::LongType const* zShapeInfo, int* dimension, int dimensionLength,
-                                  int postProcessOrNot, int* allocationBuffer, void* reductionBuffer,
+                                  sd::LongType const* zShapeInfo, long long int* dimension,
+                                  long long int dimensionLength,
+                                  int postProcessOrNot, long long int* allocationBuffer, void* reductionBuffer,
                                   sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets);
 
   static SD_DEVICE void transform(const int opNum, void const* dx, sd::LongType const* xShapeInfo, void* extraParams,
-                                  void* vz, sd::LongType const* zShapeInfo, int* dimension, int dimensionLength,
-                                  int postProcessOrNot, int* allocationBuffer, void* reductionBuffer,
+                                  void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension,
+                                  sd::LongType dimensionLength,
+                                  int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
                                   sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets);
 
   static SD_HOST void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x,
@@ -253,7 +255,8 @@ class SummaryStatsReduce {
   static SD_HOST void execSummaryStatsReduce(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x,
                                              sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo,
                                              void* extraParams, void* vz, sd::LongType const* zShapeInfo,
-                                             sd::LongType const* hzShapeInfo, int* dimension, int dimensionLength,
+                                             sd::LongType const* hzShapeInfo, long long int* dimension,
+                                             long long int dimensionLength,
                                              sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets,
                                              bool biasCorrected, void* reductionBuffer);
 #else

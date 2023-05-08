@@ -42,8 +42,8 @@ class IndexReduce {
 #ifdef __CUDABLAS__
 
   static SD_DEVICE void transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
-                                  void *result, const sd::LongType *resultShapeInfo, int *dimension,
-                                  int dimensionLength, int postProcessOrNot, int *allocationBuffer,
+                                  void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension,
+                                  sd::LongType dimensionLength, int postProcessOrNot, sd::LongType *allocationBuffer,
                                   void *reductionBuffer, const sd::LongType *tadShapeInfo,
                                   const sd::LongType *tadOffset);
 
@@ -53,21 +53,23 @@ class IndexReduce {
 
   template <typename OpType>
   static SD_DEVICE void transform(const void *dx, const sd::LongType *xShapeInfo, void *extraParams, void *result,
-                                  const sd::LongType *resultShapeInfo, int *dimension, int dimensionLength,
-                                  int postProcessOrNot, int *allocationBuffer, void *reductionBuffer,
+                                  const sd::LongType *resultShapeInfo, sd::LongType *dimension,
+                                  sd::LongType dimensionLength,
+                                  int postProcessOrNot, sd::LongType *allocationBuffer, void *reductionBuffer,
                                   const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets);
 
-  static SD_HOST void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, int op, const void *dx,
-                                               const sd::LongType *xShapeInfo, int xRank, void *extraParams,
-                                               void *result, const sd::LongType *resultShapeInfo, int zRank,
-                                               int *dimension, int dimensionLength, int postProcessOrNot,
-                                               int *allocationBuffer, void *reductionBuffer,
+  static SD_HOST void executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream, const int op, const void *dx,
+                                               const sd::LongType *xShapeInfo, sd::LongType xRank, void *extraParams,
+                                               void *result, const sd::LongType *resultShapeInfo, sd::LongType zRank,
+                                               sd::LongType *dimension,sd::LongType dimensionLength, int postProcessOrNot,
+                                               sd::LongType *allocationBuffer, void *reductionBuffer,
                                                const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets);
 
-  static SD_HOST void executeIndexReduce(dim3 launchDims, cudaStream_t *stream, int op, const void *dx,
-                                         const sd::LongType *xShapeInfo, int xRank, void *extraParams, void *result,
-                                         const sd::LongType *resultShapeInfo, int zRank, int *dimension,
-                                         int dimensionLength, int postProcessOrNot, int *allocationBuffer,
+  static SD_HOST void executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int op, const void *dx,
+                                         const sd::LongType *xShapeInfo, sd::LongType xRank, void *extraParams, void *result,
+                                         const sd::LongType *resultShapeInfo,sd::LongType zRank,
+                                         sd::LongType *dimension, sd::LongType dimensionLength, int postProcessOrNot,
+                                         sd::LongType *allocationBuffer,
                                          void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo,
                                          const sd::LongType *tadOffsets);
 #else

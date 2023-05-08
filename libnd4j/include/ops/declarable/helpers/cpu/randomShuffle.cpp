@@ -73,7 +73,7 @@ static void mergeShuffle(sd::graph::RandomGenerator& rng, T* buff, const sd::Lon
 template <typename T>
 static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
   const int firstDim = input.sizeAt(0);
-  int temp;
+  sd::LongType temp;
 
   if (input.lengthOf() == 1 || firstDim == 1) {
     if (!isInplace) output.assign(input);

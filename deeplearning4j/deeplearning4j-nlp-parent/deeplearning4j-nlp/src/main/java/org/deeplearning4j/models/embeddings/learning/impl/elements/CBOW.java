@@ -22,6 +22,7 @@ package org.deeplearning4j.models.embeddings.learning.impl.elements;
 
 import lombok.*;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -39,11 +40,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.shade.guava.cache.Cache;
 import org.nd4j.shade.guava.cache.CacheBuilder;
+import org.nd4j.shade.guava.cache.Weigher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,7 +65,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
     protected double sampling;
     protected int[] variableWindows;
     protected int workers = Runtime.getRuntime().availableProcessors();
-    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder().build();
+    private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder()
+            .maximumSize(Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_CACHE_SIZE,"10000")))
+            .build();
+
+    protected int maxQueueSize = Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_QUEUE_SIZE,"1000"));
+
+
 
     public int getWorkers() {
         return workers;
@@ -250,8 +259,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         iterationArrays1 = new IterationArrays(items.size(),maxCols);
 
                     }else {
-                        iterationArrays1 = iterationArraysQueue.remove();
-                        iterationArrays1.initCodes();
+                        try {
+                            iterationArrays1 = iterationArraysQueue.remove();
+                            iterationArrays1.initCodes();
+                        } catch (NoSuchElementException e) {
+                            iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                        }
+
                     }
                 }
 
@@ -347,7 +361,8 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
 
                 Nd4j.close(currentWindowIndexes,inputWindowWords,alphas,randoms,codes,numLabelsArray,indices);
-                iterationArraysQueue.add(iterationArrays1);
+                if(iterationArraysQueue.size() < maxQueueSize)
+                    iterationArraysQueue.add(iterationArrays1);
 
                 batches.get().clear();
                 return 0.0;

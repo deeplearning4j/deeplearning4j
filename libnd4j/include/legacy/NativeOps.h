@@ -760,7 +760,7 @@ typedef sd::TadPack OpaqueTadPack;
  * @param targetBuffer
  * @param offsetsBuffer
  */
-SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(const long long int* hXShapeInfo, long long int* dimension, int dimensionLength);
+SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(const sd::LongType* hXShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength);
 
 SD_LIB_EXPORT sd::LongType const* getPrimaryShapeInfo(OpaqueTadPack* pack);
 SD_LIB_EXPORT sd::LongType const* getPrimaryOffsets(OpaqueTadPack* pack);
@@ -1172,7 +1172,7 @@ SD_LIB_EXPORT sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray);
  */
 static sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray) {
   cnpy::NpyArray arr = cnpy::loadNpyFromHeader(reinterpret_cast<char*>(npyArray));
-  auto shape = new unsigned int[arr.shape.size()];
+  auto shape = new sd::LongType[arr.shape.size()];
   for (unsigned int i = 0; i < arr.shape.size(); i++) {
     shape[i] = arr.shape[i];
   }
@@ -1386,16 +1386,17 @@ SD_LIB_EXPORT void sortByValue(sd::Pointer* extraPointers, void* x, sd::LongType
                                sd::LongType const* dyShapeInfo, bool descending);
 
 SD_LIB_EXPORT void sortTad(sd::Pointer* extraPointers, void* hX, sd::LongType const* hXShapeInfo, void* dX,
-                           sd::LongType const* dXShapeInfo, long long int* dimension, int dimensionLength,
+                           sd::LongType const* dXShapeInfo,sd::LongType * dimension, sd::LongType dimensionLength,
                            sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, bool descending);
 
-SD_LIB_EXPORT void sortTadByKey(sd::Pointer* extraPointers, void* x, sd::LongType const* xShapeInfo, void* dx,
-                                sd::LongType const* dxShapeInfo, void* y, sd::LongType const* yShapeInfo, void* dy,
-                                sd::LongType const* dyShapeInfo, long long int* dimension, int dimensionLength, bool descending);
+SD_LIB_EXPORT void sortTadByKey(sd::Pointer* extraPointers, void* x, sd::LongType const* xShapeInfo, void* dX,
+                                sd::LongType const* dXShapeInfo, void* y, sd::LongType const* yShapeInfo, void* dy,
+                                sd::LongType const* dyShapeInfo, sd::LongType * dimension, long long int dimensionLength, bool descending);
 
 SD_LIB_EXPORT void sortTadByValue(sd::Pointer* extraPointers, void* x, sd::LongType const* xShapeInfo, void* dx,
                                   sd::LongType const* dxShapeInfo, void* y, sd::LongType const* yShapeInfo, void* dy,
-                                  sd::LongType const* dyShapeInfo, long long int* dimension, int dimensionLength,
+                                  sd::LongType const* dyShapeInfo, sd::LongType * dimension,
+                                  sd::LongType dimensionLength,
                                   bool descending);
 
 // special sort impl for sorting out COO indices and values

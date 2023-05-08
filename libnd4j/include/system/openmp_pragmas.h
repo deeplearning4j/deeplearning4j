@@ -155,21 +155,21 @@
 #endif
 
 // reductions
-#define FUNC_RL std::function<int64_t(uint64_t, int64_t, int64_t, int64_t)>
-#define FUNC_AL std::function<int64_t(int64_t, int64_t)>
+#define FUNC_RL std::function<int64_t(sd::LongType, sd::LongType, sd::LongType, sd::LongType)>
+#define FUNC_AL std::function<sd::LongType(sd::LongType, sd::LongType)>
 
 // aggregation functions
-#define FUNC_RD std::function<double(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_RD std::function<double(sd::LongType, sd::LongType, sd::LongType, sd::LongType)>
 #define FUNC_AD std::function<double(double, double)>
 
 // parallel block
-#define FUNC_DO std::function<void(uint64_t, uint64_t)>
+#define FUNC_DO std::function<void(sd::LongType, sd::LongType)>
 
 // parallel_for block
-#define FUNC_1D std::function<void(uint64_t, int64_t, int64_t, int64_t)>
-#define FUNC_2D std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
+#define FUNC_1D std::function<void(sd::LongType, sd::LongType, sd::LongType, sd::LongType)>
+#define FUNC_2D std::function<void(sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType)>
 #define FUNC_3D \
-  std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
+  std::function<void(sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType, sd::LongType)>
 
 // aggregation lambda
 #define LAMBDA_AL [&](int64_t _old, int64_t _new) -> int64_t
@@ -181,19 +181,19 @@
   LAMBDA_AD { return _old + _new; }
 
 // reduction lambda
-#define PRAGMA_REDUCE_LONG [&](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> int64_t
-#define PRAGMA_REDUCE_DOUBLE [&](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> double
+#define PRAGMA_REDUCE_LONG [&](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) mutable -> int64_t
+#define PRAGMA_REDUCE_DOUBLE [&](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) mutable -> double
 
 // paralllel block lambda
-#define PRAGMA_THREADS_DO [&](uint64_t thread_id, uint64_t numThreads) -> void
+#define PRAGMA_THREADS_DO [&](sd::LongType thread_id, sd::LongType numThreads) -> void
 
 // paralllel_for lambdas
-#define PRAGMA_THREADS_FOR [&](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void
+#define PRAGMA_THREADS_FOR [&](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void
 #define PRAGMA_THREADS_FOR_2D                                                                              \
-  [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, \
-      int64_t inc_y) -> void
+  [&](sd::LongType thread_id, sd::LongType start_x, sd::LongType stop_x, sd::LongType inc_x, sd::LongType start_y, sd::LongType stop_y, \
+      sd::LongType inc_y) -> void
 #define PRAGMA_THREADS_FOR_3D                                                                              \
-  [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, \
-      int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z) -> void
+  [&](sd::LongType thread_id, sd::LongType start_x, sd::LongType stop_x, sd::LongType inc_x, sd::LongType start_y, sd::LongType stop_y, \
+      sd::LongType inc_y, sd::LongType start_z, sd::LongType stop_z, sd::LongType inc_z) -> void
 
 #endif  // DEV_TESTS_OPENMP_PRAGMAS_H

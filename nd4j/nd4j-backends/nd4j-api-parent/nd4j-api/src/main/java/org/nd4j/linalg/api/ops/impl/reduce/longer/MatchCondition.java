@@ -42,7 +42,7 @@ public class MatchCondition extends BaseReduceLongOp {
         this(sameDiff, in, condition, false, null);
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition, boolean keepDims, int... dimensions) {
+    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition, boolean keepDims, long... dimensions) {
         super(sameDiff, in, dimensions, keepDims);
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
@@ -52,16 +52,16 @@ public class MatchCondition extends BaseReduceLongOp {
 
     public MatchCondition() {}
 
-    public MatchCondition(INDArray x, Condition condition, int... dimensions) {
+    public MatchCondition(INDArray x, Condition condition, long... dimensions) {
         this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
     }
 
-    public MatchCondition(INDArray x, Condition condition, boolean keepDims, int... dimensions) {
+    public MatchCondition(INDArray x, Condition condition, boolean keepDims, long... dimensions) {
         this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
         this.keepDims = keepDims;
     }
 
-    public MatchCondition(INDArray x, double eps, Condition condition, int... dimensions) {
+    public MatchCondition(INDArray x, double eps, Condition condition, long... dimensions) {
         super(x);
         this.compare = condition.getValue();
         this.mode = condition.conditionType();
@@ -72,7 +72,7 @@ public class MatchCondition extends BaseReduceLongOp {
         defineDimensions(dimensions);
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double compare) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.compare = compare;
     }
@@ -92,12 +92,12 @@ public class MatchCondition extends BaseReduceLongOp {
         this.compare = compare;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims, double compare) {
         super(sameDiff, input, dimensions, keepDims);
         this.compare = compare;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double compare) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.compare = compare;
     }
@@ -107,27 +107,27 @@ public class MatchCondition extends BaseReduceLongOp {
         this.compare = compare;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, int... dimensions) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, long... dimensions) {
         super(sameDiff, input, dimensions);
         this.compare = compare;
     }
 
-    public MatchCondition(INDArray x, double compare, int... dimensions) {
+    public MatchCondition(INDArray x, double compare, long... dimensions) {
         super(x, dimensions);
         this.compare = compare;
     }
 
-    public MatchCondition(INDArray x, boolean keepDims, double compare, int... dimensions) {
+    public MatchCondition(INDArray x, boolean keepDims, double compare, long... dimensions) {
         super(x, keepDims, dimensions);
         this.compare = compare;
     }
 
-    public MatchCondition(INDArray x, INDArray z, double compare, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray z, double compare, long... dimensions) {
         super(x, z, dimensions);
         this.compare = compare;
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, long... dimensions) {
         super(x, y, z, dimensions);
         this.compare = compare;
     }
@@ -146,12 +146,12 @@ public class MatchCondition extends BaseReduceLongOp {
         this.compare = compare;
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double compare) {
         super(x, y, z, keepDims, dimensions);
         this.compare = compare;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double compare, double eps) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.compare = compare;
         this.eps = eps;
@@ -175,13 +175,13 @@ public class MatchCondition extends BaseReduceLongOp {
         this.eps = eps;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare, double eps) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims, double compare, double eps) {
         super(sameDiff, input, dimensions, keepDims);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare, double eps) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double compare, double eps) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.compare = compare;
         this.eps = eps;
@@ -193,31 +193,31 @@ public class MatchCondition extends BaseReduceLongOp {
         this.eps = eps;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, int... dimensions) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, long... dimensions) {
         super(sameDiff, input, dimensions);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(INDArray x, double compare, double eps, int... dimensions) {
+    public MatchCondition(INDArray x, double compare, double eps, long... dimensions) {
         super(x, dimensions);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, int... dimensions) {
+    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, long... dimensions) {
         super(x, keepDims, dimensions);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(INDArray x, INDArray z, double compare, double eps, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray z, double compare, double eps, long... dimensions) {
         super(x, z, dimensions);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, long... dimensions) {
         super(x, y, z, dimensions);
         this.compare = compare;
         this.eps = eps;
@@ -240,13 +240,13 @@ public class MatchCondition extends BaseReduceLongOp {
         this.eps = eps;
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare, double eps) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double compare, double eps) {
         super(x, y, z, keepDims, dimensions);
         this.compare = compare;
         this.eps = eps;
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, double compare, double eps, int mode) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, double compare, double eps, int mode) {
         super(sameDiff, i_v, i_v2, dimensions);
         this.compare = compare;
         this.eps = eps;
@@ -274,14 +274,14 @@ public class MatchCondition extends BaseReduceLongOp {
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims, double compare, double eps, int mode) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims, double compare, double eps, int mode) {
         super(sameDiff, input, dimensions, keepDims);
         this.compare = compare;
         this.eps = eps;
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, boolean keepDims, double compare, double eps, int mode) {
+    public MatchCondition(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions, boolean keepDims, double compare, double eps, int mode) {
         super(sameDiff, i_v, i_v2, dimensions, keepDims);
         this.compare = compare;
         this.eps = eps;
@@ -295,35 +295,35 @@ public class MatchCondition extends BaseReduceLongOp {
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, int mode, int... dimensions) {
+    public MatchCondition(SameDiff sameDiff, SDVariable input, double compare, double eps, int mode, long... dimensions) {
         super(sameDiff, input, dimensions);
         this.compare = compare;
         this.eps = eps;
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(INDArray x, double compare, double eps, int mode, int... dimensions) {
+    public MatchCondition(INDArray x, double compare, double eps, int mode, long... dimensions) {
         super(x, dimensions);
         this.compare = compare;
         this.eps = eps;
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, int mode, int... dimensions) {
+    public MatchCondition(INDArray x, boolean keepDims, double compare, double eps, int mode, long... dimensions) {
         super(x, keepDims, dimensions);
         this.compare = compare;
         this.eps = eps;
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(INDArray x, INDArray z, double compare, double eps, int mode, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray z, double compare, double eps, int mode, long... dimensions) {
         super(x, z, dimensions);
         this.compare = compare;
         this.eps = eps;
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, int mode, int... dimensions) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, double compare, double eps, int mode, long... dimensions) {
         super(x, y, z, dimensions);
         this.compare = compare;
         this.eps = eps;
@@ -350,7 +350,7 @@ public class MatchCondition extends BaseReduceLongOp {
         this.mode = Conditions.ConditionMode.fromNumber(mode);
     }
 
-    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, int[] dimensions, double compare, double eps, int mode) {
+    public MatchCondition(INDArray x, INDArray y, INDArray z, boolean keepDims, long[] dimensions, double compare, double eps, int mode) {
         super(x, y, z, keepDims, dimensions);
         this.compare = compare;
         this.eps = eps;

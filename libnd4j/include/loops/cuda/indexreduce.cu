@@ -30,10 +30,10 @@
 using namespace simdOps;
 
 template <typename X, typename Z>
-static SD_KERNEL void simpleIndexReduceGeneric(const int op, void const *dx, sd::LongType const *xShapeInfo, int xRank,
-                                               void *extraParams, void *result, sd::LongType const *zShapeInfo,
-                                               int zRank, int *dimension, int dimensionLength, int postProcessOrNot,
-                                               int *allocationBuffer, void *reductionBuffer,
+static SD_KERNEL void simpleIndexReduceGeneric(const int op, void const *dx, sd::LongType const *xShapeInfo,
+                                               sd::LongType xRank,
+                                               void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType zRank,
+                                               sd::LongType *dimension, sd::LongType dimensionLength, int postProcessOrNot, sd::LongType *allocationBuffer, void *reductionBuffer,
                                                sd::LongType const *tadOnlyShapeInfo, sd::LongType const *tadOffsets) {
   functions::indexreduce::IndexReduce<X, Z>::transform(op, dx, xShapeInfo, extraParams, result, zShapeInfo, dimension,
                                                        dimensionLength, postProcessOrNot, allocationBuffer,
@@ -45,9 +45,11 @@ namespace indexreduce {
 
 template <typename X, typename Z>
 SD_HOST void IndexReduce<X, Z>::executeIndexReduceScalar(
-    dim3 launchDims, cudaStream_t *stream, const int opNum, void const *dx, sd::LongType const *xShapeInfo, int xRank,
-    void *extraParams, void *result, sd::LongType const *zShapeInfo, int zRank, int *dimension, int dimensionLength,
-    int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo,
+    dim3 launchDims, cudaStream_t *stream, const int opNum, void const *dx, sd::LongType const *xShapeInfo,
+    sd::LongType xRank,
+    void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType zRank,
+    sd::LongType *dimension, sd::LongType dimensionLength,
+    int postProcessOrNot,sd::LongType *allocationBuffer, void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo,
     sd::LongType const *tadOffsets) {
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, 0, nullptr, 0, 1, allocationBuffer,
@@ -56,14 +58,17 @@ SD_HOST void IndexReduce<X, Z>::executeIndexReduceScalar(
 
 template <typename X, typename Z>
 SD_HOST void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum,
-                                                   void const *dx, sd::LongType const *xShapeInfo, int xRank,
-                                                   void *extraParams, void *result, sd::LongType const *zShapeInfo,
-                                                   int zRank, int *dimension, int dimensionLength, int postProcessOrNot,
-                                                   int *allocationBuffer, void *reductionBuffer,
+                                                   void const *dx, sd::LongType const *xShapeInfo,
+                                                   sd::LongType xRank,
+                                                   void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType zRank,
+                                                   sd::LongType *dimension, sd::LongType dimensionLength,
+                                                   int postProcessOrNot,
+                                                   sd::LongType *allocationBuffer,
+                                                   void *reductionBuffer,
                                                    sd::LongType const *tadOnlyShapeInfo,
                                                    sd::LongType const *tadOffsets) {
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, zRank, dimension, dimensionLength, 1,
+      opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, zRank, dimension, dimensionLength, postProcessOrNot,
       allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
@@ -136,10 +141,10 @@ SD_DEVICE void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> *sPartials, sd
 }
 
 template <typename X, typename Y>
-SD_DEVICE void IndexReduce<X, Y>::transform(const int opNum, void const *x, sd::LongType const *xShapeInfo,
-                                            void *extraParams, void *result, sd::LongType const *zShapeInfo,
-                                            int *dimension, int dimensionLength, int postProcessOrNot,
-                                            int *allocationBuffer, void *reductionBuffer,
+SD_DEVICE void IndexReduce<X, Y>::transform(int opNum, void const *x, sd::LongType const *xShapeInfo,
+                                            void *extraParams, void *result, sd::LongType const *zShapeInfo, sd::LongType *dimension,
+                                            sd::LongType dimensionLength, int postProcessOrNot,
+                                            sd::LongType *allocationBuffer, void *reductionBuffer,
                                             sd::LongType const *tadShapeInfo, sd::LongType const *tadOffset) {
   DISPATCH_BY_OPNUM_TT(transform,
                        PARAMS(x, xShapeInfo, extraParams, result, zShapeInfo, dimension, dimensionLength,
@@ -150,8 +155,9 @@ SD_DEVICE void IndexReduce<X, Y>::transform(const int opNum, void const *x, sd::
 template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const *xShapeInfo, void *vextraParams,
-                                            void *vz, sd::LongType const *zShapeInfo, int *dimension,
-                                            int dimensionLength, int postProcessOrNot, int *allocationBuffer,
+                                            void *vz, sd::LongType const *zShapeInfo, sd::LongType *dimension,
+                                            sd::LongType dimensionLength, int postProcessOrNot,
+                                            sd::LongType *allocationBuffer,
                                             void *vreductionBuffer, sd::LongType const *tadOnlyShapeInfo,
                                             sd::LongType const *tadOffsets) {
   /**int

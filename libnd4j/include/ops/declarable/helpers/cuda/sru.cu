@@ -128,7 +128,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto ht = reinterpret_cast<T*>(vht);
   auto ct = reinterpret_cast<T*>(vct);
 
-  const int rank = 3;
+  const sd::LongType rank = 3;
 
   __shared__ sd::LongType time, K, *sharedMem;
   __shared__ sd::LongType len, totalThreads;
@@ -145,8 +145,8 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   }
   __syncthreads();
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  auto coords = sharedMem + threadIdx.x * rank;
+  const sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  sd::LongType *coords = sharedMem + threadIdx.x * rank;
 
   if (tid >= len) return;
 
@@ -309,7 +309,7 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
 
   __syncthreads();
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto coords = sharedMem + threadIdx.x * rank;
 
   if (tid >= len) return;

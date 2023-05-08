@@ -62,7 +62,7 @@ public class RandomExponential extends DynamicCustomOp {
     }
 
     public RandomExponential(INDArray shape,INDArray out, double lambda){
-        super(null, new INDArray[]{shape}, new INDArray[]{out}, Collections.singletonList(lambda), (List<Integer>)null);
+        super(null, new INDArray[]{shape}, new INDArray[]{out}, Collections.singletonList(lambda), (List<Long>)null);
         this.lambda = lambda;
     }
 

@@ -53,7 +53,7 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const sd::LongTy
       z[sourceIndex * zEws] = eB;
     }
   } else {
-    for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
+    for (sd::LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
       int sourceIndex = fullLength - actualShift + i;
 
       auto xOffsetA = shape::getIndexOffset(i, xShapeInfo);
@@ -246,8 +246,8 @@ static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const sd::LongT
 }
 
 template <typename T>
-static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<int> const &shifts,
-                             std::vector<int> const &axes, bool inplace) {
+static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<sd::LongType> const &shifts,
+                             std::vector<sd::LongType> const &axes, bool inplace) {
   if (!inplace) output->assign(input);
 
   for (size_t i = 0; i < axes.size(); i++) {
@@ -257,17 +257,11 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<int> c
       ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
       int fullLen = listOfTensors.size();
       int theShift = shifts[i];
-      //                if (theShift > 0) {
-      //                    theShift %= fullLen;
-      //                }
-      //                else {
-      //                    theShift -= fullLen * (theShift / fullLen - 1);
-      //                }
       for (int k = 0; k < fullLen; k++) {
         rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
       }
     } else {
-      std::vector<int> dims(input->rankOf() - axe - 1);
+      std::vector<sd::LongType> dims(input->rankOf() - axe - 1);
       for (int i = 0; i < dims.size(); ++i) dims[i] = axe + 1 + i;
 
       auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
@@ -277,11 +271,6 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<int> c
       auto tadLength = shape::length(packZ.primaryShapeInfo());
 
       int theShift = shifts[i];
-
-      //                if (theShift > 0)
-      //                    theShift %= sizeAt;
-      //                else
-      //                    theShift -= sizeAt * (theShift / sizeAt - 1);
 
       if (theShift) {
         for (int dim = 0; dim < numTads / sizeAt; ++dim) {
@@ -332,8 +321,8 @@ static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool 
   }
 }
 
-void rollFunctorFull(sd::LaunchContext *context, NDArray *input, NDArray *output, std::vector<int> const &shifts,
-                     std::vector<int> const &axes, bool inplace) {
+void rollFunctorFull(sd::LaunchContext *context, NDArray *input, NDArray *output, std::vector<sd::LongType> const &shifts,
+                     std::vector<sd::LongType> const &axes, bool inplace) {
   input->syncToDevice();
 
   BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorFull_, (input, output, shifts, axes, inplace), SD_COMMON_TYPES);
@@ -352,7 +341,7 @@ void rollFunctorLinear(sd::LaunchContext *context, NDArray *input, NDArray *outp
 BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray * input, NDArray *output, int shift, bool inplace),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void rollFunctorFull_,
-                      (NDArray * input, NDArray *output, std::vector<int> const &shifts, std::vector<int> const &axes,
+                      (NDArray * input, NDArray *output, std::vector<sd::LongType> const &shifts, std::vector<sd::LongType> const &axes,
                        bool inplace),
                       SD_COMMON_TYPES);
 }  // namespace helpers

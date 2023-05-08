@@ -31,7 +31,8 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -218,23 +219,32 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
             Nd4j.getEnvironment().setMaxThreads(1);
         }
 
-        Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
-                lookupTable.layerSize() + 1);
+
+        try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            Random random = Nd4j.getRandomFactory().getNewRandomInstance(configuration.getSeed() * sequence.hashCode(),
+                    lookupTable.layerSize() + 1);
 
 
 
-        INDArray ret = Nd4j.createUninitializedDetached(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
-        Nd4j.rand(ret,random);
-        ret.subi(0.5).divi(lookupTable.layerSize());
-        if(configuration.getWorkers() > 1) {
-            Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
+            INDArray ret = Nd4j.createUninitializedDetached(this.lookupTable.getWeights().dataType(),lookupTable.layerSize());
+            Nd4j.rand(ret,random);
+            DataBuffer subiDetached = Nd4j.createBufferDetached(new double[] {0.5});
+            DataBuffer diviDetached = Nd4j.createBufferDetached(new int[] {lookupTable.layerSize()});
+            INDArray subi = Nd4j.create(subiDetached,1);
+            INDArray divi = Nd4j.create(diviDetached,1);
+            ret.subi(subi).divi(divi);
+            if(configuration.getWorkers() > 1) {
+                Nd4j.getEnvironment().setMaxThreads(numThreadsOriginal);
+            }
+
+            //close since we don't have a deallocator for random instances
+            random.close();
+
+            Nd4j.close(subi,divi);
+
+            return inferSequence(ret,sequence,nextRandom,learningRate,minLearningRate,iterations);
         }
 
-        //close since we don't have a deallocator for random instances
-        random.close();
-
-
-        return inferSequence(ret,sequence,nextRandom,learningRate,minLearningRate,iterations);
     }
 
     @Override

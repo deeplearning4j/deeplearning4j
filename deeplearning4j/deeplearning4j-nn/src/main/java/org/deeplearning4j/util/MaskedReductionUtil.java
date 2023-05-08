@@ -191,10 +191,10 @@ public class MaskedReductionUtil {
         // where X=(1 or inH) and Y=(1 or inW)
 
         //General case: must be equal or 1 on each dimension
-        int[] dimensions = new int[4];
+        long[] dimensions = new long[4];
         int count = 0;
-        for(int i=0; i<4; i++ ){
-            if(toReduce.size(i) == mask.size(i)){
+        for(int i = 0; i < 4; i++) {
+            if(toReduce.size(i) == mask.size(i)) {
                 dimensions[count++] = i;
             }
         }
@@ -259,7 +259,7 @@ public class MaskedReductionUtil {
         mask = mask.castTo(dataType);   //No-op if correct type
 
         //General case: must be equal or 1 on each dimension
-        int[] dimensions = new int[4];
+        long[] dimensions = new long[4];
         int count = 0;
         for(int i=0; i<4; i++ ){
             if(input.size(i) == mask.size(i)){

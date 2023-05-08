@@ -52,10 +52,10 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK], temp;
 
-    for (auto i = start; i < stop; i++) {
+    for (sd::LongType i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
-      const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
+      const sd::LongType  zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
       temp = zCoords[yRank - 1];
       zCoords[yRank - 1] = 0;

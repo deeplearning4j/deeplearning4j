@@ -36,7 +36,7 @@ namespace ops {
 namespace helpers {
 
 
-static void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alphas,  NDArray *betas,
+void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alphas,  NDArray *betas,
                   int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc,
                   sd::NDArray *all) {
   sd::NDArray *allIndex = nullptr;
@@ -76,9 +76,9 @@ static void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alph
 
 //////////////////////////////////////////////////////////////////////////////
 // bsxMXK x bSxKxN = bSxMxN
-void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std::vector<NDArray*>& vC,
-           const NDArray* alphas, const NDArray* betas, int transA, int transB, int M, int N, int K, const int lda,
-           const int ldb, const int ldc) {
+void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
+           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,  int lda,
+           int ldb,  int ldc) {
   const auto bS = vA.size();  // batch size
 
   std::vector<NDArray*> pA(bS), pB(bS), pC(bS);

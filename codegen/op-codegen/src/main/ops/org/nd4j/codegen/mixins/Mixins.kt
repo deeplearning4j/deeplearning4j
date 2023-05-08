@@ -94,7 +94,7 @@ val scalar = Mixin("scalar"){
 val reduce = Mixin("reduce"){
     Input(DataType.NUMERIC, "in") { description = "Input variable" }
     Arg(DataType.BOOL,"keepDims"){ description = "Whether to keep the original  dimensions or produce a shrunk array with less dimensions"; defaultValue = false}
-    Arg(DataType.INT, "dimensions"){  count = AtLeast(0); isVargarg = true;  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    Arg(DataType.LONG, "dimensions"){  count = AtLeast(0); isVargarg = true;  description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 }
 
@@ -148,7 +148,7 @@ val reduce3 = Mixin("reduce3"){
     Input(DataType.NUMERIC, "y") { description = "Input variable y" }
     Arg(DataType.BOOL,"keepDims",{description = "Whether to preserve original dimensions or not"; defaultValue = false})
     Arg(DataType.BOOL,"isComplex",{description = "Depending on the implementation, such as distance calculations, this can determine whether all distance calculations for all points should be done."; defaultValue = false})
-    val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(0);  isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    val dims = Arg(DataType.LONG, "dimensions"){ count = AtLeast(0);  isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Output variable" }
 }
 
@@ -169,7 +169,7 @@ val indexAccum = Mixin("indexAccum"){
     javaPackage = "org.nd4j.linalg.api.ops.impl.indexaccum"
     val input = Input(DataType.NUMERIC, "in") { description = "Input variable" }
     val keepDims = Arg(DataType.BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions"; defaultValue = false }
-    val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    val dims = Arg(DataType.LONG, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 
     Signature(input, dims)
@@ -194,7 +194,7 @@ val indexAccumCustom = Mixin("indexAccumCustom"){
     javaPackage = "org.nd4j.linalg.api.ops.impl.indexaccum.custom"
     val input = Input(DataType.NUMERIC, "in") { description = "Input variable" }
     val keepDims = Arg(DataType.BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as length 1). False: remove the reduction dimensions"; defaultValue = false }
-    val dims = Arg(DataType.INT, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
+    val dims = Arg(DataType.LONG, "dimensions"){ count = AtLeast(1); isVargarg = true; description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
     Output(DataType.NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
 
     Signature(input, dims)

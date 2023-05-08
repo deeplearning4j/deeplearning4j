@@ -186,7 +186,7 @@ public class OneHot extends DynamicCustomOp {
 
         if(properties.containsKey("dimensions")) {
             Long dimension = getLongValueFromProperty("dimensions",properties);
-            this.dimensions = new int[] {dimension.intValue()};
+            this.dimensions = new long[] {dimension.intValue()};
             this.jaxis = dimension.intValue();
         }
 

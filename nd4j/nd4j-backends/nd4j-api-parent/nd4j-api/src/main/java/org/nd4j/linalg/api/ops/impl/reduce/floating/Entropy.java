@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Entropy extends BaseReduceFloatOp {
-    public Entropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+    public Entropy(SameDiff sameDiff, SDVariable i_v, long[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
 
@@ -50,45 +50,45 @@ public class Entropy extends BaseReduceFloatOp {
         super(sameDiff, input, dimensions);
     }
 
-    public Entropy(INDArray input, INDArray output, boolean keepDims, int... dimensions) {
+    public Entropy(INDArray input, INDArray output, boolean keepDims, long... dimensions) {
         super(input, output, keepDims, dimensions);
     }
 
-    public Entropy(INDArray x, INDArray y, INDArray z, int... dimensions) {
+    public Entropy(INDArray x, INDArray y, INDArray z, long... dimensions) {
         super(x, y, z, dimensions);
     }
 
     public Entropy() {}
 
-    public Entropy(INDArray x, INDArray z, int... dimensions) {
+    public Entropy(INDArray x, INDArray z, long... dimensions) {
         super(x, null, z, dimensions);
     }
 
-    public Entropy(INDArray x, int... dimensions) {
+    public Entropy(INDArray x, long... dimensions) {
         super(x, dimensions);
     }
 
-    public Entropy(INDArray in, boolean keepDims, int[] dimensions) {
+    public Entropy(INDArray in, boolean keepDims, long[] dimensions) {
         super(in,keepDims,dimensions);
     }
 
-    public Entropy(INDArray x, INDArray y, INDArray z, boolean keepDims, int... dimensions) {
+    public Entropy(INDArray x, INDArray y, INDArray z, boolean keepDims, long... dimensions) {
         super(x, y, z, keepDims, dimensions);
     }
 
-    public Entropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public Entropy(SameDiff sameDiff, SDVariable i_v, boolean keepDims, long[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
     }
 
-    public Entropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions) {
+    public Entropy(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, long[] dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Entropy(SameDiff sameDiff, SDVariable input, int[] dimensions, boolean keepDims) {
+    public Entropy(SameDiff sameDiff, SDVariable input, long[] dimensions, boolean keepDims) {
         super(sameDiff, input, dimensions, keepDims);
     }
 
-    public Entropy(INDArray in, int[] dimensions, boolean keepDims) {
+    public Entropy(INDArray in, long[] dimensions, boolean keepDims) {
         super(in,keepDims,dimensions);
     }
 
@@ -118,7 +118,7 @@ public class Entropy extends BaseReduceFloatOp {
         return grad(sameDiff, arg(), f1.get(0), dimensions);
     }
 
-    public static List<SDVariable> grad(SameDiff sd, SDVariable arg, SDVariable grad, int[] dimensions){
+    public static List<SDVariable> grad(SameDiff sd, SDVariable arg, SDVariable grad, long[] dimensions){
         SDVariable logx = sd.math.log(arg);
         SDVariable xLogX = arg.mul(logx);
         SDVariable sumBp = new SumBp(sd, xLogX, grad.neg(), false, dimensions).outputVariable();
