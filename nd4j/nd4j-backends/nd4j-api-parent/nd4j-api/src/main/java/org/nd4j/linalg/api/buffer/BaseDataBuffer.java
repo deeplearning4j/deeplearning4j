@@ -2252,11 +2252,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.released = true;
         this.indexer = null;
         this.pointer = null;
-        //note: also calls ptrDataBuffer.deallocate()
-        /*     this.ptrDataBuffer.closeBuffer();
-         */
-
-        //  Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
+        Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
 
     }
 

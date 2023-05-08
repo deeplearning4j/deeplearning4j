@@ -872,12 +872,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-       // ptrDataBuffer.closeBuffer();
-     /*   if(pointer != null && !pointer.isNull())
-            pointer.close();*/
-   /*     if(addressPointer != null)
-            addressPointer.deallocate();*/
-      //  super.release();
+        if(!released)
+            ptrDataBuffer.closeBuffer();
+
     }
 
     /**
