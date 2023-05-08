@@ -23,6 +23,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAttentionLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
@@ -43,7 +44,8 @@ public class KerasRnnUtils {
         return kerasLayer instanceof KerasLSTM ||
                 kerasLayer instanceof KerasSimpleRnn ||
                 kerasLayer instanceof KerasBidirectional ||
-                kerasLayer instanceof KerasEmbedding;
+                kerasLayer instanceof KerasEmbedding ||
+                kerasLayer instanceof KerasAttentionLayer;
     }
 
     /**

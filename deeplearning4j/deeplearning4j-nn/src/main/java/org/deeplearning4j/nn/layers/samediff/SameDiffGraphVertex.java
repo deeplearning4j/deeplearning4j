@@ -105,7 +105,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
         Map<String,INDArray> phMap = new HashMap<>();
         config.validateInput(inputs);
-        for(int i=0; i<inputs.length; i++ ){
+        for(int i = 0; i < inputs.length; i++) {
             String name = config.getVertexParams().getInputs().get(i);
             final String maskName = name + "_mask";
             phMap.put(name, inputs[i]);
@@ -127,10 +127,11 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameOutput, confWorking, confOutput);
 
         InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
-        if(is == null){
+        if(is == null) {
             is = SameDiff.getInferenceFactory().create(sameDiff);
             sameDiff.getSessions().put(Thread.currentThread().getId(), is);
         }
+
         is.setMmgr(mmgr);
 
         INDArray result = sameDiff.outputSingle(phMap, outputKey);
@@ -139,7 +140,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         //TODO there may be a cleaner way to do this...
         if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
             result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
-        } else if(actScopedOut && result.isAttached()){
+        } else if(actScopedOut && result.isAttached()) {
             result = result.detach();
         }
 
@@ -260,13 +261,13 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     protected void doInit(){
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff = SameDiff.create();
-            //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
+            //Use SingleThreadArrayHolder so we can use views (also don't need multithreading here, DL4J is not thread safe)
             sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
 
             inputVars = new LinkedHashMap<>();
             LinkedHashMap<String, SDVariable> maskVars = new LinkedHashMap<>();
-            int i=0;
-            for(String s : config.getVertexParams().getInputs()){
+            int i = 0;
+            for(String s : config.getVertexParams().getInputs()) {
                 val inputShape = inputs[i++].shape().clone();
                 INDArray maskTemp = createMask(dataType, inputShape);
                 inputShape[0] = -1;

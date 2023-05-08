@@ -30,7 +30,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
@@ -52,7 +51,6 @@ public class LocalResponseNormalization
 
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
-    public final static String LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper";
     @Override
     public Layer clone() {
         return new LocalResponseNormalization(conf.clone(), dataType);
@@ -65,14 +63,6 @@ public class LocalResponseNormalization
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            helper = HelperUtils.createHelper(LOCAL_RESPONSE_NORM_CUDNN_HELPER_CLASS_NAME, MKLDNNLocalResponseNormalizationHelper.class.getName(), LocalResponseNormalizationHelper.class, layerConf().getLayerName(), dataType);
-        }
-        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
-//        else if("CPU".equalsIgnoreCase(backend)){
-//            helper = new MKLDNNLocalResponseNormalizationHelper();
-//            log.debug("Created MKLDNNLocalResponseNormalizationHelper");
-//        }
         if (helper != null && !helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
             log.debug("Removed helper {} as not supported (k={}, n={}, alpha={}, beta={})", helper.getClass(), layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta());
             helper = null;

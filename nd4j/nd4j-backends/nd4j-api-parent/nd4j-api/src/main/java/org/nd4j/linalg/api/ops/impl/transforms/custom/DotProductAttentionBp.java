@@ -48,17 +48,17 @@ public class DotProductAttentionBp extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         throw new UnsupportedOperationException("Differentiation of " + getClass().getName() + " not supported");
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 4 || dataTypes.size() == 5), "Expected 4 or 5 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<dataTypes.size(); i++ ) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
+        for( int i = 0; i < dataTypes.size(); i++) {
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got dataypes %s", dataTypes);
+            if(i > 0) {
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
