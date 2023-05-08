@@ -141,7 +141,8 @@ public class OpContextTracker {
 
 
     public void purge(OpContext opContext) {
-        opContextInfo.get(opContext.id()).purge();
+        if(opContextInfo.containsKey(opContext.id()))
+                opContextInfo.get(opContext.id()).purge();
     }
 
     /**

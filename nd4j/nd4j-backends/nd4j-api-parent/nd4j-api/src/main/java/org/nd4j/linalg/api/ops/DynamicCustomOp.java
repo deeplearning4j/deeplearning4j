@@ -616,6 +616,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public boolean initializeOutputs(OpContext ctx) {
+        return CustomOp.super.initializeOutputs(ctx);
+    }
+
+    @Override
     public void removeOutputArgument(INDArray arg) {
         outputArguments.remove(arg);
     }
@@ -675,32 +680,26 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         //not fully initialized: missing integer args
         int nI = oc != null ? oc.numIArguments() : numIArguments();
         if (descriptor.getNumIArgs() >= 0 && nI < descriptor.getNumIArgs()) {
-            if(log.isTraceEnabled()){
-                log.trace("Could not calculate output shape for op {}: not fully initialized ({} IArgs specified, " +
-                        "{} required)", getClass().getName(), nI, descriptor.getNumIArgs());
-            }
-            return Collections.emptyList();
+            throw new IllegalStateException(String.format("Could not calculate output shape for op %s: not fully initialized (%d IArgs specified, " +
+                    "%d required)", getClass().getName(), nI, descriptor.getNumIArgs()));
+
         }
 
 
         //not fully initialized: missing floating point args
         int nT = oc != null ? oc.numTArguments() : numTArguments();
         if (descriptor.getNumTArgs() >= 0 && nT < descriptor.getNumTArgs()) {
-            if(log.isTraceEnabled()){
-                log.trace("Could not calculate output shape for op {}: not fully initialized ({} TArgs specified, " +
-                        "{} required)", getClass().getName(), nT, descriptor.getNumTArgs());
-            }
-            return Collections.emptyList();
+            throw new IllegalStateException(String.format("Could not calculate output shape for op %s: not fully initialized (%d TArgs specified, " +
+                    "%d required)", getClass().getName(), nT, descriptor.getNumTArgs()));
+
         }
 
         //not fully initialized: missing INDArray input args
         int nIn = oc != null ? oc.numInputArguments() : numInputArguments();
         if(descriptor.getNumInputs() >= 0 && nIn < descriptor.getNumInputs()) {
-            if(log.isTraceEnabled()){
-                log.trace("Could not calculate output shape for op {}: not fully initialized ({} input (INDArray) args specified, " +
-                        "{} required)", getClass().getName(), nIn, descriptor.getNumInputs());
-            }
-            return Collections.emptyList();
+            throw new IllegalStateException(String.format("Could not calculate output shape for op %s: not fully initialized (%d input (INDArray) args specified, " +
+                    "{} required)", getClass().getName(), nIn, descriptor.getNumInputs()));
+
         }
 
         List<LongShapeDescriptor> ret;

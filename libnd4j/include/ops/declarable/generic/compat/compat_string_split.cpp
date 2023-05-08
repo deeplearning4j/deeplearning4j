@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto delim = INPUT_VARIABLE(1);
 
-  auto indices = OUTPUT_NULLIFIED(0);
+  auto indices = OUTPUT_VARIABLE(0);
   auto values = OUTPUT_VARIABLE(1);
 
   auto d = delim->e<std::string>(0);
@@ -44,10 +44,8 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   std::vector<sd::LongType> icoords(input->rankOf());
 
   // getting buffer lengths
-  // FIXME: it'll be bigger, since it'll include delimiters,
   auto outputLength = StringUtils::byteLength(*input);
-
-  uint64_t ss = 0L;
+  sd::LongType ss = 0L;
   sd::LongType ic = 0L;
   // loop through each string within tensor
   for (sd::LongType e = 0L; e < input->lengthOf(); e++) {
@@ -58,11 +56,12 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
     shape::index2coordsCPU(0, e, input->shapeInfo(), icoords.data());
 
     // getting number of substrings
-    auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length()) + 1;
-
+    auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length());
     // filling output indices
-    for (uint64_t f = 0; f < cnt; f++) {
-      for (auto v : icoords) indices->p(ic++, v);
+    for (sd::LongType f = 0; f < cnt; f++) {
+      for (auto v : icoords) {
+        indices->p(ic++, v);
+      }
 
       // last index
       indices->p(ic++, f);
@@ -80,11 +79,8 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   }
 
   // now once we have all strings in single vector time to fill
-  auto tmp = NDArrayFactory::string({(sd::LongType)strings.size()}, strings, input->dataType(), block.launchContext());
+  auto tmp = NDArrayFactory::string(values->getShapeAsVector(), strings, input->dataType(), block.launchContext());
   auto blen = StringUtils::byteLength(tmp) + ShapeUtils::stringBufferHeaderRequirements(strings.size());
-
-  // for CUDA mostly
-  values->dataBuffer()->allocatePrimary();
   values->dataBuffer()->expand(blen);
   memcpy(values->buffer(), tmp.buffer(), blen);
   values->tickWriteHost();
@@ -97,6 +93,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   values->dataBuffer()->writePrimary();
   values->dataBuffer()->readSpecial();
 
+
   return sd::Status::OK;
 };
 
@@ -104,22 +101,25 @@ DECLARE_SHAPE_FN(compat_string_split) {
   auto input = INPUT_VARIABLE(0);
   auto delim = INPUT_VARIABLE(1);
 
+
   auto d = delim->e<std::string>(0);
 
   // count number of delimiter substrings in all strings within input tensor
-  uint64_t cnt = 0;
+  sd::LongType cnt = 0;
   for (auto e = 0L; e < input->lengthOf(); e++) {
-    // FIXME: bad, not UTF-compatible
     auto s = input->e<std::string>(e);
 
     // each substring we see in haystack, splits string in two parts. so we should add 1 to the number of subarrays
-    cnt += StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length()) + 1;
+    cnt += StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length());
   }
+  cnt++;
 
   // shape calculations
   // virtual tensor rank will be N+1, for N rank input array, where data will be located at the biggest dimension
   // values tensor is going to be vector always
   // indices tensor is going to be vector with length equal to values.length * output rank
+
+  sd_printf("compat_string_split: Assigning number of values: %d\n",cnt);
 
   auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, sd::DataType::UTF8);
   auto indicesShape =

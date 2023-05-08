@@ -92,7 +92,7 @@ public class DeallocatorService {
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;
-    private  int numThreads =  4;
+    private  int numThreads =  Integer.parseInt(System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS,"1"));
 
     private final transient AtomicLong counter = new AtomicLong(0);
 
@@ -223,6 +223,9 @@ public class DeallocatorService {
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             boolean canRun = true;
             while (canRun) {
+                while(blockDeallocator.get()) {
+                    Thread.sleep(1000);
+                }
                 // if periodicGc is enabled, only first thread will call for it
                 if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
                     val reference = (DeallocatableReference) queue.poll();

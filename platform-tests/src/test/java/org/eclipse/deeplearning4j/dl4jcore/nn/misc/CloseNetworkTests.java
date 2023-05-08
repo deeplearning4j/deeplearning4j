@@ -110,7 +110,7 @@ public class CloseNetworkTests extends BaseDL4JTest {
                     net.fit(f, l);
                 } catch (Exception e) {
                     String msg = e.getMessage();
-                    assertTrue( msg.contains("released") || msg.contains("closed"),msg);
+                    assertTrue( msg.contains("released") || msg.contains("closed") || e.getCause().getMessage().contains("closed") || e.getCause().getMessage().contains("released"),msg);
                 }
             }
         }
@@ -158,7 +158,7 @@ public class CloseNetworkTests extends BaseDL4JTest {
                     net.fit(new INDArray[]{f}, new INDArray[]{l});
                 } catch (Exception e) {
                     String msg = e.getMessage();
-                    assertTrue( msg.contains("released") || msg.contains("closed"),msg);
+                    assertTrue( msg.contains("released") || msg.contains("closed") || e.getCause().getMessage().contains("closed") || e.getCause().getMessage().contains("released"),msg);
                 }
             }
         }

@@ -50,6 +50,10 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.arrow</groupId>
+            <artifactId>arrow-memory-unsafe</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-vector</artifactId>
             <exclusions>
                 <exclusion>

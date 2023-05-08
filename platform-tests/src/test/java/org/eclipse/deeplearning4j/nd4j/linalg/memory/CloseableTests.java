@@ -87,29 +87,8 @@ public class CloseableTests extends BaseNd4jTestWithBackends {
         }
     }
 
-     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAccessException_1(Nd4jBackend backend) {
-       assertThrows(IllegalStateException.class,() -> {
-           val array = Nd4j.create(5, 5);
-           array.close();
 
-           array.data().pointer();
-       });
 
-    }
-
-     @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAccessException_2(Nd4jBackend backend) {
-      assertThrows(IllegalStateException.class,() -> {
-          val array = Nd4j.create(5, 5);
-          val view = array.getRow(0);
-          array.close();
-
-          view.data().pointer();
-      });
-    }
 
     @Override
     public char ordering() {

@@ -44,7 +44,7 @@ public class DivOp extends BaseDynamicTransformOp {
         super(sameDiff, new SDVariable[]{x, y}, false);
     }
 
-    public DivOp(INDArray first, INDArray second, INDArray result){
+    public DivOp(INDArray first, INDArray second, INDArray result) {
         this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
     }
 

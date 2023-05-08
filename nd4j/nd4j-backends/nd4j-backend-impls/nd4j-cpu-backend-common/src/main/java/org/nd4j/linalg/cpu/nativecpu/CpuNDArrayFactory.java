@@ -1054,7 +1054,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
                     x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
                 null, null,
-                    (LongPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.INT).addressPointer(),
+                    (LongPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.LONG).addressPointer(),
                     dimension.length,
                     (LongPointer) tadBuffers.getFirst().addressPointer(),
                     new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
@@ -1074,7 +1074,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new Utf8Buffer(strings);
-        val list = new ArrayList<>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 

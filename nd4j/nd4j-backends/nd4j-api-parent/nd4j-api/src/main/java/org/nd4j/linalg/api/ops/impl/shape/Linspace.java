@@ -44,18 +44,22 @@ public class Linspace extends DynamicCustomOp {
     private double stop;
     private long elements;
 
+
     public Linspace(SameDiff sameDiff, DataType dataType, double start, double stop, long number) {
         this(sameDiff, sameDiff.constant(start), sameDiff.constant(stop), sameDiff.constant(number), dataType);
     }
 
-    public Linspace(SameDiff sameDiff, SDVariable from, SDVariable to, SDVariable length, DataType dataType){
+    public Linspace(SameDiff sameDiff, SDVariable from, SDVariable to, SDVariable length, DataType dataType) {
         super(sameDiff, new SDVariable[]{from, to, length});
         this.dataType = dataType;
         addDArgument(dataType);
+        addBArgument(true);
     }
 
     public Linspace(DataType dataType, double start, double stop, long number) {
         this(start, stop, number, dataType);
+        addBArgument(true);
+
     }
 
     public Linspace(DataType dataType, INDArray start, INDArray stop, INDArray number) {
@@ -66,6 +70,8 @@ public class Linspace extends DynamicCustomOp {
         super(new INDArray[]{start, stop, number}, null);
         this.dataType = dataType;
         addDArgument(dataType);
+        addBArgument(true);
+
     }
 
     public Linspace(double start, double stop, long number, @NonNull DataType dataType) {
@@ -79,6 +85,23 @@ public class Linspace extends DynamicCustomOp {
 
         addTArgument(this.start, this.stop);
         addIArgument(elements);
+        addBArgument(true);
+
+    }
+
+    public Linspace(double start, double stop, long number, @NonNull DataType dataType,boolean endSpecified) {
+        super(new INDArray[]{}, null);
+        this.dataType = dataType;
+        addDArgument(dataType);
+
+        this.start = start;
+        this.stop = stop;
+        this.elements = number;
+
+        addTArgument(this.start, this.stop);
+        addIArgument(elements);
+        addBArgument(endSpecified);
+
     }
 
     public Linspace(){ }

@@ -68,52 +68,7 @@ public abstract class BaseOpContext implements OpContext {
 
     }
 
-    @Override
-    public boolean hasCachedDArgs() {
-        throw new UnsupportedOperationException("Unable to obtain cached d arguments pointer");
 
-    }
-
-    @Override
-    public boolean hasCachedTArgs() {
-        throw new UnsupportedOperationException("Unable to obtain cached double arguments pointer");
-
-    }
-
-    @Override
-    public boolean hasCachedBArgs() {
-        throw new UnsupportedOperationException("Unable to obtain cached boolean arguments pointer");
-
-    }
-
-    @Override
-    public boolean hasCachedIArgs() {
-        throw new UnsupportedOperationException("Unable to obtain cached int arguments pointer");
-
-    }
-
-    @Override
-    public void setDArgAt(int index, DataType value) {
-        throw new UnsupportedOperationException("Unable to set data type at an index");
-    }
-
-    @Override
-    public void setBArgAt(int index, boolean value) {
-        throw new UnsupportedOperationException("Unable to set boolean at an index");
-
-    }
-
-    @Override
-    public void setTArgAt(int index, double value) {
-        throw new UnsupportedOperationException("Unable to set double at an index");
-
-    }
-
-    @Override
-    public void setIArgAt(int index, long value) {
-        throw new UnsupportedOperationException("Unable to set int at an index");
-
-    }
 
     @Override
     public void setIArguments(long... arguments) {

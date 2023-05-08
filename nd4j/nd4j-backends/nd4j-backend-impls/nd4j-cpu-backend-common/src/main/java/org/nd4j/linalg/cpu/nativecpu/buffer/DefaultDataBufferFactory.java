@@ -991,7 +991,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public Class<? extends DataBuffer> halfBufferClass() {
-        return null;    //Not yet supported
+        return HalfBuffer.class;    //Not yet supported
     }
 
     @Override

@@ -245,6 +245,12 @@ public class ND4JSystemProperties {
      */
     public final static String UDF_NAME_SPACES = "org.nd4j.linalg.api.ops.udf.packages";
 
+    /**
+     * Sets the number of threads to be used with the deallocator service.
+     */
+
+    public final static String DEALLOCATOR_SERVICE_GC_THREADS = "org.nd4j.deallocator.threads";
+
 
     private ND4JSystemProperties() {
     }

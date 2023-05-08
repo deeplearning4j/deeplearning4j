@@ -161,7 +161,7 @@ public class Convolution {
         long outW = outputSize(img.size(3), kw, sx, pw, dw, isSameMode);
 
         //[miniBatch,depth,kH,kW,outH,outW]
-        INDArray out = Nd4j.create(new long[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
+        INDArray out = Nd4j.create(img.dataType(),new long[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
 
         return im2col(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, out);
     }

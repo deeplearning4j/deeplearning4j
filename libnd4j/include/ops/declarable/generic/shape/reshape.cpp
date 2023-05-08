@@ -45,9 +45,10 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
                x->lengthOf(), z->lengthOf());
 
   if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
-
-  z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
-
+  //only perform assign when we aren't using a view
+  if(x->dataBuffer() != z->dataBuffer()) {
+    z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
+  }
   return sd::Status::OK;
 }
 

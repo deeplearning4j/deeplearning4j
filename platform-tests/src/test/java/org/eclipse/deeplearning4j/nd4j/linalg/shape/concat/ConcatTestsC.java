@@ -183,7 +183,7 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3d(Nd4jBackend backend) {
         INDArray first = Nd4j.linspace(1, 24, 24, Nd4j.dataType()).reshape('c', 2, 3, 4);
-        INDArray second = Nd4j.linspace(24, 36, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
+        INDArray second = Nd4j.linspace(24, 36,12, Nd4j.dataType()).reshape('c', 1, 3, 4);
         INDArray third = Nd4j.linspace(36, 48, 12, Nd4j.dataType()).reshape('c', 1, 3, 4);
 
         //ConcatV2, dim 0
@@ -198,10 +198,6 @@ public class ConcatTestsC extends BaseNd4jTestWithBackends {
 
         //ConcatV2, dim 1
         second = Nd4j.linspace(24, 32, 8, Nd4j.dataType()).reshape('c', 2, 1, 4);
-        for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
-            INDArray secondTad = second.tensorAlongDimension(i, 1);
-//            System.out.println(second.tensorAlongDimension(i, 1));
-        }
 
         third = Nd4j.linspace(32, 48, 16).reshape('c', 2, 2, 4);
         exp = Nd4j.create(2, 3 + 1 + 2, 4);

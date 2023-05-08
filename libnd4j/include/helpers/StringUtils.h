@@ -80,8 +80,8 @@ class SD_LIB_EXPORT StringUtils {
    * @param needleLength
    * @return
    */
-  static uint64_t countSubarrays(const void* haystack, uint64_t haystackLength, const void* needle,
-                                 uint64_t needleLength);
+  static LongType countSubarrays(const void* haystack, LongType haystackLength, const void* needle,
+                                 LongType needleLength);
 
   /**
    * This method returns number of bytes used for string NDArrays content
@@ -90,7 +90,7 @@ class SD_LIB_EXPORT StringUtils {
    * @param array
    * @return
    */
-  static uint64_t byteLength(const NDArray& array);
+  static sd::LongType byteLength(const NDArray& array);
 
   /**
    * This method splits a string into substring by delimiter

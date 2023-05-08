@@ -33,7 +33,6 @@ import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
@@ -1239,6 +1238,7 @@ public class Nd4j {
     private static Indexer getIndexerByType(Pointer pointer, DataType dataType) {
         switch (dataType) {
             case UINT64:
+                return ULongIndexer.create((LongPointer) pointer);
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
             case UINT32:
@@ -1678,7 +1678,8 @@ public class Nd4j {
      * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-        DataBuffer buffer = getDataBuffer(data.length, dataType);
+       //TODO: byte thing
+        DataBuffer buffer = dataType() == DataType.INT8 ? getDataBuffer(data.length * DataType.INT8.width(),dataType) : getDataBuffer(data.length * DataType.INT8.width(),dataType);
         buffer.setData(data);
         return buffer;
     }
@@ -1958,13 +1959,10 @@ public class Nd4j {
              * This allows us to retain the indices
              * and how they were rearranged.
              */
-            Arrays.sort(index, new Comparator<Double>() {
-                @Override
-                public int compare(Double o1, Double o2) {
-                    int o = (int) o1.doubleValue();
-                    int oo2 = (int) o2.doubleValue();
-                    return Double.compare(data[o], data[oo2]);
-                }
+            Arrays.sort(index, (o1, o2) -> {
+                int o = (int) o1.doubleValue();
+                int oo2 = (int) o2.doubleValue();
+                return Double.compare(data[o], data[oo2]);
             });
 
             if (ascending)
@@ -1994,7 +1992,7 @@ public class Nd4j {
     /**
      * Sort all elements of an array.
      *
-     * sorts all elements of an array. For multi dimansional arrays the result depends on the array ordering]
+     * sorts all elements of an array. For multidimensional arrays the result depends on the array ordering]
      *
      * Nd4j.factory().setOrder('f');
      * INDArray x = Nd4j.arange(4).reshape(2,2);
@@ -2052,14 +2050,11 @@ public class Nd4j {
         ArrayList<Integer> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++)
             list.add(i);
-        Collections.sort(list, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer o1, Integer o2) {
-                if (ascending)
-                    return Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
-                else
-                    return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
-            }
+        Collections.sort(list, (o1, o2) -> {
+            if (ascending)
+                return Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
+            else
+                return -Double.compare(in.getDouble(o1, colIdx), in.getDouble(o2, colIdx));
         });
         for (int i = 0; i < nRows; i++) {
             out.putRow(i, in.getRow(list.get(i)));
@@ -2128,9 +2123,9 @@ public class Nd4j {
     /**
      * Generate a linearly spaced vector
      *
-     * @param lower upper bound
-     * @param num   number of items in returned vector
-     * @param step  the step (incompatible with <b>upper</b>)
+     * @param lower  lower bound
+     * @param num upper bound
+     * @param step    number of items in returned vector
      * @return the linearly spaced vector
      */
     public static INDArray linspace(@NonNull DataType dtype, long lower, long num, long step) {
@@ -2138,16 +2133,9 @@ public class Nd4j {
         if(num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
+        
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double) lower, (double)step, num, dtype, false))[0];
 
-        if (dtype.isIntType()) {
-            long upper = lower + num * step;
-            return linspaceWithCustomOpByRange( lower, upper, num, step, dtype);
-        } else if (dtype.isFPType()) {
-            return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double)step, (double) lower, (long) num, dtype))[0];
-        }
-        else {
-            throw new IllegalStateException("Illegal data type for linspace: " + dtype.toString());
-        }
     }
 
     /**
@@ -2171,7 +2159,7 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(long lower, long upper, long num, @NonNull DataType dtype) {
-        return linspace(dtype, (double) lower,(double) upper,  num);
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, upper,num, dtype,true))[0];
     }
 
     /**
@@ -2185,7 +2173,8 @@ public class Nd4j {
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, step,num, dataType))[0];
+
+        return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, step,num, dataType,false))[0];
     }
 
     /**
@@ -2203,35 +2192,8 @@ public class Nd4j {
         return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(lower, upper, num, dataType))[0];
     }
 
-    private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
-        if (num == 1)
-            return Nd4j.scalar(dataType, lower);
 
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
-        val op = DynamicCustomOp.builder("lin_space")
-                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(num))
-                .addOutputs(result)
-                .build();
-
-        Nd4j.getExecutioner().execAndReturn(op);
-        return result;
-    }
-
-    private static INDArray linspaceWithCustomOpByRange(long lower, long upper, long num, long step, DataType dataType) {
-        if (num == 1)
-            return Nd4j.scalar(dataType, lower);
-
-        INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
-
-        val op = DynamicCustomOp.builder("range")
-                .addInputs(Nd4j.scalar(lower), Nd4j.scalar(upper), Nd4j.scalar(step))
-                .addOutputs(result)
-                .build();
-
-        Nd4j.getExecutioner().execAndReturn(op);
-        return result;
-    }
 
     /**
      * Meshgrid op. Returns a pair of arrays where values are broadcast on a 2d grid.<br>
@@ -2784,27 +2746,30 @@ public class Nd4j {
      * @return the ndarray
      */
     public static INDArray read(DataInputStream dis) {
-        val headerShape = BaseDataBuffer.readHeader(dis);
+        try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            val headerShape = BaseDataBuffer.readHeader(dis);
 
-        //noinspection UnnecessaryUnboxing
-        DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
-        shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
-        DataType type;
-        DataBuffer data = null;
+            //noinspection UnnecessaryUnboxing
+            DataBuffer shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
+            shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
+            DataType type;
+            DataBuffer data = null;
 
-        val headerData = BaseDataBuffer.readHeader(dis);
-        try {
-            // current version contains dtype in extras
-            data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
-            ArrayOptionsHelper.dataType(shapeInformation.asLong());
-        } catch (ND4JUnknownDataTypeException e) {
-            // manually setting data type
-            type = headerData.getRight();
-            long extras = ArrayOptionsHelper.setOptionBit(0L, type);
-            shapeInformation.put(shapeInformation.length() - 3, extras);
+            val headerData = BaseDataBuffer.readHeader(dis);
+            try {
+                // current version contains dtype in extras
+                data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
+                ArrayOptionsHelper.dataType(shapeInformation.asLong());
+            } catch (ND4JUnknownDataTypeException e) {
+                // manually setting data type
+                type = headerData.getRight();
+                long extras = ArrayOptionsHelper.setOptionBit(0L, type);
+                shapeInformation.put(shapeInformation.length() - 3, extras);
+            }
+
+            return createArrayFromShapeBuffer(data, shapeInformation);
         }
 
-        return createArrayFromShapeBuffer(data, shapeInformation);
     }
 
     /**
@@ -4466,6 +4431,8 @@ public class Nd4j {
      * @param shape to check
      */
     public static void checkShapeValues(long... shape) {
+        if(shape == null)
+            return;
         for (long e: shape) {
             if (e < 0)
                 throw new ND4JIllegalStateException("Invalid shape: Requested INDArray shape " + Arrays.toString(shape)
@@ -6794,7 +6761,7 @@ public class Nd4j {
      *
      * @param op the operation to execute
      */
-    public static INDArray[] exec(CustomOp op){
+    public static INDArray[] exec(CustomOp op) {
         return getExecutioner().exec(op);
     }
 
@@ -6803,7 +6770,7 @@ public class Nd4j {
      *
      * @param op the operation to execute
      */
-    public static INDArray[] exec(CustomOp op, OpContext context){
+    public static INDArray[] exec(CustomOp op, OpContext context) {
         return getExecutioner().exec(op, context);
     }
 
