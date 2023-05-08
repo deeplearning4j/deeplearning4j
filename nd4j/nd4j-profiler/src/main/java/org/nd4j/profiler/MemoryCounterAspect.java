@@ -24,6 +24,9 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.bytedeco.javacpp.Pointer;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * Aspect for tracking memory allocation and deallocation
  * as well as current memory usage at a given
@@ -34,6 +37,7 @@ import org.bytedeco.javacpp.Pointer;
 @Aspect
 public class MemoryCounterAspect {
 
+
     /**
      * Track memory allocation for pointers.
      * @param joinPoint when a  new pointer is created
@@ -43,13 +47,16 @@ public class MemoryCounterAspect {
      */
     @Around("execution(org.bytedeco..*.new(..))")
     public Object allocateMemory(ProceedingJoinPoint joinPoint) throws Throwable {
-        if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
-            String className = joinPoint.getSignature().getDeclaringTypeName();
-            long currMemory = Pointer.physicalBytes();
-            Object ret = joinPoint.proceed();
-            long after = Pointer.physicalBytes();
-            MemoryCounter.increment(className, after - currMemory);
-            return ret;
+        try {
+            if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
+                String className = joinPoint.getSignature().getDeclaringTypeName();
+                long currMemory = Pointer.physicalBytes();
+                Object ret = joinPoint.proceed();
+                long after = Pointer.physicalBytes();
+                MemoryCounter.increment(className, after - currMemory);
+                return ret;
+            }
+        }catch (Exception e) {
         }
 
         return joinPoint.proceed();
@@ -64,12 +71,40 @@ public class MemoryCounterAspect {
      */
     @Around("execution(* org.bytedeco..*.*deallocate*(..))")
     public Object deallocate(ProceedingJoinPoint joinPoint) throws Throwable {
+        try {
+            if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
+                String className = joinPoint.getSignature().getDeclaringTypeName();
+                long currMemory = Pointer.physicalBytes();
+                Object ret = joinPoint.proceed();
+                long after = Pointer.physicalBytes();
+                MemoryCounter.decrement(className, currMemory - after);
+                return ret;
+            }
+        }catch (Exception e) {
+
+        }
+
+        return joinPoint.proceed();
+    }
+
+
+    /**
+     * Track memory  deallocation
+     * for pointers.
+     * @param joinPoint when a pointer is deallocated
+     * @return
+     * @throws Throwable
+     */
+    @Around("execution(* org.nd4j..*.*freeHost*(..))")
+    public Object freeHost(ProceedingJoinPoint joinPoint) throws Throwable {
         if (joinPoint != null && joinPoint.getSignature() != null && joinPoint.getTarget() instanceof Pointer) {
             String className = joinPoint.getSignature().getDeclaringTypeName();
+            Pointer freeHost = (Pointer) joinPoint.getArgs()[0];
             long currMemory = Pointer.physicalBytes();
             Object ret = joinPoint.proceed();
             long after = Pointer.physicalBytes();
             MemoryCounter.decrement(className, currMemory - after);
+            System.out.println("Deallocating : " + joinPoint.getTarget().getClass().getName());
             return ret;
         }
 

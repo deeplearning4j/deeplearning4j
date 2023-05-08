@@ -29,7 +29,7 @@
 #include <bitset>
 
 namespace sd {
-static SD_INLINE bool match(const uint8_t* haystack, const uint8_t* needle, uint64_t length) {
+static SD_INLINE bool match(const LongType* haystack, const LongType* needle, LongType length) {
   for (int e = 0; e < length; e++)
     if (haystack[e] != needle[e]) return false;
 
@@ -46,21 +46,21 @@ template std::string StringUtils::bitsToString(uint32_t value);
 template std::string StringUtils::bitsToString(sd::LongType value);
 template std::string StringUtils::bitsToString(uint64_t value);
 
-uint64_t StringUtils::countSubarrays(const void* vhaystack, uint64_t haystackLength, const void* vneedle,
-                                     uint64_t needleLength) {
-  auto haystack = reinterpret_cast<const uint8_t*>(vhaystack);
-  auto needle = reinterpret_cast<const uint8_t*>(vneedle);
+LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLength, const void* needle,
+                                     LongType needleLength) {
+  auto haystack2 = reinterpret_cast<const LongType*>(haystack);
+  auto needle2 = reinterpret_cast<const LongType*>(needle);
 
-  uint64_t number = 0;
+  LongType number = 0;
 
-  for (uint64_t e = 0; e < haystackLength - needleLength; e++) {
-    if (match(&haystack[e], needle, needleLength)) number++;
+  for (LongType e = 0; e < haystackLength - needleLength; e++) {
+    if (match(&haystack2[e], needle2, needleLength)) number++;
   }
 
   return number;
 }
 
-uint64_t StringUtils::byteLength(const NDArray& array) {
+sd::LongType StringUtils::byteLength(const NDArray& array) {
   if (!array.isS())
     throw sd::datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
 
