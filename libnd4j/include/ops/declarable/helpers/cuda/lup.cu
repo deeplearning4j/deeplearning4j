@@ -552,12 +552,12 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   //        permutationVectors->tickWriteDevice();
   auto tads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
   auto permutaionTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-1});
-  auto batchNum = tads.numberOfTads();
+  auto batchNum = tads->numberOfTads();
   luBatchedKernel<T, I><<<batchNum, 256, 1024, *stream>>>(
       reinterpret_cast<T *>(output->platformBuffer()), output->specialShapeInfo(),
       reinterpret_cast<I *>(permutationVectors->platformBuffer()), permutationVectors->specialShapeInfo(),
-      tads.specialShapeInfo(), tads.specialOffsets(), permutaionTads.specialShapeInfo(),
-      permutaionTads.specialOffsets(), batchNum);
+      tads->specialShapeInfo(), tads->specialOffsets(), permutaionTads->specialShapeInfo(),
+      permutaionTads->specialOffsets(), batchNum);
 }
 
 void lu(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutations) {
@@ -717,7 +717,7 @@ static sd::Status inverse_(sd::LaunchContext *context, NDArray *input, NDArray *
                                                                      {output->rankOf() - 2, output->rankOf() - 1});
   auto stream = context->getCudaStream();
 
-  for (auto i = 0LL; i < packX.numberOfTads(); i++) {
+  for (auto i = 0LL; i < packX->numberOfTads(); i++) {
     fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(),
                                                input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
     matrix.tickWriteDevice();
@@ -797,7 +797,7 @@ sd::Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, b
   F **dArrayBatch = nullptr;
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(
       tempOutput.shapeInfo(), {tempOutput.rankOf() - 2, tempOutput.rankOf() - 1});
-  const sd::LongType batchSize = packX.numberOfTads();
+  const sd::LongType batchSize = packX->numberOfTads();
   int *dInfoArray = nullptr;
   auto err = cudaMalloc((void **)&dArrayBatch, sizeof(F *) * batchSize);
   if (err) {
@@ -809,7 +809,7 @@ sd::Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, b
   }
   auto stream = context->getCudaStream();
   fillBatchKernel<F><<<1, batchSize, 128, *stream>>>(dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()),
-                                                     packX.specialOffsets(), batchSize);
+                                                     packX->specialOffsets(), batchSize);
 
   status = cusolverDnSetStream(handle, *stream);
   if (CUSOLVER_STATUS_SUCCESS != status) {
@@ -825,7 +825,7 @@ sd::Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, b
     throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);
   }
   adjustResultsKernel<F><<<batchSize, n2, 128, *stream>>>(reinterpret_cast<F *>(tempOutput.specialBuffer()),
-                                                          packX.specialShapeInfo(), packX.specialOffsets(), batchSize,
+                                                          packX->specialShapeInfo(), packX->specialOffsets(), batchSize,
                                                           n);
 
   err = cudaFree(dArrayBatch);
@@ -914,8 +914,8 @@ sd::Status logdetFunctor_(sd::LaunchContext *context, NDArray *input, NDArray *o
   output->nullify();
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(
       tempOutput.shapeInfo(), {tempOutput.rankOf() - 2, tempOutput.rankOf() - 1});
-  logDetKernel<T><<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(), packX.numberOfTads(),
-                                              packX.specialShapeInfo(), packX.specialOffsets(), outputBuf,
+  logDetKernel<T><<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(), packX->numberOfTads(),
+                                              packX->specialShapeInfo(), packX->specialOffsets(), outputBuf,
                                               output->specialShapeInfo());
   output->tickWriteDevice();
   NDArray::registerSpecialUse({output}, {input});

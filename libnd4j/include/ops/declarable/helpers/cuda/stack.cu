@@ -87,14 +87,14 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
   } else {
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
-    auto zTadShapeInfo = zTadPack.primaryShapeInfo();
+    auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
-      void* zBuff = output.specialBufferWithOffset(zTadPack.primaryOffsets()[i]);
+      void* zBuff = output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
                                             inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(), nullptr,
-                                            zTadShapeInfo, zBuff, zTadPack.specialShapeInfo(), nullptr, nullptr,
+                                            zTadShapeInfo, zBuff, zTadPack->specialShapeInfo(), nullptr, nullptr,
                                             nullptr, false /*allowParallelism*/);
     }
   }
@@ -169,13 +169,13 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
   } else {
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
-    auto xTadShapeInfo = xTadPack.primaryShapeInfo();
+    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
     for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
-      auto xBuff = input.specialBufferWithOffset(xTadPack.primaryOffsets()[i]);
+      auto xBuff = input.specialBufferWithOffset(xTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign, nullptr, xTadShapeInfo, xBuff,
-                                            xTadPack.specialShapeInfo(), nullptr, outArrs[i]->shapeInfo(),
+                                            xTadPack->specialShapeInfo(), nullptr, outArrs[i]->shapeInfo(),
                                             outArrs[i]->specialBuffer(), outArrs[i]->specialShapeInfo(), nullptr,
                                             nullptr, nullptr, false /*allowParallelism*/);
     }

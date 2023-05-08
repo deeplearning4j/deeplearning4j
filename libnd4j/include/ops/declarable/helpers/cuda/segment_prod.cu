@@ -145,10 +145,10 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     segmentProdTadKernel<T, I><<<128, 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
@@ -188,10 +188,10 @@ static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* inp
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     segmentProdTadKernel<T, I>
         <<<128, 256, 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
@@ -313,14 +313,14 @@ sd::Status segmentProdFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradInTads = packGradIn.specialShapeInfo();
-    auto gradInTadOffsets = packGradIn.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradInTads = packGradIn->specialShapeInfo();
+    auto gradInTadOffsets = packGradIn->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentProdBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
@@ -366,14 +366,14 @@ static sd::Status unsortedSegmentProdFunctorBP_(sd::LaunchContext* context, NDAr
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradInTads = packGradIn.specialShapeInfo();
-    auto gradInTadOffsets = packGradIn.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradInTads = packGradIn->specialShapeInfo();
+    auto gradInTadOffsets = packGradIn->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentProdBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),

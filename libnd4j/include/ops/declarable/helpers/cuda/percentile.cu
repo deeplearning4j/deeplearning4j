@@ -96,7 +96,7 @@ static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArra
   auto tempArray = input.dup();
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray.shapeInfo(), axis);
 
-  auto tadLength = shape::length(packX.primaryShapeInfo());
+  auto tadLength = shape::length(packX->primaryShapeInfo());
 
   const float fraction = 1.f - q / 100.;
   sd::LongType position = 0;
@@ -115,7 +115,7 @@ static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArra
   position = tadLength - position - 1;
 
   percentileKernel<T><<<256, 512, 1024, *context->getCudaStream()>>>(
-      tempArray.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), packX.numberOfTads(), tadLength,
+      tempArray.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
       output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 
   sd::DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");

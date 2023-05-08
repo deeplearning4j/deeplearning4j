@@ -266,21 +266,21 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<sd::Lo
 
       auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
 
-      int numTads = packZ.numberOfTads();
+      int numTads = packZ->numberOfTads();
       int sizeAt = input->sizeAt(axe);
-      auto tadLength = shape::length(packZ.primaryShapeInfo());
+      auto tadLength = shape::length(packZ->primaryShapeInfo());
 
       int theShift = shifts[i];
 
       if (theShift) {
         for (int dim = 0; dim < numTads / sizeAt; ++dim) {
           rollKernelFullAnyDimensionStage1<T><<<1, 256, 1024, *(output->getContext()->getCudaStream())>>>(
-              output->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), output->specialBuffer(),
-              packZ.platformShapeInfo(), packZ.platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
+              output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(), output->specialBuffer(),
+              packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
 
           rollKernelFullAnyDimensionStage2<T><<<1, 256, 1024, *(output->getContext()->getCudaStream())>>>(
-              output->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), output->specialBuffer(),
-              packZ.platformShapeInfo(), packZ.platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
+              output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(), output->specialBuffer(),
+              packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
         }
       }
     }

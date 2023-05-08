@@ -82,15 +82,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       auto colEnd = sd::LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
       auto colEndBound = sd::math::sd_min(sd::LongType(width - 1), colEnd);
       if (rowStart > rowEnd || colStart > colEnd) {
-        //                    printf("helpers::drawBoundingBoxesFunctor: Bounding box (%lld, %lld, %lld, %lld) is
-        //                    inverted "
-        //                                "and will not be drawn\n", rowStart, colStart, rowEnd, colEnd);
         continue;
       }
       if (rowStart >= height || rowEnd < 0 || colStart >= width || colEnd < 0) {
-        //                    printf("helpers::drawBoundingBoxesFunctor: Bounding box (%lld, %lld, %lld, %lld) is
-        //                    completely "
-        //                                "outside the image and not be drawn\n", rowStart, colStart, rowEnd, colEnd);
         continue;
       }
 

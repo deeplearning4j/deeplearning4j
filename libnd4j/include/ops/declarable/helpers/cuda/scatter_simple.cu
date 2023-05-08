@@ -57,12 +57,12 @@ void scatterSimple_(sd::LaunchContext* context, const int opId, NDArray& input, 
   auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions);
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
 
-  auto xLength = shape::length(packX.primaryShapeInfo());
+  auto xLength = shape::length(packX->primaryShapeInfo());
   auto iLength = indices.lengthOf();
   auto uLength = updates.lengthOf();
 
   scatterSimpleKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
-      input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), xLength, packX.numberOfTads(),
+      input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, packX->numberOfTads(),
       indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(),
       uLength);
 }

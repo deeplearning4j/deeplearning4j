@@ -181,10 +181,10 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     segmentMeanTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
@@ -228,10 +228,10 @@ static void unsortedSegmentMeanFunctor_(sd::LaunchContext* context, NDArray* inp
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX.specialShapeInfo();
-    sd::LongType const* inputTadOffsets = packX.specialOffsets();
-    sd::LongType const* outputTads = packZ.specialShapeInfo();
-    sd::LongType const* outputTadOffsets = packZ.specialOffsets();
+    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadOffsets = packX->specialOffsets();
+    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     segmentMeanTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
@@ -354,12 +354,12 @@ sd::Status segmentMeanFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX.specialShapeInfo();
-    sd::LongType const* inputTadOffsets = packX.specialOffsets();
-    sd::LongType const* outputTads = packZ.specialShapeInfo();
-    sd::LongType const* outputTadOffsets = packZ.specialOffsets();
-    sd::LongType const* gradOutTads = packGradOut.specialShapeInfo();
-    sd::LongType const* gradOutTadOffsets = packGradOut.specialOffsets();
+    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadOffsets = packX->specialOffsets();
+    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadOffsets = packZ->specialOffsets();
+    sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
+    sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMeanBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
@@ -411,12 +411,12 @@ static sd::Status unsortedSegmentMeanFunctorBP_(sd::LaunchContext* context, NDAr
     //            auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(),
     //            dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX.specialShapeInfo();
-    sd::LongType const* inputTadOffsets = packX.specialOffsets();
-    sd::LongType const* outputTads = packZ.specialShapeInfo();
-    sd::LongType const* outputTadOffsets = packZ.specialOffsets();
-    sd::LongType const* gradOutTads = packGradOut.specialShapeInfo();
-    sd::LongType const* gradOutTadOffsets = packGradOut.specialOffsets();
+    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadOffsets = packX->specialOffsets();
+    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadOffsets = packZ->specialOffsets();
+    sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
+    sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMeanBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
