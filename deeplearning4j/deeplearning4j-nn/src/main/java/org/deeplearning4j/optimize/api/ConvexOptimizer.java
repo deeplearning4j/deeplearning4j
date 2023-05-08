@@ -26,7 +26,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
@@ -59,7 +58,6 @@ public interface ConvexOptimizer extends Serializable {
      *
      * @param accumulator
      */
-    void setGradientsAccumulator(GradientsAccumulator accumulator);
 
     /**
      * This method returns StepFunction defined within this Optimizer instance
@@ -67,13 +65,6 @@ public interface ConvexOptimizer extends Serializable {
      */
     StepFunction getStepFunction();
 
-    /**
-     * This method returns GradientsAccumulator instance used in this optimizer.
-     *
-     * This method can return null.
-     * @return
-     */
-    GradientsAccumulator getGradientsAccumulator();
 
     NeuralNetConfiguration getConf();
 
