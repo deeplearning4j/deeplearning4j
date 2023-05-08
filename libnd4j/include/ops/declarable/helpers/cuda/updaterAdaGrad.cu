@@ -84,7 +84,10 @@ void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
                                 const sd::LongType* stShapeInfo, const double dLr, const double dEpsilon) {
   const T lr = static_cast<T>(dLr);
   const T epsilon = static_cast<T>(dEpsilon);
-
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   adaGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
                                                                           zShapeInfo, vst, stShapeInfo, lr, epsilon);
 }

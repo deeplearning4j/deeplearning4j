@@ -332,22 +332,17 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
     const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
-    const int blocksPerGrid = packZ.numberOfTads();
+    const int blocksPerGrid = packZ->numberOfTads();
     const int sharedMem = 1024;
 
     NDArray::prepareSpecialUse({&output}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher,
                           (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
-                           packX.specialShapeInfo(), packX.specialOffsets(), output.specialBuffer(),
-                           packZ.specialShapeInfo(), packZ.specialOffsets()),
+                           packX->specialShapeInfo(), packX->specialOffsets(), output.specialBuffer(),
+                           packZ->specialShapeInfo(), packZ->specialOffsets()),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
-    // auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
-    // (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-    // auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
-    // output /= sumAlongDim;
-    // input.tickReadDevice();
   }
 
   manager.synchronize();

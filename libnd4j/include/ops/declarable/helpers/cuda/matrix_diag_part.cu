@@ -84,8 +84,8 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
 
   dim3 launchDims(256, 512, 8192);
   matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      input->specialBuffer(), output->specialBuffer(), numTads, lastDimension, packX.specialShapeInfo(),
-      packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
+      input->specialBuffer(), output->specialBuffer(), numTads, lastDimension, packX->specialShapeInfo(),
+      packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());
 
   return sd::Status::OK;
 }

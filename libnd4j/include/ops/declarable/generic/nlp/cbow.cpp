@@ -231,7 +231,7 @@ DECLARE_TYPES(cbow) {
       ->setAllowedInputTypes(1, sd::DataType::INT32)
       ->setAllowedInputTypes(2, sd::DataType::INT32)
       ->setAllowedInputTypes(3, sd::DataType::INT32)
-      ->setAllowedInputTypes(4, sd::DataType::INT8)
+      ->setAllowedInputTypes(4, {ALL_INTS})
       ->setAllowedInputTypes(5, {ALL_FLOATS})
       ->setAllowedInputTypes(6, {ALL_FLOATS})
       ->setAllowedInputTypes(7, {ALL_FLOATS})

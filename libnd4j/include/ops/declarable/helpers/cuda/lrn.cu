@@ -121,16 +121,16 @@ static void lrnBP_(sd::graph::Context& block, const NDArray& input, const NDArra
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {rank - 1});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(gradI.shapeInfo(), {rank - 1});
 
-  const auto tadLength = shape::length(packX.primaryShapeInfo());
-  const int numBlocks = sd::math::sd_min<sd::LongType>(1024, packX.numberOfTads());
+  const auto tadLength = shape::length(packX->primaryShapeInfo());
+  const int numBlocks = sd::math::sd_min<sd::LongType>(1024, packX->numberOfTads());
   const int numThreads = tadLength;
 
   if (tadLength > 1024 || tadLength < 1) throw std::runtime_error("LRN: tadLength > 1024 isn't implemented yet");
 
   lrnBPKernel<X, Z><<<numBlocks, numThreads, numThreads * sizeof(X) + numThreads * sizeof(Z) + 1024,
                       *block.launchContext()->getCudaStream()>>>(
-      input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradI.specialBuffer(),
-      packZ.platformShapeInfo(), packZ.platformOffsets(), packX.numberOfTads(), tadLength, depth, bias, alpha, beta);
+      input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), gradI.specialBuffer(),
+      packZ->platformShapeInfo(), packZ->platformOffsets(), packX->numberOfTads(), tadLength, depth, bias, alpha, beta);
 
   gradI.tickWriteDevice();
   gradI *= gradO;
@@ -154,15 +154,15 @@ static void lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outp
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {rank - 1});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {rank - 1});
 
-  const auto tadLength = shape::length(packX.primaryShapeInfo());
-  const int numBlocks = sd::math::sd_min<sd::LongType>(1024, packX.numberOfTads());
+  const auto tadLength = shape::length(packX->primaryShapeInfo());
+  const int numBlocks = sd::math::sd_min<sd::LongType>(1024, packX->numberOfTads());
   const int numThreads = tadLength;
 
   if (tadLength > 1024 || tadLength < 1) throw std::runtime_error("LRN: tadLength > 1024 isn't implemented yet");
 
   lrnKernel<T><<<numBlocks, numThreads, numThreads * sizeof(T), *block.launchContext()->getCudaStream()>>>(
-      input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(),
-      packZ.platformShapeInfo(), packZ.platformOffsets(), packX.numberOfTads(), tadLength, depth, bias, alpha, beta);
+      input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
+      packZ->platformShapeInfo(), packZ->platformOffsets(), packX->numberOfTads(), tadLength, depth, bias, alpha, beta);
 }
 
 sd::Status lrnFunctor(sd::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha,

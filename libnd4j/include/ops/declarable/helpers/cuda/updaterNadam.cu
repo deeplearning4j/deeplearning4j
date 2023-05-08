@@ -109,6 +109,10 @@ void nadamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
   const T beta1 = static_cast<T>(dBeta1);
   const T beta2 = static_cast<T>(dBeta2);
   const T epsilon = static_cast<T>(dEpsilon);
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   const T iteration = static_cast<T>(nIteration);
 
   nadamUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(

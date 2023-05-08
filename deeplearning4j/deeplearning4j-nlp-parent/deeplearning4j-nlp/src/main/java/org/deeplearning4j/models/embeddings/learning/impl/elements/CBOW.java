@@ -253,10 +253,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                 if(iterationArraysQueue == null) {
                     iterationArraysQueue = new ConcurrentLinkedQueue<>();
                     iterationArrays.put(key,iterationArraysQueue);
-                    iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                    iterationArrays1 = new IterationArrays(items.size(),maxCols,maxWinWordsCols);
                 } else {
                     if(iterationArraysQueue.isEmpty()) {
-                        iterationArrays1 = new IterationArrays(items.size(),maxCols);
+                        iterationArrays1 = new IterationArrays(items.size(),maxCols,maxWinWordsCols);
 
                     }else {
                         try {

@@ -37,7 +37,7 @@ namespace sd {
 class SD_LIB_EXPORT ConstantTadHelper {
  private:
   std::mutex _mutex;
-  std::vector<SD_MAP_IMPL<TadDescriptor, TadPack>> _cache;
+  std::vector<SD_MAP_IMPL<TadDescriptor *, TadPack *>> _cache;
 
   ConstantTadHelper();
 
@@ -54,14 +54,14 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @param keepUnitiesInShape
    * @return
    */
-  TadPack tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
+  TadPack *tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
+  TadPack *tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
                            const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(const sd::LongType *originalShape, LongType dimension, const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
+  TadPack *tadForDimensions(const sd::LongType *originalShape, LongType dimension, const bool keepUnitiesInShape = false);
+  TadPack *tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
-  TadPack tadForDimensions(TadDescriptor &descriptor);
+  TadPack *tadForDimensions(TadDescriptor *descriptor);
 
   /**
    * This method returns number of cached TAD shapes/offsets on specific device

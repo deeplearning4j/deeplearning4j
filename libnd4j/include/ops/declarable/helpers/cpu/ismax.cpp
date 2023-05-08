@@ -118,19 +118,19 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<Long
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(
         output->shapeInfo(), const_cast<sd::LongType *>(dimensions.data()), dimensionsLength);
 
-    auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
-    auto tadOffsets = tadPack.primaryOffsets();
-    auto zOfsets = tadPackZ.platformOffsets();
+    auto tadShapeShapeInfo = tadPack->primaryShapeInfo();
+    auto tadOffsets = tadPack->primaryOffsets();
+    auto zOfsets = tadPackZ->platformOffsets();
 
     int tadLength = shape::length(tadShapeShapeInfo);
-    int tads = tadPack.numberOfTads();
+    int tads = tadPack->numberOfTads();
 
     int tadsPerThread = tads / TAD_THRESHOLD;
     int num_threads = sd::math::sd_max<int>(1, tadsPerThread);
     num_threads = sd::math::sd_min<int>(num_threads, omp_get_max_threads());
 
     auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
-    auto zEWS = shape::elementWiseStride(tadPackZ.primaryShapeInfo());
+    auto zEWS = shape::elementWiseStride(tadPackZ->primaryShapeInfo());
 
     int span = (tads / num_threads) + 8;
 
@@ -176,7 +176,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<Long
 
           PRAGMA_OMP_SIMD
           for (sd::LongType i = 0; i < tadLength; i++) {
-            auto zOffset = shape::getIndexOffset(i, tadPackZ.primaryShapeInfo());
+            auto zOffset = shape::getIndexOffset(i, tadPackZ->primaryShapeInfo());
             rZ[zOffset] = maxIdx == i ? (Z)1 : (Z)0;
           }
         }

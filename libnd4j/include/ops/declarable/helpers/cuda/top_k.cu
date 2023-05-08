@@ -85,7 +85,7 @@ sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* predictions,
   const auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(predictions->shapeInfo(), {1});
 
   const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
-  const int blocksPerGrid = static_cast<int>(packX.numberOfTads());
+  const int blocksPerGrid = static_cast<int>(packX->numberOfTads());
   const int sharedMem = 1024;
 
   const auto xType = predictions->dataType();
@@ -96,7 +96,7 @@ sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* predictions,
       xType, yType, inTopKCudaLauncher,
       (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->specialBuffer(),
        predictions->specialShapeInfo(), targets->specialBuffer(), targets->specialShapeInfo(), output->specialBuffer(),
-       output->specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets(), k),
+       output->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(), k),
       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {predictions, targets});
 
@@ -249,7 +249,7 @@ static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input,
   auto packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
 
-  auto tadLength = shape::length(packX.primaryShapeInfo());
+  auto tadLength = shape::length(packX->primaryShapeInfo());
 
   // we get top K values first
   if (k == 1) {
@@ -257,18 +257,18 @@ static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input,
 
     // copy values on specified indices
     topValuesMover<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(),
-        packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(),
-        packZ.platformOffsets(), tadLength, packX.numberOfTads(), k);
+        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
+        packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
+        packZ->platformOffsets(), tadLength, packX->numberOfTads(), k);
   } else {
     int scanWidth = 1;
     int numTreads = 256;
     int shMemSize = (numTreads * sizeof(X) * scanWidth) + (numTreads * sizeof(Y) * scanWidth) + 512;
 
     indicesAlongDimension<X, Y><<<256, numTreads, shMemSize, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(),
-        packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(),
-        packZ.platformOffsets(), tadLength, packX.numberOfTads(), k, scanWidth, needSort);
+        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
+        packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
+        packZ->platformOffsets(), tadLength, packX->numberOfTads(), k, scanWidth, needSort);
   }
 
   return sd::Status::OK;

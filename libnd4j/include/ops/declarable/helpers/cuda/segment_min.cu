@@ -175,10 +175,10 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     segmentMinTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
@@ -224,10 +224,10 @@ static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* inpu
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     segmentMinTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
@@ -356,14 +356,14 @@ sd::Status segmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradInTads = packGradIn.specialShapeInfo();
-    auto gradInTadOffsets = packGradIn.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradInTads = packGradIn->specialShapeInfo();
+    auto gradInTadOffsets = packGradIn->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMinBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
@@ -407,14 +407,14 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradInTads = packGradIn.specialShapeInfo();
-    auto gradInTadOffsets = packGradIn.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradInTads = packGradIn->specialShapeInfo();
+    auto gradInTadOffsets = packGradIn->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMinBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),

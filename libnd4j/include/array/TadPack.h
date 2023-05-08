@@ -38,7 +38,7 @@ class SD_LIB_EXPORT TadPack {
  public:
   explicit TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads);
   TadPack() = default;
-  ~TadPack() = default;
+  ~TadPack() {};
 
   const sd::LongType* primaryShapeInfo() const;
   const sd::LongType* primaryOffsets() const;

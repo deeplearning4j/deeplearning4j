@@ -51,11 +51,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
 
     @Override
-    void initializeHelper() {
-        // no op
-    }
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         if (input.rank() != 4) {
