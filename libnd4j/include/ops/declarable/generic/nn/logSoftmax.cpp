@@ -72,7 +72,6 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
   helpers::softmax(block.launchContext(), *input, *gradI, dim);
 
   auto sumGradOj = gradO->reduceAlongDimension(reduce::Sum, {dim}, true);
-  //gradInputi = gradOutputi - softMax(xi) . sum_j( gradOutputj )
   //we stored softmax inside gradI
   gradI->assign(*gradO - *gradI * sumGradOj);
 

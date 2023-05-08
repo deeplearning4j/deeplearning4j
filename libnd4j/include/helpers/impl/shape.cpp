@@ -185,12 +185,9 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::
     }
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
-    sd_printf("In general tad length\n",0);
     sd::LongType ret = 1;
     sd::LongType  *shape = shape::shapeOf(shapeInfo);
-    sd_printf("Determined shape\n",0);
     for (int i = 0; i < rank; i++) {
-      sd_printf("Processing dimension %d\n",i);
       for (int j = 0; j < dimensionLength; j++) {
         if(dimension[j] < 0) {
           dimension[j] += rank;
