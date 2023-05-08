@@ -118,7 +118,7 @@ predictions->syncToDevice();
  dim3 launchDims(32, 32, 1024);
  confusionFunctorKernel<Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
      labelsLongBuffer, predictionLongBuffer, bufferLength, weights != nullptr ? weights->specialBuffer() : nullptr,
-     output->specialBuffer(), pack.specialShapeInfo(), pack.specialOffsets());
+     output->specialBuffer(), pack->specialShapeInfo(), pack->specialOffsets());
 
  manager.synchronize();
 

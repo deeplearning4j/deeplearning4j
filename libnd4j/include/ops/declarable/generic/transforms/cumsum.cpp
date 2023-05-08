@@ -67,7 +67,7 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 DECLARE_TYPES(cumsum) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
-      ->setAllowedInputTypes(1, {ALL_INTS})
+      ->setAllowedInputTypes(1, {ALL_FLOATS,ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setSameMode(false);
 }

@@ -228,6 +228,92 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * This operation performs dot product attention on the given timeseries input with the given queries<br>
+   * out = sum(similarity(k_i, q) * v_i)<br>
+   * <br>
+   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * <br>
+   * Optionally with normalization step:<br>
+   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * <br>
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * <br>
+   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
+   * be 3D but can have queryCount = 1<br>
+   * <br>
+   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
+   * both.<br>
+   * <br>
+   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
+   * output rank will depend on the input rank.<br>
+   *
+   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
+   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
+   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
+   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
+   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
+   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
+   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
+   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
+      SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,
+      boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+  }
+
+  /**
+   * This operation performs dot product attention on the given timeseries input with the given queries<br>
+   * out = sum(similarity(k_i, q) * v_i)<br>
+   * <br>
+   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * <br>
+   * Optionally with normalization step:<br>
+   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * <br>
+   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * <br>
+   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
+   * be 3D but can have queryCount = 1<br>
+   * <br>
+   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
+   * both.<br>
+   * <br>
+   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
+   * output rank will depend on the input rank.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
+   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
+   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
+   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
+   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
+   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
+   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
+   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
+      SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Dropout operation<br>
    *
    * @param input Input array (NUMERIC type)

@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -59,11 +58,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     void initializeHelper() {
-        helper = HelperUtils.createHelper(
-                CUDNN_SUBSAMPLING_HELPER_CLASS_NAME,
-                MKLDNNSubsamplingHelper.class.getName(),
-                SubsamplingHelper.class, layerConf().getLayerName(), dataType
-        );
+
     }
 
     @Override
@@ -108,34 +103,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             pad = layerConf().getPadding();
         }
 
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
-            Pair<Gradient, INDArray> ret = null;
-            try{
-                ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                        layerConf().getPoolingType(), convolutionMode, dilation, dataFormat, workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")) {
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-                if(layerConf().isCudnnAllowFallback()) {
-                    helperCountFail++;
-                    if(helper instanceof MKLDNNSubsamplingHelper){
-                        log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
-                    } else {
-                        log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                    }
-                } else {
-                    throw new RuntimeException(e);
-                }
-            }
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon

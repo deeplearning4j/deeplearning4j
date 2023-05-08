@@ -37,9 +37,9 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, {axis});
 
   auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
-  auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
-  auto numTads = static_cast<unsigned int>(tadPack.numberOfTads());
-  auto tadEws = shape::elementWiseStride(tadPack.primaryShapeInfo());
+  auto tLen = static_cast<unsigned int>(shape::length(tadPack->primaryShapeInfo()));
+  auto numTads = static_cast<unsigned int>(tadPack->numberOfTads());
+  auto tadEws = shape::elementWiseStride(tadPack->primaryShapeInfo());
 
   if (iLen != numTads) throw std::runtime_error("OneHot: number of TADs should be equal to number of indices");
 
@@ -52,7 +52,7 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   if (tadEws >= 1) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = 0; e < stop; e++) {
-        auto cO = output + tadPack.primaryOffsets()[e];
+        auto cO = output + tadPack->primaryOffsets()[e];
 
         auto idx = static_cast<int>(indices[e]);
         if (idx < 0 || idx >= tLen) {
@@ -73,18 +73,18 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   } else {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
-        auto cO = output + tadPack.primaryOffsets()[e];
+        auto cO = output + tadPack->primaryOffsets()[e];
 
         auto idx = static_cast<int>(indices[e]);
         if (idx < 0 || idx >= tLen) {
           PRAGMA_OMP_SIMD
           for (sd::LongType t = 0; t < tLen; t++) {
-            cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = zero;
+            cO[shape::getIndexOffset(t, tadPack->primaryShapeInfo())] = zero;
           }
         } else {
           PRAGMA_OMP_SIMD
           for (sd::LongType t = 0; t < tLen; t++) {
-            cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = idx == t ? one : zero;
+            cO[shape::getIndexOffset(t, tadPack->primaryShapeInfo())] = idx == t ? one : zero;
           }
         }
       }

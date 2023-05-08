@@ -147,8 +147,8 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
       auto packZ = ConstantTadHelper::getInstance().tadForDimensions(outputList.at(i)->shapeInfo(), outDims);
 
       outBuffers[i] = outputList.at(i)->specialBuffer();
-      tadShapes[i] = packZ.platformShapeInfo();
-      tadOffsets[i] = packZ.platformOffsets();
+      tadShapes[i] = packZ->platformShapeInfo();
+      tadOffsets[i] = packZ->platformOffsets();
     }
 
     // we copy pointers to device
@@ -160,8 +160,8 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
         pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(sd::LongType *)));
     // run kernel on device
     dynamicPartitionTadKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
-        input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(),
-        shape::length(packX.primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(),
+        input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(),
+        shape::length(packX->primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(),
         indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
 
   } else {  // linear case
@@ -302,8 +302,8 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
       indicesShapes[e] = indices[e]->specialShapeInfo();
 
       inputBuffers[e] = inputs[e]->specialBuffer();
-      inputTadShapes[e] = packX.platformShapeInfo();
-      inputTadOffsets[e] = packX.platformOffsets();
+      inputTadShapes[e] = packX->platformShapeInfo();
+      inputTadOffsets[e] = packX->platformOffsets();
     }
 
     // copying pointers to buffers to device
@@ -321,7 +321,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
 
     dynamicStitchTadKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
         dInputBuffers, dInputTadShapes, dInputTadOffsets, dIndicesBuffers, dIndicesShapes, inputSize,
-        output->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets());
   }
 
   pm.synchronize();

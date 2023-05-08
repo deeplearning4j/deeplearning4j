@@ -62,7 +62,8 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
   } else {
     sd::LongType* hostYShapeInfo = nullptr;
     sd::LongType* hostTShapeInfo = nullptr;
-    int* dimension = nullptr;
+    sd::LongType* dimension = nullptr;
+
     sd::LongType dimensionLength = dimensions.size();
     std::vector<sd::LongType> copy(dimensions);
 
@@ -72,13 +73,13 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
 
     dim3 launchDims(256, 256, 16384);
-    dimension = (int*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int));
+    dimension = (sd::LongType*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType));
 
     // at this point, all IMax indexes are gathered, and we execute filler
     BUILD_SINGLE_SELECTOR(
         zType, fillDimensionalIsMaxGeneric,
         (launchDims, stream, indexMaxArr.specialBuffer(), output->specialBuffer(), output->specialShapeInfo(),
-         packZ.specialShapeInfo(), dimension, dimensionLength, packZ.specialOffsets()),
+         packZ->specialShapeInfo(), dimension, dimensionLength, packZ->specialOffsets()),
         SD_COMMON_TYPES);
     manager.synchronize();
   }

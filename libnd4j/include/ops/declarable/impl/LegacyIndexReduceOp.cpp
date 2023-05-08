@@ -144,8 +144,8 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<sd::LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)dims.size(),
-          Environment::getInstance().isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
+          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   } else {
     // TF mode
@@ -175,8 +175,8 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
           extras.argumentsAsT(x->dataType()), reinterpret_cast<sd::LongType *>(z->buffer()), z->shapeInfo(),
           z->specialBuffer(), z->specialShapeInfo(), nullptr, (int)axis.size(),
-          Environment::getInstance().isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(),
-          Environment::getInstance().isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
+          Environment::getInstance().isCPU() ? tadPack->primaryShapeInfo() : tadPack->specialShapeInfo(),
+          Environment::getInstance().isCPU() ? tadPack->primaryOffsets() : tadPack->specialOffsets());
     }
   }
 

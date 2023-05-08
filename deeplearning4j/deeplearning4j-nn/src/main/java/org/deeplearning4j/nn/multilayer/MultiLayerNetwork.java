@@ -54,7 +54,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.*;
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.common.base.Preconditions;
@@ -72,7 +71,6 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -757,27 +755,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         synchronizeIterEpochCounts();
     }
 
-    /**
-     * This method allows you to specificy GradientsAccumulator instance to be used with this model<br>
-     * <br>
-     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.<br>
-     * PLEASE NOTE: Do not use this method on standalone model
-     *
-     * @param accumulator    Gradient accumulator to use for the network
-     */
-    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
-        if (!isInitCalled())
-            init();
 
-        if (solver == null) {
-            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
-                        .build();
-            }
-        }
-
-        solver.getOptimizer().setGradientsAccumulator(accumulator);
-    }
 
     public boolean isInitCalled() {
         return initCalled;

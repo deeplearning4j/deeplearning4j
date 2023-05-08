@@ -47,10 +47,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
     }
 
 
-    @Override
-    void initializeHelper() {
-        // no op
-    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {

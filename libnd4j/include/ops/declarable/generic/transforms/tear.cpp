@@ -60,13 +60,13 @@ DECLARE_SHAPE_FN(tear) {
   if (dims.size() > 1) std::sort(dims.begin(), dims.end());
 
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, dims);
-  auto numTads = tadPack.numberOfTads();
+  auto numTads = tadPack->numberOfTads();
 
   auto result = SHAPELIST();
   for (sd::LongType e = 0; e < numTads; e++) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape),
-                                                                       shape::rank(tadPack.primaryShapeInfo()),
-                                                                       shape::shapeOf(tadPack.primaryShapeInfo()));
+                                                                       shape::rank(tadPack->primaryShapeInfo()),
+                                                                       shape::shapeOf(tadPack->primaryShapeInfo()));
     result->push_back(newShape);
   }
 

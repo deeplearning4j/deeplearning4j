@@ -61,7 +61,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -422,20 +421,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.labels = labels;
     }
 
-    /**
-     * This method allows you to specificy GradientsAccumulator instance to be used with this model
-     * <p>
-     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.
-     * PLEASE NOTE: Do not use this method on standalone model
-     *
-     * @param accumulator
-     */
-    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
-        if (!initCalled)
-            init();
-
-        solver.getOptimizer().setGradientsAccumulator(accumulator);
-    }
 
     /**
      * Initialize the ComputationGraph network

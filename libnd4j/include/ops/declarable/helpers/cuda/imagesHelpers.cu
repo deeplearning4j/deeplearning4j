@@ -73,7 +73,7 @@ void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX.numberOfTads();
+  const sd::LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
@@ -83,8 +83,8 @@ void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), rgbToYuvCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(),
-                         input.specialShapeInfo(), packX.platformOffsets(), output.specialBuffer(),
-                         output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC),
+                         input.specialShapeInfo(), packX->platformOffsets(), output.specialBuffer(),
+                         output.specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});
 
@@ -134,7 +134,7 @@ void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX.numberOfTads();
+  const sd::LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
@@ -144,8 +144,8 @@ void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), yuvToRgbCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(),
-                         input.specialShapeInfo(), packX.platformOffsets(), output.specialBuffer(),
-                         output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC),
+                         input.specialShapeInfo(), packX->platformOffsets(), output.specialBuffer(),
+                         output.specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});
 
@@ -300,7 +300,7 @@ void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX.numberOfTads();
+  const sd::LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
@@ -310,8 +310,8 @@ void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* 
   NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), hsvToRgbCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
-                         input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(),
-                         output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC),
+                         input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
+                         output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {input});
 
@@ -323,7 +323,7 @@ void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX.numberOfTads();
+  const sd::LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
@@ -333,8 +333,8 @@ void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* 
   NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), rgbToHsvCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
-                         input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(),
-                         output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC),
+                         input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
+                         output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {input});
 
@@ -407,9 +407,9 @@ static void rgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* ou
 
   NDArray::prepareSpecialUse({output}, {input});
   return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(
-      input->specialBuffer(), input->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-      output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 1,
-      packZ.numberOfTads());
+      input->specialBuffer(), input->specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
+      output->specialBuffer(), output->specialShapeInfo(), packZ->platformShapeInfo(), packZ->platformOffsets(), dimC, 1,
+      packZ->numberOfTads());
   NDArray::registerSpecialUse({output}, {input});
 }
 
@@ -420,9 +420,9 @@ SD_INLINE static void yiqRgb(sd::LaunchContext* context, const NDArray* input, N
 
   NDArray::prepareSpecialUse({output}, {input});
   return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(
-      input->specialBuffer(), input->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-      output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 2,
-      packZ.numberOfTads());
+      input->specialBuffer(), input->specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
+      output->specialBuffer(), output->specialShapeInfo(), packZ->platformShapeInfo(), packZ->platformOffsets(), dimC, 2,
+      packZ->numberOfTads());
   NDArray::registerSpecialUse({output}, {input});
 }
 

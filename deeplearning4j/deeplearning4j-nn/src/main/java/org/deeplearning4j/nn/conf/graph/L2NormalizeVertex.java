@@ -42,16 +42,12 @@ public class L2NormalizeVertex extends GraphVertex {
     protected double eps;
 
     public L2NormalizeVertex() {
-        this((int[]) null, DEFAULT_EPS);
+        this((long[]) null, DEFAULT_EPS);
     }
 
-    public L2NormalizeVertex(@JsonProperty("dimension") int[] dimension, @JsonProperty("eps") double eps) {
-        this.dimension = ArrayUtil.toLongArray(dimension);
-        this.eps = eps;
-    }
 
     public L2NormalizeVertex(@JsonProperty("dimension") long[] dimension, @JsonProperty("eps") double eps) {
-        this.dimension = ArrayUtil.toLongArray(dimension);
+        this.dimension = dimension == null ? null : ArrayUtil.toLongArray(dimension);
         this.eps = eps;
     }
 

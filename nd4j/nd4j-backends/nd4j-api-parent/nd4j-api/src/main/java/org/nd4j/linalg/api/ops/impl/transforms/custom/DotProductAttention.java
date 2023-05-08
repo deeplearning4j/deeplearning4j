@@ -66,22 +66,27 @@ public class DotProductAttention extends DynamicCustomOp {
     }
 
     @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        if(iArguments.size() > 0)
+            this.scaled = iArguments.get(0) > 0;
+        if(iArguments.size() > 1)
+            this.withWeights = iArguments.get(1) > 0;
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         SDVariable mask = args().length == 4 ? arg(3) : null;
-        if (iArguments.size() > 0) {
-            this.scaled = iArguments.get(0).intValue() == 1 ? true : false;
-            this.withWeights = iArguments.size() > 0 && iArguments.get(1).intValue() == 1 ? true : false ;
-        }
         return Arrays.asList(new DotProductAttentionBp(sameDiff, arg(0), arg(1), arg(2), gradient.get(0), mask, scaled).outputVariables());
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 3 || dataTypes.size() == 4), "Expected exactly 3 or 4 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
-        for( int i=0; i<dataTypes.size(); i++ ) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0){
+        for( int i = 0; i < dataTypes.size(); i++) {
+            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got dataypes %s", dataTypes);
+            if(i > 0) {
                 Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
             }
         }
@@ -94,9 +99,9 @@ public class DotProductAttention extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs() {
-        if(withWeights){
+        if(withWeights) {
             return 2;
-        }else{
+        }else {
             return 1;
         }
     }

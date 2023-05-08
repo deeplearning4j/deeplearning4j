@@ -138,7 +138,7 @@ void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArra
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
 
-  const sd::LongType numTads = packX.numberOfTads();
+  const sd::LongType numTads = packX->numberOfTads();
   const sd::LongType tadLen = x->lengthOf() / numTads;
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
@@ -150,8 +150,8 @@ void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArra
   NDArray::prepareSpecialUse({z}, {x});
   BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, x->specialBuffer(),
-                         packX.platformShapeInfo(), packX.platformOffsets(), z->specialBuffer(),
-                         packZ.platformShapeInfo(), packZ.platformOffsets(), numTads, tadLen, exclusive, reverse),
+                         packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
+                         packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
                         SD_NUMERIC_TYPES);
   NDArray::registerSpecialUse({z}, {x});
 

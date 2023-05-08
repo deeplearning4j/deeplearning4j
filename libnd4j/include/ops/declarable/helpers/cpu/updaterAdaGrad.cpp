@@ -41,8 +41,11 @@ static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, N
   T* st = stateH.bufferAsT<T>();
 
   const T lr = static_cast<T>(dLr);
-  const T epsilon = static_cast<T>(dEpsilon);
-
+  T epsilon = static_cast<T>(dEpsilon);
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateH.ews() && 1 == initState.ews();
   bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateH.ordering() &&
                        stateH.ordering() == initState.ordering();
