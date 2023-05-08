@@ -483,6 +483,7 @@ public class KerasLayer {
             }
             else
                 preprocessor = this.layer.getPreProcessorForInputType(inputType[0]);
+
         }
         return preprocessor;
     }

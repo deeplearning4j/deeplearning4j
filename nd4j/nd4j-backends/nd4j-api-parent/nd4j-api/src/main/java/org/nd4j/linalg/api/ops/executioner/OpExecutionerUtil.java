@@ -28,6 +28,8 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -111,7 +113,7 @@ public class OpExecutionerUtil {
             return;
 
         INDArray z = oc != null ? oc.getOutputArray(0) : op.z();
-        if (z != null && !(op instanceof MatchCondition)) {
+        if (z != null && !(op instanceof MatchCondition) && !(op instanceof CompareAndSet) && !(op instanceof CompareAndReplace)) {
             checkForInf(z);
         }
     }
