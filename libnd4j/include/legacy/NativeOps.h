@@ -48,6 +48,14 @@
 
 typedef sd::InteropDataBuffer OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
+
+
+
+
+#if defined(SD_GCC_FUNCTRACE)
+
+//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
+// stack overflow and segfault.
 extern "C" {
 SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
@@ -71,8 +79,39 @@ SD_LIB_EXPORT void purgeOpTrace();
 
 SD_LIB_EXPORT void toggleOpTrace(bool opTrace);
 
-SD_LIB_EXPORT void printOpTrace();
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+
+
+
+//note this is a c++ 17 feature
+static FILE* instrumentFile = nullptr;
+
+
+
+
+
+//this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
+
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
+__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
+}
+
+
+//sets the file to be written to.
+SD_LIB_EXPORT void setInstrumentOut(char * instrumentOutPath);
+//closes the file
+SD_LIB_EXPORT void closeInstrumentOut();
+
+#endif
+
+
+
+SD_LIB_EXPORT void printOpTrace();
 
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
 
@@ -991,7 +1030,7 @@ SD_LIB_EXPORT void reSeedBuffer(sd::Pointer* extraPointers, long seed, sd::Point
  * @param ptrRandom
  */
 SD_LIB_EXPORT void destroyRandom(sd::Pointer ptrRandom);
-}
+
 
 /**
  *
@@ -1576,19 +1615,19 @@ SD_LIB_EXPORT void setGraphContextInputArray(OpaqueContext* ptr, int index, void
                                              void* specialBuffer, void* specialShapeInfo);
 SD_LIB_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index, void* buffer, void* shapeInfo,
                                               void* specialBuffer, void* specialShapeInfo);
-SD_LIB_EXPORT void setGraphContextInputBuffer(OpaqueContext* ptr, int index, OpaqueDataBuffer* buffer, void* shapeInfo,
-                                              void* specialShapeInfo);
-SD_LIB_EXPORT void setGraphContextOutputBuffer(OpaqueContext* ptr, int index, OpaqueDataBuffer* buffer, void* shapeInfo,
-                                               void* specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextInputBuffer(OpaqueContext* ptr, int index, OpaqueDataBuffer* buffer,
+                                              OpaqueDataBuffer* shapeInfo, OpaqueDataBuffer* specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextOutputBuffer(OpaqueContext* ptr, int index, OpaqueDataBuffer* buffer,
+                                               OpaqueDataBuffer* shapeInfo, OpaqueDataBuffer* specialShapeInfo);
 
 SD_LIB_EXPORT void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
                                               sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo);
 SD_LIB_EXPORT void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
                                                sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo);
-SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                               sd::Pointer * specialShapeInfo);
-SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer, sd::Pointer * shapeInfo,
-                                                sd::Pointer * specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
+                                               void** shapeInfo, void** specialShapeInfo);
+SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
+                                                void** shapeInfo, void** specialShapeInfo);
 
 SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1,bool isEmpty = false);
 
