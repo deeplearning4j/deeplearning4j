@@ -104,7 +104,10 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
                                  const sd::LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon) {
   const T rho = static_cast<T>(dRho);
   const T epsilon = static_cast<T>(dEpsilon);
-
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   adaDeltaUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       vx, xShapeInfo, vinMsg, inMsgShapeInfo, vinMsdx, inMsdxShapeInfo, vz, zShapeInfo, vstMsg, stMsgShapeInfo, vstMsdx,
       stMsdxShapeInfo, rho, epsilon);

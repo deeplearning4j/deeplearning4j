@@ -44,7 +44,11 @@ static void adaDeltaUpdater_(const NDArray& gradient, const NDArray& initStateMs
   T* stMsdx = stateMsdx.bufferAsT<T>();
 
   const T rho = static_cast<T>(dRho);
-  const T epsilon = static_cast<T>(dEpsilon);
+  T epsilon = static_cast<T>(dEpsilon);
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   const T rhoT = (1 - rho);
 
   bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateMsg.ews() && 1 == initStateMsg.ews() &&
