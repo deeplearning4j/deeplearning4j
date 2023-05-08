@@ -83,7 +83,7 @@ public class CudaThreshold extends AbstractCompressor {
     }
 
     public DataBuffer compress(DataBuffer buffer) {
-        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, (DataBuffer)Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1L, buffer.length()}, buffer.dataType()).getFirst());
+        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{1L, buffer.length()}, buffer.dataType()).getFirst());
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(this.threshold), new long[0]);
         int cntAbs = Nd4j.getExecutioner().exec(condition).getInt(new int[]{0});
         if (cntAbs < 2) {

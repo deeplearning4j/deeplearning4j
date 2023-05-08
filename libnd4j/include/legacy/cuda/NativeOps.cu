@@ -60,6 +60,56 @@ int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
+void toggleOpTrace(bool opTrace) {
+  sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
+}
+
+void purgeOpTrace() {
+  sd::ops::OpRegistrator::getInstance().purgeOpExecs();
+}
+
+
+void printOpTrace() {
+  auto execTrace = *sd::ops::OpRegistrator::getInstance().execTrace();
+  for(int i = 0; i < execTrace.size(); i++) {
+    auto curr = execTrace[i];
+    if(curr->opName != nullptr) {
+      sd_printf("Op name: %s\n", curr->opName->c_str());
+    }
+    sd_printf(" Input buffers:\n",0);
+    if(curr->inputShapeBuffers == nullptr || curr->inputShapeBuffers->size() == 0) {
+      sd_printf("No input buffers\n",0);
+      continue;
+    } else {
+      auto currInputShapeBuffers = *(curr->inputShapeBuffers);
+      for(int j = 0; j < currInputShapeBuffers.size(); j++) {
+        auto buff = currInputShapeBuffers[j];
+        shape::printShapeInfo(buff);
+        sd_printf("\n",0);
+      }
+    }
+
+    if(curr->outputShapeBuffers == nullptr || curr->outputShapeBuffers->size() == 0) {
+      sd_printf("No output buffers\n",0);
+      continue;
+    } else {
+      auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
+      for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
+        shape::printShapeInfo(currOutputShapeBuffers[j]);
+        sd_printf("\n",0);
+      }
+
+    }
+
+
+  }
+
+}
+
+std::vector<ExecTrace*> * listOpTraces() {
+  return sd::ops::OpRegistrator::getInstance().execTrace();
+}
+
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
