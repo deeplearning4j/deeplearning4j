@@ -184,9 +184,24 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
     sd::LongType ret = 1;
-    for (int i = 0; i < shape::rank(shapeInfo); i++) {
+    sd::LongType  *shape = shape::shapeOf(shapeInfo);
+    for (int i = 0; i < rank; i++) {
       for (int j = 0; j < dimensionLength; j++) {
-        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+        if(dimension[j] < 0) {
+          dimension[j] += rank;
+        }
+        if(dimension[0] >= rank) {
+          std::string errorMessage;
+          errorMessage += "Dimension out of rank: ";
+          errorMessage += "dimension: " + std::to_string(dimension[0]);
+          errorMessage += " rank: " + std::to_string(rank);
+          throw std::runtime_error(errorMessage.c_str());
+        }
+
+        if (i == dimension[j]) {
+          sd_printf("Processing dimension i %d with dimension j %d dimension[j] %d\n",i,j,dimension[j]);
+          ret *= shape[dimension[j]];
+        }
       }
     }
 

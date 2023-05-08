@@ -155,7 +155,7 @@ DECLARE_CUSTOM_OP(fused_batch_norm, 3, 1, false, 0, 2);
 
 #if NOT_EXCLUDED(OP_log_softmax)
 DECLARE_CONFIGURABLE_OP(log_softmax, 1, 1, true, 0, 0);
-DECLARE_CONFIGURABLE_OP(log_softmax_bp, 3, 1, true, 0, 0);
+DECLARE_CONFIGURABLE_OP(log_softmax_bp, 2, 1, true, 0, 0);
 #endif
 
 /**
@@ -213,6 +213,46 @@ DECLARE_CUSTOM_OP(layer_norm_bp, 4, 1, false, 0, -2);
 DECLARE_CUSTOM_OP(dot_product_attention, 3, -1, false, 0, 2);
 DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
 #endif
+
+
+/**
+ * This operation performs dot product attention on the given timeseries input with the given queries
+ * out = sum(similarity(k_i, q) * v_i)
+ *
+ * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
+ *
+ * Optionally with normalization step:
+ * similarity(k, q) = softmax(k * q / sqrt(size(q))
+ *
+ * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
+ *
+ * Note: This supports multiple queries at once, if only one query is available the queries vector still has to
+ * be 3D but can have queryCount = 1
+ *
+ * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
+ * both.
+ *
+ * Expected arguments:
+ * q: input 3D array "queries" of shape [batchSize, featureKeys, queryCount] or 4D array of shape [batchSize, numHeads,
+ * featureKeys, queryCount] k: input 3D array "keys" of shape [batchSize, featureKeys, timesteps] or 4D array of shape
+ * [batchSize, numHeads, featureKeys, timesteps] v: input 3D array "values" of shape [batchSize, featureValues,
+ * timesteps] or 4D array of shape [batchSize, numHeads, featureValues, timesteps] mask: OPTIONAL; array that defines
+ * which values should be skipped of shape [batchSize, timesteps]
+ *
+ * integer input arguments:
+ * 0: normalization, may have two values: zero -> do not apply normalization, one -> apply normalization
+ * 1: withWeights, may have two values: zero -> do not return weights, one -> return weights
+ *
+ * Output Arrays:
+ * 0: Attention result arrays of shape [batchSize, featureValues, queryCount] or [batchSize, numHeads, featureValues,
+ * queryCount] 1: OPTIONAL; Attention weights of shape [batchSize, timesteps, queryCount] or [batchSize, numHeads,
+ * timesteps, queryCount]
+ */
+#if NOT_EXCLUDED(OP_dot_product_attention_v2)
+DECLARE_CUSTOM_OP(dot_product_attention_v2, -2, -1, false, -2, 2);
+DECLARE_CUSTOM_OP(dot_product_attention_v2_bp, -2, -3, false, -2, 1);
+#endif
+
 
 /**
  * This performs multi-headed dot product attention on the given timeseries input

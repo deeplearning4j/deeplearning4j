@@ -101,7 +101,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (output.ordering() == 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('f');
-        if (rnnDataFormat == RNNFormat.NWC){
+        if (rnnDataFormat == RNNFormat.NWC) {
             output = output.permute(0, 2, 1);
         }
         val shape = output.shape();

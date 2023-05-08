@@ -261,9 +261,7 @@ public class TestBERTGraph extends BaseNd4jTestWithBackends {
 
         Map<String, INDArray> out = sd.output(placeholderValues, "loss/Softmax");
         INDArray softmax = out.get("loss/Softmax");
-//        System.out.println("OUTPUT - Softmax");
-//        System.out.println(softmax);
-//        System.out.println(Arrays.toString(softmax.data().asFloat()));
+
 
         INDArray exp0 = Nd4j.createFromArray(0.99860954f, 0.0013904407f);
         INDArray exp1 = Nd4j.createFromArray(0.0005442508f, 0.99945575f);

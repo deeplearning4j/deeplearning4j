@@ -44,6 +44,7 @@ public class SelfAttentionLayer extends SameDiffLayer {
     private int nHeads;
     private long headSize;
     private boolean projectInput;
+    private boolean scaled;
 
     private static final String WEIGHT_KEY_QUERY_PROJECTION = "Wq";
     private static final String WEIGHT_KEY_KEY_PROJECTION = "Wk";
@@ -52,13 +53,14 @@ public class SelfAttentionLayer extends SameDiffLayer {
 
     private SelfAttentionLayer(){/*No arg constructor for serialization*/}
 
-    protected SelfAttentionLayer(Builder builder){
+    protected SelfAttentionLayer(Builder builder) {
         super(builder);
         nIn = builder.nIn;
         nOut = builder.nOut;
         nHeads = builder.nHeads;
         headSize = builder.headSize == 0 ? nOut / nHeads : builder.headSize;
         projectInput = builder.projectInput;
+        scaled = builder.scaled;
     }
 
     @Override
@@ -89,7 +91,7 @@ public class SelfAttentionLayer extends SameDiffLayer {
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
-        if(projectInput){
+        if(projectInput) {
             return InputType.recurrent(nOut, itr.getTimeSeriesLength());
         }else{
             return InputType.recurrent(nIn, itr.getTimeSeriesLength());
@@ -100,39 +102,25 @@ public class SelfAttentionLayer extends SameDiffLayer {
     public void defineParameters(SDLayerParams params) {
         params.clear();
 
-        if(projectInput){
-            params.addWeightParam(WEIGHT_KEY_QUERY_PROJECTION, nHeads, headSize, nIn);
-            params.addWeightParam(WEIGHT_KEY_KEY_PROJECTION,   nHeads, headSize, nIn);
-            params.addWeightParam(WEIGHT_KEY_VALUE_PROJECTION, nHeads, headSize, nIn);
-            params.addWeightParam(WEIGHT_KEY_OUT_PROJECTION, nHeads * headSize, nOut);
-        }
     }
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            for (Map.Entry<String, INDArray> e : params.entrySet()) {
-                if(e.getKey().equals(WEIGHT_KEY_OUT_PROJECTION)){
-                    WeightInitUtil.initWeights(nIn, headSize, e.getValue().shape(), weightInit, null, 'c', e.getValue());
-                }else{
-                    WeightInitUtil.initWeights(nHeads * headSize, nOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
-                }
-            }
-        }
+
     }
 
 
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-        if(projectInput){
+        if(projectInput) {
             val Wq = paramTable.get(WEIGHT_KEY_QUERY_PROJECTION);
             val Wk = paramTable.get(WEIGHT_KEY_KEY_PROJECTION);
             val Wv = paramTable.get(WEIGHT_KEY_VALUE_PROJECTION);
             val Wo = paramTable.get(WEIGHT_KEY_OUT_PROJECTION);
 
-            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), layerInput, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, true);
+            return sameDiff.nn.multiHeadDotProductAttention(getLayerName(), layerInput, layerInput, layerInput, Wq, Wk, Wv, Wo, mask, scaled);
         }else{
-            return sameDiff.nn.dotProductAttention(getLayerName(), layerInput, layerInput, layerInput, mask, true);
+            return sameDiff.nn.dotProductAttention(getLayerName(), layerInput, layerInput, layerInput, mask, scaled);
         }
     }
 
@@ -165,6 +153,23 @@ public class SelfAttentionLayer extends SameDiffLayer {
          * Project input before applying attention or not.
          */
         private boolean projectInput;
+
+
+        /**
+         * Whether to scale output or not
+         */
+        private boolean scaled;
+
+
+
+        /**
+         * @param scaled Whether to scale the input or not.
+         *               Defaults to true.
+         */
+        public Builder scale(boolean scaled) {
+            this.scaled = scaled;
+            return this;
+        }
 
         /**
          * @param nIn Number of inputs to the layer (input size)

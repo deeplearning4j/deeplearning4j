@@ -95,6 +95,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_FUNCTIONAL_DOT = "dot";
 
 
+    private final String LAYER_CLASS_NAME_ATTENTION = "Attention";
+
+
     private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
