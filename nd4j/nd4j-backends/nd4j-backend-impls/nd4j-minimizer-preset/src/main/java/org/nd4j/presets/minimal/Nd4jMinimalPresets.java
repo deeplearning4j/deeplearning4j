@@ -209,8 +209,19 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false))
                 .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
-                .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
-                        "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
+                .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip()
+                        : new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "instrumentFile",
+                        "setInstrumentOut",
+                        "closeInstrumentOut",
+                        "__cyg_profile_func_exit",
+                        "__cyg_profile_func_enter",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())

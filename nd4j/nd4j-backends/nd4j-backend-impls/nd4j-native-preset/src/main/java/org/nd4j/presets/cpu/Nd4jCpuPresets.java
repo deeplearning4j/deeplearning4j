@@ -176,6 +176,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
+        //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
+        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
+        System.out.println("Func trace: " + funcTrace);
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
@@ -212,11 +215,25 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"));
 
-        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false))
-                .put(new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
-                .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
-                        "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
+        infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false)
+                        : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__","SD_GCC_FUNCTRACE").define(false))
+                .put(funcTrace ?  new Info("__JAVACPP_HACK__", "SD_ALL_OPS","SD_GCC_FUNCTRACE").define(true) :
+                        new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
+                .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip()
+                        : new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                        "sd::graph::FlatResult",
+                        "instrumentFile",
+                        "setInstrumentOut",
+                        "closeInstrumentOut",
+                        "__cyg_profile_func_exit",
+                        "__cyg_profile_func_enter",
+                        "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
+                        "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
+
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                 .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
