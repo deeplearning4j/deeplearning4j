@@ -44,11 +44,11 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
   } else if(!output.isEmpty()) {
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
-    auto zTadShapeInfo = zTadPack.primaryShapeInfo();
+    auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        void* zBuff = output.bufferWithOffset(zTadPack.primaryOffsets()[i]);
+        void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
 
         NativeOpExecutioner::execTransformAny(inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(),
                                               inArrs[i]->shapeInfo(), nullptr /*input specialBuffer*/,
@@ -83,11 +83,11 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
   } else {
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
-    auto xTadShapeInfo = xTadPack.primaryShapeInfo();
+    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto xBuff = input.bufferWithOffset(xTadPack.primaryOffsets()[i]);
+        auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);
 
         NativeOpExecutioner::execTransformAny(
             input.getContext(), transform::Assign, xBuff, xTadShapeInfo, nullptr /*input specialBuffer*/,

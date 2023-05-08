@@ -84,16 +84,16 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), {-2, -1});
   auto stream = context->getCudaStream();
   oneOnDiagonalKernel<T><<<128, 256, 256, *stream>>>(
-      leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad.specialShapeInfo(),
-      leftLowerTad.specialOffsets(), leftLowerTad.numberOfTads(), leftLower.sizeAt(-1));
+      leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad->specialShapeInfo(),
+      leftLowerTad->specialOffsets(), leftLowerTad->numberOfTads(), leftLower.sizeAt(-1));
   auto P = leftOutput.ulike();
   P.nullify();
   auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), {-2, -1});
   auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
   restorePermutationsKernel<T><<<128, 256, 256, *stream>>>(
       P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<int>(),
-      PTad.specialShapeInfo(), PTad.specialOffsets(), permutationsTad.specialShapeInfo(),
-      permutationsTad.specialOffsets(), permutationsTad.numberOfTads(), permutations.sizeAt(-1));
+      PTad->specialShapeInfo(), PTad->specialOffsets(), permutationsTad->specialShapeInfo(),
+      permutationsTad->specialOffsets(), permutationsTad->numberOfTads(), permutations.sizeAt(-1));
   P.tickWriteDevice();
   auto rightPart = rightInput->ulike();
   MmulHelper::matmul(&P, rightInput, &rightPart, 0, 0);
@@ -140,8 +140,8 @@ static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDA
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
   output->assign(input);
-  adjointKernel<T><<<128, 256, 256, *stream>>>(outputBuf, outputTads.numberOfTads(), rows, columns,
-                                               outputTads.specialShapeInfo(), outputTads.specialOffsets());
+  adjointKernel<T><<<128, 256, 256, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
+                                               outputTads->specialShapeInfo(), outputTads->specialOffsets());
   NDArray::registerSpecialUse({output}, {input});
 }
 

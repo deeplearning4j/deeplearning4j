@@ -97,12 +97,12 @@ void matrixBandPart_(sd::LaunchContext* context, NDArray* input, NDArray* output
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), lastDims);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), lastDims);
 
-  const sd::LongType numTads = packX.numberOfTads();
+  const sd::LongType numTads = packX->numberOfTads();
 
   NDArray::prepareSpecialUse({output}, {input});
   matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), lowerBand,
-      upperBand, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(),
+      upperBand, packX->specialShapeInfo(), packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets(),
       numTads, input->lengthOf());
   NDArray::registerSpecialUse({output}, {input});
 }

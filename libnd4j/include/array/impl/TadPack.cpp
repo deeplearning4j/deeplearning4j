@@ -30,9 +30,15 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer&
   _numTads = numTads;
 }
 
-const sd::LongType* TadPack::primaryShapeInfo() const { return _tadShape.primary(); }
+const sd::LongType* TadPack::primaryShapeInfo() const {
+  if(_tadShape.primary() == nullptr)
+    throw std::runtime_error("TadPack::primaryShapeInfo: primary shape info is nullptr!");
+  return _tadShape.primary();
+}
 
-const sd::LongType* TadPack::primaryOffsets() const { return _tadOffsets.primary(); }
+const sd::LongType* TadPack::primaryOffsets() const {
+  return _tadOffsets.primary();
+}
 
 const sd::LongType* TadPack::specialShapeInfo() const { return _tadShape.special(); }
 

@@ -119,9 +119,9 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 
   NDArray::prepareSpecialUse({&input}, {&input, &updates, &indices});
   BUILD_SINGLE_SELECTOR(input.dataType(), scatterUpdateCudaLauncher,
-                        (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX.platformShapeInfo(),
-                         packX.platformOffsets(), updates.specialBuffer(), packY.platformShapeInfo(),
-                         packY.platformOffsets(), reinterpret_cast<sd::LongType *>(indices.specialBuffer())),
+                        (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX->platformShapeInfo(),
+                         packX->platformOffsets(), updates.specialBuffer(), packY->platformShapeInfo(),
+                         packY->platformOffsets(), reinterpret_cast<sd::LongType *>(indices.specialBuffer())),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&input}, {&input, &updates, &indices});
 

@@ -60,18 +60,18 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
     auto xTadShape = Environment::getInstance().isCPU()
-                         ? packX.primaryShapeInfo()
-                         : packX.specialShapeInfo();
+                         ? packX->primaryShapeInfo()
+                         : packX->specialShapeInfo();
     auto xTadOffsets = Environment::getInstance().isCPU()
-                           ? packX.primaryOffsets()
-                           : packX.specialOffsets();
+                           ? packX->primaryOffsets()
+                           : packX->specialOffsets();
 
     auto yTadShape = Environment::getInstance().isCPU()
-                         ? packZ.primaryShapeInfo()
-                         : packZ.specialOffsets();
+                         ? packZ->primaryShapeInfo()
+                         : packZ->specialOffsets();
     auto yTadOffsets = Environment::getInstance().isCPU()
-                           ? packZ.primaryOffsets()
-                           : packZ.specialOffsets();
+                           ? packZ->primaryOffsets()
+                           : packZ->specialOffsets();
 
     NativeOpExecutioner::execReduce3(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                      x->specialShapeInfo(), extras.argumentsAsT(z->dataType()), y->buffer(),

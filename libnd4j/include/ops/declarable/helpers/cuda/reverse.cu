@@ -56,8 +56,7 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const sd::LongType* i
     // now finding out element within tad
     auto idx = e % div;
 
-    // printf("TID: %i; numTads: %lld; tadLength: %lld; tadId: %i, idx: %lld\n", tid, numTads, numOfElemsToReverse,
-    // tadId, idx);
+
 
     auto tadInput = input + inputTadOffsets[tadId];
     auto tadOutput = output + outputTadOffsets[tadId];
@@ -226,13 +225,13 @@ void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, 
 
   NDArray::prepareSpecialUse({output}, {input});
 
-  if (packX.numberOfTads() == 1) {
+  if (packX->numberOfTads() == 1) {
     BUILD_SINGLE_SELECTOR(input->dataType(), reverseArray, (context, input, output, 0), SD_COMMON_TYPES);
   } else {
     BUILD_SINGLE_SELECTOR(
         input->dataType(), reverseTad,
-        (context, input, output, packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(),
-         packZ.platformOffsets(), (uint64_t)(input->lengthOf() / packX.numberOfTads())),
+        (context, input, output, packX->platformShapeInfo(), packX->platformOffsets(), packZ->platformShapeInfo(),
+         packZ->platformOffsets(), (uint64_t)(input->lengthOf() / packX->numberOfTads())),
         SD_COMMON_TYPES);
   }
 

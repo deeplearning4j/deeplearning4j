@@ -42,8 +42,8 @@ void variance(const NDArray& input, NDArray& output, const std::vector<sd::LongT
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsVariance, input.buffer(), input.shapeInfo(),
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack.specialShapeInfo(),
-        tadPack.specialOffsets(), biasCorrected);
+        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
+        tadPack->specialOffsets(), biasCorrected);
   }
   // inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse
   NDArray::registerSpecialUse({&output}, {&input});
@@ -64,8 +64,8 @@ void standardDeviation(const NDArray& input, NDArray& output, const std::vector<
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsStandardDeviation, input.buffer(), input.shapeInfo(),
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack.specialShapeInfo(),
-        tadPack.specialOffsets(), biasCorrected);
+        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
+        tadPack->specialOffsets(), biasCorrected);
   }
   // inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse
   NDArray::registerSpecialUse({&output}, {&input});

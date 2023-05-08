@@ -72,16 +72,16 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
         auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn);
         auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimsOut);
 
-        auto inTadShapeInfo = inTadPack.primaryShapeInfo();
-        auto outTadShapeInfo = outTadPack.primaryShapeInfo();
+        auto inTadShapeInfo = inTadPack->primaryShapeInfo();
+        auto outTadShapeInfo = outTadPack->primaryShapeInfo();
 
         if (shape::order(inTadShapeInfo) == shape::order(outTadShapeInfo) && shape::order(inTadShapeInfo) == 'c' &&
             input->dataType() == output->dataType() && shape::elementWiseStride(inTadShapeInfo) == 1 &&
             shape::elementWiseStride(outTadShapeInfo) == 1) {
           auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
-              auto inBuff = input->bufferWithOffset(inTadPack.primaryOffsets()[indices->e<sd::LongType>(i)]);
-              auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+              auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[indices->e<sd::LongType>(i)]);
+              auto outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 
               memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
             }
@@ -90,8 +90,8 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
         } else {
           auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
-              auto inBuff = input->bufferWithOffset(inTadPack.primaryOffsets()[indices->e<sd::LongType>(i)]);
-              auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+              auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[indices->e<sd::LongType>(i)]);
+              auto outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 
               NativeOpExecutioner::execTransformAny(
                   input->getContext(), transform::Assign, inBuff, inTadShapeInfo, nullptr /*input specialBuffer*/,
@@ -118,16 +118,16 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
       auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
       auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
 
-      auto inTadShapeInfo = inTadPack.primaryShapeInfo();
-      auto outTadShapeInfo = outTadPack.primaryShapeInfo();
+      auto inTadShapeInfo = inTadPack->primaryShapeInfo();
+      auto outTadShapeInfo = outTadPack->primaryShapeInfo();
 
       if (shape::order(inTadShapeInfo) == shape::order(outTadShapeInfo) && shape::order(inTadShapeInfo) == 'c' &&
           input->dataType() == output->dataType() && shape::elementWiseStride(inTadShapeInfo) == 1 &&
           shape::elementWiseStride(outTadShapeInfo) == 1) {
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            auto inBuff = input->bufferWithOffset(inTadPack.primaryOffsets()[intArgs[i + 1]]);
-            void* outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+            auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[intArgs[i + 1]]);
+            void* outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 
             std::memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
           }
@@ -137,8 +137,8 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
       } else {
         auto func = PRAGMA_THREADS_FOR {
           for (auto i = start; i < stop; i++) {
-            auto inBuff = input->bufferWithOffset(inTadPack.primaryOffsets()[intArgs[i + 1]]);
-            auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+            auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[intArgs[i + 1]]);
+            auto outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 
             NativeOpExecutioner::execTransformAny(
                 input->getContext(), transform::Assign, inBuff, inTadShapeInfo, nullptr /*input specialBuffer*/,
