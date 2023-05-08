@@ -46,7 +46,11 @@ static void adaMaxUpdater_(const NDArray& gradient, const NDArray& initStateU, c
   const T lr = static_cast<T>(dLr);
   const T beta1 = static_cast<T>(dBeta1);
   const T beta2 = static_cast<T>(dBeta2);
-  const T epsilon = static_cast<T>(dEpsilon);
+  T epsilon = static_cast<T>(dEpsilon);
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   const T iteration = static_cast<T>(nIteration);
   const T beta1T = sd::math::sd_pow<T, T, T>(beta1, (iteration + 1));
   T epsilonT = lr / (1.0 - beta1T);
