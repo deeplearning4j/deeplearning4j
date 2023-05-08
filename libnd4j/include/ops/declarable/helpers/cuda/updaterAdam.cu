@@ -91,7 +91,6 @@ SD_KERNEL void adamUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo, c
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
     stU[stUOffset] = beta2 * initU[initUOffset] + grad[xOffset] * grad[xOffset] * (1 - beta2);
-
     up[zOffset] = (stM[stMOffset] * epsilonT) / (sd::math::sd_sqrt<T, T>(stU[stUOffset]) + epsilon);
   }
 }
@@ -108,6 +107,10 @@ void adamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
   const T beta1 = static_cast<T>(dBeta1);
   const T beta2 = static_cast<T>(dBeta2);
   const T epsilon = static_cast<T>(dEpsilon);
+  //fp16 to prevent underflow
+  if(epsilon == 0.0) {
+    epsilon = static_cast<T>(1e-7);
+  }
   const T iteration = static_cast<T>(nIteration);
   adamUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vz, zShapeInfo, vstV, stvShapeInfo, vstM, stmShapeInfo,
