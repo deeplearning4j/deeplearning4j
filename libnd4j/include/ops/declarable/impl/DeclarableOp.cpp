@@ -448,7 +448,6 @@ void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.width(); i++) {
-      sd_printf("raceExecIfNeeded(Context &block) \n", 0);
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
@@ -1026,7 +1025,6 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
 
 sd::Status sd::ops::DeclarableOp::validateOrdersMatch(Context &block) {
   if (block.width() == 0) return sd::Status::OK;
-  sd_printf("Before validateOrdersMatch\n",0);
 
   NDArray *a0 = block.variable(0)->getNDArray();
   for (auto p : *block.inputs()) {
@@ -1227,7 +1225,6 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
   block.setDataType(0, sd::DataType::FLOAT32);
   block.fillInputs(in);
   block.markInplace(isInplace);
-  // block.setRNG(ProviderRNG::getInstance().getRNG());
 
   for (int e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
