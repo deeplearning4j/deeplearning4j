@@ -63,7 +63,7 @@ class ReduceFloatFunction {
                                          const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                          void *extraParams, void *vz, const sd::LongType *zShapeInfo,
                                          const sd::LongType *hZShapeInfo, sd::LongType *dimension,
-                                         long long int dimensionLength,
+                                         sd::LongType dimensionLength,
                                          void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
   template <typename OpType>
@@ -77,7 +77,7 @@ class ReduceFloatFunction {
                                        const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
                                        void *extraParams, void *vz, const sd::LongType *zShapeInfo,
                                        const sd::LongType *hZShapeInfo, sd::LongType *dimension,
-                                       long long int dimensionLength,
+                                       sd::LongType dimensionLength,
                                        void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
   static SD_HOST void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,

@@ -620,6 +620,9 @@ std::vector<sd::LongType> ShapeUtils::pullShapeFromShapeInfo(const sd::LongType*
 }
 
 std::string ShapeUtils::shapeAsString(const NDArray* array) {
+  if(array->rankOf() == 0 && !array->isEmpty())
+    return "[0]";
+
   std::string result;
 
   result.append("[");

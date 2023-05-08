@@ -63,6 +63,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     sd::LongType* hostYShapeInfo = nullptr;
     sd::LongType* hostTShapeInfo = nullptr;
     sd::LongType* dimension = nullptr;
+
     sd::LongType dimensionLength = dimensions.size();
     std::vector<sd::LongType> copy(dimensions);
 

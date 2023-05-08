@@ -70,7 +70,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                          sd::LongType const *xShapeInfo, sd::LongType const *hXShapeInfo,
                                          void *extraParams, void *vz, sd::LongType const *zShapeInfo,
                                          sd::LongType const *hZShapeInfo, long long int *dimension,
-                                         long long int dimensionLength,
+                                         sd::LongType dimensionLength,
                                          void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
   template <typename OpType>
@@ -84,7 +84,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                        sd::LongType const *xShapeInfo, sd::LongType const *hXShapeInfo,
                                        void *extraParams, void *vz, sd::LongType const *zShapeInfo,
                                        sd::LongType const *hZShapeInfo, long long int *dimension,
-                                       long long int dimensionLength,
+                                       sd::LongType dimensionLength,
                                        void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
   static SD_HOST void execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
