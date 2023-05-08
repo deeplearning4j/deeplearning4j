@@ -121,7 +121,7 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
       sd::ConstantTadHelper::getInstance().tadForDimensions(images->shapeInfo(), restDims.data(), restDims.size());
   auto packZ =
       sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims.data(), restDims.size());
-  int batchCount = packX.numberOfTads();
+  int batchCount = packX->numberOfTads();
 
   PointersManager manager(context, "helpers::extractPatches");
 
@@ -131,8 +131,8 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
 
   globalExtractPatchesKernel<T><<<128, 128, 1024, *stream>>>(
       theSame, batchCount, sizeRow, sizeCol, rowDim, colDim, outRowDim, outColDim, strideRow, strideCol, rateRow,
-      rateCol, rowCast, colCast, lastDim, imagesBuffer, packX.specialShapeInfo(), packX.specialOffsets(), outputBuffer,
-      packZ.specialShapeInfo(), packZ.specialOffsets());
+      rateCol, rowCast, colCast, lastDim, imagesBuffer, packX->specialShapeInfo(), packX->specialOffsets(), outputBuffer,
+      packZ->specialShapeInfo(), packZ->specialOffsets());
 
   manager.synchronize();
   NDArray::registerSpecialUse({output}, {images});

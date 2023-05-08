@@ -30,7 +30,7 @@ import org.nd4j.linalg.api.ops.Op;
 @AllArgsConstructor
 public class OpDescriptor {
     private Op op;
-    private int[] dimensions;
+    private long[] dimensions;
 
     public OpDescriptor(Op op) {
         this(op, null);

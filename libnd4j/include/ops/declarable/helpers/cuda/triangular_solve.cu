@@ -158,8 +158,8 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
   T* outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   triangularSolveKernel<T><<<128, 128, 256, *stream>>>(
       leftBuf, leftInput->specialShapeInfo(), rightBuf, rightInput->specialShapeInfo(), lower, unitsOnDiag, outputBuf,
-      output->specialShapeInfo(), leftTads.specialShapeInfo(), leftTads.specialOffsets(), rightTads.specialShapeInfo(),
-      rightTads.specialOffsets(), outputTads.specialShapeInfo(), outputTads.specialOffsets(), leftTads.numberOfTads());
+      output->specialShapeInfo(), leftTads->specialShapeInfo(), leftTads->specialOffsets(), rightTads->specialShapeInfo(),
+      rightTads->specialOffsets(), outputTads->specialShapeInfo(), outputTads->specialOffsets(), leftTads->numberOfTads());
 
   NDArray::registerSpecialUse({output}, {leftInput, rightInput});
 
@@ -267,13 +267,13 @@ static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* 
   auto columns = input->sizeAt(-1);
 
   if (lower) {
-    lowerAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads.numberOfTads(), rows, columns,
-                                                      inputTads.specialShapeInfo(), inputTads.specialOffsets(),
-                                                      outputTads.specialShapeInfo(), outputTads.specialOffsets());
+    lowerAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+                                                      inputTads->specialShapeInfo(), inputTads->specialOffsets(),
+                                                      outputTads->specialShapeInfo(), outputTads->specialOffsets());
   } else {
-    upperAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads.numberOfTads(), rows, columns,
-                                                      inputTads.specialShapeInfo(), inputTads.specialOffsets(),
-                                                      outputTads.specialShapeInfo(), outputTads.specialOffsets());
+    upperAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+                                                      inputTads->specialShapeInfo(), inputTads->specialOffsets(),
+                                                      outputTads->specialShapeInfo(), outputTads->specialOffsets());
   }
 }
 

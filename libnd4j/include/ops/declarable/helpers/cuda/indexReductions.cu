@@ -41,7 +41,7 @@ void argMax(const NDArray& input, NDArray& output, const std::vector<sd::LongTyp
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
                                          output.buffer(), output.shapeInfo(), output.specialBuffer(),
                                          output.specialShapeInfo(), (sd::LongType*)nullptr, dimensions.size(),
-                                         tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                                         tadPack->specialShapeInfo(), tadPack->specialOffsets());
   }
 
   NDArray::registerSpecialUse({&output}, {&input});
@@ -61,7 +61,7 @@ void argMin(const NDArray& input, NDArray& output, const std::vector<sd::LongTyp
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
                                          output.buffer(), output.shapeInfo(), output.specialBuffer(),
                                          output.specialShapeInfo(), (sd::LongType*)nullptr, dimensions.size(),
-                                         tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                                         tadPack->specialShapeInfo(), tadPack->specialOffsets());
   }
 
   NDArray::registerSpecialUse({&output}, {&input});
@@ -81,7 +81,7 @@ void argAbsMax(const NDArray& input, NDArray& output, const std::vector<sd::Long
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                          input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                          output.specialBuffer(), output.specialShapeInfo(), (sd::LongType*)nullptr,
-                                         dimensions.size(), tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                                         dimensions.size(), tadPack->specialShapeInfo(), tadPack->specialOffsets());
   }
 
   NDArray::registerSpecialUse({&output}, {&input});
@@ -101,7 +101,7 @@ void argAbsMin(const NDArray& input, NDArray& output, const std::vector<sd::Long
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                          input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                          output.specialBuffer(), output.specialShapeInfo(), (sd::LongType*)nullptr,
-                                         dimensions.size(), tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                                         dimensions.size(), tadPack->specialShapeInfo(), tadPack->specialOffsets());
   }
 
   NDArray::registerSpecialUse({&output}, {&input});

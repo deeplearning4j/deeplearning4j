@@ -83,7 +83,7 @@ void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX.numberOfTads();
+  const sd::LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
@@ -93,8 +93,8 @@ void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* 
   NDArray::prepareSpecialUse({output}, {input, deltaScalarArr});
   BUILD_SINGLE_SELECTOR(input->dataType(), adjustHueCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
-                         input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(),
-                         output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, deltaScalarArr, dimC),
+                         input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
+                         output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, deltaScalarArr, dimC),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {input, deltaScalarArr});
 

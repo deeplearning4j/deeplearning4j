@@ -116,10 +116,10 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     segmentSqrtNTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
@@ -243,12 +243,12 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentSqrtNBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),

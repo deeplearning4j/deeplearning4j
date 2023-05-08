@@ -70,9 +70,9 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
 
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
 
-    auto pTadShape = packX.specialShapeInfo();
-    auto pTadShapeH = packX.primaryShapeInfo();
-    auto pTadOffsets = packX.specialOffsets();
+    auto pTadShape = packX->specialShapeInfo();
+    auto pTadShapeH = packX->primaryShapeInfo();
+    auto pTadOffsets = packX->specialOffsets();
     sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(),
             sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
     sortedVals.tickWriteDevice();

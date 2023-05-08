@@ -125,9 +125,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         invokeWatchdog(op);
 
         if (op instanceof ReduceOp) {
-            exec((ReduceOp) op, new int[] {Integer.MAX_VALUE});
+            exec((ReduceOp) op, new long[] {Integer.MAX_VALUE});
         } else if (op instanceof IndexAccumulation) {
-            exec((IndexAccumulation) op, new int[] {Integer.MAX_VALUE});
+            exec((IndexAccumulation) op, new long[] {Integer.MAX_VALUE});
         } else if (op instanceof ScalarOp || op instanceof TransformOp) {
             // the only entry place for TADless ops
             processAsGridOp(op);
@@ -235,7 +235,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         execCounter.incrementAndGet();
 
         Op op = descriptor.getOp();
-        int[] dimensions = descriptor.getDimensions();
+        long[] dimensions = descriptor.getDimensions();
 
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
@@ -302,7 +302,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return execCounter.get();
     }
 
-    protected void processAsGridOp(Op op, int... dimension) {
+    protected void processAsGridOp(Op op, long... dimension) {
         /*
             We have multiple options here:
                 1) Op has no relation to lastOp
@@ -312,7 +312,6 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             So we either should append this op to future GridOp, form MetaOp, or immediately execute everything
             But we don't expect this method called for blocking ops ever, so it's either
         */
-        // CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
 
         OpDescriptor last = lastOp.get();
@@ -416,7 +415,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         //   logger.info("Dequeued op: " + descriptor.getOp().getClass().getSimpleName());
     }
 
-    protected MetaType getMetaOpType(Op op, int... dimension) {
+    protected MetaType getMetaOpType(Op op, long... dimension) {
 
         //if (1 > 0) return MetaType.NOT_APPLICABLE;
 
@@ -506,7 +505,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
      * @param dimensions
      * @return
      */
-    protected GridPointers pointerizeOp(Op op, int... dimensions) {
+    protected GridPointers pointerizeOp(Op op, long... dimensions) {
         GridPointers pointers = new GridPointers(op, dimensions);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
@@ -579,7 +578,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         return null;
     }
 
-    protected void buildZ(IndexAccumulation op, int... dimension) {
+    protected void buildZ(IndexAccumulation op, long... dimension) {
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++) {
@@ -589,7 +588,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         //do op along all dimensions
         if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+            dimension = new long[] {Integer.MAX_VALUE};
 
 
         long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
@@ -616,7 +615,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
     }
 
-    protected void buildZ(ReduceOp op, int... dimension) {
+    protected void buildZ(ReduceOp op, long... dimension) {
         Arrays.sort(dimension);
 
         for (int i = 0; i < dimension.length; i++) {
@@ -626,7 +625,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         //do op along all dimensions
         if (dimension.length == op.x().rank())
-            dimension = new int[] {Integer.MAX_VALUE};
+            dimension = new long[] {Integer.MAX_VALUE};
 
 
         long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {1, 1}
@@ -667,7 +666,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         }
     }
 
-    public INDArray exec(ReduceOp op, int... dimension) {
+    public INDArray exec(ReduceOp op, long... dimension) {
 
 
         // we should check, if this op returns scalar or not
@@ -687,15 +686,15 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
 
-    public INDArray exec(IndexAccumulation op, int... dimension) {
+    public INDArray exec(IndexAccumulation op, long... dimension) {
         //        buildZ(op, dimension);
 
         if (dimension == null || dimension.length == 0 || dimension[0] == Integer.MAX_VALUE) {
             // So, that's scalar. We'll have to flush queue
             flushQueue();
 
-            buildZ(op, new int[] {Integer.MAX_VALUE});
-            super.invoke(op, null, new int[] {Integer.MAX_VALUE});
+            buildZ(op, new long[] {Integer.MAX_VALUE});
+            super.invoke(op, null, new long[] {Integer.MAX_VALUE});
         } else {
             buildZ(op, dimension);
             processAsGridOp(op, dimension);
@@ -705,7 +704,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
 
-    public INDArray exec(BroadcastOp op, int... dimension) {
+    public INDArray exec(BroadcastOp op, long... dimension) {
         processAsGridOp(op, dimension);
 
         return op.z();

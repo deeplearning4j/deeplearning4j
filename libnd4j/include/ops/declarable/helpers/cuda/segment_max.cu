@@ -184,11 +184,11 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    segmentMaxTadKernel<T, I><<<packX.numberOfTads(), 512, 2048, *stream>>>(
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    segmentMaxTadKernel<T, I><<<packX->numberOfTads(), 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
@@ -228,10 +228,10 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     output->assign(-DataTypeUtils::max<T>());
     segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
@@ -361,14 +361,14 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX.specialShapeInfo();
-    sd::LongType const* inputTadOffsets = packX.specialOffsets();
-    sd::LongType const* outputTads = packZ.specialShapeInfo();
-    sd::LongType const* outputTadOffsets = packZ.specialOffsets();
-    sd::LongType const* gradInTads = packGradIn.specialShapeInfo();
-    sd::LongType const* gradInTadOffsets = packGradIn.specialOffsets();
-    sd::LongType const* gradOutTads = packGradOut.specialShapeInfo();
-    sd::LongType const* gradOutTadOffsets = packGradOut.specialOffsets();
+    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadOffsets = packX->specialOffsets();
+    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadOffsets = packZ->specialOffsets();
+    sd::LongType const* gradInTads = packGradIn->specialShapeInfo();
+    sd::LongType const* gradInTadOffsets = packGradIn->specialOffsets();
+    sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
+    sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMaxBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
@@ -412,14 +412,14 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX.specialShapeInfo();
-    sd::LongType const* inputTadOffsets = packX.specialOffsets();
-    sd::LongType const* outputTads = packZ.specialShapeInfo();
-    sd::LongType const* outputTadOffsets = packZ.specialOffsets();
-    sd::LongType const* gradInTads = packGradIn.specialShapeInfo();
-    sd::LongType const* gradInTadOffsets = packGradIn.specialOffsets();
-    sd::LongType const* gradOutTads = packGradOut.specialShapeInfo();
-    sd::LongType const* gradOutTadOffsets = packGradOut.specialOffsets();
+    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadOffsets = packX->specialOffsets();
+    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadOffsets = packZ->specialOffsets();
+    sd::LongType const* gradInTads = packGradIn->specialShapeInfo();
+    sd::LongType const* gradInTadOffsets = packGradIn->specialOffsets();
+    sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
+    sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentMaxBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),

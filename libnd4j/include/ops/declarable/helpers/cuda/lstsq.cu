@@ -56,8 +56,8 @@ static void fillRegularizer(sd::LaunchContext* context, NDArray& ioMatrix, doubl
   auto rows = ioMatrix.sizeAt(-2);
   // auto cols = ioMatrix.sizeAt(-1);
   fillRegularizerKernel<T><<<256, 256, 128, *stream>>>(
-      ioMatrix.dataBuffer()->specialAsT<T>(), ioMatrix.specialShapeInfo(), lastDimsTads.specialShapeInfo(),
-      lastDimsTads.specialOffsets(), lastDimsTads.numberOfTads(), rows, (T)value);
+      ioMatrix.dataBuffer()->specialAsT<T>(), ioMatrix.specialShapeInfo(), lastDimsTads->specialShapeInfo(),
+      lastDimsTads->specialOffsets(), lastDimsTads->numberOfTads(), rows, (T)value);
 }
 
 template <typename T>

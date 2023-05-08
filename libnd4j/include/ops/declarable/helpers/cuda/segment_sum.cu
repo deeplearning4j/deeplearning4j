@@ -172,10 +172,10 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     segmentSumTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
@@ -218,10 +218,10 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
     std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
     segmentSumTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
@@ -328,12 +328,12 @@ sd::Status segmentSumFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentSumBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
@@ -369,12 +369,12 @@ static sd::Status unsortedSegmentSumFunctorBP_(sd::LaunchContext* context, NDArr
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    auto inputTads = packX.specialShapeInfo();
-    auto inputTadOffsets = packX.specialOffsets();
-    auto outputTads = packZ.specialShapeInfo();
-    auto outputTadOffsets = packZ.specialOffsets();
-    auto gradOutTads = packGradOut.specialShapeInfo();
-    auto gradOutTadOffsets = packGradOut.specialOffsets();
+    auto inputTads = packX->specialShapeInfo();
+    auto inputTadOffsets = packX->specialOffsets();
+    auto outputTads = packZ->specialShapeInfo();
+    auto outputTadOffsets = packZ->specialOffsets();
+    auto gradOutTads = packGradOut->specialShapeInfo();
+    auto gradOutTadOffsets = packGradOut->specialOffsets();
 
     segmentSumBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),

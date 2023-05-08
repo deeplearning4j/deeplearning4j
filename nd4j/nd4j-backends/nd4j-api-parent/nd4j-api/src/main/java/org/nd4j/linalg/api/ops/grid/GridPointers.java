@@ -77,7 +77,7 @@ public class GridPointers {
     // Op extraArgs
     private Pointer extraArgs;
 
-    public GridPointers(Op op, int... dimensions) {
+    public GridPointers(Op op, long... dimensions) {
         this.type = BaseOp.getOpType(op);
         this.dtype = op.x().data().dataType();
         this.opNum = op.opNum();

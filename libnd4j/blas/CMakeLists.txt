@@ -377,7 +377,7 @@ if(SD_CUDA)
             include_directories(${CMAKE_CURRENT_SOURCE_DIR}/backward-cpp)
             file(GLOB_RECURSE SOURCES ${BACKWARDS_SOURCES} backward-cpp/*.cpp)
             # TODO: come back for backward
-            add_library(samediff_obj OBJECT  PUBLIC Backward::Backward ${BACKWARD_ENABLE}  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
+            add_library(samediff_obj OBJECT    ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
                     ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
@@ -385,7 +385,6 @@ if(SD_CUDA)
                     )
 
 
-            add_backward(samediff_obj)
         else()
             add_library(samediff_obj OBJECT  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
                     ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}

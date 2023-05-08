@@ -509,8 +509,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         TADManager tadManager = Nd4j.getExecutioner().getTADManager();
 
-        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new int[] {sourceDimension});
-        Pair<DataBuffer, DataBuffer> zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {sourceDimension});
+        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(source, new long[] {sourceDimension});
+        Pair<DataBuffer, DataBuffer> zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new long[] {sourceDimension});
 
         Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
         Pointer zTadShapeInfo = AtomicAllocator.getInstance().getPointer(zTadBuffers.getFirst(), context);
@@ -852,7 +852,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         int tadLength = 1;
         if (zero.rank() > 1)
             for (int i = 0; i < dimensions.get(0).length; i++) {
-                tadLength *= zero.shape()[dimensions.get(0)[i]];
+                tadLength *= zero.size(dimensions.get(0)[i]);
             }
 
         val numTads = zero.length() / tadLength;
@@ -889,7 +889,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             val tadManager = Nd4j.getExecutioner().getTADManager();
 
-            int[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
+            long[] dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
 
             val tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
@@ -1275,8 +1275,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         long tadLength = 1;
         val shape = new long[dimensions.length];
         for (int i = 0; i < dimensions.length; i++) {
-            tadLength *= tensor.shape()[dimensions[i]];
-            shape[i] = tensor.shape()[dimensions[i]];
+            tadLength *= tensor.size(dimensions[i]);
+            shape[i] = tensor.size(dimensions[i]);
         }
 
 

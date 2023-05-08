@@ -34,7 +34,7 @@ public class ReduceMetaOp extends BaseMetaOp {
         super();
     }
 
-    public ReduceMetaOp(ScalarOp opA, ReduceOp opB, int... dimensions) {
+    public ReduceMetaOp(ScalarOp opA, ReduceOp opB, long... dimensions) {
         this(new OpDescriptor(opA), new OpDescriptor(opB, dimensions));
     }
 

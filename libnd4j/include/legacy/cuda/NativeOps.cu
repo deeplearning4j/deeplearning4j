@@ -741,7 +741,7 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
         &lc, opNum, dbX->primary(), hXShapeInfo, dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
         hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        (sd::LongType *)dbDimension->special(), dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        (sd::LongType *)dbDimension->special(), dimensionLength, tadPack->specialShapeInfo(), tadPack->specialOffsets());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
@@ -778,7 +778,7 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
-      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, 
+      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo,
                                                                                             dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
@@ -1421,8 +1421,7 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
  */
 sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType*dimension, sd::LongType dimensionLength) {
   try {
-    auto pack = new TadPack();
-    *pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1693,7 +1692,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
 
     auto tadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
-    auto tadLength = shape::length(tadPack.primaryShapeInfo());
+    auto tadLength = shape::length(tadPack->primaryShapeInfo());
     auto yLength = shape::length(hYShapeInfo);
     auto xLength = shape::length(hXShapeInfo);
 
@@ -2368,12 +2367,13 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShap
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack.numberOfTads(), 256, 2048);
+    dim3 launchDims((int)tadPack->numberOfTads(), 256, 2048);
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     auto yType = sd::ArrayOptions::dataType(yShapeInfo);
+
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
-                          (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, nullptr, dimensionLength,
-                              tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                          (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, dimension, dimensionLength,
+                              tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
@@ -2391,13 +2391,13 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack.numberOfTads(), 256, 2048);
+    dim3 launchDims((int)tadPack->numberOfTads(), 256, 2048);
     auto xType = sd::ArrayOptions::dataType(yShapeInfo);
     auto yType = sd::ArrayOptions::dataType(xShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
-                          (launchDims, stream, dy, dyShapeInfo, dx, dxShapeInfo, nullptr, dimensionLength,
-                              tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                          (launchDims, stream, dy, dyShapeInfo, dx, dxShapeInfo, dimension, dimensionLength,
+                              tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
@@ -2416,7 +2416,7 @@ void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack.numberOfTads(), 512, 33768);
+    dim3 launchDims((int)tadPack->numberOfTads(), 512, 33768);
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,
@@ -2556,77 +2556,77 @@ sd::LongType getShapeListSize(sd::ShapeList *list) { return list->size(); }
 sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) { return list->at(i); }
 
 static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::LongType hash,
-sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
-    sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
-double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
-int numBArgs, bool isInplace) {
-if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
+                                     sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
+                                     sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
+                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
+                                     int numBArgs, bool isInplace) {
+  if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
 // we're using the same fake nodeId everywhere here
 
-std::vector<sd::NDArray *> inputs(numInputs);
-std::vector<sd::NDArray *> outputs(numOutputs);
-std::vector<double> ttArgs(numTArgs);
-std::vector<bool> bbArgs(numBArgs);
-std::vector<sd::LongType> iiArgs(numIArgs);
+  std::vector<sd::NDArray *> inputs(numInputs);
+  std::vector<sd::NDArray *> outputs(numOutputs);
+  std::vector<double> ttArgs(numTArgs);
+  std::vector<bool> bbArgs(numBArgs);
+  std::vector<sd::LongType> iiArgs(numIArgs);
 
 // filling block now with inputs
-for (int e = 0; e < numInputs; e++) {
-auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
+  for (int e = 0; e < numInputs; e++) {
+    auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+    void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
 
-inputs[e] = new sd::NDArray(buffer, bufferD, shape);
-}
+    inputs[e] = new sd::NDArray(buffer, bufferD, shape);
+  }
 
 // if not inplace - transferring output arrays
 
-if (!isInplace)
-for (int e = 0; e < numOutputs; e++) {
+  if (!isInplace)
+    for (int e = 0; e < numOutputs; e++) {
 // we want to keep original output shape intact
-auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
-void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
+      auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
+      void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
+      void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
 
 // FIXME: revisit this.
-bool canNullify = true;
-for (int i = 0; i < numInputs; i++) {
-void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
-if (ibuffer == buffer) {
-canNullify = false;
-break;
-}
-}
+      bool canNullify = true;
+      for (int i = 0; i < numInputs; i++) {
+        void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
+        if (ibuffer == buffer) {
+          canNullify = false;
+          break;
+        }
+      }
 
-if (canNullify && buffer != nullptr)
-memset((uint8_t *)buffer, '\0',
-shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
+      if (canNullify && buffer != nullptr)
+        memset((uint8_t *)buffer, '\0',
+               shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
-auto array = new sd::NDArray(buffer, bufferD, shape);
-outputs[e] = array;
-}
+      auto array = new sd::NDArray(buffer, bufferD, shape);
+      outputs[e] = array;
+    }
 
-for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
+  for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
 
-for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
+  for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
 
-for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
+  for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
 
 // hypothetically at this point we have everything filled
-auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
+  auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
 // auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
-if (!isInplace)
-for (int e = 0; e < numOutputs; e++) {
-if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
-outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
-}
+  if (!isInplace)
+    for (int e = 0; e < numOutputs; e++) {
+      if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
+        outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
+    }
 
-for (auto v : inputs) delete v;
+  for (auto v : inputs) delete v;
 
-for (auto v : outputs) delete v;
+  for (auto v : outputs) delete v;
 
-return Status::OK;
+  return Status::OK;
 }
 
 Status execCustomOp(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
@@ -3647,31 +3647,44 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
   }
 
 }
-void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer,
-                                 sd::InteropDataBuffer **shapeInfo, sd::InteropDataBuffer **specialShapeInfo) {
-  auto inputShapeBuffers = (void **) shapeInfo;
+void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffer,
+                                  void **shapeInfo, void **specialShapeInfo) {
   if(shapeInfo == nullptr)
     throw std::runtime_error("Input shape info was null!");
+
+
+  OpaqueDataBuffer  **buffers = (OpaqueDataBuffer **) buffer;
+  OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
+  OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
+
   for(int i = 0; i < numArrays; i++) {
-    if(inputShapeBuffers[i] == nullptr)
+    if(shapeInfo[i] == nullptr)
       throw std::runtime_error("Input shape at index was null!");
-    if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextInputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+
+
+    sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
+    if(buffer != nullptr && buffer[i] != nullptr) {
+      setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+    }
     else {
-      setGraphContextInputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+      setGraphContextInputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr);
     }
   }
 
 }
-void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, OpaqueDataBuffer** buffer,
-                                  sd::InteropDataBuffer **shapeInfo, sd::InteropDataBuffer **specialShapeInfo) {
-  auto inputShapeBuffers = (void **) shapeInfo;
+void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
+                                  void **shapeInfo, void **specialShapeInfo) {
 
+  OpaqueDataBuffer **buffers = (OpaqueDataBuffer **) buffer;
+  OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
+  OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
   for(int i = 0; i < numArrays; i++) {
-    if(buffer != nullptr && buffer[i] != nullptr)
-      setGraphContextOutputBuffer(ptr,i,buffer[i],inputShapeBuffers[i],specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
-    else {
-      setGraphContextOutputBuffer(ptr,i, nullptr,inputShapeBuffers[i],specialShapeInfo);
+
+    if(buffer != nullptr && buffer[i] != nullptr) {
+      setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
+                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+    } else {
+      setGraphContextOutputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     }
 
   }
