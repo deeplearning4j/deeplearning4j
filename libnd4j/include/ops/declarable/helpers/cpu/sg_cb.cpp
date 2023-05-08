@@ -423,7 +423,6 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
   } else {
     // regular mode provides 0 guarantees for reproducibility
     auto numTargets = targets.lengthOf();
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(int iteration = 0; iteration < iterations; iteration++) {
       for (auto t = 0; t < numTargets; t++) {
         doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
@@ -564,7 +563,6 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
   } else {
     // regular mode provides 0 guarantees for reproducibility
     auto numTargets = targets.lengthOf();
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
     for(int iteration = 0; iteration < iterations; iteration++) {
       for (auto t = 0; t < numTargets; t++) {
         doCbowLoop_(s0, s1, s1n, negStarters, indices, codes, lr, nextRandom, nLabels, nsRounds, vocabSize,
