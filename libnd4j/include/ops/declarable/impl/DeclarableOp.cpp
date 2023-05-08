@@ -116,7 +116,6 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
     std::pair<int, int> pair(ctx.nodeId(), inputId);
 
     if (ctx.isInplace()) {
-      sd_printf("DeclarableOp::getZ(Context &ctx, int inputId) Before ctx.variable in getZ() \n", inputId);
       z = ctx.variable(inputId)->getNDArray();
 
       // hypothetically it's possible to have no variable. chances are low, but who knows. let's just create it for now
@@ -614,7 +613,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           if (_descriptor->isSameMode()) {
             if (index >= block.width()) {
               if (block.width() == 0) continue;
-              sd_printf("Before variable validate data types\n",0);
               auto iv = block.variable(0);
 
               if (iv->getNDArray()->dataType() != cType) {
@@ -624,7 +622,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
                 return sd::Status::BAD_ARGUMENTS;
               }
             } else {
-              sd_printf("Before variable validate data types 2\n",0);
 
               // for same mode, output type must be the same as input type
               auto iv = block.variable(index);
