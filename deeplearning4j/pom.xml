@@ -57,7 +57,7 @@
         <module>deeplearning4j-zoo</module>
         <module>deeplearning4j-data</module>
         <module>deeplearning4j-common-tests</module>
-        <module>deeplearning4j-scaleout-parallelwrapper</module>
+        <module>deeplearning4j-parallelwrapper</module>
     </modules>
 
     <dependencyManagement>

@@ -193,6 +193,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-parallel-wrapper</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-arrow</artifactId>
             <version>${project.version}</version>
@@ -306,11 +312,6 @@
             <version>${dl4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-scaleout-parallelwrapper-parameter-server</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
