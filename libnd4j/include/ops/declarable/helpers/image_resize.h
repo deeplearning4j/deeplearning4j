@@ -88,6 +88,8 @@ template <typename T = float>
 struct IKernelFunc {
   virtual T operator()(T x) const = 0;
   virtual T radius() const = 0;
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~IKernelFunc() = default;
 };
 #endif
 
@@ -135,6 +137,8 @@ struct KeysCubicKernelFunc
   SD_HOST_DEVICE T radius() const { return T(2); }
 
   T _coef = KEYS_CUBIC_COEF;
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~KeysCubicKernelFunc() = default;
 };
 
 struct LanczosKernelFunc
@@ -156,6 +160,8 @@ struct LanczosKernelFunc
   }
   SD_HOST_DEVICE float radius() const { return _radius; }
   const float _radius;
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~LanczosKernelFunc() = default;
 };
 
 struct GaussianKernelFunc
@@ -178,6 +184,8 @@ struct GaussianKernelFunc
   SD_HOST_DEVICE float radius() const { return _radius; }
   const float _radius;
   const float _sigma;  // Gaussian standard deviation
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~GaussianKernelFunc() = default;
 };
 
 struct BoxKernelFunc
@@ -190,6 +198,9 @@ struct BoxKernelFunc
     return x < 0.5f ? 1.f : x == 0.5f ? 0.5f : 0.f;
   }
   SD_HOST_DEVICE float radius() const { return 1.f; }
+
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~BoxKernelFunc() = default;
 };
 
 struct TriangleKernelFunc
@@ -203,6 +214,9 @@ struct TriangleKernelFunc
     return x < 1.f ? 1.f - x : 0.f;
   }
   SD_HOST_DEVICE float radius() const { return 1.f; }
+
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~TriangleKernelFunc() = default;
 };
 
 struct MitchellCubicKernelFunc
@@ -239,6 +253,9 @@ struct Spans {
   // The output pixel at x is computed as:
   //   dot_product(input[starts[x]:starts[x]+span_size], weights[x]).
   NDArray _weights;
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~Spans() = default;
+
 };
 
 template <typename I, typename F>
@@ -325,6 +342,9 @@ struct BilinearInterpolationData {
   // 1-D linear iterpolation scale (see:
   // https://en.wikipedia.org/wiki/Bilinear_interpolation)
   double interpolarValue;
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~BilinearInterpolationData() = default;
+
 };
 
 SD_INLINE SD_HOST_DEVICE float legacy_scaler(const int x, const float scale) { return static_cast<float>(x) * scale; }
@@ -337,6 +357,9 @@ struct LegacyScaler {
   SD_INLINE SD_HOST_DEVICE float operator()(const int x, const float scale) const {
     return static_cast<float>(x) * scale;
   }
+
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~LegacyScaler() = default;
 };
 
 // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
@@ -348,6 +371,9 @@ struct HalfPixelScaler {
     // sampling code etc assumes pixels are in the old coordinate system.
     return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
   }
+
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~HalfPixelScaler() = default;
 };
 
 // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
@@ -359,6 +385,9 @@ struct HalfPixelScalerNN {
     // sampling code etc assumes pixels are in the old coordinate system.
     return (static_cast<float>(x) + 0.5f) * scale;
   }
+
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~HalfPixelScalerNN() = default;
 };
 
 constexpr sd::LongType kTableSize = (1 << 10);
@@ -374,6 +403,8 @@ struct WeightsAndIndices {
   sd::LongType _index3;
 
   int _advance;  // advance value.
+  // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
+  virtual ~WeightsAndIndices() = default;
 };
 
 SD_INLINE SD_HOST_DEVICE sd::LongType bound(sd::LongType val, sd::LongType limit) {

@@ -519,11 +519,14 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           }
           sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
                     ctype.c_str(),allTypes.c_str());
-        } else {
+        } else  if(!inputTypes2.size() < 1){
           auto typeAsString = DataTypeUtils::asString(inputTypes2[0]);
           sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
                     ctype.c_str(),typeAsString.c_str());
+        } else {
+          sd_printf("Op [%s] data types empty \n",_descriptor->getOpName()->data());
         }
+
 
         return sd::Status::BAD_ARGUMENTS;
       }

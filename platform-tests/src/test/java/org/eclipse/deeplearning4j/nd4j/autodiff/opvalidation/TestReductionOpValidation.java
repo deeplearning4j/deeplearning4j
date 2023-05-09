@@ -22,13 +22,11 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.hadoop.shaded.org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.Disabled;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;

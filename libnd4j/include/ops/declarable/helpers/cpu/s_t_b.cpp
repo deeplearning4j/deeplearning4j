@@ -104,7 +104,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& output,
-                            const sd::Unsigned numOfSpatialDims) {
+                            const LongType numOfSpatialDims) {
   // input [bS, H * blockShape[0], W * blockShape[1], iC]
   // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
 
@@ -117,7 +117,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
 
-  const int rank = input.rankOf();
+  const sd::LongType rank = input.rankOf();
   const sd::LongType zLen = output.lengthOf();
 
   // loop through input array
@@ -127,10 +127,10 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
     for (auto i = start; i < stop; i++) {
       shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
-      memcpy(xCoords, zCoords, rank * sizeof(int));
+      memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
       // evaluate spatial coordinates for x
-      for (sd::Unsigned j = 1; j <= numOfSpatialDims; ++j)
+      for (sd::LongType j = 1; j <= numOfSpatialDims; ++j)
         xCoords[j] += crop.e<sd::Unsigned>(j - 1, 0);  // add crop left
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
@@ -144,7 +144,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_,
-                      (const NDArray& input, const NDArray& crop, NDArray& output, const sd::Unsigned numOfSpatialDims),
+                      (const NDArray& input, const NDArray& crop, NDArray& output, const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,8 +154,8 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
   // cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
 
-  const sd::Unsigned rank = input.rankOf();
-  const sd::Unsigned numOfSpatialDims = blockShape.sizeAt(0);
+  const sd::LongType rank = input.rankOf();
+  const sd::LongType numOfSpatialDims = blockShape.sizeAt(0);
 
   //*** construct reshaping std::vector for first reshape of input array ***//
 
@@ -176,7 +176,7 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
     temp[2 * i - 1] = numOfSpatialDims + i;
     temp[2 * i] = i - 1;
   }
-  for (i = 2 * numOfSpatialDims + 1; i < static_cast<sd::Unsigned>(temp.size()); ++i) temp[i] = i;
+  for (i = 2 * numOfSpatialDims + 1; i < static_cast<sd::LongType>(temp.size()); ++i) temp[i] = i;
 
   inputRearranged0.permutei(temp);
 
@@ -229,8 +229,8 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::Unsig
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto b = start_x; b < stop_x; b += inc_x) {
       for (auto h = start_y; h < stop_y; h += inc_y) {
-        for (sd::Unsigned w = 0; w < oW; ++w) {
-          for (sd::Unsigned c = 0; c < iC; ++c) {
+        for (sd::LongType w = 0; w < oW; ++w) {
+          for (sd::LongType c = 0; c < iC; ++c) {
             const sd::LongType zOffset = b * zShapeInfo[5] + h * zShapeInfo[6] + w * zShapeInfo[7] + c * zShapeInfo[8];
 
             if (h >= padBottom && h < oH - padTop && w >= padLeft && w < oW - padRight) {
@@ -281,7 +281,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArray& output,
-                            const sd::Unsigned numOfSpatialDims) {
+                            const LongType numOfSpatialDims) {
   // 4D example
   // input [bS, H * blockShape[0] - padBottom - padTop, W * blockShape[1] - padLeft - padRight, iC]
   // output [bS, H * blockShape[0], W * blockShape[1], iC]
@@ -307,13 +307,13 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
-      memcpy(xCoords, zCoords, rank * sizeof(int));
+      memcpy(xCoords, zCoords, rank * sizeof(LongType));
 
       bool within = true;
 
       for (sd::Unsigned j = 1; j <= numOfSpatialDims; ++j) {
-        const auto padLeft = padding.e<sd::Unsigned>(j - 1, 0);
-        const auto padRight = padding.e<sd::Unsigned>(j - 1, 1);
+        const auto padLeft = padding.e<sd::LongType>(j - 1, 0);
+        const auto padRight = padding.e<sd::LongType>(j - 1, 1);
 
         within &= zCoords[j] >= padLeft && zCoords[j] < output.sizeAt(j) - padRight;
 
@@ -334,7 +334,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_,
                       (const NDArray& input, const NDArray& padding, NDArray& output,
-                       const sd::Unsigned numOfSpatialDims),
+                       const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -392,93 +392,6 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
   }
 }
 
-/*
-    template <int N, bool B2S>
-    struct SpaceToBatchHelper {
-        template <typename T>
-        static void run(T *ptrSpace, const sd::LongType *space_shape, const sd::LongType *space_strides, const
-sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, T *ptrBatch, const
-sd::LongType *batch_shape, const sd::LongType *batch_strides) { for (int batch_pos = 0; batch_pos < batch_shape[0];
-++batch_pos) { const int space_pos = batch_pos * block_shape[0] + block_offsets[0] - pad_start[0]; if (space_pos >= 0 &&
-space_pos < space_shape[0]) { SpaceToBatchHelper<N - 1, B2S>::run(ptrSpace + space_pos * space_strides[0], space_shape +
-1, space_strides + 1, block_shape + 1, pad_start + 1, block_offsets + 1, ptrBatch, batch_shape + 1, batch_strides + 1);
-                } else {
-                    if (!B2S)
-                        for (int i = 0; i < batch_strides[0]; i++)
-                            ptrBatch[i] = (T) 0.f;
-                }
-
-                ptrBatch += batch_strides[0];
-            }
-        }
-    };
-
-    template <bool B2S>
-    struct SpaceToBatchHelper<0, B2S> {
-        template <typename T>
-        static void run(T *ptrSpace, const sd::LongType *space_shape, const sd::LongType *space_strides, const
-sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, T *ptrBatch, const
-sd::LongType *batch_shape, const sd::LongType *batch_strides) { int str = batch_strides[-1]; for (int i = 0; i < str;
-i++) if (B2S) ptrSpace[i] = ptrBatch[i]; else ptrBatch[i] = ptrSpace[i];
-        }
-    };
-
-    template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(sd::LaunchContext * context, void *vptrSpace, const sd::LongType *space_shape, const sd::LongType
-*space_strides, const sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, void
-*vptrBatch, const sd::LongType *batch_shape, const sd::LongType *batch_strides) { auto ptrSpace = reinterpret_cast<T
-*>(vptrSpace); auto ptrBatch = reinterpret_cast<T *>(vptrBatch); SpaceToBatchHelper<NUM_BLOCK_DIMS, B2S>::run(ptrSpace,
-space_shape, space_strides, block_shape, pad_start, block_offsets, ptrBatch, batch_shape, batch_strides);
-    };
-
-    sd::Status _spaceToBatch(sd::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output,
-std::vector<sd::LongType> &internal_input_shape, std::vector<sd::LongType> &internal_output_shape, sd::LongType
-*block_shape, sd::LongType *paddings) { auto in = input->reshape('c', internal_input_shape); auto out =
-output->reshape('c', internal_output_shape); switch (internal_block_dims) { case 1: _prepare<1, false>(context, &in,
-&out, block_shape, paddings); break; case 2: _prepare<2, false>(context, &in, &out, block_shape, paddings); break; case
-3: _prepare<3, false>(context, &in, &out, block_shape, paddings); break; case 4: _prepare<4, false>(context, &in, &out,
-block_shape, paddings); break; default: { return Logger::logKernelFailureMsg("SpaceToBatch: Wrong number of
-internal_block_dims");
-            }
-        }
-
-        return sd::Status::OK;
-    }
-
-    sd::Status _batchToSpace(sd::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output,
-std::vector<sd::LongType> &internal_input_shape, std::vector<sd::LongType> &internal_output_shape, sd::LongType
-*block_shape, sd::LongType *crops) { auto in = input->reshape('c', internal_input_shape); auto out =
-output->reshape('c', internal_output_shape); switch (internal_block_dims) { case 1: _prepare<1, true>(context, &in,
-&out, block_shape, crops); break; case 2: _prepare<2, true>(context, &in, &out, block_shape, crops); break; case 3:
-                _prepare<3, true>(context, &in, &out, block_shape, crops);
-                break;
-            case 4:
-                _prepare<4, true>(context, &in, &out, block_shape, crops);
-                break;
-            default: {
-                return Logger::logKernelFailureMsg("BatchToSpace: Wrong number of internal_block_dims");
-            }
-        }
-
-        return sd::Status::OK;
-    }
-
-#define STB_DIM (0, 1),\
-                (1, 2),\
-                (2, 3),\
-                (3, 4)
-
-#define STB_BOOL (0, false),\
-                 (1, true)
-
-    BUILD_TRIPLE_TEMPLATE(template void _execute, (sd::LaunchContext * context, void *ptrSpace, const sd::LongType
-*space_shape, const sd::LongType *space_strides, const sd::LongType *block_shape, const sd::LongType *pad_start, const
-sd::LongType *block_offsets, void *ptrBatch, const sd::LongType *batch_shape, const sd::LongType *batch_strides),
-SD_COMMON_TYPES, STB_DIM, STB_BOOL);
-
-#undef STB_BOOL
-#undef STB_DIM
-*/
 
 }  // namespace helpers
 }  // namespace ops

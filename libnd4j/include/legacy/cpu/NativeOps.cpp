@@ -177,23 +177,23 @@ void closeInstrumentOut() {
 
 
 
- int contextNumInputs(void *contextPointer) {
+int contextNumInputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->width();
 }
 
- int contextNumOutputs(void *contextPointer) {
+int contextNumOutputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->outputWidth();
 }
 
 
- int numInputs(void *execTrace) {
+int numInputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers->size();
 }
 
- int numOutputs(void *execTrace) {
+int numOutputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers->size();
 }
@@ -505,17 +505,7 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    if(shapeInfo[i] == nullptr)
-      throw std::runtime_error("Input shape at index was null!");
-
-
-    sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
-    if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
-    else {
-      setGraphContextInputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
+    ptr->setInputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
   }
 
 }
@@ -526,13 +516,7 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buff
   OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
   for(int i = 0; i < numArrays; i++) {
-
-    if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
-                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    } else {
-      setGraphContextOutputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
+    ptr->setOutputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
 
   }
 

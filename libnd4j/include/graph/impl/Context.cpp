@@ -385,9 +385,9 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
 
 void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-  auto shapeInfoCast = reinterpret_cast<sd::LongType const *>(shapeInfo);
-  auto newShapeInfoCast = const_cast<sd::LongType *>(shapeInfoCast);
-  if(shape::rank(shapeInfoCast) > SD_MAX_RANK || shape::rank(shapeInfoCast) < 0) {
+  auto shapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
+  auto newShapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfoCast->primary());
+  if(shape::rank(newShapeInfoCast) > SD_MAX_RANK || shape::rank(newShapeInfoCast) < 0) {
     std::string error;
     error += std::string("Shape Buffer at index ");
     error += std::string(" " + index);
@@ -396,13 +396,13 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   }
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast)) {
+  if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            shapeInfoCast)));
+                                                   newShapeInfoCast)));
 
   } else {
-    array = new NDArray(nullptr, nullptr, shapeInfoCast);
+    array = new NDArray(nullptr, nullptr, newShapeInfoCast);
   }
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
@@ -411,23 +411,22 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 }
 
 void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
- if(vdatabuffer == nullptr)
-   throw std::runtime_error("Input data buffer is null!");
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
 
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  auto shapeInfoCast = reinterpret_cast<sd::LongType const *>(shapeInfo);
-  auto newShapeInfoCast = const_cast<sd::LongType *>(shapeInfoCast);
+  auto shapeInfoCast =  reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
+  auto newShapeInfoCast = reinterpret_cast<const sd::LongType *>(shapeInfoCast->primary());
+  auto newShapeCast2 = const_cast<sd::LongType *>(newShapeInfoCast);
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(shapeInfoCast))
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast,
+  if (dataBuffer != nullptr && !shape::isEmpty(newShapeCast2))
+    array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2,
                         sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            shapeInfoCast)));
+                                                   newShapeCast2)));
 
   else {
-    array = new NDArray(nullptr, nullptr, shapeInfoCast);
+    array = new NDArray(nullptr, nullptr, newShapeCast2);
   }
   _fastpath_out[index] = array;
   _handles.emplace_back(array);

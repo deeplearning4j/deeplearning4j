@@ -157,22 +157,21 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(arrays.size());
-        PointerPointer<OpaqueDataBuffer> shapeInfoBuffer = new PointerPointer<>(arrays.size());
-        List<DataBuffer> shapeInfoReferences = new ArrayList<>();
+        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.size()];
+        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.size()];
+
         for(int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            OpaqueDataBuffer opaqueDataBuffer = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
-            buffers.put(i,opaqueDataBuffer);
-            DataBuffer dataBuffer = array.shapeInfoDataBuffer();
-            shapeInfoReferences.add(dataBuffer);
-            OpaqueDataBuffer shapeBuffer = ((BaseCpuDataBuffer) dataBuffer).getOpaqueDataBuffer();
-            shapeInfoBuffer.put(i, shapeBuffer);
+            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
+            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_in.put(i,array.isEmpty() ? null : array);
             if(OpContextTracker.getInstance().isEnabled()) {
                 OpContextTracker.getInstance().associateInput(array,this);
             }
         }
+
+        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
+        PointerPointer<OpaqueDataBuffer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
 
         nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
     }
@@ -184,8 +183,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         for(int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
-            shapeInfoBufers2[i] = ((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer();
+            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
+            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
             if(OpContextTracker.getInstance().isEnabled()) {
                 OpContextTracker.getInstance().associateOutput(array,this);

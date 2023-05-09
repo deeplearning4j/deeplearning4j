@@ -293,11 +293,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-spark_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -351,14 +346,6 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-
-
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
             <artifactId>omnihub</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -369,11 +356,7 @@
             <version>1.12</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-parameter-server-node_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.datavec</groupId>
@@ -381,11 +364,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>dl4j-spark-parameterserver_2.12</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.apache.derby</groupId>
