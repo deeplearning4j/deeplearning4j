@@ -125,7 +125,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
                                         const sd::LongType *dXShapeInfo, const void *hY,
                                         const sd::LongType *hYShapeInfo, const void *dY,
                                         const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                        void *dZ, const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength,
+                                        void *dZ, const sd::LongType *dZShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                                         const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets,
                                         const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -208,7 +208,7 @@ void NativeOpExecutioner::execInverseBroadcast(
     sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo, const void *dX,
     const sd::LongType *dXShapeInfo, const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
     const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
-    const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+    const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -294,7 +294,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
     sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo, const void *dX,
     const sd::LongType *dXShapeInfo, const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
     const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
-    const sd::LongType *dZShapeInfo, void *extraParams, long long int *dimension, int dimensionLength,
+    const sd::LongType *dZShapeInfo, void *extraParams,sd::LongType *dimension, sd::LongType dimensionLength,
     const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
     const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -328,7 +328,7 @@ void NativeOpExecutioner::execBroadcastInt(
     sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo, const void *dX,
     const sd::LongType *dXShapeInfo, const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
     const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
-    const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+    const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -383,7 +383,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(
     sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo, const void *dX,
     const sd::LongType *dXShapeInfo, const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
     const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
-    const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength, const sd::LongType *tadOnlyShapeInfo,
+    const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -536,7 +536,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext *lc, int opNum, cons
                                           const sd::LongType *hXShapeInfo, const void *dX,
                                           const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                           const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                          long long int *dimension, int dimensionLength) {
+                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
@@ -552,7 +552,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *hXShapeInfo, const void *dX,
                                          const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                         long long int *dimension, int dimensionLength) {
+                                         sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
   // nothing to do here if result is empty
@@ -569,7 +569,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *hXShapeInfo, const void *dX,
                                          const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                         long long int *dimension, int dimensionLength) {
+                                         sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -587,7 +587,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *hXShapeInfo, const void *dX,
                                          const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
                                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                         long long int *dimension, int dimensionLength) {
+                                         sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -727,7 +727,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
                                       const void *dX, const sd::LongType *dXShapeInfo, void *extraParamsVals,
                                       const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
                                       const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                      void *dZ, const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength,
+                                      void *dZ, const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength,
                                       const sd::LongType *xTadOnlyShapeInfo, const sd::LongType *xTadOffsets,
                                       const sd::LongType *yTadOnlyShapeInfo, const sd::LongType *yTadOffsets) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -762,7 +762,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *dXShapeInfo, void *extraParamsVals, const void *hY,
                                          const sd::LongType *hYShapeInfo, const void *dY,
                                          const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                         void *dZ, const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength,
+                                         void *dZ, const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength,
                                          const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
                                          const sd::LongType *yTadShapeInfo, const sd::LongType *yOffsets) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -788,7 +788,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *dXShapeInfo, void *extraParamsVals, const void *hY,
                                          const sd::LongType *hYShapeInfo, const void *dY,
                                          const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                         void *dZ, const sd::LongType *dZShapeInfo, long long int *dimension, int dimensionLength,
+                                         void *dZ, const sd::LongType *dZShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength,
                                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                          const sd::LongType *yTadShapeInfo, const sd::LongType *yTadOffsets) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -871,7 +871,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
                                      void const *dX, sd::LongType const *dXShapeInfo, void *extraParams, void *hZ,
                                      sd::LongType const *hZShapeInfo, void *dZ, sd::LongType const *dZShapeInfo,
                                      void const *hScalars, sd::LongType const *hScalarShapeInfo, void const *dScalars,
-                                     sd::LongType const *dScalarShapeInfo, long long int *dimension, int dimensionLength,
+                                     sd::LongType const *dScalarShapeInfo,sd::LongType *dimension, sd::LongType dimensionLength,
                                      sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
                                      sd::LongType const *tadShapeInfoZ, sd::LongType const *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -944,7 +944,7 @@ void NativeOpExecutioner::execScalarBool(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                         long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                                         long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1013,7 +1013,7 @@ void NativeOpExecutioner::execScalarInt(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                        long long int *dimension, int dimensionLength, const sd::LongType *tadShapeInfo,
+                                        long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
