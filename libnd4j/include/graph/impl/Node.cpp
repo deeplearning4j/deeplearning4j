@@ -175,7 +175,7 @@ void sd::graph::Node::pickOutput(int outputId) {
     _hasInternalOutputs = true;
 }
 
-int* sd::graph::Node::getDimensionsPtr() { return _dim; }
+sd::LongType* sd::graph::Node::getDimensionsPtr() { return _dim; }
 
 std::vector<sd::LongType>* sd::graph::Node::getDimensions() { return &_dimensions; }
 
@@ -254,7 +254,7 @@ sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new int[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size()];
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -297,7 +297,7 @@ sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<in
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new int[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size()];
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -417,7 +417,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
     }
 
     if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
-      _dim = new int[node->dimensions()->size()];
+      _dim = new sd::LongType [node->dimensions()->size()];
       for (int e = 0; e < (int)node->dimensions()->size(); e++) {
         _dimensions.emplace_back(node->dimensions()->Get(e));
         _dim[e] = node->dimensions()->Get(e);

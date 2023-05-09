@@ -69,7 +69,7 @@ namespace shape {
 
     SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
                                                       sd::LongType *dimension,
-                                                      long long int dimensionLength,
+                                                      sd::LongType dimensionLength,
                                                       bool reverseCopyStride, sd::LongType *buffer) {
         sd::LongType *theShape = shape::shapeOf(shapeInfo);
         sd::LongType *theStride = shape::stride(shapeInfo);
@@ -122,7 +122,7 @@ namespace shape {
 
     SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
                                                       sd::LongType *dimension,
-                                                      long long int dimensionLength,
+                                                      sd::LongType dimensionLength,
                                                       bool reverseCopyStride) {
         int rank = dimensionLength == 1 ? 2 : dimensionLength;
 
@@ -153,6 +153,45 @@ namespace shape {
         return buffer;
     }
 
+    SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, const sd::LongType *dimension,
+                                                 sd::LongType dimensionLength) {
+
+      if(shapeInfo == nullptr || dimension == nullptr) {
+        std::string  errorMessage;
+        errorMessage += "shape info null: %d";
+        errorMessage += std::to_string(shapeInfo == nullptr);
+        errorMessage += " dimension null: %d";
+        errorMessage += std::to_string(dimension == nullptr);
+        throw std::runtime_error(errorMessage.c_str());
+      }
+
+      if(dimensionLength == 0)
+        return 0;
+
+      if(shapeInfo[0] > SD_MAX_RANK || shapeInfo[0] < 0)
+        throw std::runtime_error("Corrupt shape information found. Potentially dellocated?");
+
+
+
+      if (dimensionLength == 1) {
+        if(dimension[0] > SD_MAX_RANK || dimension[0] < 0)
+          throw std::runtime_error("Corrupt dimension information found. Potentially dellocated?");
+
+        return shape::shapeOf(shapeInfo)[dimension[0]];
+      } else {
+        sd::LongType ret = 1;
+        for (int i = 0; i < shape::rank(shapeInfo); i++) {
+          for (int j = 0; j < dimensionLength; j++) {
+            if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+          }
+        }
+
+        return ret;
+      }
+
+    }
+
+
 
 #ifndef SD_CUDA
 
@@ -160,49 +199,7 @@ namespace shape {
  * Length of a tad given
  * the shape information
  */
-    SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, sd::LongType *dimension,
-                                                 long long int dimensionLength) {
 
-        if(shapeInfo == nullptr || dimension == nullptr) {
-            std::string  errorMessage;
-            errorMessage += "shape info null: %d";
-            errorMessage += std::to_string(shapeInfo == nullptr);
-            errorMessage += " dimension null: %d";
-            errorMessage += std::to_string(dimension == nullptr);
-            throw std::runtime_error(errorMessage.c_str());
-        }
-
-        if(dimensionLength == 0)
-            return 0;
-
-        if(shapeInfo[0] > SD_MAX_RANK || shapeInfo[0] < 0)
-            throw std::runtime_error("Corrupt shape information found. Potentially dellocated?");
-
-
-
-        if (dimensionLength == 1) {
-            if(dimension[0] > SD_MAX_RANK || dimension[0] < 0)
-                throw std::runtime_error("Corrupt dimension information found. Potentially dellocated?");
-
-            return shape::shapeOf(shapeInfo)[dimension[0]];
-        } else {
-            sd::LongType ret = 1;
-            for (int i = 0; i < shape::rank(shapeInfo); i++) {
-                for (int j = 0; j < dimensionLength; j++) {
-                    if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
-                }
-            }
-
-            return ret;
-        }
-
-    }
-
-
-    SD_LIB_EXPORT  SD_HOST sd::LongType tadElementWiseStride(sd::LongType *shapeInfo, sd::LongType *dimension,
-                                                             sd::LongType dimensionLength) {
-        return reductionIndexElementWiseStride(shapeInfo, dimension, dimensionLength);
-    }
 
 
     SD_LIB_EXPORT SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
@@ -234,9 +231,9 @@ namespace shape {
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-    SD_LIB_EXPORT SD_HOST void maxIndToMinInd(long long int *maxIdxs, long long int *minIdxs, const sd::LongType *maxShapeInfo,
+    SD_LIB_EXPORT SD_HOST void maxIndToMinInd(long long int *maxIdxs, sd::LongType *minIdxs, const sd::LongType *maxShapeInfo,
                                               const sd::LongType *minShapeInfo,
-                                              const long long int *dimsToExclude, long long int dimsLen) {
+                                              const sd::LongType *dimsToExclude, sd::LongType dimsLen) {
         const auto maxRank = shape::rank(maxShapeInfo);
         const auto minRank = shape::rank(minShapeInfo);
 
@@ -854,21 +851,7 @@ namespace shape {
         return output;
     }
 
-/**
- *
- * @param length
- * @param shape
- * @param rearrange
- * @return
- */
-    SD_HOST sd::LongType *doPermuteSwap(long long int length, sd::LongType *shape, long long int *rearrange) {
-        traceNew(16);
-        sd::LongType *ret = new sd::LongType[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = shape[rearrange[i]];
-        }
-        return ret;
-    }
+
 
 /**
  *
@@ -877,7 +860,7 @@ namespace shape {
  * @param rearrange
  * @return
  */
-    SD_HOST void doPermuteSwap(int length, sd::LongType **shape, long long int *rearrange) {
+    SD_HOST void doPermuteSwap(sd::LongType length, sd::LongType **shape, sd::LongType *rearrange) {
         if (length == 1) {
             return;
         } else {
@@ -1212,8 +1195,8 @@ namespace shape {
  * @return the length per slice of the given shape
  * along the given dimension
  */
-    SD_HOST sd::LongType lengthPerSlice(int rank, sd::LongType const *shape, const long long int *dimension,
-                                        long long int dimensionLength) {
+    SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape, const sd::LongType *dimension,
+                                        sd::LongType dimensionLength) {
         if (shape::isVector(shape, rank)) {
             // return total length for row vectors
             if (dimensionLength == 1 && shape[0] == 1) {
@@ -1236,9 +1219,9 @@ namespace shape {
  * @param tensorShape
  * @return
  */
-    SD_HOST sd::LongType sliceOffsetForTensor(int rank, int index, sd::LongType const *shape,
-                                              sd::LongType const *tensorShape, int tensorShapeLength,
-                                              const long long int *dimension, long long int dimensionLength) {
+    SD_HOST sd::LongType sliceOffsetForTensor(sd::LongType rank, sd::LongType index, sd::LongType const *shape,
+                                              sd::LongType const *tensorShape, sd::LongType tensorShapeLength,
+                                              const long long int *dimension, sd::LongType dimensionLength) {
         auto tensorLength = prodLong(tensorShape, tensorShapeLength);
         auto lengthPerSlice2 = lengthPerSlice(rank, shape, dimension, dimensionLength);
         if (lengthPerSlice2 <= 0) {
@@ -1717,7 +1700,7 @@ namespace shape {
         return true;
     }
 
-    SD_HOST bool canReshape(const int oldRank, sd::LongType *oldShape, const int newRank,
+    SD_HOST bool canReshape(const long long int oldRank, sd::LongType *oldShape, const long long int newRank,
                             sd::LongType *newShapeOf, bool isFOrder) {
         sd::LongType oldnd;
         sd::LongType *oldDims = shape::copyOf(oldRank, shape::shapeOf(oldShape));

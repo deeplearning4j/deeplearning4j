@@ -51,7 +51,7 @@ class SD_LIB_EXPORT Node {
 
   std::vector<int> _referencedBy;
 
-  int *_dim = nullptr;
+  sd::LongType *_dim = nullptr;
   std::string _name;
 
   // this variable points to onion layer within graph
@@ -144,7 +144,7 @@ class SD_LIB_EXPORT Node {
   double scalar();
 
   std::vector<sd::LongType> *getDimensions();
-  int *getDimensionsPtr();
+  sd::LongType *getDimensionsPtr();
 
   void pickOutputOnce(int outputId);
   void pickOutput(int outputId);

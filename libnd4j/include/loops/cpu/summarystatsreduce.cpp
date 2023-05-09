@@ -49,7 +49,7 @@ template <typename X, typename Y>
 void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected, const void *x,
                                     const sd::LongType *xShapeInfo, void *extraParams, void *z,
                                     const sd::LongType *zShapeInfo,
-                                    long long int *dimension, int dimensionLength) {
+                                    sd::LongType *dimension, sd::LongType dimensionLength) {
   DISPATCH_BY_OPNUM_TT(exec,
                        PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength),
                        SUMMARY_STATS_OPS);
@@ -92,8 +92,8 @@ template <typename X, typename Z>
 template <typename OpType>
 void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
                                     void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
-                                    long long int *dimension,
-                                    int dimensionLength) {
+                                    sd::LongType *dimension,
+                                    sd::LongType dimensionLength) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
@@ -122,15 +122,15 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
   // shape information for tad offset
   // the squeezed information doesn't render the right strides for
   // tad offset
-  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack.numberOfTads() == 1) {
+  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
     z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
     return;
   }
 
-  auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
-  auto tadLength = shape::length(tadPack.primaryShapeInfo());
-  auto tadEWS = shape::elementWiseStride(tadPack.primaryShapeInfo());
-  auto tadOrder = shape::order(tadPack.primaryShapeInfo());
+  auto tadShapeShapeInfo = tadPack->primaryShapeInfo();
+  auto tadLength = shape::length(tadPack->primaryShapeInfo());
+  auto tadEWS = shape::elementWiseStride(tadPack->primaryShapeInfo());
+  auto tadOrder = shape::order(tadPack->primaryShapeInfo());
 
   sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
   const bool canCast = tadEWS == 1 && tadOrder == 'c'
@@ -139,7 +139,7 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
+      auto tadOffsetForBlock = tadPack->primaryOffsets()[r];
       auto tx = x + tadOffsetForBlock;
       SummaryStatsData<X> comp;
       comp.initWithValue(tx[0]);

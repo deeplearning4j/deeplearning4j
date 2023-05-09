@@ -175,7 +175,7 @@ SD_DEVICE void BroadcastInt<X>::transformInverseCuda(
   __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
-    tadLength = shape::length(tadOnlyShapeInfo);  // shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    tadLength = shape::length(tadOnlyShapeInfo);
     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
     xEWS = shape::elementWiseStride(xShapeInfo);
@@ -230,7 +230,7 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(void const* vx, sd::LongType const
   __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
-    tadLength = shape::length(tadOnlyShapeInfo);  // shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    tadLength = shape::length(tadOnlyShapeInfo);
     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(xShapeInfo) / tadLength;
     yEWS = shape::elementWiseStride(yShapeInfo);

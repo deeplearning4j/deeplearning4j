@@ -38,10 +38,10 @@ namespace scalar {
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const void *vscalars, long long int *dimension,
-                                         int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                         const sd::LongType *zShapeInfo, const void *vscalars,sd::LongType *dimension,
+                                         sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                         const sd::LongType *zTadOffsets, uint64_t start, uint64_t stop) {
+                                         const sd::LongType *zTadOffsets, sd::LongType start, sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto scalars = reinterpret_cast<const Y *>(vscalars);
@@ -89,11 +89,11 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
                                          void *z, const sd::LongType *zShapeInfo, const void *scalars,
-                                         long long int *dimension,
-                                         int dimensionLength, const sd::LongType *xTadShapeInfo,
+                                         sd::LongType *dimension,
+                                         sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
                                          const sd::LongType *zTadOffsets,
-                                         uint64_t start, uint64_t stop) {
+                                         sd::LongType start, sd::LongType stop) {
   DISPATCH_BY_OPNUM_TTT(transform,
                         PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
                                xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),
@@ -103,8 +103,8 @@ void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::Lon
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, sd::LongType xStride, void *z,
-                                         sd::LongType zStride, const void *scalar, void *extraParams, const uint64_t n,
-                                         const uint64_t start, const uint64_t stop) {
+                                         sd::LongType zStride, const void *scalar, void *extraParams, const sd::LongType n,
+                                         const sd::LongType start, const sd::LongType stop) {
   DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, start, stop), SCALAR_OPS);
 }
 
@@ -112,7 +112,7 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, sd::Lon
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                                          const sd::LongType *zShapeInfo, const void *scalar, void *extraParams,
-                                         const uint64_t start, const uint64_t stop) {
+                                         const sd::LongType start, const sd::LongType stop) {
   DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_OPS);
 }
 
@@ -121,7 +121,7 @@ template <typename X, typename Y, typename Z>
 template <typename OpType>
 void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vz,
                                          const sd::LongType *zShapeInfo, const void *vscalar, void *vextraParams,
-                                         const uint64_t start, const uint64_t stop) {
+                                         const sd::LongType start, const sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
@@ -163,8 +163,8 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void ScalarTransform<X, Y, Z>::transform(const void *vx, sd::LongType xEws, void *vz, sd::LongType zEws,
-                                         const void *vscalar, void *vextraParams, const uint64_t len,
-                                         const uint64_t start, const uint64_t stop) {
+                                         const void *vscalar, void *vextraParams, const sd::LongType len,
+                                         const sd::LongType start, const sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto scalar = reinterpret_cast<const Y *>(vscalar)[0];

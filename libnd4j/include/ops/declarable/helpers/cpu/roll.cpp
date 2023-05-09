@@ -105,48 +105,7 @@ void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output
     for (int k = 0; k < fullLen; k++) {
       rollFunctorLinear(context, listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
     }
-    /*        }
-            else {
-                std::vector<int> dims(source->rankOf() - axe - 1);
-                for (size_t i = 0; i < dims.size(); ++i)
-                    dims[i] = axe + 1 + i;
 
-                ResultSet listOfTensors = source->allTensorsAlongDimension({dims});
-                ResultSet listOfOutTensors = output->allTensorsAlongDimension({dims});
-                //
-                int fullLen = listOfTensors.size();
-                int sizeAt = input->sizeAt(axe);
-                sd_debug("Roll: fullLen at  dimension %d is %d\n",i,fullLen);
-
-                int theShift = shifts[i];
-
-                if (theShift > 0) {
-                    theShift %= sizeAt;
-                }
-                else {
-                    theShift -= sizeAt * (theShift / sizeAt - 1);
-                }
-
-                if (theShift) {
-                    for (size_t dim = 0; dim < fullLen / sizeAt; ++dim) {
-                        for (size_t e = theShift; e < sizeAt - theShift; ++e) {
-                            auto sourceM = listOfTensors.at(dim * sizeAt + e - theShift);
-                            auto targetM = listOfOutTensors.at(dim * sizeAt + e);
-                            sourceM->swapUnsafe(*targetM);
-                        }
-
-                        for (size_t e = 0; e < theShift; ++e) {
-                            int sourceIndex = dim * sizeAt + sizeAt - theShift + e;
-                            auto sourceM = listOfTensors.at(sourceIndex);
-                            auto targetM = listOfOutTensors.at(dim * sizeAt + e);
-
-                            sourceM->swapUnsafe(*targetM);
-                        }
-                    }
-                }
-            }
-//            if (!inplace)
-//                source = output;*/
   }
 }
 

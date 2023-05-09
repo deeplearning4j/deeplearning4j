@@ -54,7 +54,6 @@ void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 
 sd::LongType const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
-// sd::LongType const* NDArray::platform()          { return special(); }
 
 void NDArray::syncToDevice() const {
   auto currentDeviceId = AffinityManager::currentDeviceId();
@@ -207,9 +206,6 @@ BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
 void NDArray::setIdentity() {
   if (isS()) throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
 
-  // if (rankOf() != 2)
-  //     throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " +
-  //     toStringValue(rankOf()) + " was given.");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

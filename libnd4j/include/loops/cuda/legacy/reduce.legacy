@@ -266,7 +266,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
                     sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 				}
@@ -445,7 +445,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 
@@ -510,7 +510,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 

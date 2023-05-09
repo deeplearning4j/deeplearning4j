@@ -57,11 +57,6 @@ typedef sd::ops::OpExecTrace ExecTrace;
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 extern "C" {
-SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
-
-SD_LIB_EXPORT int contextNumOutputs(void *contextPointer);
-SD_LIB_EXPORT void printOpTrace();
-
 
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
 
@@ -109,7 +104,9 @@ SD_LIB_EXPORT void closeInstrumentOut();
 
 #endif
 
+SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
+SD_LIB_EXPORT int contextNumOutputs(void *contextPointer);
 
 SD_LIB_EXPORT void printOpTrace();
 

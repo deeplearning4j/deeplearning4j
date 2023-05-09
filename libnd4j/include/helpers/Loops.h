@@ -954,26 +954,26 @@ void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const sd::LongType* xSha
   const sd::LongType yLen = shape::length(yShapeInfo);
 
   const sd::LongType *xTadShapeInfo = nullptr, *yTadShapeInfo = nullptr, *xTadOffsets = nullptr, *yTadOffsets = nullptr;
-  TadPack tadPackX, tadPackY;
+  TadPack *tadPackX, *tadPackY;
   std::vector<sd::LongType> zeroOffsets;
 
   if (xLen == yLen) {
     tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
     tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
-    xTadShapeInfo = tadPackX.primaryShapeInfo();
-    yTadShapeInfo = tadPackY.primaryShapeInfo();
-    xTadOffsets = tadPackX.primaryOffsets();
-    yTadOffsets = tadPackY.primaryOffsets();
+    xTadShapeInfo = tadPackX->primaryShapeInfo();
+    yTadShapeInfo = tadPackY->primaryShapeInfo();
+    xTadOffsets = tadPackX->primaryOffsets();
+    yTadOffsets = tadPackY->primaryOffsets();
   } else if (yLen > xLen) {
     tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
     xTadShapeInfo = xShapeInfo;
-    yTadShapeInfo = tadPackY.primaryShapeInfo();
-    yTadOffsets = tadPackY.primaryOffsets();
+    yTadShapeInfo = tadPackY->primaryShapeInfo();
+    yTadOffsets = tadPackY->primaryOffsets();
   } else {
     tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
     yTadShapeInfo = yShapeInfo;
-    xTadShapeInfo = tadPackX.primaryShapeInfo();
-    xTadOffsets = tadPackX.primaryOffsets();
+    xTadShapeInfo = tadPackX->primaryShapeInfo();
+    xTadOffsets = tadPackX->primaryOffsets();
   }
 
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);

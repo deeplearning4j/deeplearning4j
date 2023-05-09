@@ -158,8 +158,7 @@ sd::LongType Graph::estimateRequiredMemory() {
             oldShape = shapesMap.at(in);
           }
 
-          // shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
-          auto numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
+          auto numTads = shape::tadLength(oldShape, const_cast<sd::LongType * const>(node->getDimensions()->data()), node->getDimensions()->size());
           sd::LongType shape[2] = {1, (int)numTads};
           newShape =
               ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
@@ -180,11 +179,6 @@ sd::LongType Graph::estimateRequiredMemory() {
       cntFD++;
     }
   }
-
-  // this is the only place where we deallocate shapes.
-  // if (_variableSpace->launchContext()->getWorkspace() == nullptr)
-  //    for (auto v: shapes)
-  //        delete[] v;
 
   return result;
 }

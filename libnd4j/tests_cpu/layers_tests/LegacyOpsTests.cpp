@@ -384,18 +384,17 @@ TEST_F(LegacyOpsTests, reduce3_1) {
   sd::LongType xShape[1] = {4};
   float y[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
   float x[4] = {1, 2, 3, 4};
-  int dimension[1] = {1};
-  int dimensionLength = 1;
+  sd::LongType dimension[1] = {1};
+  sd::LongType dimensionLength = 1;
   int opNum = 1;
   float extraVals[1] = {0};
   float result[4] = {0.0, 0.0, 0.0, 0.0};
 
-  std::vector<int> dim = {1};
+  std::vector<sd::LongType> dim = {1};
 
   auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, yShape);
   auto xShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 1, xShape);
 
-  // int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
   auto tadShapeBuffer = sd::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
   functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result,
                                                   tadShapeBuffer, dimension, dimensionLength, 0, 4);

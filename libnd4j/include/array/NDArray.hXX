@@ -27,6 +27,18 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <loops/BroadcastPairwiseConverter.h>
+#include <array/NDArrayFactory.h>
+#include <exceptions/allocation_exception.h>
+#include <exceptions/datatype_exception.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/threshold.h>
+#include <indexing/IndicesList.h>
+#include <legacy/NativeOpExecutioner.h>
+#include <loops/broadcasting.h>
+#include <loops/pairwise_transform.h>
+#include <loops/transform_same.h>
+#include <memory/MemoryRegistrator.h>
+#include <memory/Workspace.h>
 
 namespace sd {
 
@@ -1657,7 +1669,7 @@ namespace sd {
         std::vector<sd::LongType> copy(dimensions);
         shape::checkDimensions(rankOf(), copy);
 
-        sd::LongType tadLength = shape::tadLength(this->_shapeInfo, copy.data(), copy.size());
+        sd::LongType tadLength = shape::tadLength(this->_shapeInfo, const_cast<sd::LongType * const>(copy.data()), (sd::LongType) copy.size());
         sd::LongType numTads = this->lengthOf() / tadLength;
 
         return numTads;
@@ -3471,7 +3483,7 @@ namespace sd {
             NativeOpExecutioner::execSummaryStats(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                   nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                                   target.specialShapeInfo(), pDims, dimensions.size(),
-                                                  packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
+                                                  packX->platformShapeInfo(), packX->platformOffsets(), biasCorrected);
             synchronize("NDArray::varianceAlongDimension");
         }
 
@@ -4195,8 +4207,8 @@ namespace sd {
             auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
             NativeOpExecutioner::execIndexReduce(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                                  params, target.buffer(), target.shapeInfo(), target.specialBuffer(),
-                                                 target.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(),
-                                                 packX.platformOffsets());
+                                                 target.specialShapeInfo(), pDims, copy.size(), packX->platformShapeInfo(),
+                                                 packX->platformOffsets());
             synchronize("NDArray::applyIndexReduce");
         }
 
@@ -4277,15 +4289,15 @@ namespace sd {
             auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
             auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy);
 
-            if (!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()) ||
-                (packX.numberOfTads() != packY.numberOfTads() && packX.numberOfTads() != 1 && packY.numberOfTads() != 1))
+            if (!shape::equalsSoft(packX->primaryShapeInfo(), packY->primaryShapeInfo()) ||
+                (packX->numberOfTads() != packY->numberOfTads() && packY->numberOfTads() != 1 && packY->numberOfTads() != 1))
                 throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
 
             NativeOpExecutioner::execReduce3(
                     getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), params, other.buffer(),
                     other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), result.buffer(), result.shapeInfo(),
-                    result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(),
-                    packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+                    result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX->platformShapeInfo(),
+                    packX->platformOffsets(), packY->platformShapeInfo(), packY->platformOffsets());
         }
 
         registerSpecialUse({&result}, {this, &other});
@@ -4311,12 +4323,12 @@ namespace sd {
         auto packY = ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy);
 
         // check tads shapes
-        if (!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()))
+        if (!shape::equalsSoft(packX->primaryShapeInfo(), packY->primaryShapeInfo()))
             throw std::runtime_error("NDArray::applyAllReduce3 method: the shapes of array tads are different !");
 
         // set newShape for output array
         auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(DataTypeUtils::pickFloatingType(dataType()), 'c',
-                                                                           {packX.numberOfTads(), packY.numberOfTads()});
+                                                                           {packX->numberOfTads(), packY->numberOfTads()});
 
         // create output array
         NDArray result(newShape, true, getContext());
@@ -4330,8 +4342,8 @@ namespace sd {
         NativeOpExecutioner::execReduce3All(
                 getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), params, other.buffer(),
                 other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), result.buffer(), result.shapeInfo(),
-                result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(),
-                packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+                result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX->platformShapeInfo(),
+                packX->platformOffsets(), packY->platformShapeInfo(), packY->platformOffsets());
         NDArray::registerSpecialUse({&result}, {this, &other});
 
         return result;
@@ -4711,7 +4723,7 @@ namespace sd {
                                            specialShapeInfo(), row.buffer(), row.shapeInfo(), row.specialBuffer(),
                                            row.specialShapeInfo(), target.buffer(), target.shapeInfo(),
                                            target.specialBuffer(), target.specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({&target}, {this, &row});
     }
 
@@ -4736,7 +4748,7 @@ namespace sd {
                                            specialShapeInfo(), row.buffer(), row.shapeInfo(), row.specialBuffer(),
                                            row.specialShapeInfo(), target.buffer(), target.shapeInfo(),
                                            target.specialBuffer(), target.specialShapeInfo(), &dimension, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({&target}, {this, &row});
     }
 
@@ -4760,7 +4772,7 @@ namespace sd {
                                            specialShapeInfo(), row.buffer(), row.shapeInfo(), row.specialBuffer(),
                                            row.specialShapeInfo(), target.buffer(), target.shapeInfo(),
                                            target.specialBuffer(), target.specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({&target}, {this, &row});
     }
 
@@ -4785,7 +4797,7 @@ namespace sd {
                                            specialShapeInfo(), row.buffer(), row.shapeInfo(), row.specialBuffer(),
                                            row.specialShapeInfo(), target.buffer(), target.shapeInfo(),
                                            target.specialBuffer(), target.specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({&target}, {this, &row});
     }
 
@@ -4805,8 +4817,8 @@ namespace sd {
         NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
                                            specialShapeInfo(), row.buffer(), row.shapeInfo(), row.specialBuffer(),
                                            row.specialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(),
-                                           this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(),
-                                           packX.platformOffsets(), nullptr, nullptr);
+                                           this->specialShapeInfo(), nullptr, 1, packX->platformShapeInfo(),
+                                           packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({this}, {&row});
     }
 
@@ -4830,7 +4842,7 @@ namespace sd {
                                            specialShapeInfo(), column.buffer(), column.shapeInfo(), column.specialBuffer(),
                                            column.specialShapeInfo(), target.buffer(), target.shapeInfo(),
                                            target.specialBuffer(), target.specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({&target}, {this, &column});
     }
 
@@ -4852,7 +4864,7 @@ namespace sd {
                                            specialShapeInfo(), column.buffer(), column.shapeInfo(), column.specialBuffer(),
                                            column.specialShapeInfo(), this->buffer(), this->shapeInfo(),
                                            this->specialBuffer(), this->specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({this}, {&column});
     }
 
@@ -4873,7 +4885,7 @@ namespace sd {
                                            specialShapeInfo(), column.buffer(), column.shapeInfo(), column.specialBuffer(),
                                            column.specialShapeInfo(), this->buffer(), this->shapeInfo(),
                                            this->specialBuffer(), this->specialShapeInfo(), nullptr, 1,
-                                           packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+                                           packX->platformShapeInfo(), packX->platformOffsets(), nullptr, nullptr);
         NDArray::registerSpecialUse({this}, {&column});
     }
 
@@ -4909,7 +4921,7 @@ namespace sd {
         auto pack = ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), const_cast<sd::LongType *>(dimensions.data()),
                                                                       dimensions.size());
 
-        auto tadLength = shape::length(pack.primaryShapeInfo());
+        auto tadLength = shape::length(pack->primaryShapeInfo());
         auto numTads = lengthOf() / tadLength;
 
         for (auto idx : indices) {
@@ -4918,9 +4930,9 @@ namespace sd {
                 throw std::runtime_error("Bad index");
             }
 
-            auto newShapeInfoCast = const_cast<sd::LongType * const>(pack.primaryShapeInfo());
+            auto newShapeInfoCast = const_cast<sd::LongType * const>(pack->primaryShapeInfo());
             auto array = new NDArray(getDataBuffer(), newShapeInfoCast, getContext(),
-                                     pack.primaryOffsets()[idx] + bufferOffset());
+                                     pack->primaryOffsets()[idx] + bufferOffset());
             result.push_back(array);
         }
 
@@ -5030,12 +5042,12 @@ namespace sd {
 
         auto pack = ConstantTadHelper::getInstance().tadForDimensions(_shapeInfo, const_cast<sd::LongType *>(dimensions.data()),
                                                                       dimensions.size());
-        auto numTads = pack.numberOfTads();
-        auto newShapeInfoCast = const_cast<sd::LongType *>(pack.primaryShapeInfo());
+        auto numTads = pack->numberOfTads();
+        auto newShapeInfoCast = const_cast<sd::LongType *>(pack->primaryShapeInfo());
 
         for (sd::LongType idx = 0; idx < numTads; idx++) {
             auto array = new NDArray(_buffer, newShapeInfoCast, getContext(),
-                                     pack.primaryOffsets()[idx] + bufferOffset());
+                                     pack->primaryOffsets()[idx] + bufferOffset());
             array->_isView = true;
             result.push_back(array);
         }

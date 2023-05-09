@@ -103,7 +103,7 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
                                  void* vstMsg, const sd::LongType* stMsgShapeInfo, void* vstMsdx,
                                  const sd::LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon) {
   const T rho = static_cast<T>(dRho);
-  const T epsilon = static_cast<T>(dEpsilon);
+  T epsilon = static_cast<T>(dEpsilon);
   //fp16 to prevent underflow
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);

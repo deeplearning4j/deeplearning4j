@@ -61,8 +61,8 @@ template <typename X, typename Y, typename Z>
 template <typename OpType>
 void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                               const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                              long long int *dimension,
-                              int dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                              sd::LongType *dimension,
+                              sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                               const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset,
                               sd::LoopKind::Kind loopKind, uint64_t start, uint64_t stop) {
   auto x = reinterpret_cast<const X *>(vx);
@@ -79,8 +79,8 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
   if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-    xTadShapeShapeInfo = tadPack.primaryShapeInfo();
-    tadOffsets = tadPack.primaryOffsets();
+    xTadShapeShapeInfo = tadPack->primaryShapeInfo();
+    tadOffsets = tadPack->primaryOffsets();
   }
 
   // int *resultStride = shape::stride(xTadShapeShapeInfo);
@@ -349,8 +349,9 @@ void Broadcast<X, Y, Z>::execInverse(const void *vx, const sd::LongType *xShapeI
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
-    yTadShapeShapeInfo = tadPack.primaryShapeInfo();
-    tadOffsets = tadPack.primaryOffsets();
+    yTadShapeShapeInfo =
+    tadPack->primaryShapeInfo();
+    tadOffsets = tadPack->primaryOffsets();
   }
 
   // int *resultStride = shape::stride(yTadShapeShapeInfo);

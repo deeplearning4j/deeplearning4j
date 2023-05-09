@@ -19,25 +19,17 @@
 #ifndef NDARRAY_CPP
 #define NDARRAY_CPP
 #include <array/NDArray.h>
-#include <array/NDArrayFactory.h>
-#include <exceptions/allocation_exception.h>
-#include <exceptions/datatype_exception.h>
+
 #include <helpers/ArrayUtils.h>
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/logger.h>
-#include <helpers/threshold.h>
-#include <indexing/IndicesList.h>
+
 #include <indexing/NDIndex.h>
-#include <legacy/NativeOpExecutioner.h>
 #include <loops/BroadcastPairwiseConverter.h>
-#include <loops/broadcasting.h>
-#include <loops/pairwise_transform.h>
+
 #include <loops/random.h>
-#include <loops/transform_same.h>
-#include <memory/MemoryRegistrator.h>
-#include <memory/Workspace.h>
+
 #include <ops/gemm.h>
 #include <ops/ops.h>
 
