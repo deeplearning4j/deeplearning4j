@@ -39,7 +39,7 @@ BROADCASTABLE_OP_IMPL(boolean_and, 0, 0) {
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;
   else if (tZ != z)
-    throw std::runtime_error("boolean_and: result was overwritten");
+    THROW_EXCEPTION("boolean_and: result was overwritten");
 
   return sd::Status::OK;
 }

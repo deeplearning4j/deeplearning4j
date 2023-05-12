@@ -113,7 +113,7 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
   NDArray::prepareSpecialUse({z}, {x});
 
   if (z->dataType() != INT64) {
-    throw std::runtime_error("IndexReduce operations require output to be INT64");
+    THROW_EXCEPTION("IndexReduce operations require output to be INT64");
   }
 
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();

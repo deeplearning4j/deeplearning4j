@@ -75,10 +75,10 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
                         0.0, 0.0, 0.0, 0.0, 11.0, 12.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 13.0, 14.0, 0.0, 0.0,
                         0.0, 0.0, 15.0, 16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
-                        new long[] {2, 2, 1, 1, 6, 6});
+                new long[] {2, 2, 1, 1, 6, 6});
         assertEquals(im2colAssertion, ret);
         INDArray col2ImAssertion = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0,
-                        12.0, 13.0, 14.0, 15.0, 16.0
+                12.0, 13.0, 14.0, 15.0, 16.0
 
         }, new int[] {2, 2, 2, 2});
 
@@ -98,11 +98,11 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         int sx = 2;
         int depth = 2;
         INDArray assertion = Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3,
-                        3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
-                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
+                3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
+                4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
         INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
+                4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
         INDArray test = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion, test);
@@ -113,6 +113,8 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPooling2D_Same(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         int[] miniBatches = {1, 3, 5};
         int[] depths = {1, 3, 5};
         int[] inHeights = {5, 21};
@@ -143,15 +145,13 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
                                             int[] outSize = getOutputSize(in, new int[]{kh, kw}, new int[]{sh, sw}, null, true);
 
                                             //Calculate padding for same mode:
-                                            int pHTotal = (outSize[0]-1)*sh + kh - h;
-                                            int pWTotal = (outSize[1]-1)*sw + kw - w;
+                                            int pHTotal = (outSize[0] - 1)*sh + kh - h;
+                                            int pWTotal = (outSize[1] - 1)*sw + kw - w;
                                             int padTop = pHTotal / 2;
                                             int padLeft = pWTotal / 2;
 
                                             INDArray col = Nd4j.create(new int[]{m, d, outSize[0], outSize[1], kh, kw}, 'c');
                                             INDArray col2 = col.permute(0, 1, 4, 5, 2, 3);
-                                            //INDArray col = Nd4j.createUninitialized(new int[]{m, d, kH, kW, outSize[0], outSize[1]}, 'c');
-                                            //INDArray col2 = col;
 
                                             Convolution.im2col(in, kh, kw, sh, sw, padTop, padLeft, true, col2);
 
@@ -218,12 +218,12 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         int sx = 2;
 
         INDArray ret = Nd4j.create(new double[] {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-                        4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
+                4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
         INDArray assertion = Nd4j.create(new double[] {1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3,
-                        3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
-                        4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
+                3, 3, 1, 1, 1, 1, 3, 3, 3, 3, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4, 4, 4, 2, 2, 2, 2, 4, 4,
+                4, 4, 2, 2, 2, 2, 4, 4, 4, 4}, new long[] {1, 1, 2, 2, 4, 4});
         INDArray im2colTest = Convolution.im2col(ret, kh, kw, sy, sx, ph, pw, 0, false);
         assertEquals(assertion, im2colTest);
 

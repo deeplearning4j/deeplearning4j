@@ -357,7 +357,7 @@ void ConvolutionUtils::pooling2d(sd::graph::Context &block, const NDArray &input
           SD_FLOAT_TYPES);
     } break;
     default:
-      throw std::runtime_error("Pooling2D: Unknown PoolingType used");
+      THROW_EXCEPTION("Pooling2D: Unknown PoolingType used");
   }
 
   output.tickWriteDevice();

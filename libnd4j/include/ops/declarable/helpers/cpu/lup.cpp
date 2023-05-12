@@ -292,7 +292,7 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
     for (sd::LongType i = 0; i < rowNum - 1; i++) {
       auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
       if (pivotIndex < 0) {
-        throw std::runtime_error("helpers::luNN_: input matrix is singular.");
+        THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
       math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
                     permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);

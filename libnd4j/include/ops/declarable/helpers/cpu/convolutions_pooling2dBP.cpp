@@ -300,7 +300,7 @@ static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const 
         "ConvolutionUtils::pooling2dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead "
         "!\n",
         poolingMode);
-    throw std::runtime_error("Incorrect pooling2dBP mode");
+    THROW_EXCEPTION("Incorrect pooling2dBP mode");
   }
 }
 

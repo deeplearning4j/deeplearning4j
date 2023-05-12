@@ -201,16 +201,7 @@ struct float16 {
                               std::is_same<int8_t, T>::value || std::is_same<uint8_t, T>::value ||
                               std::is_same<int16_t, T>::value || std::is_same<uint16_t, T>::value ||
                               std::is_same<bool, T>::value;
-  };  // || std::is_same<bfloat16, T>::value; };
-      // struct isNumericType { static bool const value = std::is_same<double, typename std::decay<T>::type>::value ||
-  // std::is_same<float, typename std::decay<T>::type>::value || std::is_same<int, typename std::decay<T>::type>::value
-  // || std::is_same<unsigned int, typename std::decay<T>::type>::value || std::is_same<long long, typename
-  // std::decay<T>::type>::value || std::is_same<unsigned long long, typename std::decay<T>::type>::value ||
-  // std::is_same<long int, typename std::decay<T>::type>::value || std::is_same<long unsigned int, typename
-  // std::decay<T>::type>::value || std::is_same<int8_t, typename std::decay<T>::type>::value || std::is_same<uint8_t,
-  // typename std::decay<T>::type>::value || std::is_same<int16_t, typename std::decay<T>::type>::value ||
-  // std::is_same<uint16_t, typename std::decay<T>::type>::value || std::is_same<bool, typename
-  // std::decay<T>::type>::value || std::is_same<bfloat16, T>::value;; };
+  };
 
  public:
   ihalf data;

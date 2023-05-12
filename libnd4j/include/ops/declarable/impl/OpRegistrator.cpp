@@ -178,7 +178,7 @@ bool OpRegistrator::registerOperation(sd::ops::DeclarableOp* op) {
 
 void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
   std::pair<sd::LongType, samediff::Engine> p = {op->hash(), op->engine()};
-  if (_helpersLH.count(p) > 0) throw std::runtime_error("Tried to double register PlatformHelper");
+  if (_helpersLH.count(p) > 0) THROW_EXCEPTION("Tried to double register PlatformHelper");
 
   _uniqueH.emplace_back(op);
 
@@ -195,7 +195,7 @@ void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
 #if defined(HAVE_VEDA)
 void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op) {
   auto entry = op->getEntry();
-  if (_helpersHLegacy.count(entry) > 0) throw std::runtime_error("Tried to double register PlatformHelper Legacy");
+  if (_helpersHLegacy.count(entry) > 0) THROW_EXCEPTION("Tried to double register PlatformHelper Legacy");
 
   _uniqueHLegacy.emplace_back(op);
 
@@ -250,7 +250,7 @@ sd::ops::DeclarableOp* OpRegistrator::getOperation(std::string& name) {
 
 sd::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(sd::LongType hash, samediff::Engine engine) {
   std::pair<sd::LongType, samediff::Engine> p = {hash, engine};
-  if (_helpersLH.count(p) == 0) throw std::runtime_error("Requested helper can't be found");
+  if (_helpersLH.count(p) == 0) THROW_EXCEPTION("Requested helper can't be found");
 
   return _helpersLH[p];
 }

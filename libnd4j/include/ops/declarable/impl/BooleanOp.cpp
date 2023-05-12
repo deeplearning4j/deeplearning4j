@@ -48,7 +48,7 @@ bool BooleanOp::verify(sd::graph::Context &block) {
   sd::Status status = this->validateNonEmptyInput(block);
   if (status != sd::Status::OK) {
     sd_printf("Inputs should be not empty for BooleanOps", "");
-    throw std::runtime_error("Bad inputs");
+    THROW_EXCEPTION("Bad inputs");
   }
 
   status = this->validateAndExecute(block);
@@ -58,7 +58,7 @@ bool BooleanOp::verify(sd::graph::Context &block) {
     return false;
   else {
     sd_printf("Got error %i during [%s] evaluation: ", (int)status, this->getOpDescriptor()->getOpName()->c_str());
-    throw std::runtime_error("Internal error");
+    THROW_EXCEPTION("Internal error");
   }
 }
 

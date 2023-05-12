@@ -91,7 +91,12 @@ using namespace sd;
 #include "exceptions/backward.hpp"
 
 
-
+//note this is a c++ 17 feature
+#ifndef INSTRUMENT_FILE_DEF
+#pragma once
+#define INSTRUMENT_FILE_DEF 1
+FILE* instrumentFile = nullptr;
+#endif
 
 // this is mainly a c based function.
 extern "C" {
@@ -417,7 +422,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(hZShapeInfo, dimension, dimensionLength);

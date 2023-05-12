@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-11.8</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
@@ -75,17 +75,20 @@
         <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>34g</test.heap.size>
-        <test.offheap.size>34g</test.offheap.size>
+        <test.heap.size>4g</test.heap.size>
+        <test.offheap.size>4g</test.offheap.size>
         <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <surefire.forks>8</surefire.forks>
-        <surefire.threads>8</surefire.threads>
+        <surefire.forks>1</surefire.forks>
+        <surefire.threads>1</surefire.threads>
+
+        <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
+        <test.asan.options>protect_shadow_gap=0:replace_intrin=0:detect_leaks=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload></preload>
+        <preload>/usr/lib64/libasan.so.8</preload>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>
@@ -478,6 +481,29 @@
     </dependencies>
     <profiles>
         <profile>
+            <id>cuda-dep</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>backend.artifactId</name>
+                    <value>nd4j-cuda-11.8</value>
+                </property>
+            </activation>
+            <properties>
+                <cuda.version>11.8</cuda.version>
+                <cudnn.version>8.6</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.8</javacpp-presets.cuda.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>cuda-platform-redist</artifactId>
+                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
             <id>jemalloc</id>
             <properties>
                 <preload>${jemalloc.path}</preload>
@@ -846,6 +872,7 @@
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
+                        <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
                     <classpathDependencyExcludes>

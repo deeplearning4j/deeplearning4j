@@ -246,9 +246,8 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(INDArray array, CudaContext context) {
-        //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-        if (array.isEmpty() || array.isS())
-            throw new UnsupportedOperationException("Pew-pew");
+        if (array.isEmpty())
+            return null;
 
         return memoryHandler.getDevicePointer(array.data(), context);
     }
@@ -301,7 +300,7 @@ public class AtomicAllocator implements Allocator {
     public void synchronizeHostData(DataBuffer buffer) {
         // we actually need synchronization only in device-dependant environment. no-op otherwise. managed by native code
         if(!buffer.wasClosed())
-            NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
+            NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(buffer.opaqueBuffer());
     }
 
 

@@ -41,7 +41,7 @@ CONFIGURABLE_OP_IMPL(adam_updater, 3, 3, true, 0, 0) {
   auto stateM = OUTPUT_VARIABLE(2);
 
   if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty())
-    throw std::runtime_error("adam_updater: Unable to apply empty update");
+    THROW_EXCEPTION("adam_updater: Unable to apply empty update");
 
   REQUIRE_TRUE(gradient->isSameShape(initStateU), 0,
                "ADAM UPDATER OP: input state V must have the same shape as gradient,"

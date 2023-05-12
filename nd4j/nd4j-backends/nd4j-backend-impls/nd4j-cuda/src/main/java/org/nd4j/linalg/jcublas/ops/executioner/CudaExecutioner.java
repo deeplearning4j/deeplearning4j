@@ -2162,7 +2162,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
-        nativeOps.deleteConstantShapeBuffer(dbf);
 
         return result;
     }
@@ -2180,7 +2179,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val tadShape = new CudaLongDataBuffer(nativeOps.getPrimaryShapeInfo(pack), nativeOps.getSpecialShapeInfo(pack), nativeOps.getShapeInfoLength(pack));
         val tadOffsets = new CudaLongDataBuffer(nativeOps.getPrimaryOffsets(pack), nativeOps.getSpecialOffsets(pack), nativeOps.getNumberOfTads(pack));
 
-        nativeOps.deleteTadPack(pack);
 
         return new TadPack(tadShape, tadOffsets);
     }

@@ -1406,7 +1406,7 @@ namespace sd {
         const auto y = *(reinterpret_cast<const Y *>(value));
 
         auto xOffset = shape::getOffset(shapeInfo(), indices);
-        t[xOffset] = static_cast<T>(y);
+        t[xOffset] = y;
     }
     BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                           (void *buffer, const sd::LongType *indices, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1417,7 +1417,7 @@ namespace sd {
         auto t = reinterpret_cast<T *>(buffer);
         const auto y = *(reinterpret_cast<const Y *>(value));
 
-        t[offset] = static_cast<T>(y);
+        t[offset] = y;
     }
     BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                           (void *buffer, const sd::LongType offset, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -3456,7 +3456,7 @@ namespace sd {
                                         const sd::LongType yOffset) const {
         auto x = reinterpret_cast<X *>(xBuffer);
         const auto y = reinterpret_cast<const Y *>(yBuffer);
-        x[xOffset] = static_cast<X>(y[yOffset]);
+        x[xOffset] = y[yOffset];
     }
     BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
                           (void *xBuffer, const sd::LongType xOffset, const void *yBuffer, const sd::LongType yOffset)

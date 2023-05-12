@@ -28,8 +28,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
-#include <stdexcept>
-#include <string>
+
 
 using namespace simdOps;
 

@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
       default: {
         sd_printf("Unknown DataType used: [%i]\n", DataTypeUtils::asInt(type));
 #ifndef __CUDA_ARCH__
-        throw std::runtime_error("Unknown DataType requested");
+        THROW_EXCEPTION("Unknown DataType requested");
 #endif
       }
     }
@@ -125,7 +125,7 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
       default: {
         sd_printf("Unknown DataType used: [%i]\n", DataTypeUtils::asInt(type));
 #ifndef __CUDA_ARCH__
-        throw std::runtime_error("Unknown DataType requested");
+        THROW_EXCEPTION("Unknown DataType requested");
 #endif
       }
     }

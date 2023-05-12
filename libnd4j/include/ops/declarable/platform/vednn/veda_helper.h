@@ -87,7 +87,7 @@ SD_INLINE VEDA_STATUS veda_check(VEDAresult err, const char* file, const int lin
 
 SD_INLINE void veda_throw(VEDA_STATUS status) {
   if (!status) {
-    throw std::runtime_error(status.getErrorMsg());
+    THROW_EXCEPTION(status.getErrorMsg());
   }
 }
 

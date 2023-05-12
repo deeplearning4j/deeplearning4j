@@ -95,11 +95,6 @@ SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(const void *vx, const sd::
   auto extraParams = reinterpret_cast<X *>(vextraParams);
   auto reductionBuffer = reinterpret_cast<X *>(vreductionBuffer);
 
-  // if (OpType::requiresSpecialAccumulation) {
-  //     OpType::execSpecialCuda(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer,
-  //     tadOnlyShapeInfo, tadOffsets); return;
-  // }
-
   // shared memory space for storing intermediate results
   __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ int tadLen, numTads;

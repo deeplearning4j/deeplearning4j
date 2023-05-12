@@ -114,7 +114,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
       auto end = indexIndices[1];
       auto endInc = end - (inclusive[currDimension] > 0 ? 0 : 1);
       if (endInc >= inputBase->sizeAt(inIdx)) {
-        throw std::runtime_error("CREATE_VIEW: Indices are out of range: Cannot get interval index ");
+        THROW_EXCEPTION("CREATE_VIEW: Indices are out of range: Cannot get interval index ");
       }
 
       auto length = (endInc - start) / stride + 1;

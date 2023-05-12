@@ -37,7 +37,7 @@ class BroadcastHelper {
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
       if (!z->isEmpty())
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
             "as well !");
       return z;
@@ -108,7 +108,7 @@ class BroadcastHelper {
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
       if (!z->isEmpty())
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
             "as well !");
       return z;

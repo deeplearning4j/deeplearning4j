@@ -20,7 +20,6 @@ option(SD_USE_LTO "Use link time optimization" OFF)
 # GCC specific flag: 	 -finstrument-functions enables call stack logging. Useful for debugging segfaults.
 # TODO: from https://sii.pl/blog/en/call-stack-logger-function-instrumentation-as-a-way-to-trace-programs-flow-of-execution/?category=hard-development&tag=binutils-en,cpp-en,embedded-competency-center-en,function-instrumentation-en,gcc-en,logging-en,trace-en
 # from: https://github.com/TomaszAugustyn/call-stack-logger/blob/master/src/trace.cpp
-#TODO: add missing linker flags to gcc specific section for reliable back traces.
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
@@ -40,7 +39,7 @@ print_all_variables()
 
 if(SD_AURORA)
     set(SD_CUDA false)
-    set(CMAKE_CXX_STANDARD 14)
+    set(CMAKE_CXX_STANDARD 11)
     if (DEFINED ENV{NEC_FTRACE})
         SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ftrace")
         SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -ftrace")
@@ -50,7 +49,8 @@ else()
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
         SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
     endif()
-    set(CMAKE_CXX_STANDARD 11)
+
+
 endif()
 
 if (SD_CUDA AND NOT SD_AURORA)
@@ -86,6 +86,7 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -allow-unsupported-compiler")
     enable_language(CUDA)
     find_package(CUDA REQUIRED)
     # Add a platform agnostic way of showing we are compiling for cuda
@@ -94,14 +95,12 @@ if (SD_CUDA AND NOT SD_AURORA)
     add_compile_definitions(SD_CUDA=true)
 
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
-        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compilng CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
+        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compiling CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
         set(CMAKE_CXX_STANDARD 11)
         set(CMAKE_CUDA_STANDARD 11)
-    else()
-        set(CMAKE_CXX_STANDARD 11)
-        message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
-
     endif()
+
+    message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 else()

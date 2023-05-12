@@ -41,10 +41,10 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   auto numTads = static_cast<unsigned int>(tadPack->numberOfTads());
   auto tadEws = shape::elementWiseStride(tadPack->primaryShapeInfo());
 
-  if (iLen != numTads) throw std::runtime_error("OneHot: number of TADs should be equal to number of indices");
+  if (iLen != numTads) THROW_EXCEPTION("OneHot: number of TADs should be equal to number of indices");
 
   if (shape::elementWiseStride(zShapeInfo) != 1 || shape::elementWiseStride(iShapeInfo) != 1)
-    throw std::runtime_error("OneHot: op expects output and indices to have elementWiseStride to be equal to 1");
+    THROW_EXCEPTION("OneHot: op expects output and indices to have elementWiseStride to be equal to 1");
 
   Z zero = static_cast<Z>(off);
   Z one = static_cast<Z>(on);

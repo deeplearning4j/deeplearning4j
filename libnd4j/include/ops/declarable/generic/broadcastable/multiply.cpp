@@ -46,7 +46,7 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;
   else if (tZ != z)
-    throw std::runtime_error("multiply: result was replaced");
+    THROW_EXCEPTION("multiply: result was replaced");
 
   return sd::Status::OK;
 }

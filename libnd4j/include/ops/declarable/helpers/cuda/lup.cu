@@ -511,7 +511,7 @@ static SD_DEVICE int luNN(T *matrix, const sd::LongType *shape, I *permutation, 
   for (auto i = 0; i < n - 1; i++) {
     auto pivotIndex = argmaxCol(i, matrix, shape);
     if (pivotIndex < 0) {
-      return -1;  // throw std::runtime_error("helpers::luNN_: input matrix is singular.");
+      return -1;
     }
     math::sd_swap(permutation[shape::getIndexOffset(i, permuShape)],
                   permutation[shape::getIndexOffset(pivotIndex, permuShape)]);

@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(reshape) {
   if (block.width() == 1) {
     reshapeArgs = *block.getIArguments();
     if (!handleOptionalOrder(reshapeArgs, orderNew)) {
-      throw std::runtime_error(
+      THROW_EXCEPTION(
           "reshape:: Value passed in must be -99 or -102 for the ordering if "
           "an int array is present. -99 represents c ordering and -102 "
           "represents f ordering. This number is negative for the long array "
@@ -110,7 +110,7 @@ DECLARE_SHAPE_FN(reshape) {
       // the ordering. You can't have a -99 or -102 shaped array.
       char potentialOrdering = (char) I_ARG(0);
       if (!handleOptionalOrder(reshapeArgs, orderNew)) {
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "reshape:: Value passed in must be -99 or -102 for the ordering if "
             "an int array is present. -99 represents c ordering and -102 "
             "represents f ordering. This number is negative for the long array "

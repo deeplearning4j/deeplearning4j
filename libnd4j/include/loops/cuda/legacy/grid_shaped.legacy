@@ -426,21 +426,18 @@ namespace functions {
         void GRIDShaped<float>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float *dx, sd::LongType *xShapeInfo, float *dy, sd::LongType *yShapeInfo, float *dz, sd::LongType *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
             invertedMetaPairwiseShapedNumericFloat<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
-            DEBUG_KERNEL(stream, opNumA);
         }
 
         template <>
         void GRIDShaped<float16>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float16 *dx, sd::LongType *xShapeInfo, float16 *dy, sd::LongType *yShapeInfo, float16 *dz, sd::LongType *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
             invertedMetaPairwiseShapedNumericHalf<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
-            DEBUG_KERNEL(stream, opNumB);
         }
 
         template <>
         void GRIDShaped<double>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, double *dx, sd::LongType *xShapeInfo, double *dy, sd::LongType *yShapeInfo, double *dz, sd::LongType *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
             invertedMetaPairwiseShapedNumericDouble<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
-            DEBUG_KERNEL(stream, opNumA);
         }
     }
 }

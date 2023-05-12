@@ -99,7 +99,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
   if (indices != nullptr) {
     for (sd::LongType i = 0; i < indices->lengthOf(); ++i)
       if (indices->e<sd::LongType>(i) >= input->sizeAt(axis))
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "helpers::gather function: indices array contains wrong elements, each element must be smaller than "
             "corresponding dimension of input array !");
 
@@ -145,7 +145,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
   } else {
     for (int i = 1; i < numOfIntArgs; ++i)
       if (intArgs[i] >= input->sizeAt(axis))
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
 
     // we only allow scalar/vector case here

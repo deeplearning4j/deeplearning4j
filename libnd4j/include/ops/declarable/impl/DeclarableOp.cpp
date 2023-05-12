@@ -108,7 +108,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
       if (ctx.isInplace()) {
         z = ctx.fastpath_in()[inputId];
       } else
-        throw std::runtime_error("fastpath_out: unresolved output array");
+        THROW_EXCEPTION("fastpath_out: unresolved output array");
     } else {
       z = ctx.fastpath_out()[inputId];
     }
@@ -136,7 +136,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
         sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
-      throw std::runtime_error("getZ: Unable to return z variable!");
+      THROW_EXCEPTION("getZ: Unable to return z variable!");
     }
   }
 
@@ -341,13 +341,13 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
                 "shape info %s\n",
                 getOpName()->c_str(),eShape.c_str(), aShape.c_str(), pair.second, eShapeInfoString.c_str(), aShapeInfoString.c_str());
 
-            throw std::runtime_error("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch first case");
+            THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch first case");
           }
 
           if (shape::isEmpty(out) != shape::isEmpty(shape)) {
             sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmpty(out), shape::isEmpty(shape));
 
-            throw std::runtime_error("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
+            THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
           }
 
           // checking out data type equality
@@ -382,7 +382,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
                   "shape info %s. Conditions, shapeEquals: %d, array empty: %d\n",
                   getOpName()->c_str(),eShape.c_str(), aShape.c_str(), idx, eShapeInfoString.c_str(), aShapeInfoString.c_str(), shapeEquals,
                   arrayEmpty);
-              throw std::runtime_error("Output array did not match expected shape.");
+              THROW_EXCEPTION("Output array did not match expected shape.");
             }
           }
         }
@@ -491,7 +491,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   sd::DataType inputTypes[SD_MAX_INPUT_SIZE];
   if (block.width() > SD_MAX_INPUT_SIZE) {
     sd_printf("%s:%d Exceeded allowed input size (%d) \n", __FILE__, __LINE__, SD_MAX_INPUT_SIZE);
-    throw std::runtime_error("Provided inputs are more than allowed");
+    THROW_EXCEPTION("Provided inputs are more than allowed");
   }
 #else
   std::vector<sd::DataType> inputTypes(block.width());
@@ -838,7 +838,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
       if(array == nullptr) {
-        throw std::runtime_error("DeclarableOp::execute: array is nullptr");
+        THROW_EXCEPTION("DeclarableOp::execute: array is nullptr");
       }
 
       auto shape = ShapeUtils::shapeAsString(array);
@@ -870,13 +870,13 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
     sd_debug("In fast path, setting variable\n", 0);
     block.fastpath_out()[outputIdx] = array;
   } else if (block.getVariableSpace() == nullptr) {
-    throw std::runtime_error("Var space should not be null before pushing variable!");
+    THROW_EXCEPTION("Var space should not be null before pushing variable!");
   } else {
     block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array, remove);
     sd_debug("After pushing variable\n", 0);
     auto varSpace = block.getVariableSpace();
     if (varSpace == nullptr) {
-      throw std::runtime_error("Var space should not be null!");
+      THROW_EXCEPTION("Var space should not be null!");
     }
     sd_debug("After getting var space\n", 0);
     if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {

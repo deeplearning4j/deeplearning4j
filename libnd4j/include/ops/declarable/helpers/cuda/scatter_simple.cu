@@ -72,7 +72,7 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, c
   auto xType = input.dataType();
   auto yType = indices.dataType();
 
-  if (opId != 6) throw std::runtime_error("scatterSimple: only copy op is supported");
+  if (opId != 6) THROW_EXCEPTION("scatterSimple: only copy op is supported");
 
   NDArray::prepareSpecialUse({&input}, {&updates, &indices});
 

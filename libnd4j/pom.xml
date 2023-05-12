@@ -63,6 +63,8 @@
         <openblas.classifier></openblas.classifier>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
+        <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
+        <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
     </properties>
 
     <build>
@@ -92,108 +94,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.bytedeco</groupId>
-                <artifactId>javacpp</artifactId>
-                <version>${javacpp.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>${openblas.artifactId}</artifactId>
-                        <version>${openblas.version}-${javacpp-presets.version}</version>
-                        <classifier>${openblas.classifier}</classifier>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <properties>${libnd4j.platform}</properties>
-                    <buildResources>
-                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                        <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
-                    </buildResources>
-                    <includeResources>
-                        <includeResource>/${javacpp.platform.library.path}/include/
-                        </includeResource>
-                        <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/
-                        </includeResource>
-                    </includeResources>
-                    <linkResources>
-                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/lib/</linkResource>
-                    </linkResources>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>javacpp-cppbuild-validate</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>javacpp-cppbuild-compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${libnd4j.cpu.compile.skip}</skip>
-                            <buildCommand>
-                                <program>${libnd4j.buildprogram}</program>
-                                <argument>buildnativeoperations.sh</argument>
-                                <argument>--build-type</argument>
-                                <argument>${libnd4j.build}</argument>
-                                <argument>--chip</argument>
-                                <argument>${libnd4j.chip}</argument>
-                                <argument>--platform</argument>
-                                <argument>${libnd4j.platform}</argument>
-                                <argument>--chip-extension</argument>
-                                <argument>${libnd4j.extension}</argument>
-                                <argument>--chip-version</argument>
-                                <argument>${cuda.version}</argument>
-                                <argument>--compute</argument>
-                                <argument>${libnd4j.compute}</argument>
-                                <argument>${libnd4j.tests}</argument>
-                                <argument>-j</argument>
-                                <argument>${libnd4j.buildthreads}</argument>
-                                <argument>-h</argument>
-                                <argument>${libnd4j.helper}</argument>
-                                <argument>--operations</argument>
-                                <argument>${libnd4j.operations}</argument>
-                                <argument>--datatypes</argument>
-                                <argument>${libnd4j.datatypes}</argument>
-                                <argument>${libnd4j.sanitize}</argument>
-                                <argument>--sanitize</argument>
-                                <argument>--arch</argument>
-                                <argument>${libnd4j.arch}</argument>
-                                <argument>--use_lto</argument>
-                                <argument>${libnd4j.lto}</argument>
-                                <argument>--functrace</argument>
-                                <argument>${libnd4j.calltrace}</argument>
-                            </buildCommand>
-                            <workingDirectory>${project.basedir}</workingDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>libnd4j-test-run</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                        <configuration>
-                            <skip>${libnd4j.test.skip}</skip>
-                            <workingDirectory>${basedir}/tests_cpu</workingDirectory>
-                            <buildCommand>
-                                <program>bash</program>
-                                <argument>run_tests.sh</argument>
-                                <argument>--chip</argument>
-                                <argument>${libnd4j.chip}</argument>
-                            </buildCommand>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
             <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <version>2.6</version>
@@ -342,6 +243,8 @@
             <properties>
                 <!-- Leave libnd4j.chip and libnd4j.classifier as is to build CPU version as well. -->
                 <!-- <libnd4j.chip>cuda</libnd4j.chip> -->
+                <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
                 <!-- <libnd4j.classifier>${libnd4j.platform}-cuda-${cuda.version}</libnd4j.classifier> -->
             </properties>
             <build>
@@ -352,6 +255,7 @@
                         <version>${javacpp.version}</version>
                         <configuration>
                             <properties>${libnd4j.platform}</properties>
+
                         </configuration>
                         <executions>
                             <execution>
@@ -420,6 +324,128 @@
                 </plugins>
             </build>
         </profile>
+
+
+        <profile>
+            <id>build-cpu</id>
+            <activation>
+                <property>
+                    <name>!libnd4j.cuda</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
+                <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
+
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>${openblas.artifactId}</artifactId>
+                                <version>${openblas.version}-${javacpp-presets.version}</version>
+                                <classifier>${openblas.classifier}</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                            <buildResources>
+                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                                <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/${javacpp.platform.library.path}/include/
+                                </includeResource>
+                                <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/
+                                </includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/</linkResource>
+                                <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-validate</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>javacpp-cppbuild-compile</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.cpu.compile.skip}</skip>
+                                    <buildCommand>
+                                        <program>${libnd4j.buildprogram}</program>
+                                        <argument>buildnativeoperations.sh</argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
+                                        <argument>--chip</argument>
+                                        <argument>${libnd4j.chip}</argument>
+                                        <argument>--platform</argument>
+                                        <argument>${libnd4j.platform}</argument>
+                                        <argument>--chip-extension</argument>
+                                        <argument>${libnd4j.extension}</argument>
+                                        <argument>--chip-version</argument>
+                                        <argument>${cuda.version}</argument>
+                                        <argument>--compute</argument>
+                                        <argument>${libnd4j.compute}</argument>
+                                        <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
+                                        <argument>-h</argument>
+                                        <argument>${libnd4j.helper}</argument>
+                                        <argument>--operations</argument>
+                                        <argument>${libnd4j.operations}</argument>
+                                        <argument>--datatypes</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
+                                        <argument>--sanitize</argument>
+                                        <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--arch</argument>
+                                        <argument>${libnd4j.arch}</argument>
+                                        <argument>--use_lto</argument>
+                                        <argument>${libnd4j.lto}</argument>
+                                        <argument>--functrace</argument>
+                                        <argument>${libnd4j.calltrace}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>libnd4j-test-run</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.test.skip}</skip>
+                                    <workingDirectory>${basedir}/tests_cpu</workingDirectory>
+                                    <buildCommand>
+                                        <program>bash</program>
+                                        <argument>run_tests.sh</argument>
+                                        <argument>--chip</argument>
+                                        <argument>${libnd4j.chip}</argument>
+                                    </buildCommand>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>clean-tests</id>
             <activation>

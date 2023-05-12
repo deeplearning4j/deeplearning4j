@@ -2557,9 +2557,9 @@
   else                                                                                               \
     shape::shapeBufferFortran(shape::rank(SRC), sd::ArrayOptions::dataType(SRC), shape::shapeOf(SRC), TGT);
 
-#ifdef __CUDABLAS__
+#if defined(__CUDABLAS__)
 
-#ifdef _RELEASE
+#if defined(_RELEASE)
 
 // we intentionally add 8 tail bytes here to avoid problems with atomic operations
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                         \
@@ -2651,6 +2651,23 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #endif
   }
 }
+
+
+
+#if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
+#pragma once
+
+#define OP_BOILER_PLATE_THROW_EXCEPTIONS
+#include <exceptions/backward.hpp>
+using namespace backward;
+void throwException(const char* exceptionMessage);
+#endif
+
+#if defined(SD_GCC_FUNCTRACE)
+#define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
+#else
+#define THROW_EXCEPTION(exceptionMessage) throw std::runtime_error(exceptionMessage);
+#endif
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, LENGTH);
 #define RELEASE(VARIABLE, WORKSPACE) internal_release_host(WORKSPACE, VARIABLE);

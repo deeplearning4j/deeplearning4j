@@ -398,7 +398,7 @@ sd::Status resizeFunctor(sd::LaunchContext* context, NDArray const* image, int c
 #endif
     default:
       sd_printf("helper::resizeFunctor: Wrong resize method %i\n", (int)method);
-      throw std::runtime_error("helper::resizeFunctor: Wrong resize method.");
+      THROW_EXCEPTION("helper::resizeFunctor: Wrong resize method.");
   }
   return sd::Status::OK;
 }

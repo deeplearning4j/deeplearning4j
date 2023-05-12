@@ -145,9 +145,9 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   const cublasOperation_t transAblas = transA == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
   const cublasOperation_t transBblas = transB == 112 ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  if(M < 0) throw std::runtime_error("M < 0");
-  if(N < 0) throw std::runtime_error("N < 0");
-  if(K < 0) throw std::runtime_error("K < 0");
+  if(M < 0) THROW_EXCEPTION("M < 0");
+  if(N < 0) THROW_EXCEPTION("N < 0");
+  if(K < 0) THROW_EXCEPTION("K < 0");
 
 
   const auto aType = pA[0]->dataType();
@@ -193,7 +193,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
         cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers,
                             CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
   } else
-    throw std::runtime_error("batched gemm cuda: this mode is not implemented yet !");
+    THROW_EXCEPTION("batched gemm cuda: this mode is not implemented yet !");
 
   if (status != CUBLAS_STATUS_SUCCESS) {
     sd_printf("Status was: %d\n",status);

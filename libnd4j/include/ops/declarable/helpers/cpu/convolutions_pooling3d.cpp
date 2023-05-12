@@ -234,7 +234,7 @@ static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray&
         "ConvolutionUtils::pooling3d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead "
         "!\n",
         poolingMode);
-    throw std::runtime_error("Incorrect poooling3d mode");
+    THROW_EXCEPTION("Incorrect poooling3d mode");
   }
 }
 
