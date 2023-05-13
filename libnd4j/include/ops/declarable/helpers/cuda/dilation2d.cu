@@ -101,14 +101,14 @@ template <typename X, typename Z>
 static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                    const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                    const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                   const sd::LongType* zShapeInfo, const int sH, const int sW, const int pH,
-                                   const int pW, const int dH, const int dW) {
+                                   const sd::LongType* zShapeInfo, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
+                                   const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   dilation2dCuda<X, Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                zShapeInfo, sH, sW, pH, pW, dH, dW);
 }
 
-void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const int sH,
-                const int sW, const int pH, const int pW, const int dH, const int dW) {
+void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,
+                const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   PointersManager manager(context, "dilation2d");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;

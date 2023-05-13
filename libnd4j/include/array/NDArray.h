@@ -1594,7 +1594,7 @@ bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 template <typename T, typename R>
 SD_INLINE R NDArray::templatedGet(void const *buffer, sd::LongType index) const {
   auto b = reinterpret_cast<T const *>(buffer);
-  auto v = b[index];
+  auto v = static_cast<T>(b[index]);
   return v;
 }
 

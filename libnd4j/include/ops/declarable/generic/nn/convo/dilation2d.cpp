@@ -45,8 +45,8 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
                "Dilation2D: number of input channels doesn't match number of channels in weights: %i vs %i",
                input->sizeAt(3), weights->sizeAt(2));
 
-  std::vector<int> strides(4);
-  std::vector<int> rates(4);
+  std::vector<sd::LongType> strides(4);
+  std::vector<sd::LongType> rates(4);
 
   if (block.width() > 2) {
     REQUIRE_TRUE(block.width() >= 4, 0, "Dilation2D: number of input arrays should be 4 at least");
@@ -54,8 +54,8 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
     auto r = INPUT_VARIABLE(2);
     auto s = INPUT_VARIABLE(3);
 
-    strides = s->template asVectorT<int>();
-    rates = r->template asVectorT<int>();
+    strides = s->template asVectorT<sd::LongType>();
+    rates = r->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= 9, 0, "Dilation2D: number of Int arguments should be 9 at least");
 
@@ -65,10 +65,10 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
     for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
   }
 
-  int sH = 0, sW = 0;
-  int dH = 0, dW = 0;
-  int pH = 0, pW = 0;
-  int oH = 0, oW = 0;
+  sd::LongType sH = 0, sW = 0;
+  sd::LongType dH = 0, dW = 0;
+  sd::LongType pH = 0, pW = 0;
+  sd::LongType oH = 0, oW = 0;
 
   helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape,
                        &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
@@ -93,15 +93,15 @@ DECLARE_SHAPE_FN(dilation2d) {
   const int iC = shape::sizeAt(input, 3);
   const bool isSameShape = INT_ARG(0) == 1;
 
-  std::vector<int> strides(4);
-  std::vector<int> rates(4);
+  std::vector<sd::LongType> strides(4);
+  std::vector<sd::LongType> rates(4);
 
   if (block.width() > 2) {
     auto r = INPUT_VARIABLE(2);
     auto s = INPUT_VARIABLE(3);
 
-    strides = s->template asVectorT<int>();
-    rates = r->template asVectorT<int>();
+    strides = s->template asVectorT<sd::LongType>();
+    rates = r->template asVectorT<sd::LongType>();
   } else {
     if (block.numI() < 9) {
       auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
@@ -114,10 +114,10 @@ DECLARE_SHAPE_FN(dilation2d) {
     for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
   }
 
-  int sH = 0, sW = 0;
-  int dH = 0, dW = 0;
-  int pH = 0, pW = 0;
-  int oH = 0, oW = 0;
+  sd::LongType sH = 0, sW = 0;
+  sd::LongType dH = 0, dW = 0;
+  sd::LongType pH = 0, pW = 0;
+  sd::LongType oH = 0, oW = 0;
 
   helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW,
                        &oH, &oW);
