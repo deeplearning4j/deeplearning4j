@@ -36,7 +36,7 @@ cuda_exception::cuda_exception(std::string message) : std::runtime_error(message
   p.color_mode = ColorMode::always;
   p.address = true;
   p.print(st, stderr);
-  
+
 }
 #else
 cuda_exception::cuda_exception(std::string message) : std::runtime_error(message) {

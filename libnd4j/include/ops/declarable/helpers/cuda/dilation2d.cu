@@ -113,7 +113,7 @@ void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, ND
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(int) * threadsPerBlock + 128;
+  const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(sd::LongType) * threadsPerBlock + 128;
 
   NDArray::prepareSpecialUse({output}, {input, weights});
   BUILD_SINGLE_SELECTOR_TWICE(

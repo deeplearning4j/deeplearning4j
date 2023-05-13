@@ -84,7 +84,7 @@ static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsP
 sd::LongType checkIndices(sd::LaunchContext *context, const NDArray &indices, const NDArray &output, const int axis) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * indices.rankOf() + 256;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * indices.rankOf() + 256;
 
   const auto xType = indices.dataType();
 
@@ -325,7 +325,7 @@ void scatter(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indice
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = ((lock ? output.lengthOf() : updates.lengthOf()) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = sizeof(int) * threadsPerBlock * (updates.rankOf() + output.rankOf()) + 256;
+  const int sharedMem = sizeof(sd::LongType) * threadsPerBlock * (updates.rankOf() + output.rankOf()) + 256;
 
   PointersManager manager(context, "scatter");
 
@@ -578,7 +578,7 @@ void scatterND(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indi
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = ((lock ? output.lengthOf() : updates.lengthOf()) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * ((yRank > xRank ? yRank : xRank) + zRank) + 256;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * ((yRank > xRank ? yRank : xRank) + zRank) + 256;
 
   const auto xType = indices.dataType();
   const auto yType = updates.dataType();
@@ -657,7 +657,7 @@ void scatterForLoss(sd::LaunchContext *context, const NDArray &indices, NDArray 
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = updates.rankOf() * sizeof(int) * threadsPerBlock + 128;
+  const int sharedMem = updates.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
 
   if (calcGrad) {
     NDArray::prepareSpecialUse({&updates}, {&indices});

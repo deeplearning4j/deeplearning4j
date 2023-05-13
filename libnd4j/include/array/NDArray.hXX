@@ -365,27 +365,8 @@ namespace sd {
                      const bool isBuffAlloc, const bool isBuffDAlloc) {
         if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor cuda: can't be initialized without shapeinfo");
 
-        if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY) {
-            std::string errorMessage = "NDArray constructor: buffer was null but array shape info did not indicate empty! Shape buffer was: ";
-            errorMessage += "[";
-            int len = shape::shapeInfoLength(shape::rank(shapeInfo));
-            for(int i = 0; i < len; i++) {
-                errorMessage += std::string(std::to_string(shapeInfo[i]));
-                if(i < len) {
-                    errorMessage += std::string(",");
-                }
 
-            }
-
-            ShapeDescriptor shapeDescriptor(shapeInfo);
-            errorMessage += std::string("]");
-            errorMessage += std::string(" wasEmpty: " + std::to_string(shapeDescriptor.isEmpty()));
-            errorMessage += std::string(" data type: " + DataTypeUtils::asString(shapeDescriptor.dataType()));
-            errorMessage += std::string( "order: " + shapeDescriptor.order());
-            throw std::runtime_error(errorMessage);
-        }
-
-        if ((int)shapeInfo[0] > SD_MAX_RANK)
+        if ((sd::LongType)shapeInfo[0] > SD_MAX_RANK)
             throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
 
         _context = context;

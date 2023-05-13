@@ -70,8 +70,8 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
     const sd::Unsigned colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
     const sd::Unsigned colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    const sd::Unsigned colHend = sd::math::sd_min<sd::Unsigned>(imH / sH + 1, oH);
-    const sd::Unsigned colWend = sd::math::sd_min<sd::Unsigned>(imW / sW + 1, oW);
+    const sd::Unsigned colHend = sd::math::sd_min<sd::LongType>(imH / sH + 1, oH);
+    const sd::Unsigned colWend = sd::math::sd_min<sd::LongType>(imW / sW + 1, oW);
 
     T val = 0;
 
@@ -143,10 +143,10 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
     // compute the start and end of the output
     // These are the indexes for dimensions ??? in the 6d col matrix
     int w_col_start = (w_im < kWeff) ? 0 : (w_im - kWeff) / sW + 1;
-    int w_col_end = sd::math::sd_min<int>(w_im / sW + 1, oW);
+    int w_col_end = sd::math::sd_min<LongType>(w_im / sW + 1, oW);
 
     int h_col_start = (h_im < kHeff) ? 0 : (h_im - kHeff) / sH + 1;
-    int h_col_end = sd::math::sd_min<int>(h_im / sH + 1, oH);
+    int h_col_end = sd::math::sd_min<LongType>(h_im / sH + 1, oH);
 
     // Iterate over col entries in the 6d array... these are added up
     for (int colH = h_col_start; colH < h_col_end; colH += 1) {
@@ -194,7 +194,7 @@ void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const i
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (im.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::Unsigned) * threadsPerBlock + 256;
+  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
   NDArray::prepareSpecialUse({&im}, {&col});
   BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher,

@@ -123,7 +123,7 @@ void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, ND
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (vol.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::Unsigned) * threadsPerBlock + 256;
+  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
   NDArray::prepareSpecialUse({&vol}, {&col});
   BUILD_SINGLE_SELECTOR(

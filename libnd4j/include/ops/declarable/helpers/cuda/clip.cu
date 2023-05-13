@@ -106,7 +106,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
     PointersManager manager(context, "clipByNorm");
 
     const sd::LongType * dimensions = reinterpret_cast<const sd::LongType *>(
-        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(int)));
+        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({z}, {z, &actualNorms, &clipNorm});
     BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
@@ -127,7 +127,7 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
                                        const void* vNorm, const sd::LongType* normShapeInfo, const void* vSum,
                                        const sd::LongType* sumShapeInfo, void* vz,
                                        const sd::LongType* zShapeInfo,  // gradI
-                                       const int* dimensions, const int dimsLen, const bool useAverage) {
+                                       const sd::LongType* dimensions, const sd::LongType dimsLen, const bool useAverage) {
   const T clipNorm = *reinterpret_cast<const T*>(vClipNorm);
   const T* norm = reinterpret_cast<const T*>(vNorm);
   const T* sum = reinterpret_cast<const T*>(vSum);
@@ -211,14 +211,14 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
 
     PointersManager manager(context, "clipByNormBp");
 
-    const int* dimensions = reinterpret_cast<const int*>(
-        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(int)));
+    const sd::LongType* dimensions = reinterpret_cast<const sd::LongType*>(
+        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({&gradI}, {&actualNorms, &sums, &clipNorm, &input, &gradO});
     clipByNormBpCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
         clipNorm.specialBuffer(), input.specialBuffer(), input.specialShapeInfo(), gradO.specialBuffer(),
         gradO.specialShapeInfo(), actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), sums.specialBuffer(),
-        sums.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), dimensions, (int)dimsToExclude.size(),
+        sums.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude.size(),
         useAverage);
     NDArray::registerSpecialUse({&gradI}, {&actualNorms, &sums, &clipNorm, &input, &gradO});
 

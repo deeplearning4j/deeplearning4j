@@ -64,11 +64,6 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       // box with shape
       // auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
       auto colorIndex = boxIndex % colorTableLen;  // colorSet->at(c);
-      //                auto rowStart = sd::math::sd_max(sd::LongType (0), sd::LongType ((height - 1) *
-      //                internalBox[0])); auto rowEnd = sd::math::sd_min(sd::LongType (height - 1), sd::LongType
-      //                ((height - 1) * internalBox[2])); auto colStart = sd::math::sd_max(sd::LongType (0),
-      //                sd::LongType ((width - 1) * internalBox[1])); auto colEnd = sd::math::sd_min(sd::LongType(width
-      //                - 1), sd::LongType ((width - 1) * internalBox[3]));
       sd::LongType indices0[] = {batch, boxIndex, 0};
       sd::LongType indices1[] = {batch, boxIndex, 1};
       sd::LongType indices2[] = {batch, boxIndex, 2};

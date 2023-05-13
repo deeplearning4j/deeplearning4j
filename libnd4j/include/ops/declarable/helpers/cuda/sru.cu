@@ -235,7 +235,7 @@ void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArr
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
                             threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
-  const int sharedMem = threadsPerBlock * sizeof(int) * x->rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * x->rankOf() + 128;
 
   NDArray::prepareSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
   BUILD_SINGLE_SELECTOR(
@@ -468,7 +468,7 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
                             threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
-  const int sharedMem = threadsPerBlock * sizeof(int) * x->rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * x->rankOf() + 128;
 
   NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(

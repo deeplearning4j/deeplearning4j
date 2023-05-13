@@ -528,7 +528,7 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
 
   // devInfo
   int* devInfo = nullptr;
-  auto status2 = cudaMalloc((void**)&devInfo, sizeof(int) * bS);
+  auto status2 = cudaMalloc((void**)&devInfo, sizeof(sd::LongType) * bS);
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
   status2 = cudaDeviceSynchronize();
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);

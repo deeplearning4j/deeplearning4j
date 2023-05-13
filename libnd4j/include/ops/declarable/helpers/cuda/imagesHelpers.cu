@@ -206,7 +206,7 @@ void transformRgbGrs(sd::LaunchContext* context, const NDArray& input, NDArray& 
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = input.rankOf() * sizeof(int) * threadsPerBlock + 128;
+  const int sharedMem = input.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrsCudaLauncher,

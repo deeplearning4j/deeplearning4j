@@ -110,7 +110,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
 
     PointersManager manager(context, "batchToSpace");
 
@@ -242,7 +242,7 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
 
     PointersManager manager(context, "batchToSpaceND");
 
@@ -348,7 +348,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
 
     PointersManager manager(context, "spaceToBatch");
 
@@ -497,7 +497,7 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
 
     PointersManager manager(context, "spaceToBatchND");
 

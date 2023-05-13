@@ -121,8 +121,6 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   readPrimary();
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToSpecial(const bool forceSync) {
   // in this case there's nothing to do here
@@ -207,7 +205,6 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
                                     const sd::LongType offsetHostBuffer) {  // copies only to special buffer
-
 
   if (hostBuffer == nullptr) return;
 

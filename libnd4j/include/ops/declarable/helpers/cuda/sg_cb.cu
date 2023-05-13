@@ -666,14 +666,14 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
   }
   int *actualContext;
-  cerr = cudaMalloc(&actualContext, sizeof(int));
+  cerr = cudaMalloc(&actualContext, sizeof(sd::LongType));
   if (cerr) {
     throw cuda_exception::build("Cannot allocate counter buffer", cerr);
   }
 
   for (int e = 0; e < numTargets; e++) {
     auto alpha = lr.e<double>(e);
-    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
+    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<sd::LongType>(e);
 
     buildCurrentWindowKernel<T>
         <<<1, 1, 128, *stream>>>(vocabSize, contextWidth, vectorLength, dContext, syn0, neu1, actualContext, e);

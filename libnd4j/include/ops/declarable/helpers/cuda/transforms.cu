@@ -213,7 +213,7 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
             const int diagonal) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * gradO.rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * gradO.rankOf() + 128;
 
   PointersManager manager(context, "triuBP");
 
@@ -281,7 +281,7 @@ void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray&
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * 2 * gradO.rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 2 * gradO.rankOf() + 128;
 
   PointersManager manager(context, "tileBP");
 

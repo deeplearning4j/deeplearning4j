@@ -66,8 +66,8 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
-  if (static_cast<unsigned>(coords[2]) >= static_cast<unsigned>(iH) ||
-      static_cast<unsigned>(coords[3]) >= static_cast<unsigned>(iW))
+  if (static_cast<sd::LongType>(coords[2]) >= static_cast<sd::LongType>(iH) ||
+      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW))
     col[colOffset] = zeroPadVal;
   else
     col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
@@ -80,7 +80,7 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const sd::LongType *colShapeInfo, int sH, int sW, int pH, int pW, int dH, int dW,
                                double zeroPadVal) {
   im2colCuda<T>
-      <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(int) * 6 /* rank of columns = 6 */,
+      <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
          *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
