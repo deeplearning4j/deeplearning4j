@@ -391,7 +391,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
             //Sanity check on data buffer getters:
             DataBuffer db = arr.data();
             DataBuffer db2 = arr2.data();
-            for( int i=0; i<10; i++ ){
+            for(int i = 0; i < 10; i++) {
                 assertEquals(db.getDouble(i), db2.getDouble(i), 0);
                 assertEquals(db.getFloat(i), db2.getFloat(i), 0);
                 assertEquals(db.getInt(i), db2.getInt(i), 0);

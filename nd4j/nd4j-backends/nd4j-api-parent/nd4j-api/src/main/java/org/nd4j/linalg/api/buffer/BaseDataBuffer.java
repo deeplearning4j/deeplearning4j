@@ -683,7 +683,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case UINT32:
                 //Treat unsigned integer (UINT32) as 4 bytes
-                byte[] temp3 = new byte[(int)(4*length)];
+                byte[] temp3 = new byte[(int)(4 * length)];
                 asNio().get(temp3);
                 try {
                     if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {

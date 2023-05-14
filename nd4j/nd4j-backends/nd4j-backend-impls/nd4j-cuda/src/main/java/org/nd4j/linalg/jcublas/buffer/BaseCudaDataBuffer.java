@@ -355,6 +355,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
             case UINT64:    //Fall through
+                this.pointer = new CudaPointer(hostPointer, length, 0).asLongPointer();
+                indexer = ULongIndexer.create((LongPointer) pointer);
+                break;
             case LONG:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
@@ -409,6 +412,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         // let deallocator pick up this object
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
+        lazyAllocateHostPointer();
     }
 
     public BaseCudaDataBuffer(long length, int elementSize, boolean initialize) {
@@ -898,6 +902,230 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     }
 
+
+
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(short[] data, long length, long srcOffset, long dstOffset) {
+        switch (dataType()) {
+            case BOOL:  {
+                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case BYTE: {
+                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case UBYTE: {
+                for (int e = 0; e < data.length; e++) {
+                    put(e, data[e]);
+                }
+            }
+            break;
+            case SHORT: {
+                val pointer = new ShortPointer(data);
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case INT: {
+                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case LONG: {
+                val pointer = new LongPointer(ArrayUtil.toLongs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case HALF: {
+                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case BFLOAT16: {
+                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case FLOAT: {
+                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case DOUBLE: {
+                val pointer = new DoublePointer(ArrayUtil.toDoubleArray(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+
+
+    }
+
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(byte[] data, long length, long srcOffset, long dstOffset) {
+        switch (dataType()) {
+            case BOOL:  {
+                val pointer = new BooleanPointer(ArrayUtil.toBooleanArray(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case BYTE: {
+                val pointer = new BytePointer(data);
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case UBYTE: {
+                for (int e = 0; e < data.length; e++) {
+                    put(e, data[e]);
+                }
+            }
+            break;
+            case SHORT: {
+                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case INT: {
+                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case LONG: {
+                val pointer = new LongPointer(ArrayUtil.toLongs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case HALF: {
+                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case FLOAT: {
+                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case DOUBLE: {
+                val pointer = new DoublePointer(ArrayUtil.toDouble(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+
+
+    }
+
+    /**
+     *
+     * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
+     *
+     * @param data
+     * @param length
+     * @param srcOffset
+     * @param dstOffset
+     */
+    public void set(boolean[] data, long length, long srcOffset, long dstOffset) {
+        switch (dataType()) {
+            case BOOL:  {
+                val pointer = new BooleanPointer(data);
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case BYTE: {
+                val pointer = new BytePointer(ArrayUtil.toBytes(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case UBYTE: {
+                for (int e = 0; e < data.length; e++) {
+                    put(e, data[e]);
+                }
+            }
+            break;
+            case SHORT: {
+                val pointer = new ShortPointer(ArrayUtil.toShorts(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case INT: {
+                val pointer = new IntPointer(ArrayUtil.toInts(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case LONG: {
+                val pointer = new LongPointer(ArrayUtil.toLongs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case HALF: {
+                val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case FLOAT: {
+                val pointer = new FloatPointer(ArrayUtil.toFloats(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            case DOUBLE: {
+                val pointer = new DoublePointer(ArrayUtil.toDouble(data));
+                copyDataFromSrc(pointer,length,offset,dstOffset);
+
+            }
+            break;
+            default:
+                throw new UnsupportedOperationException("Unsupported data type: " + dataType());
+        }
+
+
+    }
+
     /**
      *
      * PLEASE NOTE: length, srcOffset, dstOffset are considered numbers of elements, not byte offsets
@@ -968,6 +1196,30 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
 
+    }
+
+    @Override
+    public void setData(byte[] data) {
+        if (data.length == 0)
+            return;
+
+        set(data, data.length, 0, 0);
+    }
+
+    @Override
+    public void setData(short[] data) {
+        if (data.length == 0)
+            return;
+
+        set(data, data.length, 0, 0);
+    }
+
+    @Override
+    public void setData(boolean[] data) {
+        if (data.length == 0)
+            return;
+
+        set(data, data.length, 0, 0);
     }
 
     @Override

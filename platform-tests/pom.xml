@@ -77,12 +77,13 @@
         <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>6g</test.heap.size>
         <test.offheap.size>6g</test.offheap.size>
+        <surefire.forks>1</surefire.forks>
+        <surefire.threads>1</surefire.threads>
+
         <test.nogc>false</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <surefire.forks>1</surefire.forks>
-        <surefire.threads>1</surefire.threads>
 
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options>protect_shadow_gap=0:replace_intrin=0:detect_leaks=0</test.asan.options>
@@ -493,6 +494,10 @@
                 <cuda.version>11.8</cuda.version>
                 <cudnn.version>8.6</cudnn.version>
                 <javacpp-presets.cuda.version>1.5.8</javacpp-presets.cuda.version>
+                <test.heap.size>6g</test.heap.size>
+                <test.offheap.size>6g</test.offheap.size>
+                <surefire.forks>1</surefire.forks>
+                <surefire.threads>1</surefire.threads>
             </properties>
             <dependencies>
                 <dependency>
@@ -684,6 +689,22 @@
             </properties>
         </profile>
 
+        <profile>
+            <id>cpu-profile</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>nd4j.backend</name>
+                    <value>nd4j-native</value>
+                </property>
+            </activation>
+            <properties>
+                <test.heap.size>34g</test.heap.size>
+                <test.offheap.size>34g</test.offheap.size>
+                <surefire.forks>16</surefire.forks>
+                <surefire.threads>16</surefire.threads>
+            </properties>
+        </profile>
     </profiles>
 
     <build>

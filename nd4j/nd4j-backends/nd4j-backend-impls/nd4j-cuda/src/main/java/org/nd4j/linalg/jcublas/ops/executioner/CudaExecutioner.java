@@ -157,10 +157,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         devTadShapeInfoZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getFirst(), context);
         devTadOffsetsZ = AtomicAllocator.getInstance().getPointer(tadBuffersZ.getSecond(), context);
-        //        }
 
-        // extraz.get().put
-        // new PointerPointer
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()), context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
@@ -168,9 +165,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
 
-        //Pointer dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-        Pointer dimensionPointer = AtomicAllocator.getInstance()
-                .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
 
         switch (op.getOpType()) {
             case BROADCAST:
@@ -227,7 +221,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
         op.validateDataTypes(null);
-        //validateDataType(Nd4j.dataType(), op);
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -258,14 +251,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer()),
-                (Pointer) context.getOldStream(),
+                context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(),
                 context.getBufferAllocation(),
                 context.getBufferReduction(),
                 context.getBufferScalar(),
                 context.getBufferSpecial(),
-                (Pointer) hostYShapeInfo,
-                (Pointer) hostZShapeInfo,
+                hostYShapeInfo,
+                hostZShapeInfo,
                 hostTadShapeInfo,
                 devTadShapeInfo,
                 devTadOffsets);
@@ -544,7 +537,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -620,7 +612,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             invoke(t, oc);
         } else if (op instanceof ReduceOp) {
             ReduceOp acc = (ReduceOp) op;
-            invoke(acc, oc, acc.dimensions().toLongVector());
+            invoke(acc, oc, acc.dimensionsArr());
         } else if (op instanceof ScalarOp) {
             ScalarOp sc = (ScalarOp) op;
             invoke(sc, oc);
@@ -659,7 +651,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -698,14 +689,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
                 AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), // 0
-                (Pointer) context.getOldStream(), // 1
+                context.getOldStream(), // 1
                 AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
                 context.getBufferAllocation(), // 3
                 context.getBufferReduction(),  // 4
                 context.getBufferScalar(),  // 5
                 context.getBufferSpecial(), // 6
-                (Pointer) hostYShapeInfo,  // 7
-                (Pointer) hostZShapeInfo,  // 8
+                hostYShapeInfo,  // 7
+                hostZShapeInfo,  // 8
                 hostTadShapeInfo,  // 9
                 devTadShapeInfo,  // 10
                 devTadOffsets, // 11
@@ -721,7 +712,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val yb = y == null ? null : ((BaseCudaDataBuffer) y.data()).getOpaqueDataBuffer();
         val zb = z == null ? null : ((BaseCudaDataBuffer) z.data()).getOpaqueDataBuffer();
 
-        //log.info("X: {}; Y: {}; Z: {}; dTS: {}, dTO: {}; dTSz: {}; dTOz: {};", x.address(), y.address(), z.address(), devTadShapeInfo.address(), devTadOffsets.address(), devTadShapeInfoZ.address(), devTadOffsetsZ.address());
 
         switch (op.getOpType()) {
             case BROADCAST:
@@ -783,7 +773,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        //validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -836,9 +825,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (dimension != null && dimension.length > 1)
                 Arrays.sort(dimension);
 
-            //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-            Pointer dimensionPointer = AtomicAllocator.getInstance()
-                    .getHostPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension));
 
             nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                     xb, (LongPointer) hostXShapeInfo, (LongPointer) xShapeInfo,
@@ -864,7 +850,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
             if(z != null){
@@ -1252,10 +1238,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer zShapeInfo = AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context);
 
         PointerPointer xShapeInfoHostPointer = extraz.get().put(
-                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), (Pointer) context.getOldStream(),
+                AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), context.getOldStream(),
                 AtomicAllocator.getInstance().getDeviceIdPointer(), context.getBufferAllocation(),
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
-                (Pointer) hostYShapeInfo, (Pointer) hostZShapeInfo, null, null);
+                hostYShapeInfo, hostZShapeInfo, null, null);
 
         val xb = x == null ? null : ((BaseCudaDataBuffer) x.data()).getOpaqueDataBuffer();
         val yb = op.scalar() == null ? null : ((BaseCudaDataBuffer) op.scalar().data()).getOpaqueDataBuffer();

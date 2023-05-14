@@ -358,14 +358,13 @@ public class TestLayerOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
-        //OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/eclipse/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
 
-        int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
+        long[][] inputSizes = new long[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};
 
         List<String> failed = new ArrayList<>();
 
-        for (int[] inSizeNCHW : inputSizes) {
+        for (long[] inSizeNCHW : inputSizes) {
 
             SameDiff sd = SameDiff.create();
             SDVariable var = sd.var("in", Nd4j.rand(DataType.DOUBLE, inSizeNCHW));
@@ -402,14 +401,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inSize);
-//        SDVariable out = sd.avgPooling2d(in, );
 
-//        Pooling2DConfig conf = Pooling2DConfig.builder()
-//                .isNHWC(false)
-//                .isSameMode(false)
-//                .kH(2).kW(2)
-//                .sW(1).sH(1)
-//                .build();
 
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isNHWC(true)   //***NHWC

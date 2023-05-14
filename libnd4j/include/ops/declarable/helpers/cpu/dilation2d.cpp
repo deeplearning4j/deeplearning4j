@@ -31,8 +31,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const int sH, const int sW, const int pH,
-                        const int pW, const int dH, const int dW) {
+static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
+                        const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   // input   [bS, iH, iW, iC]
   // weights [kH, kW, iC]
   // output  [bS, oH, oW, iC]
@@ -91,8 +91,8 @@ static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
-void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const int sH,
-                const int sW, const int pH, const int pW, const int dH, const int dW) {
+void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,
+                const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2d_, (input, weights, output, sH, sW, pH, pW, dH, dW),
                               SD_FLOAT_TYPES);
 }
