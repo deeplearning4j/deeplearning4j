@@ -1510,22 +1510,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         return ptrDataBuffer.address() == ((BaseCudaDataBuffer) buffer).ptrDataBuffer.address();
     }
 
-    /**
-     * PLEASE NOTE: this method implies STRICT equality only.
-     * I.e: this == object
-     *
-     * @param o
-     * @return
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (o == null)
-            return false;
-        if (this == o)
-            return true;
-
-        return false;
-    }
 
     @Override
     public void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType) {

@@ -1414,7 +1414,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
                     break;
                 case "usqrtn":
                     sm = sd.unsortedSegmentSqrtN(data, segments, numSegments);
-                    exp = Nd4j.create(new double[]{(5+7+1)/Math.sqrt(3), 2, (3+4)/Math.sqrt(2), (1+3)/Math.sqrt(2)});
+                    exp = Nd4j.create(new double[]{(5 + 7 + 1)/Math.sqrt(3), 2, (3 + 4)/ Math.sqrt(2), (1 + 3) / Math.sqrt(2)});
                     break;
                 default:
                     throw new RuntimeException();
