@@ -34,8 +34,8 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                             const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH,
-                             const int sW, LongType pH, LongType pW, const int dH, const int dW, const int paddingMode,
+                             const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+                             const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                              const int isNCHW, const int wFormat) {
   // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights   [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
@@ -53,9 +53,9 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
   // paddingMode   0-VALID, 1-SAME
   // isNCHW       0-NCHW,  1-NHWC
 
-  int bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
+  LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
                                        // iC*mC), output channels, output height/width
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
@@ -104,8 +104,8 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::depthwiseConv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                                       const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH,
-                                       const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                                       const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+                                       const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                                        const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(
       input->dataType(), depthwiseConv2d_,

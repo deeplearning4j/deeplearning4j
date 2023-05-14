@@ -108,17 +108,17 @@ static SD_KERNEL void col2volCuda(const void* columns, const sd::LongType* colSh
 template <typename T>
 static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                 const cudaStream_t* stream, const void* columns, const sd::LongType* colShapeInfo,
-                                void* volume, const sd::LongType* volShapeInfo, const int sD, const int sH,
-                                const int sW, const int pD, const int pH, const int pW, const int dD, const int dH,
-                                const int dW) {
+                                void* volume, const sd::LongType* volShapeInfo, const LongType sD, const LongType sH,
+                                const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
+                                const LongType dW) {
   col2volCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, volume, volShapeInfo,
                                                                          sD, sH, sW, pD, pH, pW, dD, dH, dW);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH,
-                               const int sW, const int pD, const int pH, const int pW, const int dD, const int dH,
-                               const int dW) {
+void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
+                               const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
+                               const LongType dW) {
   PointersManager manager(block.launchContext(), "col2vol");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;

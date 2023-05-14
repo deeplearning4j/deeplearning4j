@@ -28,8 +28,8 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                         const int kH, const int kW, const int sH, const int sW, const int pH, const int pW,
-                         const int dH, const int dW, const int poolingMode, const int extraParam0) {
+                         const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW,
+                         const LongType dH, const LongType dW, const int poolingMode, const int extraParam0) {
   // input [bS, iC, iH, iW]
   // gradI [bS, iC, iH, iW] -> gradI is output in this function
   // gradO [bS, iC, oH, oW]
@@ -305,8 +305,8 @@ static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const 
 }
 
 void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO,
-                                   NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH,
-                                   const int pW, const int dH, const int dW, const int poolingMode,
+                                   NDArray& gradI, const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
+                                   const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                    const int extraParam0) {
   BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_,
                         (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0),

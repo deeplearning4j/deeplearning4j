@@ -27,8 +27,8 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void upsampling3d_(const NDArray& input, NDArray& output, const int factorD, const int factorH,
-                          const int factorW, const bool isNCDHW) {
+static void upsampling3d_(const NDArray& input, NDArray& output, const LongType factorD, const LongType factorH,
+                          const LongType factorW, const bool isNCDHW) {
   // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
   // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW,
   // iC] (NDHWC)
@@ -36,14 +36,14 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
 
-  const sd::Unsigned dimID = isNCDHW ? 2 : 1;
-  const sd::Unsigned dimIC = isNCDHW ? 1 : 4;
+  const sd::LongType dimID = isNCDHW ? 2 : 1;
+  const sd::LongType dimIC = isNCDHW ? 1 : 4;
 
-  const sd::Unsigned bS = input.sizeAt(0);
-  const sd::Unsigned iC = input.sizeAt(dimIC);
-  const sd::Unsigned oD = output.sizeAt(dimID);
-  const sd::Unsigned oH = output.sizeAt(dimID + 1);
-  const sd::Unsigned oW = output.sizeAt(dimID + 2);
+  const sd::LongType bS = input.sizeAt(0);
+  const sd::LongType iC = input.sizeAt(dimIC);
+  const sd::LongType oD = output.sizeAt(dimID);
+  const sd::LongType oH = output.sizeAt(dimID + 1);
+  const sd::LongType oW = output.sizeAt(dimID + 2);
 
   const sd::LongType xStride0 = input.stridesOf()[0];
   const sd::LongType xStride1 = input.stridesOf()[dimIC];
@@ -61,10 +61,10 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
   auto func = PRAGMA_THREADS_FOR_3D {
     sd::Unsigned xCoord2, xCoord3, xCoord4;
 
-    for (sd::Unsigned b = start_x; b < stop_x; b += inc_x) {
-      for (sd::Unsigned c = start_y; c < stop_y; c += inc_y) {
-        for (sd::Unsigned d = start_z; d < stop_z; d += inc_z) {
-          for (sd::Unsigned h = 0; h < oH; ++h) {
+    for (sd::LongType b = start_x; b < stop_x; b += inc_x) {
+      for (sd::LongType c = start_y; c < stop_y; c += inc_y) {
+        for (sd::LongType d = start_z; d < stop_z; d += inc_z) {
+          for (sd::LongType h = 0; h < oH; ++h) {
             for (sd::Unsigned w = 0; w < oW; ++w) {
               xCoord2 = d / factorD;
               xCoord3 = h / factorH;
@@ -82,8 +82,8 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const int facto
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
 }
 
-void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD,
-                                    const int factorH, const int factorW, const bool isNCDHW) {
+void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType factorD,
+                                    const LongType factorH, const LongType factorW, const bool isNCDHW) {
   BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW),
                         SD_FLOAT_TYPES);
 }

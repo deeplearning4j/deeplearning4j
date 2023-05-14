@@ -27,9 +27,9 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH,
-                       const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
-                       const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kD, const LongType kH,
+                       const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD, const LongType pH, const LongType pW,
+                       const LongType dD, const LongType dH, const LongType dW, const LongType poolingMode, const int extraParam0) {
   // input is  [bS, iC, iD, iH, iW]
   // output is [bS, iC, oD, oH, oW]
   T* out = output.bufferAsT<T>();
@@ -238,9 +238,9 @@ static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray&
   }
 }
 
-void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD,
-                                 const int kH, const int kW, const int sD, const int sH, const int sW, const int pD,
-                                 const int pH, const int pW, const int dD, const int dH, const int dW,
+void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kD,
+                                 const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
+                                 const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW,
                                  const int poolingMode, const int extraParam0) {
   BUILD_SINGLE_SELECTOR(
       input.dataType(), pooling3d_,

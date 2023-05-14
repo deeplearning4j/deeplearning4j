@@ -34,8 +34,8 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                    NDArray* output, const int kH, const int kW, const int sH, const int sW, LongType pH, LongType pW,
-                    const int dH, const int dW, const int paddingMode, const int isNCHW, const int wFormat) {
+                    NDArray* output, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
+                    const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   // bias    [oC]
@@ -52,9 +52,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   // paddingMode 0-VALID, 1-SAME
   // isNCHW     1-NCHW,  0-NHWC
 
-  int bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -81,9 +81,10 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   //----- calculation of output -----//
   auto ctx = block.launchContext();
+  const NDArray paddingArr = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+      paddingArr);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
   MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
                         {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
@@ -104,8 +105,8 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::conv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                              const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH,
-                              const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                              const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+                              const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                               const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(
       input->dataType(), conv2d_,

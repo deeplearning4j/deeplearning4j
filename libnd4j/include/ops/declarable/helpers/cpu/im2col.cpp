@@ -28,8 +28,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const int kH, const int kW,
-                    const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType kH, const LongType kW,
+                    const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                     const NDArray& arrZeroPadVal) {
   // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 
@@ -44,12 +44,12 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
 
   const T zeroPadVal = arrZeroPadVal.e<T>(0);
 
-  const int bS = imShape[0];
-  const int iC = imShape[1];
-  const int iH = imShape[2];
-  const int iW = imShape[3];
-  const int oH = colShape[4];
-  const int oW = colShape[5];
+  const LongType bS = imShape[0];
+  const LongType iC = imShape[1];
+  const LongType iH = imShape[2];
+  const LongType iW = imShape[3];
+  const LongType oH = colShape[4];
+  const LongType oW = colShape[5];
   const sd::LongType colStride0 = colStride[0];
   const sd::LongType colStride1 = colStride[1];
   const sd::LongType colStride2 = colStride[2];
@@ -76,8 +76,8 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                   auto col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                              colH * colStride4 + colW * colStride5;
 
-                  if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) ||
-                      static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW))
                     *col = zeroPadVal;
                   else {
                     auto im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
@@ -110,8 +110,8 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                   col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                         colH * colStride4 + colW * colStride5;
 
-                  if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) ||
-                      static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW))
                     *col = zeroPadVal;
                   else {
                     im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
@@ -129,8 +129,8 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   }
 }
 
-void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const int kH, const int kW, const int sH,
-            const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW, const LongType sH,
+            const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
 #if defined(HAVE_VEDA)
     NDArray::preparePrimaryUse({&col}, {&im});
 #endif

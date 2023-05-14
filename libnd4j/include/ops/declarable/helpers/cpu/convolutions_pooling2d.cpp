@@ -26,8 +26,8 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW,
-                       const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kH, const LongType kW,
+                       const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                        const int poolingMode, const int extraParam0) {
   // input is  [bS, iC, iH, iW]
   // output is [bS, iC, oH, oW]
@@ -37,13 +37,13 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
   const int kHEff = kH + (kH - 1) * (dH - 1);
   const int kWEff = kW + (kW - 1) * (dW - 1);
 
-  const int bS = input.sizeAt(0);
-  const int iC = input.sizeAt(1);
-  const int iH = input.sizeAt(2);
-  const int iW = input.sizeAt(3);
-  const int oC = output.sizeAt(1);
-  const int oH = output.sizeAt(2);
-  const int oW = output.sizeAt(3);
+  const LongType bS = input.sizeAt(0);
+  const LongType iC = input.sizeAt(1);
+  const LongType iH = input.sizeAt(2);
+  const LongType iW = input.sizeAt(3);
+  const LongType oC = output.sizeAt(1);
+  const LongType oH = output.sizeAt(2);
+  const LongType oW = output.sizeAt(3);
 
   // sd_debug("MKL-DNN is not used for pooling2d!\n", 0);
 
@@ -79,19 +79,19 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
               if (hstart < 0)
                 hstart +=
                     dH * ((-hstart + dH - 1) /
-                          dH);  // (sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                          dH);
               if (wstart < 0)
                 wstart +=
                     dW * ((-wstart + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                          dW);
               if (hend > iH)
                 hend -=
                     dH * ((hend - iH + dH - 1) /
-                          dH);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                          dH);
               if (wend > iW)
                 wend -=
                     dW * ((wend - iW + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                          dW);
 
               hstart *= iStride2;
               hend *= iStride2;
@@ -134,19 +134,19 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
               if (hstart < 0)
                 hstart +=
                     dH * ((-hstart + dH - 1) /
-                          dH);  // (sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                          dH);
               if (wstart < 0)
                 wstart +=
                     dW * ((-wstart + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                          dW);
               if (hend > iH)
                 hend -=
                     dH * ((hend - iH + dH - 1) /
-                          dH);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                          dH);
               if (wend > iW)
                 wend -=
                     dW * ((wend - iW + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                          dW);
 
               hstart *= iStride2;
               hend *= iStride2;
@@ -194,19 +194,19 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
               if (hstart < 0)
                 hstart +=
                     dH * ((-hstart + dH - 1) /
-                          dH);  // (sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                          dH);
               if (wstart < 0)
                 wstart +=
                     dW * ((-wstart + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                          dW);
               if (hend > iH)
                 hend -=
                     dH * ((hend - iH + dH - 1) /
-                          dH);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                          dH);
               if (wend > iW)
                 wend -=
                     dW * ((wend - iW + dW - 1) /
-                          dW);  //(sd::LongType)sd::math::sd_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                          dW);
 
               hstart *= iStride2;
               hend *= iStride2;
@@ -238,9 +238,9 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
   }
 }
 
-void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH,
-                                 const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
-                                 const int dW, const PoolingType poolingMode, const int extraParam0) {
+void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kH,
+                                 const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
+                                 const LongType dW, const PoolingType poolingMode, const int extraParam0) {
   BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_,
                         (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0),
                         SD_NUMERIC_TYPES);

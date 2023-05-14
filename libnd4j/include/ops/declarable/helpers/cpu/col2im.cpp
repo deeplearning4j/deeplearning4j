@@ -30,8 +30,8 @@ namespace helpers {
 
 // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 template <typename T>
-static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const int sH, const int sW,
-                    const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType sH, const LongType sW,
+                    const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   auto imBuff = output.bufferAsT<T>();
   auto colBuff = input.bufferAsT<T>();
   auto imShapeBuffer = output.shapeInfo();
@@ -41,12 +41,12 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   auto imShape = shape::shapeOf(imShapeBuffer);
   auto imStride = shape::stride(imShapeBuffer);
 
-  const int bS = imShape[0];
-  const int iC = imShape[1];
-  const int kH = colShape[2];
-  const int kW = colShape[3];
-  const int oH = colShape[4];
-  const int oW = colShape[5];
+  const LongType bS = imShape[0];
+  const LongType iC = imShape[1];
+  const LongType kH = colShape[2];
+  const LongType kW = colShape[3];
+  const LongType oH = colShape[4];
+  const LongType oW = colShape[5];
   const sd::LongType colStride0 = colStride[0];
   const sd::LongType colStride1 = colStride[1];
   const sd::LongType colStride2 = colStride[2];
@@ -58,9 +58,7 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
-  // if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' &&
-  // shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
-  if (false) {
+   if (false) {
     auto func = PRAGMA_THREADS_FOR_2D {
       T const* col;
       T* im;
@@ -80,8 +78,8 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                         colH * colStride4 + colW * colStride5;
                   im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
 
-                  if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) &&
-                      static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                  if (static_cast<LongType>(imRow) < static_cast<LongType>(iH) &&
+                      static_cast<LongType>(imCol) < static_cast<LongType>(iW))
                     *im += *col;
                 }
               }
@@ -113,8 +111,8 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                 T const* col3 = col2;
                 T* im3 = im2 + imCol * imStride3;
                 for (int kCol = 0; kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW * imStride3) {
-                  if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) &&
-                      static_cast<unsigned>(imCol) < static_cast<unsigned>(iW))
+                  if (static_cast<LongType>(imRow) < static_cast<LongType>(iH) &&
+                      static_cast<LongType>(imCol) < static_cast<LongType>(iW))
                     *im3 += *col3;
                 }
               }
@@ -128,8 +126,8 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   }
 }
 
-void col2im(sd::LaunchContext& context, const NDArray& input, NDArray& output, const int sH, const int sW, const int pH,
-            const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType sH, const LongType sW, const LongType pH,
+            const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(input.dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW),
                         SD_FLOAT_TYPES);
 }

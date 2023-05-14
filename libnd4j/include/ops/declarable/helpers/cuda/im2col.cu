@@ -30,8 +30,8 @@ namespace helpers {
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
 SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::LongType *imShapeInfo,
-                                 const sd::LongType *colShapeInfo, const int sH, const int sW, const int pH,
-                                 const int pW, const int dH, const int dW, const double zeroPadValD) {
+                                 const sd::LongType *colShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+                                 const LongType pW, const LongType dH, const LongType dW, const double zeroPadValD) {
   T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
@@ -77,7 +77,7 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
 template <typename T>
 static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext &context,
                                const void *image, void *columns, const sd::LongType *imShapeInfo,
-                               const sd::LongType *colShapeInfo, int sH, int sW, int pH, int pW, int dH, int dW,
+                               const sd::LongType *colShapeInfo, LongType sH, LongType sW, LongType pH, LongType pW, LongType dH, LongType dW,
                                double zeroPadVal) {
   im2colCuda<T>
       <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
@@ -85,8 +85,8 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, const int kH, const int kW,
-            const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, const LongType kH, const LongType kW,
+            const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
             const NDArray &arrZeroPadVal) {
   PointersManager manager(&context, "im2col");
 

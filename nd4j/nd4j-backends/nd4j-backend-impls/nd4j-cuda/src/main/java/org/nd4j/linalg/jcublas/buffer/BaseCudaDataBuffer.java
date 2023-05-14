@@ -659,7 +659,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         context.getSpecialStream().synchronize();
 
         // we're keeping pointer reference for JVM
-        pointer.address();
         allocationPoint.tickHostWrite();
         allocationPoint.tickDeviceWrite();
     }
@@ -1306,7 +1305,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void addReferencing(String id) {
-        //referencing.add(id);
     }
 
 
@@ -1400,6 +1398,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void assign(DataBuffer data) {
+      //TODO: assign seems to have issue with the first value being bogus.
+      //not clear why. We can see this when Nd4j.createBuffer (which calls getBuffer followed by setData)
+        //TODO: it could have something to do with different setData implementations which are fairly new.
+        //TODO: look for specific combinations of data that fail and fix one by one.
         allocator.memcpy(this, data);
     }
 
@@ -1626,7 +1628,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         // we call sync to copyback data to host
         AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(allocationPoint);
-        //allocator.synchronizeHostData(this);
     }
 
     @Override
@@ -1936,7 +1937,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             allocationPoint.setReleased(true);
         }
 
-        super.release();
     }
 
 

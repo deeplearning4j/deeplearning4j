@@ -32,8 +32,8 @@ namespace ops {
 template <typename T>
 SD_KERNEL static void pooling2dBPCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                                       const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                      const int kH, const int kW, const int sH, const int sW, const int pH,
-                                      const int pW, const int dH, const int dW, const int poolingMode,
+                                      const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
+                                      const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                       const int extraParam0) {
   // x: input [bS, iC, iH, iW]
   // y: gradO [bS, iC, oH, oW]
@@ -152,8 +152,8 @@ template <typename T>
 static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                     const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                     const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                    const sd::LongType* zShapeInfo, const int kH, const int kW, const int sH,
-                                    const int sW, const int pH, const int pW, const int dH, const int dW,
+                                    const sd::LongType* zShapeInfo, const LongType kH, const LongType kW, const LongType sH,
+                                    const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                                     const int poolingMode, const int extraParam0) {
   pooling2dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(
       vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0);
@@ -161,8 +161,8 @@ static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO,
-                                   NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH,
-                                   const int pW, const int dH, const int dW, const int poolingMode,
+                                   NDArray& gradI, const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
+                                   const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                    const int extraParam0) {
   // initial zeroing of gradI
   gradI.nullify();

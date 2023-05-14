@@ -37,8 +37,8 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
   REQUIRE_TRUE(input->rankOf() == 4, 0, "Dilation2D: input should be 4D");
   REQUIRE_TRUE(weights->rankOf() == 3, 0, "Dilation2D: weights should be 3D");
 
-  const int bS = input->sizeAt(0);
-  const int iC = input->sizeAt(3);
+  const LongType bS = input->sizeAt(0);
+  const LongType iC = input->sizeAt(3);
   const bool isSameShape = INT_ARG(0) == 1;
 
   REQUIRE_TRUE(input->sizeAt(3) == weights->sizeAt(2), 0,

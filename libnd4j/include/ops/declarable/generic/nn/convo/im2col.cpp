@@ -37,14 +37,14 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
   REQUIRE_TRUE(x->rankOf() == 4, 0, "im2col input should be 4D, but got %i instead", x->rankOf());
   REQUIRE_TRUE(z->rankOf() == 6, 0, "im2col output should be 6D, but got %i instead", z->rankOf());
 
-  int kernelHeight = INT_ARG(0);
-  int kernelWidth = INT_ARG(1);
-  int strideY = INT_ARG(2);
-  int strideX = INT_ARG(3);
-  int padHeight = INT_ARG(4);
-  int padWidth = INT_ARG(5);
-  int dY = INT_ARG(6);  // Dilation, height/y dimension
-  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  LongType kernelHeight = INT_ARG(0);
+  LongType kernelWidth = INT_ARG(1);
+  LongType strideY = INT_ARG(2);
+  LongType strideX = INT_ARG(3);
+  LongType padHeight = INT_ARG(4);
+  LongType padWidth = INT_ARG(5);
+  LongType dY = INT_ARG(6);  // Dilation, height/y dimension
+  LongType dX = INT_ARG(7);  // Dilation, width/x dimension
   bool isSameMode = INT_ARG(8) > 0;
   double zeroPadVal = 0.0;
   if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
@@ -60,27 +60,27 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
 DECLARE_SHAPE_FN(im2col) {
   auto inShape = inputShape->at(0);
 
-  int bS = shape::shapeOf(inShape)[0];
-  int iD = shape::shapeOf(inShape)[1];
-  int inY = shape::shapeOf(inShape)[2];
-  int inX = shape::shapeOf(inShape)[3];
+  LongType bS = shape::shapeOf(inShape)[0];
+  LongType iD = shape::shapeOf(inShape)[1];
+  LongType inY = shape::shapeOf(inShape)[2];
+  LongType inX = shape::shapeOf(inShape)[3];
 
-  int kY = INT_ARG(0);
-  int kX = INT_ARG(1);
-  int sY = INT_ARG(2);
-  int sX = INT_ARG(3);
+  LongType kY = INT_ARG(0);
+  LongType kX = INT_ARG(1);
+  LongType sY = INT_ARG(2);
+  LongType sX = INT_ARG(3);
   sd::LongType pY = INT_ARG(4);
   sd::LongType pX = INT_ARG(5);
-  int dY = INT_ARG(6);  // Dilation, height/y dimension
-  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  LongType dY = INT_ARG(6);  // Dilation, height/y dimension
+  LongType dX = INT_ARG(7);  // Dilation, width/x dimension
   int paddingMode = INT_ARG(8);
   bool isSameMode = INT_ARG(8) == 1;
   // output is always 6d for im2col
   sd::LongType* zShape;
   ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), sd::LongType);
 
-  int oY = 0;
-  int oX = 0;
+  LongType oY = 0;
+  LongType oX = 0;
 
   ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, paddingMode);
 
@@ -112,14 +112,14 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
                "im2col_bp gradient at output (input idx 1) should be 6D, but got %i instead", gradAtOutput->rankOf());
   REQUIRE_TRUE(z->rankOf() == 4, 0, "im2col_bp output (grad at input) should be 4D, but got %i instead", z->rankOf());
 
-  int kernelHeight = INT_ARG(0);
-  int kernelWidth = INT_ARG(1);
-  int strideY = INT_ARG(2);
-  int strideX = INT_ARG(3);
-  int pH = INT_ARG(4);
-  int pW = INT_ARG(5);
-  int dY = INT_ARG(6);  // Dilation, height/y dimension
-  int dX = INT_ARG(7);  // Dilation, width/x dimension
+  LongType kernelHeight = INT_ARG(0);
+  LongType kernelWidth = INT_ARG(1);
+  LongType strideY = INT_ARG(2);
+  LongType strideX = INT_ARG(3);
+  LongType pH = INT_ARG(4);
+  LongType pW = INT_ARG(5);
+  LongType dY = INT_ARG(6);  // Dilation, height/y dimension
+  LongType dX = INT_ARG(7);  // Dilation, width/x dimension
   int paddingMode = INT_ARG(8);
   double zeroPadVal = 0.0;
   if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);

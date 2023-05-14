@@ -30,7 +30,7 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void upsampling2dCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const int factorH, const int factorW,
+                                       const sd::LongType* zShapeInfo, const LongType factorH, const LongType factorW,
                                        const bool isNCHW) {
   // x has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
   // z has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
@@ -38,7 +38,7 @@ SD_KERNEL static void upsampling2dCuda(const void* vx, const sd::LongType* xShap
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ int rank, dimIH;
+  __shared__ LongType rank, dimIH;
   __shared__ sd::LongType zLen, *sharedMem;
 
   if (threadIdx.x == 0) {
@@ -73,15 +73,15 @@ SD_KERNEL static void upsampling2dCuda(const void* vx, const sd::LongType* xShap
 template <typename T>
 static void upsampling2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const int factorH, const int factorW,
+                                     void* vz, const sd::LongType* zShapeInfo, const LongType factorH, const LongType factorW,
                                      const bool isNCHW) {
   upsampling2dCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, factorH,
                                                                               factorW, isNCHW);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorH,
-                                    const int factorW, const bool isNCHW) {
+void ConvolutionUtils::upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType factorH,
+                                    const LongType factorW, const bool isNCHW) {
   PointersManager manager(block.launchContext(), "upsampling2d");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
