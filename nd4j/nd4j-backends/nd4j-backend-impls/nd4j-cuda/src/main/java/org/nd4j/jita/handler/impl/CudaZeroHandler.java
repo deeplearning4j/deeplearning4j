@@ -465,13 +465,11 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
-        //log.info("Buffer MemCpy called");
-        //log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
         CudaContext context = getCudaContext();
         val dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         val srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
 
-        Pointer dP = null; //new CudaPointer(dstPoint.getPointers().getHostPointer().address());
+        Pointer dP = null;
         Pointer sP = null;
         MemcpyDirection direction = null;
 
@@ -510,7 +508,6 @@ public class CudaZeroHandler implements MemoryHandler {
         context.syncOldStream();
 
         PerformanceTracker.getInstance().helperRegisterTransaction(srcPoint.getDeviceId(), profDH / 2, dstPoint.getNumberOfBytes(), direction);
-//        PerformanceTracker.getInstance().helperRegisterTransaction(dstPoint.getDeviceId(), profDH / 2, dstPoint.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
     }
 
     /**

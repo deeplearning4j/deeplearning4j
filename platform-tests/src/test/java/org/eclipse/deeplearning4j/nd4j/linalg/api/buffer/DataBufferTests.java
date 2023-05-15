@@ -341,6 +341,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
                         assertFalse(db2.isAttached());
 
                         if(!sourceType.equals("boolean")) {
+                            System.out.println("Test case source type: " + sourceType + " data type : " + dt);
                             testDBOps(db1);
                             testDBOps(db2);
                         }

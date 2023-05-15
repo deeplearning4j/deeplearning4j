@@ -909,7 +909,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) ((UByteIndexer) indexer).get(i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
-            case UINT64:  //Fall through
+            case UINT64:
                 return ((ULongIndexer) indexer).get(i).floatValue();
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(i);
@@ -1670,6 +1670,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //note here that the final put will take care of the offset
         for (long i = offset; i < length(); i++)
             put(i, value.doubleValue());
+
     }
 
     @Override

@@ -800,6 +800,35 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static short[] toBfloats(double[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(boolean[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i] ? 1.0 : 0.0);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(byte[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(short[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+
     public static short[] toBfloats(float[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
@@ -811,7 +840,7 @@ public class ArrayUtil {
     public static short[] toBfloats(int[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16((float) data[i]);
+            ret[i] = toBFloat16(data[i]);
         }
         return ret;
     }
@@ -1804,6 +1833,8 @@ public class ArrayUtil {
         return ret;
     }
 
+
+
     public static int[] cutBelowZero(int[] data) {
         val ret = new int[data.length];
         for (int i = 0; i < data.length; i++)
@@ -1827,6 +1858,22 @@ public class ArrayUtil {
 
     public static byte[] cutBelowZero(byte[] data) {
         val ret = new byte[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+
+    public static float[] cutBelowZero(float[] data) {
+        val ret = new float[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+
+    public static double[] cutBelowZero(double[] data) {
+        val ret = new double[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
@@ -2209,7 +2256,7 @@ public class ArrayUtil {
 
     /**
      * Note this byte array conversion is a simple cast and not a true
-     * cast. Use {@link #toByteArray(longArray[])} for a true cast.
+     * cast. Use {@link #toByteArraySimple(longArray[])} for a true cast.
      * @param longArray
      * @return
      */

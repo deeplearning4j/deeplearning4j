@@ -226,34 +226,7 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->width();
 }
-/*
- * TODO:
- * text+0xe4531): undefined reference to `opName'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_listOpTraces':
-jnind4jcuda.cpp:(.text+0x140319): undefined reference to `listOpTraces'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_bArgs':
-jnind4jcuda.cpp:(.text+0x140534): undefined reference to `bArgs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_sArgs':
-jnind4jcuda.cpp:(.text+0x140743): undefined reference to `sArgs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_tArgs':
-jnind4jcuda.cpp:(.text+0x1408e0): undefined reference to `tArgs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_iArgs':
-jnind4jcuda.cpp:(.text+0x140b0a): undefined reference to `iArgs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_inputShapeBuffers':
-jnind4jcuda.cpp:(.text+0x140d34): undefined reference to `inputShapeBuffers'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_outputShapeBuffers':
-jnind4jcuda.cpp:(.text+0x140f5e): undefined reference to `outputShapeBuffers'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_numInputs':
-jnind4jcuda.cpp:(.text+0x141169): undefined reference to `numInputs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_numOutputs':
-jnind4jcuda.cpp:(.text+0x1412a7): undefined reference to `numOutputs'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_purgeOpTrace':
-jnind4jcuda.cpp:(.text+0x141373): undefined reference to `purgeOpTrace'
-/usr/bin/ld: /tmp/ccbUHEuX.o: in function `Java_org_nd4j_linalg_jcublas_bindings_Nd4jCuda_toggleOpTrace':
-jnind4jcuda.cpp:(.text+0x141442): undefined reference to `toggleOpTrace'
-collect2: error: ld returned 1 exit status
 
- */
  int contextNumOutputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->outputWidth();
@@ -365,7 +338,6 @@ class ScalarShapeInformation {
  private:
   sd::buffer::Buffer<sd::LongType> *scalarDimension;
   sd::buffer::Buffer<sd::LongType> *scalarShapeInfo;
-  //    std::thread::id threadId;
 
  public:
   ScalarShapeInformation(cudaStream_t stream) {
