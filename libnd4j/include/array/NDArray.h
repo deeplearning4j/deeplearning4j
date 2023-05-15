@@ -47,7 +47,8 @@
 #include <initializer_list>
 #include <memory>
 #include <legacy/NativeOpExecutioner.h>
-
+#include <types/float16.h>
+#include <types/bfloat16.h>
 namespace sd {
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
@@ -1590,9 +1591,17 @@ bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 
 template <typename T, typename R>
 SD_INLINE R NDArray::templatedGet(void const *buffer, sd::LongType index) const {
-  auto b = reinterpret_cast<T const *>(buffer);
-  auto v = static_cast<R>(b[index]);
-  return v;
+ // Add an explicit intermediate conversion to float if T is bfloat16 and R is float16
+ auto b = reinterpret_cast<T const *>(buffer);
+ //necessary due to ambiguity when converting from bfloat16 to float16 when cuda is used
+  if constexpr (std::is_same_v<T, bfloat16> && std::is_same_v<R, float16>) {
+      float intermediate = static_cast<float>(b[index]);
+      auto v = static_cast<R>(intermediate);
+      return v;
+  } else {
+      auto v = static_cast<R>(b[index]);
+      return v;
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

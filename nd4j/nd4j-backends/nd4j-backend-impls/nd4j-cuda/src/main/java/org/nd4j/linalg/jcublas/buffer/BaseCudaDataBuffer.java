@@ -682,6 +682,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
 
+            //note we drop down on purpose here and use bytes copy data
             case UBYTE: {
                 data = ArrayUtil.cutBelowZero(data);
             }
@@ -764,15 +765,13 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
 
+
+            //drop down on purpose and use the bytes conversion
             case UBYTE: {
                 data = ArrayUtil.cutBelowZero(data);
-                for (int e = 0; e < data.length; e++) {
-                    put(e, data[e]);
-                }
-
-                syncDeviceAndHost();
 
             }
+
             case BYTE: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -936,6 +935,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
+            //drop down on purpose, use the byte conversion routine below
             case UBYTE: {
                 data = ArrayUtil.cutBelowZero(data);
             }
@@ -1012,6 +1012,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
+            //drop down on purpose, use the byte conversion routine below
 
             case UBYTE: {
                 data = ArrayUtil.cutBelowZero(data);
