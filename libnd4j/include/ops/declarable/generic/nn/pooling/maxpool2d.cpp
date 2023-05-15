@@ -42,25 +42,25 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
   // mode;
   auto output = OUTPUT_NULLIFIED(0);
 
-  const int kH = INT_ARG(0);
-  const int kW = INT_ARG(1);
-  const int sH = INT_ARG(2);
-  const int sW = INT_ARG(3);
+  const LongType kH = INT_ARG(0);
+  const LongType kW = INT_ARG(1);
+  const LongType sH = INT_ARG(2);
+  const LongType sW = INT_ARG(3);
   sd::LongType pH = INT_ARG(4);
   sd::LongType  pW = INT_ARG(5);
-  const int dH = INT_ARG(6);
-  const int dW = INT_ARG(7);
+  const LongType dH = INT_ARG(6);
+  const LongType dW = INT_ARG(7);
   const bool isSameMode = INT_ARG(8);
 
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-  int oH = 0;
-  int oW = 0;
+  LongType oH = 0;
+  LongType oW = 0;
 
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
-  const int iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
-  const int iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
+  const LongType iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);
+  const LongType iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
 
   if (!isNCHW) {
     input = new NDArray(input->permute({0, 3, 1, 2}));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
@@ -95,28 +95,28 @@ DECLARE_SHAPE_FN(maxpool2d) {
   auto shapeOf = shape::shapeOf(inShape);
   // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 -
   // dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
-  int kH = INT_ARG(0);
-  int kW = INT_ARG(1);
-  int sH = INT_ARG(2);
-  int sW = INT_ARG(3);
-  int pH = INT_ARG(4);
-  int pW = INT_ARG(5);
-  int dH = INT_ARG(6);
-  int dW = INT_ARG(7);
+  LongType kH = INT_ARG(0);
+  LongType kW = INT_ARG(1);
+  LongType sH = INT_ARG(2);
+  LongType sW = INT_ARG(3);
+  LongType pH = INT_ARG(4);
+  LongType pW = INT_ARG(5);
+  LongType dH = INT_ARG(6);
+  LongType dW = INT_ARG(7);
   int isSameMode = INT_ARG(8);
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-  int bS = shapeOf[0];
-  int iC = isNCHW ? shapeOf[1] : shapeOf[3];
-  int iH = isNCHW ? shapeOf[2] : shapeOf[1];
-  int iW = isNCHW ? shapeOf[3] : shapeOf[2];
+  LongType bS = shapeOf[0];
+  LongType iC = isNCHW ? shapeOf[1] : shapeOf[3];
+  LongType iH = isNCHW ? shapeOf[2] : shapeOf[1];
+  LongType iW = isNCHW ? shapeOf[3] : shapeOf[2];
 
   char order = shape::order(inShape);  // output order must be equal to input order
 
   // calculate output Height/Width
-  int oH, oW;
+  LongType oH, oW;
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   // allocate memory for new shape
@@ -149,14 +149,14 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
   auto gradO = INPUT_VARIABLE(1);    // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto gradI = OUTPUT_NULLIFIED(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
-  int kH = INT_ARG(0);                                                 // filter(kernel) height
-  int kW = INT_ARG(1);                                                 // filter(kernel) width
-  int sH = INT_ARG(2);                                                 // strides height
-  int sW = INT_ARG(3);                                                 // strides width
+  LongType kH = INT_ARG(0);                                                 // filter(kernel) height
+  LongType kW = INT_ARG(1);                                                 // filter(kernel) width
+  LongType sH = INT_ARG(2);                                                 // strides height
+  LongType sW = INT_ARG(3);                                                 // strides width
   sd::LongType  pH = INT_ARG(4);                                                 // paddings height
   sd::LongType  pW = INT_ARG(5);                                                 // paddings width
-  int dH = INT_ARG(6);                                                 // dilations height
-  int dW = INT_ARG(7);                                                 // dilations width
+  LongType dH = INT_ARG(6);                                                 // dilations height
+  LongType dW = INT_ARG(7);                                                 // dilations width
   int isSameMode = INT_ARG(8);                                         // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
 
@@ -164,9 +164,9 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
                input->rankOf());
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-  int bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 

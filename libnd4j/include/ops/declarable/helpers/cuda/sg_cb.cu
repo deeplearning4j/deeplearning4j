@@ -367,7 +367,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
                            randomValue, nsRounds, preciseMode, numWorkers),
                           SD_FLOAT_TYPES);
   } else
-    throw std::runtime_error("SkipGram: target must have rank 0 or 1");
+    THROW_EXCEPTION("SkipGram: target must have rank 0 or 1");
 }
 
 
@@ -406,7 +406,7 @@ static SD_KERNEL void checkContextKernel(int *context, T *syn0, T *neu1, int con
   auto step = blockDim.x * gridDim.x;
 
   for (int c = start; c < contextWidth; c += step) {
-    if (context[c] >= vocabSize) hasError = true;  // throw std::runtime_error("Bad context 4");
+    if (context[c] >= vocabSize) hasError = true;  // THROW_EXCEPTION("Bad context 4");
     if (!hasError) {
       T *syn0word = syn0 + (context[c] * vectorLength);
 
@@ -475,7 +475,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
 
   T checkVal;
   err = cudaMemcpy(&checkVal, neu1, sizeof(T), cudaMemcpyDeviceToHost);
-  if (DataTypeUtils::infOrMax<T>() == checkVal) throw std::runtime_error("Bad context 4");
+  if (DataTypeUtils::infOrMax<T>() == checkVal) THROW_EXCEPTION("Bad context 4");
   // for inference we add additional inference vector
   if (infVector != nullptr) {
     addInfVectorKernel<T><<<128, 256, 128, *stream>>>(neu1, infVector, vectorLength);
@@ -489,7 +489,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   // softmax round
   if (hsRounds > 0) {
     for (int i = 0; i < hsRounds; i++) {
-      if (indices[i] < 0 || indices[i] >= vocabSize) throw std::runtime_error("Bad context 5");
+      if (indices[i] < 0 || indices[i] >= vocabSize) THROW_EXCEPTION("Bad context 5");
       T *syn1Shifted = syn1 + (indices[i] * vectorLength);
       hSoftmax_<T>(neu1, syn1Shifted, expTable, neu1e, alpha, vectorLength, codes[i], expLength, infVector != nullptr,
                    stream);
@@ -606,8 +606,6 @@ SD_KERNEL void applyShiftKernel(int *bContext, int *bLocker, T *syn0, T *neu1e, 
     // skipping padded values
     if (cContext < 0 || cLock == 1) continue;
 
-    //                    if (cContext >= vocabSize)
-    //                        throw std::runtime_error("ContextID can't be > vocab size");
 
     // one word from context
     T *syn0word = syn0 + (cContext * vectorLength);
@@ -668,14 +666,14 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
   }
   int *actualContext;
-  cerr = cudaMalloc(&actualContext, sizeof(int));
+  cerr = cudaMalloc(&actualContext, sizeof(sd::LongType));
   if (cerr) {
     throw cuda_exception::build("Cannot allocate counter buffer", cerr);
   }
 
   for (int e = 0; e < numTargets; e++) {
     auto alpha = lr.e<double>(e);
-    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
+    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<sd::LongType>(e);
 
     buildCurrentWindowKernel<T>
         <<<1, 1, 128, *stream>>>(vocabSize, contextWidth, vectorLength, dContext, syn0, neu1, actualContext, e);
@@ -690,7 +688,7 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
         // we're skipping padded values
         if (cIndex < 0) continue;
 
-        if (cIndex >= vocabSize) throw std::runtime_error("Index can't be > vocab size");
+        if (cIndex >= vocabSize) THROW_EXCEPTION("Index can't be > vocab size");
 
         hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
                      false, stream);
@@ -797,7 +795,7 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
          expTable.lengthOf(), negTable.isEmpty() ? 0 : negTable.lengthOf(), trainWords, numWorkers),
         SD_FLOAT_TYPES);
   } else
-    throw std::runtime_error("CBOW: context must have rank 0/1 or 2");
+    THROW_EXCEPTION("CBOW: context must have rank 0/1 or 2");
 
   NDArray::registerSpecialUse(
       {&syn0, &syn1, &syn1Neg, &expTable, &negTable, &target, &ngStarter},

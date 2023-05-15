@@ -176,7 +176,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
         # * CMAKE_INSTALL_LIBDIR
         # * CMAKE_INSTALL_BINDIR
         # * CMAKE_INSTALL_INCLUDEDIR
-        include(GNUInstallDirs)
 
         # check if compiler is nvcc or nvcc_wrapper
         set(COMPILER_IS_NVCC false)
@@ -193,23 +192,13 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
 
         # set CXX standard
         set(CMAKE_CXX_STANDARD_REQUIRED True)
-        set(CMAKE_CXX_STANDARD 11)
         if (${COMPILER_IS_NVCC})
             # GNU CXX extensions are not supported by nvcc
             set(CMAKE_CXX_EXTENSIONS OFF)
         endif()
 
-
-
-        ###############################################################################
-        # BACKWARD OBJECT
-        ###############################################################################
-
-
         # Set C++ compiler and flags
-        set(CMAKE_CXX_STANDARD 17)
-        set(CMAKE_CXX_STANDARD_REQUIRED ON)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic  -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic   -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -257,8 +246,8 @@ if(SD_CUDA)
         if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
             message("Experimental mode ENABLED")
             set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true -allow-unsupported-compiler")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true -allow-unsupported-compiler")
             set(EXPM " -DSD_EXPERIMENTAL_ENABLED=true")
         endif()
 
@@ -270,14 +259,15 @@ if(SD_CUDA)
             message("Enabling fPIC...")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
             #enable gnu extensions
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-std=gnu++11")
             # functrace works for cuda as well as long as the underlying compiler is gcc
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
-                set(CMAKE_CXX_STANDARD 17)
-                set(CMAKE_CXX_STANDARD_REQUIRED ON)
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
-                add_compile_definitions(SD_GCC_FUNCTRACE)
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                # note that cuda can't use -MT and -finstrument-functions
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
             endif()
         endif()
 
@@ -341,7 +331,7 @@ if(SD_CUDA)
         # list to spaces
         string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
 
-        set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+        set(CMAKE_CUDA_FLAGS " -allow-unsupported-compiler ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
         file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/*.cu ../include/execution/*.h)
@@ -374,21 +364,18 @@ if(SD_CUDA)
 
 
         if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-            include_directories(${CMAKE_CURRENT_SOURCE_DIR}/backward-cpp)
-            file(GLOB_RECURSE SOURCES ${BACKWARDS_SOURCES} backward-cpp/*.cpp)
             # TODO: come back for backward
-            add_library(samediff_obj OBJECT  PUBLIC Backward::Backward ${BACKWARD_ENABLE}  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
-                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
+            add_library(samediff_obj OBJECT  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
+                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
                     )
 
 
-            add_backward(samediff_obj)
         else()
             add_library(samediff_obj OBJECT  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
-                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${CALLSTACK_SRC}
+                    ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}

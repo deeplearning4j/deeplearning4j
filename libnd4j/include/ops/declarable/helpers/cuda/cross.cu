@@ -104,7 +104,7 @@ BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
 void crossBatched(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* z) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = sizeof(int) * threadsPerBlock * x->rankOf() + 128;
+  const int sharedMem = sizeof(sd::LongType) * threadsPerBlock * x->rankOf() + 128;
 
   PointersManager manager(context, "cross");
 

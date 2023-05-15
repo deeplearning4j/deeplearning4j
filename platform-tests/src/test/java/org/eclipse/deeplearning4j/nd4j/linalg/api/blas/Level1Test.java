@@ -43,6 +43,8 @@ public class Level1Test extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testDot(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4});
         INDArray vec2 = Nd4j.create(new float[] {1, 2, 3, 4});
         assertEquals(30, Nd4j.getBlasWrapper().dot(vec1, vec2), 1e-1);

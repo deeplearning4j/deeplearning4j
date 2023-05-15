@@ -227,7 +227,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   const bool keepUnitiesInShape = inRank == mean->rankOf();
 
   // inverse batch size 1/N
-  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), axes.data(), axes.size()) / input->lengthOf();
+  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), const_cast<sd::LongType * const>(axes.data()), axes.size()) / input->lengthOf();
 
   // input - mean
   NDArray xMinusMean(input);  // empty array with same shape as input
@@ -274,35 +274,6 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far
-
-  // java code
-  // NDArray std = *variance + epsilon;
-  // std.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
-  // std.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
-  // NDArray xMu(input);
-  // input->applyBroadcast(sd::broadcast::Subtract, axes, mean, &xMu);
-  // NDArray xHat(input);
-  // xMu.applyBroadcast(sd::broadcast::Multiply, axes, &std, &xHat);
-  // NDArray dxhat(input);
-  // dLdO->applyBroadcast(sd::broadcast::Multiply, axes, gamma, &dxhat);
-  // NDArray temp = dxhat*xMu;
-  // temp.reduceAlongDimension(reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
-  // *dLdV *= -0.5f * std*std*std;
-  // NDArray* dxmu1 = dxhat.reduceAlongDimension(reduce::Sum, excludedAxes, keepUnitiesInShape);
-  // *dxmu1 *= -std;
-  // NDArray* dxmu2 = xMu.reduceAlongDimension(reduce::Sum, excludedAxes, keepUnitiesInShape);
-  // *dxmu2 *=  *dLdV * (-2.f/N);
-  // NDArray dLdmu = *dxmu1 + *dxmu2;
-  // dLdmu *= (1.f /N);
-  // *dLdV *= (2.f/N);
-  // dxhat.applyBroadcast(sd::broadcast::Multiply, axes, &std);
-  // xMu.applyBroadcast(sd::broadcast::Multiply, axes, dLdV);
-  // dxhat += xMu;
-  // dxhat.applyBroadcast(sd::broadcast::Add, axes, &dLdmu, dLdI);
-  // delete  dxmu1;
-  // delete  dxmu2;
-  // xHat *= *dLdO;
-  // xHat.reduceAlongDimension(reduce::Sum, dLdG, excludedAxes, keepUnitiesInShape);
 
   return sd::Status::OK;
 }

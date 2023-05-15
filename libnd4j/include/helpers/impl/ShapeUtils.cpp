@@ -338,8 +338,6 @@ std::vector<sd::LongType> ShapeUtils::evalRepeatShape(int axis, const std::vecto
 // evaluate shapeInfo of permuted array
 const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, const int rank, const NDArray& arr,
                                                   sd::memory::Workspace* workspace, const bool setContigStrides) {
-  if (!arr.nonNull())
-    throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: array is nullptr!");
 
   if (rank != arr.rankOf())
     throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");

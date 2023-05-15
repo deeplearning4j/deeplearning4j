@@ -602,7 +602,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStart
     // skipping padded values
     if (cContext < 0) continue;
 
-    if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be >= vocab size");
+    if (cContext >= vocabSize) THROW_EXCEPTION("ContextID can't be >= vocab size");
 
     T *syn0word = (T *) s0.bufferWithOffset(cContext * vectorLength);
 
@@ -626,7 +626,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStart
       // we're skipping padded values
       if (cIndex < 0) continue;
 
-      if (cIndex >= vocabSize) throw std::runtime_error("Index can't be > vocab size");
+      if (cIndex >= vocabSize) THROW_EXCEPTION("Index can't be > vocab size");
 
       hSoftmax_<T>(neu1, s1.bufferasTWithOffset<T>(cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength,
                    false);
@@ -671,7 +671,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStart
     // skipping padded values
     if (cContext < 0 || cLock == 1) continue;
 
-    if (cContext >= vocabSize) throw std::runtime_error("ContextID can't be > vocab size");
+    if (cContext >= vocabSize) THROW_EXCEPTION("ContextID can't be > vocab size");
 
     // one word from context
     T *syn0word = (T *) s0.bufferWithOffset(cContext * vectorLength);
@@ -754,7 +754,7 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
                               expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers,iterations,minLearningRate),
                           SD_FLOAT_TYPES);
   } else
-    throw std::runtime_error("SkipGram: target must have rank 0 or 1");
+    THROW_EXCEPTION("SkipGram: target must have rank 0 or 1");
 }
 
 void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
@@ -784,7 +784,7 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
             negTable.isEmpty() ? 0 : negTable.lengthOf(), trainWords, numWorkers,minLearningRate,iterations),
         SD_FLOAT_TYPES);
   } else
-    throw std::runtime_error("CBOW: context must have rank 0/1 or 2");
+    THROW_EXCEPTION("CBOW: context must have rank 0/1 or 2");
 }
 }  // namespace helpers
 }  // namespace ops

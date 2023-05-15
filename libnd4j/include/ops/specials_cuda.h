@@ -102,7 +102,7 @@ SD_HOST void printCudaHost(void *pointer, const int len, cudaStream_t &stream) {
 
   cudaMemcpyAsync(ptr, pointer, sizeof(T) * len, cudaMemcpyDeviceToHost, stream);
   cudaError_t cudaResult = cudaStreamSynchronize(stream);
-  if (cudaResult != 0) throw std::runtime_error("printCudaHost:: cudaStreamSynchronize failed!");
+  if (cudaResult != 0) THROW_EXCEPTION("printCudaHost:: cudaStreamSynchronize failed!");
 
   for (int i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<T *>(ptr)[i]);
   printf("\n");

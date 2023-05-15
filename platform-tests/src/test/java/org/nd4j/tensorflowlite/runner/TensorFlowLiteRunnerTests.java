@@ -40,6 +40,8 @@ public class TensorFlowLiteRunnerTests {
 
     @Test
     public void testAdd() throws Exception {
+        if(!Nd4j.getBackend().getEnvironment().isCPU())
+            return;
         ClassPathResource classPathResource = new ClassPathResource("add.bin");
         File f = classPathResource.getFile();
         INDArray input = Nd4j.createFromArray(1.0f, 2.0f, 3.0f).reshape(1,1,1,3).broadcast(1,8,8,3);

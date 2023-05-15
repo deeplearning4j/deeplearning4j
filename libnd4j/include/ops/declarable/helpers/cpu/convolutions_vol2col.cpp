@@ -28,19 +28,19 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]
 template <typename T>
-static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD,
-                     const int pH, const int pW, const int dD, const int dH, const int dW) {
-  const int bS = volume.sizeAt(0);
-  const int iC = volume.sizeAt(1);
-  const int iD = volume.sizeAt(2);
-  const int iH = volume.sizeAt(3);
-  const int iW = volume.sizeAt(4);
-  const int kD = columns.sizeAt(2);
-  const int kH = columns.sizeAt(3);
-  const int kW = columns.sizeAt(4);
-  const int oD = columns.sizeAt(5);
-  const int oH = columns.sizeAt(6);
-  const int oW = columns.sizeAt(7);
+static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
+                     const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW) {
+  const LongType bS = volume.sizeAt(0);
+  const LongType iC = volume.sizeAt(1);
+  const LongType iD = volume.sizeAt(2);
+  const LongType iH = volume.sizeAt(3);
+  const LongType iW = volume.sizeAt(4);
+  const LongType kD = columns.sizeAt(2);
+  const LongType kH = columns.sizeAt(3);
+  const LongType kW = columns.sizeAt(4);
+  const LongType oD = columns.sizeAt(5);
+  const LongType oH = columns.sizeAt(6);
+  const LongType oW = columns.sizeAt(7);
   const sd::LongType colStride0 = columns.stridesOf()[0];
   const sd::LongType colStride1 = columns.stridesOf()[1];
   const sd::LongType colStride2 = columns.stridesOf()[2];
@@ -79,9 +79,9 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
                       col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
                             kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
 
-                      if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) ||
-                          static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) ||
-                          static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
+                      if (static_cast<LongType>(volDep) >= static_cast<LongType>(iD) ||
+                          static_cast<LongType>(volRow) >= static_cast<LongType>(iH) ||
+                          static_cast<LongType>(volCol) >= static_cast<LongType>(iW))
                         *col = static_cast<T>(0.);
                       else {
                         vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
@@ -104,14 +104,14 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
     auto func = PRAGMA_THREADS_FOR_2D {
       T *col, *vol;
       int volDep, volRow, volCol;
-      for (int b = start_x; b < stop_x; b++) {
-        for (int colD = start_y; colD < stop_y; colD++) {
-          for (int colH = 0; colH < oH; ++colH) {
-            for (int colW = 0; colW < oW; ++colW) {
-              for (int c = 0; c < iC; ++c) {
-                for (int kDep = 0; kDep < kD; ++kDep) {
-                  for (int kRow = 0; kRow < kH; ++kRow) {
-                    for (int kCol = 0; kCol < kW; ++kCol) {
+      for (LongType b = start_x; b < stop_x; b++) {
+        for (LongType colD = start_y; colD < stop_y; colD++) {
+          for (LongType colH = 0; colH < oH; ++colH) {
+            for (LongType colW = 0; colW < oW; ++colW) {
+              for (LongType c = 0; c < iC; ++c) {
+                for (LongType kDep = 0; kDep < kD; ++kDep) {
+                  for (LongType kRow = 0; kRow < kH; ++kRow) {
+                    for (LongType kCol = 0; kCol < kW; ++kCol) {
                       volDep = (-pD + kDep * dD) + colD * sD;
                       volRow = (-pH + kRow * dH) + colH * sH;
                       volCol = (-pW + kCol * dW) + colW * sW;
@@ -119,9 +119,9 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
                       col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
                             kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
 
-                      if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) ||
-                          static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) ||
-                          static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
+                      if (static_cast<LongType>(volDep) >= static_cast<LongType>(iD) ||
+                          static_cast<LongType>(volRow) >= static_cast<LongType>(iH) ||
+                          static_cast<LongType>(volCol) >= static_cast<LongType>(iW))
                         *col = static_cast<T>(0.f);
                       else {
                         vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
@@ -143,9 +143,9 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
   }
 }
 
-void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& volume, NDArray& columns, const int sD,
-                               const int sH, const int sW, const int pD, const int pH, const int pW, const int dD,
-                               const int dH, const int dW) {
+void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& volume, NDArray& columns, const LongType sD,
+                               const LongType sH, const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD,
+                               const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW),
                         SD_FLOAT_TYPES);
 }

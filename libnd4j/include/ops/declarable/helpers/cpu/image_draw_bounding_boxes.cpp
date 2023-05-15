@@ -76,9 +76,7 @@ void drawBoundingBoxesFunctor(sd::LaunchContext* context, NDArray* images, NDArr
   auto height = images->sizeAt(1);
   auto width = images->sizeAt(2);
   auto channels = images->sizeAt(3);
-  // auto imageList = images->allTensorsAlongDimension({1, 2, 3}); // split images by batch
-  //        auto boxList = boxes->allTensorsAlongDimension({1, 2}); // split boxes by batch
-  // auto colorSet = colors->allTensorsAlongDimension({0});
+
   output->assign(images);  // fill up all output with input images, then fill up boxes
   ColorTable_t colorTable;
   if (colors) {

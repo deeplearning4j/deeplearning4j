@@ -42,7 +42,7 @@ public class L2NormalizeVertex extends GraphVertex {
     protected double eps;
 
     public L2NormalizeVertex() {
-        this((long[]) null, DEFAULT_EPS);
+        this(null, DEFAULT_EPS);
     }
 
 

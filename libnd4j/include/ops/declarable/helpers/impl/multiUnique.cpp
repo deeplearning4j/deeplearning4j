@@ -38,7 +38,7 @@ bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* 
   Context cContext(1);
   for (auto array : inputList) {
     if (array->dataType() != sd::DataType::INT32)
-      throw std::runtime_error("multiUnique: this op support INT32 data type only.");
+      THROW_EXCEPTION("multiUnique: this op support INT32 data type only.");
 
     reshaped[pos] = array->reshape(array->ordering(), {-1});
     cContext.setInputArray(pos, &reshaped[pos]);
@@ -52,11 +52,11 @@ bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* 
 
   sd::ops::concat opConcat;
   auto cResult = opConcat.execute(&cContext);
-  if (sd::Status::OK != cResult) throw std::runtime_error("multiUnique: cannot execute concat op properly.");
+  if (sd::Status::OK != cResult) THROW_EXCEPTION("multiUnique: cannot execute concat op properly.");
 
   sd::ops::unique opUnique;
   auto uResult = opUnique.evaluate({&arrayFull});
-  if (sd::Status::OK != uResult.status()) throw std::runtime_error("multiUnique: cannot execute unique op properly.");
+  if (sd::Status::OK != uResult.status()) THROW_EXCEPTION("multiUnique: cannot execute unique op properly.");
 
   auto uniqueVals = uResult.at(0);
 

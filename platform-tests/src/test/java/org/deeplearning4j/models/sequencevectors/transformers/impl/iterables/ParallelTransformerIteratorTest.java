@@ -26,6 +26,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
+import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.BasicLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -63,9 +64,12 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
     @Timeout(30000)
     public void hasNext() throws Exception {
         SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
-                        .tokenizerFactory(factory).build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .iterator(iterator).allowMultithreading(true)
+                .vocabCache(cache)
+                .tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
         int cnt = 0;
@@ -86,10 +90,12 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
     @Timeout(30000)
     public void testSpeedComparison1() throws Exception {
         SentenceIterator iterator = new MutipleEpochsSentenceIterator(
-                        new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25);
+                new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25);
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
 
         SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator)
-                        .allowMultithreading(false).tokenizerFactory(factory).build();
+                .vocabCache(cache)
+                .allowMultithreading(false).tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
         int cnt = 0;
@@ -105,8 +111,11 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         log.info("Single-threaded time: {} ms", time2 - time1);
         iterator.reset();
 
-        transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
-                        .tokenizerFactory(factory).build();
+        cache = new AbstractCache.Builder<VocabWord>().build();
+        transformer = new SentenceTransformer.Builder().iterator(iterator)
+                .vocabCache(cache)
+                .allowMultithreading(true)
+                .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 
@@ -127,10 +136,12 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
 
 
         LabelAwareIterator lai = new BasicLabelAwareIterator.Builder(new MutipleEpochsSentenceIterator(
-                        new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25)).build();
-
-        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(false)
-                        .tokenizerFactory(factory).build();
+                new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25)).build();
+        cache = new AbstractCache.Builder<VocabWord>().build();
+        transformer = new SentenceTransformer.Builder().iterator(lai)
+                .vocabCache(cache)
+                .allowMultithreading(false)
+                .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 
@@ -147,8 +158,11 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         lai.reset();
 
 
-        transformer = new SentenceTransformer.Builder().iterator(lai).allowMultithreading(true)
-                        .tokenizerFactory(factory).build();
+        cache = new AbstractCache.Builder<VocabWord>().build();
+        transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(lai).allowMultithreading(true)
+                .tokenizerFactory(factory).build();
 
         iter = transformer.iterator();
 
@@ -176,8 +190,10 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         }
         InputStream inputStream = IOUtils.toInputStream(testString, "UTF-8");
         SentenceIterator iterator = new BasicLineIterator(inputStream);
-
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();
@@ -206,8 +222,10 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         }
         InputStream inputStream = IOUtils.toInputStream(testStrings, "UTF-8");
         SentenceIterator iterator = new BasicLineIterator(inputStream);
-
-        SentenceTransformer transformer = new SentenceTransformer.Builder().iterator(iterator).allowMultithreading(true)
+        AbstractCache<VocabWord> cache = new AbstractCache.Builder<VocabWord>().build();
+        SentenceTransformer transformer = new SentenceTransformer.Builder()
+                .vocabCache(cache)
+                .iterator(iterator).allowMultithreading(true)
                 .tokenizerFactory(factory).build();
 
         Iterator<Sequence<VocabWord>> iter = transformer.iterator();

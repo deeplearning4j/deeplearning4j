@@ -117,7 +117,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
     }
 
     if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
-      throw std::runtime_error("split cuda: luckCase1 failed!");
+      THROW_EXCEPTION("split cuda: luckCase1 failed!");
 
     for (int i = 0; i < numOfSubArrs; ++i) outArrs[i]->tickWriteDevice();
     input.tickReadDevice();
@@ -125,49 +125,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
     return;
   }
 
-  // const bool isXcontin = input.strideAt(axis) == 1;
-  // bool areOutputsContin = true;
-  // bool allSameOrder    = true;
-  // std::vector<sd::LongType> strideOfContigStride(outArrs.size());
 
-  // if(isXcontin) {
-
-  //     for (sd::Unsigned i = 0; i < outArrs.size(); ++i) {
-
-  //         areOutputsContin &= outArrs[i]->strideAt(axis) == 1;
-  //         allSameOrder     &= input.ordering() == outArrs[i]->ordering();
-  //         if(!areOutputsContin || !allSameOrder)
-  //             break;
-
-  //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->shapeInfo());
-  //     }
-  // }
-
-  // const bool luckCase2 = isXcontin && areOutputsContin && allSameOrder;
-
-  // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for
-  // all inputs arrays and input array
-
-  //     const auto xStep = shape::strideOverContigAxis(axis, input.shapeInfo());
-  //     const auto zDim = outArrs[0]->sizeAt(axis);     // same for all outArrs
-
-  //     for (sd::Unsigned i = 0; i < input.lengthOf() / input.sizeAt(axis); ++i) {
-
-  //         const auto iShift = i * sizeofT;
-  //         void* x = static_cast<int8_t*>(input.specialBuffer()) + xStep * iShift;
-
-  //         for (sd::Unsigned j = 0; j < numOfSubArrs; ++j) {
-  //             void* z = static_cast<int8_t*>(outArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
-  //             const auto memSizeToCopy = zDim * sizeofT;
-  //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-  //             x = static_cast<int8_t*>(x) + memSizeToCopy;
-  //         }
-  //     }
-
-  //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-  //         throw std::runtime_error("split cuda: luckCase2 failed!");
-  // }
-  // else {      // general (slower) case
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

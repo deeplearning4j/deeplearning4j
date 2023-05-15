@@ -113,7 +113,7 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
     }
 
     if (cudaStreamSynchronize(*context->getCudaStream()) != 0)
-      throw std::runtime_error("concat cuda: luckCase1 failed!");
+      THROW_EXCEPTION("concat cuda: luckCase1 failed!");
 
     for (int i = 0; i < numOfInArrs; ++i) inArrs[i]->tickReadDevice();
     output.tickWriteDevice();
@@ -121,49 +121,7 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
     return;
   }
 
-  // const bool isZcontin = output.strideAt(axis) == 1;
-  // bool areInputsContin = true;
-  // bool allSameOrder    = true;
-  // std::vector<sd::LongType> strideOfContigStride(numOfInArrs);
 
-  // if(isZcontin) {
-
-  //     for (sd::Unsigned i = 0; i < inArrs.size(); ++i) {
-
-  //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
-  //         allSameOrder    &= output.ordering() == inArrs[i]->ordering();
-  //         if(!areInputsContin || !allSameOrder)
-  //             break;
-
-  //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->shapeInfo());
-  //     }
-  // }
-
-  // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
-
-  // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for
-  // all inputs arrays and output array
-
-  //     const auto zStep = shape::strideOverContigAxis(axis, output.shapeInfo());
-
-  //     for (sd::Unsigned i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
-
-  //         const auto iShift = i * sizeofT;
-  //         void* z = static_cast<int8_t*>(output.specialBuffer()) + zStep * iShift;
-
-  //         for (sd::Unsigned j = 0; j < numOfInArrs; ++j) {
-  //             const auto xDim = inArrs[j]->sizeAt(axis);
-  //             void* x = static_cast<int8_t*>(inArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
-  //             const auto memSizeToCopy = xDim * sizeofT;
-  //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-  //             z = static_cast<int8_t*>(z) + memSizeToCopy;
-  //         }
-  //     }
-
-  //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-  //         throw std::runtime_error("concat cuda: luckCase2 failed!");
-  // }
-  // else {      // general (slower) case
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

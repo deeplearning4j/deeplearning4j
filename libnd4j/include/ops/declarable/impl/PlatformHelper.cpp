@@ -48,7 +48,7 @@ sd::NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
       if (ctx.isInplace()) {
         z = ctx.fastpath_in()[inputId];
       } else
-        throw std::runtime_error("fastpath_out: unresolved output array");
+        THROW_EXCEPTION("fastpath_out: unresolved output array");
     } else {
       z = ctx.fastpath_out()[inputId];
     }
@@ -76,7 +76,7 @@ sd::NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
         sd_printf("Can't get Z variable for node_%i!\n", ctx.nodeId());
       }
     } else {
-      throw std::runtime_error("Failed execution after attempting to get result outside of fast_path. This should not happen.\n");
+      THROW_EXCEPTION("Failed execution after attempting to get result outside of fast_path. This should not happen.\n");
     }
   }
 

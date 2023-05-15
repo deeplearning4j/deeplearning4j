@@ -60,7 +60,7 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xSha
 
   auto coords =
       sharedMem +
-      threadIdx.x * xRank;  // we provide (xRank * sizeof(int) * threadIdx.x) amount of shared memory per each thread
+      threadIdx.x * xRank;  // we provide (xRank * sizeof(sd::LongType) * threadIdx.x) amount of shared memory per each thread
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (sd::LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
@@ -92,7 +92,7 @@ void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArr
                    const bool zeroPad) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * input.rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * input.rankOf() + 128;
 
   PointersManager manager(context, "matrixSetDiag");
 

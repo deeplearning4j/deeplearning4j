@@ -87,13 +87,10 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         while(j < count) {
             ExecutorService executorService = Executors.newCachedThreadPool();
             for(int i = 0; i < 1000; i++) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try(MemoryWorkspace memoryWorkspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread()) {
-                            INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
-                            vec1.norm2Number();
-                        }
+                executorService.execute(() -> {
+                    try(MemoryWorkspace memoryWorkspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread()) {
+                        INDArray vec11 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
+                        vec11.norm2Number();
                     }
                 });
             }

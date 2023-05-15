@@ -70,7 +70,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
 ///////////////////////////////////////////////////////////////////
 void softMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
   if (!input.isVector() || !output.isVector())
-    throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
+    THROW_EXCEPTION("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
 
   auto xType = input.dataType();
   BUILD_SINGLE_SELECTOR(xType, softMaxForVector_,

@@ -34,18 +34,18 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   auto input = INPUT_VARIABLE(0);     // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto output = OUTPUT_NULLIFIED(0);  // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
-  int kD = INT_ARG(0);           // filter(kernel) depth
-  int kH = INT_ARG(1);           // filter(kernel) height
-  int kW = INT_ARG(2);           // filter(kernel) width
-  int sD = INT_ARG(3);           // strides depth
-  int sH = INT_ARG(4);           // strides height
-  int sW = INT_ARG(5);           // strides width
-  int pD = INT_ARG(6);           // paddings depth
-  int pH = INT_ARG(7);           // paddings height
-  int pW = INT_ARG(8);           // paddings width
-  int dD = INT_ARG(9);           // dilations depth
-  int dH = INT_ARG(10);          // dilations height
-  int dW = INT_ARG(11);          // dilations width
+  LongType kD = INT_ARG(0);           // filter(kernel) depth
+  LongType kH = INT_ARG(1);           // filter(kernel) height
+  LongType kW = INT_ARG(2);           // filter(kernel) width
+  LongType sD = INT_ARG(3);           // strides depth
+  LongType sH = INT_ARG(4);           // strides height
+  LongType sW = INT_ARG(5);           // strides width
+  LongType pD = INT_ARG(6);           // paddings depth
+  LongType pH = INT_ARG(7);           // paddings height
+  LongType pW = INT_ARG(8);           // paddings width
+  LongType dD = INT_ARG(9);           // dilations depth
+  LongType dH = INT_ARG(10);          // dilations height
+  LongType dW = INT_ARG(11);          // dilations width
   int isSameMode = INT_ARG(12);  // 1-SAME,  0-VALID
   int extraParam0 = INT_ARG(13);
   int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 0-NCDHW, 1-NDHWC
@@ -55,9 +55,9 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
                "AVGPOOL3DNEW OP: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
@@ -91,18 +91,18 @@ DECLARE_TYPES(avgpool3dnew) {
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew) {
-  int kD = INT_ARG(0);                                                  // filter(kernel) depth
-  int kH = INT_ARG(1);                                                  // filter(kernel) height
-  int kW = INT_ARG(2);                                                  // filter(kernel) width
-  int sD = INT_ARG(3);                                                  // strides depth
-  int sH = INT_ARG(4);                                                  // strides height
-  int sW = INT_ARG(5);                                                  // strides width
-  int pD = INT_ARG(6);                                                  // paddings depth
-  int pH = INT_ARG(7);                                                  // paddings height
-  int pW = INT_ARG(8);                                                  // paddings width
-  int dD = INT_ARG(9);                                                  // dilations depth
-  int dH = INT_ARG(10);                                                 // dilations height
-  int dW = INT_ARG(11);                                                 // dilations width
+  LongType kD = INT_ARG(0);                                                  // filter(kernel) depth
+  LongType kH = INT_ARG(1);                                                  // filter(kernel) height
+  LongType kW = INT_ARG(2);                                                  // filter(kernel) width
+  LongType sD = INT_ARG(3);                                                  // strides depth
+  LongType sH = INT_ARG(4);                                                  // strides height
+  LongType sW = INT_ARG(5);                                                  // strides width
+  LongType pD = INT_ARG(6);                                                  // paddings depth
+  LongType pH = INT_ARG(7);                                                  // paddings height
+  LongType pW = INT_ARG(8);                                                  // paddings width
+  LongType dD = INT_ARG(9);                                                  // dilations depth
+  LongType dH = INT_ARG(10);                                                 // dilations height
+  LongType dW = INT_ARG(11);                                                 // dilations width
   int isSameMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
   int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 0-NCDHW, 1-NDHWC
 
@@ -111,7 +111,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
 
   auto inputShapeInfo = inputShape->at(0);
 
-  int idxID, idxIC;
+  LongType idxID, idxIC;
   if (isNCDHW) {
     idxID = 2;
     idxIC = 1;
@@ -120,13 +120,13 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     idxIC = 4;
   }
 
-  int bS = inputShapeInfo[1];          // batch size
-  int iC = inputShapeInfo[idxIC + 1];  // input channels
-  int iD = inputShapeInfo[idxID + 1];  // input depth
-  int iH = inputShapeInfo[idxID + 2];  // input height
-  int iW = inputShapeInfo[idxID + 3];  // input width
+  LongType bS = inputShapeInfo[1];          // batch size
+  LongType iC = inputShapeInfo[idxIC + 1];  // input channels
+  LongType iD = inputShapeInfo[idxID + 1];  // input depth
+  LongType iH = inputShapeInfo[idxID + 2];  // input height
+  LongType iW = inputShapeInfo[idxID + 3];  // input width
 
-  int oD, oH, oW;  // output depth, height, width
+  LongType oD, oH, oW;  // output depth, height, width
   ConvolutionUtils::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW,
                                       isSameMode);
 
@@ -162,18 +162,18 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
   auto gradO = INPUT_VARIABLE(1);    // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
   auto gradI = OUTPUT_NULLIFIED(0);  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
 
-  const int kD = INT_ARG(0);            // filter(kernel) depth
-  const int kH = INT_ARG(1);            // filter(kernel) height
-  const int kW = INT_ARG(2);            // filter(kernel) width
-  const int sD = INT_ARG(3);            // strides depth
-  const int sH = INT_ARG(4);            // strides height
-  const int sW = INT_ARG(5);            // strides width
-  int pD = INT_ARG(6);                  // paddings depth
-  int pH = INT_ARG(7);                  // paddings height
-  int pW = INT_ARG(8);                  // paddings width
-  const int dD = INT_ARG(9);            // dilations depth
-  const int dH = INT_ARG(10);           // dilations height
-  const int dW = INT_ARG(11);           // dilations width
+  const LongType kD = INT_ARG(0);            // filter(kernel) depth
+  const LongType kH = INT_ARG(1);            // filter(kernel) height
+  const LongType kW = INT_ARG(2);            // filter(kernel) width
+  const LongType sD = INT_ARG(3);            // strides depth
+  const LongType sH = INT_ARG(4);            // strides height
+  const LongType sW = INT_ARG(5);            // strides width
+  LongType pD = INT_ARG(6);                  // paddings depth
+  LongType pH = INT_ARG(7);                  // paddings height
+  LongType pW = INT_ARG(8);                  // paddings width
+  const LongType dD = INT_ARG(9);            // dilations depth
+  const LongType dH = INT_ARG(10);           // dilations height
+  const LongType dW = INT_ARG(11);           // dilations width
   const int isSameMode = INT_ARG(12);   // 1-SAME,  0-VALID
   const int extraParam0 = INT_ARG(13);  // define what divisor to use while averaging
   const int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 0-NCDHW, 1-NDHWC
@@ -183,9 +183,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
   REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
                "AVGPOOL3DNEW_BP op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 

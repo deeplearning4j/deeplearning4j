@@ -54,15 +54,6 @@ typedef sd::ops::OpExecTrace ExecTrace;
 
 #if defined(SD_GCC_FUNCTRACE)
 
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-extern "C" {
-SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
-
-SD_LIB_EXPORT int contextNumOutputs(void *contextPointer);
-SD_LIB_EXPORT void printOpTrace();
-
-
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
 
 SD_LIB_EXPORT std::vector<bool> * bArgs(void *execTrace);
@@ -88,10 +79,12 @@ SD_LIB_EXPORT void toggleOpTrace(bool opTrace);
 
 
 
-//note this is a c++ 17 feature
-static FILE* instrumentFile = nullptr;
 
 
+
+//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
+// stack overflow and segfault.
+extern "C" {
 
 
 
@@ -109,7 +102,9 @@ SD_LIB_EXPORT void closeInstrumentOut();
 
 #endif
 
+SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
+SD_LIB_EXPORT int contextNumOutputs(void *contextPointer);
 
 SD_LIB_EXPORT void printOpTrace();
 

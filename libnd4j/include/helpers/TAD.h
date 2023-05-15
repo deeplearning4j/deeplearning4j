@@ -174,8 +174,8 @@ class TAD {
    * Length of a tad given
    * the shape information
    */
-  SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(sd::LongType const *shapeInfo, const long long int *dimension,
-                                                  long long int dimensionLength);
+  SD_INLINE SD_HOST_DEVICE sd::LongType tadLength(sd::LongType const *shapeInfo, const sd::LongType *dimension,
+                                                  sd::LongType dimensionLength);
 
   /**
    * Computes the number
@@ -183,8 +183,8 @@ class TAD {
    * a given dimension
    */
   SD_INLINE SD_HOST_DEVICE sd::LongType tensorsAlongDimension(sd::LongType const *shapeInfo,
-                                                              const long long int *dimension,
-                                                              long long int dimensionLength);
+                                                              const sd::LongType *dimension,
+                                                              sd::LongType dimensionLength);
 
 #ifdef __CUDACC__
   SD_INLINE SD_HOST_DEVICE void createOffsetForBlock(int blockIdx) {
@@ -220,8 +220,7 @@ SD_INLINE void TAD::initWithExternalTAD(sd::LongType *existingTAD, sd::LongType 
   this->numTads =
       shape::length(originalShape) /
       shape::length(
-          existingTAD);  // this->tensorsAlongDimension(this->shapeInfo, this->dimension,
-                         // this->dimensionLength);//shape::length(originalShape) / shape::length(existingTAD);
+          existingTAD);
   this->wholeThing =
       this->numTads == 1 ||
       ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
@@ -736,8 +735,8 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
   return ret2;
 }
 
-SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const long long int *dimension,
-                                      long long int dimensionLength) {
+SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const sd::LongType *dimension,
+                                      sd::LongType dimensionLength) {
   if (dimensionLength == 1) {
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
@@ -751,8 +750,8 @@ SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const long 
   }
 }
 
-SD_INLINE sd::LongType TAD::tensorsAlongDimension(sd::LongType const *shapeInfo, const long long int *dimension,
-                                                  long long int dimensionLength) {
+SD_INLINE sd::LongType TAD::tensorsAlongDimension(sd::LongType const *shapeInfo, const sd::LongType *dimension,
+                                                  sd::LongType dimensionLength) {
   return shape::length(shapeInfo) / this->tadLength(shapeInfo, dimension, dimensionLength);
 }
 

@@ -174,7 +174,6 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
             }
 
             template <>
@@ -182,7 +181,6 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarHalf(...) failed");
             }
 
             template <>
@@ -190,7 +188,6 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarDouble(...) failed");
             }
 
             template <>
@@ -216,7 +213,6 @@ namespace functions {
                     DISPATCH_SIMPLE(reduceSimpleGenericXD, float16, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 }
 
-                DEBUG_KERNEL(stream, opNum);
             }
 
             template <>
@@ -230,7 +226,6 @@ namespace functions {
                     DISPATCH_SIMPLE(reduceSimpleGenericXD, double, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 }
 
-                DEBUG_KERNEL(stream, opNum);
             }
 
             template <typename T>
@@ -266,7 +261,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
                     sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 				}
@@ -445,7 +440,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 
@@ -510,7 +505,7 @@ namespace functions {
 				if (threadIdx.x == 0) {
 				    extern __shared__ unsigned char shmem[];
 				    sPartials = (T *) shmem;
-					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
+					tadLength = shape::length(tadOnlyShapeInfo);
 					tadRank = shape::rank(tadOnlyShapeInfo);
 					numTads = shape::length(xShapeInfo) / tadLength;
 

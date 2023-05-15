@@ -110,7 +110,7 @@ sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray*
   } else if (DataTypeUtils::isZ(xType)) {
     BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), SD_INTEGER_TYPES);
   } else {
-    throw std::runtime_error("ListDiff: Only integer and floating point data types are supported");
+    THROW_EXCEPTION("ListDiff: Only integer and floating point data types are supported");
   }
 
   NDArray::registerPrimaryUse({output1, output2}, {values, keep});

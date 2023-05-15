@@ -64,23 +64,23 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
                  " SCONV2D OP: rank of biases array must be equal to 1 or 2, but got %i instead !", bias->rankOf());
   ;
 
-  int kH = INT_ARG(0);                                               // filter(kernel) height
-  int kW = INT_ARG(1);                                               // filter(kernel) width
-  int sH = INT_ARG(2);                                               // strides height
-  int sW = INT_ARG(3);                                               // strides width
-  int pH = INT_ARG(4);                                               // paddings height
-  int pW = INT_ARG(5);                                               // paddings width
-  int dH = INT_ARG(6);                                               // dilations height
-  int dW = INT_ARG(7);                                               // dilations width
+  LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-  int bS, iC, iH, iW, mC, oC, oH,
+  LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
@@ -135,7 +135,7 @@ DECLARE_SHAPE_FN(sconv2d) {
     biasShapeInfo = inputShape->at(3);
   }
 
-  const int rank = 4;
+  const LongType rank = 4;
   REQUIRE_TRUE(inputShapeInfo[0] == rank, 0,
                "SCONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
   REQUIRE_TRUE(weightsDShapeInfo[0] == rank, 0,
@@ -148,23 +148,23 @@ DECLARE_SHAPE_FN(sconv2d) {
   if (biasShapeInfo)
     REQUIRE_TRUE(biasShapeInfo[0] <= 2, 0, "SCONV2D OP: rank of biases array must be <= 2, but got %i instead !",
                  biasShapeInfo[0]);
-  ;
 
-  int kH = INT_ARG(0);                                               // filter(kernel) height
-  int kW = INT_ARG(1);                                               // filter(kernel) width
-  int sH = INT_ARG(2);                                               // strides height
-  int sW = INT_ARG(3);                                               // strides width
-  int pH = INT_ARG(4);                                               // paddings height
-  int pW = INT_ARG(5);                                               // paddings width
-  int dH = INT_ARG(6);                                               // dilations height
-  int dW = INT_ARG(7);                                               // dilations width
+
+  LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-  int indIOioC, indIiH, indWmC(0 == wFormat ? 3 : 0);
+  LongType indIOioC, indIiH, indWmC(0 == wFormat ? 3 : 0);
   if (!isNCHW) {
     indIOioC = 3;
     indIiH = 1;
@@ -173,12 +173,12 @@ DECLARE_SHAPE_FN(sconv2d) {
     indIiH = 2;
   }
 
-  const int bS = inputShapeInfo[1];                                            // batch size
-  const int iH = inputShapeInfo[indIiH + 1];                                   // input height
-  const int iW = inputShapeInfo[indIiH + 2];                                   // input width
-  const int iC = inputShapeInfo[indIOioC + 1];                                 // input channels
-  const int mC = weightsDShapeInfo[indWmC + 1];                                // channel multiplier
-  const int oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC + 1] : iC * mC;  // output channels (oC or iC*mC)
+  const LongType bS = inputShapeInfo[1];                                            // batch size
+  const LongType iH = inputShapeInfo[indIiH + 1];                                   // input height
+  const LongType iW = inputShapeInfo[indIiH + 2];                                   // input width
+  const LongType iC = inputShapeInfo[indIOioC + 1];                                 // input channels
+  const LongType mC = weightsDShapeInfo[indWmC + 1];                                // channel multiplier
+  const LongType oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC + 1] : iC * mC;  // output channels (oC or iC*mC)
 
   std::vector<sd::LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsDShapeInfo, expectedWeightsDShape), 0,
@@ -198,7 +198,7 @@ DECLARE_SHAPE_FN(sconv2d) {
         "SCONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC,
         biasShapeInfo[0], shape::length(biasShapeInfo));
 
-  int oH, oW;  // output height, width
+  LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   sd::LongType *outputShapeInfo = nullptr;
@@ -278,23 +278,23 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
                  gradB->rankOf());
   }
 
-  int kH = INT_ARG(0);                                               // filter(kernel) height
-  int kW = INT_ARG(1);                                               // filter(kernel) width
-  int sH = INT_ARG(2);                                               // strides height
-  int sW = INT_ARG(3);                                               // strides width
-  int pH = INT_ARG(4);                                               // paddings height
-  int pW = INT_ARG(5);                                               // paddings width
-  int dH = INT_ARG(6);                                               // dilations height
-  int dW = INT_ARG(7);                                               // dilations width
+  LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-  int bS, iC, iH, iW, mC, oC, oH,
+  LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
@@ -326,11 +326,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
                  gradB->lengthOf());
   }
 
-  // if (iC == 1) {
-  //     sd_debug(" SCONV2D_BP OP: for input_channels=1 this op is equivalent to standard conv2d_bp \n","");
-  //     sd::ops::conv2d_bp op;
-  //     return op.execute(&block);
-  // }
+
 
   // ----- if weightsPoint is present, perform pointwise backprop first and calculate gradWP at this step ----- //
   if (weightsPoint) {
@@ -381,7 +377,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     biasShapeInfo = inputShape->at(4);
   }
 
-  const int rank = 4;
+  const LongType rank = 4;
   REQUIRE_TRUE(inputShapeInfo[0] == rank, 0,
                " SCONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank,
                inputShapeInfo[0]);
@@ -399,16 +395,16 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
   if (biasShapeInfo)
     REQUIRE_TRUE(biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2, 0,
                  " SCONV2D_BP OP: rank of biases array must be 1 or 2, but got %i instead !", biasShapeInfo[0]);
-  ;
 
-  int kH = INT_ARG(0);                                               // filter(kernel) height
-  int kW = INT_ARG(1);                                               // filter(kernel) width
-  int sH = INT_ARG(2);                                               // strides height
-  int sW = INT_ARG(3);                                               // strides width
-  int pH = INT_ARG(4);                                               // paddings height
-  int pW = INT_ARG(5);                                               // paddings width
-  int dH = INT_ARG(6);                                               // dilations height
-  int dW = INT_ARG(7);                                               // dilations width
+
+  LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
@@ -424,14 +420,14 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     indIiH = 2;
   }
 
-  const int bS = inputShapeInfo[1];                                            // batch size
-  const int iH = inputShapeInfo[indIiH + 1];                                   // input height
-  const int iW = inputShapeInfo[indIiH + 2];                                   // input width
-  const int iC = inputShapeInfo[indIOioC + 1];                                 // input channels
-  const int mC = weightsDShapeInfo[indWmC + 1];                                // channel multiplier
-  const int oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC + 1] : iC * mC;  // output channels (oC or iC*mC)
+  const LongType bS = inputShapeInfo[1];                                            // batch size
+  const LongType iH = inputShapeInfo[indIiH + 1];                                   // input height
+  const LongType iW = inputShapeInfo[indIiH + 2];                                   // input width
+  const LongType iC = inputShapeInfo[indIOioC + 1];                                 // input channels
+  const LongType mC = weightsDShapeInfo[indWmC + 1];                                // channel multiplier
+  const LongType oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC + 1] : iC * mC;  // output channels (oC or iC*mC)
 
-  int trueoH, trueoW;  // true output height, width
+  LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   std::vector<sd::LongType> expectedGradOShapeInfo =

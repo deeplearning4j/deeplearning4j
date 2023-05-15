@@ -45,21 +45,21 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
                  "CUSTOM POINTWISECONV2D OP: rank of biases array must be equal <= 2, but got %i instead !",
                  bias->rankOf());
 
-  int kH = 1;                                                        // filter(kernel) height
-  int kW = 1;                                                        // filter(kernel) width
-  int sH = 1;                                                        // strides height
-  int sW = 1;                                                        // strides width
-  int pH = 0;                                                        // paddings height
-  int pW = 0;                                                        // paddings width
-  int dH = 1;                                                        // dilations height
-  int dW = 1;                                                        // dilations width
+  LongType kH = 1;                                                        // filter(kernel) height
+  LongType kW = 1;                                                        // filter(kernel) width
+  LongType sH = 1;                                                        // strides height
+  LongType sW = 1;                                                        // strides width
+  LongType pH = 0;                                                        // paddings height
+  LongType pW = 0;                                                        // paddings width
+  LongType dH = 1;                                                        // dilations height
+  LongType dW = 1;                                                        // dilations width
   int isNCHW = block.getIArguments()->size() > 0 ? !INT_ARG(0) : 1;  // INT_ARG(0): 0-NCHW, 1-NHWC
   int wFormat =
       block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;  // 0 - [1, 1, iC, oC], 1 - [oC, iC, 1, 1], 2 - [oC, 1, 1, iC]
 
-  int bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -100,15 +100,15 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
   int wFormat =
       block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;  // 0 - [1, 1, iC, oC], 1 - [oC, iC, 1, 1], 2 - [oC, 1, 1, iC]
 
-  int indIOioC, indWoC(0 == wFormat ? 3 : 0);
+  LongType indIOioC, indWoC(0 == wFormat ? 3 : 0);
   if (!isNCHW)
     indIOioC = 3;
   else
     indIOioC = 1;
 
-  const int bS = inputShapeInfo[1];             // batch size
-  const int iC = inputShapeInfo[indIOioC + 1];  // input channels
-  const int oC = weightsShapeInfo[indWoC + 1];  // output channels
+  const LongType bS = inputShapeInfo[1];             // batch size
+  const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
+  const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
   std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC, oC);
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,

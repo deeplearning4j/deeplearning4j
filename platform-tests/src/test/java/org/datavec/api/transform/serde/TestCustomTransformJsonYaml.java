@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.nativeblas.NativeOpsGPUInfoProvider;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

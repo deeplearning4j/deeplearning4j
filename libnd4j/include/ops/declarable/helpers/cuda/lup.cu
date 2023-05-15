@@ -349,7 +349,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
   int lwork = 0;
   int *d_info = nullptr;
   // allocate memory for permutation vector
-  auto err = cudaMalloc((void **)&d_info, sizeof(int));
+  auto err = cudaMalloc((void **)&d_info, sizeof(sd::LongType));
   if (err) {
     throw cuda_exception::build("helpers::lup_: Cannot allocate memory for solver info buffer", err);
   }
@@ -511,7 +511,7 @@ static SD_DEVICE int luNN(T *matrix, const sd::LongType *shape, I *permutation, 
   for (auto i = 0; i < n - 1; i++) {
     auto pivotIndex = argmaxCol(i, matrix, shape);
     if (pivotIndex < 0) {
-      return -1;  // throw std::runtime_error("helpers::luNN_: input matrix is singular.");
+      return -1;
     }
     math::sd_swap(permutation[shape::getIndexOffset(i, permuShape)],
                   permutation[shape::getIndexOffset(pivotIndex, permuShape)]);
@@ -571,13 +571,9 @@ template <typename T>
 static sd::Status determinant_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
   sd::LongType n = input->sizeAt(-1);
   sd::LongType n2 = n * n;
-  std::vector<int> dims();
+  std::vector<sd::LongType> dims();
   auto packX =
       ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
-  // auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {output->rankOf() - 1});
-  //        DataType dtype = input->dataType();
-  //        if (dtype != DataType::DOUBLE)
-  //            dtype = DataType::FLOAT32;
   auto matrix =
       NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);  //, block.getWorkspace());
   auto det = NDArrayFactory::create<T>(1, context);
@@ -587,24 +583,14 @@ static sd::Status determinant_(sd::LaunchContext *context, NDArray *input, NDArr
   output->assign(1.f);
   for (int e = 0; e < output->lengthOf(); e++) {
     sd::LongType pos = e * n2;
-    //            if (matrix.dataType() == input->dataType())
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
-    //            else
-    //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z,
-    //                *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(),
-    //                input->special(), pos, n);
+
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    //            else
-    //                lup_<float>(context, &matrix, nullptr, nullptr);
     auto offset = shape::getIndexOffset(e, output->shapeInfo());
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
-    //            if (matrix.dataType() == input->dataType())
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
-    //            else
-    //                determinantKernel<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream >>> (inputBuf,
-    //                outputBuf, n);
   }
   NDArray::registerSpecialUse({output}, {input});
 
@@ -621,10 +607,9 @@ template <typename T>
 sd::Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *output) {
   sd::LongType n = input->sizeAt(-1);
   sd::LongType n2 = n * n;
-  std::vector<int> dims();
+  std::vector<sd::LongType> dims();
   auto packX =
       ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
-  // auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {output->rankOf() - 1});
   DataType dtype = input->dataType();
   if (dtype != DataType::DOUBLE) dtype = DataType::FLOAT32;
 
@@ -636,26 +621,13 @@ sd::Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *o
   output->assign(0.f);
   for (int e = 0; e < output->lengthOf(); e++) {
     sd::LongType pos = e * n2;
-    //            if (matrix.dataType() == input->dataType())
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
-    //            else
-    //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z,
-    //                *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(),
-    //                input->special(), pos, n);
-
-    //            if (matrix.dataType() == input->dataType())
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    //            else
-    //                lup_<float>(context, &matrix, nullptr, nullptr);
     auto offset = shape::getIndexOffset(e, output->shapeInfo());
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
-    //            if (matrix.dataType() == input->dataType())
     determinantLogKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
-    //            else
-    //                determinantLogKernel<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream >>> (inputBuf,
-    //                outputBuf, n);
   }
   NDArray::registerSpecialUse({output}, {input});
 
@@ -721,8 +693,6 @@ static sd::Status inverse_(sd::LaunchContext *context, NDArray *input, NDArray *
     fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(),
                                                input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
     matrix.tickWriteDevice();
-    // compound.assign(matrix);
-    //            if (matrix.dataType() == input->dataType())
     lup_<T, int>(context, &matrix, nullptr, nullptr);
     fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(),
                                                      upper.specialBuffer(), upper.specialShapeInfo(),
@@ -803,7 +773,7 @@ sd::Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, b
   if (err) {
     throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver batch data buffer", err);
   }
-  err = cudaMalloc((void **)&dInfoArray, sizeof(int) * batchSize);
+  err = cudaMalloc((void **)&dInfoArray, sizeof(sd::LongType) * batchSize);
   if (err) {
     throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver errors buffer", err);
   }
@@ -865,12 +835,9 @@ sd::Status cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bo
 }
 
 sd::Status cholesky(sd::LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
-  //        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace),
-  //        SD_FLOAT_TYPES);
   return cholesky_(context, input, output, inplace);
 }
-//    BUILD_SINGLE_TEMPLATE(template sd::Status cholesky_, (LaunchContext* context, NDArray* input, NDArray* output,
-//    bool inplace), SD_FLOAT_TYPES);
+
 BUILD_SINGLE_TEMPLATE(template sd::Status inverse_, (sd::LaunchContext * context, NDArray *input, NDArray *output),
                       SD_FLOAT_NATIVE);
 
@@ -880,7 +847,7 @@ SD_KERNEL void logDetKernel(const T *inputBuf, const sd::LongType *inputShape, s
                             const sd::LongType *outputShape) {
   __shared__ int n;
   if (threadIdx.x == 0) {
-    n = shape::sizeAt(inputShape, -1);  // * shape::sizeAt(inputShape, -1);
+    n = shape::sizeAt(inputShape, -1);
   }
   __syncthreads();
 
@@ -935,8 +902,6 @@ sd::Status lup(LaunchContext *context, NDArray *input, NDArray *compound, NDArra
   return sd::Status::OK;
 }
 
-//        BUILD_SINGLE_TEMPLATE(template sd::Status logdetFunctor_,
-//                              (sd::LaunchContext * context, NDArray * input, NDArray * output), SD_FLOAT_NATIVE);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

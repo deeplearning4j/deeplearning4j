@@ -26,7 +26,7 @@
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/svd.h>
-
+#include <system/op_boilerplate.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -115,28 +115,29 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
   // U  [m, m] or [m, n] if fullUV = false and m > n
   // VT [n, n] or [m, n] if fullUV = false and m < n
 
-  if (A->rankOf() != 2) throw std::runtime_error("svdQR: rank of A array is not equal 2 !");
+  if (A->rankOf() != 2) THROW_EXCEPTION("svdQR: rank of A array is not equal 2 !");
 
   auto m = A->sizeAt(0);
   auto n = A->sizeAt(1);
   const int minDim = m < n ? m : n;
   const char orderA = A->ordering();
 
-  if (m < n) throw std::runtime_error("svdQR: due to cuda api input constrains given shape of A array are not valid !");
+  if (m < n) THROW_EXCEPTION("svdQR: due to cuda api input constrains given shape of A array are not valid !");
 
   if (std::vector<sd::LongType>({minDim}) != S->getShapeAsVector())
-    throw std::runtime_error("svdQR: wrong shape of S array !");
+    THROW_EXCEPTION("svdQR: wrong shape of S array !");
 
   if (calcUV) {
-    if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector())
-      throw std::runtime_error("svdQR: wrong shape of U array !");
-    else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector())
-      throw std::runtime_error("svdQR: wrong shape of U array !");
+    if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector()) {
+      THROW_EXCEPTION("svdQR: wrong shape of U array !");
+    } else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector()) {
+      THROW_EXCEPTION("svdQR: wrong shape of U array !");
+    }
 
     if (fullUV && std::vector<sd::LongType>({n, n}) != VT->getShapeAsVector())
       throw std::runtime_error("svdQR: wrong shape of VT array !");
     else if (!fullUV && std::vector<sd::LongType>({minDim, n}) != VT->getShapeAsVector())
-      throw std::runtime_error("svdQR: wrong shape of VT array !");
+      THROW_EXCEPTION("svdQR: wrong shape of VT array !");
   }
 
   NDArray* pA = const_cast<NDArray*>(A);
@@ -527,7 +528,7 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
 
   // devInfo
   int* devInfo = nullptr;
-  auto status2 = cudaMalloc((void**)&devInfo, sizeof(int) * bS);
+  auto status2 = cudaMalloc((void**)&devInfo, sizeof(sd::LongType) * bS);
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
   status2 = cudaDeviceSynchronize();
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);

@@ -107,7 +107,7 @@ void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
   const T lr = static_cast<T>(dLr);
   const T beta1 = static_cast<T>(dBeta1);
   const T beta2 = static_cast<T>(dBeta2);
-  const T epsilon = static_cast<T>(dEpsilon);
+  T epsilon = static_cast<T>(dEpsilon);
   //fp16 to prevent underflow
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);

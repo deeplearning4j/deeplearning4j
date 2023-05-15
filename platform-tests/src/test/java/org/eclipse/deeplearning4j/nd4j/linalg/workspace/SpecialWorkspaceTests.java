@@ -151,9 +151,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 Nd4j.create(DataType.DOUBLE,500);
                 Nd4j.create(DataType.DOUBLE,500);
 
-                int addShapeBuffer = Nd4j.getBackend().getEnvironment().isCPU() ? 192 : 0;
                 //192 accounts for shape buffer creation
-                assertEquals(1500 * DataType.DOUBLE.width() + addShapeBuffer, workspace.getThisCycleAllocations());
+                assertEquals(1500 * DataType.DOUBLE.width(), workspace.getThisCycleAllocations());
             }
         }
 

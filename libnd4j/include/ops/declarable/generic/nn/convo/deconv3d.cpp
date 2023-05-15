@@ -43,27 +43,27 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   REQUIRE_TRUE(weights->rankOf() == 5, 0,
                "CUSTOM DECONV3D OP: rank of weights array must be equal to 5, but got %i instead !", weights->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(weights->sizeAt(2));  // filter(kernel) width
+  LongType sD = INT_ARG(3);                                                          // strides depth
+  LongType sH = INT_ARG(4);                                                          // strides height
+  LongType sW = INT_ARG(5);                                                          // strides width
+  LongType pD = INT_ARG(6);                                                          // paddings depth
+  LongType pH = INT_ARG(7);                                                          // paddings height
+  LongType pW = INT_ARG(8);                                                          // paddings width
+  LongType dD = INT_ARG(9);                                                          // dilations depth
+  LongType dH = INT_ARG(10);                                                         // dilations height
+  LongType dW = INT_ARG(11);                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
@@ -131,25 +131,25 @@ DECLARE_SHAPE_FN(deconv3d) {
                "CUSTOM DECONV3D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                shape::rank(weightsShapeInfo));
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                                          // strides depth
-  int sH = INT_ARG(4);                                                                          // strides height
-  int sW = INT_ARG(5);                                                                          // strides width
-  int pD = INT_ARG(6);                                                                          // paddings depth
-  int pH = INT_ARG(7);                                                                          // paddings height
-  int pW = INT_ARG(8);                                                                          // paddings width
-  int dD = INT_ARG(9);                                                                          // dilations depth
-  int dH = INT_ARG(10);                                                                         // dilations height
-  int dW = INT_ARG(11);                                                                         // dilations width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 2));  // filter(kernel) width
+  LongType sD = INT_ARG(3);                                                                          // strides depth
+  LongType sH = INT_ARG(4);                                                                          // strides height
+  LongType sW = INT_ARG(5);                                                                          // strides width
+  LongType pD = INT_ARG(6);                                                                          // paddings depth
+  LongType pH = INT_ARG(7);                                                                          // paddings height
+  LongType pW = INT_ARG(8);                                                                          // paddings width
+  LongType dD = INT_ARG(9);                                                                          // dilations depth
+  LongType dH = INT_ARG(10);                                                                         // dilations height
+  LongType dW = INT_ARG(11);                                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;  // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int indIOioC, indIiD, indWoC(0 == wFormat ? 3 : (1 == wFormat ? 1 : 4));
+  LongType indIOioC, indIiD, indWoC(0 == wFormat ? 3 : (1 == wFormat ? 1 : 4));
   if (!isNCDHW) {
     indIOioC = 4;
     indIiD = 1;
@@ -158,12 +158,12 @@ DECLARE_SHAPE_FN(deconv3d) {
     indIiD = 2;
   }
 
-  const int bS = inputShapeInfo[1];             // batch size
-  const int iD = inputShapeInfo[indIiD + 1];    // input depth
-  const int iH = inputShapeInfo[indIiD + 2];    // input height
-  const int iW = inputShapeInfo[indIiD + 3];    // input width
-  const int iC = inputShapeInfo[indIOioC + 1];  // input channels
-  const int oC = weightsShapeInfo[indWoC + 1];  // output channels
+  const LongType bS = inputShapeInfo[1];             // batch size
+  const LongType iD = inputShapeInfo[indIiD + 1];    // input depth
+  const LongType iH = inputShapeInfo[indIiD + 2];    // input height
+  const LongType iW = inputShapeInfo[indIiD + 3];    // input width
+  const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
+  const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
   std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
   REQUIRE_TRUE(shape::shapeEquals(5, expectedWeightsShape.data(), shape::rank(weightsShapeInfo),
@@ -177,7 +177,7 @@ DECLARE_SHAPE_FN(deconv3d) {
                  "instead !",
                  oC, shape::rank(biasShapeInfo), shape::length(biasShapeInfo));
 
-  int oD, oH, oW;  // output depth, height, width
+  LongType oD, oH, oW;  // output depth, height, width
   ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW,
                                         isSameMode);
 
@@ -227,31 +227,31 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
       "CUSTOM DECONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to 5, but got %i instead !",
       gradO->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(weights->sizeAt(2));  // filter(kernel) width
+  LongType sD = INT_ARG(3);                                                          // strides depth
+  LongType sH = INT_ARG(4);                                                          // strides height
+  LongType sW = INT_ARG(5);                                                          // strides width
+  LongType pD = INT_ARG(6);                                                          // paddings depth
+  LongType pH = INT_ARG(7);                                                          // paddings height
+  LongType pW = INT_ARG(8);                                                          // paddings width
+  LongType dD = INT_ARG(9);                                                          // dilations depth
+  LongType dH = INT_ARG(10);                                                         // dilations height
+  LongType dW = INT_ARG(11);                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
-  int trueoD, trueoH, trueoW;  // true output height, width
+  LongType trueoD, trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizeDeconv3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                         iW, isSameMode);
 
@@ -348,25 +348,25 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
       "CUSTOM DECONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, shape::rank(gradOShapeInfo));
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                                          // strides depth
-  int sH = INT_ARG(4);                                                                          // strides height
-  int sW = INT_ARG(5);                                                                          // strides width
-  int pD = INT_ARG(6);                                                                          // paddings depth
-  int pH = INT_ARG(7);                                                                          // paddings height
-  int pW = INT_ARG(8);                                                                          // paddings width
-  int dD = INT_ARG(9);                                                                          // dilations depth
-  int dH = INT_ARG(10);                                                                         // dilations height
-  int dW = INT_ARG(11);                                                                         // dilations width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 2));  // filter(kernel) width
+  LongType sD = INT_ARG(3);                                                                          // strides depth
+  LongType sH = INT_ARG(4);                                                                          // strides height
+  LongType sW = INT_ARG(5);                                                                          // strides width
+  LongType pD = INT_ARG(6);                                                                          // paddings depth
+  LongType pH = INT_ARG(7);                                                                          // paddings height
+  LongType pW = INT_ARG(8);                                                                          // paddings width
+  LongType dD = INT_ARG(9);                                                                          // dilations depth
+  LongType dH = INT_ARG(10);                                                                         // dilations height
+  LongType dW = INT_ARG(11);                                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;  // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int indIOioC, indIiD, indWoC(0 == wFormat ? 3 : (1 == wFormat ? 1 : 4));
+  LongType indIOioC, indIiD, indWoC(0 == wFormat ? 3 : (1 == wFormat ? 1 : 4));
   if (!isNCDHW) {
     indIOioC = 4;
     indIiD = 1;
@@ -375,14 +375,14 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
     indIiD = 2;
   }
 
-  const int bS = inputShapeInfo[1];             // batch size
-  const int iD = inputShapeInfo[indIiD + 1];    // input depth
-  const int iH = inputShapeInfo[indIiD + 2];    // input height
-  const int iW = inputShapeInfo[indIiD + 3];    // input width
-  const int iC = inputShapeInfo[indIOioC + 1];  // input channels
-  const int oC = weightsShapeInfo[indWoC + 1];  // output channels
+  const LongType bS = inputShapeInfo[1];             // batch size
+  const LongType iD = inputShapeInfo[indIiD + 1];    // input depth
+  const LongType iH = inputShapeInfo[indIiD + 2];    // input height
+  const LongType iW = inputShapeInfo[indIiD + 3];    // input width
+  const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
+  const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
-  int trueoD, trueoH, trueoW;  // true output depth, height, width
+  LongType trueoD, trueoH, trueoW;  // true output depth, height, width
   ConvolutionUtils::calcOutSizeDeconv3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                         iW, isSameMode);
 

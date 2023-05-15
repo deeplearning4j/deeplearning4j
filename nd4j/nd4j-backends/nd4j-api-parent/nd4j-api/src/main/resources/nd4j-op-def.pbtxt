@@ -5101,8 +5101,9 @@ opList {
     argType: INPUT_TENSOR
   }
   argDescriptor {
-    name: "outputs"
-    argType: OUTPUT_TENSOR
+    name: "setShape"
+    argType: INPUT_TENSOR
+    argIndex: 1
   }
   opDeclarationType: LIST_OP_IMPL
 }

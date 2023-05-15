@@ -54,7 +54,6 @@ void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 
 sd::LongType const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
-// sd::LongType const* NDArray::platform()          { return special(); }
 
 void NDArray::syncToDevice() const {
   auto currentDeviceId = AffinityManager::currentDeviceId();
@@ -207,13 +206,10 @@ BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
 void NDArray::setIdentity() {
   if (isS()) throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
 
-  // if (rankOf() != 2)
-  //     throw std::runtime_error("NDArray::setIdentity: method should work only for 2D tensors. But " +
-  //     toStringValue(rankOf()) + " was given.");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(int) * rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * rankOf() + 128;
 
   PointersManager manager(getContext(), "NDArray::setIdentity");
 
@@ -420,7 +416,7 @@ void NDArray::tile(NDArray& target) const {
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 SD_KERNEL static void repeatCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                 const sd::LongType* zShapeInfo, const int* repeats, const int repSize,
+                                 const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize,
                                  const int axis) {
   const X* x = reinterpret_cast<const X*>(vx);
   Z* z = reinterpret_cast<Z*>(vz);
@@ -468,14 +464,14 @@ SD_KERNEL static void repeatCuda(const void* vx, const sd::LongType* xShapeInfo,
 template <typename X, typename Z>
 static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                               const sd::LongType* zShapeInfo, const int* repeats, const int repSize, const int axis) {
+                               const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis) {
   repeatCuda<X, Z>
   <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, repeats, repSize, axis);
 }
 BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                           const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                          const sd::LongType* zShapeInfo, const int* repeats, const int repSize, const int axis),
+                          const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
                       SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -485,11 +481,11 @@ NDArray NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = output.rankOf() * sizeof(int) * threadsPerBlock + 128;
+  const sd::LongType sharedMem = output.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
 
   PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
-  const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
+  const sd::LongType* reps = reinterpret_cast<sd::LongType*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(sd::LongType)));
 
   prepareSpecialUse({&output}, {this});
   BUILD_SINGLE_SELECTOR_TWICE(
@@ -512,13 +508,13 @@ void NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats, N
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = target.rankOf() * sizeof(int) * threadsPerBlock + 128;
+  const sd::LongType threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  const sd::LongType blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  const sd::LongType sharedMem = target.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
 
   PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
-  const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
+  const sd::LongType* reps = reinterpret_cast<sd::LongType*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(sd::LongType)));
 
   prepareSpecialUse({&target}, {this});
   BUILD_DOUBLE_SELECTOR(

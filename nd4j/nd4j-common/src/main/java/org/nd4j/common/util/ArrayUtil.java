@@ -754,6 +754,28 @@ public class ArrayUtil {
         return fromFloat((float) data);
     }
 
+    public static short[] toHalfs(boolean[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = fromFloat(data[i] ? 1 : 0);
+        }
+        return ret;
+    }
+    public static short[] toHalfs(byte[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = fromFloat(data[i]);
+        }
+        return ret;
+    }
+    public static short[] toHalfs(short[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = fromFloat(data[i]);
+        }
+        return ret;
+    }
+
     public static short[] toHalfs(float[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
@@ -778,6 +800,35 @@ public class ArrayUtil {
         return ret;
     }
 
+    public static short[] toBfloats(double[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(boolean[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i] ? 1.0 : 0.0);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(byte[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+    public static short[] toBfloats(short[] data) {
+        short[] ret = new short[data.length];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = toBFloat16(data[i]);
+        }
+        return ret;
+    }
+
     public static short[] toBfloats(float[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
@@ -789,7 +840,7 @@ public class ArrayUtil {
     public static short[] toBfloats(int[] data) {
         short[] ret = new short[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16((float) data[i]);
+            ret[i] = toBFloat16(data[i]);
         }
         return ret;
     }
@@ -882,6 +933,28 @@ public class ArrayUtil {
 
         return (short) (((f >> 16) & 0x8000) | ((((f & 0x7f800000) - 0x38000000) >> 13) & 0x7c00)
                 | ((f >> 13) & 0x03ff));
+    }
+
+
+    public static int[] toInts(boolean[] data) {
+        int[] ret = new int[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = (int) (data[i] ? 1 : 0);
+        return ret;
+    }
+
+    public static int[] toInts(byte[] data) {
+        int[] ret = new int[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = (int) data[i];
+        return ret;
+    }
+
+    public static int[] toInts(short[] data) {
+        int[] ret = new int[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = (int) data[i];
+        return ret;
     }
 
     public static int[] toInts(float[] data) {
@@ -1661,8 +1734,26 @@ public class ArrayUtil {
         return ret;
     }
 
+
+
     public static float[] toFloats(int[][] ints) {
         return toFloats(Ints.concat(ints));
+    }
+
+
+    public static float[] toFloats(boolean[] ints) {
+        float[] ret = new float[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (float) (ints[i] ? 1 : 0);
+        return ret;
+    }
+
+
+    public static float[] toFloats(byte[] ints) {
+        float[] ret = new float[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (float) ints[i];
+        return ret;
     }
 
     public static double[] toDoubles(int[][] ints) {
@@ -1713,6 +1804,14 @@ public class ArrayUtil {
         return ret;
     }
 
+
+    public static float[] toFloats(short[] ints) {
+        float[] ret = new float[ints.length];
+        for (int i = 0; i < ints.length; i++)
+            ret[i] = (float) ints[i];
+        return ret;
+    }
+
     public static float[] toFloats(int[] ints) {
         float[] ret = new float[ints.length];
         for (int i = 0; i < ints.length; i++)
@@ -1733,6 +1832,8 @@ public class ArrayUtil {
             ret[i] = (float) ints[i];
         return ret;
     }
+
+
 
     public static int[] cutBelowZero(int[] data) {
         val ret = new int[data.length];
@@ -1757,6 +1858,22 @@ public class ArrayUtil {
 
     public static byte[] cutBelowZero(byte[] data) {
         val ret = new byte[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+
+    public static float[] cutBelowZero(float[] data) {
+        val ret = new float[data.length];
+        for (int i = 0; i < data.length; i++)
+            ret[i] = data[i] < 0 ? 0 : data[i];
+        return ret;
+    }
+
+
+    public static double[] cutBelowZero(double[] data) {
+        val ret = new double[data.length];
         for (int i = 0; i < data.length; i++)
             ret[i] = data[i] < 0 ? 0 : data[i];
         return ret;
@@ -2139,7 +2256,7 @@ public class ArrayUtil {
 
     /**
      * Note this byte array conversion is a simple cast and not a true
-     * cast. Use {@link #toByteArray(longArray[])} for a true cast.
+     * cast. Use {@link #toByteArraySimple(longArray[])} for a true cast.
      * @param longArray
      * @return
      */
@@ -3468,6 +3585,19 @@ public class ArrayUtil {
         return nums;
     }
 
+    public static double[] toDouble(boolean[] data) {
+        double[] ret = new double[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = data[i] ? 1.0 : 0.0;
+        return ret;
+    }
+
+    public static double[] toDouble(byte[] data) {
+        double[] ret = new double[data.length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = data[i];
+        return ret;
+    }
     public static double[] toDouble(int[] data) {
         double[] ret = new double[data.length];
         for (int i = 0; i < ret.length; i++)

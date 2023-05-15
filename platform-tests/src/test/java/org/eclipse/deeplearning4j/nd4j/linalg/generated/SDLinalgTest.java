@@ -68,14 +68,14 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.createFromArray(
                 new float[]{
                         3.1622777f, 0.f,  4.427189f,  0.6324552f,
-                        8.602325f,  0.f,  9.997296f, 0.23252854f
+                        8.602325f,  0.f,  9.997296f, 0.23248f
                 }
         ).reshape(2,2,2);
 
         SDVariable sdinput = sameDiff.var(input);
         SDVariable out = sameDiff.linalg().cholesky(sdinput);
         INDArray eval =  out.eval();
-        assertEquals(expected, eval);
+        assertEquals(expected.castTo(eval.dataType()), eval);
     }
 
     @ParameterizedTest

@@ -32,7 +32,7 @@ namespace helpers {
 // calculate factorial
 template <typename T>
 static SD_INLINE T getFactorial(const int n) {
-  if (n < 0) throw std::runtime_error("factorial is not defined for negative number !");
+  if (n < 0) THROW_EXCEPTION("factorial is not defined for negative number !");
 
   if (n == 0 || n == 1) return (T)1.f;
 

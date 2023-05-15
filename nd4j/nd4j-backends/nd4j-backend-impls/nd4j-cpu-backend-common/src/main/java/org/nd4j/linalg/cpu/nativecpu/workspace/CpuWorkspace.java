@@ -115,7 +115,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
     @Override
     public long requiredMemoryPerArray(INDArray arr) {
-        long ret =  getAligned(arr.length() * arr.dataType().width()) + getAligned(arr.shapeInfoJava().length * DataType.INT64.width());
+        long ret =  getAligned(arr.length() * arr.dataType().width());
         return ret;
     }
 

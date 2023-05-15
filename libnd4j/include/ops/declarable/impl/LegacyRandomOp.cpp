@@ -335,7 +335,7 @@ ShapeList* LegacyRandomOp::calculateOutputShape(ShapeList* inputShape, sd::graph
 
     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', zShapeVector));
   } else
-    throw std::runtime_error("LegacyRandomOp: Unknown input data type!");
+    THROW_EXCEPTION("LegacyRandomOp: Unknown input data type!");
 }
 
 sd::Status LegacyRandomOp::execute(Context* block) { return DeclarableOp::execute(block); }

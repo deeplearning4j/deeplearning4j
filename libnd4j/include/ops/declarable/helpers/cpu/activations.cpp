@@ -125,7 +125,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
 ///////////////////////////////////////////////////////////////////
 void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
   if (!input.isVector() || !output.isVector())
-    throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
+    THROW_EXCEPTION("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
 
   auto xType = input.dataType();
   BUILD_SINGLE_SELECTOR(xType, logSoftMaxForVector_,

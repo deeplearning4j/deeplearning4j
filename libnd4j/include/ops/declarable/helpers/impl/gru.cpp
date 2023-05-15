@@ -104,7 +104,7 @@ void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArr
              NDArray* gates, NDArray* h, bool linearBeforeReset) {
 
   if(linearBeforeReset) {
-    throw std::runtime_error("GRU: Linear before reset not implemented. Please set to false.");
+    THROW_EXCEPTION("GRU: Linear before reset not implemented. Please set to false.");
   }
 
   // Inputs:

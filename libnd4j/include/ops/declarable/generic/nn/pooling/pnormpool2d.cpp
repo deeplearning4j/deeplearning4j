@@ -38,21 +38,21 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
   REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D op: input should have rank of 4, but got %i instead",
                input->rankOf());
 
-  auto kY = INT_ARG(0);
-  auto kX = INT_ARG(1);
-  auto sY = INT_ARG(2);
-  auto sX = INT_ARG(3);
-  auto pY = INT_ARG(4);
-  auto pX = INT_ARG(5);
-  auto dY = INT_ARG(6);
-  auto dX = INT_ARG(7);
+  LongType kY = INT_ARG(0);
+  LongType kX = INT_ARG(1);
+  LongType sY = INT_ARG(2);
+  LongType sX = INT_ARG(3);
+  LongType pY = INT_ARG(4);
+  LongType pX = INT_ARG(5);
+  LongType dY = INT_ARG(6);
+  LongType dX = INT_ARG(7);
   bool isSameMode = static_cast<bool>(INT_ARG(8));
   auto extraParam0 = INT_ARG(9);
 
   REQUIRE_TRUE(dY != 0 && dX != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dY, dX);
 
-  int oY = 0;
-  int oX = 0;
+  LongType oY = 0;
+  LongType oX = 0;
 
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // 1-NHWC, 0-NCHW
 
@@ -61,8 +61,8 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
     output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
-  const auto inY = static_cast<int>(input->sizeAt(2));
-  const auto inX = static_cast<int>(input->sizeAt(3));
+  const LongType inY = static_cast<LongType>(input->sizeAt(2));
+  const LongType inX = static_cast<LongType>(input->sizeAt(3));
 
   ConvolutionUtils::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
@@ -95,27 +95,27 @@ DECLARE_SHAPE_FN(pnormpool2d) {
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same
   // mode;
   std::vector<sd::LongType> argI = *(block.getIArguments());
-  int kH = INT_ARG(0);
-  int kW = INT_ARG(1);
-  int sH = INT_ARG(2);
-  int sW = INT_ARG(3);
-  int pH = INT_ARG(4);
-  int pW = INT_ARG(5);
-  int dH = INT_ARG(6);
-  int dW = INT_ARG(7);
+  LongType kH = INT_ARG(0);
+  LongType kW = INT_ARG(1);
+  LongType sH = INT_ARG(2);
+  LongType sW = INT_ARG(3);
+  LongType pH = INT_ARG(4);
+  LongType pW = INT_ARG(5);
+  LongType dH = INT_ARG(6);
+  LongType dW = INT_ARG(7);
   int isSameMode = INT_ARG(8);
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // 1-NHWC, 0-NCHW
 
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "PNORMPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-  int bS = shapeOf[0];
-  int iC = isNCHW ? shapeOf[1] : shapeOf[3];
-  int iH = isNCHW ? shapeOf[2] : shapeOf[1];
-  int iW = isNCHW ? shapeOf[3] : shapeOf[2];
+  LongType bS = shapeOf[0];
+  LongType iC = isNCHW ? shapeOf[1] : shapeOf[3];
+  LongType iH = isNCHW ? shapeOf[2] : shapeOf[1];
+  LongType iW = isNCHW ? shapeOf[3] : shapeOf[2];
   char order = shape::order(inShape);  // output order must be equal to input order
 
   // calculate output Height/Width
-  int oH, oW;
+  LongType oH, oW;
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
   // allocate memory for new shape
   sd::LongType newShape[4];
@@ -147,14 +147,14 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
   auto gradO = INPUT_VARIABLE(1);    // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto gradI = OUTPUT_NULLIFIED(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
-  int kH = INT_ARG(0);          // filter(kernel) height
-  int kW = INT_ARG(1);          // filter(kernel) width
-  int sH = INT_ARG(2);          // strides height
-  int sW = INT_ARG(3);          // strides width
-  int pH = INT_ARG(4);          // paddings height
-  int pW = INT_ARG(5);          // paddings width
-  int dH = INT_ARG(6);          // dilations height
-  int dW = INT_ARG(7);          // dilations width
+  LongType kH = INT_ARG(0);          // filter(kernel) height
+  LongType kW = INT_ARG(1);          // filter(kernel) width
+  LongType sH = INT_ARG(2);          // strides height
+  LongType sW = INT_ARG(3);          // strides width
+  LongType pH = INT_ARG(4);          // paddings height
+  LongType pW = INT_ARG(5);          // paddings width
+  LongType dH = INT_ARG(6);          // dilations height
+  LongType dW = INT_ARG(7);          // dilations width
   int isSameMode = INT_ARG(8);  // 0-VALID, 1-SAME
   int pnorm = INT_ARG(9);
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // 1-NHWC, 0-NCHW
@@ -166,9 +166,9 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
                input->rankOf());
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "PNORMPOOL2D_BP op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
-  int bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
@@ -191,36 +191,6 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
     gradO = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
-  // if(isSameMode)                       // SAME
-  //     ConvolutionUtils<T>::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
-
-  // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());
-  // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH,
-  // oW, kH, kW] -> [bS, iC, kH, kW, oH, oW] NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(),
-  // 1}); NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW}); NDArray<T>
-  // pNorm(columns2d->shapeInfo(), block.getWorkspace());
-
-  // input->template applyTransform<simdOps::Im2col<T>>(columns, std::vector<T>({(T)kH, (T)kW, (T)sH, (T)sW, (T)pH,
-  // (T)pW, (T)dH, (T)dW, (T)0.f, (T)0.f}).data());
-
-  // columns2d->template applyTransform<simdOps::Abs<T>>(&pNorm);
-  // pNorm.template applyTransform<simdOps::Pow<T>>(&pNorm, std::vector<T>({(T)pnorm}).data());
-
-  // NDArray<T>* denomVec = pNorm.sum({1});
-  // denomVec->template applyTransform<simdOps::Pow<T>>(std::vector<T>({(T)1. - (T)1. / pnorm}).data());
-  // denomVec->template applyScalar<simdOps::Max<T>>(eps); // in case of 0
-  // denomVec->template applyPairwiseTransform<simdOps::ReverseDivide<T>>(gradOVector, denomVec, nullptr);
-
-  // if(pnorm != 2) {
-  //     T extraParams[] = {(T)1. - (T)2. / pnorm};
-  //     pNorm.template applyTransform<simdOps::Pow<T>>(std::vector<T>({(T)1. - (T)2. / pnorm}).data());
-  //     *columns2d *= pNorm;
-  // }
-
-  // columns2d->muliColumnVector(denomVec);
-
-  // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH,
-  // (T)iW, (T)dH, (T)dW}).data());
 
   ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
 

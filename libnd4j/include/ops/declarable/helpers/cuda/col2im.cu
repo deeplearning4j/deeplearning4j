@@ -31,8 +31,8 @@ namespace helpers {
 // columns [bS, iC, kH, kW, oH, oW] to be de-convoluted to image [bS, iC, iH, iW]
 template <typename T>
 static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colShapeInfo, void* image,
-                                 const sd::LongType* imShapeInfo, const int sH, const int sW, const int pH,
-                                 const int pW, const int dH, const int dW) {
+                                 const sd::LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+                                 const LongType pW, const LongType dH, const LongType dW) {
   const T* col = reinterpret_cast<const T*>(columns);
   T* im = reinterpret_cast<T*>(image);
 
@@ -67,11 +67,11 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
     const sd::Unsigned imH = coords[2] + pH;
     const sd::Unsigned imW = coords[3] + pW;
 
-    const sd::Unsigned colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
-    const sd::Unsigned colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
+    const sd::LongType colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
+    const sd::LongType colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    const sd::Unsigned colHend = sd::math::sd_min<sd::Unsigned>(imH / sH + 1, oH);
-    const sd::Unsigned colWend = sd::math::sd_min<sd::Unsigned>(imW / sW + 1, oW);
+    const sd::LongType colHend = sd::math::sd_min<sd::LongType>(imH / sH + 1, oH);
+    const sd::LongType colWend = sd::math::sd_min<sd::LongType>(imW / sW + 1, oW);
 
     T val = 0;
 
@@ -117,42 +117,42 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
   auto imOrder = shape::order(const_cast<sd::LongType*>(imShapeInfo));
   auto imStride = shape::stride(const_cast<sd::LongType*>(imShapeInfo));
 
-  int bS = imShape[0];
-  int iC = imShape[1];
-  int iH = imShape[2];
-  int iW = imShape[3];
+  LongType bS = imShape[0];
+  LongType iC = imShape[1];
+  LongType iH = imShape[2];
+  LongType iW = imShape[3];
 
-  int oH = colShape[4];  //(iH + 2 * pH - kH) / sW + 1;
-  int oW = colShape[5];  //(iW + 2 * pW - kW) / sH + 1;
+  LongType oH = colShape[4];  //(iH + 2 * pH - kH) / sW + 1;
+  LongType oW = colShape[5];  //(iW + 2 * pW - kW) / sH + 1;
 
   int n = bS * iC * iH * iW;
 
   // Effective kernel size, accounting for dilation
-  int kHeff = kH + (kH - 1) * (dH - 1);
-  int kWeff = kW + (kW - 1) * (dW - 1);
+  LongType kHeff = kH + (kH - 1) * (dH - 1);
+  LongType kWeff = kW + (kW - 1) * (dW - 1);
 
   for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
     T val = 0;
 
-    int w_im = i % iW + pW;
-    int h_im = (i / iW) % iH + pH;
-    int c_im = i / (iW * iH);
-    int b = c_im / iC;
-    int c = c_im % iC;
+    LongType w_im = i % iW + pW;
+    LongType h_im = (i / iW) % iH + pH;
+    LongType c_im = i / (iW * iH);
+    LongType b = c_im / iC;
+    LongType c = c_im % iC;
 
     // compute the start and end of the output
     // These are the indexes for dimensions ??? in the 6d col matrix
-    int w_col_start = (w_im < kWeff) ? 0 : (w_im - kWeff) / sW + 1;
-    int w_col_end = sd::math::sd_min<int>(w_im / sW + 1, oW);
+    LongType w_col_start = (w_im < kWeff) ? 0 : (w_im - kWeff) / sW + 1;
+    LongType w_col_end = sd::math::sd_min<LongType>(w_im / sW + 1, oW);
 
-    int h_col_start = (h_im < kHeff) ? 0 : (h_im - kHeff) / sH + 1;
-    int h_col_end = sd::math::sd_min<int>(h_im / sH + 1, oH);
+    LongType h_col_start = (h_im < kHeff) ? 0 : (h_im - kHeff) / sH + 1;
+    LongType h_col_end = sd::math::sd_min<LongType>(h_im / sH + 1, oH);
 
     // Iterate over col entries in the 6d array... these are added up
     for (int colH = h_col_start; colH < h_col_end; colH += 1) {
       for (int colW = w_col_start; colW < w_col_end; colW += 1) {
-        int kRow = (h_im - colH * sH);
-        int kCol = (w_im - colW * sW);
+        LongType kRow = (h_im - colH * sH);
+        LongType kCol = (w_im - colW * sW);
 
         if (kRow % dH == 0 && kCol % dW == 0) {
           kRow /= dH;
@@ -165,8 +165,8 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
       }
     }
 
-    int i_f = 0;
-    int i_c = i;
+    LongType i_f = 0;
+    LongType i_c = i;
     for (int dim = 3; dim >= 0; dim--) {
       i_f += (i_c % imShape[dim]) * imStride[dim];
       i_c = i_c / imShape[dim];
@@ -180,21 +180,21 @@ SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::Lo
 template <typename T>
 static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                const cudaStream_t* stream, const void* columns, const sd::LongType* colShapeInfo,
-                               void* image, const sd::LongType* imShapeInfo, const int sH, const int sW, const int pH,
-                               const int pW, const int dH, const int dW) {
+                               void* image, const sd::LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+                               const LongType pW, const LongType dH, const LongType dW) {
   // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
   col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH,
                                                                         sW, pH, pW, dH, dW);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH,
-            const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const LongType sH, const LongType sW, const LongType pH,
+            const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   PointersManager manager(&context, "col2im");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (im.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::Unsigned) * threadsPerBlock + 256;
+  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
   NDArray::prepareSpecialUse({&im}, {&col});
   BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher,

@@ -91,7 +91,12 @@ using namespace sd;
 #include "exceptions/backward.hpp"
 
 
-
+//note this is a c++ 17 feature
+#ifndef INSTRUMENT_FILE_DEF
+#pragma once
+#define INSTRUMENT_FILE_DEF 1
+FILE* instrumentFile = nullptr;
+#endif
 
 // this is mainly a c based function.
 extern "C" {
@@ -177,23 +182,23 @@ void closeInstrumentOut() {
 
 
 
-SD_LIB_EXPORT int contextNumInputs(void *contextPointer) {
+int contextNumInputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->width();
 }
 
-SD_LIB_EXPORT int contextNumOutputs(void *contextPointer) {
+int contextNumOutputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->outputWidth();
 }
 
 
-SD_LIB_EXPORT int numInputs(void *execTrace) {
+int numInputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers->size();
 }
 
-SD_LIB_EXPORT int numOutputs(void *execTrace) {
+int numOutputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers->size();
 }
@@ -417,7 +422,7 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
     auto dimension = reinterpret_cast<sd::LongType *>(dbDimension->primary());
-    auto dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    auto dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
 
     auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(hZShapeInfo, dimension, dimensionLength);
@@ -505,17 +510,7 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    if(shapeInfo[i] == nullptr)
-      throw std::runtime_error("Input shape at index was null!");
-
-
-    sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
-    if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
-    else {
-      setGraphContextInputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
+    ptr->setInputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
   }
 
 }
@@ -526,13 +521,7 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buff
   OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
   for(int i = 0; i < numArrays; i++) {
-
-    if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
-                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    } else {
-      setGraphContextOutputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
-    }
+    ptr->setOutputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
 
   }
 

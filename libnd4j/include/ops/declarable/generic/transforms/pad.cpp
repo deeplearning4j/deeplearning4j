@@ -102,7 +102,7 @@ DECLARE_SHAPE_FN(pad) {
   auto paddings = INPUT_VARIABLE(1);
   const int rank = inputShapeInfo[0];
   if(rank < 0 || rank > SD_MAX_RANK) {
-    throw std::runtime_error("PAD op: Bad shape buffer. Likely corrupt. Please ensure buffer was not deallocated.");
+    THROW_EXCEPTION("PAD op: Bad shape buffer. Likely corrupt. Please ensure buffer was not deallocated.");
   }
   // paddings validation
   const std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};

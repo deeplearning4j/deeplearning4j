@@ -132,7 +132,7 @@ SD_DEVICE void ScalarBoolTransform<X, Z>::transformCuda(
   // tad preparation
   auto tadEws = shape::elementWiseStride(tadShapeInfo);
   auto zEws = shape::elementWiseStride(tadShapeInfoZ);
-  auto tadLength = shape::length(tadShapeInfo);  // shape::tadLength(xShapeInfo, dimension, dimensionLength);
+  auto tadLength = shape::length(tadShapeInfo);
   auto numTads = shape::length(xShapeInfo) / tadLength;
 
   if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {

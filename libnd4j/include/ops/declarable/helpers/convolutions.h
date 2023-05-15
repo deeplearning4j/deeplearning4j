@@ -37,9 +37,9 @@ enum PoolingType {
 
 class SD_LIB_HIDDEN ConvolutionUtils {
  public:
-  static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW,
-                                       const int pH, const int pW, const int dH, const int dW, const int iH,
-                                       const int iW, const int paddingMode) {
+  static inline void calcOutSizePool2D(sd::LongType& oH, sd::LongType& oW, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW,
+                                       const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const sd::LongType iH,
+                                       const sd::LongType iW, const sd::LongType paddingMode) {
     if (paddingMode == 0) {  // valid
       // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
       // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
@@ -54,10 +54,10 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
   }
 
-  static inline void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW,
-                                       const int sD, const int sH, const int sW, const int pD, const int pH,
-                                       const int pW, const int dD, const int dH, const int dW, const int iD,
-                                       const int iH, const int iW, const int paddingMode) {
+  static inline void calcOutSizePool3D(LongType& oD, LongType& oH, LongType& oW, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
+                                       const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH,
+                                       const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW, const sd::LongType iD,
+                                       const sd::LongType iH, const sd::LongType iW, const int paddingMode) {
     if (paddingMode == 0) {  // valid
       oD = (iD - ((kD - 1) * dD + 1) + 2 * pD) / sD + 1;
       oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
@@ -74,8 +74,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
   }
 
-  static inline void calcPadding2D(LongType& pH, LongType& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW,
-                                   int dH, int dW, const int paddingMode = 1 /* default is same mode*/) {
+  static inline void calcPadding2D(LongType& pH, LongType& pW, LongType oH, LongType oW, LongType iH, LongType iW, LongType kH, LongType kW, LongType sH, LongType sW,
+                                   LongType dH, LongType dW, const int paddingMode = 1 /* default is same mode*/) {
     if (paddingMode == 0)  // valid
       return;
 
@@ -93,9 +93,9 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
   }
 
-  static inline void calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD,
-                                   const int iH, const int iW, const int kD, const int kH, const int kW, const int sD,
-                                   const int sH, const int sW, const int dD, const int dH, const int dW,
+  static inline void calcPadding3D(LongType& pD, LongType& pH, LongType& pW, const sd::LongType oD, const sd::LongType oH, const sd::LongType oW, const sd::LongType iD,
+                                   const sd::LongType iH, const sd::LongType iW, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD,
+                                   const sd::LongType sH, const sd::LongType sW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                                    const int paddingMode = 1 /* default is same mode*/) {
     if (paddingMode == 0)  // valid
       return;
@@ -118,9 +118,9 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   // calculation of output height and width in 2D deconvolution procedure
-  static inline void calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW,
-                                         const int pH, const int pW, const int dH, const int dW, const int iH,
-                                         const int iW, const int paddingMode) {
+  static inline void calcOutSizeDeconv2D(LongType& oH, LongType& oW, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW,
+                                         const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const sd::LongType iH,
+                                         const sd::LongType iW, const int paddingMode) {
     if (paddingMode) {
       oH = sH * iH;
       oW = sW * iW;
@@ -134,10 +134,10 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   // calculation of output height and width in 3D deconvolution procedure
-  static inline void calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW,
-                                         const int sD, const int sH, const int sW, const int pD, const int pH,
-                                         const int pW, const int dD, const int dH, const int dW, const int iD,
-                                         const int iH, const int iW, const int paddingMode) {
+  static inline void calcOutSizeDeconv3D(LongType& oD, LongType& oH, LongType& oW, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
+                                         const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH,
+                                         const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW, const sd::LongType iD,
+                                         const sd::LongType iH, const sd::LongType iW, const int paddingMode) {
     if (paddingMode) {
       oD = sD * iD;
       oH = sH * iH;
@@ -155,17 +155,17 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   // evaluates sizes values and indexes using input and output arrays depending on data format
   static inline void getSizesAndIndexesConv2d(const bool isNCHW, const int wFormat, const NDArray& input,
-                                              const NDArray& output, int& bS, int& iC, int& iH, int& iW, int& oC,
-                                              int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC,
-                                              int& indWkH, int& indOoH) {
+                                              const NDArray& output, LongType& bS, LongType& iC, LongType& iH, LongType& iW, LongType& oC,
+                                              LongType& oH, LongType& oW, LongType& indIOioC, LongType& indIiH, LongType& indWiC, LongType& indWoC,
+                                              LongType& indWkH, LongType& indOoH) {
     getSizesAndIndexesConv2d(isNCHW, wFormat, input.shapeInfo(), output.shapeInfo(), bS, iC, iH, iW, oC, oH, oW,
                              indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
   }
 
   static inline void getSizesAndIndexesConv2d(const bool isNCHW, const int wFormat, const sd::LongType* inShapeInfo,
-                                              const sd::LongType* outShapeInfo, int& bS, int& iC, int& iH, int& iW,
-                                              int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC,
-                                              int& indWoC, int& indWkH, int& indOoH) {
+                                              const sd::LongType* outShapeInfo, LongType& bS, LongType& iC, LongType& iH, LongType& iW,
+                                              LongType& oC, LongType& oH, LongType& oW, LongType& indIOioC, LongType& indIiH, LongType& indWiC,
+                                              LongType& indWoC, LongType& indWkH, LongType& indOoH) {
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] (wFormat = 0), [oC, iC, kH, kW] (wFormat = 1), [oC, kH, kW, iC] (wFormat = 2)
     // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
@@ -205,9 +205,9 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   // evaluates sizes values and indexes using input and output arrays depending on data format
   static inline void getSizesAndIndexesConv3d(const bool isNCDHW, const int wFormat, const NDArray& input,
-                                              const NDArray& output, int& bS, int& iC, int& iD, int& iH, int& iW,
-                                              int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD,
-                                              int& indWiC, int& indWoC, int& indWkD) {
+                                              const NDArray& output, LongType& bS, LongType& iC, LongType& iD, LongType& iH, LongType& iW,
+                                              LongType& oC, LongType& oD, LongType& oH, LongType& oW, LongType& indIOioC, LongType& indIOioD,
+                                              LongType& indWiC, LongType& indWoC, LongType& indWkD) {
     // input   [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     // weights [kD, kH, kW, iC, oC] (wFormat = 0), [oC, iC, kD, kH, kW] (wFormat = 1), [oC, kD, kH, kW, iC] (wFormat =
     // 2) output  [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
@@ -245,59 +245,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     oW = output.sizeAt(indIOioD + 2);  // output width
   }
 
-  // static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const
-  // int kH, const int kW, const int sH, const int sW, const int paddingMode, int& pH, int& pW, int& dH, int& dW) {
-
-  //     if(kH != 1) {
-  //         if(paddingMode) {
-  //             pH = (oH - 1) * sH - iH + kH - pH;
-  //             dH = dH - 1;
-  //         }
-  //         else
-  //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
-  //     }
-  //     if(kW != 1) {
-  //         if(paddingMode) {
-  //             pW = (oW - 1) * sW - iW + kW - pW;
-  //             dW = dW - 1;
-  //         }
-  //         else
-  //             dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
-  //     }
-  // }
-
-  // static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const
-  // int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int
-  // paddingMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
-
-  //     if(kD != 1) {
-  //         if(paddingMode) {
-  //             pD = (oD - 1) * sD - iD + kD - pD;
-  //             dD = dD - 1;
-  //         }
-  //         else
-  //             dD = (iD + 2*pD - (oD - 1) * sD - kD) / (kD - 1);
-  //     }
-  //     if(kH != 1) {
-  //         if(paddingMode) {
-  //             pH = (oH - 1) * sH - iH + kH - pH;
-  //             dH = dH - 1;
-  //         }
-  //         else
-  //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
-  //     }
-  //     if(kW != 1) {
-  //         if(paddingMode) {
-  //             pW = (oW - 1) * sW - iW + kW - pW;
-  //             dW = dW - 1;
-  //         }
-  //         else
-  //             dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
-  //     }
-  // }
-
-  static std::vector<sd::LongType> expectWeightsShape(const int wFormat, const int kH, const int kW, const int iC,
-                                                      const int oC) {
+  static std::vector<sd::LongType> expectWeightsShape(const int wFormat, const sd::LongType kH, const sd::LongType kW, const sd::LongType iC,
+                                                      const sd::LongType oC) {
     if (0 == wFormat) return std::vector<sd::LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<sd::LongType>({oC, iC, kH, kW});
@@ -305,8 +254,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     return std::vector<sd::LongType>({oC, kH, kW, iC});
   }
 
-  static std::vector<sd::LongType> expectWeightsShape(const int wFormat, const int kD, const int kH, const int kW,
-                                                      const int iC, const int oC) {
+  static std::vector<sd::LongType> expectWeightsShape(const int wFormat, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
+                                                      const sd::LongType iC, const sd::LongType oC) {
     if (0 == wFormat) return std::vector<sd::LongType>({kD, kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<sd::LongType>({oC, iC, kD, kH, kW});
@@ -315,67 +264,63 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static void conv2d(sd::graph::Context& context, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                     NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW,
-                     const int dH, const int dW, const int paddingMode, const int isNCHW, const int wFormat);
+                     NDArray* output, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, LongType pH, LongType pW,
+                     const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCHW, const int wFormat);
 
-  // static void conv2d(sd::graph::Context & block, const std::vector<NDArray*>& inArrs, NDArray* output, const
-  // std::vector<int>& intArgs);
 
-  // static void conv2dBP(sd::graph::Context & block, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>&
-  // outArrs, const std::vector<int>& intArgs);
 
   static void conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW,
-                       const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const sd::LongType kH, const sd::LongType kW,
+                       const sd::LongType sH, const sd::LongType sW, LongType pH, LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode,
                        const int isNCHW, const int wFormat);
 
   static void depthwiseConv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                              const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH,
-                              const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                              const NDArray* bias, NDArray* output, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH,
+                              const sd::LongType sW, LongType pH, LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode,
                               const int isNCHW, const int wFormat);
 
   static void depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
                                 const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
-                                NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW,
-                                const int dH, const int dW, const int paddingMode, const int isNCHW, const int wFormat);
+                                NDArray* gradB, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, LongType pH, LongType pW,
+                                const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCHW, const int wFormat);
 
   static void sconv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
-                      const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const int kH, const int kW,
-                      const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
+                      const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const sd::LongType kH, const sd::LongType kW,
+                      const sd::LongType sH, const sd::LongType sW, LongType pH, LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat);
 
-  static void vol2col(sd::graph::Context& block, const NDArray& vol, NDArray& col, const int sD, const int sH,
-                      const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+  static void vol2col(sd::graph::Context& block, const NDArray& vol, NDArray& col, const sd::LongType sD, const sd::LongType sH,
+                      const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW);
 
-  static void col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH,
-                      const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+  static void col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const sd::LongType sD, const sd::LongType sH,
+                      const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW);
 
-  static void upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorH,
-                           const int factorW, const bool isNCHW);
+  static void upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const sd::LongType factorH,
+                           const sd::LongType factorW, const bool isNCHW);
 
-  static void upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD,
-                           const int factorH, const int factorW, const bool isNCDHW);
+  static void upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const sd::LongType factorD,
+                           const sd::LongType factorH, const sd::LongType factorW, const bool isNCDHW);
 
   static void upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW);
 
   static void upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW);
 
-  static void pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW,
-                        const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
+  static void pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const sd::LongType kH, const sd::LongType kW,
+                        const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW,
                         const PoolingType poolingMode, const int extraParam0);
 
-  static void pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH,
-                        const int kW, const int sD, const int sH, const int sW, const int pD, const int pH,
-                        const int pW, const int dD, const int dH, const int dW, const int poolingMode,
+  static void pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const sd::LongType kD, const sd::LongType kH,
+                        const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH,
+                        const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW, const int poolingMode,
                         const int extraParam0);
 
   static void pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                          const int kH, const int kW, const int sH, const int sW, const int pH, const int pW,
-                          const int dH, const int dW, const int poolingMode, const int extraParam0);
+                          const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
+                          const sd::LongType dH, const sd::LongType dW, const int poolingMode, const int extraParam0);
 
   static void pooling3dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                          const int kD, const int kH, const int kW, const int sD, const int sH, const int sW,
-                          const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
+                          const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW,
+                          const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                           const int poolingMode, const int extraParam0);
 };
 

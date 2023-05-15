@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -64,6 +65,7 @@ public class CloseNetworkTests extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Crashes all tests mid run on openblas")
     public void testCloseMLN() {
         for (boolean train : new boolean[]{false, true}) {
             for (boolean test : new boolean[]{false, true}) {
@@ -117,6 +119,7 @@ public class CloseNetworkTests extends BaseDL4JTest {
     }
 
     @Test
+    @Disabled("Crashes all tests mid run on openblas")
     public void testCloseCG() {
         for (boolean train : new boolean[]{false, true}) {
             for (boolean test : new boolean[]{false, true}) {

@@ -235,8 +235,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
                 array2.leverageTo("EXT");
 
-                //64 is  an extra shape buffer being allocated
-                assertEquals(reqMemory * 2 + 64, wsOne.getPrimaryOffset());
+                assertEquals(reqMemory * 2, wsOne.getPrimaryOffset());
             }
         }
     }
@@ -338,9 +337,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
             array2.assign(array1);
 
-            long reqMemory = wsI.requiredMemoryPerArray(array1);
-            //multiply by 2 for the dup() calling assign
-            assertEquals(reqMemory * 2 , wsI.getPrimaryOffset());
+             long reqMemory = wsI.requiredMemoryPerArray(array1);
+            assertEquals(reqMemory , wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 
             INDArray array3 = Nd4j.createUninitializedDetached(DataType.FLOAT, new long[0]);

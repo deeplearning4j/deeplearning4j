@@ -59,8 +59,8 @@ DECLARE_SHAPE_FN(upsampling2d) {
   REQUIRE_TRUE(inputShapeInfo[0] == 4, 0, "UPSAMPLING2D op: input should be 4D, but got %i instead!",
                inputShapeInfo[0]);
 
-  const int factorH = INT_ARG(0);
-  const int factorW = INT_ARG(1);
+  const LongType factorH = INT_ARG(0);
+  const LongType factorW = INT_ARG(1);
   const int isNCHW = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;  // INT_ARG(2): 0-NCHW,  1-NHWC
 
   sd::LongType *outputShapeInfo = nullptr;
@@ -97,8 +97,6 @@ CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 0) {
 
   const int isNCHW = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;  // INT_ARG(0): 0-NCHW,  1-NHWC
 
-  // REQUIRE_TRUE(input->rankOf() == 4, 0, "UPSAMPLING2D_BP op: input array must be 4D, but got %i instead!",
-  // input->rankOf());
   REQUIRE_TRUE(gradO->rankOf() == 4, 0, "UPSAMPLING2D_BP op: output's gradient array must be 4D, but got %i instead!",
                gradO->rankOf());
   REQUIRE_TRUE(gradI->rankOf() == 4, 0, "UPSAMPLING2D_BP op: input's gradient array must be 4D, but got %i instead!",

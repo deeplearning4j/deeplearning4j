@@ -3419,7 +3419,7 @@ public class Shape {
             return new long[] {Integer.MAX_VALUE};
 
         if(rank == 0) {
-            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)){
+            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)) {
                 throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
             }
             if(axis[0] == Integer.MAX_VALUE)

@@ -117,7 +117,7 @@ class BroadcastBool {
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo, void *extraParams,
                    sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset,
-                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
+                   const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);
 
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams);
@@ -126,7 +126,7 @@ class BroadcastBool {
                           const sd::LongType *yShapeInfo, void *result, const sd::LongType *resultShapeInfo,
                           void *extraParams, sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
-                          const sd::LongType *tadOffsetZ, uint64_t start, uint64_t stop);
+                          const sd::LongType *tadOffsetZ, sd::LongType start, sd::LongType stop);
 
   /**
    * CPU execution

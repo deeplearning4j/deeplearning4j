@@ -5106,7 +5106,8 @@ public class Nd4j {
      * @return the scalar nd array
      */
     public static INDArray scalar(boolean value) {
-        return scalar(DataType.BOOL, value ? 1 : 0);
+        val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+        return INSTANCE.create(new boolean[] {value}, new long[] {}, new long[] {}, DataType.BOOL, ws);
     }
 
     /**
@@ -6750,7 +6751,7 @@ public class Nd4j {
         return getExecutioner().exec(op);
     }
 
-    public static INDArray exec(Op op, OpContext context){
+    public static INDArray exec(Op op, OpContext context) {
         return getExecutioner().exec(op, context);
     }
 

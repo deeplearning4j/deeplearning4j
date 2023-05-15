@@ -85,7 +85,7 @@ void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
                                 const double dEpsilon) {
   const T lr = static_cast<T>(dLr);
   const T rmsDecay = static_cast<T>(dRmsDecay);
-  const T epsilon = static_cast<T>(dEpsilon);
+  T epsilon = static_cast<T>(dEpsilon);
   //fp16 to prevent underflow
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);

@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.shape.Shape;
 @Data
 public class TadDescriptor {
     private int dimensionLength;
-    private int[] dimension;
+    private long[] dimension;
     private long[] shape;
 
     /**
@@ -41,7 +41,7 @@ public class TadDescriptor {
      *              to get the shape info from
      * @param dimension the dimensions for the TAD
      */
-    public TadDescriptor(INDArray array, int[] dimension) {
+    public TadDescriptor(INDArray array, long[] dimension) {
         this.dimensionLength = dimension == null ? 0 : dimension.length;
         this.dimension = dimension;
 

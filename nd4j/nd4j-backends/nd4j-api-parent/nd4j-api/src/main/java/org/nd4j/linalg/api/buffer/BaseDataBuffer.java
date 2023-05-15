@@ -33,6 +33,9 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -683,7 +686,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case UINT32:
                 //Treat unsigned integer (UINT32) as 4 bytes
-                byte[] temp3 = new byte[(int)(4*length)];
+                byte[] temp3 = new byte[(int)(4 * length)];
                 asNio().get(temp3);
                 try {
                     if(ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
@@ -906,7 +909,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) ((UByteIndexer) indexer).get(i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
-            case UINT64:  //Fall through
+            case UINT64:
                 return ((ULongIndexer) indexer).get(i).floatValue();
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(i);
@@ -1667,6 +1670,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //note here that the final put will take care of the offset
         for (long i = offset; i < length(); i++)
             put(i, value.doubleValue());
+
     }
 
     @Override
@@ -1751,16 +1755,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean equals(Object o) {
-        // FIXME: this is BAD. it takes too long to work, and it breaks general equals contract
         if (o instanceof DataBuffer) {
             DataBuffer d = (DataBuffer) o;
             if (d.length() != length())
                 return false;
-            for (int i = 0; i < length(); i++) {
-                double eps = Math.abs(getDouble(i) - d.getDouble(i));
-                if (eps > 1e-12)
-                    return false;
-            }
+
+          if(d.dataType() != dataType())
+              return false;
+            OpContext ctx = Nd4j.getExecutioner().buildContext();
+            ctx.setInputArrays(Nd4j.create(d),Nd4j.create(this));
+            INDArray exec = Nd4j.getExecutioner().exec(new Eps(Nd4j.create(d), Nd4j.create(this), Nd4j.createUninitialized(DataType.BOOL, length())));
+            return exec.all();
         }
 
         return true;

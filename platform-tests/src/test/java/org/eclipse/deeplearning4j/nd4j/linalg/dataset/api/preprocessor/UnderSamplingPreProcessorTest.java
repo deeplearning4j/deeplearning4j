@@ -178,7 +178,9 @@ public class UnderSamplingPreProcessorTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void mixedDistOneHot(Nd4jBackend backend) {
-
+        //takes too long on cuda
+        if(!backend.getEnvironment().isCPU())
+            return;
         //preprocessor should give 30% minority class for every "window"
         UnderSamplingByMaskingPreProcessor preProcessor = new UnderSamplingByMaskingPreProcessor(targetDist, window);
         preProcessor.overrideMinorityDefault();

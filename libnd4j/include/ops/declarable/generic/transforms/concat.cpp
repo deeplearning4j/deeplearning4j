@@ -185,7 +185,7 @@ DECLARE_SHAPE_FN(concat) {
       error += std::string(" ");
       error += std::string(" did not have same rank. Expected rank: " + rank);
       error += std::string(" but was: " + shape::rank(arrShapes.at(i)));
-      throw std::runtime_error(error.c_str());
+      THROW_EXCEPTION(error.c_str());
     }
 
     for (int dim = 0; dim < rank; ++dim) {
@@ -197,7 +197,7 @@ DECLARE_SHAPE_FN(concat) {
           error += std::string(" ");
           error += std::string(" did not have same dimension. Expected dimension : " + arrShapes.at(0)[dim + 1]);
           error += std::string(" but was: " + arrShapes.at(0)[dim + 1]);
-          throw std::runtime_error(error.c_str());
+          THROW_EXCEPTION(error.c_str());
         }
       }
     }

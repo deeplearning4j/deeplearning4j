@@ -34,7 +34,6 @@ namespace helpers {
 // segment max
 template <typename T>
 static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
-  // int numClasses = output->sizeAt(0);
   // if input is a vector: (as if in doc sample)
   sd::LongType idx = indices->e<sd::LongType>(0);
   if (input->isVector() || input->isScalar()) {
@@ -56,7 +55,7 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
     auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
     auto numOfClasses = output->sizeAt(0);  // number of classes
-    std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+    std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
     auto maxT = listOfOutTensors.at(idx);
 
     // int pos = 0;
@@ -79,7 +78,6 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
 // segmen min
 template <typename T>
 static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
-  // int numClasses = output->sizeAt(0);
   // if input is a vector: (as if in doc sample)
   sd::LongType idx = indices->e<sd::LongType>(0);
   if (input->isVector() || input->isScalar()) {
@@ -102,7 +100,7 @@ static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
     int numOfClasses = output->sizeAt(0);  // number of classes
-    std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+    std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
     auto minT = listOfOutTensors.at(idx);
 
     int pos = 0;
@@ -127,19 +125,19 @@ template <typename T>
 static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
   int numClasses = output->sizeAt(0);
   // if input is a vector: (as if in doc sample)
-  int idx = indices->e<int>(0);
+  int idx = indices->e<sd::LongType>(0);
   if (input->isVector() || input->isScalar()) {
     T val = T(0.f);
     int count = 0;
 
     for (sd::LongType e = 0; e < indices->lengthOf(); e++) {
-      if (idx == indices->e<int>(e)) {
+      if (idx == indices->e<sd::LongType>(e)) {
         // mean
         val += input->e<T>(e);
         count++;
       } else {
         output->p<T>(idx, val / count);
-        idx = indices->e<int>(e);
+        idx = indices->e<sd::LongType>(e);
         val = input->e<T>(e);
         count = 1;
       }
@@ -152,14 +150,14 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
     int numOfClasses = output->sizeAt(0);  // number of classes
-    std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+    std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
     auto meanT = listOfOutTensors.at(idx);
     int count = 1;
     auto meanV = meanT->dup();
     meanV.assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
-      if (indices->e<int>(i) == idx) {
+      if (indices->e<sd::LongType>(i) == idx) {
         auto func = PRAGMA_THREADS_FOR {
           for (auto e = start; e < stop; e++) {
             meanV.p<T>(e, meanV.e<T>(e) + listOfTensors.at(i)->e<T>(e));
@@ -171,7 +169,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
       } else {
         // meanT->assign(meanV);
         meanV.applyScalar(scalar::Divide, count, *meanT);
-        idx = indices->e<int>(i);
+        idx = indices->e<sd::LongType>(i);
         meanT = listOfOutTensors.at(idx);
         meanV.assign(listOfTensors.at(i));
         count = 1;
@@ -190,11 +188,11 @@ static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output
     T val = T(0.f);
     int count = 0;
     for (sd::LongType e = 0; e < indices->lengthOf(); e++) {
-      if (idx == indices->e<int>(e)) {
+      if (idx == indices->e<sd::LongType>(e)) {
         // sum
         val += input->t<T>(e);
       } else {
-        idx = indices->e<int>(e);
+        idx = indices->e<sd::LongType>(e);
         val = input->t<T>(e);
       }
       output->p(idx, val);
@@ -206,11 +204,11 @@ static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output
     auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
     int numOfClasses = output->sizeAt(0);  // number of classes
-    std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+    std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
     auto sumT = listOfOutTensors.at(idx);
 
     for (sd::LongType i = 0; i < indices->lengthOf(); i++) {
-      if (indices->e<int>(i) == idx) {
+      if (indices->e<sd::LongType>(i) == idx) {
         auto func = PRAGMA_THREADS_FOR {
           for (auto e = start; e < stop; e++) {
             sumT->p(e, sumT->e<T>(e) + listOfTensors.at(i)->e<T>(e));
@@ -218,7 +216,7 @@ static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output
         };
         samediff::Threads::parallel_for(func, 0, sumT->lengthOf());
       } else {
-        idx = indices->e<int>(i);
+        idx = indices->e<sd::LongType>(i);
         sumT = listOfOutTensors.at(idx);
         sumT->assign(listOfTensors.at(i));
       }
@@ -229,19 +227,18 @@ static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output
 template <typename T>
 static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
   // int numClasses = output->sizeAt(0);
-  // if input is a vector: (as if in doc sample)
-  int idx = indices->e<int>(0);
+  int idx = indices->e<sd::LongType>(0);
   output->assign(1.f);
   if (input->isVector() || input->isScalar()) {
     T val = input->e<T>(0);
     int count = 0;
 
     for (sd::LongType e = 1; e < indices->lengthOf(); e++) {
-      if (idx == indices->e<int>(e)) {
+      if (idx == indices->e<sd::LongType>(e)) {
         // sum
         val *= input->e<T>(e);
       } else {
-        idx = indices->e<int>(e);
+        idx = indices->e<sd::LongType>(e);
         val = input->e<T>(e);
       }
       output->p(idx, val);
@@ -256,7 +253,7 @@ static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto sumT = listOfOutTensors.at(idx);
     sumT->assign(listOfTensors.at(0));
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
-      if (indices->e<int>(i) == idx) {
+      if (indices->e<sd::LongType>(i) == idx) {
         auto func = PRAGMA_THREADS_FOR {
           for (auto e = start; e < stop; e++) {
             sumT->p(e, sumT->e<T>(e) * listOfTensors.at(i)->e<T>(e));
@@ -272,9 +269,6 @@ static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
   }
 }
 
-//    template <typename T>
-//    static bool segmentIndicesValidate_(NDArray* indices, NDArray& aexpected, NDArray& anOutput) {
-//      }
 
 void segmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), SD_COMMON_TYPES);
@@ -338,11 +332,9 @@ bool unsortedSegmentIndicesValidate(sd::LaunchContext* context, NDArray* indices
 template <typename T>
 static void unsortedSegmentMaxFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
   // if input is a vector: (as if in doc sample)
-  // int idx = static_cast<int>((*indices)(0.));
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
-  // std::sort(idxs.begin(), idxs.end());
 
   if (input->isVector() || input->isScalar()) {  // 1D case
     T maxVal = DataTypeUtils::max<T>();
@@ -394,12 +386,10 @@ BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMaxFunctor_,
 template <typename T>
 static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
   // if input is a vector: (as if in doc sample)
-  // int idx = static_cast<int>((*indices)(0.));
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
 
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
-  // std::sort(idxs.begin(), idxs.end());
 
   if (input->isVector() || input->isScalar()) {  // 1D case
     T maxVal = DataTypeUtils::max<T>();
@@ -432,7 +422,6 @@ static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::Lon
           outputT->r<T>(e) = sd::math::sd_min(minT->t<T>(e), outputT->t<T>(e));
         }
       }
-      // outputT->assign(maxT);
     }
   }
 }
@@ -448,10 +437,9 @@ BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMinFunctor_,
 
 void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, sd::LongType numOfClasses,
                                 NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
-  // std::sort(idxs.begin(), idxs.end());
 
   if (input->isVector() || input->isScalar()) {  // 1D case
 
@@ -520,7 +508,6 @@ void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArr
         auto current = listOfTensors.at(fi->second.at(idx));
         *(outputT) += *current;
       }
-      // outputT->assign(maxT);
     }
   }
 }
@@ -529,8 +516,6 @@ template <typename T>
 void unsortedSegmentProdFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
   SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
-
-  // std::sort(idxs.begin(), idxs.end());
 
   output->assign(1.f);
 
@@ -571,10 +556,9 @@ BUILD_SINGLE_TEMPLATE(template void unsortedSegmentProdFunctor_,
 
 void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                  sd::LongType numOfClasses, NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
-  // std::sort(idxs.begin(), idxs.end());
 
   if (input->isVector() || input->isScalar()) {  // 1D case
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
@@ -597,7 +581,6 @@ void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDA
         auto current = listOfTensors.at(fi->second.at(idx));
         *outputT += *current;
       }
-      // outputT->assign(maxT);
       (*outputT) /= sd::math::sd_sqrt<size_t, double>(fi->second.size());
     }
   }
@@ -612,7 +595,6 @@ void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDA
 template <typename T>
 sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
-  // int numOfClasses = gradOut->sizeAt(0);
   // if input is a vector: (as if in doc sample)
   auto tempRes = gradOut->dup();
   segmentMaxFunctor_<T>(input, indices, &tempRes);
@@ -635,8 +617,6 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-    // int numOfClasses = tempRes.sizeAt(0); // number of classes
-    // std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {

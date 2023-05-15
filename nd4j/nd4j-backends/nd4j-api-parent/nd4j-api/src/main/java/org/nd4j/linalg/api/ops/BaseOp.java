@@ -428,6 +428,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
     }
 
+    public long[] dimensionsArr() {
+        return dimensions;
+    }
     public INDArray dimensions() {
         return dimensionz;
     }

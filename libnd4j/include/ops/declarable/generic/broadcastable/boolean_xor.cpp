@@ -39,7 +39,7 @@ BROADCASTABLE_OP_IMPL(boolean_xor, 0, 0) {
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;
   else if (tZ != z)
-    throw std::runtime_error("boolean_xor: result was overwritten");
+    THROW_EXCEPTION("boolean_xor: result was overwritten");
 
   return sd::Status::OK;
 }

@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(fill) {
   } else if (block.numB() > 0) {
     dataType = sd::DataType::BOOL;
   } else
-    throw std::runtime_error("Fill: missing value to fill output array with");
+    THROW_EXCEPTION("Fill: missing value to fill output array with");
 
   ShapeUtils::updateStridesAndType(newShape, dataType, 'c');
 

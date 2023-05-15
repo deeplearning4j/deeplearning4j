@@ -201,16 +201,7 @@ struct float16 {
                               std::is_same<int8_t, T>::value || std::is_same<uint8_t, T>::value ||
                               std::is_same<int16_t, T>::value || std::is_same<uint16_t, T>::value ||
                               std::is_same<bool, T>::value;
-  };  // || std::is_same<bfloat16, T>::value; };
-      // struct isNumericType { static bool const value = std::is_same<double, typename std::decay<T>::type>::value ||
-  // std::is_same<float, typename std::decay<T>::type>::value || std::is_same<int, typename std::decay<T>::type>::value
-  // || std::is_same<unsigned int, typename std::decay<T>::type>::value || std::is_same<long long, typename
-  // std::decay<T>::type>::value || std::is_same<unsigned long long, typename std::decay<T>::type>::value ||
-  // std::is_same<long int, typename std::decay<T>::type>::value || std::is_same<long unsigned int, typename
-  // std::decay<T>::type>::value || std::is_same<int8_t, typename std::decay<T>::type>::value || std::is_same<uint8_t,
-  // typename std::decay<T>::type>::value || std::is_same<int16_t, typename std::decay<T>::type>::value ||
-  // std::is_same<uint16_t, typename std::decay<T>::type>::value || std::is_same<bool, typename
-  // std::decay<T>::type>::value || std::is_same<bfloat16, T>::value;; };
+  };
 
  public:
   ihalf data;
@@ -528,23 +519,7 @@ struct float16 {
 
   SD_INLINE SD_HOST_DEVICE float16 operator-() const { return 0.f - (float)*this; }
 
-  // SD_INLINE SD_HOST_DEVICE std::ostream& operator<<(std::ostream& os) {
-  //     os << static_cast<float>(*this);
-  //     return os;
-  // }
 };
-
-// SD_INLINE SD_HOST_DEVICE std::ostream& operator<<(std::ostream &os, const float16 &f) {
-//     os << static_cast<float>(f);
-//     return os;
-// }
-
-// SD_INLINE SD_HOST_DEVICE float16 operator+(const float16& h) { return h; }
-
-// SD_INLINE SD_HOST_DEVICE float16 operator - (const float16& h) {
-//     const ihalf * tmp = &h.data;
-//     return float16(hneg(tmp->getX()));
-// }
 
 #ifdef __CUDACC__
 SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
@@ -552,6 +527,5 @@ SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.
 SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
 #endif
 
-// std::ostream& operator << (std::ostream& s, const float16&);
 
 #endif

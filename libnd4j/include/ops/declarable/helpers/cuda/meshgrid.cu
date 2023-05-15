@@ -110,11 +110,6 @@ static void meshgrid_(sd::LaunchContext *context, const std::vector<NDArray *> &
     hOutTadOffsets[i] = pack->specialOffsets();
     hNumTads[i] = pack->numberOfTads();
 
-    // auto list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});
-    // for(int j = 0; j < list->size(); ++j)
-    //    list->at(j)->assign(inArrs[i]);
-
-    // delete list;
   }
 
   auto dInBuffers =

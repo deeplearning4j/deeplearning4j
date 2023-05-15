@@ -492,8 +492,7 @@ fi
 # Enable call stacking
 if [ "$FUNC_TRACE" == "ON" ]; then
    export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_GCC_FUNCTRACE=ON"
-  else
-      COMPUTE="all"
+
   fi
 
 OPERATIONS_ARG=

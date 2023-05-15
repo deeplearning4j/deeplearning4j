@@ -174,9 +174,9 @@ static void pooling3dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling3dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO,
-                                   NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH,
-                                   const int sW, const int pD, const int pH, const int pW, const int dD, const int dH,
-                                   const int dW, const int poolingMode, const int extraParam0) {
+                                   NDArray& gradI, const LongType kD, const LongType kH, const LongType kW, const LongType sD, const LongType sH,
+                                   const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
+                                   const LongType dW, const int poolingMode, const int extraParam0) {
   // initial zeroing of gradI
   gradI.nullify();
 

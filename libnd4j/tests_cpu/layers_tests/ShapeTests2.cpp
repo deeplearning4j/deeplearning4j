@@ -417,14 +417,7 @@ TEST_F(BeginOneTadTest, TadTest) {
   delete tad;
 }
 
-/*
-TEST_F(OnesTest,OnesTadTest) {
-    shape::TAD *tad = new shape::TAD(shapeBuffer,dimension,dimensionLength);
-    int *tadShapeBuffer = tad->shapeInfoOnlyShapeAndStride();
-    ASSERT_TRUE(arrsEquals(10,tadAssertionShape,tadShapeBuffer));
-    delete[] tadShapeBuffer;
-}
-*/
+
 
 TEST_F(LabelTest, LabelTad) {
   shape::TAD *tad = new shape::TAD;

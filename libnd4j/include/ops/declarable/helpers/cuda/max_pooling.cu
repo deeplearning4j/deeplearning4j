@@ -40,20 +40,20 @@ static SD_KERNEL void indicesFiller(void* vz, sd::LongType const* zShapeInfo, sd
 template <typename T, typename Y>
 static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArray* values,
                                std::vector<sd::LongType> const& params, NDArray* indices) {
-  int kY = params[0];
-  int kX = params[1];
+  LongType kY = params[0];
+  LongType kX = params[1];
 
-  int sY = params[2];
-  int sX = params[3];
+  LongType sY = params[2];
+  LongType sX = params[3];
 
   sd::LongType pY = params[4];
   sd::LongType pX = params[5];
 
-  int dY = params[6];
-  int dX = params[7];
+  LongType dY = params[6];
+  LongType dX = params[7];
 
-  int oY = 0;
-  int oX = 0;
+  LongType oY = 0;
+  LongType oX = 0;
 
   const int bSize = input->sizeAt(0);
   const int inD = input->sizeAt(1);

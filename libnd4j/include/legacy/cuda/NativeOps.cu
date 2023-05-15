@@ -57,13 +57,20 @@ bool experimentalSupport = false;
 #endif
 
 
+//note we only include this if we're running gcc linux
+//and should not be enabled in default builds.
 #if defined(SD_GCC_FUNCTRACE)
 #include <cxxabi.h>  // needed  __cxa_demangle
 #include <dlfcn.h>   // needed for dladdr
 
 #include "exceptions/backward.hpp"
 
-
+//note this is a c++ 17 feature
+#ifndef INSTRUMENT_FILE_DEF
+#pragma once
+#define INSTRUMENT_FILE_DEF 1
+FILE* instrumentFile = nullptr;
+#endif
 
 
 // this is mainly a c based function.
@@ -124,7 +131,7 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 
 //sets the file to be written to.
-void setInstrumentOut(char *instrumentOutPath) {
+SD_LIB_EXPORT void setInstrumentOut(char *instrumentOutPath) {
   // sd_printf("Setting signal handler and instrument path %s\n",instrumentOutPath);
   //backward::SignalHandling sh;
   if (instrumentOutPath != nullptr) {
@@ -140,7 +147,7 @@ void setInstrumentOut(char *instrumentOutPath) {
 
 //clears the file.
 
-void closeInstrumentOut() {
+SD_LIB_EXPORT void closeInstrumentOut() {
   if(instrumentFile != nullptr)
     fclose(instrumentFile);
 }
@@ -148,20 +155,24 @@ void closeInstrumentOut() {
 #endif
 
 
+
+
+
+
 int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
-void toggleOpTrace(bool opTrace) {
+ void toggleOpTrace(bool opTrace) {
   sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
 }
 
-void purgeOpTrace() {
+ void purgeOpTrace() {
   sd::ops::OpRegistrator::getInstance().purgeOpExecs();
 }
 
 
-void printOpTrace() {
+ void printOpTrace() {
   auto execTrace = *sd::ops::OpRegistrator::getInstance().execTrace();
   for(int i = 0; i < execTrace.size(); i++) {
     auto curr = execTrace[i];
@@ -198,7 +209,7 @@ void printOpTrace() {
 
 }
 
-std::vector<ExecTrace*> * listOpTraces() {
+ std::vector<ExecTrace*> * listOpTraces() {
   return sd::ops::OpRegistrator::getInstance().execTrace();
 }
 
@@ -211,55 +222,59 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
 }
 
 
-SD_LIB_EXPORT int contextNumInputs(void *contextPointer) {
+ int contextNumInputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->width();
 }
 
-SD_LIB_EXPORT int contextNumOutputs(void *contextPointer) {
+ int contextNumOutputs(void *contextPointer) {
   sd::graph::Context *context = (sd::graph::Context *) contextPointer;
   return context->outputWidth();
 }
 
 
 
-SD_LIB_EXPORT int numInputs(void *execTrace) {
+ int numInputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers->size();
 }
 
-SD_LIB_EXPORT int numOutputs(void *execTrace) {
+  int numOutputs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers->size();
 }
 
-std::vector<bool> * bArgs(void *execTrace) {
+ std::vector<bool> * bArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return &trace->bArgs;
 }
 
-std::vector<std::string> * sArgs(void *execTrace) {
+ std::vector<std::string> * sArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return (&trace->sArguments);
 }
-std::vector<double> * tArgs(void *execTrace) {
+ std::vector<double> * tArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return (&trace->tArgs);
 
 }
-std::vector<sd::LongType> * iArgs(void *execTrace) {
+
+ std::vector<sd::LongType> * iArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return &(trace->iArgs);
 }
-std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
+
+ std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers;
 }
-std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
+
+ std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers;
 }
-char *opName(void *execTrace) {
+
+ char *opName(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return const_cast<char *>(trace->opName->c_str());
 }
@@ -323,7 +338,6 @@ class ScalarShapeInformation {
  private:
   sd::buffer::Buffer<sd::LongType> *scalarDimension;
   sd::buffer::Buffer<sd::LongType> *scalarShapeInfo;
-  //    std::thread::id threadId;
 
  public:
   ScalarShapeInformation(cudaStream_t stream) {

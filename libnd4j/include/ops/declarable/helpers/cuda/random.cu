@@ -201,7 +201,6 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
   if (beta != nullptr) {
     delete copyAlpha;
     delete copyBeta;
-    // delete broadcasted;
   }
 }
 
