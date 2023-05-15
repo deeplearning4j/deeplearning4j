@@ -337,7 +337,7 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
             array2.assign(array1);
 
-            long reqMemory = wsI.requiredMemoryPerArray(array1);
+             long reqMemory = wsI.requiredMemoryPerArray(array1);
             assertEquals(reqMemory , wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 

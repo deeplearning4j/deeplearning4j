@@ -277,10 +277,7 @@ struct bfloat16 {
 
   SD_INLINE SD_HOST_DEVICE bfloat16 operator-() const { return 0.f - (float)*this; }
 
-  // SD_INLINE SD_HOST_DEVICE std::ostream& operator<<(std::ostream& os) {
-  //     os << static_cast<float>(*this);
-  //     return os;
-  // }
+
   SD_INLINE SD_HOST_DEVICE static bfloat16 min() {
     bfloat16 res;
     res._data = 0xFF7F;
@@ -310,26 +307,5 @@ struct bfloat16 {
   }
 };
 
-//     SD_INLINE SD_HOST_DEVICE std::ostream& operator<<(std::ostream &os, const bfloat16 &f) {
-//         os << static_cast<float>(f);
-//         return os;
-//     }
-
-//   SD_INLINE SD_HOST_DEVICE bfloat16 /* constexpr */ operator+(const bfloat16& h) { return h; }
-
-//   SD_INLINE SD_HOST_DEVICE bfloat16 operator - (const bfloat16& h) {
-//     auto temp = h._data;
-//     temp ^= 0x8000;
-//     bfloat16 t;
-//     t._data = temp;
-//     return t;
-// }
-
-// WARNING: this implementation only for avoid cyclic references between float16 and bfloat16 types.
-// SD_INLINE SD_HOST_DEVICE void float16::assign(const bfloat16& rhs) {
-//   assign((float)rhs);
-// }
-
-//}   // namespace
 
 #endif

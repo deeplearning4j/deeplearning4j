@@ -134,10 +134,7 @@ class SD_LIB_EXPORT NDArray {
 
   template <typename T, typename R>
   SD_INLINE R templatedGet(void const *buffer, const sd::LongType index) const;
-  /*
-          template <typename T, typename R>
-          R templatedGetIndex(void *buffer, sd::LongType *indices) const;
-  */
+
   template <typename T>
   void *templatedPointerShift(const sd::LongType offset) const;
 
@@ -1802,9 +1799,6 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
-  // if (this->dataType() != other.dataType())    // this comparison is already present in equalsTo
-  //         return false;
-
   if (!this->isSameShape(&other)) return false;
 
   return this->equalsTo(&other);
@@ -1975,7 +1969,7 @@ sd::LongType NDArray::bufferOffset() const { return _offset; }
 ////////////////////////////////////////////////////////////////////////
 bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }
 
-#if defined(__CUDACC__)  //&& defined(BUILD_TESTS)
+#if defined(__CUDACC__)
 // for CUDA we need stil stuff inline
 #include <array/NDArrayLambda.hXX>
 #endif
