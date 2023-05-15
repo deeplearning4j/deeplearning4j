@@ -338,7 +338,6 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             array2.assign(array1);
 
             long reqMemory = wsI.requiredMemoryPerArray(array1);
-            //multiply by 2 for the dup() calling assign
             assertEquals(reqMemory , wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 
