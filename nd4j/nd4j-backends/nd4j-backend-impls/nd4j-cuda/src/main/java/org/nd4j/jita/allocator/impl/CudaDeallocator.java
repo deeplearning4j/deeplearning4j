@@ -54,7 +54,6 @@ public class CudaDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
-        log.trace("Deallocating CUDA memory");
         //update the log event with the actual time of de allocation and then
         //perform logging
         if(logEvent != null) {

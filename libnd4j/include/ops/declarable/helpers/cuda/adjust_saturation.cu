@@ -34,11 +34,11 @@ template <typename T>
 static void SD_KERNEL adjustSaturationCuda(const void* vx, const sd::LongType* xShapeInfo,
                                            const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
                                            const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                           const T factor, const int dimC) {
+                                           const T factor, const sd::LongType dimC) {
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ int rank;
+  __shared__ sd::LongType rank;
   __shared__ sd::LongType xDimCstride, zDimCstride;
 
   if (threadIdx.x == 0) {
@@ -75,14 +75,14 @@ static SD_HOST void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
                                                  const sd::LongType* xShapeInfo, const sd::LongType* xTadOffsets,
                                                  void* vz, const sd::LongType* zShapeInfo,
                                                  const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                                 const NDArray* factorScalarArr, const int dimC) {
+                                                 const NDArray* factorScalarArr, const sd::LongType dimC) {
   adjustSaturationCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, factorScalarArr->e<T>(0), dimC);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void adjustSaturation(sd::LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr, NDArray* output,
-                      const int dimC) {
+                      const sd::LongType dimC) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 

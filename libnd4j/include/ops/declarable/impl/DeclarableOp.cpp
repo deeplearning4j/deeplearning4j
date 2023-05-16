@@ -812,7 +812,9 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
 
       auto shape = ShapeUtils::shapeAsString(array);
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(32);
+      //limit size preview for string arrays due to allocation size when debugging
+      int sizePreview = array->isS() ? 2 : 32;
+      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(sizePreview);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),

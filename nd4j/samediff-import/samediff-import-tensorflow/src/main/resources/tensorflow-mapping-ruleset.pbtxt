@@ -8920,7 +8920,7 @@ mappings {
       value: "max_output_size"
     }
     inputToOutput {
-      key: "overlayThreshold"
+      key: "iouThreshold"
       value: "iou_threshold"
     }
     inputToOutput {
@@ -9082,7 +9082,7 @@ mappings {
       value: "x"
     }
     inputToOutput {
-      key: "permutationVector"
+      key: "permuteDims"
       value: "perm"
     }
     ruleType: "tensor"
@@ -9246,7 +9246,7 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "numOfClasses"
     inputToOutput {
-      key: "numOfClasses"
+      key: "numSegments"
       value: "num_segments"
     }
     ruleType: "attribute"
@@ -9310,7 +9310,7 @@ mappings {
       value: "align_corners"
     }
     inputToOutput {
-      key: "halfPixelCenters"
+      key: "halfPixelCenter"
       value: "half_pixel_centers"
     }
     ruleType: "attribute"

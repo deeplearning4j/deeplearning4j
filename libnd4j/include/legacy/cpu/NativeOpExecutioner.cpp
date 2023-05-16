@@ -716,8 +716,6 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
 
-  // BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(opNum, hX, hXShapeInfo, extraParamsVals,
-  // hY, hYShapeInfo, hZ, hZShapeInfo, nullptr, 0), SD_COMMON_TYPES, SD_FLOAT_TYPES);
   NativeOpExecutioner::execReduce3Scalar(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo,
                                          dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
