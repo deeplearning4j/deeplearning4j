@@ -142,17 +142,6 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
     }
 
 
-    @Override
-    public float[] getFloatsAt(long offset, long inc, int length) {
-        return super.getFloatsAt(offset, inc, length);
-    }
-
-    @Override
-    public double[] getDoublesAt(long offset, long inc, int length) {
-        return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
-    }
-
-
 
     @Override
     public void setData(float[] data) {

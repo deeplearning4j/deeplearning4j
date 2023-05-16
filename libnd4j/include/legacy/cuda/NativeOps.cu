@@ -368,14 +368,14 @@ SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
   T * inputBuffer = reinterpret_cast<T *>(buffer);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if(tid == 0) {
-    printf("Host buffer: ");
+    printf("DEVICE buffer: ");
   }
   const auto step = gridDim.x * blockDim.x;
   for (int t = tid; t < bufferLength; t += step) {
     if(t == 0) {
-      printf("Host buffer: ");
+      printf("DEVICE buffer: ");
     }
-    printf(" %f ",t,inputBuffer[t]);
+    printf(" %f ",(double) inputBuffer[t]);
     if(t == bufferLength - 1) {
       printf("\n");
     }
@@ -392,7 +392,7 @@ void _printHostBuffer(InteropDataBuffer *buffer) {
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
   sd_printf("Host buffer: ",0);
   for(int i = 0; i < len; i++) {
-    sd_printf("%f ",buff[i]);
+    sd_printf("%f ",(double) buff[i]);
   }
 
   sd_printf("\n",0);
@@ -415,8 +415,8 @@ void printDeviceBuffer(InteropDataBuffer *buffer) {
   } else {
     sd_printf("Device pointer address: none\n",0);
   }
+  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES_ALL);
 
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
 
   if(buffer->primary() != nullptr) {
     sd_printf("Host pointer address: %d\n",  reinterpret_cast<sd::LongType>(buffer->primary()));
@@ -424,7 +424,7 @@ void printDeviceBuffer(InteropDataBuffer *buffer) {
     sd_printf("Host pointer address: none\n",0);
   }
 
-  BUILD_SINGLE_SELECTOR(xType, _printDeviceBuffer,(buffer),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
 
 }
 

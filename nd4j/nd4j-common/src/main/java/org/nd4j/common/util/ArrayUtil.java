@@ -737,9 +737,98 @@ public class ArrayUtil {
         return result;
     }
 
+    public static short toBFloat16(short data) {
+        // Assume the short is already a float in 16-bit half-precision format
+        int sign = data >>> 15;
+        int exp = (data >>> 10) & 0x1F;
+        int fraction = data & 0x3FF;
+
+        // Adjust exponent from half-precision bias (15) to bfloat16 bias (127)
+        exp = exp - 15 + 127;
+
+        // Check for underflow and overflow
+        if (exp < 0) {  // Underflow
+            exp = 0;
+            fraction = 0;
+        } else if (exp > 255) {  // Overflow
+            exp = 255;
+            fraction = 0;
+        }
+
+        // Truncate fraction to fit into 7 bits
+        fraction >>>= 3;
+
+        // Recombine bits
+        short bfloat16 = (short) ((sign << 15) | (exp << 7) | fraction);
+
+        return bfloat16;
+    }
+
+
+    public static float bfloat16ToFloat(short b) {
+        int sign = b >>> 15;
+        int exp = (b >>> 7) & 0xFF;
+        int fraction = b & 0x7F;
+
+        // Extend fraction part to 23 bits
+        fraction <<= 16;
+
+        // Recombine bits
+        int floatBits = (sign << 31) | (exp << 23) | fraction;
+
+        return Float.intBitsToFloat(floatBits);
+    }
+
+    public static double bfloat16ToDouble(short b) {
+        // Convert bfloat16 to float then to double
+        return (double) bfloat16ToFloat(b);
+    }
+
+
+    public static short longToBFloat16(long l) {
+        // Convert long to float then to bfloat16
+        return toBFloat16((double) l);
+    }
+
+    // Reverse conversions from bfloat16 to types
+
+    public static long bfloat16ToLong(short b) {
+        // Convert bfloat16 to float then to long
+        return (long) bfloat16ToFloat(b);
+    }
+
+    public static int bfloat16ToInt(short b) {
+        // Convert bfloat16 to float then to int
+        return (int) bfloat16ToFloat(b);
+    }
+
+    public static short bfloat16ToShort(short b) {
+        // Convert the bfloat16 to a half-precision float
+        int sign = b >>> 15;
+        int exp = (b >>> 7) & 0xFF;
+        int fraction = b & 0x7F;
+
+        // Truncate the exponent and extend fraction to fit half-precision
+        exp >>>= 3;
+        fraction <<= 3;
+
+        // Recombine bits
+        return (short) ((sign << 15) | (exp << 10) | fraction);
+    }
 
     public static short toBFloat16(float data) {
-        return (short) (Float.floatToIntBits(data) << 16);
+        int floatBits = Float.floatToRawIntBits(data);
+        int sign = floatBits >>> 31;
+        int exp = (floatBits >>> 23) & 0xFF;
+        int fraction = floatBits & 0x7FFFFF;
+
+        // Truncate fraction part to 7 bits
+        fraction >>>= 16;
+
+        // Recombine bits
+        short bfloat16 = (short) ((sign << 15) | (exp << 7) | fraction);
+
+        return bfloat16;
     }
 
     public static short toBFloat16(double data) {
@@ -822,11 +911,11 @@ public class ArrayUtil {
         return ret;
     }
     public static short[] toBfloats(short[] data) {
-        short[] ret = new short[data.length];
+        float[] ret = new float[data.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = toBFloat16(data[i]);
+            ret[i] = toBFloat16((float) data[i]);
         }
-        return ret;
+        return ArrayUtil.toShorts(ret);
     }
 
     public static short[] toBfloats(float[] data) {
@@ -2263,7 +2352,7 @@ public class ArrayUtil {
     public static byte[] toByteArraySimple(long[] longArray) {
         byte[] bytes = new byte[longArray.length];
         for (int i = 0; i < longArray.length; i++) {
-           bytes[i] = (byte) longArray[i];
+            bytes[i] = (byte) longArray[i];
         }
         return bytes;
     }

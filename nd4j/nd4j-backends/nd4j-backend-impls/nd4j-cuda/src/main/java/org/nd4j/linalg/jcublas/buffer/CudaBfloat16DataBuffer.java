@@ -20,7 +20,9 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -143,21 +145,12 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
     }
 
 
-    @Override
-    public float[] getFloatsAt(long offset, long inc, int length) {
-        return super.getFloatsAt(offset, inc, length);
-    }
-
-    @Override
-    public double[] getDoublesAt(long offset, long inc, int length) {
-        return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
-    }
-
 
 
     @Override
     public void setData(float[] data) {
-        setData(ArrayUtil.toBfloats(data));
+        val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
+        copyDataFromSrc(pointer,length,offset,0);
     }
 
     @Override
@@ -170,12 +163,20 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         setData(ArrayUtil.toShorts(data));
     }
 
+    @Override
+    public void setData(byte[] data) {
+       float[] floats = new float[data.length];
+       for(int i = 0; i < data.length; i++) {
+           floats[i] = data[i];
+       }
 
+       setData(floats);
+    }
 
     @Override
     public void setData(double[] data) {
-        System.out.println("Set data data bfloat16");
-        setData(ArrayUtil.toBfloats(data));
+        val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
+        copyDataFromSrc(pointer,length,offset,0);
     }
 
     @Override
@@ -196,12 +197,6 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
     @Override
     public int[] asInt() {
         return ArrayUtil.toInts(asFloat());
-    }
-
-
-    @Override
-    public double getDouble(long i) {
-        return super.getFloat(i);
     }
 
 

@@ -3203,7 +3203,7 @@ void _printHostBuffer(InteropDataBuffer *buffer) {
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
   sd_printf("Host buffer: ",0);
   for(int i = 0; i < len; i++) {
-    sd_printf("%f ",buff[i]);
+    sd_printf("%f ",(double) buff[i]);
   }
 
   sd_printf("\n",0);
