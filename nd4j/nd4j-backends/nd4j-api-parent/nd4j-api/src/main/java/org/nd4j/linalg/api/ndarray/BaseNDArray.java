@@ -963,7 +963,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] tensorShape = ArrayUtil.keep(shape(), dimension);
         long len = ArrayUtil.prodLong(tensorShape);
         if (len == 0)
-            throw new IllegalStateException("Illegal length found after removing index");
+           return 1;
         long length = length();
         if (length / len >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Tensors along dimension can not be >= Integer.MAX_VALUE");

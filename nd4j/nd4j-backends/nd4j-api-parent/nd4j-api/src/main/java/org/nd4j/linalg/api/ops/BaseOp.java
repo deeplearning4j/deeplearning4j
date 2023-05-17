@@ -296,8 +296,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 x = args[0].getArr();
                 if(this.opType()  == Type.REDUCE3 ||
                         this.opType() == Type.PAIRWISE_BOOL
-                        || this.opType() == Type.TRANSFORM_SAME ||
-                        this.opType() == Type.REDUCE_SAME)
+                        || this.opType() == Type.TRANSFORM_SAME)
                     y = args[1].getArr();
                 else if(opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL) {
                     this.dimensionz = args[1].getArr();

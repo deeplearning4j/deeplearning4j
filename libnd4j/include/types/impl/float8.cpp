@@ -23,11 +23,5 @@
 
 namespace sd {
 
-/*
-    template float8::float8(const float& rhs);
-    template float8::float8(const double& rhs);
 
-    template float8& float8::operator=<float>(const float& rhs);
-    template float8& float8::operator=<double>(const double& rhs);
-    */
 }

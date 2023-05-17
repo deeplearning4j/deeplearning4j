@@ -529,6 +529,15 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
      */
     void put(long i, int element);
 
+
+    /**
+     * Assign an element in the buffer to the specified index
+     *
+     * @param i       the index
+     * @param element the element to assign
+     */
+    void put(long i, short element);
+
     void put(long i, long element);
 
     void put(long i, boolean element);

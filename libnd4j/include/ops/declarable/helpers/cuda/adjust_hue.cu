@@ -32,7 +32,7 @@ namespace helpers {
 template <typename T>
 static void SD_KERNEL adjustHueCuda(const void* vx, const sd::LongType* xShapeInfo, const sd::LongType* xTadOffsets,
                                     void* vz, const sd::LongType* zShapeInfo, const sd::LongType* zTadOffsets,
-                                    const sd::LongType numOfTads, const T delta, const int dimC) {
+                                    const sd::LongType numOfTads, const T delta, const sd::LongType dimC) {
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
@@ -72,14 +72,14 @@ static SD_HOST void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
                                           const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                           const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
                                           const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                          const NDArray* deltaScalarArr, const int dimC) {
-  adjustHueCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
+                                          const NDArray* deltaScalarArr, const sd::LongType dimC) {
+  adjustHueCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, deltaScalarArr->e<T>(0), dimC);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr, NDArray* output,
-               const int dimC) {
+               const sd::LongType dimC) {
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
@@ -101,125 +101,6 @@ void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* 
   manager.synchronize();
 }
 
-/*
-template <typename T>
-static void SD_KERNEL adjustHueSingleNHWCKernel(void *xBuffer, sd::LongType *xShapeInfo,  void *zBuffer, sd::LongType
-*zShapeInfo, sd::LongType tuples, float delta) { int numChannels = 3; auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-    auto bIn = reinterpret_cast<T*>(xBuffer);
-    auto bOut = reinterpret_cast<T*>(zBuffer);
-    static const int kChannelRange = 6;
-
-    for (sd::LongType e = tid; e < tuples; e += blockDim.x * gridDim.x) {
-        auto i = bIn + e * numChannels;
-        auto o = bOut + e * numChannels;
-
-        T h, v_min, v_max;
-        helpers::rgb_to_hv(i[0], i[1], i[2], &h, &v_min, &v_max);
-
-        h += delta * kChannelRange;
-        while (h < (T) 0.)
-            h += (T) kChannelRange;
-
-        while (h >= (T) kChannelRange)
-            h -= (T) kChannelRange;
-
-        helpers::hv_to_rgb(h, v_min, v_max, o, o + 1, o + 2);
-    }
-}
-
-template <typename T>
-static void SD_KERNEL adjustHueSingleNCHWKernel(void *xBuffer, sd::LongType *xTadShapeInfo, sd::LongType *xOffsets, void
-*zBuffer, sd::LongType *zTadShapeInfo, sd::LongType *zOffsets, sd::LongType tadLength, sd::LongType tuples, float delta)
-{ int numChannels = 3; auto tid = threadIdx.x + blockIdx.x * blockDim.x; static const int kChannelRange = 6;
-
-    auto bufferR = reinterpret_cast<T *>(xBuffer) + xOffsets[0];
-    auto bufferG = reinterpret_cast<T *>(xBuffer) + xOffsets[1];
-    auto bufferB = reinterpret_cast<T *>(xBuffer) + xOffsets[2];
-
-    auto outputR = reinterpret_cast<T *>(zBuffer) + zOffsets[0];
-    auto outputG = reinterpret_cast<T *>(zBuffer) + zOffsets[1];
-    auto outputB = reinterpret_cast<T *>(zBuffer) + zOffsets[2];
-
-
-    for (sd::LongType e = tid; e < tuples; e += blockDim.x * gridDim.x) {
-        auto _ri = bufferR + shape::getIndexOffset(e, xTadShapeInfo);
-        auto _gi = bufferG + shape::getIndexOffset(e, xTadShapeInfo);
-        auto _bi = bufferB + shape::getIndexOffset(e, xTadShapeInfo);
-
-        auto _ro = outputR + shape::getIndexOffset(e, xTadShapeInfo);
-        auto _go = outputG + shape::getIndexOffset(e, xTadShapeInfo);
-        auto _bo = outputB + shape::getIndexOffset(e, xTadShapeInfo);
-
-        T h, v_min, v_max;
-        helpers::rgb_to_hv(_ri[0], _gi[0], _bi[0], &h, &v_min, &v_max);
-
-        h += delta * kChannelRange;
-        while (h < (T) 0)
-            h += (T) kChannelRange;
-
-        while (h >= (T) kChannelRange)
-            h -= (T) kChannelRange;
-
-        helpers::hv_to_rgb(h, v_min, v_max, _ro, _go, _bo);
-    }
-}
-
-template <typename T>
-static void _adjust_hue_single(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
-    // numChannels is always 3
-    auto tuples = array->lengthOf() / 3;
-    if (isNHWC) {
-        adjustHueSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(),
-array->specialShapeInfo(), output->specialBuffer(), output->special(), tuples, delta); } else {
-        // TODO: check this one
-        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), {1, 2});
-        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {1, 2});
-
-        auto tadLength = shape::length(packX.primaryShapeInfo());
-
-        adjustHueSingleNCHWKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(),
-packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), packZ.platformShapeInfo(),
-packZ.platformOffsets(), tadLength, tuples, delta);
-    }
-}
-
-
-template <typename T>
-static void _adjust_hue_batch(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
-    auto xType = array->dataType();
-
-    // numChannels is always 3
-    auto tuples = array->lengthOf() / 3;
-
-    if (isNHWC) {
-        // in case of nhwc batch, we don't really care about examples: it's still bunch of RGB values
-        BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (context, array, output, delta, isNHWC);, SD_FLOAT_TYPES);
-    } else {
-        // TODO: check this one
-        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), {0, 2, 3});
-        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {0, 2, 3});
-
-        auto tadLength = shape::length(packX.primary());
-
-        adjustHueSingleNCHWKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(),
-packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), packZ.platform(), packZ.platform(),
-tadLength, tuples, delta);
-    }
-}
-
-void _adjust_hue(sd::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
-    auto xType = array->dataType();
-
-    float d = delta->e<float>(0);
-    if (array->rankOf() == 4) {
-        BUILD_SINGLE_SELECTOR(xType, _adjust_hue_batch, (context, array, output, d, isNHWC);, SD_FLOAT_TYPES);
-    } else {
-        BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (context, array, output, d, isNHWC);, SD_FLOAT_TYPES);
-    }
-}
-
-*/
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

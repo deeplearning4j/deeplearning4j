@@ -857,13 +857,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
-            if(z != null){
-                Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
-                        " Got: x=%ndShape, z=%ndShape", x, z);
+            if(z != null) {
+                if(!x.isScalar() && !z.isScalar())
+                    Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
+                            " Got: x=%ndShape, z=%ndShape", x, z);
                 z.assign(x);
                 return context;
             } else {
-                op.setZ(x.dup());
+                setZ(x.dup(), op, oc);
                 return context;
             }
         }
@@ -926,7 +927,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             Arrays.toString(x.shape()) + ", y shape = " + Arrays.toString(y.shape()) +
                             ", dimension = " + Arrays.toString(dimension) + ")");
                 }
-            } else {
+            } else if(!(op instanceof ReduceOp)) {
                 //Every X TAD vs. entirety of Y
                 val xTADSize = x.length() / x.tensorsAlongDimension(dimension);
 
@@ -976,9 +977,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context);
 
-        val xb = op.x() == null ? null : op.x().data().opaqueBuffer();
-        val yb = op.y() == null ? null : op.y().data().opaqueBuffer();
-        val zb = op.z() == null ? null : op.z().data().opaqueBuffer();
+        val xb = x == null ? null : x.data().opaqueBuffer();
+        val yb = y == null ? null : y.data().opaqueBuffer();
+        val zb = z == null ? null : z.data().opaqueBuffer();
 
         op.validateDataTypes(null);
 
@@ -2137,7 +2138,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
-        nativeOps.deleteConstantShapeBuffer(dbf);
 
         return result;
     }

@@ -23,6 +23,7 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -88,6 +89,9 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
     public BFloat16Buffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
     }
+
+
+
 
     public BFloat16Buffer(float[] data) {
         this(data, true);

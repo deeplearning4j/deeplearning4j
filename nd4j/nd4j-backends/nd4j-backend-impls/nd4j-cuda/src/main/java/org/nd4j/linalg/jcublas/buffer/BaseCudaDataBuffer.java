@@ -316,7 +316,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 // let cpp allocate primary buffer
                 NativeOpsHolder.getInstance().getDeviceNativeOps().dbAllocatePrimaryBuffer(ptrDataBuffer);
             } else {
-                //log.info("ws alloc step");
                 val ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
                 ptrDataBuffer.setPrimaryBuffer(ptr, this.length);
             }
@@ -328,6 +327,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         assert hostPointer != null;
 
+        initPointerAndIndexerFromHost(hostPointer);
+    }
+
+    private void initPointerAndIndexerFromHost(Pointer hostPointer) {
         switch (dataType()) {
             case DOUBLE:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asDoublePointer();
@@ -659,7 +662,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         // we're keeping pointer reference for JVM
         allocationPoint.tickHostWrite();
         allocationPoint.tickDeviceWrite();
-        Nd4j.getExecutioner().commit();
     }
 
     /**
@@ -692,12 +694,19 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
+            //drop down on purpose
+            case UINT16:
+                data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            //drop down on purpose
+            case UINT32:
+                data = ArrayUtil.cutBelowZero(data);
+
             case INT: {
                 val pointer = new IntPointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -711,6 +720,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
+            //drop down on purpose
+            case UINT64:
+                data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(LongUtils.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -743,14 +755,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     }
 
-    private void syncDeviceAndHost() {
-        // we're keeping pointer reference for JVM
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-        context.getSpecialStream().synchronize();
-        allocationPoint.tickHostWrite();
-        allocationPoint.tickDeviceWrite();
-        Nd4j.getExecutioner().commit();
-    }
+
 
     public void set(long[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
@@ -806,6 +811,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case BFLOAT16: {
+
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
             }
@@ -871,19 +877,27 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
-
+            //drop down on purpose
+            case UINT16:
+                data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            //drop down on purpose
+            case UINT32:
+                data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            //drop down on purpose
+            case UINT64:
+                data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongArray(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -946,18 +960,26 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
 
+            //drop down on purpose
+            case UINT16:
+                data = ArrayUtil.cutBelowZero(data);
             case SHORT: {
                 val pointer = new ShortPointer(data);
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            //drop down on purpose
+            case UINT32:
+                data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            case UINT64:
+                data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -970,6 +992,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
+
             case BFLOAT16: {
                 val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -1024,6 +1047,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
 
+            case UINT16:
+                data = ArrayUtil.cutBelowZero(data);
+
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -1038,12 +1064,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
 
+            case UINT32:
+                data = ArrayUtil.cutBelowZero(data);
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            case UINT64:
+                data = ArrayUtil.cutBelowZero(data);
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -1101,19 +1131,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             }
             break;
-
+            case UINT16:
+                //note this is on purpose. no data is below zero with booleans
             case SHORT: {
                 val pointer = new ShortPointer(ArrayUtil.toShorts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            case UINT32:
+                //note this is on purpose. no data is below zero with booleans
             case INT: {
                 val pointer = new IntPointer(ArrayUtil.toInts(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }
             break;
+            case UINT64:
+                //note this is on purpose. no data is below zero with booleans
             case LONG: {
                 val pointer = new LongPointer(ArrayUtil.toLongs(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
@@ -1321,12 +1356,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void removeReferencing(String id) {
-        //referencing.remove(id);
     }
 
     @Override
     public Collection<String> references() {
-        //return referencing;
         return null;
     }
 
@@ -1353,6 +1386,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, float element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1360,6 +1394,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, boolean element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1367,6 +1402,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, double element) {
+        lazyAllocateHostPointer();
+        super.put(i, element);
+        allocator.synchronizeHostData(this);
+        allocator.tickHostWrite(this);
+    }
+
+    @Override
+    public void put(long i, short element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1374,6 +1418,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, int element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1381,6 +1426,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, long element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);

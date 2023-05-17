@@ -53,6 +53,8 @@ static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const sd::LongTy
   int totalThreads = blockDim.x;
   sd::LongType rows = shape::sizeAt(inputShape, -2);
   sd::LongType cols = shape::sizeAt(inputShape, -1);
+  auto resetBuffer = reinterpret_cast<T *>(outputBuffer);
+  auto input = reinterpret_cast<T const *>(inputBuffer);
   for (sd::LongType e = blockIdx.x; e < numTads; e += gridDim.x) {
     auto yOffset = tadInputOffsets[e];
     auto xOffset = tadOutputOffsets[e];
@@ -63,20 +65,19 @@ static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const sd::LongTy
         sd::LongType tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
 
         if (i >= j) {  // check lower diagonals
-          if (lowerBand > 0) {
+          if (lowerBand >= 0) {
             if ((i - j) > lowerBand)
-              *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) = T(0);
+              *(resetBuffer + xOffset + tadOffsetOut) = T(0);
             else
-              *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) =
-                  *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffsetIn);
+              *(resetBuffer + xOffset + tadOffsetOut) = *(input + yOffset + tadOffsetIn);
           }
-        } else if (j > i) {
-          if (upperBand > 0)
+        } else if (j > i) { // check upper diagonals
+          if (upperBand >= 0) {
             if ((j - i) > upperBand)
-              *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) = T(0);
+              *(resetBuffer + xOffset + tadOffsetOut) = T(0);
             else
-              *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) =
-                  *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffsetIn);
+              *(resetBuffer + xOffset + tadOffsetOut) = *(input + yOffset + tadOffsetIn);
+          }
         }
       }
     }

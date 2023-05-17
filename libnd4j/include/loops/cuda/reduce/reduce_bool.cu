@@ -27,6 +27,7 @@
 #include <loops/reduce_bool.h>
 #include <loops/scalar.h>
 #include <system/op_boilerplate.h>
+#include <system/common.h>
 #include <types/types.h>
 
 using namespace simdOps;
@@ -43,7 +44,7 @@ SD_KERNEL void simpleReduce(const void *x, const sd::LongType *outerXTadShapeInf
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void simpleScalar(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                            const sd::LongType *zShapeInfo, long long int *dimension, long long int dimensionLength, void *reductionBuffer,
+                            const sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, void *reductionBuffer,
                             const sd::LongType *tadOnlyShapeInfo) {
   functions::reduce::ReduceBoolFunction<X, Z>::template execScalarCuda<OpType>(
       x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, tadOnlyShapeInfo);
@@ -124,7 +125,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::transformCudaXD(const void *vx, const s
     __syncthreads();
 
     // aggregate. do NOT reduce for elements > tadLen
-    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLen), extraParams);
+    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(blockDim.x, tadLen), extraParams);
 
     __syncthreads();
 
@@ -168,22 +169,22 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
           sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
 
   __syncthreads();
-  aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
+  aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(blockDim.x, len), extraParams);
   __syncthreads();
 
   if (gridDim.x > 1) {
-    unsigned int *tc = (unsigned int *)reductionBuffer;
+    unsigned  int *tc = (unsigned  int *)reductionBuffer;
     __shared__ bool amLast;
 
     tid = threadIdx.x;
     if (threadIdx.x == 0)
-      reductionBuffer[blockIdx.x] = sPartials[0];  // this->postProcess(sPartials[0],len,extraParams);
+      reductionBuffer[blockIdx.x] = sPartials[0];
 
     __threadfence();
     __syncthreads();
 
     if (threadIdx.x == 0) {
-      unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+      unsigned int ticket = atomicInc(&tc[16384],  gridDim.x);
       amLast = (ticket == gridDim.x - 1);
     }
 
@@ -197,7 +198,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 
       __syncthreads();
-      aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(gridDim.x, blockDim.x), extraParams);
+      aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(gridDim.x, blockDim.x), extraParams);
       __syncthreads();
 
       if (threadIdx.x == 0) {
@@ -206,7 +207,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
     }
   } else {
     if (threadIdx.x == 0) {
-      unsigned int *tc = (unsigned *)reductionBuffer;
+      sd::LongType  *tc = (sd::LongType *)reductionBuffer;
       tc[16384] = 0;
       z[0] = OpType::postProcess(sPartials[0], len, extraParams);
     }
@@ -220,7 +221,7 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
                                                       const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                                       void *extraParams, void *vreductionBuffer, void *z,
                                                       const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                                      const long long int *dims) {
+                                                      const sd::LongType *dims) {
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;
 
@@ -258,8 +259,8 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
                                                           const sd::LongType *xShapeInfo,
                                                           const sd::LongType *hXShapeInfo, void *extraParams, void *z,
                                                           const sd::LongType *zShapeInfo,
-                                                          const sd::LongType *hZShapeInfo, long long int *dimension,
-                                                          long long int dimensionLength, void *reductionBuffer,
+                                                          const sd::LongType *hZShapeInfo, sd::LongType *dimension,
+                                                          sd::LongType dimensionLength, void *reductionBuffer,
                                                           const sd::LongType *tadOnlyShapeInfo) {
   if (shape::isEmpty(hXShapeInfo)) {
     if (shape::isEmpty(hZShapeInfo)) return;

@@ -2661,6 +2661,9 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #include <exceptions/backward.hpp>
 using namespace backward;
 void throwException(const char* exceptionMessage);
+#else
+void throwException(const char* exceptionMessage);
+
 #endif
 
 #if defined(SD_GCC_FUNCTRACE)

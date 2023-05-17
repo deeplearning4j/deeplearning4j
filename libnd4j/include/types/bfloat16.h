@@ -46,7 +46,7 @@ struct isNumericType {
 // namespace sd
 //{
 struct bfloat16 {
- 
+
  public:
   int16_t _data;
 

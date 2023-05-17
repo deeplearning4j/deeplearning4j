@@ -43,22 +43,16 @@ void matrixBandPart_(NDArray* input, NDArray* output, sd::LongType lowerBand, sd
       for (sd::LongType row = 0; row < inputMatrix->rows(); ++row) {
         for (sd::LongType col = 0; col < row; ++col) {
           if ((row - col) > lowerBand) outputMatrix->p(row, col, 0.);
-          //                        else
-          //                          (*outputMatrix)(row, col) = (*inputMatrix)(row, col);
+
         }
-        //                    in_band(m, n) = (num_lower < 0 || (m-n) <= num_lower)) && (num_upper < 0 || (n-m) <=
-        //                    num_upper).
+
       }
     }
     if (upperBand >= 0) {
       for (sd::LongType col = 0; col < inputMatrix->columns(); ++col) {
         for (sd::LongType row = 0; row < col; ++row) {
           if ((col - row) > upperBand) outputMatrix->p(row, col, 0.);
-          //                        else
-          //                          (*outputMatrix)(row, col) = (*inputMatrix)(row, col);
         }
-        //                    in_band(m, n) = (num_lower < 0 || (m-n) <= num_lower)) && (num_upper < 0 || (n-m) <=
-        //                    num_upper).
       }
     }
   }

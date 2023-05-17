@@ -80,7 +80,7 @@
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
-        <test.nogc>false</test.nogc>
+        <test.nogc>true</test.nogc>
         <dokka.version>1.4.30</dokka.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
@@ -89,7 +89,7 @@
         <test.asan.options>protect_shadow_gap=0:replace_intrin=0:detect_leaks=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload>/usr/lib64/libasan.so.8</preload>
+        <preload></preload>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>

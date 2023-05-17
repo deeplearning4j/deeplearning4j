@@ -11,4 +11,8 @@ void throwException(const char* exceptionMessage) {
   p.print(st);
   throw std::runtime_error(exceptionMessage);
 }
+#else
+void throwException(const char* exceptionMessage) {
+  throw std::runtime_error(exceptionMessage);
+}
 #endif

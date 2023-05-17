@@ -20,7 +20,9 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -140,6 +142,45 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     protected DataBuffer create(long length) {
         return new CudaHalfDataBuffer(length);
     }
+
+    @Override
+    public void setData(float[] data) {
+        val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
+        copyDataFromSrc(pointer,length,offset,0);
+    }
+
+    @Override
+    public void setData(int[] data) {
+        setData(ArrayUtil.toShorts(data));
+    }
+
+    @Override
+    public void setData(long[] data) {
+        setData(ArrayUtil.toShorts(data));
+    }
+
+    @Override
+    public void setData(byte[] data) {
+        float[] floats = new float[data.length];
+        for(int i = 0; i < data.length; i++) {
+            floats[i] = data[i];
+        }
+
+        setData(floats);
+    }
+
+    @Override
+    public void setData(short[] data) {
+        val pointer = new ShortPointer(data);
+        copyDataFromSrc(pointer,length,offset,0);
+    }
+
+    @Override
+    public void setData(double[] data) {
+        val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+        copyDataFromSrc(pointer,length,offset,0);
+    }
+
 
 
     @Override
