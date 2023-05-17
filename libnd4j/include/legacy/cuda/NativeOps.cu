@@ -2830,7 +2830,7 @@ Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer 
     for (auto v : context->fastpath_out()) {
       if (!v->isEmpty()) v->syncToDevice();
     }
-  }
+
 
   return result;
 } catch (std::exception &e) {
