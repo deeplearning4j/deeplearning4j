@@ -2138,7 +2138,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
-        //nativeOps.deleteConstantShapeBuffer(dbf);
 
         return result;
     }
