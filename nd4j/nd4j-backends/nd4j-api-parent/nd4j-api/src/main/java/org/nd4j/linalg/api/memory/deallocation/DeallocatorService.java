@@ -184,7 +184,7 @@ public class DeallocatorService {
      */
     public long pickObject(@NonNull Deallocatable deallocatable) {
         if(noPointerGc) {
-            log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
+            //log.trace("Deallocation turned off. Reference " + deallocatable.getUniqueId() + " will need to be de allocated manually.");
         } else {
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);

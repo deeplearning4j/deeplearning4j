@@ -660,9 +660,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         context.getSpecialStream().synchronize();
 
         // we're keeping pointer reference for JVM
-        allocationPoint.tickDeviceWrite();
         allocationPoint.tickHostWrite();
-        Nd4j.getExecutioner().commit();
+        allocationPoint.tickDeviceWrite();
     }
 
     /**

@@ -97,9 +97,6 @@ class SD_LIB_EXPORT DataTypeUtils {
   SD_INLINE static bool castShapeInfo(const sd::LongType *originalShapeInfo, T *newShapeInfo);
 
   template <typename T>
-  // struct scalarTypesForNDarray { static bool const value = std::is_same<double, T>::value || std::is_same<float,
-  // T>::value || std::is_same<int, T>::value || std::is_same<bfloat16, T>::value || std::is_same<float16, T>::value ||
-  // std::is_same<long long, T>::value; };
   struct scalarTypesForNDarray {
     static bool const value =
         std::is_same<double, T>::value || std::is_same<float, T>::value || std::is_same<int, T>::value ||
