@@ -755,14 +755,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     }
 
-    private void syncDeviceAndHost() {
-        // we're keeping pointer reference for JVM
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-        context.getSpecialStream().synchronize();
-        allocationPoint.tickHostWrite();
-        allocationPoint.tickDeviceWrite();
-        Nd4j.getExecutioner().commit();
-    }
+
 
     public void set(long[] data, long length, long srcOffset, long dstOffset) {
         // TODO: make sure getPointer returns proper pointer
@@ -1393,6 +1386,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, float element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1400,6 +1394,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, boolean element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1407,6 +1402,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, double element) {
+        lazyAllocateHostPointer();
+        super.put(i, element);
+        allocator.synchronizeHostData(this);
+        allocator.tickHostWrite(this);
+    }
+
+    @Override
+    public void put(long i, short element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1414,6 +1418,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, int element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);
@@ -1421,6 +1426,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void put(long i, long element) {
+        lazyAllocateHostPointer();
         super.put(i, element);
         allocator.synchronizeHostData(this);
         allocator.tickHostWrite(this);

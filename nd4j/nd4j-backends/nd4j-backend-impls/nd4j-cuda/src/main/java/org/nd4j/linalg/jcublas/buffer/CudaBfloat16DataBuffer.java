@@ -174,6 +174,12 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
     }
 
     @Override
+    public void setData(short[] data) {
+        val pointer = new ShortPointer(data);
+        copyDataFromSrc(pointer,length,offset,0);
+    }
+
+    @Override
     public void setData(double[] data) {
         val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
         copyDataFromSrc(pointer,length,offset,0);

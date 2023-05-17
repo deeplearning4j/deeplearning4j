@@ -23,11 +23,4 @@
 
 namespace sd {
 
-/*
-template uint8::uint8(const float& rhs);
-template uint8::uint8(const double& rhs);
-
-template uint8& uint8::operator=<float>(const float& rhs);
-template uint8& uint8::operator=<double>(const double& rhs);
- */
 }

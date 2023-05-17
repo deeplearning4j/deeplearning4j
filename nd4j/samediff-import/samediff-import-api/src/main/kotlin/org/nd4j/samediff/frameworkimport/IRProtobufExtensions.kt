@@ -33,6 +33,7 @@ import org.nd4j.ir.TensorNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import org.nd4j.nativeblas.NativeOpsHolder
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.shade.protobuf.ByteString
 import java.lang.IllegalArgumentException
@@ -216,13 +217,11 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
                     throw IllegalArgumentException("Shape of ${Arrays.toString(shape)} did not match length ${halfArray.size}")
             }
 
-            val dataBuffer = Nd4j.createBuffer(DataType.FLOAT,halfArray.size.toLong(),false)
+            val dataBuffer = Nd4j.createTypedBuffer(halfArray.map { input -> input.toShort() }.toShortArray(),
+                DataType.HALF)
 
-            for(i in 0 until halfArray.size) {
-                dataBuffer.put(i.toLong(),HalfIndexer.toFloat(halfArray[i]))
-            }
 
-            return Nd4j.create(dataBuffer).reshape(*shape).castTo(DataType.FLOAT16)
+            return Nd4j.create(dataBuffer).reshape(*shape)
         }
 
         DataType.BFLOAT16 -> {
@@ -242,13 +241,13 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
                     throw IllegalArgumentException("Shape of ${Arrays.toString(shape)} did not match length ${halfArray.size}")
             }
 
-            val dataBuffer = Nd4j.createBuffer(DataType.FLOAT,halfArray.size.toLong(),false)
+            val dataBuffer = Nd4j.createTypedBuffer(halfArray.map { input -> input.toShort() }.toShortArray(),
+                DataType.BFLOAT16)
 
-            for(i in 0 until halfArray.size) {
-                dataBuffer.put(i.toLong(),Bfloat16ArrayIndexer.toFloat(halfArray[i]))
-            }
 
-            return Nd4j.create(dataBuffer).reshape(*shape).castTo(DataType.BFLOAT16)
+            val ret = Nd4j.create(dataBuffer).reshape(*shape)
+
+            return ret
         }
 
 
@@ -385,7 +384,7 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
                     return Nd4j.create(booleanList.toBooleanArray()).reshape(*shape)
                 }
                 else
-                    throw IllegalArgumentException("Shape of ${Arrays.toString(shape)} did not match length ${intArray.size}")
+                    throw IllegalArgumentException("Shape of ${shape.contentToString()} did not match length ${intArray.size}")
             }
 
             return Nd4j.create(intArray).reshape(*shape)

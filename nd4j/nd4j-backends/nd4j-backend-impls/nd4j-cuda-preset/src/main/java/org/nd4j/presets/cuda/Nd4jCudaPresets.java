@@ -152,7 +152,8 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         String platform = properties.getProperty("platform");
         List<String> preloads = properties.get("platform.preload");
         List<String> resources = properties.get("platform.preloadresource");
-
+        boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
+        System.out.println("Functrace on: " + funcTrace);
         // Only apply this at load time since we don't want to copy the CUDA libraries here
         if (!Loader.isLoadLibraries()) {
             return;
@@ -182,6 +183,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
         boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
+        System.out.println("Functrace on: " + funcTrace);
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
@@ -215,19 +217,21 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"));
 
-        infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__" ).define(false))
+
+        infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__" ).define(false)
+                        :  new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__","SD_GCC_FUNCTRACE" ).define(false))
                 .put(funcTrace ? new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA").define(true))
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
                         "throwException",
-                        "closeInstrumentOut",
-                        "setInstrumentOut",
-                        "instrumentFile",
                         "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
                         "sd::PointerDeallocator").skip()
                         : new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
+                        "closeInstrumentOut",
+                        "setInstrumentOut",
+                        "instrumentFile",
                         "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",
                         "sd::PointerDeallocator").skip())
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
