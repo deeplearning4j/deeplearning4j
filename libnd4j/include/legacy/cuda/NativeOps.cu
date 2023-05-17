@@ -2824,29 +2824,20 @@ Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer 
     if (res != 0) throw sd::cuda_exception::build("customOp execution failed", res);
 
     for (auto v : context->fastpath_in()) {
-      if (!v->isEmpty()){
-        v->syncToDevice();
-        v->tickWriteDevice();
-        v->syncToHost();
-
-      }
+      if (!v->isEmpty()) v->syncToDevice();
     }
 
     for (auto v : context->fastpath_out()) {
-      if (!v->isEmpty()) {
-        v->syncToDevice();
-        v->tickWriteDevice();
-        v->syncToHost();
-
-      }
+      if (!v->isEmpty()) v->syncToDevice();
     }
-
-    return result;
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::BAD_INPUT;
   }
+
+  return result;
+} catch (std::exception &e) {
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+  return Status::BAD_INPUT;
+}
 }
 
 Status registerGraph(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer) {
