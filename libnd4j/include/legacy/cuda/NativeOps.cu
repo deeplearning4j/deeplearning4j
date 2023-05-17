@@ -860,18 +860,7 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    sd_printf("Before launch in reduceBool\n",0);
-    sd_printf("stream is %s\n", stream == nullptr ? "null" : "not null");
-    sd_printf("dbX->special() is %s\n", dbX == nullptr ? "null" : "not null");
-    sd_printf("bufferForShapeInfo(hXShapeInfo)->special() is %s\n", ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special() == nullptr ? "null" : "not null");
-    sd_printf("hXShapeInfo is %s\n", hXShapeInfo == nullptr ? "null" : "not null");
-    sd_printf("extraParams is %s\n", extraParams == nullptr ? "null" : "not null");
-    sd_printf("dbZ->special() is %s\n", dbZ->special() == nullptr ? "null" : "not null");
-    sd_printf("dZShapeInfo is %s\n", dZShapeInfo == nullptr ? "null" : "not null");
-    sd_printf("hZShapeInfo is %s\n", hZShapeInfo == nullptr ? "null" : "not null");
-    sd_printf("nullptr is %s\n", nullptr == nullptr ? "null" : "not null");
-    sd_printf("reductionPointer is %s\n", &reductionPointer == nullptr ? "null" : "not null");
-    sd_printf("dTADShapeInfo is %s\n", dTADShapeInfo == nullptr ? "null" : "not null");
+
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::reduce::ReduceBoolFunction,
         ::execReduceScalar(launchDims, stream, opNum, dbX->special(),
