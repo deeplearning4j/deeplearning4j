@@ -33,11 +33,15 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
 public class ScatterNdAdd extends DynamicCustomOp {
+
+
+    private boolean lock = false;
 
     public ScatterNdAdd(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
@@ -83,8 +87,25 @@ public class ScatterNdAdd extends DynamicCustomOp {
             bArguments.add(false);
     }
 
+
+
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        addBArgument(lock);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("lock", lock);
+        return ret;
+    }
+
+
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
         Preconditions.checkState(inputDataTypes.get(0) == inputDataTypes.get(2), "Reference (input 0) and updates (input 2) must have exactly same data types, got %s and %s",
                 inputDataTypes.get(0), inputDataTypes.get(2));

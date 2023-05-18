@@ -1853,13 +1853,17 @@ val scatterNd = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterNd"),
                 booleanConstant(inputName = "checkIndices",constantValue = false,argumentIndex = 1)[0])
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
-val scatterNdAdd = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterNdAdd"),opName = "scatter_nd_add",
+val scatterNdAdd = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterNdAdd"),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("lock" to "use_locking"))),
+        opName = "scatter_nd_add",
         tensorNames = mutableMapOf("indices" to "indices","updates" to "updates","input" to "ref"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val scatterNdSub = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterNdSub"),opName = "scatter_nd_sub",
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("lock" to "use_locking"))),
         tensorNames = mutableMapOf("indices" to "indices","updates" to "updates","input" to "ref"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val scatterNdUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterNdUpdate"),opName = "scatter_nd_update",
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("lock" to "use_locking"))),
         tensorNames = mutableMapOf("indices" to "indices","updates" to "updates","input" to "ref"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 

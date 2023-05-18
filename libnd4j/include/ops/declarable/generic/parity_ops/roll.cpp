@@ -30,7 +30,7 @@
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 0) {
+CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
   auto input = INPUT_VARIABLE(0);
   int inputLen = input->lengthOf();
@@ -107,6 +107,7 @@ CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 0) {
     return sd::Status::OK;
   }
 
+  sd_printf("Shift is linear %d\n",shiftIsLinear);
   if (shiftIsLinear) {
     helpers::rollFunctorLinear(block.launchContext(), input, output, shifts[0], block.isInplace());
   } else {

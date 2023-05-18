@@ -42,20 +42,17 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
     int remainShift = fullLen % actualShift;
 
     // stage 1) swap last actualShift elements with first ones.
-    // PRAGMA_OMP_PARALLEL_FOR //_IF(actualShift > Environment::getInstance().elementwiseThreshold())
     for (int e = 0; e < actualShift; ++e) {
       int sourceIndex = fullLen - actualShift + e;
 
       auto _e0 = output->e<T>(e);
       auto _e1 = output->e<T>(sourceIndex);
 
-      // sd::math::sd_swap((*output)(e), (*output)(sourceIndex));
       output->p<T>(e, _e1);
       output->p<T>(sourceIndex, _e0);
     }
 
     // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
-    // PRAGMA_OMP_PARALLEL_FOR //_IF(shiftCount > Environment::getInstance().tadThreshold())
     for (int count = 1; count < shiftCount; ++count) {
       for (int e = 0; e < actualShift; ++e) {
         int destinationIndex = fullLen - (count + 1) * actualShift + e;
@@ -64,7 +61,6 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
         auto _e0 = output->e<T>(destinationIndex);
         auto _e1 = output->e<T>(sourceIndex);
 
-        // sd::math::sd_swap((*output)(destinationIndex), (*output)(sourceIndex));
         output->p<T>(destinationIndex, _e1);
         output->p<T>(sourceIndex, _e0);
       }
@@ -75,9 +71,6 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
       for (int i = actualShift; i < 2 * actualShift; ++i) {
         auto _e0 = output->e<T>(i);
         auto _e1 = output->e<T>(i + remainShift);
-
-        // sd::math::sd_swap((*output)(i), (*output)(i + remainShift));
-
         output->p<T>(i, _e1);
         output->p<T>(i + remainShift, _e0);
       }
@@ -91,7 +84,6 @@ void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output
   auto source = output;  // input;
   for (size_t i = 0; i < axes.size(); i++) {
     int axe = axes[i];
-    // if (axe == source->rankOf() - 1) {// last dimension
     ResultSet listOfTensors = source->allTensorsAlongDimension({axe});
     ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
     int fullLen = listOfTensors.size();

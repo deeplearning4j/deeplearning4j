@@ -33,11 +33,13 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
 public class ScatterNdUpdate extends DynamicCustomOp {
+    private boolean lock = false;
 
     public ScatterNdUpdate(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
@@ -90,5 +92,20 @@ public class ScatterNdUpdate extends DynamicCustomOp {
                 inputDataTypes.get(0), inputDataTypes.get(2));
         return Collections.singletonList(inputDataTypes.get(0));
     }
+
+    @Override
+    public void configureFromArguments() {
+        super.configureFromArguments();
+        addBArgument(lock);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new HashMap<>();
+        ret.put("lock", lock);
+        return ret;
+    }
+
+
 
 }
