@@ -174,7 +174,6 @@
                 <configuration>
                     <directories>
                         <directory>deeplearning4j-core</directory>
-                        <directory>deeplearning4j-scaleout</directory>
                         <directory>deeplearning4j-ui-parent</directory>
                         <directory>deeplearning4j-graph</directory>
                         <directory>deeplearning4j-nlp-parent</directory>
