@@ -22,7 +22,10 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
+import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -157,5 +160,40 @@ public class HalfBuffer extends BaseCpuDataBuffer {
         return new HalfBuffer(data);
     }
 
+    @Override
+    public void setData(float[] data) {
+        ((HalfIndexer) indexer).put(0, data);
+    }
 
+    @Override
+    public void setData(int[] data) {
+        ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
+
+    @Override
+    public void setData(long[] data) {
+        ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
+
+    @Override
+    public void setData(byte[] data) {
+        ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+
+    }
+
+    @Override
+    public void setData(short[] data) {
+        float[] bFloats = new float[data.length];
+        for(int i = 0;i  < data.length; i++) {
+            bFloats[i] = HalfIndexer.toFloat(data[i]);
+        }
+        ((HalfIndexer) indexer).put(0, bFloats);
+
+    }
+
+    @Override
+    public void setData(double[] data) {
+        ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+
+    }
 }

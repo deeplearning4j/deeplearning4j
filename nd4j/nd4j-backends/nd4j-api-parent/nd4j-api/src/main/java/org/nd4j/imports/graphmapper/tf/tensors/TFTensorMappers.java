@@ -338,7 +338,7 @@ public class TFTensorMappers {
 
         @Override
         public void getValue(float[] jArr, ShortBuffer buffer, int i){
-            throw new UnsupportedOperationException("Not yet implemnted: BFP16 reading from buffer");
+            throw new UnsupportedOperationException("Not yet implemented: BFP16 reading from buffer");
         }
 
         @Override

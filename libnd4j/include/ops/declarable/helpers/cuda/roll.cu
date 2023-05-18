@@ -46,11 +46,11 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const sd::LongTy
     for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
       int sourceIndex = fullLength - actualShift + i;
 
-      auto eA = x[sourceIndex * xEws];
-      auto eB = x[i * xEws];
+      auto _e0 = x[i * xEws];
+      auto _e1 = x[sourceIndex * xEws];
 
-      z[i * zEws] = eA;
-      z[sourceIndex * zEws] = eB;
+      z[i * zEws] = _e1;
+      z[sourceIndex * zEws] = _e0;
     }
   } else {
     for (sd::LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
@@ -252,40 +252,16 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<sd::Lo
 
   for (size_t i = 0; i < axes.size(); i++) {
     int axe = axes[i];
-    if (axe == input->rankOf() - 1) {  // last dimension
-      ResultSet listOfTensors = output->allTensorsAlongDimension({axe});
-      ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
-      int fullLen = listOfTensors.size();
-      int theShift = shifts[i];
-      for (int k = 0; k < fullLen; k++) {
-        rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
-      }
-    } else {
-      std::vector<sd::LongType> dims(input->rankOf() - axe - 1);
-      for (int i = 0; i < dims.size(); ++i) dims[i] = axe + 1 + i;
-
-      auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
-
-      int numTads = packZ->numberOfTads();
-      int sizeAt = input->sizeAt(axe);
-      auto tadLength = shape::length(packZ->primaryShapeInfo());
-
-      int theShift = shifts[i];
-
-      if (theShift) {
-        for (int dim = 0; dim < numTads / sizeAt; ++dim) {
-          rollKernelFullAnyDimensionStage1<T><<<1, 256, 1024, *(output->getContext()->getCudaStream())>>>(
-              output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(), output->specialBuffer(),
-              packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
-
-          rollKernelFullAnyDimensionStage2<T><<<1, 256, 1024, *(output->getContext()->getCudaStream())>>>(
-              output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(), output->specialBuffer(),
-              packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLength, dim, sizeAt, theShift);
-        }
-      }
+    ResultSet listOfTensors = input->allTensorsAlongDimension({axe});
+    ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
+    int fullLen = listOfTensors.size();
+    int theShift = shifts[i];
+    for (int k = 0; k < fullLen; k++) {
+      rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
+    }
     }
   }
-}
+
 
 template <typename T>
 static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool inplace) {

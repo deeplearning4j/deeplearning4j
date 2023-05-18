@@ -49,9 +49,7 @@ CUSTOM_OP_IMPL(scatter_nd, 3, 1, false, 0, 0) {
                "SCATTER_ND OP: last dimension of indices array must be <= length of shape array, but got %i and %i "
                "correspondingly !",
                indices->sizeAt(-1), shapeLen);
-  // REQUIRE_TRUE(updRank == (indRank + shapeLen - 2), 0, "SCATTER_ND OP: the equality updates_rank = (indices_rank +
-  // shape_length - 2) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i,
-  // shape_length = %i !", updRank, indRank, shapeLen);
+
   REQUIRE_TRUE(
       updRank == (indRank - 1 + shapeLen - indices->sizeAt(-1)), 0,
       "SCATTER_ND OP: the equality updates_rank = (indices_rank - 1 + shape_length - last_indices_dimension) must be "

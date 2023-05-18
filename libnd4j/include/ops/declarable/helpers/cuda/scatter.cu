@@ -96,8 +96,8 @@ sd::LongType checkIndices(sd::LaunchContext *context, const NDArray &indices, co
   NDArray::prepareSpecialUse({&numOfBadIndx}, {&indices});
   BUILD_SINGLE_SELECTOR(xType, checkIndicesCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
-                         indices.specialShapeInfo(), reinterpret_cast<sd::LongType *>(numOfBadIndx.specialBuffer()),
-                         output.specialShapeInfo(), axis),
+                            indices.specialShapeInfo(), reinterpret_cast<sd::LongType *>(numOfBadIndx.specialBuffer()),
+                            output.specialShapeInfo(), axis),
                         SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({&numOfBadIndx}, {&indices});
 
@@ -216,7 +216,6 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const sd::Lo
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
-
   __shared__ sd::LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
   __shared__ sd::LongType yLen;
   __shared__ bool is1Dcase, xySameStride;
@@ -260,7 +259,7 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const sd::Lo
       yOffset = shape::getOffset(yShapeInfo, yCoords);
       xOffset =
           shape::getOffset(xShapeInfo, yCoords);  // first xRank coordinates in yCoords are the same for y and x -> for
-                                                  // (sd::Unsigned j = 0; j < xRank; ++j) xCoords[j] = yCoords[j];
+      // (sd::Unsigned j = 0; j < xRank; ++j) xCoords[j] = yCoords[j];
 
       zCoords[0] = x[xOffset];
 
@@ -332,8 +331,8 @@ void scatter(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indice
   NDArray::prepareSpecialUse({&output}, {&updates, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op,
-                         indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
-                         updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
+                            indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
+                            updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
   NDArray::registerSpecialUse({&output}, {&updates, &indices});
 
@@ -387,8 +386,7 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
     if (!is1Dcase) shape::index2coords(i, zShapeInfo, zCoords);
 
-    for (sd::LongType j = 0; j < len;
-         ++j) {  // if !is1Dcase then we loop through first xRank-1 dimensions of x, that is we exclude last x dimension
+    for (sd::LongType j = 0; j < len; j++) {
 
       if (is1Dcase) {
         if (x[j * shape::stride(xShapeInfo)[xNonUnitDim]] != i) continue;
@@ -406,7 +404,7 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
         // rest iterations
         bool matched = true;
-        for (sd::Unsigned k = 1; k < xLastDim; ++k) {
+        for (sd::LongType k = 1; k < xLastDim; k++) {
           yCoords[xRank - 1] = k;
           xOffset += shape::stride(xShapeInfo)[xRank - 1];
           if (zCoords[k] != x[xOffset]) {
@@ -494,36 +492,30 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
   sd::LongType yOffset, zOffset;
   sd::LongType *yCoords, *zCoords;
 
-  if (!is1Dcase) {
-    yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
-    zCoords = yCoords + biggerXYRank;
-  }
-
+  yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
+  zCoords = yCoords + biggerXYRank;
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
-    if (is1Dcase) {
-      yOffset = i * shape::stride(yShapeInfo)[zNonUnitDim];
-      zOffset = x[i * shape::stride(xShapeInfo)[xNonUnitDim]] * shape::stride(zShapeInfo)[zNonUnitDim];
-    } else {
-      shape::index2coords(i, yShapeInfo, yCoords);
 
-      yOffset = shape::getOffset(yShapeInfo, yCoords);
+    shape::index2coords(i, yShapeInfo, yCoords);
 
-      if (yRank >= xRank)
-        zCoords[xLastDim] = yCoords[xRank - 1];  // saving y coordinate, since it might be changed in next instructions
+    yOffset = shape::getOffset(yShapeInfo, yCoords);
 
-      for (sd::Unsigned j = 0; j < xLastDim; ++j) {  // first xRank-1 coordinates in yCoords are the same for y and x
-        yCoords[xRank - 1] = j;
-        zCoords[j] = x[shape::getOffset(xShapeInfo, yCoords)];
-      }
+    if (yRank >= xRank)
+      zCoords[xLastDim] = yCoords[xRank - 1];  // saving y coordinate, since it might be changed in next instructions
 
-      for (sd::Unsigned j = xLastDim + 1; j < zRank; ++j) zCoords[j] = yCoords[yRank - zRank + j];
-
-      zOffset = shape::getOffset(zShapeInfo, zCoords);
+    for (sd::LongType j = 0; j < xLastDim; ++j) {  // first xRank-1 coordinates in yCoords are the same for y and x
+      yCoords[xRank - 1] = j;
+      zCoords[j] = x[shape::getOffset(xShapeInfo, yCoords)];
     }
+
+    for (sd::LongType j = xLastDim + 1; j < zRank; ++j) zCoords[j] = yCoords[yRank - zRank + j];
+
+    zOffset = shape::getOffset(zShapeInfo, zCoords);
 
     switch (opCode) {
       case pairwise::Add:
         z[zOffset] += y[yOffset];
+
         break;
       case pairwise::Subtract:
         z[zOffset] -= y[yOffset];
@@ -551,8 +543,8 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
         break;
       default:
         continue;
-    }
-  }
+    } //end switch
+  } //end for loop
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -578,7 +570,7 @@ void scatterND(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indi
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = ((lock ? output.lengthOf() : updates.lengthOf()) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * ((yRank > xRank ? yRank : xRank) + zRank) + 256;
+  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * ((yRank > xRank ? yRank : xRank) + zRank) + 512;
 
   const auto xType = indices.dataType();
   const auto yType = updates.dataType();
@@ -588,8 +580,8 @@ void scatterND(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indi
   NDArray::prepareSpecialUse({&output}, {&updates, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op,
-                         indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
-                         updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
+                            indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
+                            updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
   NDArray::registerSpecialUse({&output}, {&updates, &indices});
 
@@ -643,7 +635,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
                                        void *vy, const sd::LongType *yShapeInfo, void *vz,
                                        const sd::LongType *zShapeInfo) {
   scatterForLossCuda<X, Z>
-      <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+  <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -657,22 +649,22 @@ void scatterForLoss(sd::LaunchContext *context, const NDArray &indices, NDArray 
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = updates.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
+  const int sharedMem = updates.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
   if (calcGrad) {
     NDArray::prepareSpecialUse({&updates}, {&indices});
     BUILD_DOUBLE_SELECTOR(
         indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
         (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
-         indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr),
+            indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr),
         SD_INDEXING_TYPES, SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&updates}, {&indices});
   } else {
     NDArray::prepareSpecialUse({&output}, {&indices, &updates});
     BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
                           (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
-                           indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
-                           output.specialBuffer(), output.specialShapeInfo()),
+                              indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
+                              output.specialBuffer(), output.specialShapeInfo()),
                           SD_INDEXING_TYPES, SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&indices, &updates});
   }

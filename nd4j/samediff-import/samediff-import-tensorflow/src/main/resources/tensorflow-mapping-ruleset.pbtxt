@@ -2343,10 +2343,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
     outputBooleanName: "computeUv"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "computeUv"
       value: "compute_uv"
@@ -2362,9 +2362,9 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     outputIntName: "calcUV"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "calcUV"
       value: "compute_uv"
@@ -5312,7 +5312,7 @@ mappings {
     functionName: "stringequals"
     inputStringAttrName: "padding"
     inputStringAttrName: "padding"
-    outputIntName: "isSameMode"
+    outputBooleanName: "isSameMode"
     inputToOutput {
       key: "isSameMode"
       value: "padding"
@@ -6163,10 +6163,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6327,6 +6327,18 @@ mappings {
       value: "updates"
     }
     ruleType: "tensor"
+    inputFrameworkOpName: "ScatterNdAdd"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "use_locking"
+    outputBooleanName: "lock"
+    inputToOutput {
+      key: "lock"
+      value: "use_locking"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "ScatterNdAdd"
   }
 }
@@ -6929,6 +6941,18 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNdUpdate"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "use_locking"
+    outputBooleanName: "lock"
+    inputToOutput {
+      key: "lock"
+      value: "use_locking"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ScatterNdUpdate"
+  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -7077,8 +7101,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "start"
     outputDoubleName: "stop"
-    inputTensorName: "start"
     inputToOutput {
       key: "start"
       value: "start"
@@ -8282,6 +8306,18 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "ScatterNdSub"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputBooleanName: "use_locking"
+    outputBooleanName: "lock"
+    inputToOutput {
+      key: "lock"
+      value: "use_locking"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "ScatterNdSub"
+  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -8909,19 +8945,19 @@ mappings {
     inputTensorName: "max_output_size"
     outputTensorName: "boxes"
     outputTensorName: "scales"
-    outputTensorName: "overlayThreshold"
+    outputTensorName: "iouThreshold"
     outputTensorName: "maxOutputSize"
     inputToOutput {
       key: "boxes"
       value: "boxes"
     }
     inputToOutput {
-      key: "maxOutputSize"
-      value: "max_output_size"
-    }
-    inputToOutput {
       key: "iouThreshold"
       value: "iou_threshold"
+    }
+    inputToOutput {
+      key: "maxOutputSize"
+      value: "max_output_size"
     }
     inputToOutput {
       key: "scales"
@@ -9030,8 +9066,8 @@ mappings {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "depth"
-    inputTensorName: "on"
-    inputTensorName: "off"
+    outputDoubleName: "on"
+    outputDoubleName: "off"
     inputToOutput {
       key: "depth"
       value: "depth"
@@ -9076,7 +9112,7 @@ mappings {
     inputTensorName: "x"
     inputTensorName: "perm"
     outputTensorName: "input"
-    outputTensorName: "permutationVector"
+    outputTensorName: "permuteDims"
     inputToOutput {
       key: "input"
       value: "x"
@@ -9244,7 +9280,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numOfClasses"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9304,7 +9340,7 @@ mappings {
     inputBooleanName: "align_corners"
     inputBooleanName: "half_pixel_centers"
     outputBooleanName: "alignCorners"
-    outputBooleanName: "halfPixelCenters"
+    outputBooleanName: "halfPixelCenter"
     inputToOutput {
       key: "alignCorners"
       value: "align_corners"
@@ -10350,8 +10386,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    inputTensorName: "min"
-    inputTensorName: "max"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "maxval"
@@ -11560,7 +11596,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "k"
+    outputDoubleName: "k"
     inputToOutput {
       key: "k"
       value: "k"
@@ -12572,7 +12608,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "k"
-    outputIntName: "k"
+    outputDoubleName: "k"
     inputBooleanName: "sorted"
     outputBooleanName: "needSort"
     inputToOutput {
@@ -12989,8 +13025,8 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "reverse"
     inputBooleanName: "reverse"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "reverse"
       value: "reverse"
@@ -14540,7 +14576,7 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
-    inputTensorName: "scoreThreshold"
+    outputDoubleName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -14899,7 +14935,7 @@ mappings {
     functionName: "stringequals"
     inputStringAttrName: "padding"
     inputStringAttrName: "padding"
-    outputIntName: "isSameMode"
+    outputBooleanName: "isSameMode"
     inputToOutput {
       key: "isSameMode"
       value: "padding"
@@ -15663,10 +15699,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
-    outputIntName: "exclusive"
-    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
+    outputBooleanName: "exclusive"
+    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"

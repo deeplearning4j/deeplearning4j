@@ -1433,7 +1433,7 @@ DECLARE_OP(draw_bounding_boxes, 3, 1, true);
  *    0 - NDArray with the same shape as input.
  */
 #if NOT_EXCLUDED(OP_roll)
-DECLARE_CONFIGURABLE_OP(roll, 1, 1, true, 0, 1);
+DECLARE_CONFIGURABLE_OP(roll, -2, 1, true, 0, 1);
 #endif
 
 /**

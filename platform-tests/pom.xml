@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-cuda-11.8</backend.artifactId>
+        <backend.artifactId>nd4j-native</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
@@ -89,7 +89,7 @@
         <test.asan.options>protect_shadow_gap=0:replace_intrin=0:detect_leaks=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload></preload>
+        <preload>/usr/lib64/libasan.so.8</preload>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>
