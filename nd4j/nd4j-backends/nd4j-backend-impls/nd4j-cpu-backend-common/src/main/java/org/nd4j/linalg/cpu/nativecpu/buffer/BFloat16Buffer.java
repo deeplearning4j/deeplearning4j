@@ -21,7 +21,10 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.ShortPointer;
+import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -140,6 +143,45 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
     public BFloat16Buffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         super(data, copy, offset, workspace);
     }
+
+
+    @Override
+    public void setData(float[] data) {
+        ((Bfloat16Indexer) indexer).put(0, data);
+    }
+
+    @Override
+    public void setData(int[] data) {
+        ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
+
+    @Override
+    public void setData(long[] data) {
+        ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
+
+    @Override
+    public void setData(byte[] data) {
+        ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+
+    }
+
+    @Override
+    public void setData(short[] data) {
+        float[] bFloats = new float[data.length];
+        for(int i = 0;i  < data.length; i++) {
+            bFloats[i] = Bfloat16Indexer.toFloat(data[i]);
+        }
+        ((Bfloat16Indexer) indexer).put(0, bFloats);
+
+    }
+
+    @Override
+    public void setData(double[] data) {
+        ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+
+    }
+
 
     @Override
     protected DataBuffer create(long length) {
