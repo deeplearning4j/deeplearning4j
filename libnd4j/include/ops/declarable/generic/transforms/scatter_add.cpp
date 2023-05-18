@@ -35,7 +35,6 @@ OP_IMPL(scatter_add, 3, 1, true) {
     auto indices = INPUT_VARIABLE(1);
     auto updates = INPUT_VARIABLE(2);
 
-    sd_printf("Scatter add base op\n",0);
     auto output = OUTPUT_VARIABLE(0);
 
     if (!block.isInplace())

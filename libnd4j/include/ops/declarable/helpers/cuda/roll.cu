@@ -252,7 +252,6 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<sd::Lo
 
   for (size_t i = 0; i < axes.size(); i++) {
     int axe = axes[i];
-    sd_printf("Last dimension case\n",0);
     ResultSet listOfTensors = input->allTensorsAlongDimension({axe});
     ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
     int fullLen = listOfTensors.size();

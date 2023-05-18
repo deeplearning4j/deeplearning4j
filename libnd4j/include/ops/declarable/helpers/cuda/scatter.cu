@@ -489,7 +489,6 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
   }
   __syncthreads();
 
-  printf("is1Dcase %d xRank %d yRank %d zRank %d yLen %d\n",is1Dcase, xRank, yRank, zRank,yLen);
   sd::LongType yOffset, zOffset;
   sd::LongType *yCoords, *zCoords;
 
@@ -513,11 +512,9 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const sd::
 
     zOffset = shape::getOffset(zShapeInfo, zCoords);
 
-    printf("zOffset %d yOffset %d value at zOffset %f value at yOffset %f \n",zOffset,yOffset,z[zOffset],y[yOffset]);
     switch (opCode) {
       case pairwise::Add:
         z[zOffset] += y[yOffset];
-        printf("New zOffset %d yOffset %d value at zOffset %f value at yOffset %f \n",zOffset,yOffset,z[zOffset],y[yOffset]);
 
         break;
       case pairwise::Subtract:

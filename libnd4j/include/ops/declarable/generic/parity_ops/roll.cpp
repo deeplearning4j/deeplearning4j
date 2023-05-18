@@ -107,7 +107,6 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
     return sd::Status::OK;
   }
 
-  sd_printf("Shift is linear %d\n",shiftIsLinear);
   if (shiftIsLinear) {
     helpers::rollFunctorLinear(block.launchContext(), input, output, shifts[0], block.isInplace());
   } else {
