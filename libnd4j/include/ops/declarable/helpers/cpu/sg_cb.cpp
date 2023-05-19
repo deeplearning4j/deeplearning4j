@@ -1,20 +1,20 @@
 /* ******************************************************************************
- *
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
 
 //
 // @author raver119@gmail.com
@@ -384,6 +384,28 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
                      const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                      const int expLength, const int negLength, T *const expTable, const T *negTable,
                      const LongType hsRounds, int t);
+
+template <typename T>
+void doSkipGramInferenceLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
+                              const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+                              const int expLength, const int negLength, T *const expTable, const T *negTable,
+                              const LongType hsRounds, int t,T *neu1e);
+
+//used for lifecycle tracking in thread locals for error accumulation
+template <typename T>
+class BufferHolder {
+ public:
+  BufferHolder(const int vectorLength) {
+    neu1e = new T[vectorLength];
+  }
+  T *neu1e;
+  ~BufferHolder() {
+    delete[] neu1e;
+  }
+
+};
+
 template <typename T>
 void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable,NDArray &vnegTable, NDArray &vinfVector,
                         NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
@@ -392,6 +414,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
   const auto expTable = reinterpret_cast<T *>(vexpTable.buffer());
   const auto negTable = reinterpret_cast<T *>(vnegTable.buffer());
   const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
+  //training
   if(vinfVector.isEmpty()) {
     const sd::LongType  targetsLen = targets.lengthOf();
 
@@ -420,24 +443,118 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
 
-  } else {
-    // regular mode provides 0 guarantees for reproducibility
+  } else { //inference
+    // Declare the accumulation buffer outside of the parallel section
+    T* accBuffer = new T[vectorLength];
+    memset(accBuffer, 0, vectorLength * sizeof(T));
+    std::vector<T *> accBuffers(numThreads);
     auto numTargets = targets.lengthOf();
-    for(int iteration = 0; iteration < iterations; iteration++) {
-      for (auto t = 0; t < numTargets; t++) {
-        doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
-                        vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
 
-        lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
+    auto func2 = PRAGMA_THREADS_FOR_2D {
+     thread_local BufferHolder<T> holder(vectorLength);
+      memset(holder.neu1e, 0, vectorLength * sizeof(T));
+      for (int iteration = start_x; iteration < stop_x; iteration += inc_x) {
+
+        for (auto t = start_y; t < stop_y; t += inc_y) {
+
+          doSkipGramInferenceLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
+                                   vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t,holder.neu1e);
+
+          lr.p<double>(t, ((lr.e<double>(t) - static_cast<double>(minLearningRate)) /
+                           (static_cast<double>(iterations - start_x))) +
+                          static_cast<double>(minLearningRate));
+
+          // accumulate updates in neu1e to accBuffer
+          PRAGMA_OMP_SIMD
+          for (int e = 0; e < vectorLength; e++) {
+            accBuffer[e] += holder.neu1e[e];
+            holder.neu1e[e] = 0;  // reset neu1e for the next iteration
+          }
+        }
+
 
       }
 
+    };
+
+    // Apply the accumulated updates to vinfVector outside the parallel section
+    auto syn0row = reinterpret_cast<T *>(vinfVector.buffer());
+    PRAGMA_OMP_SIMD
+    for (int e = 0; e < vectorLength; e++) {
+      syn0row[e] += accBuffer[e];
+    }
+    delete[] accBuffer;
+
+    samediff::Threads::parallel_for(func2, 0, iterations, 1, 0, numTargets, 1);
+    // regular mode provides 0 guarantees for reproducibility
+/*   PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
+   for(int iteration = 0; iteration < iterations; iteration++) {
+     for (auto t = 0; t < numTargets; t++) {
+       doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
+                       vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
+
+       lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
+
+     }
+   }*/
+
+  } //end else
+
+}
+
+
+template <typename T>
+void doSkipGramInferenceLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
+                              const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+                              const int expLength, const int negLength, T *const expTable, const T *negTable,
+                              const LongType hsRounds, int t,T *neu1e) {
+
+  auto alpha = lr.e<double>(t);
+
+  LongType randomValue = nextRandom.e<LongType>(t);
+  auto target = targets.e<int>(t);
+  auto syn0row = vinfVector.isEmpty() ?  reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)) : reinterpret_cast<T *>(vinfVector.buffer());
+  if(hsRounds > 0) {
+    for (LongType e = 0; e < hsRounds; e++) {
+      int currRow = indices.e<int>(t,e);
+      int code = codes.e<int>(t,e);
+      //codes are only 0 and 1, -1 are placeholders for invalid codes
+      //the codes matrix is padded with extra values at time of allocation
+      //this is due to the code rows effectively being a ragged matrix (rows have different shapes)
+      if(code < 0)  {
+        continue;
+      }
+
+      T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
+      hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,lr.e<double>(t),vectorLength,code,expLength,!vinfVector.isEmpty());
 
     }
+  }
 
+  if(nsRounds > 0) {
+    int irow = negStarters.e<int>(t);
+    int nsStarter = irow;
+    for (int r = 0; r < nsRounds + 1; r++) {
+      if (r == 0) {
+        // target is known in advance
+      } else {
+        randomValue = randomValue * (unsigned long long)25214903917 + 11;
+        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+        if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+
+        if (irow == nsStarter) continue;
+      }
+
+      nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
+                    r == 0 ? 1 : 0, expLength, !vinfVector.isEmpty());
+    }
   }
 
 }
+
 template <typename T>
 void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
                      const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
