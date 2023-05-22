@@ -36,10 +36,10 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void softmaxMKLDNN(const NDArray* x, NDArray* z, const int axis) {
+static void softmaxMKLDNN(const NDArray* x, NDArray* z, const sd::LongType axis) {
   dnnl::memory::dims shape = x->getShapeAsFlatVector();
 
-  const int xRank = x->rankOf();
+  const sd::LongType xRank = x->rankOf();
 
   dnnl::memory::format_tag xFormat = onednnUtils::getFormat(*x);
   dnnl::memory::format_tag zFormat = onednnUtils::getFormat(*z);
@@ -139,7 +139,7 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx, const int axis) {
+static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx, const sd::LongType axis) {
   dnnl::memory::desc x_user_md, x_mkl_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
   // x
@@ -207,8 +207,8 @@ PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
   auto dLdx = OUTPUT_VARIABLE(0);
   dLdx->assign(softmaxOutput);
 
-  const int rank = input->rankOf();
-  const int dLdzRank = dLdz->rankOf();
+  const sd::LongType rank = input->rankOf();
+  const sd::LongType dLdzRank = dLdz->rankOf();
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
   if (dim < 0) {

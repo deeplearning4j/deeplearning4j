@@ -868,7 +868,7 @@ std::vector<sd::LongType> ShapeUtils::evalPermutFromTo(const std::vector<sd::Lon
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<sd::LongType> ShapeUtils::composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx) {
+std::vector<sd::LongType> ShapeUtils::composeShapeUsingDimsAndIdx(const std::vector<LongType>& dimsAndIdx) {
   auto size = dimsAndIdx.size();
   if (size % 2 != 0)
     throw std::runtime_error(

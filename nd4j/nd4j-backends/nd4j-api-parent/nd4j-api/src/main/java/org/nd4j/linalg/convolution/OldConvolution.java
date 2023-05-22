@@ -134,8 +134,12 @@ public class OldConvolution {
         long w = img.size(3);
         long outHeight = outSize(h, kh, sy, ph, coverAll);
         long outWidth = outSize(w, kw, sx, pw, coverAll);
+        INDArray paddedArray = Nd4j.createFromArray(new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}});
+        System.out.println("Padded array: " + paddedArray  + " shape: " + paddedArray.shapeInfoToString());
         INDArray padded = Nd4j.pad(img, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}}, Mode.CONSTANT, pval);
+        System.out.println("Padded: " + padded + " padded final shape " + padded.shapeInfoToString());
         INDArray ret = Nd4j.create(n, c, kh, kw, outHeight, outWidth);
+        System.out.println("Ret shape info java " + ret.shapeInfoToString());
         for (int i = 0; i < kh; i++) {
             //offset for the row based on the stride and output height
             long iLim = i + sy * outHeight;

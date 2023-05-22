@@ -4203,7 +4203,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 pointIdxsIn[j++] = indexes[i];
             }
 
-            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length-numPoint];          //Indices for destination (output array)
+            INDArrayIndex[] pointIdxsOut = new INDArrayIndex[indexes.length - numPoint];          //Indices for destination (output array)
             j = 0;
             specCount = 0;
             int[] specifiedAxisOut = new int[numSpecified];
@@ -4226,7 +4226,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             //Iterate over sub-arrays; copy from source to destination
             while(iter.hasNext()) {
                 long[] specifiedIdxs = iter.next();
-                for( int i = 0; i<specifiedIdxs.length; i++) {
+                for( int i = 0; i < specifiedIdxs.length; i++) {
                     long sourceIdx = si[i].getIndexes()[(int)specifiedIdxs[i]];
                     pointIdxsIn[specifiedAxisIn[i]] = NDArrayIndex.point(sourceIdx);
                     int outI = (int)specifiedIdxs[i];

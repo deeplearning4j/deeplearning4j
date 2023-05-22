@@ -328,55 +328,6 @@ int binarySearch(const int *haystack, const int needle, const int totalElements)
   return (haystack[halfIndex] == needle) ? halfIndex : -1;
 }
 
-template <typename T>
-static void do_update(const int target, const int rowIndex, const int count, T *syn0, T *neu1t,
-                      const int vectorLength) {
-  auto syn0row = syn0 + (target * vectorLength);
-  auto neu1e = neu1t + (rowIndex * vectorLength);
-  for (int e = 0; e < vectorLength; e++) syn0row[e] += neu1e[e] / count;
-}
-
-template <typename T>
-static void do_positive(const int target, const int postive, T *syn0, T *syn1Neg, T *expTable, T *neu1e,
-                        const double alpha, const int vectorLength, const int expLength) {
-  nSampling_<T>(syn0, syn1Neg, expTable, neu1e, alpha, vectorLength, 1, expLength, false);
-}
-
-template <typename T>
-static void do_negative(int target, int positive, T *syn0, T *syn1Neg, T *expTable, T *negTable, T *neu1e,
-                        int *sStarters, const double alpha, const unsigned long long rv, const int vocabSize,
-                        const int vectorLength, const int expLength, const int negLength, const int nsRounds,
-                        const int numThreads, const int numTargets) {
-  int irow = 0;
-  unsigned long long randomValue = rv;
-  for (int r = 0; r < nsRounds; r++) {
-    randomValue = sd::math::sd_abs<sd::LongType>(randomValue * (unsigned long long)25214903917 + 11);
-    auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
-    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-    if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-
-    if (irow == positive) continue;
-
-    // we shift irow here to guarantee independence
-
-    int dim = irow % numThreads;
-    if (dim != omp_get_thread_num()) {
-      irow += (numThreads - dim + omp_get_thread_num());
-
-      // roll back to nearest affilated word
-      while (irow >= vocabSize) irow -= numThreads;
-
-      // if this row was processed as first step somewhere - skip it
-      if (binarySearch(sStarters, irow, numTargets) > 0) {
-        r--;
-        continue;
-      }
-    }
-
-    nSampling_<T>(syn0, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, 0, expLength, false);
-  }
-}
 
 template <typename T>
 void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
@@ -386,11 +337,11 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
                      const LongType hsRounds, int t);
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
-                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
-                              const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
-                              const int expLength, const int negLength, T *const expTable, const T *negTable,
-                              const LongType hsRounds, int t,T *neu1e);
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
+                              const NDArray &lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+                              const int vectorLength, const int expLength, const int negLength, T *const expTable,
+                              const T *negTable, const LongType hsRounds, int t, T *neu1e);
 
 //used for lifecycle tracking in thread locals for error accumulation
 template <typename T>
@@ -444,59 +395,37 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
   } else { //inference
-    // Declare the accumulation buffer outside of the parallel section
     T* accBuffer = new T[vectorLength];
     memset(accBuffer, 0, vectorLength * sizeof(T));
-    std::vector<T *> accBuffers(numThreads);
     auto numTargets = targets.lengthOf();
 
-    auto func2 = PRAGMA_THREADS_FOR_2D {
-     thread_local BufferHolder<T> holder(vectorLength);
-      memset(holder.neu1e, 0, vectorLength * sizeof(T));
-      for (int iteration = start_x; iteration < stop_x; iteration += inc_x) {
+    BufferHolder<T> holder(vectorLength);
 
-        for (auto t = start_y; t < stop_y; t += inc_y) {
+    for(int iteration = 0; iteration < iterations; iteration++) {
+      for (auto t = 0; t < numTargets; t++) {
+        doSkipGramInferenceLoop_(s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom,
+                                 nsRounds, vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t, holder.neu1e);
 
-          doSkipGramInferenceLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
-                                   vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t,holder.neu1e);
+        lr.p<double>(t, ((lr.e<double>(t) - static_cast<double>(minLearningRate)) /
+                         (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
 
-          lr.p<double>(t, ((lr.e<double>(t) - static_cast<double>(minLearningRate)) /
-                           (static_cast<double>(iterations - start_x))) +
-                          static_cast<double>(minLearningRate));
-
-          // accumulate updates in neu1e to accBuffer
-          PRAGMA_OMP_SIMD
-          for (int e = 0; e < vectorLength; e++) {
-            accBuffer[e] += holder.neu1e[e];
-            holder.neu1e[e] = 0;  // reset neu1e for the next iteration
-          }
+        // accumulate updates in neu1e to accBuffer
+        for (int e = 0; e < vectorLength; e++) {
+          accBuffer[e] += holder.neu1e[e];
+          holder.neu1e[e] = 0;  // reset neu1e for the next iteration
         }
-
-
       }
-
-    };
+    }
 
     // Apply the accumulated updates to vinfVector outside the parallel section
     auto syn0row = reinterpret_cast<T *>(vinfVector.buffer());
-    PRAGMA_OMP_SIMD
     for (int e = 0; e < vectorLength; e++) {
       syn0row[e] += accBuffer[e];
     }
+
     delete[] accBuffer;
 
-    samediff::Threads::parallel_for(func2, 0, iterations, 1, 0, numTargets, 1);
-    // regular mode provides 0 guarantees for reproducibility
-/*   PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-   for(int iteration = 0; iteration < iterations; iteration++) {
-     for (auto t = 0; t < numTargets; t++) {
-       doSkipGramLoop_(s0, s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom, nsRounds,
-                       vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t);
 
-       lr.p<double>(t,((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
-
-     }
-   }*/
 
   } //end else
 
@@ -504,17 +433,17 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
-                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
-                              const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
-                              const int expLength, const int negLength, T *const expTable, const T *negTable,
-                              const LongType hsRounds, int t,T *neu1e) {
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
+                              const NDArray &lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+                              const int vectorLength, const int expLength, const int negLength, T *const expTable,
+                              const T *negTable, const LongType hsRounds, int t, T *neu1e) {
 
   auto alpha = lr.e<double>(t);
 
   LongType randomValue = nextRandom.e<LongType>(t);
   auto target = targets.e<int>(t);
-  auto syn0row = vinfVector.isEmpty() ?  reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength)) : reinterpret_cast<T *>(vinfVector.buffer());
+  auto syn0row =  reinterpret_cast<T *>(vinfVector.buffer());
   if(hsRounds > 0) {
     for (LongType e = 0; e < hsRounds; e++) {
       int currRow = indices.e<int>(t,e);

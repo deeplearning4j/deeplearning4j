@@ -1317,20 +1317,19 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         long outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
-/*
-      @ParameterizedTest
+
+    @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIm2Col(Nd4jBackend backend) {
         INDArray linspaced = Nd4j.linspace(1, 16, 16, DataType.FLOAT).reshape(2, 2, 2, 2);
         INDArray ret = Convolution.im2col(linspaced, 1, 1, 1, 1, 2, 2, 0, false);
         System.out.println(ret);
     }
-    */
 
 
 
-    @Test
-    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompareIm2ColImpl(Nd4jBackend backend) {
 
         int[] miniBatches = {1, 3, 5};
@@ -1386,8 +1385,6 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
                                                     for (boolean cAll : coverall) {
 
                                                         INDArray in = Nd4j.rand(new int[] {m, d, h, w});
-                                                        //assertEquals(in.data().allocationMode(), mode);
-                                                        //assertEquals(in.data().dataType(), opType);
 
                                                         INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph,
                                                                 pw, -1, cAll); //Old implementation

@@ -302,7 +302,7 @@ else()
 
     if (SD_CPU AND SD_SANITIZE)
         # adds stack size to prevent misc errors with address sanitizer
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address stack-size=8192")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,thread,undefined -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow -fno-sanitize-recover=all stack-size=8192")
     endif()
 endif()
 

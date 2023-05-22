@@ -1898,7 +1898,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Disabled(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsStrictlyIncShape(Nd4jBackend backend) {

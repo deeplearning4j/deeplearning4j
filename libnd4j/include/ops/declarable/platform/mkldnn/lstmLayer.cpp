@@ -232,7 +232,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
   lstm_forward::primitive_desc lstm_prim_desc(lstm_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   // provide memory and check whether reorder is required
   // x

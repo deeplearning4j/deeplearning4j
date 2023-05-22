@@ -33,13 +33,13 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
-                           const int kH, const int kW, const int sH, const int sW, const int pH, const int pW,
-                           const int dH, const int dW, const int paddingMode, const bool isNCHW, const int wFormat) {
+                           const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
+                           const sd::LongType dH, const sd::LongType dW, const int paddingMode, const bool isNCHW, const int wFormat) {
   // mkl supports weights format [oC, iC, kH, kW] only
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWoC, indWiC, indWkH, indOoH);
 
@@ -48,7 +48,7 @@ static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const N
   dnnl::memory::dims padding_r = {(iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {2, 3, 0, 1};  // [kH, kW, oC, iC] -> [oC, iC, kH, kW]
   else if (1 == wFormat)
@@ -153,19 +153,18 @@ static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const N
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
 static void deconv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI,
-                             NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW,
-                             const int pH, const int pW, const int dH, const int dW, const int paddingMode,
+                             NDArray* gradW, NDArray* gradB, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW,
+                             const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode,
                              const bool isNCHW, const int wFormat) {
   // mkl supports weights/gradW in [oC, iC, kH, kW] format only
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWoC, indWiC, indWkH, indOoH);
 
@@ -174,7 +173,7 @@ static void deconv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const
   dnnl::memory::dims padding_r = {(iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {2, 3, 0, 1};  // [kH, kW, oC, iC] -> [oC, iC, kH, kW]
   else if (1 == wFormat)
@@ -262,7 +261,7 @@ static void deconv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const
                                                                                op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -317,7 +316,6 @@ static void deconv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -335,23 +333,23 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
                "CUSTOM DECONV2D_MKLDNN OP: rank of weights array must be equal to 4, but got %i instead !",
                weights->rankOf());
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
-  int sH = INT_ARG(2);                                                          // strides height
-  int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
-  int dH = INT_ARG(6);                                                          // dilations height
-  int dW = INT_ARG(7);                                                          // dilations width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                                          // strides height
+  sd::LongType sW = INT_ARG(3);                                                          // strides width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType dH = INT_ARG(6);                                                          // dilations height
+  sd::LongType dW = INT_ARG(7);                                                          // dilations width
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWoC, indWiC, indWkH, indOoH);
 
@@ -435,27 +433,27 @@ PLATFORM_IMPL(deconv2d_bp, ENGINE_CPU) {
                "got %i instead !",
                gradO->rankOf());
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
-  int sH = INT_ARG(2);                                                          // strides height
-  int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
-  int dH = INT_ARG(6);                                                          // dilations height
-  int dW = INT_ARG(7);                                                          // dilations width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                                          // strides height
+  sd::LongType sW = INT_ARG(3);                                                          // strides width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType dH = INT_ARG(6);                                                          // dilations height
+  sd::LongType dW = INT_ARG(7);                                                          // dilations width
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWoC, indWiC, indWkH, indOoH);
 
-  int trueoH, trueoW;  // true output height, width
+  sd::LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
   std::vector<sd::LongType> expectedGradOShape =

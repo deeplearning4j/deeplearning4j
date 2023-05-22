@@ -161,7 +161,7 @@ class SD_LIB_EXPORT ShapeUtils {
    *  please note: the size of input vector dimsAndIdx must always be even, since the numbers of dimensions and indexes
    * are the same, for example if dimsAndIdx = {dimC,dimB,dimA,  2,1,0} then output vector = {dimA,dimB,dimC}
    */
-  static std::vector<sd::LongType> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
+  static std::vector<sd::LongType> composeShapeUsingDimsAndIdx(const std::vector<LongType>& dimsAndIdx);
 
   /**
    *  x * y = c,  evaluate shape for array resulting from mmul operation

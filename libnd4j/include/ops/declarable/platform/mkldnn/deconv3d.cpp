@@ -33,14 +33,14 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
-                           const int kD, const int kH, const int kW, const int sD, const int sH, const int sW,
-                           const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
+                           const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW,
+                           const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                            const bool isNCDHW, const int wFormat) {
   // mkl supports weights in [oC, iC, kD, kH, kW] only
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
@@ -50,7 +50,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
                                   (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dD - 1, dH - 1, dW - 1};
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {3, 4, 0, 1, 2};  // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
   else if (1 == wFormat)
@@ -123,7 +123,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
   dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -160,14 +160,14 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
 
 //////////////////////////////////////////////////////////////////////////
 static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI,
-                                   NDArray* gradW, NDArray* gradB, const int kD, const int kH, const int kW,
-                                   const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
-                                   const int dD, const int dH, const int dW, const bool isNCDHW, const int wFormat) {
+                                   NDArray* gradW, NDArray* gradB, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
+                                   const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
+                                   const sd::LongType dD, const sd::LongType dH, const int dW, const bool isNCDHW, const int wFormat) {
   // mkl supports weights/gradW in [oC, iC, kD, kH, kW] format only
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
@@ -177,7 +177,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
                                   (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dD - 1, dH - 1, dW - 1};
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {3, 4, 0, 1, 2};  // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
   else if (1 == wFormat)
@@ -265,7 +265,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
                                                                                op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -338,27 +338,27 @@ PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
                "CUSTOM DECONV3D_MKLDNN OP: rank of weights array must be equal to 5, but got %i instead !",
                weights->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  sd::LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  sd::LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<sd::LongType>(weights->sizeAt(2));  // filter(kernel) width
+  sd::LongType sD = INT_ARG(3);                                                          // strides depth
+  sd::LongType sH = INT_ARG(4);                                                          // strides height
+  sd::LongType sW = INT_ARG(5);                                                          // strides width
+  sd::LongType pD = INT_ARG(6);                                                          // paddings depth
+  sd::LongType pH = INT_ARG(7);                                                          // paddings height
+  sd::LongType pW = INT_ARG(8);                                                          // paddings width
+  sd::LongType dD = INT_ARG(9);                                                          // dilations depth
+  sd::LongType dH = INT_ARG(10);                                                         // dilations height
+  sd::LongType dW = INT_ARG(11);                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
@@ -390,9 +390,9 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
 
   auto output = INPUT_VARIABLE(0);
 
-  int dD = INT_ARG(9);           // dilations depth
-  int dH = INT_ARG(10);          // dilations height
-  int dW = INT_ARG(11);          // dilations width
+  sd::LongType dD = INT_ARG(9);           // dilations depth
+  sd::LongType dH = INT_ARG(10);          // dilations height
+  sd::LongType dW = INT_ARG(11);          // dilations width
   int isSameMode = INT_ARG(12);  // 0-SAME,  1-VALID
 
   Requirements req("ONEDNN DECONV3d OP");
@@ -444,31 +444,31 @@ PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
                "got %i instead !",
                gradO->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  sd::LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  sd::LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<sd::LongType>(weights->sizeAt(2));  // filter(kernel) width
+  sd::LongType sD = INT_ARG(3);                                                          // strides depth
+  sd::LongType sH = INT_ARG(4);                                                          // strides height
+  sd::LongType sW = INT_ARG(5);                                                          // strides width
+  sd::LongType pD = INT_ARG(6);                                                          // paddings depth
+  sd::LongType pH = INT_ARG(7);                                                          // paddings height
+  sd::LongType pW = INT_ARG(8);                                                          // paddings width
+  sd::LongType dD = INT_ARG(9);                                                          // dilations depth
+  sd::LongType dH = INT_ARG(10);                                                         // dilations height
+  sd::LongType dW = INT_ARG(11);                                                         // dilations width
   int isSameMode = INT_ARG(12);                                                 // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
-  int trueoD, trueoH, trueoW;  // true output height, width
+  sd::LongType trueoD, trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizeDeconv3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                         iW, isSameMode);
 

@@ -39,15 +39,14 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto indexTypes = std::vector<sd::LongType>();
   auto numIndicesPerIndex = std::vector<sd::LongType>();
   auto inclusive = std::vector<sd::LongType>();
-  auto outRank = inputBase->rankOf() + numNewAxis - numPoint;
-  auto outputShape = std::vector<sd::LongType>();
-  auto outputStrides = std::vector<sd::LongType>();
+
+
   auto baseOffset = inputBase->bufferOffset();
   auto outIdx = 0;
   auto inIdx = 0;
   std::vector<std::vector<sd::LongType>> indexVectors;
   //note we iterate from i + 1 for each input so we only go to block input size - 1
-  for(sd::LongType i = 0; i < block.fastpath_in().size() - 1; i++) {
+  for(sd::LongType i = 0; i < block.width() - 1; i++) {
     //first element is the input we are creating the view from
     auto inputIndex = INPUT_VARIABLE(i + 1);
     auto indexVector = inputIndex->asVectorT<sd::LongType>();
@@ -57,7 +56,8 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     if(indexType == POINT_TYPE) {
       numPoint++;
       inclusive.push_back(1);
-    } else if(indexType == 1) {
+    } else if(indexType == INTERVAL_TYPE) {
+     //TODO: fix end with interval types, testing using im2col
       numInterval++;
       //the end indicates inclusive or not
       inclusive.push_back(indexVector[indexVector.size() - 1]);
@@ -69,6 +69,14 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
       inclusive.push_back(1);
     }
   }
+
+  auto outRank = inputBase->rankOf() + numNewAxis - numPoint;
+  auto outputShape = std::vector<sd::LongType>(outRank);
+  auto outputStrides = std::vector<sd::LongType>(outRank);
+  sd_printf("out rank %d\n",outRank);
+
+  sd_printf("num points %d num all %d\n",numPoint,numAll);
+
 
   auto numIndices = block.fastpath_in().size() - 1;
 
@@ -99,41 +107,54 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
 
     if(indexType ==  POINT_TYPE) { //point index
       //Point indexes don't appear in output
-      auto pointOffset = indexIndices[0];
+      auto pointOffset = indexIndices[i];
       baseOffset += pointOffset * ( inputBase->strideAt(inIdx));
       inIdx++;
+      sd_printf("POINT TYPE: In idx %d out idx %d\n",inIdx,outIdx);
+
     } else if(indexType ==  ALL_TYPE) { // all index
       //All index: doesn't change offset. Axis is in both in and output arrays
-      outputShape.push_back(inputBase->sizeAt(inIdx));
-      outputStrides.push_back(inputBase->strideAt(inIdx));
+      outputShape[outIdx] = inputBase->sizeAt(inIdx);
+      outputStrides[outIdx] = inputBase->strideAt(inIdx);
       inIdx++;
       outIdx++;
+      sd_printf("ALL TYPE: In idx %d out idx %d\n",inIdx,outIdx);
     } else if(indexType == INTERVAL_TYPE) { //interval index
       //Interval index: Axis is in both in and output arrays, but output might be smaller
       auto start = indexIndices[0];
       auto end = indexIndices[1];
       auto endInc = end - (inclusive[currDimension] > 0 ? 0 : 1);
       if (endInc >= inputBase->sizeAt(inIdx)) {
-        THROW_EXCEPTION("CREATE_VIEW: Indices are out of range: Cannot get interval index ");
+        std::string errorMessage;
+        errorMessage += "CREATE_VIEW: Indices are out of range: Cannot get interval index ";
+        errorMessage += std::to_string(endInc);
+        errorMessage += " on dimension ";
+        errorMessage += std::to_string(inputBase->sizeAt(inIdx));
+        THROW_EXCEPTION(errorMessage.c_str());
       }
 
       auto length = (endInc - start) / stride + 1;
 
       baseOffset += start * inputBase->strideAt(inIdx);
-      outputShape.push_back(length);
-      outputStrides.push_back(stride *  inputBase->strideAt(inIdx));
+      outputShape[outIdx] = length;
+      outputStrides[outIdx] = stride *  inputBase->strideAt(inIdx);
+      sd_printf("Start %d end %d endInc %d length %d strided at ind index %d\n",start,end,endInc,length,stride *  inputBase->strideAt(inIdx));
+
       inIdx++;
       outIdx++;
     } else if(indexType == NEW_AXIS) {
       //New axis: appends a 1 in shape. Axis not present in input, but is present in output
-      outputShape.push_back(1);
+      outputShape[outIdx] = 1;
       if (outIdx > 0) { //Stride doesn't matter for 1 size axis anyway...
-        outputStrides.push_back(outputStrides[outIdx - 1]);
+        outputStrides[outIdx] = outputStrides[outIdx - 1];
       } else {
-        outputStrides.push_back(1);
+        outputStrides[outIdx] = 1;
       }
       outIdx++;
     }
+  }
+  for(int i = 0; i < outputShape.size(); i++) {
+    sd_printf("GET output shape %d\n",outputShape[i]);
   }
 
   auto newResult = new NDArray(inputBase->dataBuffer(),'c',outputShape,inputBase->dataType(),inputBase->getContext(),false,true,baseOffset);

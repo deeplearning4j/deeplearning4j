@@ -38,37 +38,37 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
-  const int xRank = input->rankOf();
+  const sd::LongType xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
 
-  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  const std::vector<sd::LongType> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
 
-  std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
+  std::vector<sd::LongType> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
     const int iC = mean->lengthOf();
-    const int stride0 = mean->strideAt(0);
-    paramsShape = xRank == 4 ? std::vector<int>({1, iC, 1, 1}) : std::vector<int>({1, iC, 1, 1, 1});
-    paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
-                               : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
+    const sd::LongType stride0 = mean->strideAt(0);
+    paramsShape = xRank == 4 ? std::vector<sd::LongType>({1, iC, 1, 1}) : std::vector<sd::LongType>({1, iC, 1, 1, 1});
+    paramsStrides = xRank == 4 ? std::vector<sd::LongType>({iC * stride0, stride0, 1, 1})
+                               : std::vector<sd::LongType>({iC * stride0, stride0, 1, 1, 1});
   } else {
     paramsShape = mean->getShapeAsVectorInt();
     paramsStrides = xRank == 4
-                        ? std::vector<int>({(int)mean->strideAt(0), (int)mean->strideAt(1), (int)mean->strideAt(2),
-                                            (int)mean->strideAt(3)})
-                        : std::vector<int>({(int)mean->strideAt(0), (int)mean->strideAt(1), (int)mean->strideAt(2),
-                                            (int)mean->strideAt(3), (int)mean->strideAt(4)});
+                        ? std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
+                                            (sd::LongType)mean->strideAt(3)})
+                        : std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
+                                            (sd::LongType)mean->strideAt(3), (sd::LongType)mean->strideAt(4)});
   }
 
-  std::vector<int> xStrides = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
-                               (int)input->strideAt(3)};
-  std::vector<int> zStrides = {(int)output->strideAt(0), (int)output->strideAt(1), (int)output->strideAt(2),
-                               (int)output->strideAt(3)};
+  std::vector<sd::LongType> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
+                               (sd::LongType)input->strideAt(3)};
+  std::vector<sd::LongType> zStrides = {(sd::LongType)output->strideAt(0), (sd::LongType)output->strideAt(1), (sd::LongType)output->strideAt(2),
+                               (sd::LongType)output->strideAt(3)};
 
   if (xRank > 4) {  // 5D
-    xStrides.push_back((int)input->strideAt(4));
-    zStrides.push_back((int)output->strideAt(4));
+    xStrides.push_back((sd::LongType)input->strideAt(4));
+    zStrides.push_back((sd::LongType)output->strideAt(4));
   }
 
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
@@ -137,33 +137,33 @@ static void batchnormBpCUDNN(const LaunchContext* context, const NDArray* input,
 
   const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
 
-  std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
+  std::vector<sd::LongType> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
     const int iC = mean->lengthOf();
     const int stride0 = mean->strideAt(0);
-    paramsShape = xRank == 4 ? std::vector<int>({1, iC, 1, 1}) : std::vector<int>({1, iC, 1, 1, 1});
-    paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
-                               : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
+    paramsShape = xRank == 4 ? std::vector<sd::LongType>({1, iC, 1, 1}) : std::vector<sd::LongType>({1, iC, 1, 1, 1});
+    paramsStrides = xRank == 4 ? std::vector<sd::LongType>({iC * stride0, stride0, 1, 1})
+                               : std::vector<sd::LongType>({iC * stride0, stride0, 1, 1, 1});
   } else {
     paramsShape = mean->getShapeAsVectorInt();
     paramsStrides = xRank == 4
-                        ? std::vector<int>({(int)mean->strideAt(0), (int)mean->strideAt(1), (int)mean->strideAt(2),
-                                            (int)mean->strideAt(3)})
-                        : std::vector<int>({(int)mean->strideAt(0), (int)mean->strideAt(1), (int)mean->strideAt(2),
-                                            (int)mean->strideAt(3), (int)mean->strideAt(4)});
+                        ? std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
+                                            (sd::LongType)mean->strideAt(3)})
+                        : std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
+                                            (sd::LongType)mean->strideAt(3), (sd::LongType)mean->strideAt(4)});
   }
 
-  std::vector<int> xStrides = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
-                               (int)input->strideAt(3)};
-  std::vector<int> dxStrides = {(int)gradI->strideAt(0), (int)gradI->strideAt(1), (int)gradI->strideAt(2),
-                                (int)gradI->strideAt(3)};
-  std::vector<int> dzStrides = {(int)gradO->strideAt(0), (int)gradO->strideAt(1), (int)gradO->strideAt(2),
-                                (int)gradO->strideAt(3)};
+  std::vector<int> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
+                               (sd::LongType)input->strideAt(3)};
+  std::vector<int> dxStrides = {(sd::LongType)gradI->strideAt(0), (sd::LongType)gradI->strideAt(1), (sd::LongType)gradI->strideAt(2),
+                                (sd::LongType)gradI->strideAt(3)};
+  std::vector<int> dzStrides = {(sd::LongType)gradO->strideAt(0), (sd::LongType)gradO->strideAt(1), (sd::LongType)gradO->strideAt(2),
+                                (sd::LongType)gradO->strideAt(3)};
 
   if (xRank > 4) {  // 5D
-    xStrides.push_back((int)input->strideAt(4));
-    dxStrides.push_back((int)gradI->strideAt(4));
-    dzStrides.push_back((int)gradO->strideAt(4));
+    xStrides.push_back((sd::LongType)input->strideAt(4));
+    dxStrides.push_back((sd::LongType)gradI->strideAt(4));
+    dzStrides.push_back((sd::LongType)gradO->strideAt(4));
   }
 
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;

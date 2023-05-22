@@ -30,9 +30,9 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void depthwiseConv2dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                                 const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH,
-                                 const int sW, const int pH, const int pW, const int dH, const int dW,
-                                 const int paddingMode, const bool isNCHW) {
+                                 const NDArray* bias, NDArray* output, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH,
+                                 const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW,
+                                 const sd::LongType paddingMode, const bool isNCHW) {
   // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)
 
   // input [bS, iC, iH, iW] nchw or [bS, iH, iW, iC] nhwc
@@ -41,9 +41,9 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, const NDArray* in
   // output [bS, oC, oH, oW] nchw or [bS, oH, oW, oC] nhwc
   // oC = iC*mC
 
-  int bS, iC, iH, iW, mC, oC, oH,
+  sd::LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(1);
@@ -126,16 +126,13 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, const NDArray* in
                                                                       z, output->specialBuffer()));
   }
 
-  // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  // if (cudaErr != 0)
-  //     throw cuda_exception::build("depthwiseConv2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
 }
 
 //////////////////////////////////////////////////////////////////////////
 static void depthwiseConv2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                                   const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH,
-                                   const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
-                                   const int dW, const int paddingMode, const bool isNCHW) {
+                                   const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const sd::LongType kH,
+                                   const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH,
+                                   const sd::LongType dW, const sd::LongType paddingMode, const bool isNCHW) {
   // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)
 
   // input, gradI [bS, iC, iH, iW] nchw or [bS, iH, iW, iC] nhwc
@@ -144,9 +141,9 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, const NDArray* 
   // gradO [bS, oC, oH, oW] nchw or [bS, oH, oW, oC] nhwc
   // oC = iC*mC
 
-  int bS, iC, iH, iW, mC, oC, oH,
+  sd::LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(1);
@@ -210,9 +207,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, const NDArray* 
   // gradI algorithm description
   cudnnConvolutionBwdDataAlgo_t algoGradI;
   cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardDataAlgorithm),
-  // cudnnGetConvolutionBackwardDataAlgorithm( *handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0,
-  // &algoGradI));
+
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
       cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
@@ -269,9 +264,6 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, const NDArray* 
       cudnnConvolutionBackwardData(*handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(), conv,
                                    algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer()));
 
-  // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  // if (cudaErr != 0)
-  //     throw cuda_exception::build("depthwiseConv2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
   NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
 }
@@ -291,23 +283,23 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
                "DEPTHWISECONV2D CUDNN OP: rank of weights array must be equal to 4, but got %i instead !",
                weights->rankOf());
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
-  int sH = INT_ARG(2);                                                          // strides height
-  int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
-  int dH = INT_ARG(6);                                                          // dilations height
-  int dW = INT_ARG(7);                                                          // dilations width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                                          // strides height
+  sd::LongType sW = INT_ARG(3);                                                          // strides width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType dH = INT_ARG(6);                                                          // dilations height
+  sd::LongType dW = INT_ARG(7);                                                          // dilations width
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-  int bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
+  sd::LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
                                        // iC*mC), output channels, output height/width
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
@@ -328,7 +320,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
                  "%i, %i instead !",
                  oC, bias->rankOf(), bias->lengthOf());
 
-  std::vector<int> wPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC (groupCount ==
+  std::vector<sd::LongType> wPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC (groupCount ==
                              // iC) that is {iC, mC, kH, kW} in our case
   if (0 == wFormat)
     wPermut = {2, 3, 0, 1};  // kH, kW, iC, mC -> iC, mC, kH, kW
@@ -403,23 +395,23 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
                "%i instead !",
                gradO->rankOf());
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
-  int sH = INT_ARG(2);                                                          // strides height
-  int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
-  int dH = INT_ARG(6);                                                          // dilations height
-  int dW = INT_ARG(7);                                                          // dilations width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                                          // strides height
+  sd::LongType sW = INT_ARG(3);                                                          // strides width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType dH = INT_ARG(6);                                                          // dilations height
+  sd::LongType dW = INT_ARG(7);                                                          // dilations width
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-  int bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
+  sd::LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
                                        // iC*mC), output channels, output height/width
-  int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
@@ -445,7 +437,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
                  "got %i, %i instead !",
                  oC, bias->rankOf(), bias->lengthOf());
 
-  std::vector<int> wPermut, gradWPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC
+  std::vector<sd::LongType> wPermut, gradWPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC
                                           // (groupCount == iC) that is {iC, mC, kH, kW}
   if (0 == wFormat) {
     wPermut = {2, 3, 0, 1};      // kH, kW, iC, mC -> iC, mC, kH, kW

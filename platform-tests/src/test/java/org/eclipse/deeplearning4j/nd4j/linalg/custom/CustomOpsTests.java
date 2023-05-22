@@ -1425,7 +1425,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, result[0]);
     }
 
-    @Disabled("AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8449")
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1451,7 +1450,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(1, lsd.size());
     }
 
-    @Disabled("Failed AS 11.26.2019 - https://github.com/eclipse/deeplearning4j/issues/8450")
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -1465,7 +1463,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(expected, ret[0]);
     }
 
-    @Disabled("Failure AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8452")
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

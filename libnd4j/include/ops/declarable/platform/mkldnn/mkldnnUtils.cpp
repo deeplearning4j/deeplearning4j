@@ -95,13 +95,13 @@ dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engin
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingONEDNN(const NDArray* input, NDArray* output, const int kD, const int kH, const int kW, const int sD,
-                   const int sH, const int sW, const int pD, const int pH, const int pW, const int isNCHW,
+void poolingONEDNN(const NDArray* input, NDArray* output, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD,
+                   const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const int isNCHW,
                    const dnnl::algorithm mode) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for input
-  const int rank = input->rankOf();
+  const sd::LongType rank = input->rankOf();
 
-  int bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
   dnnl::memory::dims strides, kernel, padding, padding_r, xDims, zDims;
   dnnl::memory::format_tag xzFrmat;
 
@@ -158,7 +158,7 @@ void poolingONEDNN(const NDArray* input, NDArray* output, const int kD, const in
   dnnl::pooling_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -182,14 +182,14 @@ void poolingONEDNN(const NDArray* input, NDArray* output, const int kD, const in
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI, const int kD, const int kH,
-                     const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
+void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI, const sd::LongType kD, const sd::LongType kH,
+                     const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
                      const int isNCHW, const dnnl::algorithm mode) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for input
 
-  const int rank = input->rankOf();
+  const sd::LongType rank = input->rankOf();
 
-  int bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
   dnnl::memory::dims strides, kernel, padding, padding_r, xDims, zDims;
   dnnl::memory::format_tag xzFrmat;
 
@@ -256,7 +256,7 @@ void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI,
   dnnl::pooling_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   // gradO
   onednnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(),
