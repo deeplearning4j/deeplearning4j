@@ -201,7 +201,15 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
-    public String toString(){
-        return "Interval(b=" + begin + ",e=" + end + ",s=" + stride + (inclusive ? ",inclusive" : "") + ")";
+    public String toString() {
+        return "IntervalIndex{" +
+                "begin=" + begin +
+                ", end=" + end +
+                ", inclusive=" + inclusive +
+                ", stride=" + stride +
+                ", index=" + index +
+                ", length=" + length +
+                ", initialized=" + initialized +
+                '}';
     }
 }

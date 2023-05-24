@@ -4037,7 +4037,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //copy to avoid direct modification
         indexes = NDArrayIndex.deepCopy(indexes);
         //initialize upon use passing in the array where necessary when not initialized
-        for(int i = 0; i < indexes.length; i++) {
+         for(int i = 0; i < indexes.length; i++) {
             if(!indexes[i].initialized()) {
                 indexes[i].init(this,indexes[i].offset(), i);
             }
@@ -4135,7 +4135,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
                 long stride = ii.stride();
                 long length = (endInc - start)/stride + 1;
-
                 offset += ii.offset() * stride(inIdx);
                 outShape[outIdx] = length;
                 outStrides[outIdx] = ii.stride() * stride(inIdx);

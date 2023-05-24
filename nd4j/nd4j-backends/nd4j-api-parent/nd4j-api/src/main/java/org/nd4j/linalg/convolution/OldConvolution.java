@@ -146,6 +146,8 @@ public class OldConvolution {
             for (int j = 0; j < kw; j++) {
                 //offset for the column based on stride and output width
                 long jLim = j + sx * outWidth;
+                System.out.println("Interval i: " + NDArrayIndex.interval(i, sy, iLim));
+                System.out.println("Interval j: " + NDArrayIndex.interval(j, sx, jLim));
                 INDArray get = padded.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(i, sy, iLim),
                                 NDArrayIndex.interval(j, sx, jLim));
                 ret.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i),

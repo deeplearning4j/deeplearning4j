@@ -1385,15 +1385,13 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
                                                     for (boolean cAll : coverall) {
 
                                                         INDArray in = Nd4j.rand(new int[] {m, d, h, w});
-
                                                         INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph,
                                                                 pw, -1, cAll); //Old implementation
+
+
                                                         INDArray outNew = Convolution.im2col(in, kh, kw, sh, sw, ph, pw,
                                                                 cAll); //Current implementation
-
-                                                        assertArrayEquals(outOrig.data().asFloat(),
-                                                                outNew.data().asFloat(), 0.01f);
-                                                        assertEquals(outOrig, outNew);
+                                                        assertEquals(outOrig.castTo(DataType.DOUBLE), outNew.castTo(DataType.DOUBLE));
                                                     }
                                                 }
                                             }

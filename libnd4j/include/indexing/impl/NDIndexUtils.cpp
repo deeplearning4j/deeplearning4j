@@ -8,6 +8,7 @@ namespace sd {
 
 sd::NDArray NDIndexUtils::createInterval(sd::LongType start,sd::LongType end,sd::LongType stride,sd::LongType inclusive) {
   // index type, num indices,stride, indices (length num indices), inclusive
+  sd_printf("Creating index with: start %d end %d stride %d inclusive %d\n",start,end,stride,inclusive);
   auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{7},{INTERVAL_TYPE,2,1,start,end,stride,inclusive});
   return indexFirstPoint;
 }
