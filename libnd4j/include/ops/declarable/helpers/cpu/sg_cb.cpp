@@ -23,6 +23,9 @@
 #include <ops/declarable/helpers/sg_cb.h>
 #include <math/templatemath.h>
 #define HS_MAX_EXP 6.0f
+#include <cstddef>
+#include <cstdlib>
+#include <new>
 
 namespace sd {
 namespace ops {
@@ -70,6 +73,8 @@ void hSoftmax_(T *vsyn0, T *vsyn1, T *vexpTable, T *vneu1e, const double alpha, 
     for (int e = 0; e < vectorLength; e++) {
       neu1e[e] = g * syn1[e] + neu1e[e];
     }
+
+
   }
 }
 
@@ -234,7 +239,7 @@ BUILD_SINGLE_TEMPLATE(template void cbow_,
                           double alpha, sd::LongType randomValue, const int contextWidth, const int hsRounds,
                           const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                           const int negLength, const int numLabels, const bool trainWords,double minLearningRate,const int iterations),
-                      SD_FLOAT_TYPES);
+                      SD_NATIVE_FLOAT_TYPES);
 
 template <typename T>
 void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target,
@@ -309,7 +314,7 @@ BUILD_SINGLE_TEMPLATE(template void skipgram_,
                           int target, int ngStarter,NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
                           const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength,double minLearningRate,const int iterations),
-                      SD_FLOAT_TYPES);
+                      SD_NATIVE_FLOAT_TYPES);
 
 int binarySearch(const int *haystack, const int needle, const int totalElements) {
   int firstIndex = 0;
@@ -337,9 +342,9 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
                      const LongType hsRounds, int t);
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArray &targets,
                               const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
-                              const NDArray &lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+                              const double lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
                               const int vectorLength, const int expLength, const int negLength, T *const expTable,
                               const T *negTable, const LongType hsRounds, int t, T *neu1e);
 
@@ -356,6 +361,72 @@ class BufferHolder {
   }
 
 };
+
+
+#include <cstdlib>
+
+template <typename T, std::size_t Alignment>
+class AlignedAllocator
+{
+ public:
+  typedef T value_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef std::size_t size_type;
+  typedef std::ptrdiff_t difference_type;
+
+  template <typename U>
+  struct rebind { typedef AlignedAllocator<U, Alignment> other; };
+
+  AlignedAllocator() {}
+
+  template <typename U>
+  AlignedAllocator(const AlignedAllocator<U, Alignment>&) {}
+
+  pointer address(reference x) const { return &x; }
+  const_pointer address(const_reference x) const { return &x; }
+
+  pointer allocate(size_type n, const void* = nullptr)
+  {
+#if defined(_MSC_VER)
+    void* ptr = _aligned_malloc(n * sizeof(T), Alignment);
+#else
+    void* ptr = nullptr;
+    if(posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0)
+      ptr = nullptr;
+#endif
+    if (!ptr)
+      throw std::bad_alloc();
+    return static_cast<pointer>(ptr);
+  }
+
+  void deallocate(pointer p, size_type)
+  {
+#if defined(_MSC_VER)
+    _aligned_free(p);
+#else
+    std::free(p);
+#endif
+  }
+
+  size_type max_size() const
+  {
+    return static_cast<size_type>(-1) / sizeof(T);
+  }
+
+  void construct(pointer p, const value_type& x)
+  {
+    ::new(p) value_type(x);
+  }
+
+  void destroy(pointer p)
+  {
+    p->~value_type();
+  }
+};
+
 
 template <typename T>
 void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable,NDArray &vnegTable, NDArray &vinfVector,
@@ -395,94 +466,128 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
   } else { //inference
-    T* accBuffer = new T[vectorLength];
-    memset(accBuffer, 0, vectorLength * sizeof(T));
-    auto numTargets = targets.lengthOf();
+       auto numTargets = targets.lengthOf();
+    auto vec = reinterpret_cast<T *>(vinfVector.buffer());
 
-    BufferHolder<T> holder(vectorLength);
+    T **neu1e = new T*[numTargets];
+    for(int i = 0; i < numTargets; i++) {
+      neu1e[i] = new T[vectorLength];
+    }
 
-    for(int iteration = 0; iteration < iterations; iteration++) {
-      for (auto t = 0; t < numTargets; t++) {
-        doSkipGramInferenceLoop_(s1, s1n, vinfVector, targets, negStarters, indices, codes, lr, nextRandom,
-                                 nsRounds, vocabSize, vectorLength, expLength, negLength, expTable, negTable, hsRounds, t, holder.neu1e);
+    for(int curr = 0; curr < iterations; curr++) {
+      std::vector<double> lrs(numTargets);
+      for(int t = 0; t < numTargets; t++) {
+        lrs[t] = ((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - curr))) + static_cast<double>(minLearningRate);
+      }
 
-        lr.p<double>(t, ((lr.e<double>(t) - static_cast<double>(minLearningRate)) /
-                         (static_cast<double>(iterations - iteration))) + static_cast<double>(minLearningRate));
+#pragma omp parallel for num_threads(numThreads) schedule(guided)
+      for(int t = 0; t < numTargets; t++) {
+        auto currNeu1e = neu1e[t];
+        std::fill_n(currNeu1e, vectorLength, T(0));
+        double currentLr = lrs[t];
 
-        // accumulate updates in neu1e to accBuffer
-        for (int e = 0; e < vectorLength; e++) {
-          accBuffer[e] += holder.neu1e[e];
-          holder.neu1e[e] = 0;  // reset neu1e for the next iteration
+        doSkipGramInferenceLoop_(s1,s1n,vec,
+                                 targets,negStarters,
+                                 indices,
+                                 codes,
+                                 currentLr,
+                                 nextRandom,
+                                 nsRounds,
+                                 vocabSize,
+                                 vectorLength,
+                                 expLength,
+                                 negLength,
+                                 expTable,
+                                 negTable,
+                                 hsRounds,
+                                 t,
+                                 currNeu1e);
+      }
+
+      std::vector<std::vector<T> > buffer(numThreads, std::vector<T>(vectorLength));
+
+#pragma omp parallel num_threads(numThreads)
+      {
+        int threadId = omp_get_thread_num();
+        auto& vec_local = buffer[threadId];
+
+#pragma omp for schedule(dynamic)
+        for(int i = 0; i < numTargets; i++) {
+          for(int j = 0; j < vectorLength; j++) {
+            vec_local[j] += neu1e[i][j];
+          }
+        }
+      }
+
+      for(int j = 0; j < vectorLength; j++) {
+        for(const auto& vec_local : buffer) {
+          vec[j] += vec_local[j];
         }
       }
     }
 
-    // Apply the accumulated updates to vinfVector outside the parallel section
-    auto syn0row = reinterpret_cast<T *>(vinfVector.buffer());
-    for (int e = 0; e < vectorLength; e++) {
-      syn0row[e] += accBuffer[e];
+    for(int i = 0; i < numTargets; i++) {
+      delete[] neu1e[i];
     }
+    delete[] neu1e;
 
-    delete[] accBuffer;
-
-
-
-  } //end else
-
+  }// end else
 }
+
+
 
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArray &targets,
                               const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
-                              const NDArray &lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+                              const double alpha, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
                               const int vectorLength, const int expLength, const int negLength, T *const expTable,
                               const T *negTable, const LongType hsRounds, int t, T *neu1e) {
 
-  auto alpha = lr.e<double>(t);
-
   LongType randomValue = nextRandom.e<LongType>(t);
   auto target = targets.e<int>(t);
-  auto syn0row =  reinterpret_cast<T *>(vinfVector.buffer());
-  if(hsRounds > 0) {
+
+  std::vector<int> currRows(hsRounds);
+  std::vector<int> codes_vals(hsRounds);
+  std::vector<int> irows(nsRounds+1, negStarters.e<int>(t));
+
+#pragma omp parallel
+  {
+#pragma omp for nowait
     for (LongType e = 0; e < hsRounds; e++) {
-      int currRow = indices.e<int>(t,e);
-      int code = codes.e<int>(t,e);
-      //codes are only 0 and 1, -1 are placeholders for invalid codes
-      //the codes matrix is padded with extra values at time of allocation
-      //this is due to the code rows effectively being a ragged matrix (rows have different shapes)
-      if(code < 0)  {
-        continue;
-      }
+      currRows[e] = indices.e<int>(t,e);
+      codes_vals[e] = codes.e<int>(t,e);
+    }
 
-      T *syn1row = (T *) s1.bufferWithOffset(currRow * vectorLength);
-      hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,lr.e<double>(t),vectorLength,code,expLength,!vinfVector.isEmpty());
+#pragma omp for nowait
+    for (int r = 1; r < nsRounds + 1; r++) {
+      randomValue = randomValue * (unsigned long long)25214903917 + 11;
+      auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+      irows[r] = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
+      if (irows[r] < 0 || irows[r] >= vocabSize) irows[r] = randomValue % (vocabSize - 1) + 1;
     }
   }
 
-  if(nsRounds > 0) {
-    int irow = negStarters.e<int>(t);
-    int nsStarter = irow;
-    for (int r = 0; r < nsRounds + 1; r++) {
-      if (r == 0) {
-        // target is known in advance
-      } else {
-        randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
-        irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-        if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-
-        if (irow == nsStarter) continue;
-      }
-
-      nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength,
-                    r == 0 ? 1 : 0, expLength, !vinfVector.isEmpty());
+#pragma omp parallel for
+  for (LongType e = 0; e < hsRounds; e++) {
+    if(codes_vals[e] < 0) {
+      continue;
     }
+
+    T *syn1row = (T *) s1.bufferWithOffset(currRows[e] * vectorLength);
+    hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,alpha,vectorLength,codes_vals[e],expLength,true);
   }
 
+  int nsStarter = irows[0];
+  for (int r = 0; r < nsRounds + 1; r++) {
+    if (r != 0 && irows[r] == nsStarter) continue;
+
+    nSampling_<T>(syn0row, s1n.bufferWithOffset(irows[r] * vectorLength), expTable, neu1e, alpha, vectorLength,
+                  r == 0 ? 1 : 0, expLength, true);
+  }
 }
+
 
 template <typename T>
 void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
@@ -547,7 +652,7 @@ BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
                           NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr,
                           NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                           const int expLength, const int negLength, const bool preciseMode, const int numThreads,const int iterations,double minLearningRate),
-                      SD_FLOAT_TYPES);
+                      SD_NATIVE_FLOAT_TYPES);
 
 template <typename T>
 void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStarters, const NDArray &indices,
@@ -737,7 +842,7 @@ BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_,
                           NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds,
                           const int vocabSize, const int vectorLength, const int expLength, const int negLength,
                           const bool trainWords, const int numThreads,double minLearningRate,const int iterations),
-                      SD_FLOAT_TYPES);
+                      SD_NATIVE_FLOAT_TYPES);
 
 
 
@@ -753,7 +858,7 @@ void skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &
           indices, codes, alpha,
           randomValue, hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
           (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
-      SD_FLOAT_TYPES);
+      SD_NATIVE_FLOAT_TYPES);
 }
 
 
@@ -772,7 +877,7 @@ void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expT
           randomValue, (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
           (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
           numLabels, trainWords,minLearningRate,iterations),
-      SD_FLOAT_TYPES);
+      SD_NATIVE_FLOAT_TYPES);
 }
 
 void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target,
@@ -791,14 +896,14 @@ void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable,
             indices, codes, alpha.e<double>(0),
             randomValue.e<sd::LongType>(0), hsRounds, nsRounds, (int)syn0.sizeAt(0), (int)syn0.sizeAt(1),
             (int)expTable.lengthOf(), (int)negTable.lengthOf(),minLearningRate,iterations),
-        SD_FLOAT_TYPES);
+        SD_NATIVE_FLOAT_TYPES);
   } else if (ngStarter.isVector() || target.isVector()) {
     // batch mode
     BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_,
                           (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, target, ngStarter,
                               indices, codes, alpha, randomValue, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1),
                               expTable.lengthOf(), negTable.lengthOf(), preciseMode, numWorkers,iterations,minLearningRate),
-                          SD_FLOAT_TYPES);
+                          SD_NATIVE_FLOAT_TYPES);
   } else
     THROW_EXCEPTION("SkipGram: target must have rank 0 or 1");
 }
@@ -821,14 +926,14 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
             randomValue.e<sd::LongType>(0), (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
             (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
             numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords,minLearningRate,iterations),
-        SD_FLOAT_TYPES);
+        SD_NATIVE_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
         (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, context, lockedWords, target, ngStarter,
             indices, codes, alpha, randomValue, numLabels, nsRounds, syn0.sizeAt(0), syn0.sizeAt(1), expTable.lengthOf(),
             negTable.isEmpty() ? 0 : negTable.lengthOf(), trainWords, numWorkers,minLearningRate,iterations),
-        SD_FLOAT_TYPES);
+        SD_NATIVE_FLOAT_TYPES);
   } else
     THROW_EXCEPTION("CBOW: context must have rank 0/1 or 2");
 }
