@@ -3744,7 +3744,9 @@ namespace sd {
     template <typename T>
     T NDArray::e(const sd::LongType i) const {
         const auto rp = getOffset(i);
-
+        if(rp >= lengthOf()) {
+          THROW_EXCEPTION("NDArray::e: index is out of array length !");
+        }
         NDArray::preparePrimaryUse({}, {this});
         NDArray::registerPrimaryUse({}, {this});
         BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
@@ -3759,7 +3761,9 @@ namespace sd {
             throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1);
-
+        if(xOffset >= lengthOf()) {
+          THROW_EXCEPTION("NDArray::e: index is out of array length !");
+        }
         NDArray::preparePrimaryUse({}, {this});
         NDArray::registerPrimaryUse({}, {this});
 
@@ -3778,7 +3782,9 @@ namespace sd {
             throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
-
+        if(xOffset >= lengthOf()) {
+          THROW_EXCEPTION("NDArray::e: index is out of array length !");
+        }
         NDArray::preparePrimaryUse({}, {this});
         NDArray::registerPrimaryUse({}, {this});
 
@@ -3798,7 +3804,9 @@ namespace sd {
             throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
-
+        if(xOffset >= lengthOf()) {
+          THROW_EXCEPTION("NDArray::e: index is out of array length !");
+        }
         NDArray::preparePrimaryUse({}, {this});
         NDArray::registerPrimaryUse({}, {this});
 
@@ -3814,7 +3822,9 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////
     NDArray NDArray::e(const sd::LongType i) const {
         const auto offset = getOffset(i);
-
+        if(offset >= lengthOf()) {
+          THROW_EXCEPTION("NDArray::e: index is out of array length !");
+        }
         NDArray scalar(dataType(), getContext());
 
         scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, bufferOffset() + offset);
@@ -4936,7 +4946,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     sd::LongType NDArray::getOffset(const sd::LongType i) const {
         if (i >= lengthOf()) {
-            sd_debug("NDArray::getOffset: input index %d array length %d\n", i, lengthOf());
+            sd_printf("NDArray::getOffset: input index %d array length %d\n", i, lengthOf());
             throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
         }
 
