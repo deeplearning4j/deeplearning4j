@@ -33,6 +33,12 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  if(input->lengthOf() == 0) {
+    sd_printf("reduce_prod: Assigning 1 to length 0 array ",0);
+    output->assign(1);
+    return sd::Status::OK;
+  }
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
@@ -46,9 +52,9 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
       dimensions.size());
 
   for (const auto& item : dimensions)
-    REQUIRE_TRUE(item >= -input->shapeInfo()[0] && item < input->shapeInfo()[0], 0,
-                 "REDUCE_PROD OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
-                 input->rankOf(), input->rankOf(), item);
+  REQUIRE_TRUE(item >= -input->shapeInfo()[0] && item < input->shapeInfo()[0], 0,
+               "REDUCE_PROD OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+               input->rankOf(), input->rankOf(), item);
 
   bool keepDims = false;
   if (block.getBArguments()->size())
@@ -81,9 +87,9 @@ DECLARE_SHAPE_FN(reduce_prod) {
       dimensions.size());
 
   for (const auto& item : dimensions)
-    REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
-                 "REDUCE_PROD OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
-                 inputShape->at(0)[0], inputShape->at(0)[0], item);
+  REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
+               "REDUCE_PROD OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+               inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
                                                    keepDims, false, block.getWorkspace()));
@@ -124,10 +130,10 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
         dimensions.size());
 
     for (const auto& item : dimensions)
-      REQUIRE_TRUE(
-          item >= -input->rankOf() && item < input->rankOf(), 0,
-          "REDUCE_NORM1_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
-          input->rankOf(), input->rankOf(), item);
+    REQUIRE_TRUE(
+        item >= -input->rankOf() && item < input->rankOf(), 0,
+        "REDUCE_NORM1_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+        input->rankOf(), input->rankOf(), item);
 
     // *** calculations *** //
 
@@ -161,10 +167,10 @@ DECLARE_SHAPE_FN(reduce_prod_bp) {
       dimensions.size());
 
   for (const auto& item : dimensions)
-    REQUIRE_TRUE(
-        item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
-        "REDUCE_PROD_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
-        inputShape->at(0)[0], inputShape->at(0)[0], item);
+  REQUIRE_TRUE(
+      item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
+      "REDUCE_PROD_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+      inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   sd::LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);

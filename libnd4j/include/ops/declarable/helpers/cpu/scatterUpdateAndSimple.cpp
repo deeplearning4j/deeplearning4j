@@ -99,7 +99,7 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, c
     } break;
 
     default:
-      throw std::invalid_argument("helpers::scatterSimple: operation is not implemented for given id !");
+      THROW_EXCEPTION("helpers::scatterSimple: operation is not implemented for given id !");
   }
 }
 

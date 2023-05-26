@@ -88,7 +88,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                      sd::LaunchContext *context) {
-        if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _isAttached = _context->getWorkspace() != nullptr;
@@ -113,7 +113,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
                      sd::DataType dtype, sd::LaunchContext *context) {
-        if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = 0;
@@ -175,7 +175,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                      sd::LaunchContext *context, const bool isBuffAlloc) {
-        if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = 0;
@@ -189,7 +189,7 @@ namespace sd {
 
     NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                      sd::LaunchContext *context, const bool isBuffAlloc, const bool isView, sd::LongType offset) {
-        if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = offset;
@@ -209,7 +209,7 @@ namespace sd {
                      sd::LaunchContext *context, const bool nullify) {
         if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
 
-        if ((int)shapeInfo[0] > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = 0;
@@ -289,7 +289,7 @@ namespace sd {
     NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                      sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc, const bool isView,
                      sd::LongType offset) {
-        if ((int)shape.size() > SD_MAX_RANK) throw std::invalid_argument("Rank of NDArray can't exceed 32");
+        if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = offset;
@@ -340,7 +340,7 @@ namespace sd {
         if (shapeInfo == nullptr) throw std::runtime_error("NDArray constructor: can't be initialized without shapeinfo !");
 
         if ((int)shapeInfo[0] > SD_MAX_RANK)
-            throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32 !");
+            THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32 !");
 
         _context = context;
         _isAttached = getContext()->getWorkspace() != nullptr;
@@ -367,7 +367,7 @@ namespace sd {
 
 
         if ((sd::LongType)shapeInfo[0] > SD_MAX_RANK)
-            throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+            THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = 0;
@@ -388,7 +388,7 @@ namespace sd {
             throw std::runtime_error("NDArray constructor: input shape is empty !");
         }
         if ((int)shape.size() > SD_MAX_RANK)
-            throw std::invalid_argument("NDArray constructor: rank of NDArray can't exceed 32");
+            THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
         _context = context;
         _offset = 0;
@@ -404,11 +404,11 @@ namespace sd {
 // u16 string constructors
     NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype)) {
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
         }
 
         if (!unicode::isStringValidU16(u16string.data(), u16string.data() + u16string.size())) {
-            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+            THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
         }
 
         // one word that is why used 1
@@ -453,11 +453,11 @@ namespace sd {
 // u32 string constructors
     NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype)) {
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
         }
 
         if (!unicode::isStringValidU32(u32string.data(), u32string.data() + u32string.size())) {
-            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+            THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
         }
         // one word that is why used 1
         sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
@@ -501,11 +501,11 @@ namespace sd {
 // u8 string constructors
     NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype)) {
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
         }
 
         if (!unicode::isStringValidU8(str.data(), str.data() + str.size())) {
-            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+            THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
         }
 
         // one word that is why used 1
@@ -551,14 +551,14 @@ namespace sd {
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string,
                      const sd::DataType dataType, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dataType))
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (const auto &str : string) {
             if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str))) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -616,14 +616,14 @@ namespace sd {
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::string> &string,
                      const sd::DataType dataType, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dataType))
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (const auto &str : string) {
             if (!unicode::isStringValidU8(str.data(), str.data() + str.size())) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -680,14 +680,14 @@ namespace sd {
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u16string> &string, sd::DataType dtype,
                      sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype))
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (const auto &str : string) {
             if (!unicode::isStringValidU16(str.data(), str.data() + str.size())) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -742,14 +742,14 @@ namespace sd {
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &string,
                      sd::DataType dtype, sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype))
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (const auto &str : string) {
             if (!unicode::isStringValidU16(str, str + std::char_traits<char16_t>::length(str))) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -806,14 +806,14 @@ namespace sd {
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype,
                      sd::LaunchContext *context) {
         if (!DataTypeUtils::isS(dtype))
-            throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+            THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (auto str : string) {
             if (!unicode::isStringValidU32(str.data(), str.data() + str.size())) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -867,14 +867,14 @@ namespace sd {
 /////////////////////////////////////////////////////////////////////////
     NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &string,
                      sd::DataType dtype, sd::LaunchContext *context) {
-        if (!DataTypeUtils::isS(dtype)) throw std::invalid_argument("NDArray::NDArray: invalid DataType used");
+        if (!DataTypeUtils::isS(dtype)) THROW_EXCEPTION("NDArray::NDArray: invalid DataType used");
 
         if (shape::prodLong(shape.data(), shape.size()) != string.size())
-            throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+            THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
         for (const auto &str : string) {
             if (!unicode::isStringValidU32(str, str + std::char_traits<char32_t>::length(str))) {
-                throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+                THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
             }
         }
 
@@ -1573,7 +1573,7 @@ namespace sd {
     void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray &target, void *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
         if (target.lengthOf() != 1 || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
         prepareUse({&target}, {this});
@@ -1587,7 +1587,7 @@ namespace sd {
     void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray &target, void *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::reduceNumber SameOps: you can't use this method on String array!");
         if (target.lengthOf() != 1 || target.dataType() != dataType())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
         prepareUse({&target}, {this});
@@ -1601,7 +1601,7 @@ namespace sd {
     void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray &target, void *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
         if (target.lengthOf() != 1 || target.dataType() != DataType::BOOL)
-            throw std::invalid_argument("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
+            THROW_EXCEPTION("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
 
         prepareUse({&target}, {this});
         NativeOpExecutioner::execReduceBoolScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
@@ -1614,7 +1614,7 @@ namespace sd {
     void NDArray::reduceNumber(sd::reduce::LongOps op, NDArray &target, void *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::reduceNumber LongOps: you can't use this method on String array!");
         if (target.lengthOf() != 1 || target.dataType() != DataType::INT64)
-            throw std::invalid_argument("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
+            THROW_EXCEPTION("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
         prepareUse({&target}, {this});
         NativeOpExecutioner::execReduceLongScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(),
@@ -1738,7 +1738,7 @@ namespace sd {
         } else if (this->dataType() == sd::DataType::DOUBLE) {
             for (sd::LongType e = 0; e < len; e++) printf("%.8f, ", this->bufferAsT<double>()[e * ews]);
         } else
-            throw std::invalid_argument("NDArray::printLinearBuffer: not implemented yet for this data type !");
+            THROW_EXCEPTION("NDArray::printLinearBuffer: not implemented yet for this data type !");
 
         printf("]\n");
         fflush(stdout);
@@ -2277,7 +2277,7 @@ namespace sd {
 
         auto dtype = DataTypeUtils::fromT<T>();
 
-        if (!(DataTypeUtils::isS(dtype))) throw std::invalid_argument("NDArray::asS: invalid DataType used");
+        if (!(DataTypeUtils::isS(dtype))) THROW_EXCEPTION("NDArray::asS: invalid DataType used");
 
         if (dtype == dataType()) {
             sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
@@ -2438,7 +2438,7 @@ namespace sd {
         } else {
             const sd::LongType *bShape = nullptr;
             if (!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, getContext()->getWorkspace()))
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::operator+=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
             if (shape::equalsTypesAndShapesSoft(shapeInfo(), bShape)) {
@@ -2477,7 +2477,7 @@ namespace sd {
         } else {
             const sd::LongType *bShape = nullptr;
             if (!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, getContext()->getWorkspace()))
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::operator-=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
             if (shape::equalsTypesAndShapesSoft(shapeInfo(), bShape)) {
@@ -2515,7 +2515,7 @@ namespace sd {
         } else {
             const sd::LongType *bShape = nullptr;
             if (!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, getContext()->getWorkspace()))
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::operator*=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
             if (shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
@@ -2555,7 +2555,7 @@ namespace sd {
         } else {
             const sd::LongType *bShape = nullptr;
             if (!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, bShape, getContext()->getWorkspace()))
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::operator/=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
             if (shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
@@ -2765,7 +2765,7 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     NDArray NDArray::quantize(const NDArray &array) {
-        if (!array.isR()) throw std::invalid_argument("NDArray::quantize: type of array should be from real space!");
+        if (!array.isR()) THROW_EXCEPTION("NDArray::quantize: type of array should be from real space!");
 
         auto ws = array.getContext()->getWorkspace();
 
@@ -2859,7 +2859,7 @@ namespace sd {
             if (!shape::equalsSoft(target._shapeInfo, newShapeInfo) || target.dataType() != DataType::BOOL)
                 throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
             if (dataType() != other.dataType())
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
         }
 
@@ -2918,7 +2918,7 @@ namespace sd {
             if (!shape::equalsSoft(target._shapeInfo, newShapeInfo) || target.dataType() != this->dataType())
                 throw std::runtime_error("NDArray::applyTrueBroadcast int method: the shape or type of target array is wrong !");
             if (dataType() != other.dataType())
-                throw std::invalid_argument(
+                THROW_EXCEPTION(
                         "NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !");
         }
 
@@ -3076,9 +3076,9 @@ namespace sd {
 
 
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), tad.shapeInfo()))
-            throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::applyBroadcast method: wrong type of target array !");
         if (!target.isSameShape(this) && !target.isSameShape(tad))
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyBroadcast method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
 
@@ -3134,13 +3134,13 @@ namespace sd {
         // }
 
         if (target.dataType() != DataType::BOOL)
-            throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
+            THROW_EXCEPTION("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
         if (!target.isSameShape(this) && !target.isSameShape(tad))
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyBroadcast bool method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
         if (_dataType != tad._dataType)
-            throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same type !");
+            THROW_EXCEPTION("NDArray::applyBroadcast bool method: this and other arrays must have the same type !");
 
         std::vector<LongType> copy(dimensions);
 
@@ -3189,13 +3189,13 @@ namespace sd {
 
 
         if (target.dataType() != dataType())
-            throw std::invalid_argument("NDArray::applyBroadcast int method: type of target array must be the same as input!");
+            THROW_EXCEPTION("NDArray::applyBroadcast int method: type of target array must be the same as input!");
         if (!target.isSameShape(this) && !target.isSameShape(tad))
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyBroadcast int method: one of of two input arrays (this or other) should has the same shape as "
                     "target array!");
         if (_dataType != tad._dataType)
-            throw std::invalid_argument("NDArray::applyBroadcast int method: this and other arrays must have the same type !");
+            THROW_EXCEPTION("NDArray::applyBroadcast int method: this and other arrays must have the same type !");
 
         std::vector<LongType> copy(dimensions);
 
@@ -3274,7 +3274,7 @@ namespace sd {
         const bool isOutShapeEmpty = std::find(cshape.begin(), cshape.end(), 0) != cshape.end();
 
         if (isEmpty() && !isOutShapeEmpty)
-            throw std::invalid_argument("NDArray::reshapei: can't reshape empty array to non-empty !");
+            THROW_EXCEPTION("NDArray::reshapei: can't reshape empty array to non-empty !");
         if (isEmpty() && isOutShapeEmpty) {
             sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
             setShapeInfo(shapeInfoNew);
@@ -3370,7 +3370,7 @@ namespace sd {
                                          ExtraArguments *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
         if (target.dataType() != this->dataType() && target.dataType() != other.dataType())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array "
                     "!");
 
@@ -3390,11 +3390,11 @@ namespace sd {
         if (isS())
             throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
         if (other.lengthOf() != target.lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
+            THROW_EXCEPTION("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
         if (!target.isB())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
+            THROW_EXCEPTION("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
         if (dataType() != other.dataType())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
         prepareUse({&target}, {this, &other});
@@ -3411,11 +3411,11 @@ namespace sd {
         if (isS())
             throw std::runtime_error("NDArray::applyPairwiseTransform IntOps: you can't use this method on String array!");
         if (other.lengthOf() != target.lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - lengths of arrays are mismatched");
+            THROW_EXCEPTION("NDArray::applyPairwiseTransform IntOps method - lengths of arrays are mismatched");
         if (!target.isZ())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - result must have bool type");
+            THROW_EXCEPTION("NDArray::applyPairwiseTransform IntOps method - result must have bool type");
         if (dataType() != other.dataType())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::applyPairwiseTransform IntOps method - this and other arrays must have the same type !");
 
         prepareUse({&target}, {this, &other});
@@ -3758,7 +3758,7 @@ namespace sd {
     template <typename T>
     T NDArray::e(const sd::LongType i, const sd::LongType j) const {
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-            throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
+            THROW_EXCEPTION("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1);
         if(xOffset >= lengthOf()) {
@@ -3779,7 +3779,7 @@ namespace sd {
     template <typename T>
     T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k) const {
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
-            throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
+            THROW_EXCEPTION("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
         if(xOffset >= lengthOf()) {
@@ -3801,7 +3801,7 @@ namespace sd {
     template <typename T>
     T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l) const {
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
-            throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
+            THROW_EXCEPTION("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
         const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
         if(xOffset >= lengthOf()) {
@@ -4022,11 +4022,11 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////
     void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray &target, ExtraArguments *extraParams) {
         if (isS()) throw std::runtime_error("NDArray::applyScalarArr: you can't use this method on String array!");
-        if (scalar.lengthOf() != 1) throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
+        if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
 
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()) &&
             !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))
-            throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
+            THROW_EXCEPTION("NDArray::applyScalarArr method: wrong type of target array!");
 
         NDArray::prepareSpecialUse({&target}, {this, &scalar});
         NativeOpExecutioner::execScalar(
@@ -4040,11 +4040,11 @@ namespace sd {
     void NDArray::applyScalarArr(sd::scalar::BoolOps op, const NDArray &scalar, NDArray &target,
                                  ExtraArguments *extraParams) const {
         if (isS()) throw std::runtime_error("NDArray::applyScalarArr BoolOps: you can't use this method on String array!");
-        if (!target.isB()) throw std::invalid_argument("NDArray::applyScalarArr bool method: target has not bool type!");
+        if (!target.isB()) THROW_EXCEPTION("NDArray::applyScalarArr bool method: target has not bool type!");
         if (dataType() != scalar.dataType()) {
             sd_printf("NDArray::applyScalarArr BoolOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(),
                       scalar.dataType());
-            throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
+            THROW_EXCEPTION("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
         }
 
         NDArray::prepareSpecialUse({&target}, {this, &scalar});
@@ -4061,11 +4061,11 @@ namespace sd {
         if (isS()) throw std::runtime_error("NDArray::applyScalarArr IntOps: you can't use this method on String array!");
 
         if (target.dataType() != this->dataType())
-            throw std::invalid_argument("NDArray::applyScalarArr int method: target has not bool type!");
+            THROW_EXCEPTION("NDArray::applyScalarArr int method: target has not bool type!");
         if (dataType() != scalar.dataType()) {
             sd_printf("NDArray::applyScalarArr IntOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(),
                       scalar.dataType());
-            throw std::invalid_argument("NDArray::applyScalarArr int method: this and scalar arrays must have the same type!");
+            THROW_EXCEPTION("NDArray::applyScalarArr int method: this and scalar arrays must have the same type!");
         }
 
         NDArray::prepareSpecialUse({&target}, {this, &scalar});
@@ -4348,7 +4348,7 @@ namespace sd {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
         if (!target.isR())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
         std::vector<sd::LongType> copy(dimensions);
@@ -4486,7 +4486,7 @@ namespace sd {
         if (isS())
             throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: you can't use this method on String array!");
         if (!target.isB())
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");
 
         std::vector<sd::LongType> copy(dimensions);
@@ -4529,7 +4529,7 @@ namespace sd {
 // This method sets value in linear buffer to position i
     template <typename T>
     void NDArray::p(const sd::LongType i, const T value) {
-        if (i >= lengthOf()) throw std::invalid_argument("NDArray::p(i, value): input index is out of array length !");
+        if (i >= lengthOf()) THROW_EXCEPTION("NDArray::p(i, value): input index is out of array length !");
 
         auto rp = getOffset(i);
         const void *pV = reinterpret_cast<const void *>(const_cast<T *>(&value));
@@ -4558,7 +4558,7 @@ namespace sd {
     template <typename T>
     void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
         if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-            throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
+            THROW_EXCEPTION("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xOffset = i * strideAt(0) + j * strideAt(1);
@@ -4587,7 +4587,7 @@ namespace sd {
     void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const T value) {
         //(*this)(i,j,k) = value;
         if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
-            throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
+            THROW_EXCEPTION("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
@@ -4628,7 +4628,7 @@ namespace sd {
     void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const T value) {
         //(*this)(i,j,k) = value;
         if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
-            throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
+            THROW_EXCEPTION("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
 
         void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
         auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
@@ -4666,8 +4666,8 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     void NDArray::p(const sd::LongType i, const NDArray &scalar) {
-        if (scalar.lengthOf() != 1) throw std::invalid_argument("NDArray::p method: input array must be scalar!");
-        if (i >= _length) throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
+        if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
+        if (i >= _length) THROW_EXCEPTION("NDArray::p(i, NDArray_scalar): input index is out of array length !");
 
         NDArray::preparePrimaryUse({this}, {&scalar}, true);
         auto rp = getOffset(i);
@@ -4679,8 +4679,8 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l,
                     const NDArray &scalar) {
-        if (scalar.lengthOf() != 1) throw std::invalid_argument("NDArray::p method: input array must be scalar!");
-        if (i >= _length) throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
+        if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
+        if (i >= _length) THROW_EXCEPTION("NDArray::p(i, NDArray_scalar): input index is out of array length !");
 
         //        void *p = reinterpret_cast<void *>(scalar.buffer());
         sd::LongType coords[4] = {i, j, k, l};
@@ -4699,11 +4699,11 @@ namespace sd {
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() ||
             !row.isRowVector() || columns() != row.lengthOf()) {
             sd_printf("NDArray::addiRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
-            throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::addRowVector: wrong arguments !");
         }
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()) &&
             !(isR() && row.isR() && target.isR()))
-            throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::addRowVector: wrong type of target array !");
 
         int dimension = 1;
 
@@ -4724,11 +4724,11 @@ namespace sd {
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() ||
             !row.isRowVector() || columns() != row.lengthOf()) {
             sd_printf("NDArray::addRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
-            throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::addRowVector: wrong arguments !");
         }
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()) &&
             !(isR() && row.isR() && target.isR()))
-            throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::addRowVector: wrong type of target array !");
 
         sd::LongType dimension = 1;
 
@@ -4749,10 +4749,10 @@ namespace sd {
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() ||
             !row.isRowVector() || columns() != row.columns()) {
             sd_printf("NDArray::mulRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
-            throw std::invalid_argument("NDArray::mulRowVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::mulRowVector: wrong arguments !");
         }
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
-            throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::mulRowVector: wrong type of target array !");
 
         int dimension = 1;
 
@@ -4774,10 +4774,10 @@ namespace sd {
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() ||
             !row.isRowVector() || columns() != row.columns()) {
             sd_printf("NDArray::divRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
-            throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::divRowVector: wrong arguments !");
         }
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
-            throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::divRowVector: wrong type of target array !");
 
         int dimension = 1;
 
@@ -4798,7 +4798,7 @@ namespace sd {
         if (isS()) throw std::runtime_error("NDArray::addiRowVector: you can't use this method on String array!");
         if (rankOf() != 2 || !row.isRowVector() || columns() != row.lengthOf()) {
             sd_printf("NDArray::addiRowVector Input rank %d, Row is row vector %d, Number of columns: %d Row length: %d\n",rankOf(),row.isRowVector(),columns(),row.lengthOf());
-            throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::addiRowVector: wrong arguments !");
         }
         int dimension = 1;
 
@@ -4819,10 +4819,10 @@ namespace sd {
         if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() ||
             !column.isColumnVector() || rows() != column.lengthOf()) {
             sd_printf("NDArray::addColumnVector Input rank %d, Vector is column vector %d, Number of columns: %d Row length: %d\n",rankOf(),column.isColumnVector(),rows(),column.lengthOf());
-            throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::addColumnVector: wrong arguments !");
         }
         if (target.dataType() != DataTypeUtils::pickPairwiseResultType(dataType(), column.dataType()))
-            throw std::invalid_argument("NDArray::addColumnVector: wrong type of target array !");
+            THROW_EXCEPTION("NDArray::addColumnVector: wrong type of target array !");
 
         int dimension = 0;
 
@@ -4843,7 +4843,7 @@ namespace sd {
         if (isS()) throw std::runtime_error("NDArray::addiColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || !column.isColumnVector() || rows() != column.lengthOf()) {
             sd_printf("NDArray::addiColumnVector Input rank %d, Vector is column vector %d, Number of columns: %d Row length: %d\n",rankOf(),column.isColumnVector(),rows(),column.lengthOf());
-            throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::addiColumnVector: wrong arguments !");
         }
 
         int dimension = 0;
@@ -4865,7 +4865,7 @@ namespace sd {
         if (isS()) throw std::runtime_error("NDArray::muliColumnVector: you can't use this method on String array!");
         if (rankOf() != 2 || !column.isColumnVector() || rows() != column.lengthOf()) {
             sd_printf("NDArray::muliColumnVector Input rank %d, Vector is column vector %d, Number of columns: %d Row length: %d\n",rankOf(),column.isColumnVector(),rows(),column.lengthOf());
-            throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
+            THROW_EXCEPTION("NDArray::muliColumnVector: wrong arguments !");
         }
         int dimension = 0;
 
@@ -4947,7 +4947,7 @@ namespace sd {
     sd::LongType NDArray::getOffset(const sd::LongType i) const {
         if (i >= lengthOf()) {
             sd_printf("NDArray::getOffset: input index %d array length %d\n", i, lengthOf());
-            throw std::invalid_argument("NDArray::getOffset: input index %d is out of array length %d!");
+            THROW_EXCEPTION("NDArray::getOffset: input index %d is out of array length %d!");
         }
 
         return shape::getIndexOffset(i, _shapeInfo);
@@ -5050,7 +5050,7 @@ namespace sd {
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
     NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                                 const bool isStrided) const {
-        if (isEmpty()) throw std::invalid_argument("NDArray::operator(sub-arrays): array is empty !");
+        if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
 
         int numOfUntiesInSubArrShape = 0;
@@ -5095,7 +5095,7 @@ namespace sd {
         const sd::LongType subArrRank = static_cast<sd::LongType>(dimsToExclude.size());
 
         if (subArrRank > rank)
-            throw std::invalid_argument(
+            THROW_EXCEPTION(
                     "NDArray::operator(const sd::LongType subArrIdx, const std::vector<int>& dimsToExclude, bool "
                     "keepUnitiesInShape): static method: dimsToExclude is empty or has size > rank of array !");
 
@@ -5122,7 +5122,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, sd::LongType *&subArrShapeInfo,
                                            sd::LongType *&subArrOffsets, bool keepUnitiesInShape) const {
-        if (isEmpty()) throw std::invalid_argument("NDArray::getSubArrShapeAndOffsets: array is empty !");
+        if (isEmpty()) THROW_EXCEPTION("NDArray::getSubArrShapeAndOffsets: array is empty !");
 
         const sd::LongType rank = rankOf();
         const sd::LongType subArrRank = (rank == dimsToExclude.size() || keepUnitiesInShape) ? rank : rank - dimsToExclude.size();

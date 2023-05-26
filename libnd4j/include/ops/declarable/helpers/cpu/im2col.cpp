@@ -63,7 +63,6 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride1 = imStride[1];
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
-  sd_printf("im2col: First case\n",0);
   sd::ops::create_view createView;
   auto all = sd::NDIndexUtils::createAll();
 
@@ -72,33 +71,29 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   sd::ops::pad pad2;
   const std::vector<sd::LongType> values = {0,0,0,0,pH,pH + sH - 1,pW,pW + sW - 1};
   const std::vector<sd::LongType>  shape = {4,2};
-  /*
-   *
-   * create(const char order, const std::vector<sd::LongType>& shape, const std::vector<T>& data,
-sd::LaunchContext* context)
-   * */
+
   auto inputPad = NDArrayFactory::create('c',shape,values).cast(sd::DataType::INT32);
-  inputPad.printIndexedBuffer("Input pad");
   auto padded = pad2.evaluate({recastInput,&inputPad},{},{0}, {zeroPadVal}).at(0);
-  padded->printIndexedBuffer("Padded input");
-  padded->printShapeInfo("Padded input shape");
-  sd_printf("Obtained padding\n",0);
-  output.printShapeInfo("Output shape: ");
   auto retGet = NDArrayFactory::create(input.dataType(),{output.sizeAt(0),output.sizeAt(1),kH,kW,oH,oW},input.dataType());
-  retGet.printShapeInfo("Ret get shape info\n");
   for(int i = 0; i < kH; i++) {
     sd::LongType iLim = i + sH * oH;
     for(int j = 0; j < kW; j++) {
       sd::LongType jLim = j + sW * oW;
       auto interval = sd::NDIndexUtils::createInterval(i,iLim,sH,0);
       auto interval2 = sd::NDIndexUtils::createInterval(j,jLim,sW,0);
-      sd_printf("Created intervals with i %d j %d sH %d sW %d iLim %d jLim %d\n",i,j,sH,sW,iLim,jLim);
       auto point = sd::NDIndexUtils::createPoint(i);
       auto point2 = sd::NDIndexUtils::createPoint(j);
+      sd_printf("About to do evaluate for interval 1: i %d iLim %d sH %d inclusive %d\n",i,iLim,sH,0);
+      sd_printf("About to do evaluate for interval 2: j %d jLim %d sW %d inclusive %d\n",j,jLim,sW,0);
+      padded->printShapeInfo("Interval source");
       auto get = createView.evaluate({padded, &all, &all, &interval, &interval2}).at(0);
+      sd_printf("About to do evaluate for point %d\n",0);
+      sd_printf("About to do evaluate for point %d\n",i);
+      sd_printf("About to do evaluate for point %d\n",j);
+      retGet.printShapeInfo("Point array source");
       auto assignView = createView.evaluate({&retGet,&all, &all,&point, &point2, &all, &all}).at(0);
-      assignView->printShapeInfo("Assign view shape");
-      get->printShapeInfo("Get shape");
+      sd_printf("get shape %s\n",ShapeUtils::shapeAsString(get->shapeInfo()).c_str());
+      sd_printf("assign shape %s\n",ShapeUtils::shapeAsString(assignView->shapeInfo()).c_str());
       assignView->assign(get);
 
     }

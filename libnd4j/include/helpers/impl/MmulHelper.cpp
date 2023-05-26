@@ -278,7 +278,7 @@ void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray*
         "NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! "
         "\n",
         ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
-    throw std::invalid_argument("");
+    THROW_EXCEPTION("");
   }
 
   if (z->isEmpty()) return;

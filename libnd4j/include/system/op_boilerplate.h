@@ -2275,7 +2275,7 @@
 #define REQUIRE_TRUE(COND, ...)                                                            \
   if (!(COND)) {                                                                           \
     if (sd::ops::conditionHelper(__FILE__, __LINE__, COND, __VA_ARGS__) != sd::Status::OK) \
-      throw std::invalid_argument("Op validation failed");                                 \
+      THROW_EXCEPTION("Op validation failed");                                 \
   };
 
 #define DECLARE_ENTRY(NAME, ...)                                          \
@@ -2705,7 +2705,7 @@ void throwException(const char* exceptionMessage);
 #define BROADCAST_CHECK_EMPTY(X, Y, Z)                                                                     \
   if (X->isEmpty() || Y->isEmpty()) {                                                                      \
     if (!Z->isEmpty()) {                                                                                   \
-      throw std::invalid_argument("Broadcast op validation failed: if x or y are empty, z must be empty"); \
+      THROW_EXCEPTION("Broadcast op validation failed: if x or y are empty, z must be empty"); \
     }                                                                                                      \
     return sd::Status::OK;                                                                                 \
   }

@@ -46,7 +46,7 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
   const auto xEws = shape::elementWiseStride(xShapeInfo);
   const int rank = shape::rank(xShapeInfo);
 
-  if (shape::isEmpty(xShapeInfo)) {
+  if (shape::isEmpty(xShapeInfo) || shape::length(xShapeInfo) == 0) {
     z[0] = OpType::startingValue(x);
     return;
   }
@@ -95,6 +95,7 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
+  sd_printf("execScalar 5\n",0);
   const sd::LongType length = shape::length(xShapeInfo);
   const auto xEws = shape::elementWiseStride(xShapeInfo);
 

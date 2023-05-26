@@ -90,7 +90,7 @@ static void applyActivation(const NDArray& x, const int opId, const float alpha,
       (const_cast<NDArray&>(x)).applyTransform(transform::SoftPlus, z);
       break;
     default:
-      throw std::invalid_argument("LSTM_LAYER operation: wrong id number of activation !");
+      THROW_EXCEPTION("LSTM_LAYER operation: wrong id number of activation !");
   }
 }
 
@@ -147,7 +147,7 @@ static void activationDeriv(const NDArray& x, const int opId, const float alpha,
       break;
     }
     default:
-      throw std::invalid_argument("LSTM_LAYER operation: wrong id number of activation !");
+      THROW_EXCEPTION("LSTM_LAYER operation: wrong id number of activation !");
   }
 }
 

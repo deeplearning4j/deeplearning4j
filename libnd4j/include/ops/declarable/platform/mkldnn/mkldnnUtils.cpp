@@ -62,7 +62,7 @@ dnnl::memory::format_tag getFormat(const NDArray& arr) {
       result = dnnl::memory::format_tag::abcdef;
       break;
     default:
-      throw std::invalid_argument("MKLDNN getFormat: do we really want to use arras with rank > 6 ?");
+      THROW_EXCEPTION("MKLDNN getFormat: do we really want to use arras with rank > 6 ?");
   }
 
   return result;
@@ -77,7 +77,7 @@ void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std:
       for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(i);
     else {
       if (array.rankOf() != permut.size())
-        throw std::invalid_argument("mkldnnUtils::setBlockStrides: size of permut vector is not equal to array rank !");
+        THROW_EXCEPTION("mkldnnUtils::setBlockStrides: size of permut vector is not equal to array rank !");
       for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(permut[i]);
     }
   }

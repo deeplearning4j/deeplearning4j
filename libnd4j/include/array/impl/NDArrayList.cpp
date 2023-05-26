@@ -52,7 +52,7 @@ sd::DataType NDArrayList::dataType() { return _dtype; }
 NDArray* NDArrayList::readRaw(int idx) {
   if (_chunks.count(idx) < 1) {
     sd_debug("Non-existent chunk requested: [%i]\n", idx);
-    throw std::invalid_argument("Bad index");
+    THROW_EXCEPTION("Bad index");
   }
 
   return _chunks[idx];
@@ -62,7 +62,7 @@ NDArray* NDArrayList::readRaw(int idx) {
 NDArray* NDArrayList::remove(int idx) {
   if(!isWritten(idx)) {
     sd_debug("Non-existent chunk requested: [%i]\n", idx);
-    throw std::invalid_argument("Bad index");
+    THROW_EXCEPTION("Bad index");
   }
 
   delete _chunks[idx];

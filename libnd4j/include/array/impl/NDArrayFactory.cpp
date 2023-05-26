@@ -40,7 +40,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, s
   auto status = shapeDescriptor->validate();
   if (status != SHAPE_DESC_OK) {
     sd_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status);
-    throw std::invalid_argument("NDArrayFactory::create: invalid ShapeDescriptor ");
+    THROW_EXCEPTION("NDArrayFactory::create: invalid ShapeDescriptor ");
   }
   sd::LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
   std::shared_ptr<DataBuffer> buffer =
@@ -55,10 +55,10 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
                                              const std::vector<sd::LongType>& paddingOffsets,
                                              sd::LaunchContext* context) {
   int rank = shape.size();
-  if (rank > SD_MAX_RANK) throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+  if (rank > SD_MAX_RANK) THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
 
   if (paddings.size() != rank) {
-    throw std::invalid_argument("NDArrayFactory::create: paddings size should match rank ");
+    THROW_EXCEPTION("NDArrayFactory::create: paddings size should match rank ");
   }
 
   auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
@@ -72,7 +72,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
 
   for (int i = 0; i < check_size; i++) {
     if (paddingOffsets[i] > paddings[i]) {
-      throw std::invalid_argument(
+      THROW_EXCEPTION(
           "NDArrayFactory::create: paddingOffsets numbers should not exceed corresponding paddings");
     }
   }
@@ -90,7 +90,7 @@ template <>
 SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::vector<sd::LongType>& shape,
                                                    const std::vector<bool>& data, sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
-    throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
+    THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(sd::DataType::BOOL, order, shape);
 
@@ -117,7 +117,7 @@ template <typename T>
 NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape, const std::vector<T>& data,
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
-    throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
+    THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
 
   if (descriptor->arrLength() != data.size()) {
@@ -511,7 +511,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArrayFactory::create,
 NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>& shape, sd::DataType dtype,
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
-    throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+    THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
 
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
@@ -644,7 +644,7 @@ template <typename T>
 NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializer_list<sd::LongType>& shape,
                                sd::LaunchContext* context) {
   if ((int)shape.size() > SD_MAX_RANK)
-    throw std::invalid_argument("NDArrayFactory::create: Rank of NDArray can't exceed 32");
+    THROW_EXCEPTION("NDArrayFactory::create: Rank of NDArray can't exceed 32");
 
   std::vector<sd::LongType> shp(shape);
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shp);

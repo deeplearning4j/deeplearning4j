@@ -153,6 +153,12 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     }
   }
 
+  sd_printf("Offset is %d\n",baseOffset);
+
+  auto outputLength = shape::prodLong(outputShape.data(),outRank);
+  if(baseOffset > outputLength) {
+    THROW_EXCEPTION("CREATE_VIEW: Base offset is out of bounds");
+  }
 
   auto newResult = new NDArray(inputBase->dataBuffer(),'c',outputShape,inputBase->dataType(),inputBase->getContext(),false,true,baseOffset);
   //note we pass in delete false here so we don't cause a double free

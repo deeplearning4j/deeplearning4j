@@ -71,7 +71,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext *lc, int opNum
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto hz = reinterpret_cast<sd::LongType *>(hZ);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams), SD_COMMON_TYPES, SD_INDEXING_TYPES);
@@ -539,7 +539,9 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext *lc, int opNum, cons
                                           sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceFloatFunction,
@@ -555,9 +557,9 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
-  // nothing to do here if result is empty
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
-
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_SINGLE_SELECTOR(
       xType, functions::reduce::ReduceSameFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
@@ -572,10 +574,9 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  // nothing to do here if result is empty
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
-
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceBoolFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
@@ -590,9 +591,9 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  // nothing to do here if result is empty
-  if (shape::isEmpty(hZShapeInfo)) return;
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceLongFunction,
@@ -616,7 +617,7 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext *lc, int opNum
                                                 const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
@@ -630,8 +631,9 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *hZShapeInfo, void *dZ,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
-
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES);
 }
@@ -644,8 +646,9 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
-
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_BOOL_TYPES);
@@ -659,8 +662,9 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
-
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_LONG_TYPES);
@@ -688,7 +692,9 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext *lc, int opNum, co
                                             void *dZ, const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo),
@@ -714,7 +720,9 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
                                       void *dZ, const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  //Note here we continue due to numpy compat which
+  //expects an output for a reduce.
+  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
 
   NativeOpExecutioner::execReduce3Scalar(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo,
                                          dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
@@ -835,7 +843,11 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
+  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) {
+    return;
+  }
+
+
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
@@ -976,7 +988,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
                                         const sd::LongType *hSscalarShapeInfo, const void *dScalar,
                                         const sd::LongType *dSscalarShapeInfo, void *extraParams,
                                         bool allowParallelism) {
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
@@ -1055,7 +1067,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
                                            bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
@@ -1079,7 +1091,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
                                                  const sd::LongType *dZShapeInfo, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::execScalar(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo),
@@ -1132,7 +1144,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
@@ -1154,7 +1166,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
@@ -1178,7 +1190,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
@@ -1200,7 +1212,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)  || shape::length(hXShapeInfo) == 0) return;
+  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,

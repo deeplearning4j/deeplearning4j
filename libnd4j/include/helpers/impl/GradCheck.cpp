@@ -39,7 +39,7 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>&
       break;
 
     default:
-      throw std::invalid_argument("GradCheck::fillGradArrays: invalid type of loss function !");
+      THROW_EXCEPTION("GradCheck::fillGradArrays: invalid type of loss function !");
   }
 }
 

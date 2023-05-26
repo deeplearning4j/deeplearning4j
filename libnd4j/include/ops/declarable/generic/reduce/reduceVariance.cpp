@@ -31,7 +31,11 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  if(input->lengthOf() == 0) {
+    output->assign(1);
+    return sd::Status::OK;
+  }
   bool keepDims = false;       // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   bool biasCorrected = false;  // block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
 

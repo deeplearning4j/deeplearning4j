@@ -466,7 +466,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
   } else { //inference
-       auto numTargets = targets.lengthOf();
+    auto numTargets = targets.lengthOf();
     auto vec = reinterpret_cast<T *>(vinfVector.buffer());
 
     T **neu1e = new T*[numTargets];

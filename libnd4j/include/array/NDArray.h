@@ -1846,7 +1846,7 @@ T &NDArray::r(const sd::LongType i) {
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
   syncToHost();
   tickWriteHost();
@@ -1858,11 +1858,11 @@ T &NDArray::r(const sd::LongType i) {
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j) {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
-    throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
   tickWriteHost();
@@ -1873,9 +1873,9 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j) {
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k) {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
-    throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
   if (DataTypeUtils::fromT<T>() != _dataType)
-    throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
 
   syncToHost();
   tickWriteHost();
@@ -1886,9 +1886,9 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k) 
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType w) {
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
-    throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
   if (DataTypeUtils::fromT<T>() != _dataType)
-    throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
 
   syncToHost();
   tickWriteHost();
@@ -1903,7 +1903,7 @@ T NDArray::t(const sd::LongType i) const {
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
 
   syncToHost();
@@ -1915,11 +1915,11 @@ T NDArray::t(const sd::LongType i) const {
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j) const {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
-    throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
 
@@ -1930,11 +1930,11 @@ T NDArray::t(const sd::LongType i, const sd::LongType j) const {
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k) const {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
-    throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
   }
   syncToHost();
 
@@ -1945,11 +1945,11 @@ T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k) c
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType w) const {
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
-    throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
   }
   syncToHost();
 

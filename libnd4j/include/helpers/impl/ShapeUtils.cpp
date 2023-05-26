@@ -321,7 +321,7 @@ std::vector<sd::LongType> ShapeUtils::evalRepeatShape(int axis, const std::vecto
   if (axis < 0) axis += arr.rankOf();
 
   if (repeats.size() != 1 && repeats.size() != arr.sizeAt(axis))
-    throw std::invalid_argument(
+    THROW_EXCEPTION(
         "ShapeUtils::evalRepeatShape: size of repeats vector must be 1 or equal to dimension at given axis !");
 
   std::vector<sd::LongType> outShape = arr.getShapeAsVector();
@@ -906,7 +906,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
           "ShapeUtils::evalShapeForMatmul method: since input arrays are vectors they must have the same length, but "
           "got x length = %i, y length = %i !",
           xShapeInfo[1], yShapeInfo[1]);
-      throw std::invalid_argument("");
+      THROW_EXCEPTION("");
     }
     return std::vector<sd::LongType>({});
   }
@@ -917,7 +917,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
           "ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x "
           "%s, y %s !",
           ShapeUtils::shapeAsString(xShapeInfo).c_str(), ShapeUtils::shapeAsString(yShapeInfo).c_str());
-      throw std::invalid_argument("");
+      THROW_EXCEPTION("");
     }
     return std::vector<sd::LongType>({y1Dim});
   }
@@ -928,7 +928,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
           "ShapeUtils::evalShapeForMatmul method: input arrays have inconsistent shapes for vector-matrix product: x "
           "%s, y %s !",
           ShapeUtils::shapeAsString(xShapeInfo).c_str(), ShapeUtils::shapeAsString(yShapeInfo).c_str());
-      throw std::invalid_argument("");
+      THROW_EXCEPTION("");
     }
     return std::vector<sd::LongType>({x0Dim});
   }
@@ -939,13 +939,13 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
         "ShapeUtils::evalShapeForMatmul static method: the ranks of arrays must be the same, but got xRank = %i and "
         "yRank = %i ! \n",
         xRank, yRank);
-    throw std::invalid_argument("");
+    THROW_EXCEPTION("");
   }
 
   if (x1Dim != y0Dim) {
     sd_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xDim %i != yDim %i \n",
               x1Dim, y0Dim);
-    throw std::invalid_argument("");
+    THROW_EXCEPTION("");
   }
 
   for (int i = 0; i < xRank - 2; ++i)
@@ -953,7 +953,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
       sd_printf(
           "ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n",
           ShapeUtils::shapeAsString(xShapeInfo).c_str(), ShapeUtils::shapeAsString(yShapeInfo).c_str());
-      throw std::invalid_argument("");
+      THROW_EXCEPTION("");
     }
 
   std::vector<sd::LongType> cShape(xRank);

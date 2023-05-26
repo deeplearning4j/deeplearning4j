@@ -298,7 +298,7 @@ class Requirements {
 
   // throws. use this if you want to throw an exception if there is any failure
   void throws() {
-    if (!this->ok) throw std::invalid_argument(OP_VALIDATION_FAIL_MSG);
+    if (!this->ok) THROW_EXCEPTION(OP_VALIDATION_FAIL_MSG);
   }
 
   template <typename T>

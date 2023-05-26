@@ -504,7 +504,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats
 // fill array by repeating it the number of times given by repeats
 void NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats, NDArray& target) const {
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
-    throw std::invalid_argument(
+    THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
 

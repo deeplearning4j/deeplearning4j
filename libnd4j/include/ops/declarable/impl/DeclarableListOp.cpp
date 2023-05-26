@@ -69,7 +69,7 @@ ResultSet DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDA
 }
 
 sd::Status DeclarableListOp::execute(Context* block) {
-  if (block == nullptr) throw std::invalid_argument("Block is NULL");
+  if (block == nullptr) THROW_EXCEPTION("Block is NULL");
 
   sd_debug("Executing list op: [%s]\n", this->getOpName()->c_str());
 

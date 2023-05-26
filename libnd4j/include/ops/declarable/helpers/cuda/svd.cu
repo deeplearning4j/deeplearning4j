@@ -187,7 +187,7 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
   else if (A->dataType() == DataType::FLOAT32)
     status = cusolverDnSgesvd_bufferSize(*handle, m, n, &lwork);
   else
-    throw std::invalid_argument("svdQR: given data type is unsupported !");
+    THROW_EXCEPTION("svdQR: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdQR: cuda failed !", status);
 
@@ -235,7 +235,7 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
                               calcUV ? reinterpret_cast<float*>(pVT->specialBuffer()) : nullptr, ldvt,
                               reinterpret_cast<float*>(dWork), lwork, reinterpret_cast<float*>(rWork), devInfo);
   } else
-    throw std::invalid_argument("svdQR: given data type is unsupported !");
+    THROW_EXCEPTION("svdQR: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdQR: cuda failed !", status);
 
@@ -395,7 +395,7 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
         calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv, &lwork,
         gesvdjParams);
   else
-    throw std::invalid_argument("svdJcb: given data type is unsupported !");
+    THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
 
@@ -422,7 +422,7 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
         calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv,
         reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams);
   } else
-    throw std::invalid_argument("svdJcb: given data type is unsupported !");
+    THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
 
@@ -558,7 +558,7 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
         reinterpret_cast<float*>(pS->specialBuffer()), calcUV ? reinterpret_cast<float*>(pU->specialBuffer()) : nullptr,
         ldu, calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : nullptr, ldv, &lwork, gesvdjParams, bS);
   else
-    throw std::invalid_argument("svdBatched: given data type is unsupported !");
+    THROW_EXCEPTION("svdBatched: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
 
@@ -587,7 +587,7 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
                                       calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : nullptr, ldv,
                                       reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams, bS);
   } else
-    throw std::invalid_argument("svdBatched: given data type is unsupported !");
+    THROW_EXCEPTION("svdBatched: given data type is unsupported !");
 
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdBatched: cuda failed !", status);
 

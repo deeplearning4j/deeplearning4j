@@ -57,6 +57,16 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
   const int numTads = shape::length(xShapeInfo) / tadLength;
 
+  //0 length array
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  sd_printf("ScalarTransform: 5 Op num: 5\n",0);
+
+  if(numTads == 0 || tadLength == 0) {
+    z[0] = 1;
+    return;
+  }
+
+
   sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
 
   if (kindOfLoop != sd::LoopKind::EWS1 && kindOfLoop != sd::LoopKind::EWSNONZERO) {
@@ -94,6 +104,15 @@ void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::Lon
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
                                          const sd::LongType *zTadOffsets,
                                          sd::LongType start, sd::LongType stop) {
+  sd_printf("ScalarTransform: 4 Op num: %d\n", opNum);
+
+  auto len = shape::length(xShapeInfo);
+  if(len == 0) {
+    auto newCast = reinterpret_cast<Z *>(z);
+    newCast[0] = 1;
+    return;
+  }
+
   DISPATCH_BY_OPNUM_TTT(transform,
                         PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
                                xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),
@@ -105,6 +124,15 @@ template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, sd::LongType xStride, void *z,
                                          sd::LongType zStride, const void *scalar, void *extraParams, const sd::LongType n,
                                          const sd::LongType start, const sd::LongType stop) {
+
+  sd_printf("ScalarTransform: 3 Op num: %d\n", opNum);
+  if(n == 0) {
+    auto newCast = reinterpret_cast<Z *>(z);
+    newCast[0] = 1;
+    return;
+  }
+
+
   DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, start, stop), SCALAR_OPS);
 }
 
@@ -113,6 +141,16 @@ template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
                                          const sd::LongType *zShapeInfo, const void *scalar, void *extraParams,
                                          const sd::LongType start, const sd::LongType stop) {
+
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  sd_printf("ScalarTransform: Op num: %d\n", opNum);
+  auto len = shape::length(xShapeInfo);
+  if(len == 0) {
+    sd_printf("ScalarTransform: In length 0\n",0);
+    auto newCast = reinterpret_cast<Z *>(z);
+    newCast[0] = 1;
+    return;
+  }
   DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_OPS);
 }
 
@@ -130,6 +168,14 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   const auto len = shape::length(xShapeInfo);
   const auto xEws = shape::elementWiseStride(xShapeInfo);
   const auto zEws = shape::elementWiseStride(zShapeInfo);
+
+  //0 length array
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  if(len == 0) {
+    sd_printf("ScalarTransform: In length 0 2\n",0);
+    z[0] = 1;
+    return;
+  }
 
   sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
@@ -169,7 +215,12 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, sd::LongType xEws, void
   auto z = reinterpret_cast<Z *>(vz);
   auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
-
+  //0 length array
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  if(len == 0) {
+    z[0] = 1;
+    return;
+  }
   if (xEws == 1 && zEws == 1) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], scalar, extraParams);
