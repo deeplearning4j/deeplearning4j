@@ -7261,17 +7261,6 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "UnsortedSegmentSum"
   }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
-    inputToOutput {
-      key: "numSegments"
-      value: "num_segments"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "UnsortedSegmentSum"
-  }
 }
 mappings {
   frameworkName: "tensorflow"
