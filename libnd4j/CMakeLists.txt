@@ -294,11 +294,11 @@ else()
     # ideally debug builds would work but since it's not consistent it's better to just
     # set this for release flags so we can debug code even from the java level
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true -MM")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true")
     else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
     endif()
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -MM")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
     if (SD_CPU AND SD_SANITIZE)
         # adds stack size to prevent misc errors with address sanitizer
