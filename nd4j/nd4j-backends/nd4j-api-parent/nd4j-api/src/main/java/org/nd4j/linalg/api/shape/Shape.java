@@ -3876,9 +3876,15 @@ public class Shape {
                 retShape = new long[]{1, 1};
             }
         } else {
+
+            //numpy compatibility: reduce an array down to scalar never empty
+            if(x.isEmpty() || x.length() == 0) {
+                return new long[]{};
+            }
+
             if(keepDims) {
                 retShape = x.shape().clone();
-                if(wholeArray){
+                if(wholeArray) {
                     for( int i = 0; i < retShape.length; i++) {
                         retShape[i] = 1;
                     }

@@ -405,6 +405,17 @@
                                     <copyResources>true</copyResources>
                                     <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                                     <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                                    <compilerOptions>
+                                        <compilerOption>${javacpp.compiler.options}</compilerOption>
+                                        <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
+                                        <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
+                                        <compilerOption>-rdynamic</compilerOption>
+                                        <!-- Need these 2 libraries including bin utils for handling address decoding-->
+                                        <compilerOption>-ldl</compilerOption>
+                                        <compilerOption>-O0</compilerOption>
+                                        <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
+                                        <compilerOption>-std=c++11</compilerOption>
+                                    </compilerOptions>
                                 </configuration>
                             </execution>
                         </executions>
