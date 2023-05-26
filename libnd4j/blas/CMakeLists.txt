@@ -264,7 +264,7 @@ if(SD_CUDA)
                 # Set C++ compiler and flags
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -MT -M -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
                 # note that cuda can't use -MT and -finstrument-functions
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -MM -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
             else()
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
