@@ -165,7 +165,7 @@ case $key in
     shift # past argument
     ;;
     --check-vectorization)
-    CHECK_VECTORIZATION="ON"
+    CHECK_VECTORIZATION="$value"
     ;;
     -j)
     MAKEJ="$value"
