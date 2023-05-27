@@ -477,6 +477,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
     for(int curr = 0; curr < iterations; curr++) {
       std::vector<double> lrs(numTargets);
       for(int t = 0; t < numTargets; t++) {
+        sd_printf("About to get learning rate %d\n",t);
         lrs[t] = ((lr.e<double>(t) - static_cast<double>(minLearningRate)) / (static_cast<double>(iterations - curr))) + static_cast<double>(minLearningRate);
       }
 
@@ -555,7 +556,9 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
   {
 #pragma omp for nowait
     for (LongType e = 0; e < hsRounds; e++) {
+      sd_printf("About to get indices %d\n",e);
       currRows[e] = indices.e<int>(t,e);
+      sd_printf("About to get codes %d\n",e);
       codes_vals[e] = codes.e<int>(t,e);
     }
 
