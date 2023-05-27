@@ -143,10 +143,8 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, const s
                                          const sd::LongType start, const sd::LongType stop) {
 
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-  sd_printf("ScalarTransform: Op num: %d\n", opNum);
   auto len = shape::length(xShapeInfo);
   if(len == 0) {
-    sd_printf("ScalarTransform: In length 0\n",0);
     auto newCast = reinterpret_cast<Z *>(z);
     newCast[0] = 1;
     return;
