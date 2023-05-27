@@ -545,6 +545,26 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
                               const int vectorLength, const int expLength, const int negLength, T *const expTable,
                               const T *negTable, const LongType hsRounds, int t, T *neu1e) {
 
+  if(t >= targets.lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Target index is greater than number of targets ";
+    errorMessage += std::to_string(t);
+    errorMessage += " >= ";
+    errorMessage += std::to_string(targets.lengthOf());
+    THROW_EXCEPTION(errorMessage.c_str())
+  }
+
+  if(t >= nextRandom.sizeAt(0)) {
+    std::string errorMessage;
+    errorMessage += "Target index is greater than number of randoms ";
+    errorMessage += std::to_string(t);
+    errorMessage += " >= ";
+    errorMessage += std::to_string(nextRandom.sizeAt(0));
+    THROW_EXCEPTION(errorMessage.c_str())
+  }
+
+
+
   LongType randomValue = nextRandom.e<LongType>(t);
   auto target = targets.e<int>(t);
 
@@ -598,6 +618,25 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
                      const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                      const int expLength, const int negLength, T *const expTable, const T *negTable,
                      const LongType hsRounds, int t) {
+
+  if(t >= lr.lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Target index is greater than number of learning rates ";
+    errorMessage += std::to_string(t);
+    errorMessage += " >= ";
+    errorMessage += std::to_string(lr.lengthOf());
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+
+  if(t >= targets.lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Target index is greater than number of targets ";
+    errorMessage += std::to_string(t);
+    errorMessage += " >= ";
+    errorMessage += std::to_string(targets.lengthOf());
+    THROW_EXCEPTION(errorMessage.c_str())
+  }
   T *neu1e = new T[vectorLength];
   memset(neu1e, 0, vectorLength * sizeof(T));
 
