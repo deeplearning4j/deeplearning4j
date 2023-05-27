@@ -262,7 +262,7 @@ if(SD_CUDA)
             # functrace works for cuda as well as long as the underlying compiler is gcc
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -MT -M -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
                 # note that cuda can't use -MT and -finstrument-functions
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
             else()
