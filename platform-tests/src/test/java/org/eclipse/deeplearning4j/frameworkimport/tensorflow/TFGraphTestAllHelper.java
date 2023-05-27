@@ -60,7 +60,9 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
+import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph;
 import org.nd4j.shade.guava.io.Files;
+import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -118,6 +120,7 @@ public class TFGraphTestAllHelper {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+
 
             System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
             try {

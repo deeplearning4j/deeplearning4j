@@ -182,9 +182,9 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
 
         try {
-            Nd4j.getExecutioner().enableDebugMode(true);
+         /*   Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
-            //TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,new TFGraphTestAllHelper.DefaultGraphLoader(inputs),maxRE,minAbs,localTestDir,true);
+       */     //TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,new TFGraphTestAllHelper.DefaultGraphLoader(inputs),maxRE,minAbs,localTestDir,true);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

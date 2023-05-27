@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 #pragma once
-#ifndef OPS_H_
+#if not defined(OPS_H_)
 #define OPS_H_
 
 #include <array/DataTypeUtils.h>
