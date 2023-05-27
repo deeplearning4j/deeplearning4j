@@ -570,16 +570,6 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
 
   std::vector<int> currRows(hsRounds);
   std::vector<int> codes_vals(hsRounds);
-  if(t >= negStarters.lengthOf()) {
-        std::string errorMessage;
-        errorMessage += "Target index is greater than number of neg starters ";
-        errorMessage += std::to_string(t);
-        errorMessage += " >= ";
-        errorMessage += std::to_string(negStarters.lengthOf());
-        THROW_EXCEPTION(errorMessage.c_str())
-  }
-
-  std::vector<int> irows(nsRounds+1, negStarters.e<int>(t));
 
 #pragma omp parallel
   {
@@ -592,6 +582,8 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
     }
 
     if(nsRounds > 0) {
+      std::vector<int> irows(nsRounds+1, negStarters.e<int>(t));
+
 #pragma omp for nowait
       for (int r = 1; r < nsRounds + 1; r++) {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
@@ -600,6 +592,17 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
 
         if (irows[r] < 0 || irows[r] >= vocabSize) irows[r] = randomValue % (vocabSize - 1) + 1;
       }
+
+
+      int nsStarter = irows[0];
+#pragma omp parallel for
+      for (int r = 0; r < nsRounds + 1; r++) {
+        if (r != 0 && irows[r] == nsStarter) continue;
+
+        nSampling_<T>(syn0row, s1n.bufferWithOffset(irows[r] * vectorLength), expTable, neu1e, alpha, vectorLength,
+                      r == 0 ? 1 : 0, expLength, true);
+      }
+
     }
 
   }
@@ -614,15 +617,6 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
     hSoftmax_<T>(syn0row,syn1row,expTable,neu1e,alpha,vectorLength,codes_vals[e],expLength,true);
   }
 
-  if(nsRounds > 0) {
-    int nsStarter = irows[0];
-    for (int r = 0; r < nsRounds + 1; r++) {
-      if (r != 0 && irows[r] == nsStarter) continue;
-
-      nSampling_<T>(syn0row, s1n.bufferWithOffset(irows[r] * vectorLength), expTable, neu1e, alpha, vectorLength,
-                    r == 0 ? 1 : 0, expLength, true);
-    }
-  }
 
 
 }
