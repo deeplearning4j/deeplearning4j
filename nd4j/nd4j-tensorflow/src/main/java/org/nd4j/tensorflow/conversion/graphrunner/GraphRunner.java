@@ -212,25 +212,27 @@ public class GraphRunner implements Closeable {
         if(inputDataTypes == null || inputDataTypes.isEmpty()) {
 
             inputDataTypes = new LinkedHashMap<>();
-            for(int i = 0; i < inputOrder.size(); i++) {
-                TensorDataType tensorDataType = TensorDataType.values()[TF_TensorType(inputs.get(inputOrder.get(i)))];
-                Preconditions.checkNotNull(tensorDataType,"Data type of " + TF_TensorType(inputs.get(inputOrder.get(i))) + " was null!");
-                inputDataTypes.put(inputOrder.get(i),tensorDataType);
-            }
+            if(inputOrder != null)
+                for(int i = 0; i < inputOrder.size(); i++) {
+                    TensorDataType tensorDataType = TensorDataType.values()[TF_TensorType(inputs.get(inputOrder.get(i)))];
+                    Preconditions.checkNotNull(tensorDataType,"Data type of " + TF_TensorType(inputs.get(inputOrder.get(i))) + " was null!");
+                    inputDataTypes.put(inputOrder.get(i),tensorDataType);
+                }
         }
 
         Map<String, TF_Tensor> ret = new HashMap<>();
-        for(int i = 0; i < inputOrder.size(); i++) {
-            TF_Tensor currInput = inputs.get(inputOrder.get(i));
-            TensorDataType fromDType = TensorDataType.values()[TF_TensorType(currInput)];
-            if(fromDType != inputDataTypes.get(inputOrder.get(i))) {
-                TF_Tensor oldTensor = currInput;
-                currInput = castTensor(currInput, fromDType, inputDataTypes.get(inputOrder.get(i)));
-                TF_DeleteTensor(oldTensor);
-            }
+        if(inputOrder != null)
+            for(int i = 0; i < inputOrder.size(); i++) {
+                TF_Tensor currInput = inputs.get(inputOrder.get(i));
+                TensorDataType fromDType = TensorDataType.values()[TF_TensorType(currInput)];
+                if(fromDType != inputDataTypes.get(inputOrder.get(i))) {
+                    TF_Tensor oldTensor = currInput;
+                    currInput = castTensor(currInput, fromDType, inputDataTypes.get(inputOrder.get(i)));
+                    TF_DeleteTensor(oldTensor);
+                }
 
-            ret.put(inputOrder.get(i),currInput);
-        }
+                ret.put(inputOrder.get(i),currInput);
+            }
 
         return ret;
     }
@@ -247,15 +249,16 @@ public class GraphRunner implements Closeable {
         }
 
 
-        if(inputs.size() != inputOrder.size()) {
+        if(!inputs.isEmpty() && inputOrder != null && inputs.size() != inputOrder.size()) {
             throw new IllegalArgumentException("Number of inputs specified do not match number of arrays specified.");
         }
 
         if(inputDataTypes == null) {
             inputDataTypes = new LinkedHashMap<>();
-            for(int i = 0; i < inputOrder.size(); i++) {
-                inputDataTypes.put(inputOrder.get(i),TensorDataType.values()[TF_TensorType(inputs.get(inputOrder.get(i)))]);
-            }
+            if(inputOrder != null)
+                for(int i = 0; i < inputOrder.size(); i++) {
+                    inputDataTypes.put(inputOrder.get(i),TensorDataType.values()[TF_TensorType(inputs.get(inputOrder.get(i)))]);
+                }
         }
 
         for(Map.Entry<String, org.bytedeco.tensorflow.TF_Tensor> entry : inputs.entrySet()) {
@@ -341,11 +344,12 @@ public class GraphRunner implements Closeable {
         else {
             Map<String, TF_Tensor> outputArrays = new LinkedHashMap<>();
 
+            int inputOrderSize = inputOrder == null ? 0 : inputOrder.size();
             Map<String, org.bytedeco.tensorflow.TF_Operation> opsByName = new HashMap<>();
-            org.bytedeco.tensorflow.TF_Output inputOut = new org.bytedeco.tensorflow.TF_Output(inputOrder.size());
+            org.bytedeco.tensorflow.TF_Output inputOut = new org.bytedeco.tensorflow.TF_Output(inputOrderSize);
 
-            TF_Tensor[] inputTensors = new TF_Tensor[inputOrder.size()];
-            for(int i = 0; i < inputOrder.size(); i++) {
+            TF_Tensor[] inputTensors = new TF_Tensor[inputOrderSize];
+            for(int i = 0; i < inputOrderSize; i++) {
                 String[] name = inputOrder.get(i).split(":");
                 org.bytedeco.tensorflow.TF_Operation inputOp = TF_GraphOperationByName(graph, name[0]);
                 opsByName.put(inputOrder.get(i),inputOp);
@@ -359,9 +363,10 @@ public class GraphRunner implements Closeable {
             //reset the position of the pointer for execution
             inputOut.position(0);
 
+            int outputOrderSize = outputOrder == null ? 0 : outputOrder.size();
             org.bytedeco.tensorflow.TF_Output outputOut = new org.bytedeco.tensorflow.TF_Output(outputOrder.size());
             //only setup the output ops
-            for(int i = 0; i < outputOrder.size(); i++) {
+            for(int i = 0; i < outputOrderSize; i++) {
                 String[] name = outputOrder.get(i).split(":");
                 org.bytedeco.tensorflow.TF_Operation outputOp = TF_GraphOperationByName(graph, name[0]);
                 if(outputOp == null) {
@@ -381,16 +386,16 @@ public class GraphRunner implements Closeable {
             PointerPointer<TF_Tensor> inputTensorsPointer = new PointerPointer<>(inputTensors);
             //note that these are the result pointers
             //the result pointers are null, and will be populated automatically by the session run
-            PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrder.size());
+            PointerPointer<TF_Tensor> outputTensorsPointer = new PointerPointer<>(outputOrderSize);
 
             long start = System.nanoTime();
             TF_SessionRun(
                     session,
                     null,
                     //inputs
-                    inputOut, inputTensorsPointer, inputOrder.size(),
+                    inputOut, inputTensorsPointer, inputOrderSize,
                     //output
-                    outputOut, outputTensorsPointer, outputOrder.size(),
+                    outputOut, outputTensorsPointer, outputOrderSize,
                     //targets
                     null, 0,
                     null,

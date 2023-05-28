@@ -33,12 +33,6 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
-  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-  if(input->lengthOf() == 0) {
-    output->assign(1);
-    return sd::Status::OK;
-  }
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);

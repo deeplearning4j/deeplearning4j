@@ -85,11 +85,16 @@
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
 
+        <!--
+        TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address
+        and preload. The build without -fsanitize=address is where you left off.
+        -->
+
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
-        <test.asan.options>protect_shadow_gap=0:replace_intrin=0:detect_leaks=0</test.asan.options>
+        <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=1:replace_intrin=0:detect_leaks=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload>/usr/lib64/libasan.so.8</preload>
+        <preload></preload>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>
@@ -889,6 +894,7 @@
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
+                        <ASAN_SHADOW_OFFSET>0</ASAN_SHADOW_OFFSET>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
                     <classpathDependencyExcludes>
@@ -905,6 +911,9 @@
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
+                    <properties>
+                        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
+                    </properties>
                 </configuration>
             </plugin>
         </plugins>

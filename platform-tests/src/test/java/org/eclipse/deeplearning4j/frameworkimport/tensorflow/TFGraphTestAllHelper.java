@@ -145,9 +145,13 @@ public class TFGraphTestAllHelper {
         String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
+            System.out.println("Loading model " + modelNames[i] + " - " + (i + 1) + " of " + modelNames.length);
             Object[] currentParams = new Object[4];
+            System.out.println("Reading input variables");
             currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
+            System.out.println("Reading output variables");
             currentParams[1] = outputVars(modelNames[i], baseDir, localTestDir); //saved off predictions
+            System.out.println("Reading model");
             currentParams[2] = modelNames[i];
             currentParams[3] = localTestDir;
             modelParams.add(currentParams);
@@ -615,10 +619,6 @@ public class TFGraphTestAllHelper {
                                         // parse type directly
                                         DataType value = ArrayOptionsHelper.dataType(split[1]);
 
-                                        // adding key directly
-                                        //if (dtypes.containsKey(key))
-                                        //    throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
-                                        //else
 
                                         dtypes.put(key, value);
 
@@ -655,7 +655,6 @@ public class TFGraphTestAllHelper {
 
         }
 
-//        Preconditions.checkState(!dtypes.isEmpty(), "No datatypes file was found");
 
 
         for (int i = 0; i < resources.size(); i++) {
@@ -670,7 +669,7 @@ public class TFGraphTestAllHelper {
 
             DataType type = dtypes.get(modelDir + "/" + varName);
 
-            List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
+            List<String> lines;
             try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
                 lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
             }
@@ -784,8 +783,8 @@ public class TFGraphTestAllHelper {
                             case UINT32:
                             case UINT64:
                                 long[] lArr = new long[cLines.length];
-                                int y=0;
-                                while(y < lArr.length){
+                                int y = 0;
+                                while(y < lArr.length) {
                                     lArr[y] = parseLong(cLines[y]);
                                     y++;
                                 }

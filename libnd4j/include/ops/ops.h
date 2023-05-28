@@ -103,14 +103,7 @@
       const sd::LongType *tadOffsets) {}
 
 #else
-// hacky fix for isnan/being being out of scope
-//#ifdef IOS
-//#define isinf(x) 0 // this isn't right. But std::isinf fails
-//#define isnan(x) 0
-//#else
-//#define isnan std::isnan
-//#define isinf std::isinf
-//#endif
+
 
 #define no_op_exec_special_cuda
 #define no_op_exec_special_accumulation_cuda

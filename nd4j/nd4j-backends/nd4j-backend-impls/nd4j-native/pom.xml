@@ -412,7 +412,6 @@
                                         <compilerOption>-rdynamic</compilerOption>
                                         <!-- Need these 2 libraries including bin utils for handling address decoding-->
                                         <compilerOption>-ldl</compilerOption>
-                                        <compilerOption>-O0</compilerOption>
                                         <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
                                         <compilerOption>-std=c++11</compilerOption>
                                     </compilerOptions>
@@ -551,7 +550,7 @@
                                 <compilerOption>-ldl</compilerOption>
                                 <compilerOption>-O0</compilerOption>
                                 <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
-                                <compilerOption>-std=c++17</compilerOption>
+                                <compilerOption>-std=c++11</compilerOption>
                                 <!-- Need to pass this to gcc in order to enable the right functions to appear in cmake.  -->
                                 <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
                                 <compilerOption>-lunwind</compilerOption>
@@ -561,7 +560,11 @@
                                 <compilerOption>-fno-omit-frame-pointer</compilerOption>
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption>
-                                    <compilerOption>-fsanitize=address</compilerOption>
+                                <compilerOption>-fPIE</compilerOption>
+                                <compilerOption>-fsanitize=address,undefined,float-divide-by-zero,float-cast-overflow </compilerOption>
+                                <!-- For some reason -shared-libasan doesn't work here. That would be the preferrred approach.-->
+                                <compilerOption>-lasan</compilerOption>
+                                <compilerOption> -fno-sanitize-recover=all </compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

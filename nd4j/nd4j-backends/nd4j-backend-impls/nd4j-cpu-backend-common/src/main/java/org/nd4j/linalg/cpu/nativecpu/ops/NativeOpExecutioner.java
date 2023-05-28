@@ -228,35 +228,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
         op.validateDataTypes(oc);
-        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
-            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
-            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
-            if(z != null) {
-                if(!x.isScalar() && !z.isScalar())
-                    Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
-                            " Got: x=%ndShape, z=%ndShape", x, z);
-                z.assign(x);
-                return z;
-            } else {
-                setZ(x.dup(), op, oc);
-                return z;
-            }
-        }
 
-        // FIXME: this should be moved down to C++ on per-op basis
         val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toLongVector() : null);
-        // reduce to scalar case, ReduceBool ops require special treatment
-        if (op instanceof BaseReduceBoolOp && x.isEmpty() && (dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE))) {
-            if (z == null) {
-                setZ(Nd4j.scalar(((BaseReduceBoolOp) op).emptyValue()), op, oc);
-            } else {
-                z.assign(((BaseReduceBoolOp) op).emptyValue());
-            }
-
-            return z;
-        }
-
-
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -308,22 +281,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             setZ(ret, op, oc);
             z = ret;
         } else {
-            // compare length
-            long shapeProduct = (retShape.length == 0 ? 1 : ArrayUtil.prodLong(retShape));
-            if (!op.isComplexAccumulation() && z.length() != shapeProduct) {
-                if(!(x.isEmpty() && op.isKeepDims())){
-                    //Empty reductions are special case: [1,0].sum(0,1,keep=true) -> shape [1,1]
-                    throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(z.shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
-                }
-            }
-            else if (op.isComplexAccumulation()) {
-                long xT = x.tensorsAlongDimension(dimension);
-                long yT = y.tensorsAlongDimension(dimension);
-
-                if (z.length() != xT * yT)
-                    throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(z.shape()) + "] doesn't match expected [" + (xT * yT) + "]");
-            }
-
             ret = z;
         }
 
@@ -746,8 +703,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             op.validateDataTypes(oc, experimentalMode.get());
 
-            val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-            val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+            val xb = x.data().opaqueBuffer();
+            val zb = z.data().opaqueBuffer();
 
             switch (op.getOpType()) {
                 case TRANSFORM_FLOAT: {

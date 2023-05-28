@@ -21,9 +21,6 @@
 //
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/im2col.h>
-#include <indexing/NDIndexUtils.h>
-#include <ops/declarable/CustomOperations.h>
-
 #if NOT_EXCLUDED(OP_im2col)
 namespace sd {
 namespace ops {
@@ -63,54 +60,85 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride1 = imStride[1];
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
-  sd::ops::create_view createView;
-  auto all = sd::NDIndexUtils::createAll();
 
-  auto recastInput = reinterpret_cast<NDArray *>(const_cast<NDArray *>(&input));
-  auto recastOutput = reinterpret_cast<NDArray *>(const_cast<NDArray *>(&output));
-  sd::ops::pad pad2;
-  const std::vector<sd::LongType> values = {0,0,0,0,pH,pH + sH - 1,pW,pW + sW - 1};
-  const std::vector<sd::LongType>  shape = {4,2};
+  if (shape::order(imShapeBuffer) == 'c' && shape::order(colShapeBuffer) == 'c' &&
+      shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
+    auto func = PRAGMA_THREADS_FOR_2D {
+      for (auto b = start_x; b < stop_x; b++) {
+        for (auto c = start_y; c < stop_y; c++) {
+          for (int kRow = 0; kRow < kH; ++kRow) {
+            for (int kCol = 0; kCol < kW; ++kCol) {
+              for (int colH = 0; colH < oH; ++colH) {
+                for (int colW = 0; colW < oW; ++colW) {
+                  int imRow = (-pH + kRow * dH) + colH * sH;
+                  int imCol = (-pW + kCol * dW) + colW * sW;
 
-  auto inputPad = NDArrayFactory::create('c',shape,values).cast(sd::DataType::INT32);
-  auto padded = pad2.evaluate({recastInput,&inputPad},{},{0}, {zeroPadVal}).at(0);
-  auto retGet = NDArrayFactory::create(input.dataType(),{output.sizeAt(0),output.sizeAt(1),kH,kW,oH,oW},input.dataType());
-  for(int i = 0; i < kH; i++) {
-    sd::LongType iLim = i + sH * oH;
-    for(int j = 0; j < kW; j++) {
-      sd::LongType jLim = j + sW * oW;
-      auto interval = sd::NDIndexUtils::createInterval(i,iLim,sH,0);
-      auto interval2 = sd::NDIndexUtils::createInterval(j,jLim,sW,0);
-      auto point = sd::NDIndexUtils::createPoint(i);
-      auto point2 = sd::NDIndexUtils::createPoint(j);
-      sd_printf("About to do evaluate for interval 1: i %d iLim %d sH %d inclusive %d\n",i,iLim,sH,0);
-      sd_printf("About to do evaluate for interval 2: j %d jLim %d sW %d inclusive %d\n",j,jLim,sW,0);
-      padded->printShapeInfo("Interval source");
-      auto get = createView.evaluate({padded, &all, &all, &interval, &interval2}).at(0);
-      sd_printf("About to do evaluate for point %d\n",0);
-      sd_printf("About to do evaluate for point %d\n",i);
-      sd_printf("About to do evaluate for point %d\n",j);
-      retGet.printShapeInfo("Point array source");
-      auto assignView = createView.evaluate({&retGet,&all, &all,&point, &point2, &all, &all}).at(0);
-      sd_printf("get shape %s\n",ShapeUtils::shapeAsString(get->shapeInfo()).c_str());
-      sd_printf("assign shape %s\n",ShapeUtils::shapeAsString(assignView->shapeInfo()).c_str());
-      assignView->assign(get);
+                  auto col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
+                             colH * colStride4 + colW * colStride5;
 
-    }
+                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW))
+                    *col = zeroPadVal;
+                  else {
+                    auto im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                    *col = *im;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+  } else {
+    auto func = PRAGMA_THREADS_FOR_2D {
+      T* col;
+      T const* im;
+      int imRow, imCol;
+
+      for (auto b = start_x; b < stop_x; b += inc_x) {
+        for (auto colH = start_y; colH < stop_y; colH += inc_y) {
+          for (int colW = 0; colW < oW; ++colW) {
+            for (int c = 0; c < iC; ++c) {
+              for (int kRow = 0; kRow < kH; ++kRow) {
+                for (int kCol = 0; kCol < kW; ++kCol) {
+                  imRow = (-pH + kRow * dH) + colH * sH;
+                  imCol = (-pW + kCol * dW) + colW * sW;
+
+                  col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
+                        colH * colStride4 + colW * colStride5;
+                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
+                      static_cast<LongType>(imRow) < 0 ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
+                      static_cast<LongType>(imCol) < 0)
+                    *col = zeroPadVal;
+                  else {
+                    im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                    *col = *im;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+
+    samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
   }
-
-  output.assign(retGet.reshape('c',output.getShapeAsVector()));
 }
 
 void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW, const LongType sH,
             const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
 #if defined(HAVE_VEDA)
-  NDArray::preparePrimaryUse({&col}, {&im});
+    NDArray::preparePrimaryUse({&col}, {&im});
 #endif
   BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal),
                         SD_FLOAT_TYPES);
 #if defined(HAVE_VEDA)
-  NDArray::registerPrimaryUse({&col}, {&im});
+    NDArray::registerPrimaryUse({&col}, {&im});
 #endif
 }
 
