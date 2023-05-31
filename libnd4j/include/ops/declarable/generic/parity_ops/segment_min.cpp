@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(segment_min) {
 
   outputShape[0] = outRank;
   outputShape[1] = numOfClasses;
-  for (int i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
+  for (sd::LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
 
   ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 

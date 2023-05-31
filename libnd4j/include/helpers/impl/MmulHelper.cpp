@@ -94,7 +94,7 @@ void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::N
 
   if (cPR->buffer() != cP->buffer() ||
       cPR->specialBuffer() != cP->specialBuffer())  // this means both permute and reshape have been performed on c, cP
-                                                    // always points on c->buffer()
+    // always points on c->buffer()
     cP->assign(cPR);
 
   if (aP != aPR) delete aPR;
@@ -115,14 +115,14 @@ void sd::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA, whatToDoWithB,
       whatToDoWithC;  // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" -
-                      // reshaping/permutation, and so on; if another string is produced - throw exception
+  // reshaping/permutation, and so on; if another string is produced - throw exception
 
   for (const auto& arr : modifA)
     whatToDoWithA =
         (std::find(arr.begin(), arr.end(), 0) != arr.end())
-            ? whatToDoWithA + "p"
-            : whatToDoWithA +
-                  "r";  // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
+        ? whatToDoWithA + "p"
+        : whatToDoWithA +
+          "r";  // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
   for (const auto& arr : modifB)
     whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";
   for (const auto& arr : modifC)
@@ -156,10 +156,10 @@ void sd::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     for (int i = 0; i < cArrs.size() - 1; ++i)
       cArrs[i + 1] =
           (whatToDoWithC[i] == 'p')
-              ? new NDArray(cArrs[i]->permute(modifC[i]))
-              : new NDArray(cArrs[i]->reshape(
-                    c->ordering(), modifC[i],
-                    false));  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
+          ? new NDArray(cArrs[i]->permute(modifC[i]))
+          : new NDArray(cArrs[i]->reshape(
+              c->ordering(), modifC[i],
+              false));  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
   }
 
   mmul(aPR, bPR, cArrs[cArrs.size() - 1], 1.0, 0.0);
@@ -169,12 +169,12 @@ void sd::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     for (int i = cArrs.size() - 1; i > 0; --i) {
       if (cArrs[i]->buffer() != cArrs[i - 1]->buffer() || cArrs[i]->specialBuffer() != cArrs[i - 1]->specialBuffer())
         cArrs[i - 1]->assign(cArrs[i]);
-      delete cArrs[i];
+      //delete cArrs[i];
     }
   }
 
-  if (aPR != a) delete aPR;
-  if (bPR != b) delete bPR;
+  // if (aPR != a) delete aPR;
+  // if (bPR != b) delete bPR;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -184,14 +184,14 @@ NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b,
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA,
       whatToDoWithB;  // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp"
-                      // - reshaping/permutation; another string - throw exception
+  // - reshaping/permutation; another string - throw exception
 
   for (const auto& arr : modifA)
     whatToDoWithA =
         (std::find(arr.begin(), arr.end(), 0) != arr.end())
-            ? whatToDoWithA + "p"
-            : whatToDoWithA +
-                  "r";  // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
+        ? whatToDoWithA + "p"
+        : whatToDoWithA +
+          "r";  // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
   for (const auto& arr : modifB)
     whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";
 
@@ -237,14 +237,19 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
   if (A->lengthOf() == B->lengthOf() && isAVector && isBVector &&
       (aRank != 2 ||
        aRank == 2 && (A->isSameShape(B) ||
-                      bRank == 1 && A->sizeAt(1) == 1)))  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
-    return dot(A, B, C, alpha, beta);
+                      bRank == 1 && A->sizeAt(1) == 1))) {  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
 
+    return dot(A, B, C, alpha, beta);
+  }
   // matrix x matrix
-  if (aRank == 2 && bRank == 2) return mmulMxM(A, B, C, alpha, beta, outOrder);
+  if (aRank == 2 && bRank == 2) {
+    return mmulMxM(A, B, C, alpha, beta, outOrder);
+  }
 
   // matrix x vector
-  if (aRank == 2 && isBVector) return mmulMxV(A, B, C, alpha, beta, outOrder);
+  if (aRank == 2 && isBVector) {
+    return mmulMxV(A, B, C, alpha, beta, outOrder);
+  }
 
   // vector x matrix, A{M} x B{M,N} = C{N} -> reduce to matrix x matrix A2{1,M} x B{M,N} = C2{1,N}, since there is no
   // corresponding blas operation sgevm
@@ -252,8 +257,8 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
     NDArray* A2 = new NDArray(A->reshape(A->ordering(), {1, A->lengthOf()}));                       // A{M} -> A2{1,M}
     NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), {1, C->lengthOf()}, false)) : nullptr;  // C{N} -> C2{1,N}
     auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                        // result{1,N}
-    delete A2;
-    delete C2;
+    // delete A2;
+    // delete C2;
 
     if (!C) {
       result->reshapei({result->lengthOf()});  // result{1,N} -> result{N}
@@ -274,11 +279,13 @@ void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray*
 
   auto outShape = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
   if (!z->isSameShape(outShape)) {
-    sd_printf(
-        "NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! "
-        "\n",
-        ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
-    THROW_EXCEPTION("");
+    std::string errorMessage;
+    errorMessage = "NDArrayFactory::matmul static method: input shape of output array is wrong, actual is";
+    errorMessage += ShapeUtils::shapeAsString(z).c_str();
+    errorMessage += " and expected is ";
+    errorMessage += ShapeUtils::shapeAsString(outShape).c_str();
+    errorMessage += " ! \n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   if (z->isEmpty()) return;

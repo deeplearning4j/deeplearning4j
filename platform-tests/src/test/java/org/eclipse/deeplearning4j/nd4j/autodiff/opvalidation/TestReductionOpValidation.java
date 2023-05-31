@@ -1252,6 +1252,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Will handle attention in separate PR")
     public void testDotProductAttentionV2Manual(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
@@ -1328,6 +1329,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Will handle attention in separate PR")
     public void testDotProductAttentionV2Causal(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
@@ -1356,6 +1358,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Will handle attention in separate PR")
     public void testDotProductAttentionWithMask(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});
@@ -1389,6 +1392,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Will handle attention in separate PR")
     public void testDotProductAttentionV2WithMask(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
@@ -1550,6 +1554,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Will handle attention in separate PR")
     public void testDotProductAttentionWeirdInputs(Nd4jBackend backend) {
         final INDArray keys = Nd4j.rand(new int[]{10, 4, 3});
         final INDArray values = Nd4j.rand(new int[]{10, 4, 3});

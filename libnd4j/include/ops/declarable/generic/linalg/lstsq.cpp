@@ -103,16 +103,15 @@ DECLARE_SHAPE_FN(lstsq) {
   auto in1 = inputShape->at(1);
   auto shapeOf = ShapeUtils::shapeAsVector(in1);
   auto rank = shapeOf.size();
-  shapeOf[rank - 2] = shape::sizeAt(in0, -1);
+  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<sd::LongType>(-1));
 
   if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty
   }
   auto resShape = ConstantShapeHelper::getInstance().createShapeInfo(
       ArrayOptions::dataType(in0), shape::order(in1),
-      shapeOf);  // ShapeBuilders::copyShapeInfoAndType(in1, in0, true, block.workspace());
+      shapeOf);
   if (shapeOf[rank - 1] == 0) {
-    //                ArrayOptions::setPropertyBit(resShape, ARRAY_EMPTY);
     resShape = ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(in0));
   }
   return SHAPELIST(resShape);
@@ -126,7 +125,7 @@ DECLARE_SHAPE_FN(solve_ls) {
   auto in1 = inputShape->at(1);
   auto shapeOf = ShapeUtils::shapeAsVector(in1);
   auto rank = shapeOf.size();
-  shapeOf[rank - 2] = shape::sizeAt(in0, -1);
+  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<sd::LongType>(-1));
 
   if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty

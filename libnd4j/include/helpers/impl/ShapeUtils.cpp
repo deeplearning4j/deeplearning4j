@@ -38,10 +38,10 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* 
                                                             std::vector<sd::LongType>& permutBt,
                                                             std::vector<sd::LongType>& shapeAt,
                                                             std::vector<sd::LongType>& shapeBt) {
-  int axeAsize = (int)axesA.size();
-  int axeBsize = (int)axesB.size();
-  int aRank = aShapeInfo[0];
-  int bRank = bShapeInfo[0];
+  sd::LongType axeAsize = (sd::LongType)axesA.size();
+  sd::LongType axeBsize = (sd::LongType)axesB.size();
+  sd::LongType aRank = aShapeInfo[0];
+  sd::LongType bRank = bShapeInfo[0];
 
   if (axeAsize != axeBsize)
     throw std::runtime_error(
@@ -63,7 +63,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* 
 
   // check whether axesA and axesB contain only unique numbers
   std::set<sd::LongType> uniqueElems(axesA.begin(), axesA.end());
-  if ((int)uniqueElems.size() != axeAsize)
+  if ((sd::LongType)uniqueElems.size() != axeAsize)
     throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !");
   uniqueElems.clear();
   uniqueElems = std::set<sd::LongType>(axesB.begin(), axesB.end());
@@ -81,7 +81,7 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForTensorDot(const sd::LongType* 
   permutBt = axesB;
   permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
 
-  // if permut contains something like {0,1,2,..rank-1}, then there is no need to make permutation and we return empty
+  // if permute contains something like {0,1,2,..rank-1}, then there is no need to make permutation and we return empty
   // vector in this case
   sd::Unsigned i1, i2;
   for (i1 = 0; i1 < aRank; ++i1)
@@ -428,7 +428,7 @@ bool ShapeUtils::areShapesBroadcastable(const NDArray& arr1, const NDArray& arr2
 bool ShapeUtils::areShapesBroadcastable(const sd::LongType* shapeInfo1, const sd::LongType* shapeInfo2) {
   int minRank = shape::rank(shapeInfo1) < shape::rank(shapeInfo2) ? shape::rank(shapeInfo1) : shape::rank(shapeInfo2);
 
-  for (int i = -1; i >= -minRank; --i)
+  for (sd::LongType i = -1; i >= -minRank; --i)
     if (shape::sizeAt(shapeInfo1, i) != shape::sizeAt(shapeInfo2, i) && shape::sizeAt(shapeInfo1, i) != 1 &&
         shape::sizeAt(shapeInfo2, i) != 1)
       return false;
@@ -442,7 +442,7 @@ bool ShapeUtils::areShapesBroadcastable(const std::vector<sd::LongType>& shape1,
   const auto rank2 = shape2.size();
   const int minRank = rank1 < rank2 ? rank1 : rank2;
 
-  for (int i = 1; i <= minRank; ++i)
+  for (sd::LongType i = 1; i <= minRank; ++i)
     if (shape1[rank1 - i] != shape2[rank2 - i] && shape1[rank1 - i] != 1 && shape2[rank2 - i] != 1) return false;
 
   return true;
@@ -663,7 +663,11 @@ std::string ShapeUtils::shapeAsString(const std::vector<sd::LongType>& shape) {
 }
 
 std::string ShapeUtils::shapeAsString(const sd::LongType* shapeInfo) {
-  if (!shapeInfo) throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+  if (shapeInfo == nullptr) THROW_EXCEPTION("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+
+  if(shapeInfo[0] < 0 || shapeInfo[0] > SD_MAX_RANK) {
+    THROW_EXCEPTION("Shape info appears to be corrupt. Shape info[0] is less than 0 or greater than 32. Might have been deallocated.");
+  }
 
   std::string result;
 
@@ -755,7 +759,7 @@ std::vector<sd::LongType> ShapeUtils::evalBroadcastBackwardAxis(const sd::LongTy
   const auto diff = rRank - oRank;
   std::vector<sd::LongType> axis;
 
-  for (int i = 0; i < rRank; ++i)
+  for (sd::LongType i = 0; i < rRank; ++i)
     if (i < diff || shape::sizeAt(operand, i - diff) != shape::sizeAt(result, i)) axis.push_back(i);
 
   return axis;
@@ -1035,7 +1039,7 @@ void ShapeUtils::copyCertainStridesFromShapeInfo(const sd::LongType* inShapeInfo
   auto yOrigStride = shape::stride(inShapeInfo);
 
   if (yRank == nRank) {
-    for (int i = 0; i < yRank; ++i) {
+    for (sd::LongType i = 0; i < yRank; ++i) {
       // x[2,3,4] * y[2,1,4] = z[2,3,4]
       outStrides[i] = (1 == shape::sizeAt(inShapeInfo, i)) ? 0 : yOrigStride[i];
     }

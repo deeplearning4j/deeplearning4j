@@ -103,7 +103,10 @@ public class IntervalIndex implements INDArrayIndex {
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
 
-        //Calculation of length: (endInclusive - begin)/stride + 1
+        // set the stride to the stride of the corresponding dimension in the array
+        this.stride = arr.stride(dimension);
+
+        // Calculation of length: (endInclusive - begin)/stride + 1
         long endInc = arr.size(dimension) - (inclusive ? 0 : 1);
         this.length = (endInc - begin) / stride + 1;
         initialized = true;

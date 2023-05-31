@@ -57,17 +57,17 @@ SD_INLINE sd::Status outputSize(sd::LaunchContext *context, const sd::LongType i
 SD_INLINE sd::Status dilation_hw(sd::LaunchContext *context, sd::LongType const *in, sd::LongType const *wh,
                                  std::vector<sd::LongType> &strides, std::vector<sd::LongType> &rates, bool isSameMode, sd::LongType *sH, sd::LongType *sW,
                                  sd::LongType *pH, sd::LongType *pW, sd::LongType *dH, sd::LongType *dW, sd::LongType *oH, sd::LongType *oW) {
-  const sd::LongType iH = shape::sizeAt(in, 1);
-  const sd::LongType iW = shape::sizeAt(in, 2);
-  const sd::LongType iC = shape::sizeAt(in, 3);
+  const sd::LongType iH = shape::sizeAt(in, static_cast<sd::LongType>(1));
+  const sd::LongType iW = shape::sizeAt(in, static_cast<sd::LongType>(2));
+  const sd::LongType iC = shape::sizeAt(in, static_cast<sd::LongType>(3));
 
   *sH = strides[1];
   *sW = strides[2];
   *dH = rates[1];
   *dW = rates[2];
 
-  const sd::LongType kH = shape::sizeAt(wh, 0);
-  const sd::LongType kW = shape::sizeAt(wh, 1);
+  const sd::LongType kH = shape::sizeAt(wh, static_cast<sd::LongType>(0));
+  const sd::LongType kW = shape::sizeAt(wh, static_cast<sd::LongType>(1));
 
   const sd::LongType kHeff = kH + (kH - 1) * (*dH - 1);
   const sd::LongType kWeff = kW + (kW - 1) * (*dW - 1);

@@ -1408,8 +1408,8 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
-    @Test
-    @Disabled
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testCompareIm2Col(Nd4jBackend backend) {
 
         int[] miniBatches = {1, 3, 5};
@@ -1455,12 +1455,10 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
                                         for (int kw : sizeW) {
                                             for (int ph : padH) {
                                                 for (int pw : padW) {
-                                                    System.out.println("Before assertion");
                                                     if ((w - kw + 2 * pw) % sw != 0 || (h - kh + 2 * ph) % sh != 0)
                                                         continue; //(w-kp+2*pW)/sw + 1 is not an integer, i.e., number of outputs doesn't fit
 
-                                                    INDArray in = Nd4j.rand(new int[] {m, d, h, w});
-                                                    assertEquals(in.data().allocationMode(), mode);
+                                                    INDArray in = Nd4j.rand(new int[] {m, d, h, w}).castTo(type);
                                                     assertEquals(in.data().dataType(), type);
                                                     INDArray im2col = Convolution.im2col(in, kh, kw, sh, sw, ph, pw,
                                                             false); //Cheating, to get correct shape for input

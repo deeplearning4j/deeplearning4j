@@ -561,10 +561,6 @@
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption>
                                 <compilerOption>-fPIE</compilerOption>
-                                <compilerOption>-fsanitize=address,undefined,float-divide-by-zero,float-cast-overflow </compilerOption>
-                                <!-- For some reason -shared-libasan doesn't work here. That would be the preferrred approach.-->
-                                <compilerOption>-lasan</compilerOption>
-                                <compilerOption> -fno-sanitize-recover=all </compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

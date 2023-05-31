@@ -59,13 +59,13 @@ DECLARE_SHAPE_FN(extract_image_patches) {
   int ksizeRowsEffective = INT_ARG(0) + (INT_ARG(0) - 1) * (INT_ARG(4) - 1);
   int ksizeColsEffective = INT_ARG(1) + (INT_ARG(1) - 1) * (INT_ARG(5) - 1);
 
-  auto batchSizeDim = shape::sizeAt(in, 0);
-  auto inputRowsDim = shape::sizeAt(in, 1);
-  auto inputColsDim = shape::sizeAt(in, 2);
-  auto outputDepthDim = shape::sizeAt(in, 3) * INT_ARG(0) * INT_ARG(1);  // last dim * ksizeRows * ksizeCols
+  auto batchSizeDim = shape::sizeAt(in, static_cast<sd::LongType>(0));
+  auto inputRowsDim = shape::sizeAt(in, static_cast<sd::LongType>(1));
+  auto inputColsDim = shape::sizeAt(in, static_cast<sd::LongType>(2));
+  auto outputDepthDim = shape::sizeAt(in, static_cast<sd::LongType>(3)) * INT_ARG(0) * INT_ARG(1);  // last dim * ksizeRows * ksizeCols
 
-  auto inputRowSize = inputRowsDim;  // shape::sizeAt(in, inputRowsDim);
-  auto inputColSize = inputColsDim;  // shape::sizeAt(in, inputColsDim);
+  auto inputRowSize = inputRowsDim;
+  auto inputColSize = inputColsDim;
   sd::LongType outRowSize;
   sd::LongType outColSize;
   if (INT_ARG(6) == 0) {

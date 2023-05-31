@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
   std::vector<sd::LongType> outShape(outRank);
   // fill up output shape template: the first to max index, and rests - to vals from the first data input
   outShape[0] = maxValue + 1;
-  for (int i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
+  for (sd::LongType i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
 
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));

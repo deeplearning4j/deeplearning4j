@@ -252,7 +252,7 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
 
   const int maxBlock = blockDim.x;
 
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<sd::LongType>(1) ];
 
   __shared__ int xTadLength;
   __shared__ int yTadLength;
@@ -352,7 +352,7 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
 
   Z startingVal = OpType::startingValue(x);
 
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
+  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<sd::LongType>(1) ];
 
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ int tadLen;
@@ -381,7 +381,7 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
     for(int i = blockIdx.x; i < zLen; i+= gridDim.x) {
 
       sd::LongType xOffset = tadOffsets[i];
-      sd::LongType yOffset = yTadNum == 1 ? 0 : yTadOffsets[i];
+      sd::LongType yOffset = yTadNum == 1 ? static_cast<sd::LongType>(0)  : yTadOffsets[i];
 
       if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen)
         extraZ[threadIdx.x] = startingVal;
@@ -410,7 +410,7 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
     for(int i = blockIdx.x; i < zLen; i += gridDim.x) {
 
       sd::LongType xOffset = tadOffsets[i];
-      sd::LongType yOffset = yTadNum == 1 ? 0 : yTadOffsets[i];
+      sd::LongType yOffset = yTadNum == 1 ? static_cast<sd::LongType>(0)  : yTadOffsets[i];
 
       if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen)
         extraZ[threadIdx.x] = startingVal;

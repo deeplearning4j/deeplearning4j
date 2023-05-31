@@ -53,21 +53,6 @@ void BlasHelper::initializeFunctions(sd::Pointer *functions) {
 void BlasHelper::initializeDeviceFunctions(sd::Pointer *functions) {
   sd_debug("Initializing device BLAS\n", "");
 
-  /*
-  this->cublasSgemv = (CublasSgemv)functions[0];
-  this->cublasDgemv = (CublasDgemv)functions[1];
-  this->cublasHgemm = (CublasHgemm)functions[2];
-  this->cublasSgemm = (CublasSgemm)functions[3];
-  this->cublasDgemm = (CublasDgemm)functions[4];
-  this->cublasSgemmEx = (CublasSgemmEx)functions[5];
-  this->cublasHgemmBatched = (CublasHgemmBatched)functions[6];
-  this->cublasSgemmBatched = (CublasSgemmBatched)functions[7];
-  this->cublasDgemmBatched = (CublasDgemmBatched)functions[8];
-  this->cusolverDnSgesvdBufferSize = (CusolverDnSgesvdBufferSize)functions[9];
-  this->cusolverDnDgesvdBufferSize = (CusolverDnDgesvdBufferSize)functions[10];
-  this->cusolverDnSgesvd = (CusolverDnSgesvd)functions[11];
-  this->cusolverDnDgesvd = (CusolverDnDgesvd)functions[12];
-  */
 }
 
 template <>
@@ -309,8 +294,10 @@ CblasDgemv BlasHelper::dgemv() {
 
 CblasSgemm BlasHelper::sgemm() {
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
+  sd_printf("external  blas openblas\n",0);
   return (CblasSgemm)&cblas_sgemm;
 #else
+  sd_printf("no  blas openblas\n",0);
   return this->cblasSgemm;
 #endif
 }

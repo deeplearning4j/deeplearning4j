@@ -116,12 +116,11 @@ DECLARE_SHAPE_FN(image_resize) {
 
   int width;
   int height;
-  double ratio = shape::sizeAt(in, 1) / (0.0 + shape::sizeAt(in, 2));
+  double ratio = shape::sizeAt(in, static_cast<sd::LongType>(1)) / (0.0 + shape::sizeAt(in, static_cast<sd::LongType>(2)));
   auto newImageSize = INPUT_VARIABLE(1);
   REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.",
                newImageSize->lengthOf());
-  // if(method != helpers::ImageResizeMethods::kResizeNearest) REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear:
-  // Resize params already given by the second param. Int params are expensive.");
+
   width = newImageSize->e<int>(1);
   height = newImageSize->e<int>(0);
   if (block.numB() > 0) {

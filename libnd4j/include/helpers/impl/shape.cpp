@@ -2016,7 +2016,7 @@ namespace shape {
 
         minShapeInfo[0] = keepUnitiesInShape ? maxRank : maxRank - numOfUntiesInMinShape;
 
-        for (sd::Unsigned step = 0, j = 0, i = 0; i < maxRank; ++i, step += n) {
+        for (sd::LongType step = 0, j = 0, i = 0; i < maxRank; ++i, step += n) {
             if (idx[step] == idx[step + 1]) {  // means whole dimension
                 shape::shapeOf(minShapeInfo)[j] = shape::shapeOf(maxShapeInfo)[i];
                 shape::stride(minShapeInfo)[j++] = shape::stride(maxShapeInfo)[i];

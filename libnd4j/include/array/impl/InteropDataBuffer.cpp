@@ -54,7 +54,7 @@ namespace sd {
 
     void* InteropDataBuffer::primary() const {
         if(_dataBuffer == nullptr)
-            throw std::runtime_error("InteropDataBuffer::primary() - _dataBuffer is nullptr");
+          THROW_EXCEPTION("InteropDataBuffer::primary() - _dataBuffer is nullptr");
         if(_dataBuffer->primary() == nullptr)
             return nullptr;
         return reinterpret_cast<int8_t*>(_dataBuffer->primary()) + _offset;
@@ -62,7 +62,7 @@ namespace sd {
 
     void* InteropDataBuffer::special() const {
         if(_dataBuffer == nullptr)
-            throw std::runtime_error("InteropDataBuffer::special() - _dataBuffer is nullptr");
+            THROW_EXCEPTION("InteropDataBuffer::special() - _dataBuffer is nullptr");
         if(_dataBuffer->special() == nullptr)
             return nullptr;
         return reinterpret_cast<int8_t*>(_dataBuffer->special()) + _offset;
@@ -70,13 +70,13 @@ namespace sd {
 
     void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
         if(_dataBuffer == nullptr)
-            throw std::runtime_error("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
+          THROW_EXCEPTION("InteropDataBuffer::setPrimary() - _dataBuffer is nullptr");
         _dataBuffer->setPrimaryBuffer(ptr, length);
     }
 
     void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
         if(_dataBuffer == nullptr)
-            throw std::runtime_error("InteropDataBuffer::setSpecial() - _dataBuffer is nullptr");
+          THROW_EXCEPTION("InteropDataBuffer::setSpecial() - _dataBuffer is nullptr");
         _dataBuffer->setSpecialBuffer(ptr, length);
     }
 

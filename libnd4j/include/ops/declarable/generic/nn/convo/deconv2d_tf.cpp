@@ -115,9 +115,9 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
                shape::rank(gradIShapeShapeInfo));
 
   const LongType kH =
-      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) height
+      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
   const LongType kW =
-      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) width
+      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   const LongType sH = INT_ARG(2);                                                               // strides height
   const LongType sW = INT_ARG(3);                                                               // strides width
   const LongType pH = INT_ARG(4);                                                               // paddings height

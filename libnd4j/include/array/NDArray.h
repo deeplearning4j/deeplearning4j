@@ -1815,7 +1815,8 @@ bool NDArray::isSameShapeStrict(const NDArray &other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
   if (this->_shapeInfo == nullptr) return false;
-
+  if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0)
+    THROW_EXCEPTION("NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated.");
   return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY || this->lengthOf() < 1;
 }
 

@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(top_k) {
     sd::LongType* aShape;
     ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), sd::LongType);
     aShape[0] = shapeRank;
-    for (int i = 1; i < shapeRank; ++i) aShape[i] = shape::sizeAt(in, i - 1);
+    for (sd::LongType i = 1; i < shapeRank; ++i) aShape[i] = shape::sizeAt(in, i - 1);
     aShape[shapeRank] = k;
 
     shape::updateStrides(aShape, shape::order(in));

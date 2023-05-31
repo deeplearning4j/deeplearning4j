@@ -108,7 +108,7 @@ DECLARE_SHAPE_FN(split_v) {
 
     std::vector<sd::LongType> shape(rank);
 
-    for (int d = 0; d < rank; d++) {
+    for (sd::LongType d = 0; d < rank; d++) {
       if (d != axis)
         shape[d] = shape::sizeAt(input, d);
       else

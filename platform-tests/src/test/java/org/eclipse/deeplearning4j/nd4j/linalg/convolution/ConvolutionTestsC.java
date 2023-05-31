@@ -41,6 +41,7 @@ import org.nd4j.linalg.convolution.OldConvolution;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 
@@ -245,6 +246,31 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
 
         System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
         assertEquals(assertion, newTest);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCol2Im3(Nd4jBackend backend) {
+        int n = 2;
+        int c = 2;
+        int h = 4;
+        int w = 4;
+
+        // Create an INDArray with numbers 1 through n*c*h*w
+        INDArray array = Nd4j.linspace(1, n * c * h * w, n * c * h * w).reshape(n, c, h, w);
+
+        // Define the stride
+        int[] stride = new int[] {32, 16, 4, 1};
+        // Define the expected output
+        INDArray expected = Nd4j.create(new double[]{1,17,33,49}).reshape(2,2,1,1);
+
+        // Try to access a subarray using NDArrayIndex
+        INDArray subArray = array.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,  stride[2],1), NDArrayIndex.interval(0, stride[3],1));
+
+        System.out.println(subArray.shapeInfoToString());
+        assertEquals(expected,subArray);
+
     }
 
     @ParameterizedTest

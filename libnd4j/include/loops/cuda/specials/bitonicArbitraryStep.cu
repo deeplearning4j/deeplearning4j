@@ -42,10 +42,10 @@ SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShap
   // for (int i = 0; i < length; i+= window)
   /*
       if window == 4;
-      iterations will be: 0; 4; 8; 12; 16; 20
+      iterations will be : static_cast<sd::LongType>(0) ; 4; 8; 12; 16; 20
       if gridDim = 3;
-      on first iteration we'll have: 0; 4; 8;
-      on second iteration we'll have: 0 + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
+      on first iteration we'll have : static_cast<sd::LongType>(0) ; 4; 8;
+      on second iteration we'll have : static_cast<sd::LongType>(0)  + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
   */
   int firstPosition;
   int firstStep;
@@ -122,10 +122,10 @@ SD_KERNEL void execBitonicArbitraryStepKernel(void *vx, sd::LongType const *xSha
   // for (int i = 0; i < length; i+= window)
   /*
       if window == 4;
-      iterations will be: 0; 4; 8; 12; 16; 20
+      iterations will be : static_cast<sd::LongType>(0) ; 4; 8; 12; 16; 20
       if gridDim = 3;
-      on first iteration we'll have: 0; 4; 8;
-      on second iteration we'll have: 0 + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
+      on first iteration we'll have : static_cast<sd::LongType>(0) ; 4; 8;
+      on second iteration we'll have : static_cast<sd::LongType>(0)  + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
   */
   int firstPosition;
   int firstStep;

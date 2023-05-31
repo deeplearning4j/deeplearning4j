@@ -161,13 +161,13 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
       numTads = shape::length(hYShapeInfo);
     } break;
     case sd::LoopKind::BROADCAST_3D: {
-      numTads = shape::sizeAt(hZShapeInfo, 0);
+      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0));
     } break;
     case sd::LoopKind::BROADCAST_4D: {
-      numTads = shape::sizeAt(hZShapeInfo, 0) * shape::sizeAt(hZShapeInfo, 1);
+      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0)) * shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(1));
     } break;
     case sd::LoopKind::BROADCAST_5D: {
-      numTads = shape::sizeAt(hZShapeInfo, 0) * shape::sizeAt(hZShapeInfo, 1);
+      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0)) * shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(1));
     } break;
     default: {
       auto xLen = shape::length(hXShapeInfo);

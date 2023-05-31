@@ -152,11 +152,11 @@ class SD_LIB_HIDDEN Reduction3Loops {
 template <typename X, typename Z, typename E, typename OpType>
 static void reduceExec21(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                          const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -167,10 +167,10 @@ static void reduceExec21(const X* x, const sd::LongType* xShapeInfo, Z* z, const
       auto s = OpType::startingValue(x0);
 
       if (xStrd1 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
           s = OpType::update(s, OpType::op(x0[i1], extraParams), extraParams);
       else
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
           s = OpType::update(s, OpType::op(x0[i1 * xStrd1], extraParams), extraParams);
 
       *z0 = OpType::postProcess(s, static_cast<sd::LongType>(xAxis1), extraParams);
@@ -184,14 +184,14 @@ static void reduceExec21(const X* x, const sd::LongType* xShapeInfo, Z* z, const
 template <typename X, typename Z, typename E, typename OpType>
 static void reduceExec31(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                          const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis1 * xAxis2);
@@ -204,16 +204,16 @@ static void reduceExec31(const X* x, const sd::LongType* xShapeInfo, Z* z, const
       auto s = OpType::startingValue(x0);
 
       if (xStrd1 == 1)
-        for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-          for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
+        for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+          for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
             s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2], extraParams), extraParams);
       else if (xStrd2 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
             s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2], extraParams), extraParams);
       else
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
             s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2], extraParams), extraParams);
 
       *z0 = OpType::postProcess(s, tadLen, extraParams);
@@ -227,15 +227,15 @@ static void reduceExec31(const X* x, const sd::LongType* xShapeInfo, Z* z, const
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec32(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
   auto func = PRAGMA_THREADS_FOR_2D {
@@ -247,10 +247,10 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const sd::LongType* xShapeInfo, Z* z
         auto s = OpType::startingValue(x1);
 
         if (xStrd2 == 1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
             s = OpType::update(s, OpType::op(x1[i2], extraParams), extraParams);
         else
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
             s = OpType::update(s, OpType::op(x1[i2 * xStrd2], extraParams), extraParams);
 
         *z1 = OpType::postProcess(s, static_cast<sd::LongType>(xAxis2), extraParams);
@@ -265,17 +265,17 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec41(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis1 * xAxis2 * xAxis3);
@@ -288,24 +288,24 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const sd::LongType* xShapeInfo, Z* z
       auto s = OpType::startingValue(x0);
 
       if (xStrd1 == 1)
-        for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
+        for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
               s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
       else if (xStrd2 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-            for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3], extraParams), extraParams);
       else if (xStrd3 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3], extraParams), extraParams);
       else
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
 
       *z0 = OpType::postProcess(s, tadLen, extraParams);
@@ -319,18 +319,18 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec42(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis2 * xAxis3);
@@ -344,16 +344,16 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const sd::LongType* xShapeInfo, Z* z
         auto s = OpType::startingValue(x1);
 
         if (xStrd2 == 1)
-          for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-            for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+          for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
               s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3], extraParams), extraParams);
         else if (xStrd3 == 1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3], extraParams), extraParams);
         else
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
 
         *z1 = OpType::postProcess(s, tadLen, extraParams);
@@ -368,19 +368,19 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec43(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(2));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, 1);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
-  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
+  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
   auto func = PRAGMA_THREADS_FOR_3D {
@@ -393,10 +393,10 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const sd::LongType* xShapeInfo, Z* z
           auto s = OpType::startingValue(x2);
 
           if (xStrd3 == 1)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x2[i3], extraParams), extraParams);
           else
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
               s = OpType::update(s, OpType::op(x2[i3 * xStrd3], extraParams), extraParams);
 
           *z2 = OpType::postProcess(s, static_cast<sd::LongType>(xAxis3), extraParams);
@@ -412,20 +412,20 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec51(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, dims[0]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, dims[0]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
-  const sd::Unsigned xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
+  const sd::LongType xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
   const sd::LongType xStrd4 = shape::strideAt(xShapeInfo, dims[4]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis1 * xAxis2 * xAxis3 * xAxis4);
@@ -438,38 +438,38 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const sd::LongType* xShapeInfo, Z* z
       auto s = OpType::startingValue(x0);
 
       if (xStrd1 == 1)
-        for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-          for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-            for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-              for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
+        for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+          for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+              for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
                 s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], extraParams),
                                    extraParams);
       else if (xStrd2 == 1)
-        for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-          for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-            for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-              for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+        for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+          for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+              for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
                 s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4], extraParams),
                                    extraParams);
       else if (xStrd3 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-              for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+              for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
                 s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 + i4 * xStrd4], extraParams),
                                    extraParams);
       else if (xStrd4 == 1)
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4], extraParams),
                                    extraParams);
       else
-        for (sd::Unsigned i1 = 0; i1 < xAxis1; ++i1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+        for (sd::LongType i1 = 0; i1 < xAxis1; ++i1)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(
                     s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], extraParams), extraParams);
 
@@ -484,21 +484,21 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec52(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[1]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[0]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, dims[2]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, dims[2]);
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
-  const sd::Unsigned xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
+  const sd::LongType xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
   const sd::LongType xStrd4 = shape::strideAt(xShapeInfo, dims[4]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis2 * xAxis3 * xAxis4);
@@ -512,24 +512,24 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const sd::LongType* xShapeInfo, Z* z
         auto s = OpType::startingValue(x1);
 
         if (xStrd2 == 1)
-          for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
+          for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
                 s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3 + i4 * xStrd4], extraParams), extraParams);
         else if (xStrd3 == 1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-              for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+              for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
                 s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 + i4 * xStrd4], extraParams), extraParams);
         else if (xStrd4 == 1)
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3 + i4], extraParams), extraParams);
         else
-          for (sd::Unsigned i2 = 0; i2 < xAxis2; ++i2)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+          for (sd::LongType i2 = 0; i2 < xAxis2; ++i2)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], extraParams),
                                    extraParams);
 
@@ -545,22 +545,22 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec53(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[2]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(2));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, dims[1]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, dims[1]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, 1);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[0]);
-  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
+  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, dims[3]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, dims[3]);
 
-  const sd::Unsigned xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
+  const sd::LongType xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
   const sd::LongType xStrd4 = shape::strideAt(xShapeInfo, dims[4]);
 
   const sd::LongType tadLen = static_cast<sd::LongType>(xAxis3 * xAxis4);
@@ -575,16 +575,16 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const sd::LongType* xShapeInfo, Z* z
           auto s = OpType::startingValue(x2);
 
           if (xStrd3 == 1)
-            for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
-              for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
+            for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
+              for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
                 s = OpType::update(s, OpType::op(x2[i3 + i4 * xStrd4], extraParams), extraParams);
           else if (xStrd4 == 1)
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x2[i3 * xStrd3 + i4], extraParams), extraParams);
           else
-            for (sd::Unsigned i3 = 0; i3 < xAxis3; ++i3)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+            for (sd::LongType i3 = 0; i3 < xAxis3; ++i3)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x2[i3 * xStrd3 + i4 * xStrd4], extraParams), extraParams);
 
           *z2 = OpType::postProcess(s, tadLen, extraParams);
@@ -600,23 +600,23 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const sd::LongType* xShapeInfo, Z* z
 template <typename X, typename Z, typename E, typename OpType>
 SD_LIB_HIDDEN void reduceExec54(const X* x, const sd::LongType* xShapeInfo, Z* z, const sd::LongType* zShapeInfo,
                                 const LongType* dims, E* extraParams) {
-  const sd::Unsigned xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
+  const sd::LongType xAxis0 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
   const sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[0] : dims[3]);
-  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
+  const sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(3));
 
-  const sd::Unsigned xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[2]);
+  const sd::LongType xAxis1 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[2]);
   const sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[1] : dims[2]);
-  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 2);
+  const sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1) : static_cast<sd::LongType>(2));
 
-  const sd::Unsigned xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[1]);
+  const sd::LongType xAxis2 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[1]);
   const sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[2] : dims[1]);
-  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 1);
+  const sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2) : static_cast<sd::LongType>(1));
 
-  const sd::Unsigned xAxis3 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[3] : dims[0]);
+  const sd::LongType xAxis3 = shape::sizeAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[3] : dims[0]);
   const sd::LongType xStrd3 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? dims[3] : dims[0]);
-  const sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
+  const sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(3) : static_cast<sd::LongType>(0));
 
-  const sd::Unsigned xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
+  const sd::LongType xAxis4 = shape::sizeAt(xShapeInfo, dims[4]);
   const sd::LongType xStrd4 = shape::strideAt(xShapeInfo, dims[4]);
 
   auto func = PRAGMA_THREADS_FOR_3D {
@@ -630,10 +630,10 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const sd::LongType* xShapeInfo, Z* z
             auto s = OpType::startingValue(x3);
 
             if (xStrd4 == 1)
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x3[i4], extraParams), extraParams);
             else
-              for (sd::Unsigned i4 = 0; i4 < xAxis4; ++i4)
+              for (sd::LongType i4 = 0; i4 < xAxis4; ++i4)
                 s = OpType::update(s, OpType::op(x3[i4 * xStrd4], extraParams), extraParams);
 
             *z3 = OpType::postProcess(s, static_cast<sd::LongType>(xAxis4), extraParams);
@@ -782,8 +782,8 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
 
       //*********************************************//
     case LoopKind::EWSNONZERO: {
-      const sd::Unsigned xEws = shape::elementWiseStride(xShapeInfo);
-      const sd::Unsigned zEws = shape::elementWiseStride(zShapeInfo);
+      const sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
+      const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
 
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       int64_t start = span.startX(), stop = span.stopX();
@@ -827,8 +827,8 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
 
       //*********************************************//
     case LoopKind::RANK2: {
-      auto uXShape0 = static_cast<sd::Unsigned>(xShape[0]);
-      auto uXShape1 = static_cast<sd::Unsigned>(xShape[1]);
+      auto uXShape0 = static_cast<sd::LongType>(xShape[0]);
+      auto uXShape1 = static_cast<sd::LongType>(xShape[1]);
 
       auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
 

@@ -51,8 +51,8 @@ DECLARE_SHAPE_FN(matrix_diag) {
 
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
   outShapeInfo[0] = outRank;
-  for (int i = 0; i < inRank; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
-  outShapeInfo[outRank] = shape::sizeAt(in, -1);
+  for (sd::LongType i = 0; i < inRank; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
+  outShapeInfo[outRank] = shape::sizeAt(in, static_cast<sd::LongType>(-1));
 
   ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 

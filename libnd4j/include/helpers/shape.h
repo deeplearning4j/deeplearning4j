@@ -105,8 +105,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool haveSameShapeAndStrides(const sd::LongType *sh
                                                           const sd::LongType *shapeInfo2,
                                                           const sd::LongType *shapeInfo3);
 
-SD_LIB_EXPORT SD_HOST_DEVICE int sizeAt(const sd::LongType *shapeInfo, const int dim);
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType strideAt(const sd::LongType *shapeInfo, const int dim);
+
 
 template <typename T>
 SD_LIB_EXPORT SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongType length);
@@ -456,9 +455,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shap
  * Returns the rank portion of
  * an information buffer
  */
-SD_LIB_EXPORT SD_HOST_DEVICE int rank(const sd::LongType *shapeInfo);
-SD_LIB_EXPORT SD_HOST_DEVICE int rank(const int *shapeInfo);
-SD_LIB_EXPORT SD_HOST_DEVICE int rank(const unsigned int *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType rank(const sd::LongType *shapeInfo);
 
 /**
  *  returns pointer on elementWiseStride
@@ -1584,11 +1581,9 @@ SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shapeInf
  * Returns the rank portion of
  * an information buffer
  */
-SD_INLINE SD_HOST_DEVICE int rank(const sd::LongType *buffer) { return static_cast<int>(buffer[0]); }
+SD_INLINE SD_HOST_DEVICE sd::LongType rank(const sd::LongType *buffer) { return static_cast<sd::LongType>(buffer[0]); }
 
-SD_INLINE SD_HOST_DEVICE int rank(const int *buffer) { return buffer[0]; }
 
-SD_INLINE SD_HOST_DEVICE int rank(const unsigned int *buffer) { return static_cast<int>(buffer[0]); }
 
 SD_INLINE SD_HOST_DEVICE sd::LongType *ews(sd::LongType *shapeInfo) { return shapeInfo + 2 * shapeInfo[0] + 2; }
 
@@ -1643,12 +1638,6 @@ SD_INLINE SD_HOST_DEVICE sd::LongType length(const sd::LongType *shapeInfo) {
   }
 
   if (rank == 1) return shapeInfo[1];
-
-  // if(shape::elementWiseStride(shapeInfo) == 1) { // contiguous
-  //     if(shape::order(shapeInfo) == 'c')
-  //         return shapeInfo[1] * shapeInfo[rank + 1];      // first dim * first stride
-  //     return shapeInfo[rank] * shapeInfo[2 * rank];       // last  dim * last  stride
-  // }
 
   return shape::prodLong(shape::shapeOf(const_cast<sd::LongType *>(shapeInfo)), rank);
 }
@@ -1885,7 +1874,10 @@ SD_INLINE SD_HOST_DEVICE bool haveSameShapeAndStrides(const sd::LongType *shapeI
   return shape::haveSameShapeAndStrides(shapeInfo1, shapeInfo2) &&
          shape::haveSameShapeAndStrides(shapeInfo1, shapeInfo3);
 }
-SD_INLINE SD_HOST_DEVICE int sizeAt(const sd::LongType *shapeInfo, const int dim) {
+
+#if not defined(__JAVACPP_HACK__)
+
+SD_INLINE SD_HOST_DEVICE sd::LongType sizeAt(const sd::LongType *shapeInfo, const sd::LongType dim) {
   if (0 == rank(shapeInfo)) return 1;
   if (dim >= 0)
     return shapeInfo[1 + dim];
@@ -1893,14 +1885,14 @@ SD_INLINE SD_HOST_DEVICE int sizeAt(const sd::LongType *shapeInfo, const int dim
     return shapeInfo[1 + (rank(shapeInfo) + dim)];
 }
 
-SD_INLINE SD_HOST_DEVICE sd::LongType strideAt(const sd::LongType *shapeInfo, const int dim) {
+SD_INLINE SD_HOST_DEVICE sd::LongType strideAt(const sd::LongType *shapeInfo, const sd::LongType dim) {
   if (0 == rank(shapeInfo)) return 1;
   if (dim >= 0)
     return shapeInfo[1 + rank(shapeInfo) + dim];
   else
     return shapeInfo[1 + 2 * rank(shapeInfo) + dim];
 }
-
+#endif
 /**
  * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
  *
@@ -2329,7 +2321,7 @@ SD_INLINE SD_HOST_DEVICE void index2coordsCPU(const sd::LongType &startIndex, co
   if (startIndex == index) {
     shape::index2coords(index, shapeInfo, coords);
   } else {
-    int axis = shapeInfo[0] - 1;
+    sd::LongType axis = shapeInfo[0] - 1;
     while (coords[axis] == shape::sizeAt(shapeInfo, axis) - 1) coords[axis--] = 0;
     ++coords[axis];
   }

@@ -45,9 +45,13 @@ public class KerasDeconvolution3DTest extends BaseDL4JTest {
     public void testDeconv3D() throws Exception {
         File f = Resources.asFile("/modelimport/keras/weights/conv3d_transpose.h5");
         MultiLayerNetwork multiLayerNetwork = KerasModelImport.importKerasSequentialModelAndWeights(f.getAbsolutePath(), true);
-        System.out.println(multiLayerNetwork.summary());
+     /*   System.out.println(multiLayerNetwork.summary());
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getProfiler().start();*/
         INDArray output = multiLayerNetwork.output(Nd4j.ones(1, 100));
         assertArrayEquals(new long[]{1,30,30,30,64},output.shape());
+        Thread.sleep(10000);
 
     }
 

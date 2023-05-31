@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(non_max_suppression) {
     REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
   if (maxOutputSize > 0) {
-    auto actualIndicesCount = shape::sizeAt(in, 0);
+    auto actualIndicesCount = shape::sizeAt(in, static_cast<sd::LongType>(0));
     if (block.getTArguments()->size() > 1 || block.width() > 4) {
       auto scoreThreshold = block.getTArguments()->size() > 1 ? T_ARG(1) : INPUT_VARIABLE(4)->e<double>(0);
       auto scales = INPUT_VARIABLE(1);

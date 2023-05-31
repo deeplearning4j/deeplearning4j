@@ -210,8 +210,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
   if (!typeFloat && !typeDouble) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
-    // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_COMMON_TYPES,
-    // SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   } else {
     std::vector<NDArray*> toDelete;
 
@@ -225,16 +223,19 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
+      sd_printf("Creating new a array\n",0);
       pA = new NDArray(A->dup('f'));
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
+      sd_printf("Creating new b array\n",0);
       pB = new NDArray(B->dup('f'));
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
+      sd_printf("Creating new c array\n",0);
       pC = new NDArray(C->dup('f'));
       toDelete.push_back(pC);
       cMcont = true;
@@ -253,21 +254,22 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
     if (typeFloat) {
+      sd_printf("typeFloat sgemm\n",0);
       BlasHelper::getInstance().sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float)alpha,
                                         pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float)beta,
                                         pC->bufferAsT<float>(), ldc);
     } else if (typeDouble) {
+      sd_printf("typeDouble dgemm\n",0);
       BlasHelper::getInstance().dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double)alpha,
                                         pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double)beta,
                                         pC->bufferAsT<double>(), ldc);
     }
-
     if (pC != C) {
       C->assign(pC);
-      delete pC;
+ //     delete pC;
     }
-    if (pA != A) delete pA;
-    if (pB != B) delete pB;
+   /* if (pA != A) delete pA;
+    if (pB != B) delete pB;*/
   }
 
   return C;
@@ -380,8 +382,7 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), SD_NUMERIC_TYPES);
-  // BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta,
-  // Z->buffer()), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+
 
   return Z;
 }
