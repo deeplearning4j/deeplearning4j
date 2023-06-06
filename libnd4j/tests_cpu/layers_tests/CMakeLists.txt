@@ -81,7 +81,7 @@ elseif(NOT SD_AURORA)
         endif()
     endif()
     if (SD_CPU AND SD_SANITIZE)
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-sanitize-recover=all -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow")
     else()
         # CUDA?
     endif()
@@ -150,7 +150,7 @@ if (SD_CPU OR SD_AURORA)
     endif()
 
     add_executable(runtests ${TEST_SOURCES})
-    target_link_libraries(runtests samediff_obj ${CALLTRACE_LIBS} ${CALL_STACK} ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${BLAS_LIBRARIES} ${CPU_FEATURES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
+    target_link_libraries(runtests samediff_obj  ${CALL_STACK} ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${BLAS_LIBRARIES} ${CPU_FEATURES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
 elseif(SD_CUDA)
 
     add_executable(runtests ${TEST_SOURCES})
@@ -168,7 +168,7 @@ elseif(SD_CUDA)
         message("CUDNN library: ${CUDNN}")
     endif()
 
-    target_link_libraries(runtests samediff_obj ${CALLTRACE_LIBS}  ${CALL_STACK} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
+    target_link_libraries(runtests samediff_obj  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
 endif()
 
 

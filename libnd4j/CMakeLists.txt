@@ -302,7 +302,7 @@ else()
 
     if (SD_CPU AND SD_SANITIZE)
         # adds stack size to prevent misc errors with address sanitizer
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address stack-size=8192")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}   -Wall -Wextra -shared-libsan -fPIE  -fsanitize=address,thread,undefined,float-divide-by-zero,float-cast-overflow -fno-sanitize-recover=all  -fPIE stack-size=8192")
     endif()
 endif()
 
@@ -623,7 +623,7 @@ if(DISTRIBUTION STREQUAL "Ubuntu")
     # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
     # Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/eclipse/deeplearning4j")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/deeplearning4j")
     set(CPACK_GENERATOR "DEB")
     set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
     set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
@@ -641,9 +641,8 @@ elseif(DISTRIBUTION STREQUAL "CentOS")
     set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
     set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
     set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
-    # Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
     set(CPACK_RPM_PACKAGE_REQUIRES "")
-    set(CPACK_RPM_PACKAGE_URL "https://github.com/eclipse/deeplearning4j/libnd4j")
+    set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/deeplearning4j/libnd4j")
     set(CPACK_GENERATOR "RPM")
     set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
     set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")

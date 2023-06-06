@@ -63,6 +63,7 @@
         <openblas.classifier></openblas.classifier>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
+        <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
     </properties>
@@ -396,6 +397,8 @@
                                         <argument>${libnd4j.chip}</argument>
                                         <argument>--platform</argument>
                                         <argument>${libnd4j.platform}</argument>
+                                        <argument>--check-vectorization</argument>
+                                        <argument>${libnd4j.vectorization}</argument>
                                         <argument>--chip-extension</argument>
                                         <argument>${libnd4j.extension}</argument>
                                         <argument>--chip-version</argument>
