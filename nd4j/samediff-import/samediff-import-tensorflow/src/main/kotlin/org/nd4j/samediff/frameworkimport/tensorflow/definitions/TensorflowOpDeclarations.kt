@@ -2344,7 +2344,6 @@ val unsortedSegmentProd = mapTensorNamesWithOp(inputFrameworkOpName = "UnsortedS
 
 val unsortedSegmentSum = mapTensorNamesWithOp(inputFrameworkOpName = "UnsortedSegmentSum",
         opName = "unsorted_segment_sum",
-        attributeMappingRules = listOf(convertNDArrayInputToNumericalAttr(mutableMapOf("numSegments" to "num_segments"))),
         tensorNames = mutableMapOf("input" to "data","idxSegments" to "segment_ids","numSegments" to "num_segments")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
