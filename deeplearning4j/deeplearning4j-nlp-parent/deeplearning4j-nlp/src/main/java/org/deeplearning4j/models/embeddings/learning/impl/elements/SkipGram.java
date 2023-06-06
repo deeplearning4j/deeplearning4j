@@ -44,6 +44,7 @@ import org.nd4j.shade.guava.cache.CacheBuilder;
 import org.nd4j.shade.guava.cache.Weigher;
 
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -65,7 +66,9 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
     protected int maxQueueSize = Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_QUEUE_SIZE,"1000"));
 
     private Cache<IterationArraysKey, Queue<IterationArrays>> iterationArrays = CacheBuilder.newBuilder()
-            .maximumSize(Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_CACHE_SIZE,"10000")))
+            .maximumSize(Integer.parseInt(System.getProperty(DL4JSystemProperties.NLP_CACHE_SIZE,"1000")))
+            .weakKeys()
+            .expireAfterWrite(Duration.ofMinutes(5))
             .build();
 
     protected int workers = Runtime.getRuntime().availableProcessors();

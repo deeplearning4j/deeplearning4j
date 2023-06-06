@@ -40,7 +40,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.shade.guava.cache.Cache;
 import org.nd4j.shade.guava.cache.CacheBuilder;
-import org.nd4j.shade.guava.cache.Weigher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
