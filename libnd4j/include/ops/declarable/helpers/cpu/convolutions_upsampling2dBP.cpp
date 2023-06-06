@@ -57,7 +57,7 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR_3D {
-    for (sd::Unsigned b = start_x; b < stop_x; b += inc_x) {
+    for (sd::LongType b = start_x; b < stop_x; b += inc_x) {
       for (sd::LongType c = start_y; c < stop_y; c += inc_y) {
         for (sd::LongType h = start_z; h < stop_z; h += inc_z) {
           for (sd::LongType w = 0; w < iW; ++w) {

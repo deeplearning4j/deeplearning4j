@@ -110,9 +110,9 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const sd::LongType* xShapeIn
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) sum += x[shape::getOffset(xShapeInfo, coords)];
 
       if (extraParam0 == 0) {  // Exclude padding
-        sd::Unsigned a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
-        sd::Unsigned b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
-        sd::Unsigned c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
+        sd::LongType a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
+        sd::LongType b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
+        sd::LongType c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
         sum /= static_cast<T>(
             a * b * c);  //  /= sd::math::sd_ceil<double,T>(static_cast<double>(dend - dstart) /
                          //  static_cast<double>(dD)) * sd::math::sd_ceil<double,T>(static_cast<double>(hend - hstart) /

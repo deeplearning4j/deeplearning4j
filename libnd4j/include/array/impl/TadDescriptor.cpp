@@ -38,7 +38,9 @@ TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *
   ShapeDescriptor descriptor(originalShape);
 
   _axis.resize(length);
-  for (int e = 0; e < length; e++) _axis[e] = dimensions[e];
+  for (sd::LongType e = 0; e < length; e++) {
+    _axis[e] = dimensions[e];
+  }
 
   if (length > 1) std::sort(_axis.begin(), _axis.end());
 
@@ -79,11 +81,11 @@ size_t hash<sd::TadDescriptor>::operator()(const sd::TadDescriptor &k) const {
   // Compute individual hash values for first,
   // second and third and combine them using XOR
   // and bit shifting:
-  auto res = std::hash<int>()((int)k.areUnitiesinShape());
+  auto res = std::hash<sd::LongType>()((sd::LongType)k.areUnitiesinShape());
   res ^= std::hash<sd::ShapeDescriptor>()(k.originalShapeConst()) + 0x9e3779b9 + (res << 6) + (res >> 2);
   auto axes = const_cast<sd::TadDescriptor &>(k).axis();
   for (auto a : axes) {
-    res ^= std::hash<int>()(a) + 0x9e3779b9 + (res << 6) + (res >> 2);
+    res ^= std::hash<sd::LongType>()(a) + 0x9e3779b9 + (res << 6) + (res >> 2);
   }
   return res;
 }

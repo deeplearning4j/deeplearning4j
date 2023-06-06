@@ -106,7 +106,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   if (gradB) {
     NDArray* gradBR = gradB;
     if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
-    gradO->reduceAlongDimension(reduce::Sum, *gradBR, gradOaxesForDot);  // sum over bS, oH, oW
+    gradO->reduceAlongDimension(reduce::Sum, *gradBR, &gradOaxesForDot);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;
   }
 

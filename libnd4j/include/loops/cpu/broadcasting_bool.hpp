@@ -93,8 +93,8 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
   }
 
   // int *resultStride = shape::stride(xTadShapeShapeInfo);
-  unsigned int tadLength = shape::length(xTadShapeShapeInfo);  // shape::length(xTadShapeShapeInfo);
-  unsigned int tads = shape::length(xShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(xTadShapeShapeInfo);  // shape::length(xTadShapeShapeInfo);
+  sd::LongType tads = shape::length(xShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = xTadShapeShapeInfo;
@@ -104,8 +104,8 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
   auto lenZ = shape::length(zTadShapeInfo);
   auto lenY = shape::length(yShapeInfo);
 
-  int tadsPerThread = tads / TAD_THRESHOLD;
-  int threads = sd::math::sd_max<int>(1, tadsPerThread);
+  sd::LongType tadsPerThread = tads / TAD_THRESHOLD;
+  sd::LongType threads = sd::math::sd_max<sd::LongType>(1, tadsPerThread);
   threads = sd::math::sd_min<int>(threads, sd::Environment::getInstance().maxThreads());
 
   auto xEws = shape::elementWiseStride(xTadShapeShapeInfo);
@@ -121,7 +121,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f], extraParams);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f], extraParams);
     }
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {
@@ -129,7 +129,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws], extraParams);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws], extraParams);
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
@@ -141,7 +141,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(oX[offset], y[offset], extraParams);
       }
@@ -157,7 +157,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
         oZ[zOffset] = OpType::op(oX[offset], y[offset], extraParams);
@@ -174,7 +174,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[offset], y[yOffset], extraParams);
@@ -192,7 +192,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[xOffset], y[offset], extraParams);
@@ -211,7 +211,7 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
@@ -249,8 +249,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
   }
 
   // int *resultStride = shape::stride(yTadShapeShapeInfo);
-  unsigned int tadLength = shape::length(yTadShapeShapeInfo);
-  unsigned int tads = shape::length(yShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
+  sd::LongType tads = shape::length(yShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = yTadShapeShapeInfo;
@@ -260,8 +260,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
   auto lenZ = shape::length(zTadShapeInfo);
   auto lenX = shape::length(xShapeInfo);
 
-  int tadsPerThread = tads / TAD_THRESHOLD;
-  int threads = sd::math::sd_max<int>(1, tadsPerThread);
+  sd::LongType tadsPerThread = tads / TAD_THRESHOLD;
+  sd::LongType threads = sd::math::sd_max<sd::LongType>(1, tadsPerThread);
   threads = sd::math::sd_min<int>(threads, sd::Environment::getInstance().maxThreads());
 
   auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
@@ -277,7 +277,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f], extraParams);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f], extraParams);
     }
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {
@@ -297,7 +297,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(x[offset], oY[offset], extraParams);
       }
@@ -313,7 +313,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
         oZ[zOffset] = OpType::op(x[offset], oY[offset], extraParams);
@@ -330,7 +330,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(x[xOffset], oY[offset], extraParams);
@@ -347,7 +347,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto offset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(x[offset], oY[yOffset], extraParams);
@@ -366,7 +366,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);

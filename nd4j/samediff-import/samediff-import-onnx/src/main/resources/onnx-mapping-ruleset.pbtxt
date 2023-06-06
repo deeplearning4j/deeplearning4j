@@ -785,9 +785,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "axis"
-    outputIntName: "dimensions"
+    outputIntName: "flattenDimension"
     inputToOutput {
-      key: "dimensions"
+      key: "flattenDimension"
       value: "axis"
     }
     ruleType: "attribute"
@@ -1155,7 +1155,7 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     inputIntName: "keepdims"
-    outputDoubleName: "keepDims"
+    outputBooleanName: "keepDims"
     inputToOutput {
       key: "keepDims"
       value: "keepdims"
@@ -1167,7 +1167,7 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputIntName: "keepdims"
-    outputDoubleName: "keepDims"
+    outputBooleanName: "keepDims"
     inputToOutput {
       key: "keepDims"
       value: "keepdims"
@@ -5338,7 +5338,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "k"
+    outputDoubleName: "k"
     inputToOutput {
       key: "k"
       value: "K"
@@ -5770,7 +5770,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "from"
+    outputDoubleName: "from"
     inputToOutput {
       key: "from"
       value: "start"
@@ -5781,7 +5781,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "to"
+    outputDoubleName: "to"
     inputToOutput {
       key: "to"
       value: "limit"
@@ -5792,7 +5792,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "step"
+    outputDoubleName: "step"
     inputToOutput {
       key: "step"
       value: "delta"
@@ -5900,8 +5900,8 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "low"
     inputFloatName: "high"
-    inputTensorName: "min"
-    inputTensorName: "max"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "max"
       value: "high"

@@ -35,17 +35,17 @@ namespace functions {
 namespace pairwise_transforms {
 
 template <typename X, typename Y, typename Z>
-void PairWiseTransform<X, Y, Z>::exec(const int opNum, const void *x, sd::LongType xEws, const void *y,
+void PairWiseTransform<X, Y, Z>::exec(int opNum, const void *x, sd::LongType xEws, const void *y,
                                       sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
-                                      const uint64_t start, const uint64_t stop) {
+                                      long long int start, long long int stop) {
   DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_TRANSFORM_OPS);
 };
 
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
-                                      sd::LongType zEws, void *vextraParams, const sd::LongType n, const uint64_t start,
-                                      const uint64_t stop) {
+                                      sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
+                                      sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
@@ -61,9 +61,9 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const v
 }
 
 template <typename X, typename Y, typename Z>
-void PairWiseTransform<X, Y, Z>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+void PairWiseTransform<X, Y, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                      void *extraParams, const uint64_t start, const uint64_t stop) {
+                                      void *extraParams, long long int start, long long int stop) {
   DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, start, stop),
                         PAIRWISE_TRANSFORM_OPS);
 };
@@ -72,7 +72,7 @@ template <typename X, typename Y, typename Z>
 template <typename OpType>
 void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                      void *vextraParams, const uint64_t start, const uint64_t stop) {
+                                      void *vextraParams, long long int start, long long int stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
@@ -116,6 +116,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
              !sameShapesXY) {  // not same shape
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
   } else {
+
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
         shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
       sd::LongType xShapeInfoCast[SD_MAX_RANK];

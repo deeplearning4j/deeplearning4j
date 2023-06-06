@@ -154,7 +154,7 @@ struct SharedSummaryStatsData {
 };
 
 // Following are the specializations for the following types.
-// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// int, sd::LongType, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template <>
@@ -165,7 +165,7 @@ struct SharedSummaryStatsData<float> {
   }
 };
 // Following are the specializations for the following types.
-// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// int, sd::LongType, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template <>

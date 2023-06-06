@@ -26,53 +26,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-// template <typename T>
-// NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 
-//     // input validation
-//     if(x.rankOf() != 1 && !x.isScalar())
-//         throw std::runtime_error("ops::helpers::Householder::evalHHmatrix method: iinput array must have rank = 1 or
-//         to be scalar!");
-
-//     const auto xLen = x.lengthOf();
-
-//     NDArray w(x.ordering(), {xLen, 1}, x.dataType(), x.getContext());                            // column-vector
-
-//     NDArray xTail = xLen > 1 ? x({1,-1}) : NDArray();
-//     T tailXnorm   = xLen > 1 ? xTail.reduceNumber(reduce::SquaredNorm).t<T>(0) : (T)0;
-
-//     const auto xFirstElem = x.t<T>(0);
-
-//     T coeff, normX;
-
-//     if(tailXnorm <= DataTypeUtils::min<T>()) {
-
-//         normX = xFirstElem;
-//         coeff = 0.f;
-//         if(xLen > 1)
-//             w({1,-1, 0,0}) = 0.f;
-//     }
-//     else {
-
-//         normX = math::sd_sqrt<T,T>(xFirstElem*xFirstElem + tailXnorm);
-
-//         if(xFirstElem >= (T)0.f)
-//             normX = -normX;                                    // choose opposite sign to lessen roundoff error
-
-//         coeff = (normX - xFirstElem) / normX;
-
-//         if(xLen > 1)
-//             w({1,-1, 0,0}).assign(xTail / (xFirstElem - normX));
-//     }
-
-//     w.t<T>(0) = (T)1;
-
-//     NDArray identity(x.ordering(), {xLen, xLen}, x.dataType(), x.getContext());
-//     identity.setIdentity();                                                                            // identity
-//     matrix
-
-//     return identity - mmul(w, w.transpose()) * coeff;
-// }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>

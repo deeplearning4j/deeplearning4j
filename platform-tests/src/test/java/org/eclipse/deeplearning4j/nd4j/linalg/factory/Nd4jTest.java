@@ -176,7 +176,7 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testExpandDims(){
+    public void testExpandDims() {
         final List<Pair<INDArray, String>> testMatricesC = NDArrayCreationUtil.getAllTestMatricesWithShape('c', 3, 5, 0xDEAD, DataType.DOUBLE);
         final List<Pair<INDArray, String>> testMatricesF = NDArrayCreationUtil.getAllTestMatricesWithShape('f', 7, 11, 0xBEEF, DataType.DOUBLE);
 
@@ -186,7 +186,9 @@ public class Nd4jTest extends BaseNd4jTestWithBackends {
         final List<Pair<INDArray, String>> testMatrices = new ArrayList<>(testMatricesC);
         testMatrices.addAll(testMatricesF);
 
-        for (Pair<INDArray, String> testMatrixPair : testMatrices) {
+        //TODO: verify if test issue fixed by checking the column limit being < columns
+        for (int j = 0; j < testMatrices.size(); j++) {
+            Pair<INDArray, String> testMatrixPair  = testMatrices.get(j);
             final String recreation = testMatrixPair.getSecond();
             final INDArray testMatrix = testMatrixPair.getFirst();
             final char ordering = testMatrix.ordering();

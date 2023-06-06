@@ -45,7 +45,7 @@ static SD_KERNEL void lrnKernel(void* vx, sd::LongType const* xTadShapeInfo, sd:
   const T talpha = static_cast<T>(alpha);
 
   // one block of threads processes 1 example within batch
-  for (sd::Unsigned i = blockIdx.x; i < numTads; i += gridDim.x) {
+  for (sd::LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
     auto x = reinterpret_cast<T*>(vx) + xTadOffsets[i];
     auto z = reinterpret_cast<T*>(vz) + zTadOffsets[i];
 
@@ -53,9 +53,9 @@ static SD_KERNEL void lrnKernel(void* vx, sd::LongType const* xTadShapeInfo, sd:
     shared[threadIdx.x] = x[threadIdx.x * xEws];
     __syncthreads();
 
-    const sd::Unsigned begin = sd::math::sd_max<int>(0, threadIdx.x - depth);
-    const sd::Unsigned last = depth + threadIdx.x + 1;
-    const sd::Unsigned end = sd::math::sd_min<int>(last, tadLength);
+    const sd::LongType begin = sd::math::sd_max<int>(0, threadIdx.x - depth);
+    const sd::LongType last = depth + threadIdx.x + 1;
+    const sd::LongType end = sd::math::sd_min<int>(last, tadLength);
 
     T prev = 0.;
     for (int s = begin; s < end; s++) prev = prev + shared[s] * shared[s];
@@ -84,13 +84,13 @@ static SD_KERNEL void lrnBPKernel(void const* vx, sd::LongType const* xTadShapeI
   const Z talpha = static_cast<Z>(alpha);
   const Z coeff = talpha * tbeta;
 
-  for (sd::Unsigned i = blockIdx.x; i < numTads; i += gridDim.x) {
+  for (sd::LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
     auto x = reinterpret_cast<X const*>(vx) + xTadOffsets[i];
     auto z = reinterpret_cast<Z*>(vz) + zTadOffsets[i];
 
-    const sd::Unsigned begin = sd::math::sd_max<int>(0, threadIdx.x - depth);
-    const sd::Unsigned last = depth + threadIdx.x + 1;
-    const sd::Unsigned end = sd::math::sd_min<int>(last, tadLength);
+    const sd::LongType begin = sd::math::sd_max<int>(0, threadIdx.x - depth);
+    const sd::LongType last = depth + threadIdx.x + 1;
+    const sd::LongType end = sd::math::sd_min<int>(last, tadLength);
 
     // load everything into shared memory
     sharedX[threadIdx.x] = x[threadIdx.x * xEws];
@@ -105,7 +105,7 @@ static SD_KERNEL void lrnBPKernel(void const* vx, sd::LongType const* xTadShapeI
     Z init = tbias + talpha * sharedY[threadIdx.x];
 
     Z prev = 0.f;
-    for (sd::Unsigned s = begin; s < end; ++s) {
+    for (sd::LongType s = begin; s < end; ++s) {
       factor[s] = sd::math::sd_pow<Z, Z, Z>(tbias + talpha * sharedY[s], -tbeta - 1);
       prev = prev + sharedX[s] * factor[s];
     }

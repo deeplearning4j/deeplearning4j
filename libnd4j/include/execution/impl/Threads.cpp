@@ -371,9 +371,10 @@ namespace samediff {
 	}
 #endif
 
-	int Threads::parallel_tad(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, uint32_t numThreads) {
+	int Threads::parallel_tad(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment,
+                                  sd::LongType numThreads) {
 		if (start > stop)
-			throw std::runtime_error("Threads::parallel_for got start > stop");
+			THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
 		auto delta = (stop - start);
 
@@ -394,7 +395,7 @@ namespace samediff {
 
 			auto span = delta / numThreads;
 #pragma omp parallel for  schedule(guided) proc_bind(close) default(shared)
-			for (int e = 0; e < numThreads; e++) {
+			for (sd::LongType e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = start_ + span;
 				if (e == numThreads - 1)
@@ -449,7 +450,8 @@ namespace samediff {
 #endif
 	}
 
-	int Threads::parallel_for(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, uint32_t numThreads) {
+	int Threads::parallel_for(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment,
+                                  sd::LongType numThreads) {
 		if (start > stop)
 			throw std::runtime_error("Threads::parallel_for got start > stop");
 
@@ -635,7 +637,7 @@ namespace samediff {
 #endif
 	}
 
-	int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
+	int Threads::parallel_do(FUNC_DO function, sd::LongType numThreads) {
 
 		if (numThreads == 1) {
 			function(0, numThreads);
@@ -686,7 +688,8 @@ namespace samediff {
 		return numThreads;
 	}
 
-	int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, int64_t start, int64_t stop, int64_t increment, uint64_t numThreads) {
+	int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongType start, sd::LongType stop,
+                                       sd::LongType increment, sd::LongType numThreads) {
 		if (start > stop)
 			throw std::runtime_error("Threads::parallel_long got start > stop");
 
@@ -863,7 +866,7 @@ namespace samediff {
 
 		//take span as ceil
 		auto spand = std::ceil((double)delta / (double)adjusted_numThreads);
-		numThreads = static_cast<int>(std::ceil((double)delta / spand));
+		numThreads = static_cast<sd::LongType>(std::ceil((double)delta / spand));
 		auto span = static_cast<sd::LongType>(spand);
 
 

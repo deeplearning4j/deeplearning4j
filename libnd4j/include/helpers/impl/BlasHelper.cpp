@@ -294,10 +294,8 @@ CblasDgemv BlasHelper::dgemv() {
 
 CblasSgemm BlasHelper::sgemm() {
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
-  sd_printf("external  blas openblas\n",0);
   return (CblasSgemm)&cblas_sgemm;
 #else
-  sd_printf("no  blas openblas\n",0);
   return this->cblasSgemm;
 #endif
 }

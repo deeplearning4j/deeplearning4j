@@ -59,7 +59,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
       xInt <= 20) {  // psi(n) = -Euler_Mascheroni_const + sum_from_k=1_to_n-1( 1/k ), for n = 1,2,3,...inf, we use this
                      // formula only for n <= 20 to avoid time consuming sum calculation for bigger n
     T result = -0.577215664901532;
-    for (sd::Unsigned i = 1; i <= xInt - 1; ++i) {
+    for (sd::LongType i = 1; i <= xInt - 1; ++i) {
       result += static_cast<T>(1) / i;
     }
     return result;
@@ -70,7 +70,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
                                         // )    , for n = 1,2,3,...inf, we use this formula only for n <= 20 to avoid
                                         // time consuming sum calculation for bigger n
     T result = -0.577215664901532 - 2 * sd::math::sd_log<T, T>(2);
-    for (sd::Unsigned i = 1; i <= xInt; ++i) {
+    for (sd::LongType i = 1; i <= xInt; ++i) {
       result += static_cast<T>(2) / (2 * i - 1);
     }
     return result;

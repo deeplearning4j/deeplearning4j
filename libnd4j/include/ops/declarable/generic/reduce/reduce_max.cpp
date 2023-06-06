@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size() > 0)
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Max, *output, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Max, *output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(reduce_max) {
                  "REDUCE_MAX OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
                  inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
                                                       keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
@@ -133,10 +133,12 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMax);
     gradI->p(indOfMaxElem.t<sd::LongType>(0), gradO->e(0));
   } else {
-    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, dimensions);
+    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
+  auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, indicesArr,
-        ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));  // 6 corresponds to copy operation
+        *vec);  // 6 corresponds to copy operation
+    delete vec;
   }
 
   return sd::Status::OK;

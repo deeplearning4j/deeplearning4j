@@ -69,8 +69,9 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
                  "weights = %s and output = %s instead!",
                  ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
   }
-
-  NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum, {dim}, true);
+  std::vector<sd::LongType> dims;
+  dims.push_back(dim);
+  NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum,&dims, true);
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
@@ -162,7 +163,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
   else {  // in this case output has the same shape as labels reduced  by dim axis
 
     std::vector<LongType> dimensions = {dim};
-    outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo,
+    outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), &dimensions, predictionsShapeInfo,
                                                    outType, true, false, block.getWorkspace());
 
     // weights array can be single scalar or has the same rank as output, and must be broadcastable to output
@@ -211,7 +212,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
                "COSINE_DISTANCE_LOSS_GRAD OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, "
                "but got %i instead!",
                reductionMode);
-  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(predictions->ordering(), dimensions, predictions->shapeInfo(),
+  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(predictions->ordering(), &dimensions, predictions->shapeInfo(),
                                                        true, false, block.getWorkspace());
   // weights array can be single scalar or has the same shape as loss, and must be broadcastable to loss shape
   REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == shape::rank(lossShapeInfo), 0,
@@ -228,7 +229,9 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
                "COSINE_DISTANCE_LOSS_GRAD OP: input reduction dimension (got %i) must be < labels rank %i!", dim,
                labels->rankOf());
 
-  NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum, {dim}, true);
+  std::vector<sd::LongType> dims;
+  dims.push_back(dim);
+  NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum,&dims, true);
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
@@ -250,7 +253,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+          E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
         } else
           dLdw->assign(E);
       }
@@ -281,7 +284,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-                .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+                .reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
           } else
             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
         }
@@ -311,7 +314,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+            E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
           } else
             dLdw->assign(E / numOfNonZeroWeights);
@@ -349,7 +352,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss_grad) {
                "%s correspondingly !",
                ShapeUtils::shapeAsString(labelsShapeInfo).c_str(),
                ShapeUtils::shapeAsString(predictionsShapeInfo).c_str());
-  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions,
+  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), &dimensions,
                                                        predictionsShapeInfo, true, false, block.getWorkspace());
   // weights array can be single scalar or has the same rank as loss, and must be broadcastable to loss
   REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(lossShapeInfo), 0,

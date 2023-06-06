@@ -36,7 +36,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<LongT
   if (axises.empty())
     for (int i = 0; i < inputRank; ++i) axises.push_back(i);
   else
-    shape::checkDimensions(inputRank, axises);  // check, sort dimensions and remove duplicates if they are present
+    shape::checkDimensions(inputRank, &axises);  // check, sort dimensions and remove duplicates if they are present
 
   auto listOfSubArrs = input.allTensorsAlongDimension(axises);
 

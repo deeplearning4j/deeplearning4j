@@ -123,7 +123,7 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
   // !!! dimension 3*nOut implies order it, ft, ot
 
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
-                                       // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
+  // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
   const auto directionMode = INT_ARG(1);
   // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
   // extra output dim (in conjunction with format dataFormat = 3)
@@ -150,7 +150,7 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::Unsigned count = 1;
+  sd::LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -194,59 +194,59 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
 
     // Wx validation
     if (Wx->rankOf() != 2 || Wx->sizeAt(0) != nIn)
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of input weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of input weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
     // Wr validation
     if (Wr->rankOf() != 2 || Wr->sizeAt(0) != nOut || Wr->sizeAt(1) != 4 * nOut)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
     // biases validation
     if (b != nullptr && (b->rankOf() != 1 || b->sizeAt(0) != 4 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of biases, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of biases, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
     // initial output validation
     if (hI != nullptr && (hI->rankOf() != 2 || hI->sizeAt(0) != bS || hI->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of initial output, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of initial output, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
     // initial cell  validation
     if (cI != nullptr && (cI->rankOf() != 2 || cI->sizeAt(0) != bS || cI->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
     // peephole weights validation
     if (Wp != nullptr && (Wp->rankOf() != 1 || Wp->sizeAt(0) != 3 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong peephole weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong peephole weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
   } else {  // bidirectional
-            // Wx validation
+    // Wx validation
     if (Wx->rankOf() != 3 || Wx->sizeAt(0) != 2 || Wx->sizeAt(1) != nIn)
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of input weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of input weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
     // Wr validation
     if (Wr->rankOf() != 3 || Wr->sizeAt(0) != 2 || Wr->sizeAt(1) != nOut || Wr->sizeAt(2) != 4 * nOut)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
     // biases validation
     if (b != nullptr && (b->rankOf() != 2 || b->sizeAt(0) != 2 || b->sizeAt(1) != 4 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of biases, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong shape of biases, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
     // initial output validation
     if (hI != nullptr && (hI->rankOf() != 3 || hI->sizeAt(0) != 2 || hI->sizeAt(1) != bS || hI->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of initial output, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of initial output, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
     // initial cell  validation
     if (cI != nullptr && (cI->rankOf() != 3 || cI->sizeAt(0) != 2 || cI->sizeAt(1) != bS || cI->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
     // peephole weights validation
     if (Wp != nullptr && (Wp->rankOf() != 2 || Wp->sizeAt(0) != 2 || Wp->sizeAt(1) != 3 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong peephole weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, 3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER operation: wrong peephole weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, 3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
   }
 
   std::vector<float> params = {
@@ -341,16 +341,16 @@ DECLARE_TYPES(lstmLayer) {
 
 DECLARE_SHAPE_FN(lstmLayer) {
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
-                                       // for bidirectional: 3 = [sL, 2, bS, nIn] (for ONNX)
+  // for bidirectional: 3 = [sL, 2, bS, nIn] (for ONNX)
   const auto directionMode = INT_ARG(1);  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional
-                                          // concat, 4 = bidirectional extra output dim
+  // concat, 4 = bidirectional extra output dim
 
   const auto retFullSeq = B_ARG(5);  // indicates whether to return whole h {h_0, h_1, ... , h_sL-1}, if true, format
-                                     // would be [sL,bS,nOut] (exact shape depends on dataFormat argument)
+  // would be [sL,bS,nOut] (exact shape depends on dataFormat argument)
   const auto retLastH = B_ARG(6);    // indicates whether to return output at last time step only, in this case shape
-                                     // would be [bS, nOut] (exact shape depends on dataFormat argument)
+  // would be [bS, nOut] (exact shape depends on dataFormat argument)
   const auto retLastC = B_ARG(7);  // indicates whether to return cells state at last time step only, in this case shape
-                                   // would be [bS, nOut] (exact shape depends on dataFormat argument)
+  // would be [bS, nOut] (exact shape depends on dataFormat argument)
 
   const auto x = INPUT_VARIABLE(0);   // input
   const auto Wx = INPUT_VARIABLE(1);  // input weights
@@ -557,10 +557,10 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   // !!! dimension 3*nOut implies order it, ft, ot
 
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
-                                       // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
+  // for bidirectional: 3 = [sL, bS, nIn] && [sL, 2, bS, nOut] (for ONNX)
   const auto directionMode = INT_ARG(1);
   // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
-   // extra output dim (in conjunction with format dataFormat = 3)
+  // extra output dim (in conjunction with format dataFormat = 3)
 
   // integer numbers corresponding to activations: 0=tanh, 1=relu, 2=sigmoid, 3=affine, 4=leaky relu, 5= thresholded
   // relu, 6=scaled tanh, 7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus
@@ -574,7 +574,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   const auto hasInitC = B_ARG(3);    // indicates whether initial cell state is provided
   const auto hasPH = B_ARG(4);       // indicates whether peephole connections are present
   const auto retFullSeq = B_ARG(5);  // indicates whether gradient vs. outputs is given for whole time sequence dLdh
-                                     // {dLdh_0, dLdh_1, ... , dLdh_sL-1}
+  // {dLdh_0, dLdh_1, ... , dLdh_sL-1}
   const auto retLastH = B_ARG(6);    // indicates whether gradient vs. output at last time step (dLdhL) is given
   const auto retLastC = B_ARG(7);    // indicates whether gradient vs. cell state at last time step (dLdcL) is given
 
@@ -585,7 +585,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::Unsigned count = 1;
+  sd::LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -677,92 +677,93 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   auto dLdcI = hasInitC ? OUTPUT_NULLIFIED(count++) : nullptr;  // gradient vs. initial cell state
   auto dLdWp = hasPH ? OUTPUT_NULLIFIED(count) : nullptr;       // gradient vs. peephole weights
 
+  sd_printf("Obtained all inputs/outputs\n",0);
   // inputs validations
   if (directionMode < 2) {  // no bidirectional
 
     // Wx validation
     if (Wx->rankOf() != 2 || Wx->sizeAt(0) != nIn)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of input weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of input weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
     // Wr validation
     if (Wr->rankOf() != 2 || Wr->sizeAt(0) != nOut || Wr->sizeAt(1) != 4 * nOut)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
     // biases validation
     if (b != nullptr && (b->rankOf() != 1 || b->sizeAt(0) != 4 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong shape of biases, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong shape of biases, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
     // initial output validation
     if (hI != nullptr && (hI->rankOf() != 2 || hI->sizeAt(0) != bS || hI->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of initial output, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of initial output, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
     // initial cell  validation
     if (cI != nullptr && (cI->rankOf() != 2 || cI->sizeAt(0) != bS || cI->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
     // peephole weights validation
     if (Wp != nullptr && (Wp->rankOf() != 1 || Wp->sizeAt(0) != 3 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong peephole weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong peephole weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
     // gradient vs. output at last time step validation
     if (dLdhL != nullptr && (dLdhL->rankOf() != 2 || dLdhL->sizeAt(0) != bS || dLdhL->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of gradient vs. output at last time step, expected is %s, but "
-                   "got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdhL).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of gradient vs. output at last time step, expected is %s, but "
+                 "got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdhL).c_str());
     // gradient vs. cell state at last time step validation
     if (dLdcL != nullptr && (dLdcL->rankOf() != 2 || dLdcL->sizeAt(0) != bS || dLdcL->sizeAt(1) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of gradient vs. cell state at last time, expected is %s, but "
-                   "got %s instead !",
-                   ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdcL).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of gradient vs. cell state at last time, expected is %s, but "
+                 "got %s instead !",
+                 ShapeUtils::shapeAsString({bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdcL).c_str());
   } else {  // bidirectional
-            // Wx validation
+    // Wx validation
     if (Wx->rankOf() != 3 || Wx->sizeAt(0) != 2 || Wx->sizeAt(1) != nIn)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of input weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of input weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, nIn, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
     // Wr validation
     if (Wr->rankOf() != 3 || Wr->sizeAt(0) != 2 || Wr->sizeAt(1) != nOut || Wr->sizeAt(2) != 4 * nOut)
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of recurrent weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, nOut, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(Wr).c_str());
     // biases validation
     if (b != nullptr && (b->rankOf() != 2 || b->sizeAt(0) != 2 || b->sizeAt(1) != 4 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong shape of biases, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong shape of biases, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, 4 * nOut}).c_str(), ShapeUtils::shapeAsString(b).c_str());
     // initial output validation
     if (hI != nullptr && (hI->rankOf() != 3 || hI->sizeAt(0) != 2 || hI->sizeAt(1) != bS || hI->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of initial output, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of initial output, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(hI).c_str());
     // initial cell  validation
     if (cI != nullptr && (cI->rankOf() != 3 || cI->sizeAt(0) != 2 || cI->sizeAt(1) != bS || cI->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of initial cell state, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(cI).c_str());
     // peephole weights validation
     if (Wp != nullptr && (Wp->rankOf() != 2 || Wp->sizeAt(0) != 2 || Wp->sizeAt(1) != 3 * nOut))
-      REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong peephole weights, expected is %s, but got %s instead !",
-                   ShapeUtils::shapeAsString({2, 3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
+    REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: wrong peephole weights, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString({2, 3 * nOut}).c_str(), ShapeUtils::shapeAsString(Wp).c_str());
     // gradient vs. output at last time step validation
     if (dLdhL != nullptr &&
         (dLdhL->rankOf() != 3 || dLdhL->sizeAt(0) != 2 || dLdhL->sizeAt(1) != bS || dLdhL->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of gradient vs. output at last time step, expected is %s, but "
-                   "got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdhL).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of gradient vs. output at last time step, expected is %s, but "
+                 "got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdhL).c_str());
     // gradient vs. cell state at last time step validation
     if (dLdcL != nullptr &&
         (dLdcL->rankOf() != 3 || dLdcL->sizeAt(0) != 2 || dLdcL->sizeAt(1) != bS || dLdcL->sizeAt(2) != nOut))
-      REQUIRE_TRUE(false, 0,
-                   "LSTM_LAYER_BP operation: wrong shape of gradient vs. cell state at last time, expected is %s, but "
-                   "got %s instead !",
-                   ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdcL).c_str());
+    REQUIRE_TRUE(false, 0,
+                 "LSTM_LAYER_BP operation: wrong shape of gradient vs. cell state at last time, expected is %s, but "
+                 "got %s instead !",
+                 ShapeUtils::shapeAsString({2, bS, nOut}).c_str(), ShapeUtils::shapeAsString(dLdcL).c_str());
   }
 
   // gradient vs. output  validation
@@ -781,12 +782,18 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
   if (directionMode == 0) {  // forward
 
+    sd_printf("Before directionMode 0 layerTimeLoopBp\n",0);
     helpers::lstmLayerTimeLoopBp(x, Wx, Wr, b, seqLen, hI, cI, Wp, dLdh, dLdhL, dLdcL, params, true, dLdx, dLdWx, dLdWr,
                                  dLdb, dLdhI, dLdcI, dLdWp);
+    sd_printf("After directionMode 0 layerTimeLoopBp\n",0);
+
   } else if (directionMode == 1) {  // backward
+    sd_printf("Before directionMode 1 layerTimeLoopBp\n",0);
 
     helpers::lstmLayerTimeLoopBp(x, Wx, Wr, b, seqLen, hI, cI, Wp, dLdh, dLdhL, dLdcL, params, false, dLdx, dLdWx,
                                  dLdWr, dLdb, dLdhI, dLdcI, dLdWp);
+    sd_printf("After directionMode 1 layerTimeLoopBp\n",0);
+
   } else {  // bidirectional
 
     NDArray WxFwd = (*Wx)({0, 1, 0, 0, 0, 0});
@@ -853,6 +860,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
     NDArray dLdxBwd = dLdx->ulike();
 
+    sd_printf("Before lstmLayerTimeLoopBp\n",0);
     // FIXME - following two calls are independent and may run in different streams
     helpers::lstmLayerTimeLoopBp(x, &WxFwd, &WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd,
                                  params, true, dLdx, &dLdWxFwd, &dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);

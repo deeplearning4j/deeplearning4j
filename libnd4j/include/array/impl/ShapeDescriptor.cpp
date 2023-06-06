@@ -177,7 +177,7 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
   auto shapePtr = shape::shapeOf(shapeInfo);
   auto stridePtr = shape::stride(shapeInfo);
 
-  for (int e = 0; e < _rank; e++) {
+  for (sd::LongType e = 0; e < _rank; e++) {
     _shape[e] = shapePtr[e];
     _strides[e] = stridePtr[e];
     if (shapePtr[e] == 0) _extraProperties |= ARRAY_EMPTY;

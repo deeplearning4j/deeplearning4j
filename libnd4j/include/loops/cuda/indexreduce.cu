@@ -85,7 +85,7 @@ struct SharedIndexValue {
 };
 
 // Following are the specializations for the following types.
-// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// int, sd::LongType, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template <>
@@ -96,7 +96,7 @@ struct SharedIndexValue<float> {
   }
 };
 // Following are the specializations for the following types.
-// int, sd::Unsigned, char, uchar, short, ushort, long long, ulong long, bool, float, and double
+// int, sd::LongType, char, uchar, short, ushort, long long, ulong long, bool, float, and double
 // One could also specialize it for user-defined types.
 
 template <>
@@ -202,7 +202,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
 
-    for (sd::Unsigned i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
+    for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
       z[i] = (Z)reduction.index;
 
     return;

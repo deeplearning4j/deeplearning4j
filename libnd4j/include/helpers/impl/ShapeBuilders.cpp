@@ -25,7 +25,7 @@ namespace sd {
 
 sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, sd::memory::Workspace* workspace) {
   sd::LongType* newShape;
-  ALLOCATE(newShape, workspace, shape::shapeInfoLength(0), sd::LongType);
+  ALLOCATE(newShape, workspace, shape::shapeInfoLength(static_cast<sd::LongType>(0)), sd::LongType);
   newShape[0] = 0;
   newShape[1] = 0;
   newShape[2] = 1;

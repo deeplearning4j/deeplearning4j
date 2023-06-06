@@ -62,7 +62,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
     auto array = INPUT_VARIABLE(0);  // new NDArray(nullptr, inShape, block.getWorkspace());
 
     auto newShape =
-        ShapeUtils::evalReduceShapeInfo('c', *block.getAxis(), *array, DataType::INT64, false, true, block.workspace());
+        ShapeUtils::evalReduceShapeInfo('c', block.getAxis(), *array, DataType::INT64, false, true, block.workspace());
     return SHAPELIST(newShape);
   } else {
     bool allAxes = false;
@@ -97,7 +97,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
       // in this case we're building proper shape for reduction
       auto array = INPUT_VARIABLE(0);
       return SHAPELIST(
-          ShapeUtils::evalReduceShapeInfo('c', axis, *array, DataType::INT64, false, true, block.workspace()));
+          ShapeUtils::evalReduceShapeInfo('c', &axis, *array, DataType::INT64, false, true, block.workspace()));
     }
   }
 }
@@ -138,7 +138,7 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
       }
       if (dims.size() > 1) std::sort(dims.begin(), dims.end());
 
-      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
       NativeOpExecutioner::execIndexReduce(
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -153,9 +153,8 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
     if (indices->lengthOf() == x->rankOf()) allAxes = true;
 
     std::vector<sd::LongType> axis(indices->lengthOf());
-    for (int e = 0; e < indices->lengthOf(); e++) {
-      // lol otherwise we segfault on macOS
-      int f = indices->e<int>(e);
+    for (sd::LongType e = 0; e < indices->lengthOf(); e++) {
+      sd::LongType f = indices->e<sd::LongType>(e);
       axis[e] = f >= 0 ? f : f += x->rankOf();
     }
 
@@ -169,7 +168,7 @@ sd::Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), axis);
+      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis);
 
       NativeOpExecutioner::execIndexReduce(
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),

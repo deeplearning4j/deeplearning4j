@@ -62,7 +62,6 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
                     : 0;  // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
 
-  sd_printf("Deconv3d: getting sizes\n",0);
   LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
   LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
@@ -80,7 +79,6 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
                  oC, bias->rankOf(), bias->lengthOf());
 
 
-  sd_printf("isNCDHW %d\n",isNCDHW);
   if (!isNCDHW) output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
   std::vector<LongType> colPermut;
@@ -92,7 +90,6 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   if (isSameMode)  // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not
                    // deconv) forward pass
     ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
-  sd_printf("Deconv3d: calculated padding\n",0);
 
   NDArray columns(input->ordering(), {bS, oC, kD, kH, kW, iD, iH, iW}, input->dataType(), block.launchContext());
 
@@ -102,17 +99,14 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   // [iC, kD, kH, kW, oC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
   sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC},
                             colPermut);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
-  sd_printf("Deconv3d: after tensorDot\n",0);
 
   ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, kD, kH, kW, iD, iH, iW] is de-convoluted to [bS, oC, oD, oH, oW]
-  sd_printf("Deconv3d: after col2vol\n",0);
 
   //----- add biases if required -----//
   if (bias)
     helpers::addBias(block, *output, *bias, *output, true);
 
-  sd_printf("addBias\n",0);
   //if (!isNCDHW) delete output;
 
   return sd::Status::OK;
@@ -311,7 +305,8 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   // ----- calculation of gradB ----- //
   if (gradB) {
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
-    gradO->reduceAlongDimension(reduce::Sum, *gradB, {0, 2, 3, 4});  // sum over bS, oD, oH, oW
+    std::vector<sd::LongType> dims = {{0, 2, 3, 4}};
+    gradO->reduceAlongDimension(reduce::Sum, *gradB, &dims);  // sum over bS, oD, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 

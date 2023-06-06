@@ -43,8 +43,10 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
   }
 
   if (dimensions.empty()) {
-    const NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, {}) / z->lengthOf()
-                                          : z->reduceAlongDimension(reduce::Norm2, {});
+    std::vector<sd::LongType> emptyVec = {};
+
+    const NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &emptyVec) / z->lengthOf()
+                                          : z->reduceAlongDimension(reduce::Norm2, &emptyVec);
 
     if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
   } else {
@@ -52,9 +54,10 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
+        std::vector<sd::LongType> emptyVec = {};
         const NDArray actualNorm =
-            useAverage ? listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, {}) / listOfSubArrs.at(i)->lengthOf()
-                       : listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, {});
+            useAverage ? listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec) / listOfSubArrs.at(i)->lengthOf()
+                       : listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
         if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *listOfSubArrs.at(i) *= clipNorm / actualNorm;
       }
     };
@@ -68,8 +71,8 @@ static void clipByNormBp_(const NDArray& input, const NDArray& gradO, NDArray& g
                           const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
   const int rank = input.rankOf();
 
-  auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
-  auto sums = input.reduceAlongDimension(reduce::Sum, dimensions);
+  auto norm2 = input.reduceAlongDimension(reduce::Norm2, &dimensions);
+  auto sums = input.reduceAlongDimension(reduce::Sum, &dimensions);
 
   if (norm2.lengthOf() == 1) {
     const T norm = useAverage ? norm2.e<T>(0) / input.lengthOf() : norm2.e<T>(0);

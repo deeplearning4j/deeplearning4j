@@ -69,7 +69,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
       else
         memcpy(xCoords - diff, zCoords, zRank * sizeof(sd::LongType));
 
-      for (sd::Unsigned j = 0; j < yLastDim; ++j)
+      for (sd::LongType j = 0; j < yLastDim; ++j)
         xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];  // last stride
 
       const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
@@ -112,13 +112,16 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         auto scalarNDArray = input->e(idx);
         output->assign(scalarNDArray);
       } else {
-        auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+        std::vector<sd::LongType> axesVec = {axis};
+        auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
         auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
 
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
                                                       tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),
                               tadPack->primaryShapeInfo(), output->getContext());
         output->assign(&tadArr);
+        delete dimensions;
+
       }
     } else if (input->rankOf() == 1 && indices->isVector()) {
       // special case

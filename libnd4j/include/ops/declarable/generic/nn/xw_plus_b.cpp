@@ -135,7 +135,8 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
 
   // dLdb
-  dLdb->assign(dLdz->reduceAlongDimension(reduce::Sum, {0}));
+  std::vector<sd::LongType> dims({0});
+  dLdb->assign(dLdz->reduceAlongDimension(reduce::Sum, &dims));
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});

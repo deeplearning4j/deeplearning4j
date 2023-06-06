@@ -83,11 +83,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
   // maxLogit is max among logits_i
 
   std::vector<LongType> dimensions = {-1};
-  NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
+  NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, &dimensions, true);
   NDArray logSumExp = shiftedLogits.transform(transform::Exp)
-      .reduceAlongDimension(reduce::Sum, dimensions, true)
+      .reduceAlongDimension(reduce::Sum, &dimensions, true)
       .transform(transform::Log);
-  NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
+  NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, &dimensions);
 
   // perform weights broadcasting/tile to E if it is necessary
   auto weightsBroad = weights;
@@ -179,7 +179,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the shape as labels and logits minus last dimension
     std::vector<LongType> dimensions = {-1};
-    outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), dimensions, logitsShapeInfo, false,
+    outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), &dimensions, logitsShapeInfo, false,
                                                    true, block.getWorkspace());
 
     // weights array can be single scalar or has the same rank as output, and must be broadcastable to output
@@ -215,7 +215,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   // take into account Alex's proposition to treat "none" the same as "weighted_sum" mode when calculating gradients
   if (reductionMode == 0) reductionMode = 1;
 
-  std::vector<LongType> dimensions = {-1};
+  std::vector<LongType> *dimensions =  new std::vector<LongType>({-1});
 
   // input validation
   REQUIRE_TRUE(labels->isSameShape(logits), 0,
@@ -272,7 +272,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   if (!weights->isScalar() && !weights->isSameShape(&E))
     weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
 
-  dimensions = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions);
+  dimensions = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions->size(),dimensions->data());
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -288,7 +288,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+          E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
         } else
           dLdw->assign(E);
       }
@@ -322,7 +322,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-                .reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+                .reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
           } else
             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
         }
@@ -355,7 +355,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
+            E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
           } else
             dLdw->assign(E / numOfNonZeroWeights);
@@ -399,7 +399,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
                "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: labels and logits arrays must have the same shapes, but got %s and "
                "%s correspondingly!",
                ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
-  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), dimensions, logitsShapeInfo,
+  auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), &dimensions, logitsShapeInfo,
                                                        false, false, block.getWorkspace());
   // weights array can be single scalar or has the same rank as loss, and must be broadcastable to loss
   REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || shape::rank(weightsShapeInfo) == shape::rank(lossShapeInfo), 0,

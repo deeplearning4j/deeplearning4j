@@ -58,7 +58,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, -1, 1, false, 0, 0) {
         "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         input->rankOf(), input->rankOf(), item);
 
-  input->reduceAlongDimension(reduce::SquaredNorm, *gradI, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::SquaredNorm, *gradI, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
         "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
                                                       keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
@@ -135,7 +135,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
 
     if (!keepDims) {
       auto gradOShapeKeepDims =
-          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
       gradI->assign(2. * (*input) *
                     gradO->reshape(gradO->ordering(),
                                    ShapeUtils::pullShapeFromShapeInfo(

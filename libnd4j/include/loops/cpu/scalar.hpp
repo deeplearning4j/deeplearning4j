@@ -59,7 +59,6 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
 
   //0 length array
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-  sd_printf("ScalarTransform: 5 Op num: 5\n",0);
 
   if(numTads == 0 || tadLength == 0) {
     z[0] = 1;
@@ -104,7 +103,6 @@ void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::Lon
                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
                                          const sd::LongType *zTadOffsets,
                                          sd::LongType start, sd::LongType stop) {
-  sd_printf("ScalarTransform: 4 Op num: %d\n", opNum);
 
   auto len = shape::length(xShapeInfo);
   if(len == 0) {
@@ -125,7 +123,6 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, sd::Lon
                                          sd::LongType zStride, const void *scalar, void *extraParams, const sd::LongType n,
                                          const sd::LongType start, const sd::LongType stop) {
 
-  sd_printf("ScalarTransform: 3 Op num: %d\n", opNum);
   if(n == 0) {
     auto newCast = reinterpret_cast<Z *>(z);
     newCast[0] = 1;
@@ -170,7 +167,6 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   //0 length array
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   if(len == 0) {
-    sd_printf("ScalarTransform: In length 0 2\n",0);
     z[0] = 1;
     return;
   }

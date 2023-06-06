@@ -150,7 +150,7 @@ DECLARE_SHAPE_FN(reshape) {
     sd::LongType xLen = x->lengthOf();
     if (x->isEmpty()) {
       xLen = 1;
-      for (sd::Unsigned i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
+      for (sd::LongType i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
         if (x->sizeAt(i) > 0 || !newShapeEmpty) xLen *= x->sizeAt(i);
     }
 

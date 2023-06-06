@@ -44,18 +44,18 @@ class SD_LIB_EXPORT ShapeUtils {
                                                          std::vector<sd::LongType>& shapeBt);
 
   // evaluate resulting shape after reduce operation
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions, const NDArray& arr,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, const NDArray& arr,
                                                  const sd::DataType dataType, const bool keepDims = false,
                                                  const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
                                                  const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                  const bool keepDims = false, const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions, const NDArray& arr,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, const NDArray& arr,
                                                  const bool keepDims = false, const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
-  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<sd::LongType>& dimensions,
+  static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
                                                  const sd::LongType* shapeInfo, const bool keepDims = false,
                                                  const bool supportOldShapes = false,
                                                  sd::memory::Workspace* workspace = nullptr);
@@ -64,22 +64,23 @@ class SD_LIB_EXPORT ShapeUtils {
   // if rank = 3 and dimsToExclude = {0,2} then output = {1,0,2},   if rank = 3 and dimsToExclude = {2} then output =
   // {0,1,2} if rank = 3 and dimsToExclude = {0} then output = {1,2,0},     if rank = 4 and dimsToExclude = {0,3} then
   // output = {1,2,0,3}
-  static std::vector<sd::LongType> evalDimsForReduceOp(const int rank, const std::vector<sd::LongType>& dimsToExclude);
+  static std::vector<sd::LongType>* evalDimsForReduceOp(const LongType rank,
+                                                        const std::vector<LongType>* dimsToExclude);
 
   /**
    * evaluate output shape for reduce operation when input shape is empty
    * behavior is analogous to tf
    */
-  static const sd::LongType* evalReduceShapeInfoEmpty(const char order, std::vector<sd::LongType>& dimensions,
+  static const sd::LongType* evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude,
                                                       const sd::LongType* shapeInfo, const sd::DataType dataType,
                                                       const bool keepDims, sd::memory::Workspace* workspace);
 
   // evaluate shape for array which is result of repeat operation applied to arr
-  static std::vector<sd::LongType> evalRepeatShape(int axis, const std::vector<LongType>& repeats, const NDArray& arr);
+  static std::vector<sd::LongType> evalRepeatShape(LongType axis, const std::vector<LongType>& repeats, const NDArray& arr);
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const sd::LongType* evalPermShapeInfo(const LongType* dimensions, const int rank, const NDArray& arr,
+  static const sd::LongType* evalPermShapeInfo(const LongType* dimensions, const LongType rank, const NDArray& arr,
                                                sd::memory::Workspace* workspace, const bool setContigStrides = false);
 
 
@@ -88,11 +89,11 @@ class SD_LIB_EXPORT ShapeUtils {
   static const sd::LongType* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
                                                  const bool setContigStrides = false);
 
-  static bool copyVectorPart(std::vector<sd::LongType>& target, std::vector<sd::LongType>& source, int rank, int offset);
+  static bool copyVectorPart(std::vector<sd::LongType>& target, std::vector<sd::LongType>& source, LongType rank,
+                             LongType offset);
 
   // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-  static std::vector<sd::LongType> evalDimsToExclude(const int rank, const int dimsLen, const sd::LongType* dimensions);
-  static std::vector<sd::LongType> evalDimsToExclude(const int rank, const std::vector<sd::LongType>& dimensions);
+  static std::vector<sd::LongType>* evalDimsToExclude(const LongType rank, const LongType dimsLen, const sd::LongType* dimensions);
 
   // check whether 2 arrays have mutually broadcastable shapes
   // shape comparison starts from the end
@@ -110,7 +111,7 @@ class SD_LIB_EXPORT ShapeUtils {
   // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
   // if simple broadcast is not possible then empty vector is returned
   // PLEASE NOTE: condition (rank_max >= rank_min) should be satisfied !
-  static std::vector<int> tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min);
+  static std::vector<sd::LongType> tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min);
 
   // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
   static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, sd::LongType*& resultShapeInfo,
@@ -118,7 +119,7 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger
   // rank for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
-  static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
+  static std::vector<sd::LongType> getDimsWithSameShape(const NDArray& arr1, const NDArray& arr2);
 
   // evaluate shapeInfo for resulting array of tile operation
   static const sd::LongType* evalTileShapeInfo(const NDArray& arr, const std::vector<sd::LongType>& reps,
@@ -130,7 +131,7 @@ class SD_LIB_EXPORT ShapeUtils {
   static std::string shapeAsString(const NDArray* array);
   static std::string shapeAsString(const std::vector<sd::LongType>& shape);
   static std::string shapeAsString(const sd::LongType* shapeInfo);
-  static std::string shapeAsString(const int rank, const sd::LongType* shapeInfo);
+  static std::string shapeAsString(const LongType rank, const sd::LongType* shapeInfo);
   static std::string strideAsString(const NDArray* array);
 
   static std::string shapeInfoAsString(const sd::LongType* shapeInfo);
@@ -218,7 +219,8 @@ class SD_LIB_EXPORT ShapeUtils {
    * @param pointer to output strides have to be pre allocated by 0
    * @return
    */
-  static void copyCertainStridesFromShapeInfo(const sd::LongType* inShapeInfo, const int nRank, const int dimsSize,
+  static void copyCertainStridesFromShapeInfo(const sd::LongType* inShapeInfo, const LongType nRank,
+                                              const LongType dimsSize,
                                               const sd::LongType* dims, sd::LongType* outStrides);
 
   /*

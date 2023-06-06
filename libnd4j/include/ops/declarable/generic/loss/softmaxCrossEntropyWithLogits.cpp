@@ -48,11 +48,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
 
   std::vector<LongType> dimension = {classesDim};
 
-  auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, {classesDim}, true);
+  auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
   auto logExp = (*logits - maxAlongDim).transform(transform::Exp);
-  auto logSoftMax = (logExp / logExp.reduceAlongDimension(reduce::Sum, {classesDim}, true)).transform(transform::Log);
+  auto logSoftMax = (logExp / logExp.reduceAlongDimension(reduce::Sum, &dimension, true)).transform(transform::Log);
 
-  (-(*labels) * logSoftMax).reduceAlongDimension(reduce::Sum, *output, dimension);
+  (-(*labels) * logSoftMax).reduceAlongDimension(reduce::Sum, *output, &dimension);
 
   return sd::Status::OK;
 }
@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_with_logits) {
                ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
   auto outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
-  auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo,
+  auto reducedShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(labelsShapeInfo), &dimensions, labelsShapeInfo,
                                                           outType, false, false, block.getWorkspace());
 
   return SHAPELIST(reducedShapeInfo);
@@ -107,15 +107,15 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
 
   std::vector<LongType> dimension = {classesDim};
 
-  NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
-  softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);
+  NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, &dimension, true)).transform(transform::Exp);
+  softmax /= softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
 
 
   // dEdp = softmax * sum_i(labels_i) - labels
   //note the eps is to account for exact 0s in the log calculation being nan
   auto labelsPlusEps = *labels + 1e-6;
   labelsPlusEps.printBuffer("Labels plus eps");
-  dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, dimension, true) - labelsPlusEps)));
+  dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true) - labelsPlusEps)));
   auto negSoftmax = softmax;
 
 

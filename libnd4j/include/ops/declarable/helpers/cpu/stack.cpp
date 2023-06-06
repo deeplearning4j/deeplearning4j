@@ -42,10 +42,12 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
 
     samediff::Threads::parallel_for(func, 0, numOfSubArrs);
   } else if(!output.isEmpty()) {
+    std::vector<sd::LongType> dimVec = {dim};
+    auto vec = ShapeUtils::evalDimsToExclude(output.rankOf(),1,dimVec.data());
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+        output.shapeInfo(), vec);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
-
+    delete vec;
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
@@ -81,10 +83,12 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
 
     samediff::Threads::parallel_for(func, 0, numOfSubArrs);
   } else {
+    std::vector<sd::LongType> dimVec = {dim};
+    auto vec = ShapeUtils::evalDimsToExclude(input.rankOf(), 1,dimVec.data());
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+        input.shapeInfo(), vec);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-
+    delete vec;
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);

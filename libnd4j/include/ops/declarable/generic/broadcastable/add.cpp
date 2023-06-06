@@ -76,17 +76,19 @@ CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisX);
+      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, &axisX);
       gradX->assign(sum);
     } else
       gradX->assign(epsNext);
 
     if (axisY.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
+      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(epsNext);
   }
+
+
 
   return sd::Status::OK;
 }

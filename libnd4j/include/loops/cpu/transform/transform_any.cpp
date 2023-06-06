@@ -32,8 +32,8 @@ namespace transform {
 
 template <typename X, typename Y>
 void TransformAny<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
-                              const sd::LongType *zShapeInfo, void *extraParams, uint64_t threadId,
-                              uint64_t numThreads) {
+                              const sd::LongType *zShapeInfo, void *extraParams, sd::LongType threadId,
+                              sd::LongType numThreads) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads),
                        TRANSFORM_ANY_OPS);
 }
@@ -42,8 +42,8 @@ void TransformAny<X, Y>::exec(int opNum, const void *x, const sd::LongType *xSha
 template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                      const sd::LongType *zShapeInfo, void *vextraParams, uint64_t threadId,
-                                      uint64_t numThreads) {
+                                      const sd::LongType *zShapeInfo, void *vextraParams, sd::LongType threadId,
+                                      sd::LongType numThreads) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<X *>(vextraParams);

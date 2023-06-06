@@ -562,23 +562,29 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
   // dLdb
   if (b && x->rankOf() == 1)
     *dLdb += dLdz;  // [4*nOut]
-  else if (b)
-    *dLdb += dLdz.reduceAlongDimension(reduce::Sum, {0});  // [bS, 4*nOut] -> reduce -> [4*nOut];
-
+  else if (b) {
+    std::vector<sd::LongType> dims = {0};
+    *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &dims);  // [bS, 4*nOut] -> reduce -> [4*nOut];
+  }
   // dLdWp
   if (Wp && x->rankOf() == 1) {
     (*dLdWp)({0, nOut}) += std::move(dLdzi) * (*cI);            // [nOut]
     (*dLdWp)({nOut, 2 * nOut}) += std::move(dLdzf) * (*cI);     // [nOut]
     (*dLdWp)({2 * nOut, 3 * nOut}) += std::move(dLdzo) * (*c);  // [nOut]
+
   } else if (Wp) {
     NDArray temp(Wp->ordering(), {nOut}, Wp->dataType(), Wp->getContext());
-    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp, {0});  // [bS, nOut] -> reduce -> [nOut]
+    std::vector<sd::LongType> dims = {0};
+
+    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({0, nOut}) += temp;
-    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, temp, {0});  // [bS, nOut] -> reduce -> [nOut]
+    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({nOut, 2 * nOut}) += temp;
-    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, temp, {0});  // [bS, nOut] -> reduce -> [nOut]
+    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({2 * nOut, 3 * nOut}) += temp;
+
   }
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -633,24 +639,27 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
   if (!h && !hL) ht = new NDArray(x->ordering(), shapeOut, type, x->getContext());
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<sd::LongType> dims;
+  std::vector<sd::LongType> *dims;
   ResultSet *xSet(nullptr), *hSet(nullptr), *h0Set(nullptr), *c0Set(nullptr), *htSet(nullptr), *ctSet(nullptr);
 
   if (!seqLen) {
+    std::vector<sd::LongType> dims2 =  {dataFormat < 3 ? dataFormat : 0};
     dims = ShapeUtils::evalDimsToExclude(x->rankOf(),
-                                         {dataFormat < 3 ? dataFormat : 0});  // points on bS and nIn/nOut axes
+                                         dims2.size(),dims2.data());  // points on bS and nIn/nOut axes
 
-    xSet = new ResultSet(x->allTensorsAlongDimension(dims));         // sub-arrays with shape [bS, nIn]
-    if (h) hSet = new ResultSet(h->allTensorsAlongDimension(dims));  // sub-arrays with shape [bS, nOut]
+    xSet = new ResultSet(x->allTensorsAlongDimension(*dims));         // sub-arrays with shape [bS, nIn]
+    if (h) hSet = new ResultSet(h->allTensorsAlongDimension(*dims));  // sub-arrays with shape [bS, nOut]
   } else {
-    dims = dataFormat == 2 ? std::vector<sd::LongType>({1}) : std::vector<sd::LongType>({2});  // points on nIn/nOut axis
+    dims = dataFormat == 2 ? new std::vector<sd::LongType>({1}) : new std::vector<sd::LongType>({2});  // points on nIn/nOut axis
 
-    xSet = new ResultSet(x->allTensorsAlongDimension(dims));           //  sub-arrays with shape [nIn]
+    xSet = new ResultSet(x->allTensorsAlongDimension(*dims));           //  sub-arrays with shape [nIn]
     h0Set = new ResultSet(h0->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
     c0Set = new ResultSet(c0->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
     ctSet = new ResultSet(ct->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
-    if (h) hSet = new ResultSet(h->allTensorsAlongDimension(dims));    //  sub-arrays with shape [nOut]
+    if (h) hSet = new ResultSet(h->allTensorsAlongDimension(*dims));    //  sub-arrays with shape [nOut]
     if (ht) htSet = new ResultSet(ht->allTensorsAlongDimension({1}));  //  sub-arrays with shape [nOut]
+
+    delete dims;
   }
 
   // loops
@@ -925,26 +934,30 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
   NDArray c = h.ulike();
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<sd::LongType> dims;
+  std::vector<sd::LongType> *dims;
   ResultSet *xSet(nullptr), *dLdxSet(nullptr), *hSet(nullptr), *cSet(nullptr), *zSet(nullptr), *aSet(nullptr),
       *dLdhSet(nullptr), *dLdh0Set(nullptr), *dLdc0Set(nullptr), *dLdhLSet(nullptr), *dLdcLSet(nullptr),
       *hISet(nullptr), *cISet(nullptr);
 
   if (!seqLen) {
-    dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {dataFormat < 3 ? dataFormat : 0});  // points on [bS, nIn/nOut]
-
-    xSet = new ResultSet(x->allTensorsAlongDimension(dims));                  // sub-arrays with shape [bS, nIn]
-    dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(dims));            // sub-arrays with shape [bS, nIn]
+    std::vector<sd::LongType> dim =  {dataFormat < 3 ? dataFormat : 0};
+    dims = ShapeUtils::evalDimsToExclude(x->rankOf(),dim.size(),dim.data());  // points on [bS, nIn/nOut]
+    sd_printf("!seqLen after evalDimsToExclude\n",0);
+    xSet = new ResultSet(x->allTensorsAlongDimension(*dims));                  // sub-arrays with shape [bS, nIn]
+    dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));            // sub-arrays with shape [bS, nIn]
     hSet = new ResultSet(h.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, nOut]
     cSet = new ResultSet(c.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, nOut]
     zSet = new ResultSet(z.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, 4*nOut]
     aSet = new ResultSet(a.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, 4*nOut]
-    if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(dims));  // sub-arrays with shape [bS, nOut]
-  } else {
-    dims = dataFormat == 2 ? std::vector<sd::LongType>({1}) : std::vector<sd::LongType>({2});  // points on nIn/nOut axis
+    if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(*dims));  // sub-arrays with shape [bS, nOut]
+    sd_printf("!seqLen after result sets\n",0);
 
-    xSet = new ResultSet(x->allTensorsAlongDimension(dims));        // sub-arrays with shape [nIn]
-    dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(dims));  // sub-arrays with shape [nIn]
+  } else {
+    dims = dataFormat == 2 ? new std::vector<sd::LongType>({1}) : new std::vector<sd::LongType>({2});  // points on nIn/nOut axis
+    sd_printf("seqLen before allTensorsAlongDimension\n",0);
+
+    xSet = new ResultSet(x->allTensorsAlongDimension(*dims));        // sub-arrays with shape [nIn]
+    dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));  // sub-arrays with shape [nIn]
     hSet = new ResultSet(h.allTensorsAlongDimension({2}));          // sub-arrays with shape [nOut]
     cSet = new ResultSet(c.allTensorsAlongDimension({2}));          // sub-arrays with shape [nOut]
     zSet = new ResultSet(z.allTensorsAlongDimension({2}));          // sub-arrays with shape [4*nOut]
@@ -956,9 +969,12 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
     dLdh0Set = new ResultSet(dLdh0->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
     dLdc0Set = new ResultSet(dLdc0->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
 
-    if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(dims));    // sub-arrays with shape [nOut]
+    if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(*dims));    // sub-arrays with shape [nOut]
     if (dLdhL) dLdhLSet = new ResultSet(dLdhL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
     if (dLdcL) dLdcLSet = new ResultSet(dLdcL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
+    sd_printf("seqLen after allTensorsAlongDimension\n",0);
+
+    delete dims;
   }
 
   // loops
@@ -974,23 +990,36 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       else
         cSet->at(0)->nullify();
 
+      sd_printf("forward !seqLen\n",0);
       // ff
-      for (int t = 0; t < sL; ++t)
+      for (sd::LongType t = 0; t < sL; ++t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t + 1), cSet->at(t + 1));
+      }
 
+      sd_printf("after forward !seqLen\n",0);
       // bp
-      for (int t = sL - 1; t >= 0; --t) {
+      for (sd::LongType t = sL - 1; t >= 0; --t) {
+        sd_printf(" forward !seqLen in time step %lld\n",t);
+
         const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
         const NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
         const NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL, zSet->at(t),
                         aSet->at(t), cSet->at(t + 1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
-      }
-    } else {  // seqLen is present
+        sd_printf("after  time step %lld\n",t);
 
-      for (int e = 0; e < bS; ++e) {
-        const int limit = seqLen->e<int>(e);
+      }
+
+
+      sd_printf("forward !seqLen after backprop\n",0);
+
+    } else {  // seqLen is present
+      sd_printf("forward seqLen\n",0);
+
+
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const sd::LongType limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1008,13 +1037,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
           cSet->at(e)->nullify();
 
         // ff
-        for (int t = 0; t < limit; ++t)
+        for (sd::LongType t = 0; t < limit; ++t) {
           lstmLayerCell(xSet->at(getBatchTimeTotalIndex(dataFormat, sL, bS, t, e)), Wx, Wr, b, hSet->at(t * bS + e),
                         cSet->at(t * bS + e), Wp, params, zSet->at(t * bS + e), aSet->at(t * bS + e),
                         hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e));
-
+        }
         // bp
-        for (int t = limit - 1; t >= 0; --t) {
+        for (sd::LongType t = limit - 1; t >= 0; --t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           const NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
@@ -1028,6 +1057,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
           tensorAlongTimeBatchDims(*dLdx, dataFormat, limit, sL, e, e + 1)
               .nullify();  // nullify for given e and time range [limit, sL)
       }
+
+      sd_printf("backward !seqLen\n",0);
+
     }
   } else {  // backward or bidirectional
 
@@ -1042,13 +1074,16 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       else
         cSet->at(sL)->nullify();
 
+      sd_printf("backward !seqLen\n",0);
       // ff
-      for (int t = sL - 1; t >= 0; --t)
+      for (sd::LongType t = sL - 1; t >= 0; --t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), cSet->at(t + 1), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t), cSet->at(t));
+      }
 
+      sd_printf("After backward !seqLen lstmLayerCell\n",0);
       // bp
-      for (int t = 0; t < sL; ++t) {
+      for (sd::LongType t = 0; t < sL; ++t) {
         const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
         const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
         const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
@@ -1056,10 +1091,15 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                         zSet->at(t), aSet->at(t), cSet->at(t), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb,
                         dLdWp);
       }
+
+
+      sd_printf("After backward !seqLen lstmLayerCell 2\n",0);
+
     } else if (directionMode == 1) {  // backward, seqLen is present
 
-      for (int e = 0; e < bS; ++e) {
-        const int limit = seqLen->e<int>(e);
+      sd_printf("directionMode 1\n",0);
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const sd::LongType limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1083,7 +1123,7 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                         aSet->at(t * bS + e), hSet->at(t * bS + e), cSet->at(t * bS + e));
 
         // bp
-        for (int t = sL - limit; t < sL; ++t) {
+        for (sd::LongType t = sL - limit; t < sL; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           const NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
@@ -1097,10 +1137,14 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, sL - limit, e, e + 1)
               .nullify();  // nullify for given e and time range [limit, sL)
       }
-    } else {  // bidirectional mode, seqLen is present
 
-      for (int e = 0; e < bS; ++e) {
-        const int limit = seqLen->e<int>(e);
+      sd_printf("after directionMode 1\n",0);
+
+    } else {  // bidirectional mode, seqLen is present
+      sd_printf("bidirectional mode \n",0);
+
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const int limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1124,7 +1168,7 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                         aSet->at(t * bS + e), hSet->at(t * bS + e), cSet->at(t * bS + e));
 
         // bp
-        for (int t = 0; t < limit; ++t) {
+        for (sd::LongType t = 0; t < limit; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
@@ -1138,6 +1182,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
           tensorAlongTimeBatchDims(*dLdx, dataFormat, limit, sL, e, e + 1)
               .nullify();  // nullify for given e and time range [limit, sL)
       }
+
+      sd_printf("after bidirectional mode \n",0);
+
     }
   }
 
@@ -1164,711 +1211,5 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 }  // namespace sd
 
 //////////////////////////////////////////////////////////////////////////
-// void lstmLayerCellBp(const NDArray* x,    const NDArray* Wx, const NDArray* Wr,
-//                      const NDArray* b,          NDArray* hI,       NDArray* cI, const NDArray* Wp, const NDArray*
-//                      dLdh, const std::vector<float>& params, const bool firstIter,
 
-//                      NDArray* dhIdcI, NDArray* dhIdWx, NDArray* dcIdWx, NDArray* dhIdWr, NDArray* dcIdWr,
-//                      NDArray* dhIdb, NDArray* dcIdb, NDArray* dhIdWp, NDArray* dcIdWp,
-//                      NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb,
-//                      NDArray* dLdWp) {
-
-//     /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
-//     /** the objective is to provide math-readable code **/
-
-//     // equations (no peephole connections)
-//     // zi = x × Wxi + hI × Wri + bi
-//     // zf = x × Wxf + hI × Wrf + bf
-//     // zg = x × Wxg + hI × Wrg + bg
-//     // zo = x × Wxo + hI × Wro + bo
-//     // i = act(zi)
-//     // f = act(zf)
-//     // g = actC(zg)
-//     // o = act(zo)
-//     // c = clip(f * cI + i * g)
-//     // h = o * actH(c)
-
-//     // equations (peephole connections are present)
-//     // zi = x × Wxi + hI × Wri + cI * Wpi + bi
-//     // zf = x × Wxf + hI × Wrf + cI * Wpf + bf
-//     // zg = x × Wxg + hI × Wrg + bg
-//     // zo = x × Wxo + hI × Wro + c  * Wpo + bo
-//     // i = act(zi)
-//     // f = act(zf)
-//     // g = actC(zg)
-//     // o = act(zo)
-//     // c = clip(f * cI + i * g)
-//     // h = o * actH(c)
-
-//     // IDs for activations: 0=tanh, 1=relu, 2=sigmoid, 3=affine, 4=leaky relu, 5= thresholded relu, 6=scaled tanh,
-//     7=hard sigmoid, 8=ELU, 9=softsign, 10=softplus
-
-//     // params[0] - dataFormat, ignore
-//     // params[1] - directionMode, ignore
-//     // params[2] - cell clipping value, if it = 0 then do not apply clipping
-
-//     // params[3]  - activation ID for input (i), forget (f) and output (o) gates
-//     // params[4]  - alpha value for gates activation
-//     // params[5]  - beta value for gates activation
-
-//     // params[6]  - activation ID for cell state (c)
-//     // params[7]  - alpha value for cell state activation
-//     // params[8]  - beta value for cell state activation
-
-//     // params[9]  - activation ID for output (h)
-//     // params[10] - alpha value for output activation
-//     // params[11] - beta value for output activation
-
-//     // INPUTS:
-//     // x    - current input at time t, [bS, nIn] or [nIn] if seqLen != nullptr
-//     // Wx   - input weights [nIn, 4*nOut]
-//     // Wr   - recurrent weights [nOut, 4*nOut]
-//     // b    - biases [4*nOut], optional, may be nullptr
-//     // hI   - (ht-1) previous (initial) output at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // cI   - (ct-1) previous (initial) cell state at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // Wp   - peephole weights [3*nOut], optional, may be nullptr
-//     // dLdh - loss derivative with respect to h, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // dhIdcI - derivative from previous time step, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // dhIdWx - derivative from previous time step (Jacobian), [nIn, 4*nOut, bS, nOut] or [nIn, 4*nOut, nOut] if
-//     seqLen != nullptr
-//     // dcIdWx - derivative from previous time step (Jacobian), [nIn, 4*nOut, bS, nOut] or [nIn, 4*nOut, nOut] if
-//     seqLen != nullptr
-//     // dhIdWr - derivative from previous time step (Jacobian), [nOut, 4*nOut, bS, nOut] or [nOut, 4*nOut, nOut] if
-//     seqLen != nullptr
-//     // dcIdWr - derivative from previous time step (Jacobian), [nOut, 4*nOut, bS, nOut] or [nOut, 4*nOut, nOut] if
-//     seqLen != nullptr
-//     // dcIdWp - derivative from previous time step, [3*nOut], optional, may be nullptr
-//     // dhIdWp - derivative from previous time step, [3*nOut], optional, may be nullptr
-//     // dcIdb  - derivative from previous time step, [4*nOut], optional, may be nullptr
-//     // dhIdb  - derivative from previous time step, [4*nOut], optional, may be nullptr
-
-//     // OUTPUTS:
-//     // dLdx  - loss derivative with respect to x, [bS, nIn] or [nIn] if seqLen != nullptr
-//     // dLdWx - loss derivative with respect to Wx, [nIn, 4*nOut]
-//     // dLdWr - loss derivative with respect to Wr, [nOut, 4*nOut]
-//     // dLdb  - loss derivative with respect to b, optional, may be nullptr, [4*nOut]
-//     // dLdhI - loss derivative with respect to hI, optional may be nullptr, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // dLdcI - loss derivative with respect to cI, optional may be nullptr, [bS, nOut] or [nOut] if seqLen != nullptr
-//     // dLdWp - loss derivative with respect to Wp, optional, may be nullptr,  [3*nOut]
-
-//     // !!! dimension 4*nOut implies order i, f, g, o
-//     // !!! dimension 3*nOut implies order i, f, o
-
-//     // dcdzi = dcdi*didzi
-//     // dcdzf = dcdf*dfdzf
-//     // dcdzg = dcdg*dgdzg
-//     // dhdzo = dhdo*dodzo
-
-//     // dhdc = dhdc + Wp ? dhdzo*dzodc : 0           [bS, nOut]
-//     // factor = dLdh*dhdc                           [bS, nOut]
-//     // iFactor = factor*dcdzi                       [bS, nOut]
-//     // fFactor = factor*dcdzf                       [bS, nOut]
-//     // eFactor = factor*dcdzg                       [bS, nOut]
-//     // oFactor = *dLdh*dhdzo                        [bS, nOut]
-
-//     // tempC   = dcdcI + Wp ? dcdzi*dzidcI + dcdzf*dzfdcI : 0;
-//     // tempIFE = dcdzi×WriT + dcdzf×WrfT + dcdzg×WrgT
-//     // tempO   = dhdzo×WroT
-
-//     // dhIdcI = dhdc_from_previous_time_step
-
-//     // dLdx   = iFactor×WxiT + fFactor×WxfT + eFactor×WxgT + oFactor×WxoT,      [bS, nIn]
-//     // dLdhI  = iFactor×WriT + fFactor×WrfT + eFactor×WrgT + oFactor×WroT,      [bS, nOut]
-//     // dLdcI  = factor*tempC + dLdhI * dhIdcI, dhIdcI=0 if firstIter,           [bS, nOut]
-
-//     // dcdWxi(dcIdWxi) = dcdzi*dzidWxi + tempIFE*dhIdWxi + tempC*dcIdWxi,           dcIdWxi=dhIdWxi= 0 if firstIter,
-//     [nIn, nOut, bS, nOut]
-//     // dcdWxf(dcIdWxf) = dcdzf*dzfdWxf + tempIFE*dhIdWxf + tempC*dcIdWxf,           dcIdWxf=dhIdWxf= 0 if firstIter,
-//     [nIn, nOut, bS, nOut]
-//     // dcdWxg(dcIdWxg) = dcdzg*dzgdWxg + tempIFE*dhIdWxg + tempC*dcIdWxg,           dcIdWxg=dhIdWxg= 0 if firstIter,
-//     [nIn, nOut, bS, nOut]
-//     // dcdWxo(dcIdWxo) =       0       + tempIFE*dhIdWxo + tempC*dcIdWxo;           dcIdWxo=dhIdWxo= 0 if firstIter,
-//     [nIn, nOut, bS, nOut]
-
-//     // dhdWxi(dhIdWxi) =       0       + dhdc*dcdWxi + tempO*dhIdWxi,           dhIdWxi= 0 if firstIter, [nIn, nOut,
-//     bS, nOut]
-//     // dhdWxf(dhIdWxf) =       0       + dhdc*dcdWxf + tempO*dhIdWxf,           dhIdWxf= 0 if firstIter, [nIn, nOut,
-//     bS, nOut]
-//     // dhdWxg(dhIdWxg) =       0       + dhdc*dcdWxg + tempO*dhIdWxg,           dhIdWxg= 0 if firstIter, [nIn, nOut,
-//     bS, nOut]
-//     // dhdWxo(dhIdWxo) = dhdzo*dzodWxo + dhdc*dcdWxo + tempO*dhIdWxo,           dhIdWxo= 0 if firstIter, [nIn, nOut,
-//     bS, nOut]
-
-//     // dhdWri(dhIdWri) =       0       + dhdc*dcdWri + tempO*dhIdWri,           dhIdWri= 0 if firstIter, [nOut, nOut,
-//     bS, nOut]
-//     // dhdWrf(dhIdWrf) =       0       + dhdc*dcdWrf + tempO*dhIdWrf,           dhIdWrf= 0 if firstIter, [nOut, nOut,
-//     bS, nOut]
-//     // dhdWrg(dhIdWrg) =       0       + dhdc*dcdWrg + tempO*dhIdWrg,           dhIdWrg= 0 if firstIter, [nOut, nOut,
-//     bS, nOut]
-//     // dhdWro(dhIdWro) = dhdzo*dzodWro + dhdc*dcdWro + tempO*dhIdWro,           dhIdWro= 0 if firstIter, [nOut, nOut,
-//     bS, nOut]
-
-//     // dcdWri(dcIdWri) = dcdzi*dzidWri + tempIFE*dhIdWri + tempC*dcIdWri,           dcIdWri=dhIdWri= 0 if firstIter,
-//     [nOut, nOut, bS, nOut]
-//     // dcdWrf(dcIdWrf) = dcdzf*dzfdWrf + tempIFE*dhIdWrf + tempC*dcIdWrf,           dcIdWri=dhIdWri= 0 if firstIter,
-//     [nOut, nOut, bS, nOut]
-//     // dcdWrg(dcIdWrg) = dcdzg*dzgdWrg + tempIFE*dhIdWrg + tempC*dcIdWrg,           dcIdWri=dhIdWri= 0 if firstIter,
-//     [nOut, nOut, bS, nOut]
-//     // dcdWro(dcIdWro) =       0       + tempIFE*dhIdWro + tempC*dcIdWro;           dcIdWro=dhIdWro= 0 if firstIter,
-//     [nOut, nOut, bS, nOut]
-
-//     // dcIdWpi = (dcdzi*cI + tempIFE*dhIdWpi + tempC*dcIdWpi).reduceALongFirstDim,  dcIdWpi=dhIdWpi= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-//     // dcIdWpf = (dcdzf*cI + tempIFE*dhIdWpf + tempC*dcIdWpf).reduceALongFirstDim,  dcIdWpf=dhIdWpf= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-//     // dcIdWpo = (0        + tempIFE*dhIdWpo + tempC*dcIdWpo).reduceALongFirstDim,  dcIdWpo=dhIdWpo= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-
-//     // dhdWpi(dhIdWpi) =(   0    + dhdc*dcdWpi + tempO*dhIdWpi).reduceALongFirstDim,           dhIdWpi= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-//     // dhdWpf(dhIdWpf) =(   0    + dhdc*dcdWpf + tempO*dhIdWpf).reduceALongFirstDim,           dhIdWpf= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-//     // dhdWpo(dhIdWpo) =(dhdzo*c + dhdc*dcdWpo + tempO*dhIdWpo).reduceALongFirstDim,           dhIdWpo= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-
-//     // dcdbi(dcIdbi) = (dcdzi + tempIFE*dhIdbi + tempC*dcIdbi).reduceALongFirstDim,           dcIdbi=dhIdbi= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-//     // dcdbf(dcIdbf) = (dcdzf + tempIFE*dhIdbf + tempC*dcIdbf).reduceALongFirstDim,           dcIdbf=dhIdbf= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-//     // dcdbg(dcIdbg) = (dcdzg + tempIFE*dhIdbg + tempC*dcIdbg).reduceALongFirstDim,           dcIdbg=dhIdbg= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-//     // dcdbo(dcIdbo) = (  0   + tempIFE*dhIdbo + tempC*dcIdbo).reduceALongFirstDim;           dcIdbo=dhIdbo= 0 if
-//     firstIter, [bS, nOut]->reduce->[bS]
-
-//     // dhdbi(dhIdbi) = (  0   + dhdc*dcdbi + tempO*dhIdbi).reduceALongFirstDim,           dhIdbi= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-//     // dhdbf(dhIdbf) = (  0   + dhdc*dcdbf + tempO*dhIdbf).reduceALongFirstDim,           dhIdbf= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-//     // dhdbg(dhIdbg) = (  0   + dhdc*dcdbg + tempO*dhIdbg).reduceALongFirstDim,           dhIdbg= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-//     // dhdbo(dhIdbo) = (dhdzo + dhdc*dcdbo + tempO*dhIdbo).reduceALongFirstDim,           dhIdbo= 0 if firstIter,
-//     [bS, nOut]->reduce->[bS]
-
-//     const sd::LongType nOut = Wx->sizeAt(-1) / 4;
-
-//     NDArray *Wpi(nullptr), *Wpf(nullptr), *Wpo(nullptr), *dcIdWpi(nullptr), *dcIdWpf(nullptr), *dcIdWpo(nullptr),
-//     *dhIdWpi(nullptr), *dhIdWpf(nullptr), *dhIdWpo(nullptr); if(Wp) {
-//         Wpi = new NDArray((*Wp)({0, nOut}));
-//         Wpf = new NDArray((*Wp)({nOut, 2*nOut}));
-//         Wpo = new NDArray((*Wp)({2*nOut, 3*nOut}));
-//         dhIdWpi = new NDArray((*dhIdWp)({0, nOut}));
-//         dhIdWpf = new NDArray((*dhIdWp)({nOut, 2*nOut}));
-//         dhIdWpo = new NDArray((*dhIdWp)({2*nOut, 3*nOut}));
-//         dcIdWpi = new NDArray((*dcIdWp)({0, nOut}));
-//         dcIdWpf = new NDArray((*dcIdWp)({nOut, 2*nOut}));
-//         dcIdWpo = new NDArray((*dcIdWp)({2*nOut, 3*nOut}));
-//     }
-
-//     NDArray *dcIdbi(nullptr), *dcIdbf(nullptr), *dcIdbg(nullptr), *dcIdbo(nullptr), *dhIdbi(nullptr),
-//     *dhIdbf(nullptr), *dhIdbg(nullptr), *dhIdbo(nullptr); if(b) {
-//         dhIdbi = new NDArray((*dhIdb)({0, nOut}));
-//         dhIdbf = new NDArray((*dhIdb)({nOut, 2*nOut}));
-//         dhIdbg = new NDArray((*dhIdb)({2*nOut, 3*nOut}));
-//         dhIdbo = new NDArray((*dhIdb)({3*nOut, 4*nOut}));
-//         dcIdbi = new NDArray((*dcIdb)({0, nOut}));
-//         dcIdbf = new NDArray((*dcIdb)({nOut, 2*nOut}));
-//         dcIdbg = new NDArray((*dcIdb)({2*nOut, 3*nOut}));
-//         dcIdbo = new NDArray((*dcIdb)({3*nOut, 4*nOut}));
-//     }
-
-//     NDArray dhIdWxi = x->rankOf() == 1 ? (*dhIdWx)({0,0,  0,nOut,        0,0}) : (*dhIdWx)({0,0,  0,nOut,        0,0,
-//     0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen != nullptr NDArray dhIdWxf = x->rankOf() == 1 ?
-//     (*dhIdWx)({0,0,  nOut,2*nOut,   0,0}) : (*dhIdWx)({0,0,  nOut,2*nOut,   0,0, 0,0});    // [nIn, nOut, bS, nOut]
-//     or [nIn, nOut, nOut] if seqLen != nullptr NDArray dhIdWxg = x->rankOf() == 1 ? (*dhIdWx)({0,0,  2*nOut,3*nOut,
-//     0,0}) : (*dhIdWx)({0,0,  2*nOut,3*nOut, 0,0, 0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen !=
-//     nullptr NDArray dhIdWxo = x->rankOf() == 1 ? (*dhIdWx)({0,0,  3*nOut,4*nOut, 0,0}) : (*dhIdWx)({0,0,
-//     3*nOut,4*nOut, 0,0, 0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen != nullptr
-
-//     NDArray dhIdWri = x->rankOf() == 1 ? (*dhIdWr)({0,0,  0,nOut,        0,0}) : (*dhIdWr)({0,0,  0,nOut,        0,0,
-//     0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut, nOut] if seqLen != nullptr NDArray dhIdWrf = x->rankOf() == 1
-//     ? (*dhIdWr)({0,0,  nOut,2*nOut,   0,0}) : (*dhIdWr)({0,0,  nOut,2*nOut,   0,0, 0,0});    // [nOut, nOut, bS,
-//     nOut] or [nOut, nOut, nOut] if seqLen != nullptr NDArray dhIdWrg = x->rankOf() == 1 ? (*dhIdWr)({0,0,
-//     2*nOut,3*nOut, 0,0}) : (*dhIdWr)({0,0,  2*nOut,3*nOut, 0,0, 0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut,
-//     nOut] if seqLen != nullptr NDArray dhIdWro = x->rankOf() == 1 ? (*dhIdWr)({0,0,  3*nOut,4*nOut, 0,0}) :
-//     (*dhIdWr)({0,0,  3*nOut,4*nOut, 0,0, 0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut, nOut] if seqLen !=
-//     nullptr
-
-//     NDArray dcIdWxi = x->rankOf() == 1 ? (*dcIdWx)({0,0,  0,nOut,        0,0}) : (*dcIdWx)({0,0,  0,nOut,        0,0,
-//     0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen != nullptr NDArray dcIdWxf = x->rankOf() == 1 ?
-//     (*dcIdWx)({0,0,  nOut,2*nOut,   0,0}) : (*dcIdWx)({0,0,  nOut,2*nOut,   0,0, 0,0});    // [nIn, nOut, bS, nOut]
-//     or [nIn, nOut, nOut] if seqLen != nullptr NDArray dcIdWxg = x->rankOf() == 1 ? (*dcIdWx)({0,0,  2*nOut,3*nOut,
-//     0,0}) : (*dcIdWx)({0,0,  2*nOut,3*nOut, 0,0, 0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen !=
-//     nullptr NDArray dcIdWxo = x->rankOf() == 1 ? (*dcIdWx)({0,0,  3*nOut,4*nOut, 0,0}) : (*dcIdWx)({0,0,
-//     3*nOut,4*nOut, 0,0, 0,0});    // [nIn, nOut, bS, nOut] or [nIn, nOut, nOut] if seqLen != nullptr
-
-//     NDArray dcIdWri = x->rankOf() == 1 ? (*dcIdWr)({0,0,  0,nOut,        0,0}) : (*dcIdWr)({0,0,  0,nOut,        0,0,
-//     0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut, nOut] if seqLen != nullptr NDArray dcIdWrf = x->rankOf() == 1
-//     ? (*dcIdWr)({0,0,  nOut,2*nOut,   0,0}) : (*dcIdWr)({0,0,  nOut,2*nOut,   0,0, 0,0});    // [nOut, nOut, bS,
-//     nOut] or [nOut, nOut, nOut] if seqLen != nullptr NDArray dcIdWrg = x->rankOf() == 1 ? (*dcIdWr)({0,0,
-//     2*nOut,3*nOut, 0,0}) : (*dcIdWr)({0,0,  2*nOut,3*nOut, 0,0, 0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut,
-//     nOut] if seqLen != nullptr NDArray dcIdWro = x->rankOf() == 1 ? (*dcIdWr)({0,0,  3*nOut,4*nOut, 0,0}) :
-//     (*dcIdWr)({0,0,  3*nOut,4*nOut, 0,0, 0,0});    // [nOut, nOut, bS, nOut] or [nOut, nOut, nOut] if seqLen !=
-//     nullptr
-
-//     NDArray WxiT = (*Wx)({0,0,  0,     nOut}).transpose();              // [nOut, nIn]
-//     NDArray WxfT = (*Wx)({0,0,  nOut,  2*nOut}).transpose();            // [nOut, nIn]
-//     NDArray WxgT = (*Wx)({0,0,  2*nOut,3*nOut}).transpose();            // [nOut, nIn]
-//     NDArray WxoT = (*Wx)({0,0,  3*nOut,4*nOut}).transpose();            // [nOut, nIn]
-
-//     NDArray WriT = (*Wr)({0,0,  0,     nOut}).transpose();              // [nOut, nOut]
-//     NDArray WrfT = (*Wr)({0,0,  nOut,  2*nOut}).transpose();            // [nOut, nOut]
-//     NDArray WrgT = (*Wr)({0,0,  2*nOut,3*nOut}).transpose();            // [nOut, nOut]
-//     NDArray WroT = (*Wr)({0,0,  3*nOut,4*nOut}).transpose();            // [nOut, nOut]
-
-//     // ***** feed forward step ***** //
-
-//     auto z = mmul(*x, *Wx) + mmul(*hI, *Wr);    //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS,
-//     4*nOut]
-//                                                 //or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
-//     // add biases if they are given
-//     if(b)
-//         z += *b;                                    // broadcast [bS, 4*nOut] + [4*nOut] = [bS, 4*nOut](or[4*nOut])
-
-//     auto zi = x->rankOf() == 1 ? z({0,        nOut}) : z({0,0, 0,        nOut});         // input gate i, [bS,
-//     nOut](or[nOut]) auto zf = x->rankOf() == 1 ? z({nOut,   2*nOut}) : z({0,0, nOut,   2*nOut});         // forget
-//     gate f, [bS, nOut](or[nOut]) auto zg = x->rankOf() == 1 ? z({2*nOut, 3*nOut}) : z({0,0, 2*nOut, 3*nOut}); // cell
-//     gate g, [bS, nOut](or[nOut]) auto zo = x->rankOf() == 1 ? z({3*nOut, 4*nOut}) : z({0,0, 3*nOut, 4*nOut}); //
-//     output gate o, [bS, nOut](or[nOut])
-
-//     // peephole connections for input and forget gates
-//     if(Wp) {
-//         zi += *cI * *Wpi;      // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
-//         zf += *cI * *Wpf;      // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
-//     }
-
-//     NDArray i = zi.ulike();        // [bS, nOut]
-//     NDArray f = zf.ulike();        // [bS, nOut]
-//     NDArray g = zg.ulike();        // [bS, nOut]
-//     applyActivation(zi, params[3], params[4], params[5], i);
-//     applyActivation(zf, params[3], params[4], params[5], f);
-//     applyActivation(zg, params[6], params[7], params[8], g);
-
-//     NDArray c = f * *cI + i * g;          // [bS, nOut] * [bS, nOut] + [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
-
-//     // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
-//     if(params[2] != 0)
-//         c.applyScalar(scalar::LstmClip, params[2], c);
-
-//     // peephole connections for output gate
-//     if(Wp)
-//         zo += c * *Wpo;    // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
-
-//     NDArray o = zo.ulike();     // [bS, nOut](or[nOut])
-//     applyActivation(zo, params[3], params[4], params[5], o);
-
-//     // ***** back prop step ***** //
-
-//     NDArray dWxJacobian = mmulJacobianWeightsDeriv(nOut, *x);       // [nIn,  nOut, bS, nOut] (or [nIn,  nOut, nOut])
-//     NDArray dWrJacobian = mmulJacobianWeightsDeriv(nOut, *hI);      // [nOut, nOut, bS, nOut] (or [nOut, nOut, nOut])
-
-//     // dodzo
-//     NDArray dodzo = zo.ulike();                                              // [bS, nOut](or[nOut])
-//     activationDeriv(zo, params[3], params[4], params[5], dodzo);
-
-//     // dhdzo = dhdo*dodzo = actH(c)*dodzo
-//     NDArray dhdzo = zo.ulike();                                              // [bS, nOut](or[nOut])
-//     applyActivation(c, params[9], params[10], params[11], dhdzo);            // actH(c)
-//     hI->assign(o*dhdzo);
-//     dhdzo *= dodzo;
-
-//     // dcdzi = dcdi*didzi
-//     NDArray dcdzi = zi.ulike();                                             // [bS, nOut](or[nOut])
-//     activationDeriv(zi, params[3], params[4], params[5], dcdzi);            // didzi
-//     dcdzi *= g;                                                             // dcdi = g*clipDeriv
-
-//     // dcdzf = dcdf*dfdzf
-//     NDArray dcdzf = zf.ulike();                                             // [bS, nOut](or[nOut])
-//     activationDeriv(zf, params[3], params[4], params[5], dcdzf);            // dfdzf
-//     dcdzf *= *cI;                                                           // dcdf = cI*clipDeriv
-
-//     // dcdzg = dcde*dedzg
-//     NDArray dcdzg = zg.ulike();                                             // [bS, nOut](or[nOut])
-//     activationDeriv(zg, params[6], params[7], params[8], dcdzg);            // dedzg
-//     dcdzg *= i;                                                             // dcdf = i*clipDeriv
-
-//     // dcdcI
-//     NDArray dcdcI = f.dup();                                                // [bS, nOut](or[nOut])
-
-//     // take into account possible deposit from clipping derivative
-//     clipDeriv(params[2], c, dcdzi, dcdzf, dcdzg, dcdcI);
-
-//     // dzodc
-//     NDArray* dzodc = Wpo;                           // [nOut], should be [bS, nOut] actually, however it will be
-//     broadcasted appropriately in future calcus (element-wise multiplication)
-
-//     // dzidcI
-//     NDArray* dzidcI = Wpi;                          // [nOut], should be [bS, nOut] actually, however it will be
-//     broadcasted appropriately in future calcus (element-wise multiplication)
-
-//     // dzfdcI
-//     NDArray* dzfdcI = Wpf;                          // [nOut], should be [bS, nOut] actually, however it will be
-//     broadcasted appropriately in future calcus (element-wise multiplication)
-
-//     // dhdc
-//     NDArray dhdc = c.ulike();
-//     activationDeriv(c, params[9], params[10], params[11], dhdc);    // [bS, nOut]
-//     dhdc *= o;
-//     if(Wp)
-//         dhdc += dhdzo* *dzodc;
-
-//     NDArray factor = *dLdh * dhdc;
-
-//     NDArray iFactor = factor*dcdzi;     // [bS, nOut](or[nOut])
-//     NDArray fFactor = factor*dcdzf;     // [bS, nOut](or[nOut])
-//     NDArray eFactor = factor*dcdzg;     // [bS, nOut](or[nOut])
-//     NDArray oFactor = *dLdh *dhdzo;     // [bS, nOut](or[nOut])
-
-//     NDArray tempC = dcdcI;
-//     if(Wp)
-//         tempC += dcdzi*(*dzidcI) + dcdzf*(*dzfdcI);
-
-//     // dLdx
-//     dLdx->assign(mmul(iFactor, WxiT) + mmul(fFactor, WxfT) + mmul(eFactor, WxgT) + mmul(oFactor, WxoT));    // [bS,
-//     nIn](or[nOut])
-//     // NDArray temp = c.ulike();
-//     // applyActivation(c, params[9], params[10], params[11], temp);            // actH(c)
-//     // dLdx->assign(mmul(o*(1-temp*temp)*g*i*(1-i), WxiT) + mmul(o*(1-temp*temp)*(*cI)*f*(1-f), WxfT) +
-//     mmul(o*(1-temp*temp)*i*g*(1-g), WxgT) + mmul(temp*o*(1-o), WxoT));    // [bS, nIn](or[nOut])
-
-//     // dLdhI
-//     NDArray* dLdhII = dLdhI;
-//     if(dLdcI && !dLdhI)
-//         dLdhII = new NDArray(dLdcI->ulike());
-//     dLdhII->assign(mmul(iFactor, WriT) + mmul(fFactor, WrfT) + mmul(eFactor, WrgT) + mmul(oFactor, WroT));   // [bS,
-//     nOut](or[nOut])
-
-//     if(firstIter) {
-
-//         // dLdcI
-//         if(dLdcI)
-//             dLdcI->assign(factor*tempC);                        // [bS, nOut](or[nOut])
-
-//         // dcIdWxi(dcdWxi)
-//         dcIdWxi.assign(dcdzi*dWxJacobian);      // broadcast [bS, nOut] * [nIn, nOut, bS, nOut] (or [nOut] * [nIn,
-//         nOut, nOut]);
-//         // dcIdWxf(dcdWxf)
-//         dcIdWxf.assign(dcdzf*dWxJacobian);
-//         // dcIdWxg(dcdWxg)
-//         dcIdWxg.assign(dcdzg*dWxJacobian);
-//         // dcIdWxo(dcdWxo) = 0
-//         dcIdWxo.nullify();
-
-//         // dhIdWxi
-//         dhIdWxi.assign(dhdc*dcIdWxi);           // broadcast [bS, nOut] * [nIn, nOut, bS, nOut] (or [nOut] * [nIn,
-//         nOut, nOut]);
-//         // dhIdWxf
-//         dhIdWxf.assign(dhdc*dcIdWxf);
-//         // dhIdWxg
-//         dhIdWxg.assign(dhdc*dcIdWxg);
-//         // dhIdWxo
-//         dhIdWxo.assign(dhdzo*dWxJacobian /*+ 0 */);
-
-//         // dcIdWri(dcdWri)
-//         dcIdWri.assign(dcdzi*dWrJacobian);      // broadcast [bS, nOut] * [nOut, nOut, bS, nOut](or [nOut] * [nIn,
-//         nOut, nOut]);;
-//         // dcIdWrf(dcdWrf)
-//         dcIdWrf.assign(dcdzf*dWrJacobian);
-//         // dcIdWrg(dcdWrg)
-//         dcIdWrg.assign(dcdzg*dWrJacobian);
-//         // dcIdWro(dcdWro) = 0
-//         dcIdWro.nullify();
-
-//         // dhIdWri
-//         dhIdWri.assign(dhdc*dcIdWri);           // broadcast [bS, nOut] * [nIn, nOut, bS, nOut] (or [nOut] * [nIn,
-//         nOut, nOut]);
-//         // dhIdWrf
-//         dhIdWrf.assign(dhdc*dcIdWrf);
-//         // dhIdWrg
-//         dhIdWrg.assign(dhdc*dcIdWrg);
-//         // dhIdWro
-//         dhIdWro.assign(dhdzo*dWrJacobian /*+ 0 */);
-
-//         if(Wp && x->rankOf() == 1) {
-//             // dcIdWpi
-//             dcIdWpi->assign(dcdzi*(*cI));       // [nOut] * [nOut]
-//             // dcIdWpf
-//             dcIdWpf->assign(dcdzf*(*cI));       // [nOut] * [nOut]
-//             // dcIdWpo
-//             dcIdWpo->nullify();                 // [nOut]
-
-//             // dhdWpi
-//             dhIdWpi->assign(dhdc*(*dcIdWpi));     // [nOut] * [nOut]
-//             // dhdWpf
-//             dhIdWpf->assign(dhdc*(*dcIdWpf));     // [nOut] * [nOut]
-//             // dhdWpo
-//             dhIdWpo->assign(dhdzo*c /* +0*/);     // [nOut] * [nOut]
-//         }
-//         else if(Wp) {
-//             // dcIdWpi
-//             (dcdzi*(*cI)).reduceAlongDimension(reduce::Sum, *dcIdWpi, {0});       // [bS, nOut]->reduce->[nOut]
-//             // dcIdWpf
-//             (dcdzf*(*cI)).reduceAlongDimension(reduce::Sum, *dcIdWpf, {0});       // [bS, nOut]->reduce->[nOut]
-//             // dcIdWpo
-//             dcIdWpo->nullify();                                                   // [nOut]
-
-//             // dhIdWpi
-//             (*dLdh*dhdc*(dcdzi*(*cI))).reduceAlongDimension(reduce::Sum, *dhIdWpi, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             // dhIdWpf
-//             (*dLdh*dhdc*(dcdzf*(*cI))).reduceAlongDimension(reduce::Sum, *dhIdWpf, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             // dhIdWpo
-//             (*dLdh*dhdzo*c /* +0*/).reduceAlongDimension(reduce::Sum, *dhIdWpo, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//         }
-
-//         if(b && x->rankOf() == 1) {
-//             // dcIdbi
-//             dcIdbi->assign(dcdzi);           // [nOut]
-//             // dcIdbf
-//             dcIdbf->assign(dcdzf);           // [nOut]
-//             // dcIdbg
-//             dcIdbg->assign(dcdzg);           // [nOut]
-//             // dcIdbo
-//             dcIdbo->nullify();               // [nOut]
-
-//             //dhIdbi
-//             dhIdbi->assign(dhdc*(*dcIdbi));     // [nOut]
-//             //dhIdbf
-//             dhIdbf->assign(dhdc*(*dcIdbf));     // [nOut]
-//             //dhIdbg
-//             dhIdbg->assign(dhdc*(*dcIdbg));     // [nOut]
-//             //dhIdbo
-//             dhIdbo->assign(dhdzo);              // [nOut]
-
-//         }
-//         else if(b) {
-//             // dcIdbi
-//             dcdzi.reduceAlongDimension(reduce::Sum, *dcIdbi, {0});       // [bS, nOut]->reduce->[nOut]
-//             // dcIdbf
-//             dcdzf.reduceAlongDimension(reduce::Sum, *dcIdbf, {0});       // [bS, nOut]->reduce->[nOut]
-//             // dcIdbg
-//             dcdzg.reduceAlongDimension(reduce::Sum, *dcIdbg, {0});       // [bS, nOut]->reduce->[nOut]
-//             // dcIdbo
-//             dcIdbo->nullify();                  // [nOut]
-
-//             //dhIdbi
-//             (*dLdh*dhdc*dcdzi).reduceAlongDimension(reduce::Sum, *dhIdbi, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             //dhIdbf
-//             (*dLdh*dhdc*dcdzf).reduceAlongDimension(reduce::Sum, *dhIdbf, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             //dhIdbg
-//             (*dLdh*dhdc*(*dcIdbg)).reduceAlongDimension(reduce::Sum, *dhIdbg, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             //dhIdbo
-//             (*dLdh*dhdzo).reduceAlongDimension(reduce::Sum, *dhIdbo, {0});     // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-
-//         }
-//     }
-//     else {
-
-//         NDArray tempIFE = mmul(dcdzi, WriT) + mmul(dcdzf, WrfT) + mmul(dcdzg, WrgT);
-//         NDArray tempO   = mmul(dhdzo, WroT);
-
-//         // dLdcI
-//         if(dLdcI)
-//             dLdcI->assign(factor*tempC + (*dLdhII)*(*dhIdcI));
-
-//         // dcIdWxi(dcdWxi)
-//         dcIdWxi.assign(dcdzi*dWxJacobian + tempIFE*dhIdWxi + tempC*dcIdWxi);       // broadcast [bS, nOut] * [nIn,
-//         nOut, bS, nOut](or [nOut] * [nIn, nOut, nOut]);
-//         // dcIdWxf(dcdWxf)
-//         dcIdWxf.assign(dcdzf*dWxJacobian + tempIFE*dhIdWxf + tempC*dcIdWxf);
-//         // dcIdWxg(dcdWxg)
-//         dcIdWxg.assign(dcdzg*dWxJacobian + tempIFE*dhIdWxg + tempC*dcIdWxg);
-//         // dcIdWxo(dcdWxo)
-//         dcIdWxo.assign(/* 0 + */tempIFE * dhIdWxo + tempC*dcIdWxo);
-
-//          // dhIdWxi
-//         dhIdWxi.assign(dhdc*dcIdWxi + tempO*dhIdWxi);                           // broadcast [bS, nOut] * [nIn, nOut,
-//         bS, nOut](or [nOut] * [nIn, nOut, nOut]);
-//         // dhIdWxf
-//         dhIdWxf.assign(dhdc*dcIdWxf + tempO*dhIdWxf);
-//         // dhIdWxg
-//         dhIdWxg.assign(dhdc*dcIdWxg + tempO*dhIdWxg);
-//         // dhIdWxo
-//         dhIdWxo.assign(dhdzo*dWxJacobian + dhdc*dcIdWxo + tempO*dhIdWxo);
-
-//         // dcIdWri(dcdWri)
-//         dcIdWri.assign(dcdzi*dWrJacobian + tempIFE*dhIdWri + tempC*dcIdWri);      // broadcast [bS, nOut] * [nOut,
-//         nOut, bS, nOut](or [nOut] * [nIn, nOut, nOut]);
-//         // dcIdWrf(dcdWrf)
-//         dcIdWrf.assign(dcdzf*dWrJacobian + tempIFE*dhIdWrf + tempC*dcIdWrf);
-//         // dcIdWrg(dcdWrg)
-//         dcIdWrg.assign(dcdzg*dWrJacobian + tempIFE*dhIdWrg + tempC*dcIdWrg);
-//         // dcIdWro(dcdWro)
-//         dcIdWro.assign(/* 0 + */tempIFE * dhIdWro + tempC*dcIdWro);
-
-//         // dhIdWri
-//         dhIdWri.assign(dhdc*dcIdWri + tempO*dhIdWri);                           // broadcast [bS, nOut] * [nOut,
-//         nOut, bS, nOut](or [nOut] * [nIn, nOut, nOut]);
-//         // dhIdWrf
-//         dhIdWrf.assign(dhdc*dcIdWrf + tempO*dhIdWrf);
-//         // dhIdWrg
-//         dhIdWrg.assign(dhdc*dcIdWrg + tempO*dhIdWrg);
-//         // dhIdWro
-//         dhIdWro.assign(dhdzo*dWrJacobian + dhdc*dcIdWro + tempO*dhIdWro);
-
-//         if(Wp && x->rankOf() == 1) {
-//             // dcIdWpi
-//             dcIdWpi->assign(dcdzi*(*cI) + tempIFE*(*dhIdWpi) + tempC*(*dcIdWpi));       // [nOut] * [nOut]
-//             // dcIdWpf
-//             dcIdWpf->assign(dcdzf*(*cI) + tempIFE*(*dhIdWpf) + tempC*(*dcIdWpf));       // [nOut] * [nOut]
-//             // dcIdWpo
-//             dcIdWpo->assign(/*  0 +  */   tempIFE*(*dhIdWpo) + tempC*(*dcIdWpo));       // [nOut] * [nOut]
-
-//             // dhdWpi
-//             dhIdWpi->assign(dhdc*(*dcIdWpi) + tempO*(*dhIdWpi));                // [nOut] * [nOut]
-//             // dhdWpf
-//             dhIdWpf->assign(dhdc*(*dcIdWpf) + tempO*(*dhIdWpf));                // [nOut] * [nOut]
-//             // dhdWpo
-//             dhIdWpo->assign(dhdzo*c + dhdc*(*dcIdWpo) + tempO*(*dhIdWpo));      // [nOut] * [nOut]
-//         }
-//         else if(Wp) {
-//             // dcIdWpi
-//             (dcdzi*(*cI) + tempIFE*(*dhIdWpi) + tempC*(*dcIdWpi)).reduceAlongDimension(reduce::Sum, *dcIdWpi, {0});
-//             // ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dcIdWpf
-//             (dcdzf*(*cI) + tempIFE*(*dhIdWpf) + tempC*(*dcIdWpf)).reduceAlongDimension(reduce::Sum, *dcIdWpf, {0});
-//             // ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dcIdWpo
-//             (/*  0 +  */   tempIFE*(*dhIdWpo) + tempC*(*dcIdWpo)).reduceAlongDimension(reduce::Sum, *dcIdWpo, {0});
-//             // ([bS, nOut] * [nOut])->reduce->[nOut]
-
-//             // dhIdWpi
-//             (dhdc*(*dcIdWpi) + tempO*(*dhIdWpi)).reduceAlongDimension(reduce::Sum, *dhIdWpi, {0});              //
-//             ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dhIdWpf
-//             (dhdc*(*dcIdWpf) + tempO*(*dhIdWpf)).reduceAlongDimension(reduce::Sum, *dhIdWpf, {0});              //
-//             ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dhIdWpo
-//             (dhdzo*c + dhdc*(*dcIdWpo) + tempO*(*dhIdWpo)).reduceAlongDimension(reduce::Sum, *dhIdWpo, {0});    //
-//             ([bS, nOut] * [nOut])->reduce->[nOut]
-//         }
-
-//         if(b && x->rankOf() == 1) {
-//             // dcIdbi
-//             dcIdbi->assign(dcdzi  + tempIFE*(*dhIdbi) + tempC*(*dcIdbi));           // [nOut]
-//             // dcIdbf
-//             dcIdbf->assign(dcdzf  + tempIFE*(*dhIdbf) + tempC*(*dcIdbf));           // [nOut]
-//             // dcIdbg
-//             dcIdbg->assign(dcdzg  + tempIFE*(*dhIdbg) + tempC*(*dcIdbg));           // [nOut]
-//             // dcIdbo
-//             dcIdbo->assign(/*0+*/   tempIFE*(*dhIdbo) + tempC*(*dcIdbo));           // [nOut]
-
-//             //dhIdbi
-//             dhIdbi->assign(dhdc*(*dcIdbi) + tempO*(*dhIdbi));           // [nOut]
-//             //dhIdbf
-//             dhIdbf->assign(dhdc*(*dcIdbf) + tempO*(*dhIdbf));           // [nOut]
-//             //dhIdbg
-//             dhIdbg->assign(dhdc*(*dcIdbg) + tempO*(*dhIdbg));           // [nOut]
-//             //dhIdbo
-//             dhIdbo->assign(dhdzo + dhdc*(*dcIdbo) + tempO*(*dhIdbo));   // [nOut]
-
-//         }
-//         else if(b) {
-//             // dcIdbi
-//             (dcdzi  + tempIFE*(*dhIdbi) + tempC*(*dcIdbi)).reduceAlongDimension(reduce::Sum, *dcIdbi, {0});       //
-//             [bS, nOut]->reduce->[nOut]
-//             // dcIdbf
-//             (dcdzf  + tempIFE*(*dhIdbf) + tempC*(*dcIdbf)).reduceAlongDimension(reduce::Sum, *dcIdbf, {0});       //
-//             [bS, nOut]->reduce->[nOut]
-//             // dcIdbg
-//             (dcdzg  + tempIFE*(*dhIdbg) + tempC*(*dcIdbg)).reduceAlongDimension(reduce::Sum, *dcIdbg, {0});       //
-//             [bS, nOut]->reduce->[nOut]
-//             // dcIdbo
-//             (/*0+*/   tempIFE*(*dhIdbo) + tempC*(*dcIdbo)).reduceAlongDimension(reduce::Sum, *dcIdbo, {0});       //
-//             [bS, nOut]->reduce->[nOut]
-
-//             //dhIdbi
-//             (dhdc*(*dcIdbi) + tempO*(*dhIdbi)).reduceAlongDimension(reduce::Sum, *dhIdbi, {0});         // ([bS,
-//             nOut] * [nOut])->reduce->[nOut]
-//             //dhIdbf
-//             (dhdc*(*dcIdbf) + tempO*(*dhIdbf)).reduceAlongDimension(reduce::Sum, *dhIdbf, {0});         // ([bS,
-//             nOut] * [nOut])->reduce->[nOut]
-//             //dhIdbg
-//             (dhdc*(*dcIdbg) + tempO*(*dhIdbg)).reduceAlongDimension(reduce::Sum, *dhIdbg, {0});         // ([bS,
-//             nOut] * [nOut])->reduce->[nOut]
-//             //dhIdbo
-//             (dhdzo + dhdc*(*dcIdbo) + tempO*(*dhIdbo)).reduceAlongDimension(reduce::Sum, *dhIdbo, {0}); // ([bS,
-//             nOut] * [nOut])->reduce->[nOut]
-
-//         }
-//     }
-
-//     const std::vector<int> dimsToExclude = x->rankOf() == 1 ? std::vector<int>({2}) : std::vector<int>({2, 3});
-
-//     // dLdWxi, dLdWxf, dLdWxg, dLdWxo
-//     (*dLdh*(*dhIdWx)).reduceAlongDimension(reduce::Sum, *dLdWx, dimsToExclude);
-
-//     // dLdWri, dLdWrf, dLdWrg, dLdWro
-//     (*dLdh*(*dhIdWr)).reduceAlongDimension(reduce::Sum, *dLdWr, dimsToExclude);
-
-//     // dLdWpi, dLdWpf, dLdWpo
-//     if(Wp) {
-//         if(x->rankOf() == 1) {
-//             (*dLdWp)({0, nOut}).assign(*dLdh*(*dhIdWpi));          // [nOut] * [nOut]
-//             (*dLdWp)({nOut, 2*nOut}).assign(*dLdh*(*dhIdWpf));     // [nOut] * [nOut]
-//             (*dLdWp)({2*nOut, 3*nOut}).assign(*dLdh*(*dhIdWpo));   // [nOut] * [nOut]
-//         }
-//         else {
-//             // NDArray temp1 = (*dLdWp)({0, nOut});
-//             // NDArray temp2 = (*dLdWp)({nOut, 2*nOut});
-//             // NDArray temp3 = (*dLdWp)({2*nOut, 3*nOut});
-//             // dhIdWpi->reduceAlongDimension(reduce::Sum, temp1, {0});       // ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dhIdWpf->reduceAlongDimension(reduce::Sum, temp2, {0});       // ([bS, nOut] * [nOut])->reduce->[nOut]
-//             // dhIdWpo->reduceAlongDimension(reduce::Sum, temp3, {0});       // ([bS, nOut] * [nOut])->reduce->[nOut]
-//             (*dLdWp)({0, nOut}).assign(dhIdWpi);
-//             (*dLdWp)({nOut, 2*nOut}).assign(dhIdWpf);
-//             (*dLdWp)({2*nOut, 3*nOut}).assign(dhIdWpo);
-//         }
-//     }
-
-//     // dLdbi, dLdbf, dLdbg, dLdbo
-//     if(b) {
-//         if(x->rankOf() == 1) {
-//             (*dLdb)({0, nOut}).assign(*dLdh*(*dhIdbi));          // [nOut] * [nOut]
-//             (*dLdb)({nOut, 2*nOut}).assign(*dLdh*(*dhIdbf));     // [nOut] * [nOut]
-//             (*dLdb)({2*nOut, 3*nOut}).assign(*dLdh*(*dhIdbg));   // [nOut] * [nOut]
-//             (*dLdb)({3*nOut, 4*nOut}).assign(*dLdh*(*dhIdbo));   // [nOut] * [nOut]
-//         }
-//         else {
-//             // NDArray temp1 = (*dLdb)({0, nOut});
-//             // NDArray temp2 = (*dLdb)({nOut, 2*nOut});
-//             // NDArray temp3 = (*dLdb)({2*nOut, 3*nOut});
-//             // NDArray temp4 = (*dLdb)({3*nOut, 4*nOut});
-//             // (*dLdh*(*dhIdbi)).reduceAlongDimension(reduce::Sum, temp1, {0});       // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             // (*dLdh*(*dhIdbf)).reduceAlongDimension(reduce::Sum, temp2, {0});       // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             // (*dLdh*(*dhIdbg)).reduceAlongDimension(reduce::Sum, temp3, {0});       // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             // (*dLdh*(*dhIdbo)).reduceAlongDimension(reduce::Sum, temp3, {0});       // ([bS, nOut] *
-//             [nOut])->reduce->[nOut]
-//             (*dLdb)({0, nOut}).assign(dhIdbi);
-//             (*dLdb)({nOut, 2*nOut}).assign(dhIdbf);
-//             (*dLdb)({2*nOut, 3*nOut}).assign(dhIdbg);
-//             (*dLdb)({3*nOut, 4*nOut}).assign(dhIdbo);
-//         }
-//     }
-
-//     //dhIdcI
-//     if(dLdcI)
-//         dhIdcI->assign(dhdc);
-
-//     cI->assign(c);
-
-//     if(dLdcI && !dLdhI)
-//         delete dLdhII;
-//     if(Wp) {
-//         delete Wpi; delete Wpf; delete Wpo; delete dcIdWpi; delete dcIdWpf; delete dcIdWpo; delete dhIdWpi; delete
-//         dhIdWpf; delete dhIdWpo;
-//     }
-//     if(b) {
-//         delete dcIdbi; delete dcIdbf; delete dcIdbg; delete dcIdbo; delete dhIdbi; delete dhIdbf; delete dhIdbg;
-//         delete dhIdbo;
-//     }
-// }
 #endif

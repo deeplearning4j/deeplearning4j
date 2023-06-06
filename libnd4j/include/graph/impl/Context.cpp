@@ -173,10 +173,12 @@ Variable *Context::getVariable(int idx) {
     auto type = DataTypeUtils::asString(array->dataType());
     float m = std::numeric_limits<float>::quiet_NaN();
     if (!array->isEmpty()) {
-      auto values = array->asIndexedString(16);
+      sd::LongType maxLen = sd::math::sd_min<sd::LongType>(16, array->lengthOf() - 1);
 
-      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s]; first values: %s\n",
-                this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str(), values.c_str());
+      sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
+                this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str());
+      array->printIndexedBuffer("Values",maxLen - 2);
+
     } else {
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
                 this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str(), m);
@@ -399,7 +401,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                                                   newShapeInfoCast)));
+                            newShapeInfoCast)));
 
   } else {
     array = new NDArray(nullptr, nullptr, newShapeInfoCast);
@@ -423,7 +425,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
     array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2,
                         sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                                                   newShapeCast2)));
+                            newShapeCast2)));
 
   else {
     array = new NDArray(nullptr, nullptr, newShapeCast2);

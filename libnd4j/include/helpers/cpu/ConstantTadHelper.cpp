@@ -45,9 +45,9 @@ TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, 
   return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
 }
 
-TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
+TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> *dimensions,
                                              const bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, const_cast<sd::LongType *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
+  return tadForDimensions(originalShape, const_cast<sd::LongType *>(dimensions->data()), dimensions->size(), keepUnitiesInShape);
 }
 
 TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
@@ -65,16 +65,17 @@ TadPack *ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::v
 TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
   const int deviceId = 0;
   if(descriptor == nullptr)
-    throw std::runtime_error("ConstantTadHelper::tadForDimensions: descriptor is nullptr!");
+    THROW_EXCEPTION("ConstantTadHelper::tadForDimensions: descriptor is nullptr!");
   std::lock_guard<std::mutex> lock(_mutex);
   if (_cache[deviceId].count(descriptor) == 0) {
     // if there's no TadPack matching this descriptor - create one
     const auto shapeInfo = descriptor->originalShape().toShapeInfo();
-    const int rank = shape::rank(shapeInfo);
-    const std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor->axis());
-    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
-    const int subArrRank =
-        (rank == dimsToExclude.size() || descriptor->areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
+    const sd::LongType rank = shape::rank(shapeInfo);
+    const std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor->axis().size(),descriptor->axis().data());
+
+    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, *dimsToExclude);
+    const sd::LongType subArrRank =
+        (rank == dimsToExclude->size() || descriptor->areUnitiesinShape()) ? rank : rank - dimsToExclude->size();
 
     auto sPtr = std::make_shared<PointerWrapper>(
         new sd::LongType[shape::shapeInfoLength(subArrRank)],
@@ -83,7 +84,7 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
         std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
 
     if (numOfSubArrs > 0)
-      shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(),
+      shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude->size(), dimsToExclude->data(),
                                             sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
                                             descriptor->areUnitiesinShape());
 
@@ -92,8 +93,11 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
     TadPack *t = new TadPack(shapeBuffer, offsetsBuffer, numOfSubArrs);
 
     _cache[deviceId][descriptor] = t;
+    delete dimsToExclude;
 
   }
+
+
   return _cache[deviceId][descriptor];
 
 // if there's no TadPack matching this descriptor - create one

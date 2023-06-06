@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
   auto output = OUTPUT_VARIABLE(0);
 
-  const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
+  const bool checkIndices = block.getBArguments()->empty() ? true : B_ARG(0);
 
   // Edge case: empty indices -> empty output
   if (indices != nullptr && indices->isEmpty()) {
@@ -44,19 +44,19 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     return sd::Status::OK;  // No op
   }
 
-  const int numOfIntArgs = block.numI();
+  const sd::LongType numOfIntArgs = block.numI();
 
-  std::vector<int> intArgs;
+  std::vector<sd::LongType> intArgs;
   if (block.width() > 2) {
-    intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
+    intArgs = INPUT_VARIABLE(2)->template asVectorT<sd::LongType>();
   } else {
     if (numOfIntArgs == 0)
       intArgs.emplace_back(0);
     else
-      for (int i = 0; i < numOfIntArgs; ++i) intArgs.emplace_back(block.getIArguments()->at(i));
+      for (sd::LongType i = 0; i < numOfIntArgs; i++) intArgs.emplace_back(block.getIArguments()->at(i));
   }
 
-  const int inputRank = input->rankOf();
+  const sd::LongType inputRank = input->rankOf();
   if (intArgs[0] < 0) intArgs[0] += inputRank;
 
   // input validation
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     NDArray* pIndices = indices;
     if (indices == nullptr)
       pIndices =
-          new NDArray(input->ordering(), {static_cast<int>(intArgs.size()) - 1},
+          new NDArray(input->ordering(), {static_cast<sd::LongType>(intArgs.size()) - 1},
                       std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
     const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
@@ -95,14 +95,14 @@ DECLARE_SHAPE_FN(gather) {
   auto inputShapeInfo = inputShape->at(0);
   sd::LongType* outputShapeInfo = nullptr;
 
-  int axis = 0;
+  sd::LongType axis = 0;
 
   if (block.width() > 2) {
-    axis = INPUT_VARIABLE(2)->e<int>(0);
+    axis = INPUT_VARIABLE(2)->e<sd::LongType>(0);
   } else
     axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 
-  int inputRank = shape::rank(inputShapeInfo);
+  sd::LongType inputRank = shape::rank(inputShapeInfo);
   if (axis < 0) axis += inputRank;
 
   REQUIRE_TRUE(axis < inputRank, 0,
@@ -114,35 +114,35 @@ DECLARE_SHAPE_FN(gather) {
   if (block.width() > 1) {
     auto indicesShapeInfo = inputShape->at(1);
 
-    int indicesRank = shape::rank(indicesShapeInfo);
+    sd::LongType indicesRank = shape::rank(indicesShapeInfo);
 
-    int outputRank = inputRank + indicesRank - 1;
+    sd::LongType outputRank = inputRank + indicesRank - 1;
 
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
     // fill output shapeInfo
     outputShapeInfo[0] = outputRank;
-    int shapeIdx = 1;
+    sd::LongType shapeIdx = 1;
 
-    for (int i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+    for (sd::LongType i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
 
-    for (int i = 0; i < indicesRank; ++i) outputShapeInfo[shapeIdx++] = indicesShapeInfo[i + 1];
+    for (sd::LongType i = 0; i < indicesRank; ++i) outputShapeInfo[shapeIdx++] = indicesShapeInfo[i + 1];
 
-    for (int i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+    for (sd::LongType i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
   } else if (block.numI() > 1) {
     int indicesRank = block.numI() == 2 ? 0 : 1;
 
-    int outputRank = inputRank + indicesRank - 1;
+    sd::LongType outputRank = inputRank + indicesRank - 1;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), sd::LongType);
 
     // building shape manually
     outputShapeInfo[0] = outputRank;
     int shapeIdx = 1;
-    for (int i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+    for (sd::LongType i = 0; i < axis; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
 
     if (block.numI() > 2) outputShapeInfo[shapeIdx++] = block.numI() - 1;
 
-    for (int i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
+    for (sd::LongType i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
   } else
     REQUIRE_TRUE(false, 0,
                  "GATHER op: indices should be provided either as additional input array or as IntArguments !");

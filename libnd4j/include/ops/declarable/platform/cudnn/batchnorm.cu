@@ -264,7 +264,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
     expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::Unsigned i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -434,7 +434,7 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
     expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::Unsigned i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,

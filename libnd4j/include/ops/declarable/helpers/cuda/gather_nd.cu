@@ -96,7 +96,7 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
     if (yLastDim != xRank) zCoordStart[yRank - 1] = coordToRestore;
 
     // construct coordinates for x
-    for (sd::Unsigned j = 0; j < yLastDim; ++j) xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];  // last stride
+    for (sd::LongType j = 0; j < yLastDim; ++j) xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];  // last stride
 
     const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
 

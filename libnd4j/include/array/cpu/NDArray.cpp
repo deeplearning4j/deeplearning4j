@@ -479,7 +479,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<Lon
 
   const sd::LongType rank = input.rankOf();     // xRank = zRank
   const sd::LongType zLen = output.lengthOf();  // xLen <= zLen
-  const sd::Unsigned repSize = repeats.size();
+  const sd::LongType repSize = repeats.size();
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {

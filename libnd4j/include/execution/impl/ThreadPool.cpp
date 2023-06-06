@@ -35,7 +35,6 @@ static void executionLoop_(int thread_id, BlockingQueue<CallableWithArguments *>
   while (true) {
     // this method blocks until there's something within queue
     auto c = queue->poll();
-    // sd_printf("ThreadPool: starting thread %i\n", c->threadId());
     switch (c->dimensions()) {
       case 0: {
         c->function_do()(c->threadId(), c->numThreads());
@@ -50,7 +49,6 @@ static void executionLoop_(int thread_id, BlockingQueue<CallableWithArguments *>
         auto args = c->arguments();
         c->function_2d()(c->threadId(), args[0], args[1], args[2], args[3], args[4], args[5]);
         c->finish();
-        // sd_printf("ThreadPool: finished thread %i\n", c->threadId());
       } break;
       case 3: {
         auto args = c->arguments();

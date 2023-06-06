@@ -135,7 +135,6 @@ DECLARE_SYN(concatv2, concat);
 
 DECLARE_TYPES(concat) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY);
-  // ->setSameMode(true);
 }
 
 //////////////////////////////////////////////////////////////////////////

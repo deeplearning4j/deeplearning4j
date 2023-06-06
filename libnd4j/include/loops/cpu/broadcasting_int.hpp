@@ -89,8 +89,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
     tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
   }
 
-  unsigned int tadLength = shape::length(xTadShapeShapeInfo);
-  unsigned int tads = shape::length(xShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(xTadShapeShapeInfo);
+  sd::LongType tads = shape::length(xShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = xTadShapeShapeInfo;
@@ -117,7 +117,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
     };
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {
@@ -125,7 +125,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
@@ -137,7 +137,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(oX[offset], y[offset]);
       }
@@ -153,7 +153,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
         oZ[zOffset] = OpType::op(oX[offset], y[offset]);
@@ -170,7 +170,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[offset], y[yOffset]);
@@ -187,7 +187,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[xOffset], y[offset]);
@@ -206,7 +206,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
@@ -242,8 +242,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
   }
 
   // int *resultStride = shape::stride(yTadShapeShapeInfo);
-  unsigned int tadLength = shape::length(yTadShapeShapeInfo);
-  unsigned int tads = shape::length(yShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
+  sd::LongType tads = shape::length(yShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = yTadShapeShapeInfo;
@@ -270,7 +270,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
     };
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {

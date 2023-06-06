@@ -143,12 +143,15 @@ int NDArrayList::counter() { return _counter++; }
 void NDArrayList::unstack(NDArray* array, int axis) {
   _axis = axis;
   std::vector<sd::LongType> args({axis});
-  auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
-  auto result = array->allTensorsAlongDimension(newAxis);
+   sd::LongType *axis2 = reinterpret_cast<sd::LongType *>(&axis);
+  auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(),1, axis2);
+  auto result = array->allTensorsAlongDimension(*newAxis);
   for (int e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
     write(e, new NDArray(chunk->dup(array->ordering())));
   }
+
+  delete newAxis;
 }
 
 NDArray* NDArrayList::stack() {
@@ -226,14 +229,16 @@ NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
   shape[_axis] = indices.size();
   // do we have to enforce C order here?
   auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
-  std::vector<sd::LongType> axis = ShapeUtils::evalDimsToExclude(shape.size(), {_axis});
-  auto tads = array->allTensorsAlongDimension(axis);
+  const sd::LongType *axis2 = const_cast<sd::LongType *>(&_axis);
+  std::vector<sd::LongType> *axis = ShapeUtils::evalDimsToExclude(shape.size(),1, axis2);
+  auto tads = array->allTensorsAlongDimension(*axis);
   int indicesSize = indices.size();
 
   if (tads.size() != indicesSize) throw std::runtime_error("Number of TADs should match number of indices");
 
   for (int e = 0; e < indicesSize; e++) tads.at(e)->assign(_chunks[indices[e]]);
 
+  delete axis;
   return array;
 }
 

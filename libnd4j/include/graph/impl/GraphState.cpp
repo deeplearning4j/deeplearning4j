@@ -86,7 +86,6 @@ sd::Status GraphState::attachOpToScope(int scopeId, int nodeId, ops::DeclarableO
       _variableSpace.putVariable(p.first(), p.second(), var);
     }
 
-    // sd_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
     node->pickInput(p.first(), p.second());
   }
 
@@ -130,7 +129,6 @@ sd::Status GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args)
       _variableSpace.putVariable(p.first(), p.second(), var);
     }
 
-    // sd_printf("Node_%i: adding input [%i:%i]\n", node->id(), p.first(), p.second());
     node->pickInput(p.first(), p.second());
     node->pickOutput(0, e);
   }

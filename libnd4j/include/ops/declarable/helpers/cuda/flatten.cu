@@ -39,7 +39,7 @@ static void SD_KERNEL flattenKernel(void **xBuffers, sd::LongType **xShapeInfos,
     auto xLength = shape::length(xShapeInfo);
 
     // each element of this input array has own place within common output array
-    for (sd::Unsigned i = threadIdx.x; i < xLength; i += blockDim.x)
+    for (sd::LongType i = threadIdx.x; i < xLength; i += blockDim.x)
       z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
   }
 }

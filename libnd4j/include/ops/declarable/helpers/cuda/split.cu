@@ -98,7 +98,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
       input.ews() == 1;
 
   if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
       luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -109,7 +109,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
 
     auto x = static_cast<const int8_t*>(input.specialBuffer());
 
-    for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf() * sizeofT;
       cudaMemcpyAsync(static_cast<int8_t*>(outArrs[i]->specialBuffer()), x, memAmountToCopy, cudaMemcpyDeviceToDevice,
                       *context->getCudaStream());

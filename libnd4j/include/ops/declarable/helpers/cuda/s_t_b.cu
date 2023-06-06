@@ -78,21 +78,21 @@ SD_KERNEL static void batchToSpaceCuda(const void* vx, const sd::LongType* xShap
 template <typename T>
 static void batchToSpaceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const sd::Unsigned cropBottom,
-                                     const sd::Unsigned cropLeft) {
+                                     void* vz, const sd::LongType* zShapeInfo, const sd::LongType cropBottom,
+                                     const sd::LongType cropLeft) {
   batchToSpaceCuda<T>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, cropBottom, cropLeft);
 }
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                       const sd::LongType* zShapeInfo, const sd::Unsigned cropBottom, const sd::Unsigned cropLeft),
+                       const sd::LongType* zShapeInfo, const sd::LongType cropBottom, const sd::LongType cropLeft),
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::Unsigned cropBottom,
-                  const sd::Unsigned cropTop, const sd::Unsigned cropLeft, const sd::Unsigned cropRight,
-                  const sd::Unsigned blockSize) {
+void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType cropBottom,
+                  const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight,
+                  const sd::LongType blockSize) {
   // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
   // oH = H - cropTop  - cropBottom
   // oW = W - cropLeft - cropRight
@@ -130,7 +130,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
 template <typename X, typename Y>
 SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                                          const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                         const sd::Unsigned numOfSpatialDims) {
+                                         const sd::LongType numOfSpatialDims) {
   // 4D example, numOfSpatialDims = 2
   // input [bS, H * blockShape[0], W * blockShape[1], iC]
   // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
@@ -182,7 +182,7 @@ template <typename X, typename Y>
 static void batchToSpaceNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                        const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const sd::Unsigned numOfSpatialDims) {
+                                       const sd::LongType* zShapeInfo, const sd::LongType numOfSpatialDims) {
   batchToSpaceNDCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                    zShapeInfo, numOfSpatialDims);
 }
@@ -190,7 +190,7 @@ BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                       const sd::Unsigned numOfSpatialDims),
+                       const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES, SD_INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -200,8 +200,8 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
   // cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
 
-  const sd::Unsigned rank = input.rankOf();
-  const sd::Unsigned numOfSpatialDims = blockShape.sizeAt(0);
+  const sd::LongType rank = input.rankOf();
+  const sd::LongType numOfSpatialDims = blockShape.sizeAt(0);
 
   //*** construct reshaping std::vector for first reshape of input array ***//
 
@@ -262,9 +262,9 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void spaceToBatchCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const sd::Unsigned padBottom,
-                                       const sd::Unsigned padTop, const sd::Unsigned padLeft,
-                                       const sd::Unsigned padRight) {
+                                       const sd::LongType* zShapeInfo, const sd::LongType padBottom,
+                                       const sd::LongType padTop, const sd::LongType padLeft,
+                                       const sd::LongType padRight) {
   // input [bS, H * blockSize - padBottom - padTop, W * blockSize - padLeft - padRight, iC]
   // output [bs, H * blockSize, W * blockSize, iC]
 
@@ -328,9 +328,9 @@ BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher,
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::Unsigned padBottom,
-                  const sd::Unsigned padTop, const sd::Unsigned padLeft, const sd::Unsigned padRight,
-                  const sd::Unsigned blockSize) {
+void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType padBottom,
+                  const sd::LongType padTop, const sd::LongType padLeft, const sd::LongType padRight,
+                  const sd::LongType blockSize) {
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
   // padLeft + padRight)/blockSize, iC]
 
@@ -370,7 +370,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
 template <typename X, typename Y>
 SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                                          const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                         const sd::Unsigned numOfSpatialDims) {
+                                         const sd::LongType numOfSpatialDims) {
   // x - input, y - padding, z - output
 
   // 4D example
@@ -410,7 +410,7 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const sd::LongType* xSh
 
     bool within = true;
 
-    for (sd::Unsigned j = 1; j <= numOfSpatialDims; ++j) {
+    for (sd::LongType j = 1; j <= numOfSpatialDims; ++j) {
       // yRank = 2, calculate offset manually
       const auto yOffset = (j - 1) * yShapeInfo[3];
       const auto padLeft = y[yOffset];
@@ -436,7 +436,7 @@ template <typename X, typename Y>
 static void spaceToBatchNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                        const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const sd::Unsigned numOfSpatialDims) {
+                                       const sd::LongType* zShapeInfo, const sd::LongType numOfSpatialDims) {
   spaceToBatchNDCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                    zShapeInfo, numOfSpatialDims);
 }
@@ -444,7 +444,7 @@ BUILD_DOUBLE_TEMPLATE(template void spaceToBatchNDCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                        const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                       const sd::Unsigned numOfSpatialDims),
+                       const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES, SD_INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -454,9 +454,9 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom +
   // padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
 
-  const sd::Unsigned rank = input.rankOf();
+  const sd::LongType rank = input.rankOf();
 
-  const sd::Unsigned numOfSpatialDims = blockShape.sizeAt(0);
+  const sd::LongType numOfSpatialDims = blockShape.sizeAt(0);
 
   //*** construct reshaping std::vector for first reshape of output array ***//
   std::vector<sd::LongType> temp(numOfSpatialDims + rank);

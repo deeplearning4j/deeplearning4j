@@ -49,8 +49,8 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
   t1 = static_cast<T>(1) / t1;
   T result = t1;
 
-  for (sd::Unsigned i = 1; i <= maxIter; ++i) {
-    const sd::Unsigned i2 = 2 * i;
+  for (sd::LongType i = 1; i <= maxIter; ++i) {
+    const sd::LongType i2 = 2 * i;
     aPlus2i = a + static_cast<T>(i2);
 
     // t1

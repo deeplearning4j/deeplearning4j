@@ -437,7 +437,6 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
@@ -556,10 +555,6 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_SINGLE_SELECTOR(
       xType, functions::reduce::ReduceSameFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
@@ -574,9 +569,6 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceBoolFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
@@ -591,10 +583,6 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext *lc, int opNum, const
                                          sd::LongType *dimension, sd::LongType dimensionLength) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce::ReduceLongFunction,
       ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension),
@@ -631,9 +619,6 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *hZShapeInfo, void *dZ,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES);
 }
@@ -646,9 +631,6 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_BOOL_TYPES);
@@ -662,9 +644,6 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext *lc, int opNum,
                                                const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
                         SD_LONG_TYPES);
@@ -692,10 +671,6 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext *lc, int opNum, co
                                             void *dZ, const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
@@ -720,10 +695,6 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
                                       void *dZ, const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  //Note here we continue due to numpy compat which
-  //expects an output for a reduce.
-  // numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-
   NativeOpExecutioner::execReduce3Scalar(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo,
                                          dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }

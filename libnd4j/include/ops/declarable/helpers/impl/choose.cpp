@@ -58,7 +58,6 @@ sd::NDArray* processCondition_(int mode, sd::NDArray* arg, sd::NDArray* comp, sd
         }
       }
     } else {
-      // REQUIRE_TRUE(comp.isSameShape(arg));
       // Other input for compare could be an ndarray or a secondary scalar
       // for comparison
       sd::NDArray arg1 = *arg;

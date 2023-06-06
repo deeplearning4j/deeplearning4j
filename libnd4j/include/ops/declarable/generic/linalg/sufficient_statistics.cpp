@@ -35,13 +35,13 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
   auto sum = OUTPUT_VARIABLE(1);
   auto squares = OUTPUT_VARIABLE(2);
 
-  std::vector<LongType> axis(axisVector->lengthOf());  //*block.getIArguments();
+  std::vector<LongType> axis(axisVector->lengthOf());
 
   // axis might be dynamic (i.e. tf mode)
   helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-  input->reduceAlongDimension(reduce::SquaredNorm, *squares, axis);
-  input->reduceAlongDimension(reduce::Sum, *sum, axis);
+  input->reduceAlongDimension(reduce::SquaredNorm, *squares, &axis);
+  input->reduceAlongDimension(reduce::Sum, *sum, &axis);
   auto count = NDArrayFactory::create(input->dataType(), input->lengthOf() / sum->lengthOf());
   dataCount->assign(count);
   if (block.numT() > 0) {
@@ -67,11 +67,10 @@ DECLARE_SHAPE_FN(sufficient_statistics) {
   auto input = INPUT_VARIABLE(0);
   helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-  // std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
   auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)));
-  auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+  auto sumShape = ShapeUtils::evalReduceShapeInfo('c', &axis, *input, false, false, block.workspace());
 
-  auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
+  auto squareShape = ShapeUtils::evalReduceShapeInfo('c', &axis, *input, false, false, block.workspace());
 
   auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
   if (block.numT() > 0)

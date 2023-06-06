@@ -288,7 +288,7 @@ size_t hash<std::pair<sd::LongType, samediff::Engine>>::operator()(
     const std::pair<sd::LongType, samediff::Engine>& k) const {
   using std::hash;
   auto res = std::hash<sd::LongType>()(k.first);
-  res ^= std::hash<int>()((int)k.second) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  res ^= std::hash<sd::LongType>()((sd::LongType)k.second) + 0x9e3779b9 + (res << 6) + (res >> 2);
   return res;
 }
 
@@ -296,7 +296,7 @@ size_t hash<std::pair<std::string, samediff::Engine>>::operator()(
     const std::pair<std::string, samediff::Engine>& k) const {
   using std::hash;
   auto res = std::hash<std::string>()(k.first);
-  res ^= std::hash<int>()((int)k.second) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  res ^= std::hash<sd::LongType>()((sd::LongType)k.second) + 0x9e3779b9 + (res << 6) + (res >> 2);
   return res;
 }
 }  // namespace std

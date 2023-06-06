@@ -302,8 +302,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * for immutable buffers for the dimensions.
          * This gives us a pointer which is passed around in libnd4j.
          */
-        val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-        val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = x.data() != null ?  x.data().opaqueBuffer() : null;
+        val zb = z.data() != null ? z.data().opaqueBuffer() : null;
         if (op instanceof Variance) {
             if (ret.isScalar()) {
                 loop.execSummaryStatsScalar(null, op.opNum(),
@@ -319,7 +319,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, z.dataType()),
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
 
-                            ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                            op.dimensions().data().opaqueBuffer(),
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                             null,
 
@@ -333,7 +333,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
         //pairwise reduction like similarity of two arrays
         else if (y != null && op.getOpType() == Op.Type.REDUCE3) {
-            val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
+            val yb =y.data().opaqueBuffer();
             yTadBuffers = tadManager.getTADOnlyShapeInfo(y, dimension);
             if (op.isComplexAccumulation()) {
                 try {
@@ -363,7 +363,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             getPointerForExtraArgs(op, z.dataType()),
                             yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                             zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                            op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
+                            (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                             null, null, null, null);
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
@@ -415,7 +416,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                                 getPointerForExtraArgs(op, x.dataType()),
                                 zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                                ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                                op.dimensions().data().opaqueBuffer(),
                                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                         break;
                     case REDUCE_SAME:
@@ -423,7 +424,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                                 getPointerForExtraArgs(op, z.dataType()),
                                 zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                                ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                                op.dimensions().data().opaqueBuffer(),
                                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                         break;
                     case REDUCE_BOOL:
@@ -431,7 +432,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                                 xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                                 getPointerForExtraArgs(op, x.dataType()),
                                 zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                                ((BaseCpuDataBuffer) op.dimensions().data()).getOpaqueDataBuffer(),
+                                op.dimensions().data().opaqueBuffer(),
                                 (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                         break;
                     default:
@@ -489,9 +490,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = x.data().opaqueBuffer();
+        val yb = y.data().opaqueBuffer();
+        val zb = z.data().opaqueBuffer();
         switch (op.getOpType()) {
             case SCALAR:
                 loop.execScalarTad(null, op.opNum(),
@@ -499,7 +500,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),null,
+                        op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -509,7 +511,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         zb, (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) op.y().shapeInfoDataBuffer().addressPointer(), null,
                         getPointerForExtraArgs(op, op.z().dataType()),
-                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
+                        op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                         (LongPointer) hostTadShapeInfo, (LongPointer) hostTadOffsets,
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
@@ -546,9 +549,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             return getZ(op, oc);
         }
 
-        val x = ((BaseCpuDataBuffer) getX(op, oc).data()).getOpaqueDataBuffer();
-        val scalar = ((BaseCpuDataBuffer) op.scalar().data()).getOpaqueDataBuffer();
-        val z = ((BaseCpuDataBuffer) getZ(op, oc).data()).getOpaqueDataBuffer();
+        val x = getX(op, oc).data().opaqueBuffer();
+        val scalar = op.scalar().data() .opaqueBuffer();
+        val z =  getZ(op, oc).data().opaqueBuffer();
 
 
         switch (op.getOpType()) {
@@ -660,9 +663,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
 
-            val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-            val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
-            val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+            val xb =  x.data().opaqueBuffer();
+            val yb = y.data().opaqueBuffer();
+            val zb = z.data().opaqueBuffer();
             ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
             ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
             switch (op.getOpType()) {
@@ -1351,7 +1354,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().addressPointer());
+                inputBuffers.put(cnt, in.data().opaqueBuffer());
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
@@ -1409,7 +1412,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         OpaqueShapeList ptrptr;
         try {
-            ptrptr = loop.calculateOutputShapes2(null,
+            ptrptr = loop.calculateOutputShapes3(null,
                     hash, inputBuffers, inputShapes, nIn, tArgs,
                     nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
@@ -1638,6 +1641,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 ((UserDefinedCustomOp) op).exec(context);
                 return context.getOutputArrays().toArray(new INDArray[0]);
             }
+
+
 
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
 

@@ -66,7 +66,8 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
                rank, dim);
 
 
-  auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, {dim}, true);
+  std::vector<sd::LongType> dimVector = {dim};
+  auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, &dimVector, true);
   gradI->assign(*gradI * (*gradO - sumAlongDim));
 
   return sd::Status::OK;

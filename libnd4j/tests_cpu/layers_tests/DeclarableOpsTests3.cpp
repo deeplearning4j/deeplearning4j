@@ -1864,9 +1864,9 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
@@ -1908,9 +1908,9 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
@@ -1952,9 +1952,9 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
@@ -1996,9 +1996,9 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
@@ -2040,9 +2040,9 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
@@ -2104,9 +2104,9 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
@@ -2325,9 +2325,9 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 //     ASSERT_TRUE(expV.equalsTo(v));
 // }
 // else {
-//     for(sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+//     for(sd::LongType i = 0; i < expU.lengthOf(); ++i)
 //         ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-//     for(sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+//     for(sd::LongType i = 0; i < expV.lengthOf(); ++i)
 //         ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
 // }
 
@@ -2408,9 +2408,9 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
@@ -2485,9 +2485,9 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
@@ -2532,9 +2532,9 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
     ASSERT_TRUE(expU.equalsTo(u));
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
-    for (sd::Unsigned i = 0; i < expU.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expU.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
-    for (sd::Unsigned i = 0; i < expV.lengthOf(); ++i)
+    for (sd::LongType i = 0; i < expV.lengthOf(); ++i)
       ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }

@@ -148,11 +148,12 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+    std::vector<sd::LongType> batchDimVec = {batchDim};
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,batchDimVec.data());
 
-    auto inSubArrsSet = input->allTensorsAlongDimension(dimensions);
-    auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
-
+    auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
+    auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
+    delete dimensions;
     for (int i = 0; i < inSubArrsSet.size(); ++i) {
       sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 
@@ -194,11 +195,11 @@ void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, 
 
 BUILD_SINGLE_TEMPLATE(template void reverseSequence_,
                       (sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
-                       int seqDim, const int batchDim),
+                          int seqDim, const int batchDim),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void reverseArray,
                       (sd::LaunchContext * context, void const* inArr, sd::LongType const* inShapeBuffer, void* outArr,
-                       sd::LongType const* outShapeBuffer, int numOfElemsToReverse),
+                          sd::LongType const* outShapeBuffer, int numOfElemsToReverse),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

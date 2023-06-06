@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
+      auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
       sum.applyTransform(transform::Neg, *gradX);
     } else {
       epsNext->applyTransform(transform::Neg, *gradX);
     }
 
     if (axisY.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisY);
+      auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else {
       gradY->assign(epsNext);

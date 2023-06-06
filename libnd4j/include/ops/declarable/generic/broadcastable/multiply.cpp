@@ -101,14 +101,14 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     y->tile(yTiled);
     std::vector<sd::LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
-    dLdy->assign((*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY));
+    dLdy->assign((*x * *dLdz).reduceAlongDimension(reduce::Sum, &axesForY));
     yTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
   } else if (y->isSameShape(dLdz)) {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     x->tile(xTiled);
     std::vector<sd::LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
 
-    dLdx->assign((*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX));
+    dLdx->assign((*y * *dLdz).reduceAlongDimension(reduce::Sum, &axesForX));
     xTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
   } else {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
@@ -118,8 +118,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     std::vector<sd::LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
     std::vector<sd::LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
-    dLdx->assign((*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX));
-    dLdy->assign((*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY));
+    dLdx->assign((*y * *dLdz).reduceAlongDimension(reduce::Sum, &axesForX));
+    dLdy->assign((*x * *dLdz).reduceAlongDimension(reduce::Sum, &axesForY));
   }
 
   return sd::Status::OK;

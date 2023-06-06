@@ -54,5 +54,5 @@ const sd::LongType* TadPack::platformOffsets() const {
   return sd::Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
 }
 
-int TadPack::shapeInfoLength() const { return (int)shape::shapeInfoLength(primaryShapeInfo()); }
+sd::LongType TadPack::shapeInfoLength() const { return shape::shapeInfoLength(primaryShapeInfo()); }
 }  // namespace sd

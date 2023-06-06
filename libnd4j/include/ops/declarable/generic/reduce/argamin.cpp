@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(argamin) {
   }
 
   return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));
+      ShapeUtils::evalReduceShapeInfo('c', &dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));
 }
 }  // namespace ops
 }  // namespace sd
