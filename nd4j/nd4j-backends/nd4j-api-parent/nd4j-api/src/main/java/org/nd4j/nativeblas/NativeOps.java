@@ -23,6 +23,7 @@ package org.nd4j.nativeblas;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
 
+import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
@@ -106,12 +107,12 @@ public interface NativeOps {
     void execIndexReduceScalar(PointerPointer extraPointers,
                                int opNum,
                                OpaqueDataBuffer x,
-                               @Cast("sd::LongType *") LongPointer xShapeInfo,
-                               @Cast("sd::LongType *") LongPointer dXShapeInfo,
+                                LongPointer xShapeInfo,
+                                LongPointer dXShapeInfo,
                                Pointer extraParams,
                                OpaqueDataBuffer z,
-                               @Cast("sd::LongType *") LongPointer zShapeInfo,
-                               @Cast("sd::LongType *") LongPointer dZShapeInfo);
+                                LongPointer zShapeInfo,
+                                LongPointer dZShapeInfo);
 
     /**
      *
@@ -131,15 +132,15 @@ public interface NativeOps {
     void execIndexReduce(PointerPointer extraPointers,
                          int opNum,
                          OpaqueDataBuffer x,
-                         @Cast("sd::LongType *") LongPointer xShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dXShapeInfo,
+                          LongPointer xShapeInfo,
+                          LongPointer dXShapeInfo,
                          Pointer extraParams,
                          OpaqueDataBuffer result,
-                         @Cast("sd::LongType *") LongPointer resultShapeInfoBuffer,
-                         @Cast("sd::LongType *") LongPointer dResultShapeInfoBuffer,
+                          LongPointer resultShapeInfoBuffer,
+                          LongPointer dResultShapeInfoBuffer,
                          OpaqueDataBuffer hDimension,
-                         @Cast("sd::LongType *") LongPointer hDimensionShape,
-                         @Cast("sd::LongType *") LongPointer dDimensionShape);
+                          LongPointer hDimensionShape,
+                          LongPointer dDimensionShape);
 
     /**
      *
@@ -161,33 +162,33 @@ public interface NativeOps {
     void execBroadcast(PointerPointer extraPointers,
                        int opNum,
                        OpaqueDataBuffer x,
-                       @Cast("sd::LongType *") LongPointer xShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                        LongPointer xShapeInfo,
+                        LongPointer dxShapeInfo,
                        OpaqueDataBuffer y,
-                       @Cast("sd::LongType *") LongPointer yShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                        LongPointer yShapeInfo,
+                        LongPointer dyShapeInfo,
                        OpaqueDataBuffer result,
-                       @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                        LongPointer resultShapeInfo,
+                        LongPointer dresultShapeInfo,
                        OpaqueDataBuffer hDimension,
-                       @Cast("sd::LongType *") LongPointer hDimensionShape,
-                       @Cast("sd::LongType *") LongPointer dDimensionShape);
+                        LongPointer hDimensionShape,
+                        LongPointer dDimensionShape);
 
     void execBroadcastBool(PointerPointer extraPointers,
                            int opNum,
                            OpaqueDataBuffer x,
-                           @Cast("sd::LongType *") LongPointer xShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                            LongPointer xShapeInfo,
+                            LongPointer dxShapeInfo,
                            OpaqueDataBuffer y,
-                           @Cast("sd::LongType *") LongPointer yShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                            LongPointer yShapeInfo,
+                            LongPointer dyShapeInfo,
                            OpaqueDataBuffer result,
-                           @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                            LongPointer resultShapeInfo,
+                            LongPointer dresultShapeInfo,
                            Pointer extraParams,
                            OpaqueDataBuffer hDimension,
-                           @Cast("sd::LongType *") LongPointer hDimensionShape,
-                           @Cast("sd::LongType *") LongPointer dDimensionShape);
+                            LongPointer hDimensionShape,
+                            LongPointer dDimensionShape);
 
 
     /**
@@ -208,27 +209,27 @@ public interface NativeOps {
     void execPairwiseTransform(PointerPointer extraPointers,
                                int opNum,
                                OpaqueDataBuffer x,
-                               @Cast("sd::LongType *") LongPointer xShapeInfo,
-                               @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                                LongPointer xShapeInfo,
+                                LongPointer dxShapeInfo,
                                OpaqueDataBuffer y,
-                               @Cast("sd::LongType *") LongPointer yShapeInfo,
-                               @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                                LongPointer yShapeInfo,
+                                LongPointer dyShapeInfo,
                                OpaqueDataBuffer result,
-                               @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                               @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                                LongPointer resultShapeInfo,
+                                LongPointer dresultShapeInfo,
                                Pointer extraParams);
 
     void execPairwiseTransformBool(PointerPointer extraPointers,
                                    int opNum,
                                    OpaqueDataBuffer x,
-                                   @Cast("sd::LongType *") LongPointer xShapeInfo,
-                                   @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                                    LongPointer xShapeInfo,
+                                    LongPointer dxShapeInfo,
                                    OpaqueDataBuffer y,
-                                   @Cast("sd::LongType *") LongPointer yShapeInfo,
-                                   @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                                    LongPointer yShapeInfo,
+                                    LongPointer dyShapeInfo,
                                    OpaqueDataBuffer result,
-                                   @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                                   @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                                    LongPointer resultShapeInfo,
+                                    LongPointer dresultShapeInfo,
                                    Pointer extraParams);
 
     /**
@@ -242,45 +243,45 @@ public interface NativeOps {
     void execReduceFloat(PointerPointer extraPointers,
                          int opNum,
                          OpaqueDataBuffer x,
-                         @Cast("sd::LongType *") LongPointer xShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                          LongPointer xShapeInfo,
+                          LongPointer dxShapeInfo,
                          Pointer extraParams,
                          OpaqueDataBuffer result,
-                         @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dresultShapeInfo);
+                          LongPointer resultShapeInfo,
+                          LongPointer dresultShapeInfo);
 
 
     void execReduceSame(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         Pointer extraParams,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfo);
+                         LongPointer resultShapeInfo,
+                         LongPointer dresultShapeInfo);
 
 
     void execReduceBool(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         Pointer extraParams,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfo);
+                         LongPointer resultShapeInfo,
+                         LongPointer dresultShapeInfo);
 
 
     void execReduceLong(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         Pointer extraParams,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfo);
+                         LongPointer resultShapeInfo,
+                         LongPointer dresultShapeInfo);
 
     /**
      * @param opNum
@@ -293,55 +294,55 @@ public interface NativeOps {
     void execReduceFloat2(PointerPointer extraPointers,
                           int opNum,
                           OpaqueDataBuffer x,
-                          @Cast("sd::LongType *") LongPointer xShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                           LongPointer xShapeInfo,
+                           LongPointer dxShapeInfo,
                           Pointer extraParams,
                           OpaqueDataBuffer result,
-                          @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                           LongPointer resultShapeInfo,
+                           LongPointer dresultShapeInfo,
                           OpaqueDataBuffer hDimension,
-                          @Cast("sd::LongType *") LongPointer hDimensionShape,
-                          @Cast("sd::LongType *") LongPointer dDimensionShape);
+                           LongPointer hDimensionShape,
+                           LongPointer dDimensionShape);
 
 
     void execReduceSame2(PointerPointer extraPointers,
                          int opNum,
                          OpaqueDataBuffer x,
-                         @Cast("sd::LongType *") LongPointer xShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                          LongPointer xShapeInfo,
+                          LongPointer dxShapeInfo,
                          Pointer extraParams,
                          OpaqueDataBuffer result,
-                         @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                          LongPointer resultShapeInfo,
+                          LongPointer dresultShapeInfo,
                          OpaqueDataBuffer hDimension,
-                         @Cast("sd::LongType *") LongPointer hDimensionShape,
-                         @Cast("sd::LongType *") LongPointer dDimensionShape);
+                          LongPointer hDimensionShape,
+                          LongPointer dDimensionShape);
 
     void execReduceBool2(PointerPointer extraPointers,
                          int opNum,
                          OpaqueDataBuffer x,
-                         @Cast("sd::LongType *") LongPointer xShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                          LongPointer xShapeInfo,
+                          LongPointer dxShapeInfo,
                          Pointer extraParams,
                          OpaqueDataBuffer result,
-                         @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                          LongPointer resultShapeInfo,
+                          LongPointer dresultShapeInfo,
                          OpaqueDataBuffer hDimension,
-                         @Cast("sd::LongType *") LongPointer hDimensionShape,
-                         @Cast("sd::LongType *") LongPointer dDimensionShape);
+                          LongPointer hDimensionShape,
+                          LongPointer dDimensionShape);
 
     void execReduceLong2(PointerPointer extraPointers,
                          int opNum,
                          OpaqueDataBuffer x,
-                         @Cast("sd::LongType *") LongPointer xShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                          LongPointer xShapeInfo,
+                          LongPointer dxShapeInfo,
                          Pointer extraParams,
                          OpaqueDataBuffer result,
-                         @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                         @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                          LongPointer resultShapeInfo,
+                          LongPointer dresultShapeInfo,
                          OpaqueDataBuffer hDimension,
-                         @Cast("sd::LongType *") LongPointer hDimensionShape,
-                         @Cast("sd::LongType *") LongPointer dDimensionShape);
+                          LongPointer hDimensionShape,
+                          LongPointer dDimensionShape);
 
     /**
      * @param opNum
@@ -356,15 +357,15 @@ public interface NativeOps {
     void execReduce3(PointerPointer extraPointers,
                      int opNum,
                      OpaqueDataBuffer x,
-                     @Cast("sd::LongType *") LongPointer xShapeInfo,
-                     @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                      LongPointer xShapeInfo,
+                      LongPointer dxShapeInfo,
                      Pointer extraParamsVals,
                      OpaqueDataBuffer y,
-                     @Cast("sd::LongType *") LongPointer yShapeInfo,
-                     @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                      LongPointer yShapeInfo,
+                      LongPointer dyShapeInfo,
                      OpaqueDataBuffer result,
-                     @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                     @Cast("sd::LongType *") LongPointer dresultShapeInfo);
+                      LongPointer resultShapeInfo,
+                      LongPointer dresultShapeInfo);
 
     /**
      * @param opNum
@@ -376,15 +377,15 @@ public interface NativeOps {
      */
     void execReduce3Scalar(PointerPointer extraPointers, int opNum,
                            OpaqueDataBuffer x,
-                           @Cast("sd::LongType *") LongPointer xShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                            LongPointer xShapeInfo,
+                            LongPointer dxShapeInfo,
                            Pointer extraParamsVals,
                            OpaqueDataBuffer y,
-                           @Cast("sd::LongType *") LongPointer yShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                            LongPointer yShapeInfo,
+                            LongPointer dyShapeInfo,
                            OpaqueDataBuffer z,
-                           @Cast("sd::LongType *") LongPointer zShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dzShapeInfo);
+                            LongPointer zShapeInfo,
+                            LongPointer dzShapeInfo);
 
     /**
      *
@@ -411,40 +412,40 @@ public interface NativeOps {
     void execReduce3Tad(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         Pointer extraParamsVals,
                         OpaqueDataBuffer y,
-                        @Cast("sd::LongType *") LongPointer yShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                         LongPointer yShapeInfo,
+                         LongPointer dyShapeInfo,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfoBuffer,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfoBuffer,
+                         LongPointer resultShapeInfoBuffer,
+                         LongPointer dresultShapeInfoBuffer,
                         OpaqueDataBuffer hDimension,
-                        @Cast("sd::LongType *") LongPointer hDimensionShape,
-                        @Cast("sd::LongType *") LongPointer dDimensionShape,
-                        @Cast("sd::LongType *") LongPointer tadOnlyShapeInfo, @Cast("sd::LongType *") LongPointer tadOffsets,
-                        @Cast("sd::LongType *") LongPointer yTadOnlyShapeInfo, @Cast("sd::LongType *") LongPointer yTadOffsets);
+                         LongPointer hDimensionShape,
+                         LongPointer dDimensionShape,
+                         LongPointer tadOnlyShapeInfo,  LongPointer tadOffsets,
+                         LongPointer yTadOnlyShapeInfo,  LongPointer yTadOffsets);
 
     void execReduce3All(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         Pointer extraParamsVals,
                         OpaqueDataBuffer y,
-                        @Cast("sd::LongType *") LongPointer yShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dyShapeInfo,
+                         LongPointer yShapeInfo,
+                         LongPointer dyShapeInfo,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfoBuffer,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfoBuffer,
+                         LongPointer resultShapeInfoBuffer,
+                         LongPointer dresultShapeInfoBuffer,
                         OpaqueDataBuffer hDimension,
-                        @Cast("sd::LongType *") LongPointer hDimensionShape,
-                        @Cast("sd::LongType *") LongPointer dDimensionShape,
-                        @Cast("sd::LongType *") LongPointer xTadShape,
-                        @Cast("sd::LongType *") LongPointer xOffsets,
-                        @Cast("sd::LongType *") LongPointer yTadShape,
-                        @Cast("sd::LongType *") LongPointer yOffsets);
+                         LongPointer hDimensionShape,
+                         LongPointer dDimensionShape,
+                         LongPointer xTadShape,
+                         LongPointer xOffsets,
+                         LongPointer yTadShape,
+                         LongPointer yOffsets);
 
 
     /**
@@ -459,27 +460,27 @@ public interface NativeOps {
     void execScalar(PointerPointer extraPointers,
                     int opNum,
                     OpaqueDataBuffer x,
-                    @Cast("sd::LongType *") LongPointer xShapeInfo,
-                    @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                     LongPointer xShapeInfo,
+                     LongPointer dxShapeInfo,
                     OpaqueDataBuffer result,
-                    @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                    @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                     LongPointer resultShapeInfo,
+                     LongPointer dresultShapeInfo,
                     OpaqueDataBuffer scalar,
-                    @Cast("sd::LongType *") LongPointer scalarShapeInfo,
-                    @Cast("sd::LongType *") LongPointer dscalarShapeInfo,
+                     LongPointer scalarShapeInfo,
+                     LongPointer dscalarShapeInfo,
                     Pointer extraParams);
 
     void execScalarBool(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
-                        @Cast("sd::LongType *") LongPointer xShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                         LongPointer xShapeInfo,
+                         LongPointer dxShapeInfo,
                         OpaqueDataBuffer result,
-                        @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                         LongPointer resultShapeInfo,
+                         LongPointer dresultShapeInfo,
                         OpaqueDataBuffer scalar,
-                        @Cast("sd::LongType *") LongPointer scalarShapeInfo,
-                        @Cast("sd::LongType *") LongPointer dscalarShapeInfo,
+                         LongPointer scalarShapeInfo,
+                         LongPointer dscalarShapeInfo,
                         Pointer extraParams);
 
     /**
@@ -492,12 +493,12 @@ public interface NativeOps {
     void execSummaryStatsScalar(PointerPointer extraPointers,
                                 int opNum,
                                 OpaqueDataBuffer x,
-                                @Cast("sd::LongType *") LongPointer xShapeInfo,
-                                @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                                 LongPointer xShapeInfo,
+                                 LongPointer dxShapeInfo,
                                 Pointer extraParams,
                                 OpaqueDataBuffer z,
-                                @Cast("sd::LongType *") LongPointer zShapeInfo,
-                                @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                                 LongPointer zShapeInfo,
+                                 LongPointer dzShapeInfo,
                                 boolean biasCorrected);
 
     /**
@@ -512,12 +513,12 @@ public interface NativeOps {
     void execSummaryStats(PointerPointer extraPointers,
                           int opNum,
                           OpaqueDataBuffer x,
-                          @Cast("sd::LongType *") LongPointer xShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                           LongPointer xShapeInfo,
+                           LongPointer dxShapeInfo,
                           Pointer extraParams,
                           OpaqueDataBuffer result,
-                          @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                           LongPointer resultShapeInfo,
+                           LongPointer dresultShapeInfo,
                           boolean biasCorrected);
 
     /**
@@ -541,18 +542,18 @@ public interface NativeOps {
     void execSummaryStatsTad(PointerPointer extraPointers,
                              int opNum,
                              OpaqueDataBuffer x,
-                             @Cast("sd::LongType *") LongPointer xShapeInfo,
-                             @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                              LongPointer xShapeInfo,
+                              LongPointer dxShapeInfo,
                              Pointer extraParams,
                              OpaqueDataBuffer result,
-                             @Cast("sd::LongType *") LongPointer resultShapeInfoBuffer,
-                             @Cast("sd::LongType *") LongPointer dresultShapeInfoBuffer,
+                              LongPointer resultShapeInfoBuffer,
+                              LongPointer dresultShapeInfoBuffer,
                              OpaqueDataBuffer hDimension,
-                             @Cast("sd::LongType *") LongPointer hDimensionShape,
-                             @Cast("sd::LongType *") LongPointer dDimensionShape,
+                              LongPointer hDimensionShape,
+                              LongPointer dDimensionShape,
                              boolean biasCorrected,
-                             @Cast("sd::LongType *") LongPointer tadShapeInfo,
-                             @Cast("sd::LongType *") LongPointer tadOffsets);
+                              LongPointer tadShapeInfo,
+                              LongPointer tadOffsets);
 
 
     /**
@@ -570,51 +571,51 @@ public interface NativeOps {
     void execTransformFloat(PointerPointer extraPointers,
                             int opNum,
                             OpaqueDataBuffer x,
-                            @Cast("sd::LongType *") LongPointer xShapeInfo,
-                            @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                             LongPointer xShapeInfo,
+                             LongPointer dxShapeInfo,
                             OpaqueDataBuffer result,
-                            @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                            @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                             LongPointer resultShapeInfo,
+                             LongPointer dresultShapeInfo,
                             Pointer extraParams);
 
     void execTransformSame(PointerPointer extraPointers,
                            int opNum,
                            OpaqueDataBuffer x,
-                           @Cast("sd::LongType *") LongPointer xShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                            LongPointer xShapeInfo,
+                            LongPointer dxShapeInfo,
                            OpaqueDataBuffer result,
-                           @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                            LongPointer resultShapeInfo,
+                            LongPointer dresultShapeInfo,
                            Pointer extraParams);
 
     void execTransformStrict(PointerPointer extraPointers,
                              int opNum,
                              OpaqueDataBuffer x,
-                             @Cast("sd::LongType *") LongPointer xShapeInfo,
-                             @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                              LongPointer xShapeInfo,
+                              LongPointer dxShapeInfo,
                              OpaqueDataBuffer result,
-                             @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                             @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                              LongPointer resultShapeInfo,
+                              LongPointer dresultShapeInfo,
                              Pointer extraParams);
 
     void execTransformBool(PointerPointer extraPointers,
                            int opNum,
                            OpaqueDataBuffer x,
-                           @Cast("sd::LongType *") LongPointer xShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                            LongPointer xShapeInfo,
+                            LongPointer dxShapeInfo,
                            OpaqueDataBuffer result,
-                           @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                            LongPointer resultShapeInfo,
+                            LongPointer dresultShapeInfo,
                            Pointer extraParams);
 
     void execTransformAny(PointerPointer extraPointers,
                           int opNum,
                           OpaqueDataBuffer x,
-                          @Cast("sd::LongType *") LongPointer xShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                           LongPointer xShapeInfo,
+                           LongPointer dxShapeInfo,
                           OpaqueDataBuffer result,
-                          @Cast("sd::LongType *") LongPointer resultShapeInfo,
-                          @Cast("sd::LongType *") LongPointer dresultShapeInfo,
+                           LongPointer resultShapeInfo,
+                           LongPointer dresultShapeInfo,
                           Pointer extraParams);
 
     /**
@@ -642,49 +643,49 @@ public interface NativeOps {
     void execScalarTad(PointerPointer extraPointers,
                        int opNum,
                        OpaqueDataBuffer x,
-                       @Cast("sd::LongType *") LongPointer xShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                        LongPointer xShapeInfo,
+                        LongPointer dxShapeInfo,
                        OpaqueDataBuffer z,
-                       @Cast("sd::LongType *") LongPointer zShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                        LongPointer zShapeInfo,
+                        LongPointer dzShapeInfo,
                        OpaqueDataBuffer scalars,
-                       @Cast("sd::LongType *") LongPointer scalarShapeInfo,
-                       @Cast("sd::LongType *") LongPointer dscalarShapeInfo,
+                        LongPointer scalarShapeInfo,
+                        LongPointer dscalarShapeInfo,
                        Pointer extraParams,
                        OpaqueDataBuffer hDimension,
-                       @Cast("sd::LongType *") LongPointer hDimensionShape,
-                       @Cast("sd::LongType *") LongPointer dDimensionShape,
-                       @Cast("sd::LongType *") LongPointer tadShapeInfo,
-                       @Cast("sd::LongType *") LongPointer tadOffsets,
-                       @Cast("sd::LongType *") LongPointer tadShapeInfoZ,
-                       @Cast("sd::LongType *") LongPointer tadOffsetsZ);
+                        LongPointer hDimensionShape,
+                        LongPointer dDimensionShape,
+                        LongPointer tadShapeInfo,
+                        LongPointer tadOffsets,
+                        LongPointer tadShapeInfoZ,
+                        LongPointer tadOffsetsZ);
 
     void execScalarBoolTad(PointerPointer extraPointers,
                            int opNum,
                            OpaqueDataBuffer x,
-                           @Cast("sd::LongType *") LongPointer xShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                            LongPointer xShapeInfo,
+                            LongPointer dxShapeInfo,
                            OpaqueDataBuffer z,
-                           @Cast("sd::LongType *") LongPointer zShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                            LongPointer zShapeInfo,
+                            LongPointer dzShapeInfo,
                            OpaqueDataBuffer scalars,
-                           @Cast("sd::LongType *") LongPointer scalarShapeInfo,
-                           @Cast("sd::LongType *") LongPointer dscalarShapeInfo,
+                            LongPointer scalarShapeInfo,
+                            LongPointer dscalarShapeInfo,
                            Pointer extraParams,
                            OpaqueDataBuffer hDimension,
-                           @Cast("sd::LongType *") LongPointer hDimensionShape,
-                           @Cast("sd::LongType *") LongPointer dDimensionShape,
-                           @Cast("sd::LongType *") LongPointer tadShapeInfo,
-                           @Cast("sd::LongType *") LongPointer tadOffsets,
-                           @Cast("sd::LongType *") LongPointer tadShapeInfoZ,
-                           @Cast("sd::LongType *") LongPointer tadOffsetsZ);
+                            LongPointer hDimensionShape,
+                            LongPointer dDimensionShape,
+                            LongPointer tadShapeInfo,
+                            LongPointer tadOffsets,
+                            LongPointer tadShapeInfoZ,
+                            LongPointer tadOffsetsZ);
 
 
     void specialConcat(PointerPointer extraPointers,
                        int dimension,
                        int numArrays,
                        PointerPointer data, PointerPointer inputShapeInfo,
-                       Pointer results, @Cast("sd::LongType *") LongPointer resultShapeInfo,
+                       Pointer results,  LongPointer resultShapeInfo,
                        PointerPointer tadPointers,
                        PointerPointer tadOffsets);
 
@@ -799,26 +800,26 @@ public interface NativeOps {
 
     void pullRows(PointerPointer extraPointers,
                   OpaqueDataBuffer x,
-                  @Cast("sd::LongType *") LongPointer xShapeInfo,
-                  @Cast("sd::LongType *") LongPointer dxShapeInfo,
+                   LongPointer xShapeInfo,
+                   LongPointer dxShapeInfo,
                   OpaqueDataBuffer z,
-                  @Cast("sd::LongType *") LongPointer zShapeInfo,
-                  @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                   LongPointer zShapeInfo,
+                   LongPointer dzShapeInfo,
                   long n,
-                  @Cast("sd::LongType *") LongPointer indexes,
-                  @Cast("sd::LongType *") LongPointer tadShapeInfo,
-                  @Cast("sd::LongType *") LongPointer tadOffsets,
-                  @Cast("sd::LongType *") LongPointer zTadShapeInfo,
-                  @Cast("sd::LongType *") LongPointer zTadOffsets);
+                   LongPointer indexes,
+                   LongPointer tadShapeInfo,
+                   LongPointer tadOffsets,
+                   LongPointer zTadShapeInfo,
+                   LongPointer zTadOffsets);
 
 
     ///////////////////////
 
     void average(PointerPointer extraPointers,
-                 PointerPointer x, @Cast("sd::LongType *") LongPointer xShapeInfo,
-                 PointerPointer dx, @Cast("sd::LongType *") LongPointer dxShapeInfo,
-                 Pointer z, @Cast("sd::LongType *") LongPointer zShapeInfo,
-                 Pointer dz, @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                 PointerPointer x,  LongPointer xShapeInfo,
+                 PointerPointer dx,  LongPointer dxShapeInfo,
+                 Pointer z,  LongPointer zShapeInfo,
+                 Pointer dz,  LongPointer dzShapeInfo,
                  int n,
                  long length,
                  boolean propagate);
@@ -826,10 +827,10 @@ public interface NativeOps {
     ///////////////////////
 
     void accumulate(PointerPointer extraPointers,
-                    PointerPointer x, @Cast("sd::LongType *") LongPointer xShapeInfo,
-                    PointerPointer dx, @Cast("sd::LongType *") LongPointer dxShapeInfo,
-                    Pointer z, @Cast("sd::LongType *") LongPointer zShapeInfo,
-                    Pointer dz, @Cast("sd::LongType *") LongPointer dzShapeInfo,
+                    PointerPointer x,  LongPointer xShapeInfo,
+                    PointerPointer dx,  LongPointer dxShapeInfo,
+                    Pointer z,  LongPointer zShapeInfo,
+                    Pointer dz,  LongPointer dzShapeInfo,
                     int n,
                     long length);
 
@@ -844,10 +845,10 @@ public interface NativeOps {
     //
 
     void shuffle(PointerPointer extraPointers,
-                 PointerPointer x, @Cast("sd::LongType *") PointerPointer xShapeInfo,
-                 PointerPointer dx, @Cast("sd::LongType *") PointerPointer dxShapeInfo,
-                 PointerPointer z, @Cast("sd::LongType *") PointerPointer zShapeInfo,
-                 PointerPointer dz, @Cast("sd::LongType *") PointerPointer dzShapeInfo,
+                 PointerPointer x,  PointerPointer xShapeInfo,
+                 PointerPointer dx,  PointerPointer dxShapeInfo,
+                 PointerPointer z,  PointerPointer zShapeInfo,
+                 PointerPointer dz,  PointerPointer dzShapeInfo,
                  int N,
                  IntPointer shuffleMap,
                  PointerPointer tadShapeInfo,
@@ -868,12 +869,12 @@ public interface NativeOps {
                                                 int opTypeA, int opNumA,
                                                 int opTypeB, int opNumB,
                                                 long N,
-                                                Pointer x, @Cast("sd::LongType *") LongPointer xShape,
-                                                Pointer dx, @Cast("sd::LongType *") LongPointer dxShape,
-                                                Pointer y, @Cast("sd::LongType *") LongPointer yShape,
-                                                Pointer dy, @Cast("sd::LongType *") LongPointer dyShape,
-                                                Pointer z, @Cast("sd::LongType *") LongPointer zShape,
-                                                Pointer dz, @Cast("sd::LongType *") LongPointer dzShape,
+                                                Pointer x,  LongPointer xShape,
+                                                Pointer dx,  LongPointer dxShape,
+                                                Pointer y,  LongPointer yShape,
+                                                Pointer dy,  LongPointer dyShape,
+                                                Pointer z,  LongPointer zShape,
+                                                Pointer dz,  LongPointer dzShape,
                                                 Pointer extraA, Pointer extraB, double scalarA,
                                                 double scalarB);
 
@@ -903,33 +904,33 @@ public interface NativeOps {
                     int opNum,
                     Pointer state,
                     OpaqueDataBuffer z,
-                    @Cast("sd::LongType *") LongPointer zShapeBuffer,
-                    @Cast("sd::LongType *") LongPointer dzShapeBuffer,
+                     LongPointer zShapeBuffer,
+                     LongPointer dzShapeBuffer,
                     Pointer extraArguments);
 
     void execRandom3(PointerPointer extraPointers,
                      int opNum,
                      Pointer state,
                      OpaqueDataBuffer x,
-                     @Cast("sd::LongType *") LongPointer xShapeBuffer,
-                     @Cast("sd::LongType *") LongPointer dxShapeBuffer,
+                      LongPointer xShapeBuffer,
+                      LongPointer dxShapeBuffer,
                      OpaqueDataBuffer y,
-                     @Cast("sd::LongType *") LongPointer yShapeBuffer,
-                     @Cast("sd::LongType *") LongPointer dyShapeBuffer,
+                      LongPointer yShapeBuffer,
+                      LongPointer dyShapeBuffer,
                      OpaqueDataBuffer z,
-                     @Cast("sd::LongType *") LongPointer zShapeBuffer,
-                     @Cast("sd::LongType *") LongPointer dzShapeBuffer,
+                      LongPointer zShapeBuffer,
+                      LongPointer dzShapeBuffer,
                      Pointer extraArguments);
 
     void execRandom2(PointerPointer extraPointers,
                      int opNum,
                      Pointer state,
                      OpaqueDataBuffer x,
-                     @Cast("sd::LongType *") LongPointer xShapeBuffer,
-                     @Cast("sd::LongType *") LongPointer dxShapeBuffer,
+                      LongPointer xShapeBuffer,
+                      LongPointer dxShapeBuffer,
                      OpaqueDataBuffer z,
-                     @Cast("sd::LongType *") LongPointer zShapeBuffer,
-                     @Cast("sd::LongType *") LongPointer dzShapeBuffer,
+                      LongPointer zShapeBuffer,
+                      LongPointer dzShapeBuffer,
                      Pointer extraArguments);
 
     ////////////////////
@@ -1136,44 +1137,44 @@ public interface NativeOps {
 
 
 
-     void sortTad( PointerPointer extraPointers, Pointer hX, LongPointer hXShapeInfo, Pointer dX,
-                               LongPointer dXShapeInfo, LongPointer dimension,  long dimensionLength,
-                               LongPointer tadShapeInfo, LongPointer tadOffsets,  boolean descending);
-     void sortTad( PointerPointer extraPointers, Pointer hX, LongBuffer hXShapeInfo, Pointer dX,
-                               LongBuffer dXShapeInfo, LongBuffer dimension,  long dimensionLength,
-                               LongBuffer tadShapeInfo, LongBuffer tadOffsets,  boolean descending);
-     void sortTad( PointerPointer extraPointers, Pointer hX, long[] hXShapeInfo, Pointer dX,
-                               long[] dXShapeInfo, long[] dimension,long dimensionLength,
-                               long[] tadShapeInfo, long[] tadOffsets, boolean descending);
+    void sortTad( PointerPointer extraPointers, Pointer hX, LongPointer hXShapeInfo, Pointer dX,
+                  LongPointer dXShapeInfo, LongPointer dimension,  long dimensionLength,
+                  LongPointer tadShapeInfo, LongPointer tadOffsets,  boolean descending);
+    void sortTad( PointerPointer extraPointers, Pointer hX, LongBuffer hXShapeInfo, Pointer dX,
+                  LongBuffer dXShapeInfo, LongBuffer dimension,  long dimensionLength,
+                  LongBuffer tadShapeInfo, LongBuffer tadOffsets,  boolean descending);
+    void sortTad( PointerPointer extraPointers, Pointer hX, long[] hXShapeInfo, Pointer dX,
+                  long[] dXShapeInfo, long[] dimension,long dimensionLength,
+                  long[] tadShapeInfo, long[] tadOffsets, boolean descending);
 
-     void sortTadByKey( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dX,
-                                    LongPointer dXShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
-                                    LongPointer dyShapeInfo,  LongPointer dimension, long dimensionLength,boolean descending);
-     void sortTadByKey(PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dX,
-                                     LongBuffer dXShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
-                                    LongBuffer dyShapeInfo,LongBuffer dimension, long dimensionLength,  boolean descending);
-     void sortTadByKey( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dX,
-                                     long[] dXShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
-                                  long[] dyShapeInfo,  long[] dimension, long dimensionLength,  boolean descending);
+    void sortTadByKey( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dX,
+                       LongPointer dXShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
+                       LongPointer dyShapeInfo,  LongPointer dimension, long dimensionLength,boolean descending);
+    void sortTadByKey(PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dX,
+                      LongBuffer dXShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
+                      LongBuffer dyShapeInfo,LongBuffer dimension, long dimensionLength,  boolean descending);
+    void sortTadByKey( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dX,
+                       long[] dXShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
+                       long[] dyShapeInfo,  long[] dimension, long dimensionLength,  boolean descending);
 
-     void sortTadByValue( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dx,
-                                      LongPointer dxShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
-                                      LongPointer dyShapeInfo,  LongPointer dimension,
-                                       long dimensionLength,
-                                       boolean descending);
-     void sortTadByValue( PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dx,
-                                      LongBuffer dxShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
-                                      LongBuffer dyShapeInfo,  LongBuffer dimension,
-                                       long dimensionLength,
-                                       boolean descending);
-     void sortTadByValue( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dx,
-                                      long[] dxShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
-                                      long[] dyShapeInfo,  long[] dimension,
-                                       long dimensionLength,
-                                       boolean descending);
+    void sortTadByValue( PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, Pointer dx,
+                         LongPointer dxShapeInfo, Pointer y, LongPointer yShapeInfo, Pointer dy,
+                         LongPointer dyShapeInfo,  LongPointer dimension,
+                         long dimensionLength,
+                         boolean descending);
+    void sortTadByValue( PointerPointer extraPointers, Pointer x, LongBuffer xShapeInfo, Pointer dx,
+                         LongBuffer dxShapeInfo, Pointer y, LongBuffer yShapeInfo, Pointer dy,
+                         LongBuffer dyShapeInfo,  LongBuffer dimension,
+                         long dimensionLength,
+                         boolean descending);
+    void sortTadByValue( PointerPointer extraPointers, Pointer x, long[] xShapeInfo, Pointer dx,
+                         long[] dxShapeInfo, Pointer y, long[] yShapeInfo, Pointer dy,
+                         long[] dyShapeInfo,  long[] dimension,
+                         long dimensionLength,
+                         boolean descending);
 
 
-    void sortCooIndices(PointerPointer extraPointers, @Cast("sd::LongType *") LongPointer indices, Pointer x, long length, @Cast("sd::LongType *") LongPointer shapeInfo);
+    void sortCooIndices(PointerPointer extraPointers,  LongPointer indices, Pointer x, long length,  LongPointer shapeInfo);
 
 
     /**
@@ -1189,7 +1190,7 @@ public interface NativeOps {
      *                              1   wrap around shape
      *                              2   clip to shape
      */
-    void ravelMultiIndex(PointerPointer extraPointers, @Cast("sd::LongType *") LongPointer indices, @Cast("sd::LongType *") LongPointer flatIndices, long length, @Cast("sd::LongType *") LongPointer shapeInfo, int mode);
+    void ravelMultiIndex(PointerPointer extraPointers,  LongPointer indices,  LongPointer flatIndices, long length,  LongPointer shapeInfo, int mode);
 
     /**
      *
@@ -1199,7 +1200,7 @@ public interface NativeOps {
      * @param length            number of non-zero entries (length of flatIndices)
      * @param shapeInfo   DataBuffer with ShapeInfo for the full matrix to be unraveled
      */
-    void unravelIndex(PointerPointer extraPointers, @Cast("sd::LongType *") LongPointer indices, @Cast("sd::LongType *") LongPointer flatIndices, long length, @Cast("sd::LongType *") LongPointer shapeInfo);
+    void unravelIndex(PointerPointer extraPointers,  LongPointer indices,  LongPointer flatIndices, long length,  LongPointer shapeInfo);
 
 
     LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
@@ -1217,11 +1218,19 @@ public interface NativeOps {
 
     int execCustomOp2(PointerPointer extraPointers, long opHashCode, Pointer context);
 
-    int execCustomOp(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("sd::LongType *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, boolean isInplace);
+    int execCustomOp(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs, boolean isInplace);
 
-    OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("sd::LongType *") LongPointer iArgs, int numIArgs);
+    OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs);
 
-    OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("sd::LongType *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, @Cast("int *") IntPointer dArgs, int numDArgs);
+    OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs,  IntPointer dArgs, int numDArgs);
+
+
+
+    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes3(PointerPointer extraPointers,  long hash,
+                                                               PointerPointer inputBuffers,
+                                                               PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,
+                                                               LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs, IntPointer dArgs,
+                                                               int numDArgs);
 
     long getShapeListSize(OpaqueShapeList list);
     LongPointer getShape(OpaqueShapeList list, long i);
@@ -1268,11 +1277,11 @@ public interface NativeOps {
     int execCustomOpWithScope(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
 
     void scatterUpdate(PointerPointer extraPointers, int opCode, int numOfUpdates,
-                       Pointer hX, @Cast("sd::LongType *") LongPointer hXShapeInfo, @Cast("sd::LongType *") LongPointer hxOffsets,
-                       Pointer dX, @Cast("sd::LongType *") LongPointer dXShapeInfo, @Cast("sd::LongType *") LongPointer dxOffsets,
-                       Pointer hY, @Cast("sd::LongType *") LongPointer hYShapeInfo, @Cast("sd::LongType *") LongPointer hyOffsets,
-                       Pointer dY, @Cast("sd::LongType *") LongPointer dYShapeInfo, @Cast("sd::LongType *") LongPointer dyOffsets,
-                       Pointer hIndices, @Cast("sd::LongType *") LongPointer hIndicesShapeInfo, Pointer dIndices, @Cast("sd::LongType *") LongPointer dIndicesShapeInfo);
+                       Pointer hX,  LongPointer hXShapeInfo,  LongPointer hxOffsets,
+                       Pointer dX,  LongPointer dXShapeInfo,  LongPointer dxOffsets,
+                       Pointer hY,  LongPointer hYShapeInfo,  LongPointer hyOffsets,
+                       Pointer dY,  LongPointer dYShapeInfo,  LongPointer dyOffsets,
+                       Pointer hIndices,  LongPointer hIndicesShapeInfo, Pointer dIndices,  LongPointer dIndicesShapeInfo);
 
     //void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
     Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
@@ -1281,7 +1290,7 @@ public interface NativeOps {
     void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
 
 
-    void inspectArray(PointerPointer extraPointers, Pointer buffer, @Cast("sd::LongType *") LongPointer shapeInfo, Pointer specialBuffer, @Cast("sd::LongType *") LongPointer specialShapeInfo, @Cast("nd4j::DebugInfo *") Pointer debugInfo);
+    void inspectArray(PointerPointer extraPointers, Pointer buffer,  LongPointer shapeInfo, Pointer specialBuffer,  LongPointer specialShapeInfo, @Cast("nd4j::DebugInfo *") Pointer debugInfo);
 
     /**
      * this method tries to read numBytes bytes from buffer to provoke crash in certain scenarios
