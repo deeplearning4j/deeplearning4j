@@ -1898,7 +1898,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @Disabled(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testIsStrictlyIncShape(Nd4jBackend backend) {
@@ -2399,6 +2398,60 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         assertEquals(Nd4j.createFromArray(10,10),innerShape.eval());
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIndexInterval2(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create a linspace array with a shape of 2,2,5,5
+        INDArray arr = Nd4j.linspace(1, 100, 100).reshape(2,2,5,5);
+        INDArray expected = arr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(1, 6, 1, false), NDArrayIndex.interval(0, 5, 1, false));
+
+        // Create a SDVariable from the array
+        SDVariable paramsShape = sd.var(arr);
+
+        // Create an inner shape with given intervals
+        SDVariable innerShape = paramsShape.getView(
+                SDIndex.all(),
+                SDIndex.all(),
+                SDIndex.interval(sd.constant(1), sd.constant(6), sd.constant(1), sd.constant(0)),
+                SDIndex.interval(sd.constant(0), sd.constant(5), sd.constant(1), sd.constant(0))
+        );
+
+        // Perform the evaluation
+        INDArray result = innerShape.eval();
+
+        // Assert that the result matches the expected result
+        assertEquals(expected, result);
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIndexPoints(Nd4jBackend backend) {
+        SameDiff sd = SameDiff.create();
+
+        // Create a linspace array with a shape of 2,2,2,2,5,5
+        INDArray arr = Nd4j.linspace(1, 400, 400).reshape(2,2,2,2,5,5);
+        INDArray expected = arr.get(NDArrayIndex.point(0), NDArrayIndex.point(1));
+
+        // Create a SDVariable from the array
+        SDVariable paramsShape = sd.var(arr);
+
+        // Create an inner shape with given points
+        SDVariable innerShape = paramsShape.getView(
+                SDIndex.point(sd.constant(0)),
+                SDIndex.point(sd.constant(1))
+        );
+
+        // Perform the evaluation
+        INDArray result = innerShape.eval();
+
+        // Assert that the result matches the expected result
+        assertEquals(expected, result);
+    }
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

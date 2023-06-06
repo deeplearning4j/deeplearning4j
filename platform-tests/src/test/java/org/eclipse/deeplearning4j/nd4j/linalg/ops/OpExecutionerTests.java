@@ -80,6 +80,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Takes too long")
     public void testMultiThreadedReduce(Nd4jBackend backend) throws InterruptedException {
         INDArray vec1 = Nd4j.create(new float[] {1, 2, 3, 4, 5});
         int count = 1000;

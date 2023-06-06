@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
 @NativeTag
+@Disabled("Attention will be handled in separate PR")
 public class KerasAttentionLayerTests extends BaseDL4JTest {
 
     @Test

@@ -378,7 +378,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled //temporary till libnd4j implements general broadcasting
+
     public void testAutoBroadcastAdd(Nd4jBackend backend) {
         INDArray left = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,1,2,1);
         INDArray right = Nd4j.linspace(1,10,10, DataType.DOUBLE).reshape(2,1,5);
@@ -3499,7 +3499,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled //not relevant anymore
     public void testAssignMixedC(Nd4jBackend backend) {
         int[] shape1 = {3, 2, 2, 2, 2, 2};
         int[] shape2 = {12, 8};
@@ -5726,7 +5725,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
     @Tag(TagNames.NEEDS_VERIFY)
     public void testNativeSortAlongDimension1(Nd4jBackend backend) {
         INDArray array = Nd4j.create(1000, 1000);
@@ -8254,7 +8252,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(scalarRank2, scalarRank2.dup());
     }
 
-    //@Disabled // https://github.com/eclipse/deeplearning4j/issues/7632
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGetWhereINDArray(Nd4jBackend backend) {
