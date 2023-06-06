@@ -33,7 +33,7 @@
     <name>nd4j-tvm</name>
 
     <properties>
-        <tvm.version>0.10.0</tvm.version>
+        <tvm.version>0.12.0</tvm.version>
         <tvm.javacpp.version>${tvm.version}-${javacpp-presets.version}</tvm.javacpp.version>
         <module.name>nd4j.tvm</module.name>
     </properties>

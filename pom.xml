@@ -177,9 +177,9 @@
          <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
-        <javacpp.version>1.5.8</javacpp.version>
-        <javacpp-presets.version>1.5.8</javacpp-presets.version>
-        <javacv.version>1.5.8</javacv.version>
+        <javacpp.version>1.5.9</javacpp.version>
+        <javacpp-presets.version>1.5.9</javacpp-presets.version>
+        <javacv.version>1.5.9</javacv.version>
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
@@ -192,21 +192,19 @@
         <moditect.add.skip>false</moditect.add.skip>
         <moditect.version>1.0.0.RC2</moditect.version>
 
-        <python.version>3.10.8</python.version>
+        <python.version>3.11.3</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.23.4</numpy.version>
+        <numpy.version>1.24.3</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
-        <onnx.version>1.12.0</onnx.version>
+        <onnx.version>1.14.0</onnx.version>
         <onnx.javacpp.version>${onnx.version}-${javacpp-presets.version}</onnx.javacpp.version>
-        <openblas.version>0.3.21</openblas.version>
-        <mkl.version>2022.2</mkl.version>
-        <opencv.version>4.6.0</opencv.version>
-        <ffmpeg.version>5.1.2</ffmpeg.version>
-        <leptonica.version>1.82.0</leptonica.version>
-        <hdf5.version>1.12.2</hdf5.version>
-        <ale.version>0.7.3</ale.version>
+        <openblas.version>0.3.23</openblas.version>
+        <mkl.version>2023.1</mkl.version>
+        <opencv.version>4.7.0</opencv.version>
+        <hdf5.version>1.14.1</hdf5.version>
         <tensorflow.version>1.15.5</tensorflow.version>
-        <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
+        <!--- Hardcoded since TF1 isn't updating anymore-->
+        <tensorflow.javacpp.version>${tensorflow.version}-1.5.8</tensorflow.javacpp.version>
 
         <archunit.version>0.17</archunit.version>
         <commons-compress.version>1.21</commons-compress.version>
