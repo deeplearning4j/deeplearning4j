@@ -161,12 +161,12 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
     # using GCC
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,-z")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS}  -std=c++11")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,-z,,--verbose")
     # keep this, we need to ensure that all symbols are defined or it may fail on mac based platforms
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(APPLE) AND NOT(WIN32))
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
-        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic,--verbose")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic,--verbose")
     endif()
 
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
@@ -198,7 +198,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
         endif()
 
         # Set C++ compiler and flags
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Bsymbolic   -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread -MT  -Bsymbolic   -lbfd -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -262,9 +262,9 @@ if(SD_CUDA)
             # functrace works for cuda as well as long as the underlying compiler is gcc
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -MT -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
                 # note that cuda can't use -MT and -finstrument-functions
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
             else()
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
@@ -417,7 +417,11 @@ if(SD_CUDA)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-        target_link_libraries(${SD_LIBRARY_NAME}  ${CALLTRACE_LIBS}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
+        if(SD_SANITIZE)
+            set_target_properties(${SD_LIBRARY_NAME} PROPERTIES LINK_FLAGS --Wl,-z,stack-size=8192)
+
+        endif()
+        target_link_libraries(${SD_LIBRARY_NAME}   ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
         install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
@@ -647,7 +651,7 @@ elseif(SD_CPU OR SD_AURORA)
 
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME} ${CALLTRACE_LIBS}   ${EXTERNAL_DEPENDENCY_LIBS} ${CALL_STACK} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(${SD_LIBRARY_NAME}    ${EXTERNAL_DEPENDENCY_LIBS} ${CALL_STACK} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
         target_include_directories (${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
     endif()
 
