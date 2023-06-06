@@ -46,7 +46,7 @@ DECLARE_SHAPE_FN(matrix_diag_part) {
   REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
   int outRank = inRank - 1;
-  int lastDimension = sd::math::sd_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
+  int lastDimension = sd::math::sd_min(shape::sizeAt(in, static_cast<sd::LongType>(-1)), shape::sizeAt(in, static_cast<sd::LongType>(-2)));
   if (outRank == 1) {
     // output shape is a vector with size min(sizeAt(0), sizeAt(1))
     outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
@@ -54,7 +54,7 @@ DECLARE_SHAPE_FN(matrix_diag_part) {
     sd::LongType* anShapeInfo;
     ALLOCATE(anShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     anShapeInfo[0] = outRank;
-    for (int i = 0; i < outRank - 1; ++i) anShapeInfo[i + 1] = shape::sizeAt(in, i);
+    for (sd::LongType i = 0; i < outRank - 1; ++i) anShapeInfo[i + 1] = shape::sizeAt(in, i);
     anShapeInfo[outRank] = lastDimension;
 
     ShapeUtils::updateStridesAndType(anShapeInfo, in, shape::order(in));

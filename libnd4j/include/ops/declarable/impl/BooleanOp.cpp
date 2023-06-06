@@ -103,7 +103,8 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
   // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE
   std::pair<int, int> p(block->nodeId(), 0);
   auto var = block->isFastPath() ? block->fastpath_out()[0] : block->variable(p)->getNDArray();
-  var->p(sd::LongType(0), status == sd::Status::EQ_TRUE ? 1.0f : 0.0f);
+  if(!var->isEmpty())
+    var->p(sd::LongType(0), status == sd::Status::EQ_TRUE ? 1.0f : 0.0f);
 
   // for CPU backend that's nop, but for CUDA-like archs this will update special buffer
   var->syncToDevice();

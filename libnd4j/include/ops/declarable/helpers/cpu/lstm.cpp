@@ -118,7 +118,7 @@ static void fusedTanh(NDArray* z, NDArray* i, NDArray* c, const NDArray* cLast, 
   c->applyTransform(transform::Tanh, h);  //h = tanh(c)
    */
 
-  auto uLen = static_cast<sd::Unsigned>(z->lengthOf());
+  auto uLen = static_cast<sd::LongType>(z->lengthOf());
   auto c_ = c->bufferAsT<T>();
   auto z_ = z->bufferAsT<T>();
   auto i_ = i->bufferAsT<T>();

@@ -89,7 +89,7 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const sd::LongType* aShapeIn
 
     T3 val = A[aOffset] * B[bOffset];  // first iteration
 
-    for (sd::Unsigned j = 1; j < K; ++j) {  // rest iterations
+    for (sd::LongType j = 1; j < K; ++j) {  // rest iterations
       aOffset += shape::stride(aShapeInfo)[aKaxis];
       bOffset += shape::stride(bShapeInfo)[bKaxis];
       val = val + A[aOffset] * B[bOffset];
@@ -588,7 +588,7 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const sd::LongType* aShape
 
     T3 val = A[aOffset] * B[bOffset];  // first iteration
 
-    for (sd::Unsigned j = 1; j < K; ++j) {  // rest iterations
+    for (sd::LongType j = 1; j < K; ++j) {  // rest iterations
       aOffset += shape::stride(aShapeInfo)[aKaxis];
       bOffset += shape::stride(bShapeInfo)[bKaxis];
       val = val + A[aOffset] * B[bOffset];

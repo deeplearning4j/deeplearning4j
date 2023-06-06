@@ -42,7 +42,7 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const sd::LongType* xShapeI
   Z* z = reinterpret_cast<Z*>(vz);
 
   __shared__ sd::LongType xzRank, yRank, *sharedMem;
-  __shared__ sd::Unsigned iH, iW, kH, kW;
+  __shared__ sd::LongType iH, iW, kH, kW;
   __shared__ sd::LongType zLen;
 
   if (threadIdx.x == 0) {

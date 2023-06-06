@@ -29,8 +29,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchToSpace_(const NDArray& input, NDArray& output, const sd::Unsigned cropBottom,
-                          const sd::Unsigned cropTop, const sd::Unsigned cropLeft, const sd::Unsigned cropRight) {
+static void batchToSpace_(const NDArray& input, NDArray& output, const sd::LongType cropBottom,
+                          const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight) {
   // input [bS, H * blockSize, W * blockSize, iC]
   // output [bS, H * blockSize - cropBottom - cropTop, W * blockSize - cropLeft - cropRight, iC]
 
@@ -48,17 +48,17 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const sd::Unsig
   const sd::LongType* xShapeInfo = input.shapeInfo();
   const sd::LongType* zShapeInfo = output.shapeInfo();
 
-  const sd::Unsigned bS = xShapeInfo[1];
-  const sd::Unsigned iH = xShapeInfo[2];
-  const sd::Unsigned iW = xShapeInfo[3];
-  const sd::Unsigned iC = xShapeInfo[4];
+  const sd::LongType bS = xShapeInfo[1];
+  const sd::LongType iH = xShapeInfo[2];
+  const sd::LongType iW = xShapeInfo[3];
+  const sd::LongType iC = xShapeInfo[4];
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto b = start_x; b < stop_x; b += inc_x) {
       for (auto h = start_y; h < stop_y; h += inc_y) {
         for (auto w = start_z; w < stop_z; w += inc_z) {
-          for (sd::Unsigned c = 0; c < iC; ++c) {
+          for (sd::LongType c = 0; c < iC; ++c) {
             const sd::LongType xOffset = b * xShapeInfo[5] + h * xShapeInfo[6] + w * xShapeInfo[7] + c * xShapeInfo[8];
             const sd::LongType zOffset = b * zShapeInfo[5] + (h - cropBottom) * zShapeInfo[6] +
                                          (w - cropLeft) * zShapeInfo[7] + c * zShapeInfo[8];
@@ -74,14 +74,14 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const sd::Unsig
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpace_,
-                      (const NDArray& input, NDArray& output, const sd::Unsigned cropBottom, const sd::Unsigned cropTop,
-                       const sd::Unsigned cropLeft, const sd::Unsigned cropRight),
+                      (const NDArray& input, NDArray& output, const sd::LongType cropBottom, const sd::LongType cropTop,
+                       const sd::LongType cropLeft, const sd::LongType cropRight),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::Unsigned cropBottom,
-                  const sd::Unsigned cropTop, const sd::Unsigned cropLeft, const sd::Unsigned cropRight,
-                  const sd::Unsigned blockSize) {
+void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType cropBottom,
+                  const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight,
+                  const sd::LongType blockSize) {
   // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
   // oH = H - cropTop  - cropBottom
   // oW = W - cropLeft - cropRight
@@ -131,7 +131,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 
       // evaluate spatial coordinates for x
       for (sd::LongType j = 1; j <= numOfSpatialDims; ++j)
-        xCoords[j] += crop.e<sd::Unsigned>(j - 1, 0);  // add crop left
+        xCoords[j] += crop.e<sd::LongType>(j - 1, 0);  // add crop left
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
       const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
@@ -161,10 +161,10 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
   std::vector<sd::LongType> temp(numOfSpatialDims + rank);
 
-  sd::Unsigned i;
+  sd::LongType i;
   for (i = 0; i < numOfSpatialDims; ++i) temp[i] = blockShape.e<sd::LongType>(i);
   temp[i++] = output.sizeAt(0);
-  for (sd::Unsigned j = 1; j < rank; ++i, ++j) temp[i] = input.sizeAt(j);
+  for (sd::LongType j = 1; j < rank; ++i, ++j) temp[i] = input.sizeAt(j);
 
   NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
 
@@ -201,8 +201,8 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::Unsigned padBottom,
-                          const sd::Unsigned padTop, const sd::Unsigned padLeft, const sd::Unsigned padRight) {
+static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::LongType padBottom,
+                          const sd::LongType padTop, const sd::LongType padLeft, const sd::LongType padRight) {
   // input [bS, H * blockSize - padBottom - padTop, W * blockSize - padLeft - padRight, iC]
   // output [bS, H * blockSize, W * blockSize, iC]
 
@@ -220,10 +220,10 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::Unsig
   const sd::LongType* xShapeInfo = input.shapeInfo();
   const sd::LongType* zShapeInfo = output.shapeInfo();
 
-  const sd::Unsigned bS = zShapeInfo[1];
-  const sd::Unsigned oH = zShapeInfo[2];
-  const sd::Unsigned oW = zShapeInfo[3];
-  const sd::Unsigned iC = zShapeInfo[4];
+  const sd::LongType bS = zShapeInfo[1];
+  const sd::LongType oH = zShapeInfo[2];
+  const sd::LongType oW = zShapeInfo[3];
+  const sd::LongType iC = zShapeInfo[4];
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR_2D {
@@ -249,14 +249,14 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::Unsig
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatch_,
-                      (const NDArray& input, NDArray& output, const sd::Unsigned padBottom, const sd::Unsigned padTop,
-                       const sd::Unsigned padLeft, const sd::Unsigned padRight),
+                      (const NDArray& input, NDArray& output, const sd::LongType padBottom, const sd::LongType padTop,
+                       const sd::LongType padLeft, const sd::LongType padRight),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::Unsigned padBottom,
-                  const sd::Unsigned padTop, const sd::Unsigned padLeft, const sd::Unsigned padRight,
-                  const sd::Unsigned blockSize) {
+void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType padBottom,
+                  const sd::LongType padTop, const sd::LongType padLeft, const sd::LongType padRight,
+                  const sd::LongType blockSize) {
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
   // padLeft + padRight)/blockSize, iC]
 
@@ -311,7 +311,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
       bool within = true;
 
-      for (sd::Unsigned j = 1; j <= numOfSpatialDims; ++j) {
+      for (sd::LongType j = 1; j <= numOfSpatialDims; ++j) {
         const auto padLeft = padding.e<sd::LongType>(j - 1, 0);
         const auto padRight = padding.e<sd::LongType>(j - 1, 1);
 
@@ -344,9 +344,9 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom +
   // padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
 
-  const sd::Unsigned rank = input.rankOf();
+  const sd::LongType rank = input.rankOf();
 
-  const sd::Unsigned numOfSpatialDims = blockShape.sizeAt(0);
+  const sd::LongType numOfSpatialDims = blockShape.sizeAt(0);
 
   //*** construct reshaping std::vector for first reshape of output array ***//
   std::vector<sd::LongType> temp(numOfSpatialDims + rank);

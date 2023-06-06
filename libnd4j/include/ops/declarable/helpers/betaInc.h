@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-const sd::Unsigned maxIter =
+const sd::LongType maxIter =
     SD_MAX_NUM_THREADS /*articles propose 10000*/;  // max number of loop iterations in function for continued fractions
 
 SD_LIB_HIDDEN void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x,

@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(nth_element) {
     ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
     outShape = CONSTANT(outputShape);
   } else if (outRank == 1) {
-    outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
+    outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, static_cast<sd::LongType>(0)), ArrayOptions::dataType(in));
   } else {
     // outputShape = shape::createScalarShapeInfo();
     outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));

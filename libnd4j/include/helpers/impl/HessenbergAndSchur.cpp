@@ -57,7 +57,7 @@ void Hessenberg<T>::evalData() {
   NDArray hhCoeffs(_H.ordering(), {rows - 1}, _H.dataType(), _H.getContext());
 
   // calculate _H
-  for (sd::Unsigned i = 0; i < rows - 1; ++i) {
+  for (sd::LongType i = 0; i < rows - 1; ++i) {
     T coeff, norm;
 
     NDArray tail1 = _H({i + 1, -1, i, i + 1});

@@ -32,10 +32,10 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI, const int bS, const int iC,
-                               const int iH, const int iW, const int oC, const int oH, const int oW, const int kH,
-                               const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
-                               const int dW, const bool isNCHW, const int wFormat) {
+static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI, const sd::LongType bS, const sd::LongType iC,
+                               const sd::LongType iH, const sd::LongType iW, const sd::LongType oC, const sd::LongType oH, const sd::LongType oW, const sd::LongType kH,
+                               const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH,
+                               const sd::LongType dW, const bool isNCHW, const int wFormat) {
   // gradI [bS, iH, iW, iC], mkl doesn't support ndhwc format
   // weights [oC, iC, kH, kW] always, mkl doesn't support weights format [kH, kW, iC, oC]
   // gradO [bS, oH, oW, oC]
@@ -95,7 +95,7 @@ static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDA
   dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -133,21 +133,21 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
 
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
-  int sH = INT_ARG(2);                                                          // strides height
-  int sW = INT_ARG(3);                                                          // strides width
-  int pH = INT_ARG(4);                                                          // paddings height
-  int pW = INT_ARG(5);                                                          // paddings width
-  int dH = INT_ARG(6);                                                          // dilations height
-  int dW = INT_ARG(7);                                                          // dilations width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                                          // strides height
+  sd::LongType sW = INT_ARG(3);                                                          // strides width
+  sd::LongType pH = INT_ARG(4);                                                          // paddings height
+  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  sd::LongType dH = INT_ARG(6);                                                          // dilations height
+  sd::LongType dW = INT_ARG(7);                                                          // dilations width
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
-  const int rank = gradO->rankOf();
+  const sd::LongType rank = gradO->rankOf();
 
   REQUIRE_TRUE(weights->rankOf() == rank, 0,
                "CUSTOM DECONV2D_TF MKLDNN OP: rank of weights array must be equal to 4, but got %i instead !",
@@ -173,15 +173,15 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
 
   std::vector<sd::LongType> gradIShapeVector = gradIShape->template asVectorT<sd::LongType>();
 
-  const int bS = gradIShapeVector[0];           // batch size
-  const int iH = gradIShapeVector[indIiH];      // input height
-  const int iW = gradIShapeVector[indIiH + 1];  // input width
-  const int iC = gradIShapeVector[indIOioC];    // input channels
-  const int oC = weights->sizeAt(indWoC);       // output channels
-  const int oH = gradO->sizeAt(indOoH);         // input height
-  const int oW = gradO->sizeAt(indOoH);         // input width
+  const sd::LongType bS = gradIShapeVector[0];           // batch size
+  const sd::LongType iH = gradIShapeVector[indIiH];      // input height
+  const sd::LongType iW = gradIShapeVector[indIiH + 1];  // input width
+  const sd::LongType iC = gradIShapeVector[indIOioC];    // input channels
+  const sd::LongType oC = weights->sizeAt(indWoC);       // output channels
+  const sd::LongType oH = gradO->sizeAt(indOoH);         // input height
+  const sd::LongType oW = gradO->sizeAt(indOoH);         // input width
 
-  int trueoH, trueoW;  // true output height, width
+  sd::LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   std::vector<sd::LongType> expectedGradOShape =
@@ -199,26 +199,10 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
   // // mkl supports only [oC, iC, kH, kW] for weights
-  // weights = new NDArray(weights->permute({3,2,0,1}));        // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
 
-  // // mkl supports NCHW format only
-  // if(!isNCHW) {
-  //     gradI = new NDArray(gradI->permute({0,3,1,2}));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-  //     gradO = new NDArray(gradO->permute({0,3,1,2}));    // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-  // }
 
   deconv2TFdBpMKLDNN(weights, gradO, gradI, bS, iC, iH, iW, oC, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW,
                      wFormat);
-
-  // delete weights;
-
-  // if(!isNCHW) {
-  //     delete gradI;
-  //     delete gradO;
-  // }
-
-  // ConvolutionUtils::conv2dBP(block, &input, weights, nullptr, gradO, gradI, nullptr, nullptr,
-  // kH,kW,sH,sW,pH,pW,dH,dW,isSameMode,isNCHW);
 
   return sd::Status::OK;
 }

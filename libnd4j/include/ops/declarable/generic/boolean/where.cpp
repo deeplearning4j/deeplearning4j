@@ -57,10 +57,11 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
                    "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
                    condition->lengthOf());
 
-      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {0});
-      auto tadsX = x->allTensorsAlongDimension(dims);
-      auto tadsY = y->allTensorsAlongDimension(dims);
-      auto tadsZ = z->allTensorsAlongDimension(dims);
+      std::vector<sd::LongType> zero({0});
+      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1,zero.data());
+      auto tadsX = x->allTensorsAlongDimension(*dims);
+      auto tadsY = y->allTensorsAlongDimension(*dims);
+      auto tadsZ = z->allTensorsAlongDimension(*dims);
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!condition->e<bool>(e)) {
@@ -69,19 +70,24 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
           tadsZ.at(e)->assign(tadsX.at(e));
         }
       }
+
+      delete dims;
     }
   } else {
     // in this case we return 2D matrix, which basically contains coordinates fo true
     REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                  block.width());
     auto output = OUTPUT_VARIABLE(0);
+    std::vector<sd::LongType> zero({0});
 
     int width = condition->rankOf();
     if (z->isEmpty()) return sd::Status::OK;
 
-    std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(width, {0});
+
+    std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(width,1,zero.data());
 
     helpers::_where(block.launchContext(), *condition, *output, block.workspace());
+    delete dims;
   }
   return sd::Status::OK;
 }

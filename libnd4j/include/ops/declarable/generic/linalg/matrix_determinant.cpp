@@ -50,7 +50,7 @@ DECLARE_SHAPE_FN(matrix_determinant) {
     determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
   } else if (targetRank == 1) {  // vector
     determinantShape =
-        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
         ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(log_matrix_determinant) {
     determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
   } else if (targetRank == 1) {  // vector
     determinantShape =
-        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
         ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
@@ -140,7 +140,7 @@ DECLARE_SHAPE_FN(logdet) {
     determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
   } else if (targetRank == 1) {  // vector
     determinantShape =
-        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+        ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
         ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));

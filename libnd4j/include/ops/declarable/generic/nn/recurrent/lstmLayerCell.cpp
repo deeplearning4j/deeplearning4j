@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(lstmLayerCell, 5, 2, false, 1, 3) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::Unsigned count = 1;
+  sd::LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -160,7 +160,7 @@ DECLARE_TYPES(lstmLayerCell) {
 DECLARE_SHAPE_FN(lstmLayerCell) {
   const auto hasBiases = B_ARG(0);  // indicates whether biases array is provided
 
-  sd::Unsigned count = hasBiases ? 4 : 3;
+  sd::LongType count = hasBiases ? 4 : 3;
   const auto hI = INPUT_VARIABLE(count++);  // initial output
   const auto cI = INPUT_VARIABLE(count);    // initial cell state
 
@@ -229,7 +229,7 @@ CUSTOM_OP_IMPL(lstmLayerCellBp, 7, 5, false, 1, 3) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::Unsigned count = 1;
+  sd::LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -335,7 +335,7 @@ DECLARE_SHAPE_FN(lstmLayerCellBp) {
   const auto hasBiases = B_ARG(0);  // indicates whether biases array is provided
   const auto hasPH = B_ARG(1);      // indicates whether peephole connections are present
 
-  sd::Unsigned count = 3;
+  sd::LongType count = 3;
   const auto x = INPUT_VARIABLE(0);                              // input
   const auto Wx = INPUT_VARIABLE(1);                             // input weights
   const auto Wr = INPUT_VARIABLE(2);                             // recurrent weights

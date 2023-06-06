@@ -60,7 +60,7 @@ sd::Status LegacyStatsOp::validateAndExecute(Context &block) {
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
     auto pTadShape = Environment::getInstance().isCPU()
                          ? packX->primaryShapeInfo()
@@ -117,7 +117,7 @@ ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, sd::graph:
     // in this case we're building proper shape for reduction
     auto array = new NDArray(nullptr, inShape, block.launchContext());
 
-    auto newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+    auto newShape = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), *array, false, true);
 
     delete array;
     return SHAPELIST(newShape);

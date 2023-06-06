@@ -33,7 +33,7 @@ constexpr int numLayers = 1;
 
 // we will copy without using cudnnGetRNNLinLayerMatrixParams : 1 pseudo layer , isBidirectional : 2 pseudo layer
 void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weightsSpace, size_t weightsSize,
-                 uint8_t *inputWeightsData, uint8_t *recurrentWeightsData, uint8_t *biasesData, int inputSize,
+                 uint8_t *inputWeightsData, uint8_t *recurrentWeightsData, uint8_t *biasesData, sd::LongType inputSize,
                  int hiddenSize, int dataTypeSize) {
   int pseudo_layer_count = isBidirectional ? 2 : 1;
   uint8_t *wptr = weightsSpace;
@@ -81,7 +81,7 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
 void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,
                    NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct, NDArray *prevMemCell,
                    NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
-                   int maxSeqLength, int batchSize, int inputSize, int hiddenSize, double cellClip,
+                   sd::LongType maxSeqLength, sd::LongType batchSize, sd::LongType inputSize, sd::LongType hiddenSize, double cellClip,
                    bool isBidirectional) {
   sd_debug("cudnn rnn api %s \n", "v6");
 
@@ -99,17 +99,17 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
 
   CudnnTensor hxDesc, cxDesc, hyDesc, cyDesc;
 
-  constexpr int rankOf = 3;
-  const int numDirections = isBidirectional ? 2 : 1;
+  constexpr sd::LongType rankOf = 3;
+  const sd::LongType numDirections = isBidirectional ? 2 : 1;
 
-  const int dimsX[rankOf] = {batchSize, inputSize, 1};
-  const int stridesX[rankOf] = {inputSize, 1, 1};
+  const sd::LongType dimsX[rankOf] = {batchSize, inputSize, 1};
+  const sd::LongType stridesX[rankOf] = {inputSize, 1, 1};
 
-  const int dimsY[rankOf] = {batchSize, hiddenSize * numDirections, 1};
-  const int stridesY[rankOf] = {hiddenSize * numDirections, 1, 1};
+  const sd::LongType dimsY[rankOf] = {batchSize, hiddenSize * numDirections, 1};
+  const sd::LongType stridesY[rankOf] = {hiddenSize * numDirections, 1, 1};
 
-  const int dimC[rankOf] = {numLayers * numDirections, batchSize, hiddenSize};
-  const int strideC[rankOf] = {batchSize * hiddenSize, hiddenSize, 1};
+  const sd::LongType dimC[rankOf] = {numLayers * numDirections, batchSize, hiddenSize};
+  const sd::LongType strideC[rankOf] = {batchSize * hiddenSize, hiddenSize, 1};
 
   for (int i = 0; i < maxSeqLength; i++) {
     xDescList.set(i, cudnnType, rankOf, dimsX, stridesX);
@@ -164,7 +164,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
                           cudnnGetRNNParamsSize(handle, rnnDesc, xDesc0, &weightsSize, cudnnType));
 
   FilterDesc wDesc;
-  int dimW[] = {(int)weightsSize / dataTypeSize, 1, 1};
+  sd::LongType dimW[] = {(sd::LongType)weightsSize / dataTypeSize, 1, 1};
 
   wDesc.set(cudnnType, CUDNN_TENSOR_NCHW, 3, dimW);
   // allocation
@@ -442,7 +442,7 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
 PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
-  const auto directionMode =
+  const sd::LongType directionMode =
       INT_ARG(1);  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
                    // extra output dim (in conjunction with format dataFormat = 3)
 

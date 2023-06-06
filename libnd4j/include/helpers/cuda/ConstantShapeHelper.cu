@@ -172,7 +172,7 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
   newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);              // order
 
   if (!dimensions.empty()) {
-    for (sd::Unsigned k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
+    for (sd::LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
       if (j < dimensions.size() && dimensions[j] == i) {
         shape::shapeOf(newShapeInfo)[i] = shape::shapeOf(minShapeInfo)[k];
         shape::stride(newShapeInfo)[i] = shape::stride(minShapeInfo)[k++];

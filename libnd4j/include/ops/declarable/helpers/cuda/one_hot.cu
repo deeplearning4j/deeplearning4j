@@ -39,7 +39,7 @@ namespace helpers {
 // x - indices, z - output
 template <typename X, typename Z>
 SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                 const sd::LongType *zShapeInfo, const sd::Unsigned axis, const sd::Unsigned depth,
+                                 const sd::LongType *zShapeInfo, const sd::LongType axis, const sd::LongType depth,
                                  const Z on, const Z off) {
   const auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
@@ -66,7 +66,7 @@ SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo,
     const auto zOffset = shape::getOffset(zShapeInfo, coord);
     const auto depthCoord = coord[axis];
 
-    for (sd::Unsigned j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
+    for (sd::LongType j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
 
     const auto xOffset = shape::getOffset(xShapeInfo, coord);
     const sd::LongType idx = x[xOffset];
@@ -78,15 +78,15 @@ SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo,
 template <typename X, typename Y>
 static void onehotCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                               const sd::LongType *zShapeInfo, const sd::Unsigned axis, const sd::Unsigned depth,
+                               const sd::LongType *zShapeInfo, const sd::LongType axis, const sd::LongType depth,
                                const double on, const double off) {
   onehotCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, axis, depth,
                                                                            static_cast<Y>(on), static_cast<Y>(off));
 }
 
 ///////////////////////////////////////////////////////////////////
-void onehot(const sd::LaunchContext *context, const NDArray *indices, NDArray *output, const sd::Unsigned axis,
-            const sd::Unsigned depth, const double on, const double off) {
+void onehot(const sd::LaunchContext *context, const NDArray *indices, NDArray *output, const sd::LongType axis,
+            const sd::LongType depth, const double on, const double off) {
   const auto xType = indices->dataType();
   const auto zType = output->dataType();
 

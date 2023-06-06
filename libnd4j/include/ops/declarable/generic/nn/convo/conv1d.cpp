@@ -109,7 +109,7 @@ DECLARE_SHAPE_FN(conv1d) {
   auto weightsShapeInfo = inputShape->at(1);
   sd::LongType const* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;
 
-  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) width
+  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                                          // strides width
   LongType pW = INT_ARG(2);                                                                          // paddings width
   LongType dW = INT_ARG(3);                                                                          // dilations width
@@ -297,7 +297,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
       "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, gradOShapeInfo[0]);
 
-  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) width
+  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                                          // strides width
   LongType pW = INT_ARG(2);                                                                          // paddings width
   LongType dW = INT_ARG(3);                                                                          // dilations width

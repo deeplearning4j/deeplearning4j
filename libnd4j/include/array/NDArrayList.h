@@ -56,7 +56,7 @@ class SD_LIB_EXPORT NDArrayList {
   std::vector<sd::LongType> _shape;
 
   // unstack axis
-  int _axis = 0;
+  sd::LongType _axis = 0;
 
   //
   bool _expandable = false;

@@ -88,9 +88,9 @@ DECLARE_SHAPE_FN(bitcast) {
     auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(newType, shape::order(inShape), shapeOf);
     return SHAPELIST(outputShape);
   }
-  REQUIRE_TRUE(shape::sizeAt(inShape, -1) == outputSize / inputSize, 0,
+  REQUIRE_TRUE(shape::sizeAt(inShape, static_cast<sd::LongType>(-1)) == outputSize / inputSize, 0,
                "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize, outputSize,
-               outputSize / inputSize, shape::sizeAt(inShape, -1));
+               outputSize / inputSize, shape::sizeAt(inShape, static_cast<sd::LongType>(-1)));
   std::vector<sd::LongType> shapeOf(inputRank - 1);
 
   for (auto i = 0; i < shapeOf.size(); ++i) {

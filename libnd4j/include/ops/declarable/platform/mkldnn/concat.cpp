@@ -62,7 +62,7 @@ static void concatMKLDNN(const std::vector<const NDArray*>& inArrs, NDArray& out
   dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
   onednnUtils::setBlockStrides(output, z_user_md);
 
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -100,7 +100,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
   // first of all take into account possible presence of empty arrays
   // also if scalar is present -> copy its value to vector with length=1
   std::vector<const NDArray*> nonEmptyArrs;
-  std::vector<int> arrsToDelete;
+  std::vector<sd::LongType> arrsToDelete;
   int index = 0;
   bool allOfSameType = true;
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;

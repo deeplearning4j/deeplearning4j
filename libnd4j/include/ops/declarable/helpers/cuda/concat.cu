@@ -94,7 +94,7 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
       output.ews() == 1;
 
   if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfInArrs; ++i) {
       luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -105,7 +105,7 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
 
     void* z = static_cast<int8_t*>(output.specialBuffer());
 
-    for (sd::Unsigned i = 0; i < numOfInArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfInArrs; ++i) {
       const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
       cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy,
                       cudaMemcpyDeviceToDevice, *context->getCudaStream());

@@ -221,11 +221,13 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       // match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
       // the dimensions should match the matching dimensions to compute proper gradients wrt each input
       // core gradient for each is sum(input) * eps as scalar
-      auto xSum = x->reduceAlongDimension(sd::reduce::Sum, {0});
+      std::vector<sd::LongType> axesZero({0});
+      auto xSum = x->reduceAlongDimension(sd::reduce::Sum, &axesZero);
       xSum *= *eps;
       // ensure we have proper shape for broadcasted multiplication
       auto xSumRow = xSum.reshape(xSum.ordering(), {xSum.lengthOf(), 1});
-      auto ySum = y->reduceAlongDimension(sd::reduce::Sum, {1});
+      std::vector<sd::LongType> axes({1});
+      auto ySum = y->reduceAlongDimension(sd::reduce::Sum, &axes);
       ySum *= *eps;
       auto ySumRow = ySum.reshape(ySum.ordering(), {1, ySum.lengthOf()});
       // execute proper multiplication: rows for first input, columns for second

@@ -29,17 +29,10 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* indices, const sd::Unsigned k,
+static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k,
                                bool needSort) {
   sd::LongType width = input->sizeAt(-1);
-  int lastDim = input->rankOf() - 1;
-  // ----------------------------------------------------------------------------------------------- //
-  // this assumption is right:
-  //        if (values->lengthOf() != k * lastDimList->size()) {
-  //            sd_printf("top_k: something is wrong. %i expected, but %i given.\n",
-  //                values->lengthOf(), k * lastDimList->size());
-  //        }
-  // ----------------------------------------------------------------------------------------------- //
+  sd::LongType lastDim = input->rankOf() - 1;
   std::vector<sd::LongType> dimsToExclude(input->rankOf() - 1);
   for (size_t d = 0; d < dimsToExclude.size(); ++d) dimsToExclude[d] = d;
 
@@ -68,7 +61,7 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
       NDArray topValues = NDArrayFactory::create<T>('c', {k}, input->getContext());
       NDArray sortedVals = NDArrayFactory::create<T>('c', {k}, input->getContext());
       NDArray topIndices = NDArrayFactory::create<sd::LongType>('c', {k}, input->getContext());
-      for (sd::Unsigned pos = 0; pos < k; ++pos) {
+      for (sd::LongType pos = 0; pos < k; ++pos) {
         topIndices.r<sd::LongType>(pos) = pos;
         topValues.r<T>(pos) = trial.t<T>(pos);
       }
@@ -101,18 +94,14 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
         SpecialMethods<T>::sortGeneric(topValues.buffer(), topValues.shapeInfo(), true);
 
         for (sd::LongType j = 0; j < width; j++)
-          for (sd::Unsigned pos = 0; pos < k; ++pos)
+          for (sd::LongType pos = 0; pos < k; ++pos)
             if (topValues.t<T>(pos) == trial.t<T>(j)) topIndices.r<sd::LongType>(pos) = j;
       } else {  // else sort by indices
         std::map<sd::LongType, T> sortValsMap;
-        // std::vector<std::pair<int, T>> data(topValues.lengthOf());
         for (sd::LongType e = 0; e < topValues.lengthOf(); ++e) {
           sortValsMap[topIndices.t<sd::LongType>(e)] = topValues.t<T>(e);
         }
 
-        // std::sort(data.begin(), data.end(), [](std::pair<int, T> const& a, std::pair<int, T> const& b) {
-        //    return a.first < b.first;
-        //});
         sd::LongType e = 0;
         for (auto it = sortValsMap.begin(); it != sortValsMap.end(); ++it, e++) {
           topIndices.r<sd::LongType>(e) = it->first;
@@ -129,7 +118,7 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
 
 template <typename T>
 static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* input, const NDArray* target,
-                                 NDArray* result, const sd::Unsigned k) {
+                                 NDArray* result, const sd::LongType k) {
   std::vector<sd::LongType> shapeI(input->rankOf());
   for (int i = 0; i < input->rankOf() - 1; i++) shapeI[i] = input->sizeAt(i);
   shapeI[input->rankOf() - 1] = k;
@@ -141,7 +130,7 @@ static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* inpu
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         bool found = false;
-        for (sd::Unsigned j = 0; j < k; j++) {
+        for (sd::LongType j = 0; j < k; j++) {
           if (target->e<sd::LongType>(e) == indices->e<sd::LongType>(e * k + j)) {
             found = true;
             break;
@@ -157,23 +146,23 @@ static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* inpu
 }
 
 sd::Status topKFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
-                       const sd::Unsigned k, bool needSort) {
+                       const sd::LongType k, bool needSort) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indices, k, needSort),
                         SD_NUMERIC_TYPES);
 }
 
 sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* input, const NDArray* target, NDArray* result,
-                         const sd::Unsigned k) {
+                         const sd::LongType k) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k),
                         SD_NUMERIC_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::Status topKFunctor_,
-                      (const NDArray* input, NDArray* values, NDArray* indices, const sd::Unsigned k, bool needSort),
+                      (const NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status inTopKFunctor_,
                       (sd::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result,
-                       const sd::Unsigned k),
+                       const sd::LongType k),
                       SD_NUMERIC_TYPES);
 }  // namespace helpers
 }  // namespace ops

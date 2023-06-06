@@ -32,12 +32,12 @@ namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
 void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
-            const std::vector<int>& intArgs) {
-  int axis = intArgs.size() > 0 ? intArgs[0] : 0;
-  const int inputRank = input->rankOf();
+            const std::vector<LongType>& intArgs) {
+  sd::LongType axis = intArgs.size() > 0 ? intArgs[0] :static_cast<LongType>(0);
+  const sd::LongType inputRank = input->rankOf();
   if (axis < 0) axis += inputRank;
 
-  const int numOfIntArgs = intArgs.size();
+  const sd::LongType numOfIntArgs = intArgs.size();
 
   if (indices != nullptr) {
     // first case: indices consist of only one scalar
@@ -62,16 +62,17 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
 
       } else {
         std::vector<sd::LongType> dimsOut;
-        for (int i = 0; i < axis; ++i) dimsOut.push_back(i);
-        for (int i = axis + indices->rankOf(); i < output->rankOf(); ++i) dimsOut.push_back(i);
+        for (sd::LongType i = 0; i < axis; ++i) dimsOut.push_back(i);
+        for (sd::LongType i = axis + indices->rankOf(); i < output->rankOf(); ++i) dimsOut.push_back(i);
 
-        std::vector<sd::LongType> dimsIn = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+        std::vector<sd::LongType> axesVec = {axis};
+        std::vector<sd::LongType> *dimsIn = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,axesVec.data());
 
         const sd::LongType numOfSubArrs = indices->lengthOf();
 
         auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn);
-        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimsOut);
-
+        delete dimsIn;
+        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut);
         auto inTadShapeInfo = inTadPack->primaryShapeInfo();
         auto outTadShapeInfo = outTadPack->primaryShapeInfo();
 
@@ -90,9 +91,10 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
         } else {
           auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
-              auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[indices->e<sd::LongType>(i)]);
-              auto outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
-
+              auto offset = inTadPack->primaryOffsets()[indices->e<sd::LongType>(i)];
+              auto inBuff = input->bufferWithOffset(offset);
+              auto outOffset = outTadPack->primaryOffsets()[i];
+              auto outBuff = output->bufferWithOffset(outOffset);
               NativeOpExecutioner::execTransformAny(
                   input->getContext(), transform::Assign, inBuff, inTadShapeInfo, nullptr /*input specialBuffer*/,
                   nullptr /*input special*/, outBuff, outTadShapeInfo, nullptr /*output specialBuffer*/,
@@ -107,16 +109,16 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
   } else {
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
-
       output->assign((*input)(intArgs[1], {axis}));
     } else {  // vector case
-
       const sd::LongType numOfSubArrs = intArgs.size() - 1;
 
-      std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
+      std::vector<sd::LongType> axesVec = {axis};
+      std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
 
       auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
       auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
+      delete dims;
 
       auto inTadShapeInfo = inTadPack->primaryShapeInfo();
       auto outTadShapeInfo = outTadPack->primaryShapeInfo();
@@ -125,7 +127,7 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
           input->dataType() == output->dataType() && shape::elementWiseStride(inTadShapeInfo) == 1 &&
           shape::elementWiseStride(outTadShapeInfo) == 1) {
         auto func = PRAGMA_THREADS_FOR {
-          for (auto i = start; i < stop; i++) {
+          for (sd::LongType i = start; i < stop; i++) {
             auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[intArgs[i + 1]]);
             void* outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 

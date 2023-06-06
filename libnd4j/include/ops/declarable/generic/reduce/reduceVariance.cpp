@@ -90,7 +90,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
         "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
                                                       keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
@@ -141,13 +141,13 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
   const double factor1 = 2.0 / NminusOne;
   const double factor2 = 2.0 / (N * NminusOne);
-  auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
+  auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
 
   gradI->assign((*input - mean) * (2.0f / NminusOne));  // automatic broadcasting happens here
 
   if (!keepDims) {
     auto gradOShapeKeepDims =
-        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     *gradI *= gradO->reshape(gradO->ordering(),
                              ShapeUtils::pullShapeFromShapeInfo(
                                  gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]

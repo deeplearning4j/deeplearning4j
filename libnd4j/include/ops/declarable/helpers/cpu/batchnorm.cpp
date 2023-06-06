@@ -55,7 +55,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
   const sd::LongType lenSmall = mean->lengthOf();
 
   const sd::LongType steps = lenBig / lenSmall;
-  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
+  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes.size(),axes.data());
 
   OmpLaunchHelper info(lenBig, lenSmall);
 
@@ -87,9 +87,9 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
       }
 
       // calculate offsets for input and output
-      shape::outerArrayOffsets(xOffsets, j, input->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude.data());
+      shape::outerArrayOffsets(xOffsets, j, input->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude->data());
       if (!xzSameOffset)
-        shape::outerArrayOffsets(zOffsets, j, output->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude.data());
+        shape::outerArrayOffsets(zOffsets, j, output->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude->data());
 
       PRAGMA_OMP_SIMD
       for (sd::LongType i = 0; i < steps; ++i) z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
@@ -101,6 +101,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
   };
 
   samediff::Threads::parallel_do(func, info._numThreads);
+
+  delete dimsToExclude;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,9 +119,9 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
   const auto b = beta == nullptr ? nullptr : beta->bufferAsT<T>();
 
   // xRank == zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
-  const sd::Unsigned xRank = input->rankOf();
-  const sd::Unsigned minRank = mean->rankOf();
-  const sd::Unsigned numAxes = axes.size();
+  const sd::LongType xRank = input->rankOf();
+  const sd::LongType minRank = mean->rankOf();
+  const sd::LongType numAxes = axes.size();
 
   const bool xzSameOffset = shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo());
 
@@ -132,7 +134,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType xzCoords[SD_MAX_RANK], minCoords[SD_MAX_RANK];
 
-    for (sd::Unsigned i = 0, j = 0; i < xRank; ++i)
+    for (sd::LongType i = 0, j = 0; i < xRank; ++i)
       if (j < numAxes && i != axes[j])
         minCoords[i] = 0;
       else

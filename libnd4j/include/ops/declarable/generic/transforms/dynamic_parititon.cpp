@@ -73,10 +73,9 @@ DECLARE_SHAPE_FN(dynamic_partition) {
   for (int e = 0; e < numPartition; e++) {
     sd::LongType *newShape;
     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
-    // shape::shapeVector(partitionSizes[e], newShape);
     newShape[0] = outRank;
     newShape[1] = partitionSizes[e];
-    for (int i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
+    for (sd::LongType i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
     shape::updateStrides(newShape, shape::order(in));
     ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));

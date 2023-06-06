@@ -33,18 +33,18 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CUDA) {
   auto input = INPUT_VARIABLE(0);    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto output = OUTPUT_VARIABLE(0);  // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
-  int kD = INT_ARG(0);            // filter(kernel) depth
-  int kH = INT_ARG(1);            // filter(kernel) height
-  int kW = INT_ARG(2);            // filter(kernel) width
-  int sD = INT_ARG(3);            // strides depth
-  int sH = INT_ARG(4);            // strides height
-  int sW = INT_ARG(5);            // strides width
-  int pD = INT_ARG(6);            // paddings depth
-  int pH = INT_ARG(7);            // paddings height
-  int pW = INT_ARG(8);            // paddings width
-  int dD = INT_ARG(9);            // dilations depth
-  int dH = INT_ARG(10);           // dilations height
-  int dW = INT_ARG(11);           // dilations width
+  sd::LongType kD = INT_ARG(0);            // filter(kernel) depth
+  sd::LongType kH = INT_ARG(1);            // filter(kernel) height
+  sd::LongType kW = INT_ARG(2);            // filter(kernel) width
+  sd::LongType sD = INT_ARG(3);            // strides depth
+  sd::LongType sH = INT_ARG(4);            // strides height
+  sd::LongType sW = INT_ARG(5);            // strides width
+  sd::LongType pD = INT_ARG(6);            // paddings depth
+  sd::LongType pH = INT_ARG(7);            // paddings height
+  sd::LongType pW = INT_ARG(8);            // paddings width
+  sd::LongType dD = INT_ARG(9);            // dilations depth
+  sd::LongType dH = INT_ARG(10);           // dilations height
+  sd::LongType dW = INT_ARG(11);           // dilations width
   int paddingMode = INT_ARG(12);  // 1-SAME,  0-VALID
   int extraParam0 = INT_ARG(13);
   int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 0-NCDHW, 1-NDHWC
@@ -54,7 +54,7 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CUDA) {
   REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
                "AVGPOOL3DNEW CUDNN OP: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
   int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
@@ -97,18 +97,18 @@ PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CUDA) {
   auto gradO = INPUT_VARIABLE(1);   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
 
-  const int kD = INT_ARG(0);            // filter(kernel) depth
-  const int kH = INT_ARG(1);            // filter(kernel) height
-  const int kW = INT_ARG(2);            // filter(kernel) width
-  const int sD = INT_ARG(3);            // strides depth
-  const int sH = INT_ARG(4);            // strides height
-  const int sW = INT_ARG(5);            // strides width
-  int pD = INT_ARG(6);                  // paddings depth
-  int pH = INT_ARG(7);                  // paddings height
-  int pW = INT_ARG(8);                  // paddings width
-  const int dD = INT_ARG(9);            // dilations depth
-  const int dH = INT_ARG(10);           // dilations height
-  const int dW = INT_ARG(11);           // dilations width
+  const sd::LongType kD = INT_ARG(0);            // filter(kernel) depth
+  const sd::LongType kH = INT_ARG(1);            // filter(kernel) height
+  const sd::LongType kW = INT_ARG(2);            // filter(kernel) width
+  const sd::LongType sD = INT_ARG(3);            // strides depth
+  const sd::LongType sH = INT_ARG(4);            // strides height
+  const sd::LongType sW = INT_ARG(5);            // strides width
+  sd::LongType pD = INT_ARG(6);                  // paddings depth
+  sd::LongType pH = INT_ARG(7);                  // paddings height
+  sd::LongType pW = INT_ARG(8);                  // paddings width
+  const sd::LongType dD = INT_ARG(9);            // dilations depth
+  const sd::LongType dH = INT_ARG(10);           // dilations height
+  const sd::LongType dW = INT_ARG(11);           // dilations width
   const int isSameMode = INT_ARG(12);   // 1-SAME,  0-VALID
   const int extraParam0 = INT_ARG(13);  // define what divisor to use while averaging
   const int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 0-NCDHW, 1-NDHWC
@@ -118,9 +118,9 @@ PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CUDA) {
   REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
                "AVGPOOL3DNEW_BP CUDNN OP: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 

@@ -36,8 +36,8 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
   const sd::LongType zLen = shape::length(zShapeInfo);
   const sd::LongType tadLen = shape::length(tadShapeInfo);
 
-  const sd::Unsigned tadEws = shape::elementWiseStride(tadShapeInfo);
-  const sd::Unsigned zEws = shape::elementWiseStride(zShapeInfo);
+  const sd::LongType tadEws = shape::elementWiseStride(tadShapeInfo);
+  const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
 
   const sd::LongType* tadShape = shape::shapeOf(const_cast<sd::LongType*>(tadShapeInfo));
   const sd::LongType* tadStride = shape::stride(const_cast<sd::LongType*>(tadShapeInfo));

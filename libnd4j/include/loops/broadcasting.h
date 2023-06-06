@@ -140,7 +140,8 @@ class Broadcast {
                    void *result, const sd::LongType *resultShapeInfo, sd::LongType *dimension,
                    sd::LongType dimensionLength,
                    const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset, const sd::LongType *tadShapeInfoZ,
-                   const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind, uint64_t start, uint64_t stop);
+                   const sd::LongType *tadOffsetZ, sd::LoopKind::Kind loopKind,
+                   long long int start, long long int stop);
 
   template <typename OpType>
   static void execInverse(const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo,

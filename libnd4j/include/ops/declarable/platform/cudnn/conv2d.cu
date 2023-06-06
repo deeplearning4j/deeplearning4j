@@ -31,14 +31,14 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                        NDArray* output, const int kH, const int kW, const int sH, const int sW, const int pH,
-                        const int pW, const int dH, const int dW, const int paddingMode, const bool isNCHW,
+                        NDArray* output, const int kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
+                        const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode, const bool isNCHW,
                         const int wFormat) {
   // cudnn support only two formats for weights {oC,iC,kH,kW} and {oC,kH,kW,iC}
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -112,28 +112,24 @@ static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, cons
   if (bias != nullptr) {
     CudnnTensor b;
 
-    // b.set4D(format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1:
-    // bias->lengthOf());
+
     b.set4D(CUDNN_TENSOR_NCHW, cudnnDataType(bias->dataType()), 1, oC, 1, 1);
     CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnAddTensor), cudnnAddTensor(*handle, alpha, b, bias->specialBuffer(), alpha,
                                                                       z, output->specialBuffer()));
   }
 
-  // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  // if (cudaErr != 0)
-  //     throw cuda_exception::build("conv2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
   NDArray::registerSpecialUse({output}, {input, weights, bias});
 }
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH,
-                          const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
-                          const int dW, const int paddingMode, const bool isNCHW, const int wFormat) {
-  int bS, iC, iH, iW, oC, oH,
+                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const sd::LongType kH,
+                          const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH,
+                          const sd::LongType dW, const sd::LongType paddingMode, const bool isNCHW, const int wFormat) {
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -262,20 +258,20 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
 
   auto output = OUTPUT_VARIABLE(0);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
-  int sH = INT_ARG(2);                                                // strides height
-  int sW = INT_ARG(3);                                                // strides width
-  int pH = INT_ARG(4);                                                // paddings height
-  int pW = INT_ARG(5);                                                // paddings width
-  int dH = INT_ARG(6);                                                // dilations height
-  int dW = INT_ARG(7);                                                // dilations width
+  sd::LongType sH = INT_ARG(2);                                                // strides height
+  sd::LongType sW = INT_ARG(3);                                                // strides width
+  sd::LongType pH = INT_ARG(4);                                                // paddings height
+  sd::LongType pW = INT_ARG(5);                                                // paddings width
+  sd::LongType dH = INT_ARG(6);                                                // dilations height
+  sd::LongType dW = INT_ARG(7);                                                // dilations width
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   bool isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
 
   REQUIRE_TRUE(input->rankOf() == 4, 0,
                "CUSTOM CONV2D CUDNN OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -283,9 +279,9 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
                "CUSTOM CONV2D CUDNN OP: rank of weights array must be equal to 4, but got %i instead !",
                weights->rankOf());
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -375,14 +371,14 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
-  int kH = INT_ARG(0);                                               // filter(kernel) height
-  int kW = INT_ARG(1);                                               // filter(kernel) width
-  int sH = INT_ARG(2);                                               // strides height
-  int sW = INT_ARG(3);                                               // strides width
-  int pH = INT_ARG(4);                                               // paddings height
-  int pW = INT_ARG(5);                                               // paddings width
-  int dH = INT_ARG(6);                                               // dilations height
-  int dW = INT_ARG(7);                                               // dilations width
+  sd::LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  sd::LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  sd::LongType sH = INT_ARG(2);                                               // strides height
+  sd::LongType sW = INT_ARG(3);                                               // strides width
+  sd::LongType pH = INT_ARG(4);                                               // paddings height
+  sd::LongType pW = INT_ARG(5);                                               // paddings width
+  sd::LongType dH = INT_ARG(6);                                               // dilations height
+  sd::LongType dW = INT_ARG(7);                                               // dilations width
   int paddingMode = INT_ARG(8);                                      // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
@@ -400,13 +396,13 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
                "%i instead !",
                gradO->rankOf());
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
-  int trueoH, trueoW;  // true output height, width
+  sd::LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
@@ -441,8 +437,8 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
     newGradW = tmpGradW.get();
     newWeights = tmpWeights.get();
     newWeights->assign(weights->permute(
-        isNCHW ? std::vector<int>({3, 2, 0, 1})
-               : std::vector<int>(
+        isNCHW ? std::vector<sd::LongType>({3, 2, 0, 1})
+               : std::vector<sd::LongType>(
                      {3, 0, 1, 2})));  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
   }
 

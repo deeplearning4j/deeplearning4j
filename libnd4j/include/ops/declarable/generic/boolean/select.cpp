@@ -69,11 +69,12 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
                    cond->lengthOf());
 
       auto z = OUTPUT_VARIABLE(0);
-
-      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {0});
-      auto tadsX = x->allTensorsAlongDimension(dims);
-      auto tadsY = y->allTensorsAlongDimension(dims);
-      auto tadsZ = z->allTensorsAlongDimension(dims);
+      std::vector<sd::LongType> idxs;
+      idxs.push_back(0);
+      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf() ,1,idxs.data());
+      auto tadsX = x->allTensorsAlongDimension(*dims);
+      auto tadsY = y->allTensorsAlongDimension(*dims);
+      auto tadsZ = z->allTensorsAlongDimension(*dims);
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!cond->e<bool>(e)) {
@@ -82,6 +83,8 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
           tadsZ.at(e)->assign(tadsX.at(e));
         }
       }
+
+      delete dims;
     }
   }
 

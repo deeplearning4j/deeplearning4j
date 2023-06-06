@@ -23,14 +23,8 @@
 #ifndef LIBND4J_LOOPKIND_H
 #define LIBND4J_LOOPKIND_H
 
-// #include <pointercast.h>
 #include <helpers/shape.h>
-// #include <helpers/OmpLaunchHelper.h>
-// #include <array/DataTypeUtils.h>
-// #include <ops.h>
-// #include <indexreduce.h>
-// #include <helpers/ConstantTadHelper.h>
-// #include <openmp_pragmas.h>
+
 
 namespace sd {
 
@@ -111,7 +105,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInf
   bool bNDLoopsRanks = (xRank == zRank && yRank <= xRank && yRank >= 2);
 
   int countUnityDimsInY = 0, countUnityDimsInX = 0;
-  for (int i = 0; i < xRank; i++) {
+  for (sd::LongType i = 0; i < xRank; i++) {
     if (i < yRank) countUnityDimsInY += (1 == shape::sizeAt(yShapeInfo, i)) ? 1 : 0;
     countUnityDimsInX += (1 == shape::sizeAt(xShapeInfo, i)) ? 1 : 0;
   }
@@ -121,7 +115,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInf
   if (bNDLoopsRanks && bNotCommonVectorCase) {
     // case x[3,4,5] * y[1,4,5] = z[3,4,5] or reverse x[1,4,5] + y[3,4,5] = z[3,4,5]
     if (sd::LoopKind::EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo) &&
-        (1 == shape::sizeAt(yShapeInfo, 0) || 1 == shape::sizeAt(xShapeInfo, 0))) {
+        (1 == shape::sizeAt(yShapeInfo, static_cast<sd::LongType>(0)) || 1 == shape::sizeAt(xShapeInfo, static_cast<sd::LongType>(0)))) {
       return EWS1;
     }
 

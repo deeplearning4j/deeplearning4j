@@ -146,11 +146,11 @@ DECLARE_SHAPE_FN(multi_head_dot_product_attention) {
   auto WkShape = inputShape->at(3);
   auto WoShape = inputShape->at(6);
 
-  auto batchSize = shape::sizeAt(queryShape, 0);
-  auto outSize = shape::sizeAt(WoShape, 1);
-  auto queryCount = shape::sizeAt(queryShape, 2);
-  auto numHeads = shape::sizeAt(WkShape, 0);
-  auto timeSteps = shape::sizeAt(keysShape, 2);
+  auto batchSize = shape::sizeAt(queryShape, static_cast<sd::LongType>(0));
+  auto outSize = shape::sizeAt(WoShape, static_cast<sd::LongType>(1));
+  auto queryCount = shape::sizeAt(queryShape, static_cast<sd::LongType>(2));
+  auto numHeads = shape::sizeAt(WkShape, static_cast<sd::LongType>(0));
+  auto timeSteps = shape::sizeAt(keysShape, static_cast<sd::LongType>(2));
 
   auto weightsShape = ConstantShapeHelper::getInstance().createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c',
                                                                          {batchSize, numHeads, timeSteps, queryCount});

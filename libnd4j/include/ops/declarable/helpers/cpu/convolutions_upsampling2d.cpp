@@ -55,11 +55,11 @@ static void upsampling2d_(const NDArray& input, NDArray& output, const LongType 
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR_3D {
-    sd::Unsigned xCoord2, xCoord3;
-    for (sd::Unsigned b = start_x; b < stop_x; b += inc_x) {
-      for (sd::Unsigned c = start_y; c < stop_y; c += inc_y) {
-        for (sd::Unsigned h = start_z; h < stop_z; h += inc_z) {
-          for (sd::Unsigned w = 0; w < oW; ++w) {
+    sd::LongType xCoord2, xCoord3;
+    for (sd::LongType b = start_x; b < stop_x; b += inc_x) {
+      for (sd::LongType c = start_y; c < stop_y; c += inc_y) {
+        for (sd::LongType h = start_z; h < stop_z; h += inc_z) {
+          for (sd::LongType w = 0; w < oW; ++w) {
             xCoord2 = h / factorH;
             xCoord3 = w / factorW;
 

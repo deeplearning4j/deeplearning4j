@@ -31,7 +31,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
-  sd::Unsigned numSplits = outArrs.size();
+  sd::LongType numSplits = outArrs.size();
 
   const auto sizeofT = input.sizeOfT();
 
@@ -42,7 +42,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
       input.ews() == 1;
 
   if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -50,7 +50,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
 
   if (luckCase1) {
     T* x = const_cast<T*>(xBuff);
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf();
       memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
       x += memAmountToCopy;
@@ -63,7 +63,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
   bool allSameOrder = true;
 
   if (isXcontin) {
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       areOutsContin &= outArrs[i]->strideAt(axis) == 1;
       allSameOrder &= outArrs[i]->ordering() == input.ordering();
       if (!areOutsContin || !allSameOrder) break;
@@ -78,7 +78,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
     for (sd::LongType i = 0; i < input.lengthOf() / xDim; ++i) {
       auto x = xBuff + xDim * i;
 
-      for (sd::Unsigned j = 0; j < numSplits; ++j) {
+      for (sd::LongType j = 0; j < numSplits; ++j) {
         const auto zDim = outArrs[j]->sizeAt(axis);
         T* z = outArrs[j]->bufferAsT<T>() + zDim * i;
         memcpy(z, x, zDim * sizeofT);
@@ -90,7 +90,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
     return;
   }
 
-  sd::Unsigned zDim = outArrs[0]->sizeAt(axis);
+  sd::LongType zDim = outArrs[0]->sizeAt(axis);
   // general case
 
   auto func = PRAGMA_THREADS_FOR {
@@ -100,7 +100,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
-      sd::Unsigned outArrIdx = 0;
+      sd::LongType outArrIdx = 0;
 
       temp = coords[axis];
 

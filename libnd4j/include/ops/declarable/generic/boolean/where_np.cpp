@@ -84,10 +84,12 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
                    "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
                    condition->lengthOf());
 
-      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {0});
-      auto tadsX = x->allTensorsAlongDimension(dims);
-      auto tadsY = y->allTensorsAlongDimension(dims);
-      auto tadsZ = z->allTensorsAlongDimension(dims);
+      std::vector<sd::LongType> idxs;
+      idxs.push_back(0);
+      auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1,idxs.data());
+      auto tadsX = x->allTensorsAlongDimension(*dims);
+      auto tadsY = y->allTensorsAlongDimension(*dims);
+      auto tadsZ = z->allTensorsAlongDimension(*dims);
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!condition->e<bool>(e))
@@ -95,6 +97,8 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
         else
           tadsZ.at(e)->assign(tadsX.at(e));
       }
+
+      delete dims;
     }
   } else {
     // in this case we return 2D matrix, which basically contains coordinates fo true

@@ -67,7 +67,7 @@ SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **
       }
     } else {
       // we roll over the pairs of TADs, thus limit is numTads / 2
-      for (sd::Unsigned r = blockIdx.x; r < numTads; r += gridDim.x) {
+      for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
         if (shuffleMap[r] >= 0) {
           auto oldOffset = tadOffsets[f][r];
           auto newOffset = tadOffsets[f][shuffleMap[r]];

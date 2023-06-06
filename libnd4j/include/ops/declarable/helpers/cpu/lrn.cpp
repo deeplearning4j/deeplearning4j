@@ -70,12 +70,12 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
         // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           if (j == 0) {
-            for (sd::Unsigned s = begin; s < end; ++s) prev = prev + x[s] * x[s];
+            for (sd::LongType s = begin; s < end; ++s) prev = prev + x[s] * x[s];
             y[j] = prev;
           } else if (begin == 0 && last <= tadLen)
             y[j] = prev + x[end - 1] * x[end - 1];
@@ -105,12 +105,12 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
         // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           if (j == 0) {
-            for (sd::Unsigned s = begin; s < end; ++s) prev = prev + x[s * inTadEws] * x[s * inTadEws];
+            for (sd::LongType s = begin; s < end; ++s) prev = prev + x[s * inTadEws] * x[s * inTadEws];
             y[j * outTadEws] = prev;
           } else if (begin == 0 && last <= tadLen)
             y[j * outTadEws] = prev + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws];
@@ -185,13 +185,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           if (j == 0) {
             y[0] = 0;
-            for (sd::Unsigned s = begin; s < end; ++s) y[0] = y[0] + x[s] * x[s];
+            for (sd::LongType s = begin; s < end; ++s) y[0] = y[0] + x[s] * x[s];
           } else if (begin == 0 && last <= tadLen)
             y[j] = y[j - 1] + x[end - 1] * x[end - 1];
           else if (begin > 0 && last <= tadLen)
@@ -207,14 +207,14 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         Y prev = 0;
         // second loop calculates derivatives using information gained in first loop above
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           Y init = tbias + talpha * y[j];
 
           if (j == 0) {
-            for (sd::Unsigned s = begin; s < end; ++s) {
+            for (sd::LongType s = begin; s < end; ++s) {
               factor[s] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
               prev = prev + x[s] * factor[s];
             }
@@ -249,13 +249,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
         // we store each squared sum in corresponding element of y array
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           if (j == 0) {
             y[0] = 0;
-            for (sd::Unsigned s = begin; s < end; ++s) y[0] = y[0] + x[s * inTadEws] * x[s * inTadEws];
+            for (sd::LongType s = begin; s < end; ++s) y[0] = y[0] + x[s * inTadEws] * x[s * inTadEws];
           } else if (begin == 0 && last <= tadLen)
             y[j * gradITadEws] = y[(j - 1) * gradITadEws] + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws];
           else if (begin > 0 && last <= tadLen)
@@ -272,14 +272,14 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
         Y prev = 0;
         // second loop calculates derivatives using information gained in first loop above
         for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::Unsigned begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::Unsigned last = depth + j + 1;
-          const sd::Unsigned end = sd::math::sd_min<int>(last, tadLen);
+          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+          const sd::LongType last = depth + j + 1;
+          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
           Y init = tbias + talpha * y[j * gradITadEws];
 
           if (j == 0) {
-            for (sd::Unsigned s = begin; s < end; ++s) {
+            for (sd::LongType s = begin; s < end; ++s) {
               factor[s] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[s * gradITadEws], -tbeta - 1);
               prev = prev + x[s * inTadEws] * factor[s];
             }

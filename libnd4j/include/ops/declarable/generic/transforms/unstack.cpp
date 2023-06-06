@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
   if (input->isEmpty()) return sd::Status::OK;
 
   std::vector<NDArray*> outArrs(input->sizeAt(dim));
-  for (sd::Unsigned i = 0; i < outArrs.size(); ++i) outArrs[i] = OUTPUT_VARIABLE(i);
+  for (sd::LongType i = 0; i < outArrs.size(); ++i) outArrs[i] = OUTPUT_VARIABLE(i);
 
   helpers::unstack(block.launchContext(), *input, outArrs, dim);
 
@@ -68,31 +68,33 @@ DECLARE_SHAPE_FN(unstack) {
 
     const sd::LongType numTads = shape::shapeOf(inShapeInfo)[dim];
     std::vector<sd::LongType> outShape;
-    for (sd::Unsigned i = 0; i < shape::rank(inShapeInfo); ++i)
+    for (sd::LongType i = 0; i < shape::rank(inShapeInfo); ++i)
       if (i != dim) outShape.push_back(shape::shapeOf(inShapeInfo)[i]);
 
     auto result = SHAPELIST();
-    for (sd::Unsigned i = 0; i < numTads; ++i)
+    for (sd::LongType i = 0; i < numTads; ++i)
       result->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                            shape::order(inShapeInfo), outShape));
 
     return result;
   }
 
-  std::vector<sd::LongType> dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], {dim});
+  std::vector<sd::LongType> dimVec = {dim};
+  std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], 1,dimVec.data());
 
-  if (dims.size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lengthOf scalars
+  if (dims->size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lengthOf scalars
 
     auto result = SHAPELIST();
     for (sd::LongType e = 0; e < shape::length(inShapeInfo); e++)
       result->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShapeInfo)));
+    delete dims;
 
     return result;
   }
 
   std::vector<sd::LongType> subArrShape(shape::rank(inShapeInfo) - 1);
 
-  for (sd::Unsigned j = 0, i = 0; i < shape::rank(inShapeInfo); i++)
+  for (sd::LongType j = 0, i = 0; i < shape::rank(inShapeInfo); i++)
     if (i != dim) subArrShape[j++] = shape::shapeOf(inShapeInfo)[i];
 
   // remove leading and trailing 1

@@ -88,7 +88,7 @@ class BroadcastHelper {
         tZ->applyPairwiseTransform(op.p, *y, extraArgs);
         return tZ;
       }
-    } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
+    } else if (x->isScalar() && y->isScalar()) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);

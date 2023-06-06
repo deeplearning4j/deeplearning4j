@@ -39,26 +39,26 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
 
   auto output = OUTPUT_VARIABLE(0);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
-  int sH = INT_ARG(2);                                                // strides height
-  int sW = INT_ARG(3);                                                // strides width
-  int pH = INT_ARG(4);                                                // paddings height
-  int pW = INT_ARG(5);                                                // paddings width
-  int dH = INT_ARG(6);                                                // dilations height
-  int dW = INT_ARG(7);                                                // dilations width
+  sd::LongType sH = INT_ARG(2);                                                // strides height
+  sd::LongType sW = INT_ARG(3);                                                // strides width
+  sd::LongType pH = INT_ARG(4);                                                // paddings height
+  sd::LongType pW = INT_ARG(5);                                                // paddings width
+  sd::LongType dH = INT_ARG(6);                                                // dilations height
+  sd::LongType dW = INT_ARG(7);                                                // dilations width
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   bool isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
-  int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) height
-  int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) width
+  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
 
   // Calculate individual paddings
-  unsigned int padLeft, padTop, padRight, padBottom;
-  int bS, iC, iH, iW, oC, oH,
+  unsigned sd::LongType padLeft, padTop, padRight, padBottom;
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 

@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(split) {
 
   std::vector<sd::LongType> shape(shape::rank(input));
 
-  for (int e = 0; e < shape::rank(input); e++)
+  for (sd::LongType e = 0; e < shape::rank(input); e++)
     if (e == axis)
       shape[e] = shape::sizeAt(input, e) / num_splits;
     else

@@ -54,8 +54,8 @@ sd::Status LegacyReduce3Op::validateAndExecute(Context &block) {
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
@@ -123,7 +123,7 @@ ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, sd::grap
   } else {
     auto array = new NDArray(nullptr, xShape, block.launchContext());
 
-    xShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+    xShape = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), *array, false, true);
 
     delete array;
   }

@@ -39,7 +39,7 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const sd::LongType* xSh
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ int rank, dimID;
-  __shared__ sd::Unsigned factorD, factorH, factorW;
+  __shared__ sd::LongType factorD, factorH, factorW;
   __shared__ sd::LongType zLen, *sharedMem;
 
   if (threadIdx.x == 0) {

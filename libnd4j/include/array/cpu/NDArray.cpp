@@ -479,7 +479,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<Lon
 
   const sd::LongType rank = input.rankOf();     // xRank = zRank
   const sd::LongType zLen = output.lengthOf();  // xLen <= zLen
-  const sd::Unsigned repSize = repeats.size();
+  const sd::LongType repSize = repeats.size();
 
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
@@ -525,7 +525,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) co
 // fill array by repeating it the number of times given by reps
 void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
-    throw std::invalid_argument(
+    THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
 

@@ -116,30 +116,13 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
 
     for (int j = 1; j < numChunks; j += j) samediff::Threads::parallel_for(funcMerge, 0, numChunks, 2 * j);
 
-    // #pragma omp parallel for
-    // for (sd::Unsigned i = 0; i < numChunks; ++i) {
-
-    //     sd::LongType offset = (len * i) >> power;
-    //     sd::LongType currLen = ((len * (i + 1)) >> power) - offset;
-    //     fisherYates<T>(rng, arr->bufferAsT<T>() + offset*ews, currLen, ews, offset);
-    // }
-
-    // for (sd::Unsigned j = 1; j < numChunks; j += j) {
-    //     #pragma omp parallel for
-    //     for (auto i = 0; i < numChunks; i += 2*j) {
-    //         sd::LongType offset = len * i >> power;
-    //         sd::LongType len1   = (len * (i + j) >> power) - offset;
-    //         sd::LongType totLen = (len * (i + 2*j)   >> power) - offset;
-    //         mergeShuffle(rng, arr->bufferAsT<T>() + offset*ews, len1, totLen, ews, len * j + offset);
-    //     }
-    // }
-
     rng.rewindH((len + 1) * power);
   } else {
-    auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
+    std::vector<sd::LongType> zeroDim = {0};
+    auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), 1,zeroDim.data());
 
     if (isInplace) {
-      auto subArrsList = input.allTensorsAlongDimension(dimsToExclude);
+      auto subArrsList = input.allTensorsAlongDimension(*dimsToExclude);
 
       // Fisher-Yates shuffle
       for (int i = firstDim - 1; i > 0; --i) {
@@ -147,9 +130,9 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
         if (i != j) subArrsList.at(i)->swapUnsafe(*subArrsList.at(j));
       }
     } else {
-      auto subArrsListIn = input.allTensorsAlongDimension(dimsToExclude);
-      auto subArrsListOut = output.allTensorsAlongDimension(dimsToExclude);
-
+      auto subArrsListIn = input.allTensorsAlongDimension(*dimsToExclude);
+      auto subArrsListOut = output.allTensorsAlongDimension(*dimsToExclude);
+      delete dimsToExclude;
       std::vector<int> indices(firstDim);
       std::iota(indices.begin(), indices.end(), 0);  // 0,1,2,3, ... firstDim-1
 

@@ -156,15 +156,7 @@ class SD_LIB_EXPORT DeclarableOp {
    */
   sd::LongType getOpHash();
 
-  /**
-   * This method sets arguments for op
-   */
-  //            void setArguments();
 
-  /**
-   * This method returns pointer to results
-   */
-  //            void getResults();
 
   /**
    * This method executes given Op

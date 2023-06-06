@@ -40,13 +40,12 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   if (dims.size() == 0 && block.width() > 2) {
     auto axis = INPUT_VARIABLE(2);
     helpers::adjustAxis(x->rankOf(), axis, dims);
-    // dims = ShapeUtils::convertAxisToTadTarget(z->rankOf(), dims);
   }
   if (dims.size() > 0) std::sort(dims.begin(), dims.end());
 
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
   auto tadLen = shape::length(packX->primaryShapeInfo());
   REQUIRE_TRUE(tadLen == y->lengthOf(), 0,
@@ -72,16 +71,14 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   else {
     // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare
     // and pass separate TAD info
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
     auto zTadShape = Environment::getInstance().isCPU()
                          ? packZ->primaryShapeInfo()
-                         : packZ->specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOnlyShapeInfo,
-                                                      //shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
+                         : packZ->specialShapeInfo();
     auto zTadOffsets = Environment::getInstance().isCPU()
                            ? packZ->primaryOffsets()
-                           : packZ->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tadZ.tadOffsets,
-                                                      //tadZ.numTads * sizeof(sd::LongType));
+                           : packZ->specialOffsets();
 
     NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                        x->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),

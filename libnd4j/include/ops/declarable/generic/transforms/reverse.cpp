@@ -49,7 +49,7 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     if (!block.isInplace()) output->assign(input);
   } else {
     // check the consistency of input dimensions to reverse along
-    shape::checkDimensions(input->rankOf(), axis);
+    shape::checkDimensions(input->rankOf(), &axis);
     helpers::reverse(block.launchContext(), input, output, &axis);
   }
 
@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
     output->assign(eps);
   } else {
     // check the consistency of input dimensions to reverse along
-    shape::checkDimensions(input->rankOf(), axis);
+    shape::checkDimensions(input->rankOf(), &axis);
     // we just reverse back original array
     helpers::reverse(block.launchContext(), eps, output, &axis);
   }

@@ -69,17 +69,16 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     e.nullify();
     z = matrixMinor<T>(z, k);  // minor computing for current column with given matrix z (initally is a input matrix)
 
+    std::vector<sd::LongType> zeroVec = {0};
     auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, {0});
+    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2,&zeroVec);
     if (matrix->t<T>(k, k) > T(0.f))  // negate on positive matrix diagonal element
       norm *= T(-1.f);                //.applyTransform(transform::Neg, nullptr, nullptr); //t<T>(0) = -norm.t<T>(0);
-    // e.t<T>(k) = T(1.f); // e - is filled by 0 vector except diagonal element (filled by 1)
-    // auto tE = e;
-    // tE *= norm;
+
 
     e.p(k, norm);
     e += currentColumn;  //  e += tE; // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
-    auto normE = e.reduceAlongDimension(reduce::Norm2, {0});
+    auto normE = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
     e /= normE;
     q[k] = vmul<T>(e, M);
     auto qQ = z.ulike();

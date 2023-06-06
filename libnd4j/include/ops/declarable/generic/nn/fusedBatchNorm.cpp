@@ -116,7 +116,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   const float restSizeAdjust = (float)restSize / restSizeMinusOne;
 
   if (isTraining) {
-    auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
+    std::vector<sd::LongType > dim = {0};
+    auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
     mean->assign(sum);
     *batchMean = *mean;
@@ -129,7 +130,9 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   if (isTraining) {
     int power = 2;
     xAffected.applyScalar(scalar::Pow, power, xAffected);
-    auto sum = xAffected.reduceAlongDimension(reduce::Sum, {0});
+    std::vector<sd::LongType > dim = {0};
+
+    auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
     variance->assign(sum);
     auto varOutput = (*variance) * restSizeAdjust;

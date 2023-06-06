@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
 
     if (!keepDims) {
       auto gradOShapeKeepDims =
-          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *x, true, false, block.getWorkspace());
+          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *x, true, false, block.getWorkspace());
       auto r = gradO->reshape(gradO->ordering(),
                               ShapeUtils::pullShapeFromShapeInfo(
                                   gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]

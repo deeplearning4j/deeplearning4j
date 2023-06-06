@@ -446,7 +446,7 @@ SD_KERNEL static void repeatCuda(const void* vx, const sd::LongType* xShapeInfo,
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     if (repSize > 1) {
-      for (sd::Unsigned j = 0; j < repSize; ++j) {
+      for (sd::LongType j = 0; j < repSize; ++j) {
         coords[axis] -= repeats[j];
         if (coords[axis] < 0) {
           coords[axis] = j;
@@ -504,7 +504,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats
 // fill array by repeating it the number of times given by repeats
 void NDArray::repeat(const int axis, const std::vector<sd::LongType>& repeats, NDArray& target) const {
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
-    throw std::invalid_argument(
+    THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");
 
@@ -564,7 +564,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
     }
 
     const T* buff = bufferAsT<T>();
-    for (sd::Unsigned i = 0; i < _length; i++) printf("%.*f, ", precision, (double)buff[getOffset(i)]);
+    for (sd::LongType i = 0; i < _length; i++) printf("%.*f, ", precision, (double)buff[getOffset(i)]);
     printf("\n");
   } else {
     if (specialBuffer() == nullptr || _length == 0) {
@@ -581,7 +581,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
     cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
     if (cudaResult != 0) throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
 
-    for (sd::Unsigned i = 0; i < _length; i++)
+    for (sd::LongType i = 0; i < _length; i++)
       printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[getOffset(i)]);
     printf("\n");
 

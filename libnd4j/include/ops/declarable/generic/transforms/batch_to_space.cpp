@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  const sd::Unsigned blockSize = INT_ARG(0);
+  const sd::LongType blockSize = INT_ARG(0);
   REQUIRE_TRUE(blockSize >= 2, 0, "BatchToSpace: integer parameter block_size must be >= 2, but got %i instead",
                blockSize);
 
@@ -70,10 +70,10 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
                  ShapeUtils::shapeAsString(crop).c_str());
 
-  const sd::Unsigned cropBottom = crop->e<sd::Unsigned>(0, 0);
-  const sd::Unsigned cropTop = crop->e<sd::Unsigned>(0, 1);
-  const sd::Unsigned cropLeft = crop->e<sd::Unsigned>(1, 0);
-  const sd::Unsigned cropRight = crop->e<sd::Unsigned>(1, 1);
+  const sd::LongType cropBottom = crop->e<sd::LongType>(0, 0);
+  const sd::LongType cropTop = crop->e<sd::LongType>(0, 1);
+  const sd::LongType cropLeft = crop->e<sd::LongType>(1, 0);
+  const sd::LongType cropRight = crop->e<sd::LongType>(1, 1);
 
   const int oH = input->sizeAt(1) * blockSize - cropBottom - cropTop;  // top and bottom
   const int oW = input->sizeAt(2) * blockSize - cropLeft - cropRight;  // left and right
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(batch_to_space) {
   auto inputShapeInfo = inputShape->at(0);
   auto cropShapeInfo = inputShape->at(1);
 
-  const sd::Unsigned blockSize = INT_ARG(0);
+  const sd::LongType blockSize = INT_ARG(0);
   REQUIRE_TRUE(blockSize >= 2, 0, "BatchToSpace: integer parameter block_size must be >= 2, but got %i instead",
                blockSize);
 
@@ -117,10 +117,10 @@ DECLARE_SHAPE_FN(batch_to_space) {
     REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead",
                  ShapeUtils::shapeAsString(cropShapeInfo).c_str());
 
-  const sd::Unsigned cropBottom = INPUT_VARIABLE(1)->e<sd::LongType>(0, 0);
-  const sd::Unsigned cropTop = INPUT_VARIABLE(1)->e<sd::LongType>(0, 1);
-  const sd::Unsigned cropLeft = INPUT_VARIABLE(1)->e<sd::LongType>(1, 0);
-  const sd::Unsigned cropRight = INPUT_VARIABLE(1)->e<sd::LongType>(1, 1);
+  const sd::LongType cropBottom = INPUT_VARIABLE(1)->e<sd::LongType>(0, 0);
+  const sd::LongType cropTop = INPUT_VARIABLE(1)->e<sd::LongType>(0, 1);
+  const sd::LongType cropLeft = INPUT_VARIABLE(1)->e<sd::LongType>(1, 0);
+  const sd::LongType cropRight = INPUT_VARIABLE(1)->e<sd::LongType>(1, 1);
 
   const int oH = inputShapeInfo[2] * blockSize - cropTop - cropBottom;  // top and bottom
   const int oW = inputShapeInfo[3] * blockSize - cropLeft - cropRight;  // left and right

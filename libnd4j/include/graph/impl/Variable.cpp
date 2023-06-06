@@ -244,7 +244,6 @@ sd::graph::Variable::Variable(NDArray *array, const char *name, int id, int idx)
 }
 
 sd::graph::Variable::~Variable() {
-  // sd_printf("Removing variable [%i:%i]\n", _id, _index);
   if (_variableType == VariableType::NDARRAY) {
     sd_debug("Removing variable <%i:%i>\n", _id, _index);
     if (_ndarray != nullptr && _removable && !_readOnly) delete _ndarray;

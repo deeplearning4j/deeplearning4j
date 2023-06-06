@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(qr) {
   auto shape = ShapeUtils::shapeAsVector(inShape);
 
   if (!fullMatricies) {  // outputs are: Q is MxN and R is NxN
-    shape[targetRank - 1] = shape::sizeAt(inShape, -1);
+    shape[targetRank - 1] = shape::sizeAt(inShape, static_cast<sd::LongType>(-1));
     shape[targetRank - 2] = shape[targetRank - 1];
     shapeQ = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
                                                                 targetRank, shape::shapeOf(inShape));
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(qr) {
                                                                 shape);
 
   } else {  // otherwise outputs are Q is MxM and R is MxN with zero filled rows
-    shape[targetRank - 1] = shape::sizeAt(inShape, -2);
+    shape[targetRank - 1] = shape::sizeAt(inShape, static_cast<sd::LongType>(-2));
     shape[targetRank - 2] = shape[targetRank - 1];
     shapeR = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
                                                                 targetRank, shape::shapeOf(inShape));

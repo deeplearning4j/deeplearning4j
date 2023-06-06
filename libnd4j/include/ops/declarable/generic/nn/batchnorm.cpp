@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   else
     axes.push_back(inRank - 1);  // default dimension to reduce along is last dimension
 
-  const sd::Unsigned numOfAxes = axes.size();
+  const sd::LongType numOfAxes = axes.size();
   REQUIRE_TRUE(numOfAxes <= inRank, 0,
                "BATCHNORM op: too big number of input axes to normalize over, expected number should be less or equal "
                "to rank of input array, but got %i and %i correspondingly !",
@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
     expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::Unsigned i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -156,7 +156,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   else
     axes.push_back(inRank - 1);  // default dimension to reduce along is last dimension
 
-  const sd::Unsigned numOfAxes = axes.size();
+  const sd::LongType numOfAxes = axes.size();
   REQUIRE_TRUE(numOfAxes <= inRank, 0,
                "BATCHNORM_BP op: too big number of input axes to normalize over, expected number should be less or "
                "equal to rank of input array, but got %i and %i correspondingly !",
@@ -170,7 +170,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
     expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::Unsigned i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -223,7 +223,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   // variance = input->varianceAlongDimension(variance::SummaryStatsVariance, false,
 
 
-  const auto excludedAxes = ShapeUtils::evalDimsToExclude(inRank, axes);
+  const auto excludedAxes = ShapeUtils::evalDimsToExclude(inRank, axes.size(),axes.data());
   const bool keepUnitiesInShape = inRank == mean->rankOf();
 
   // inverse batch size 1/N
@@ -231,7 +231,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // input - mean
   NDArray xMinusMean(input);  // empty array with same shape as input
-  input->applyBroadcast(sd::broadcast::Subtract, axes, *mean, xMinusMean);
+  input->applyBroadcast(sd::broadcast::Subtract, &axes, *mean, xMinusMean);
 
   // stdInv
   NDArray stdInv = *variance + epsilon;
@@ -250,8 +250,8 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
   gSum *= Ninv;
-  dLdO->applyBroadcast(sd::broadcast::Subtract, axes, gSum, *dLdI);
-  dLdI->applyBroadcast(sd::broadcast::Multiply, axes, stdInv, *dLdI);
+  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, gSum, *dLdI);
+  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, stdInv, *dLdI);
 
   // dLdV <- [g*(x - m)]_sum
   (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
@@ -265,12 +265,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdV *= -Ninv;            // -0.5f * (2 / N);
 
   // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
-  xMinusMean.applyBroadcast(sd::broadcast::Add, axes, *dLdM, xMinusMean);
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, *dLdV, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, *dLdM, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, *dLdV, xMinusMean);
 
   // dLdI
   *dLdI += xMinusMean;
-  if (applyScale) dLdI->applyBroadcast(sd::broadcast::Multiply, axes, *gamma, *dLdI);
+  if (applyScale) dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, *gamma, *dLdI);
 
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far

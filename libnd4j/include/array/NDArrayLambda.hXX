@@ -127,9 +127,9 @@ static SD_KERNEL void lambdaKernel(const void *vx, const sd::LongType *xShapeInf
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws]);
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws]);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto zOffset = getIndexOffset(e, zShapeInfo);
 
@@ -156,9 +156,9 @@ static SD_KERNEL void lambdaIndexedKernel(const void *vx, const sd::LongType *xS
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(e, x[e * xEws]);
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(e, x[e * xEws]);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto zOffset = getIndexOffset(e, zShapeInfo);
 
@@ -189,10 +189,10 @@ static SD_KERNEL void lambdaIndexedPairwiseKernel(const void *vx, const sd::Long
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x)
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x)
       z[e * zEws] = lambda(e, x[e * xEws], y[e * yEws]);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto yOffset = getIndexOffset(e, yShapeInfo);
       auto zOffset = getIndexOffset(e, zShapeInfo);
@@ -224,9 +224,9 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *vx, const sd::LongType *x
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], y[e * yEws]);
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], y[e * yEws]);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto yOffset = getIndexOffset(e, yShapeInfo);
       auto zOffset = getIndexOffset(e, zShapeInfo);
@@ -256,9 +256,9 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], yVal);
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], yVal);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto zOffset = getIndexOffset(e, zShapeInfo);
 
@@ -292,10 +292,10 @@ static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if (wEws > 1 && xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder && wOrder == xOrder) {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x)
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x)
       z[e * zEws] = lambda(w[e * wEws], x[e * xEws], y[e * yEws]);
   } else {
-    for (sd::Unsigned e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
       auto wOffset = getIndexOffset(e, wShapeInfo);
       auto xOffset = getIndexOffset(e, xShapeInfo);
       auto yOffset = getIndexOffset(e, yShapeInfo);

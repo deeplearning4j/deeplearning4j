@@ -89,7 +89,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     // copyCase1:
     // in this case:
     // When NdArrays follow the same order and unit elementwise stride and
-    // the concantenation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
+    // the concantneation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
     // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
     // we will concatenate them by sequential copying of the whole buffers
 
@@ -182,8 +182,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
       const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
 
-      sd::Unsigned inArrIdx = 0;
-      sd::Unsigned xDim = inArrs[inArrIdx]->sizeAt(axis);
+      sd::LongType inArrIdx = 0;
+      sd::LongType xDim = inArrs[inArrIdx]->sizeAt(axis);
 
       temp = coords[axis];
       while (coords[axis] >= xDim) {
@@ -236,7 +236,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
       input.ews() == 1;
 
   if (luckCase1) {
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -244,7 +244,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
 
   if (luckCase1) {
     T *x = const_cast<T *>(xBuff);
-    for (sd::Unsigned i = 0; i < numSplits; ++i) {
+    for (sd::LongType i = 0; i < numSplits; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf();
       memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
       x += memAmountToCopy;
@@ -252,7 +252,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
     return;
   }
 
-  sd::Unsigned zDim = outArrs[0]->sizeAt(axis);
+  sd::LongType zDim = outArrs[0]->sizeAt(axis);
   // general case
 
   auto func = PRAGMA_THREADS_FOR {
@@ -262,7 +262,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<
       shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
       const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
-      sd::Unsigned outArrIdx = 0;
+      sd::LongType outArrIdx = 0;
       temp = coords[axis];
 
       while (coords[axis] >= zDim) {

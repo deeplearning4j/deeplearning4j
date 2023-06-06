@@ -63,18 +63,21 @@ class PairWiseTransform {
  public:
   static void exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                    const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo, void *extraParams,
-                   uint64_t start, uint64_t stop);
+                   sd::LongType start, sd::LongType stop);
 
   static void exec(int opNum, const void *x, sd::LongType xStride, const void *y, sd::LongType yStride, void *z,
-                   sd::LongType resultStride, void *extraParams, sd::LongType len, uint64_t start, uint64_t stop);
+                   sd::LongType resultStride, void *extraParams, sd::LongType len, sd::LongType start,
+                   sd::LongType stop);
 
   template <typename OpType>
   static void exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
-                   void *vresult, const sd::LongType *zShapeInfo, void *vextraParams, uint64_t start, uint64_t stop);
+                   void *vresult, const sd::LongType *zShapeInfo, void *vextraParams, sd::LongType start,
+                   sd::LongType stop);
 
   template <typename OpType>
   static void exec(const void *vx, sd::LongType xStride, const void *vy, sd::LongType yStride, void *vresult,
-                   sd::LongType resultStride, void *vextraParams, sd::LongType len, uint64_t start, uint64_t stop);
+                   sd::LongType resultStride, void *vextraParams, sd::LongType len, sd::LongType start,
+                   sd::LongType stop);
 };
 }  // namespace pairwise_transforms
 }  // namespace functions

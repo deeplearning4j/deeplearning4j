@@ -64,8 +64,8 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
 
     const auto bSiCoffset = coords[0] * colShapeInfo[7] + coords[1] * colShapeInfo[8];
 
-    const sd::Unsigned imH = coords[2] + pH;
-    const sd::Unsigned imW = coords[3] + pW;
+    const sd::LongType imH = coords[2] + pH;
+    const sd::LongType imW = coords[3] + pW;
 
     const sd::LongType colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
     const sd::LongType colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;

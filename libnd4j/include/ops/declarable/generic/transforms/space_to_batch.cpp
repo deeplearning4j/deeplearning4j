@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  const sd::Unsigned blockSize = INT_ARG(0);
+  const sd::LongType blockSize = INT_ARG(0);
   REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead",
                blockSize);
 
@@ -54,10 +54,10 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead",
                  ShapeUtils::shapeAsString(padding).c_str());
 
-  const sd::Unsigned padBottom = padding->e<sd::Unsigned>(0, 0);
-  const sd::Unsigned padTop = padding->e<sd::Unsigned>(0, 1);
-  const sd::Unsigned padLeft = padding->e<sd::Unsigned>(1, 0);
-  const sd::Unsigned padRight = padding->e<sd::Unsigned>(1, 1);
+  const sd::LongType padBottom = padding->e<sd::LongType>(0, 0);
+  const sd::LongType padTop = padding->e<sd::LongType>(0, 1);
+  const sd::LongType padLeft = padding->e<sd::LongType>(1, 0);
+  const sd::LongType padRight = padding->e<sd::LongType>(1, 1);
 
   REQUIRE_TRUE(
       (input->sizeAt(1) + padBottom + padTop) % blockSize == 0 &&
@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(space_to_batch) {
   auto inputShapeInfo = inputShape->at(0);
   auto paddingShapeInfo = inputShape->at(1);
 
-  const sd::Unsigned blockSize = INT_ARG(0);
+  const sd::LongType blockSize = INT_ARG(0);
   REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead",
                blockSize);
 
@@ -94,10 +94,10 @@ DECLARE_SHAPE_FN(space_to_batch) {
     REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead",
                  ShapeUtils::shapeAsString(paddingShapeInfo).c_str());
 
-  const sd::Unsigned padBottom = INPUT_VARIABLE(1)->e<sd::LongType>(0, 0);
-  const sd::Unsigned padTop = INPUT_VARIABLE(1)->e<sd::LongType>(0, 1);
-  const sd::Unsigned padLeft = INPUT_VARIABLE(1)->e<sd::LongType>(1, 0);
-  const sd::Unsigned padRight = INPUT_VARIABLE(1)->e<sd::LongType>(1, 1);
+  const sd::LongType padBottom = INPUT_VARIABLE(1)->e<sd::LongType>(0, 0);
+  const sd::LongType padTop = INPUT_VARIABLE(1)->e<sd::LongType>(0, 1);
+  const sd::LongType padLeft = INPUT_VARIABLE(1)->e<sd::LongType>(1, 0);
+  const sd::LongType padRight = INPUT_VARIABLE(1)->e<sd::LongType>(1, 1);
 
   REQUIRE_TRUE(
       (inputShapeInfo[2] + padBottom + padTop) % blockSize == 0 &&

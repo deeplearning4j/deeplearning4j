@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(evaluate_reduction_shape, 2, 1, false, 0, 0) {
 
   auto tempShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::INT64, 'c', shape);
   auto tempReductionShapeInfo =
-      ShapeUtils::evalReduceShapeInfo('c', axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
+      ShapeUtils::evalReduceShapeInfo('c', &axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
 
   REQUIRE_TRUE(output->lengthOf() == shape::rank(tempReductionShapeInfo), 0,
                "evaluate_reduction_shape: output length should be %i, but got %i instead",

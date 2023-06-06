@@ -93,16 +93,16 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
     float sum = 0.f;
 
 #pragma omp simd reduction(max : max)
-    for (sd::Unsigned j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
+    for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
 
 #pragma omp simd reduction(+ : sum)
-    for (sd::Unsigned j = 0; j < tadLen; ++j) {
+    for (sd::LongType j = 0; j < tadLen; ++j) {
       float temp = sd::math::sd_exp<float, float>(inBuff[j] - max);
       outBuff[j] = temp;
       sum += temp;
     }
 
-    for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[j] /= sum;
+    for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
   }
 }
 #else
@@ -117,15 +117,15 @@ SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongTyp
       float max = -DataTypeUtils::max<float>();
       float sum = 0.f;
 
-      for (sd::Unsigned j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
+      for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<float>(max, inBuff[j]);
 
-      for (sd::Unsigned j = 0; j < tadLen; ++j) {
+      for (sd::LongType j = 0; j < tadLen; ++j) {
         float temp = sd::math::sd_exp<float, float>(inBuff[j] - max);
         outBuff[j] = temp;
         sum += temp;
       }
 
-      for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[j] /= sum;
+      for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
     }
   };
 
@@ -146,15 +146,15 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
       T sum(0.f);
 
       PRAGMA_OMP_SIMD_MAX_2(max)
-      for (sd::Unsigned j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[j]);
+      for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[j]);
       PRAGMA_OMP_SIMD_SUM(sum)
-      for (sd::Unsigned j = 0; j < tadLen; ++j) {
+      for (sd::LongType j = 0; j < tadLen; ++j) {
         T temp = sd::math::sd_exp<T, T>(inBuff[j] - max);
         outBuff[j] = temp;
         sum += temp;
       }
 
-      for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[j] /= sum;
+      for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
     }
   };
 
@@ -175,8 +175,8 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
     TadPack *tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimension);
     auto tadShapeInfo = tadPack->primaryShapeInfo();
     auto tadOffsets = tadPack->primaryOffsets();
-    const sd::Unsigned numOfSubArrs = tadPack->numberOfTads();
-    const sd::Unsigned tadLen = shape::length(tadShapeInfo);
+    const sd::LongType numOfSubArrs = tadPack->numberOfTads();
+    const sd::LongType tadLen = shape::length(tadShapeInfo);
 
     if (shape::elementWiseStride(tadShapeInfo) == 1) {
       auto inBuff = input.bufferAsT<T>();
@@ -184,7 +184,7 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
 
       softmax_loop(inBuff, outBuff, tadOffsets, numOfSubArrs, tadLen);
     } else {
-      sd::Unsigned inShapeInfoCast[SD_MAX_RANK];
+      sd::LongType inShapeInfoCast[SD_MAX_RANK];
       bool canCast = sd::DataTypeUtils::castShapeInfo(tadShapeInfo, inShapeInfoCast);
 
       auto offsets = new sd::LongType[tadLen];
@@ -198,15 +198,15 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
           T max = -DataTypeUtils::max<T>();
           T sum = 0.f;
 
-          for (sd::Unsigned j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[offsets[j]]);
+          for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[offsets[j]]);
 
-          for (sd::Unsigned j = 0; j < tadLen; ++j) {
+          for (sd::LongType j = 0; j < tadLen; ++j) {
             T temp = sd::math::sd_exp<T, T>(inBuff[offsets[j]] - max);
             outBuff[offsets[j]] = temp;
             sum += temp;
           }
 
-          for (sd::Unsigned j = 0; j < tadLen; ++j) outBuff[offsets[j]] /= sum;
+          for (sd::LongType j = 0; j < tadLen; ++j) outBuff[offsets[j]] /= sum;
         }
       };
 
@@ -215,10 +215,11 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
       delete[] offsets;
     }
   } else {
-    NDArray max = input.reduceAlongDimension(sd::reduce::Max, {dimension}, true);
+    std::vector<sd::LongType> dimensionVec = {dimension};
+    NDArray max = input.reduceAlongDimension(sd::reduce::Max, &dimensionVec, true);
     input.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), max, output, false);
     output.applyTransform(sd::transform::Exp, output);
-    NDArray sum = output.reduceAlongDimension(sd::reduce::Sum, {dimension}, true);
+    NDArray sum = output.reduceAlongDimension(sd::reduce::Sum, &dimensionVec, true);
     output /= sum;
   }
 }

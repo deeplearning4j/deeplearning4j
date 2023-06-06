@@ -31,7 +31,6 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
   auto dimensions = *block.getIArguments();
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
@@ -55,7 +54,7 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
                  input->rankOf(), input->rankOf(), item);
   }
 
-  input->reduceAlongDimension(reduce::Mean, *output, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Mean, *output, &dimensions, keepDims);
   return sd::Status::OK;
 }
 
@@ -84,7 +83,7 @@ DECLARE_SHAPE_FN(reduce_mean) {
                  inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   auto outShapeInfo =
-      ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
+      ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
 }
@@ -135,7 +134,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
     gradI->assign((gradO->lengthOf() + 0.) / (input->lengthOf() + 0.0));
     if (!keepDims) {
       auto gradOShapeKeepDims =
-          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+          ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
       *gradI *= gradO->reshape(gradO->ordering(),
                                ShapeUtils::pullShapeFromShapeInfo(
                                    gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]

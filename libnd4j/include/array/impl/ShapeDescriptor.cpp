@@ -157,11 +157,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
   if(shapeInfo == nullptr) {
-    throw std::runtime_error("ShapeDescriptor constructor: Shape info can not be null!");
+    THROW_EXCEPTION("ShapeDescriptor constructor: Shape info can not be null!");
   }
 
   if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
-    throw std::runtime_error("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
+    THROW_EXCEPTION("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
   }
 
   _order = shape::order(shapeInfo);
@@ -177,7 +177,7 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
   auto shapePtr = shape::shapeOf(shapeInfo);
   auto stridePtr = shape::stride(shapeInfo);
 
-  for (int e = 0; e < _rank; e++) {
+  for (sd::LongType e = 0; e < _rank; e++) {
     _shape[e] = shapePtr[e];
     _strides[e] = stridePtr[e];
     if (shapePtr[e] == 0) _extraProperties |= ARRAY_EMPTY;

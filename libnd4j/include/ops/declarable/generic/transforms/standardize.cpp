@@ -44,10 +44,10 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
 
   REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
 
-  shape::checkDimensions(input->rankOf(), axis);
+  shape::checkDimensions(input->rankOf(), &axis);
 
-  auto means = input->reduceAlongDimension(reduce::Mean, axis, true);
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis) + 1e-12;
+  auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis) + 1e-12;
   stdev.reshapei(means.getShapeAsVector());
   input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, *output, false);
   output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
@@ -76,16 +76,16 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
 
   REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
 
-  shape::checkDimensions(input->rankOf(), axis);
+  shape::checkDimensions(input->rankOf(), &axis);
   auto longAxis = ArrayUtils::toLongVector(axis);
 
-  auto means = input->reduceAlongDimension(reduce::Mean, axis, true);
-  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
+  auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
+  auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
   stdev.reshapei(means.getShapeAsVector());
 
   eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
 
-  NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, axis, true);
+  NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, &axis, true);
 
   NDArray dldx_u(input->shapeInfo(), false, block.launchContext());
   std::vector<NDArray *> meanBpArgs = {input, &dldu_sum};
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   stdev.applyPairwiseTransform(sd::pairwise::Multiply, stdev, stdev);
   tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, tmp, false);
 
-  auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, axis, true);
+  auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, &axis, true);
   NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
   std::vector<NDArray *> stdevBpArgs = {input, &dlds_sum};
   std::vector<NDArray *> stdevBpOutput = {&dldx_s};

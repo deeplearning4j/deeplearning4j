@@ -33,7 +33,7 @@ class SD_LIB_EXPORT TadPack {
   ConstantShapeBuffer _tadShape;
   ConstantOffsetsBuffer _tadOffsets;
   sd::LongType _numTads = 0;
-  int _shapeInfoLength = 0;
+  sd::LongType _shapeInfoLength = 0;
 
  public:
   explicit TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads);
@@ -47,7 +47,7 @@ class SD_LIB_EXPORT TadPack {
   const sd::LongType* specialOffsets() const;
 
   sd::LongType numberOfTads() const;
-  int shapeInfoLength() const;
+  sd::LongType shapeInfoLength() const;
 
   /**
    * These methods return either primary or special pointers depending on platform binaries were compiled for

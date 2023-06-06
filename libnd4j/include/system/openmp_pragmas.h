@@ -117,6 +117,7 @@
 #define PRAGMA_OMP_ATOMIC _Pragma(OMP_STRINGIFY(omp atomic))
 #define PRAGMA_OMP_ATOMIC_ARGS(args) _Pragma(OMP_STRINGIFY(omp atomic args))
 #define PRAGMA_OMP_CRITICAL _Pragma(OMP_STRINGIFY(omp critical))
+#define PRAGMA_OMP_ATOMIC _Pragma(OMP_STRINGIFY(omp atomic))
 #define PRAGMA_OMP_DECLARE_SIMD _Pragma("omp declare simd")
 #define PRAGMA_OMP_SIMD _Pragma(OMP_STRINGIFY(omp simd))
 #define PRAGMA_OMP_SIMD_ARGS(args) _Pragma(OMP_STRINGIFY(omp simd args))

@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(expand_dims) {
   auto x_rank = shape::rank(inShape);
   char order = shape::order(inShape);
 
-  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
+  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<sd::LongType>(0);
   if (axis < 0) axis += x_rank + 1;
 
   REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf(), 0,
@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(expand_dims) {
                axis);
 
   std::vector<sd::LongType> shape;
-  for (int e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
+  for (sd::LongType e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
 
   shape.insert(shape.begin() + axis, 1);
 
