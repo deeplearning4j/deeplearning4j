@@ -1715,7 +1715,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
-                inputBuffers.put(cnt, in.data().addressPointer());
+                inputBuffers.put(cnt, in.data().opaqueBuffer());
                 inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
             }
 
@@ -1772,10 +1772,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 dArgs.put(cnt++, b.toInt());
         }
 
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null,
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes3(null,
                 hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
                 iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
-//        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().size(), tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments(), dArgs, op.numDArguments());
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
