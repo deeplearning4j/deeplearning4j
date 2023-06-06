@@ -253,6 +253,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public SDVariable[] outputVariables(String baseName) {
+        //when using nd4j debug might be called and samediff may be null
+        if(this.sameDiff == null)
+            return new SDVariable[0];
         if (this.outputVariables == null) {
             val outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists

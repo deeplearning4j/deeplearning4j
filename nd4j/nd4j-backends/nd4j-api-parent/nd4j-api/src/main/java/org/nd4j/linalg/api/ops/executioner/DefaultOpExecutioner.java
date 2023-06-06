@@ -485,7 +485,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
         Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
-
+        if(isDebug() && isVerbose()) {
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            String[] arg = differentialFunction.argNames();
+            String[] output = differentialFunction.outputVariablesNames();
+            log.info("About to execute op {} of type {} with inputs {} and outputs {}", differentialFunction.getOwnName(), op.opName(),
+                    Arrays.toString(arg), Arrays.toString(differentialFunction.outputVariablesNames()));
+        }
 
         for (val arr: inArgs) {
             if (arr.wasClosed())

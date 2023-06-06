@@ -601,6 +601,8 @@ public abstract class DifferentialFunction {
 
     public String[] outputVariablesNames() {
         SDVariable[] outputVars = outputVariables();
+        if(outputVars == null)
+            return new String[0];
         String[] out = new String[outputVars.length];
         for( int i = 0; i < out.length; i++) {
             out[i] = outputVars[i] == null ? "" : outputVars[i].name();
@@ -656,10 +658,12 @@ public abstract class DifferentialFunction {
         return args[num];
     }
 
-    public String[] argNames(){
+    public String[] argNames() {
         SDVariable[] args = args();
+        if(args == null)
+            return new String[0];
         String[] out = new String[args.length];
-        for( int i = 0; i < args.length; i++ ){
+        for( int i = 0; i < args.length; i++) {
             out[i] = args[i].name();
         }
         return out;
