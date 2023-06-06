@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
     varianceOp.execute({input}, {variances}, {}, axes, {keepDims}, {}, false);
   }
 
-  input->reduceAlongDimension(reduce::Mean, *means, axis, keepDims);
+  input->reduceAlongDimension(reduce::Mean, *means, &axis, keepDims);
 
   return sd::Status::OK;
 }
@@ -72,11 +72,10 @@ DECLARE_SHAPE_FN(moments) {
       axis.emplace_back(ca);
     }
   }
-  // std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
   const bool keepDims = block.getBArguments()->size() > 0 ? (bool)B_ARG(0) : false;
 
-  auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
-  auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
+  auto meanShape = ShapeUtils::evalReduceShapeInfo('c', &axis, *input, keepDims, false, block.workspace());
+  auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', &axis, *input, keepDims, false, block.workspace());
   return SHAPELIST(meanShape, varianceShape);
 }
 

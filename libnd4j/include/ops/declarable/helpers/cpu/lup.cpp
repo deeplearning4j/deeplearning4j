@@ -40,7 +40,7 @@ BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, int theFirst, 
 template <typename T>
 static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType theFirst, sd::LongType theSecond) {
   if (theFirst != theSecond) {
-    auto n = shape::sizeAt(matrixShape, -1);
+    auto n = shape::sizeAt(matrixShape, static_cast<sd::LongType>(-1));
 
     auto loop = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
@@ -206,10 +206,10 @@ BUILD_DOUBLE_TEMPLATE(template NDArray lup_,
  * */
 template <typename T, typename I>
 static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShape) {
-  auto rowNum = shape::sizeAt(compoundShape, 0);
+  auto rowNum = shape::sizeAt(compoundShape, static_cast<sd::LongType>(0));
   sd::LongType xInitial[] = {column, column};
   auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
-  auto maxValue = T(0);  // sd::math::sd_abs(compoundBuffer[xInitialIndex]);
+  auto maxValue = T(0);
   auto result = -1;
   // auto loop = PRAGMA_THREADS_FOR {
   auto start = column;

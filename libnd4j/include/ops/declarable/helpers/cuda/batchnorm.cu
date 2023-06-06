@@ -64,14 +64,14 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const sd::LongType* xShapeI
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::Unsigned i = tid; i < xLen; i += totalThreads) {
+  for (sd::LongType i = tid; i < xLen; i += totalThreads) {
     shape::index2coords(i, xShapeInfo, coords);
 
     const auto xOffset = shape::getOffset(xShapeInfo, coords);
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     if (minRank == xRank) {
-      for (sd::Unsigned i = 0, j = 0; i < xRank; ++i) {
+      for (sd::LongType i = 0, j = 0; i < xRank; ++i) {
         if (j < numDims && i != dims[j])
           coords[i] = 0;
         else

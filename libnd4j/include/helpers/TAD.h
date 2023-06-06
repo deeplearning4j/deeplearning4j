@@ -579,9 +579,9 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
 
 SD_INLINE void TAD::createOffsets() {
   this->tadOffsets = new sd::LongType[this->numTads];
-  sd::Unsigned nT = this->numTads;
+  sd::LongType nT = this->numTads;
 
-  for (sd::Unsigned i = 0; i < nT; i++) this->tadOffsets[i] = this->tadOffset(i);
+  for (sd::LongType i = 0; i < nT; i++) this->tadOffsets[i] = this->tadOffset(i);
 }
 
 SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {

@@ -89,9 +89,8 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
     tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
   }
 
-  // int *resultStride = shape::stride(xTadShapeShapeInfo);
-  unsigned int tadLength = shape::length(xTadShapeShapeInfo);  // shape::length(xTadShapeShapeInfo);
-  unsigned int tads = shape::length(xShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(xTadShapeShapeInfo);
+  sd::LongType tads = shape::length(xShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = xTadShapeShapeInfo;
@@ -118,7 +117,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
     };
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {
@@ -126,7 +125,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
     };
   } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
@@ -138,7 +137,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(oX[offset], y[offset]);
       }
@@ -154,7 +153,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
         oZ[zOffset] = OpType::op(oX[offset], y[offset]);
@@ -171,7 +170,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[offset], y[yOffset]);
@@ -188,7 +187,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(oX[xOffset], y[offset]);
@@ -207,7 +206,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       auto oX = x + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
@@ -243,8 +242,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
   }
 
   // int *resultStride = shape::stride(yTadShapeShapeInfo);
-  unsigned int tadLength = shape::length(yTadShapeShapeInfo);
-  unsigned int tads = shape::length(yShapeInfo) / tadLength;
+  sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
+  sd::LongType tads = shape::length(yShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = yTadShapeShapeInfo;
@@ -271,7 +270,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (unsigned int f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
     };
   } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
     for (auto i = start; i < stop; i++) {
@@ -279,7 +278,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (sd::Unsigned f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
+      for (sd::LongType f = 0; f < tadLength; f++) oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
     };
   } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
              shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
@@ -291,7 +290,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oZ = z + zTadOffset[i];
 
       PRAGMA_OMP_SIMD
-      for (sd::Unsigned f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         oZ[offset] = OpType::op(x[offset], oY[offset]);
       }
@@ -306,7 +305,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oZ = z + zTadOffset[i];
       auto oY = y + tadOffsets[i];
 
-      for (sd::Unsigned f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
         oZ[zOffset] = OpType::op(x[offset], oY[offset]);
@@ -323,7 +322,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (sd::Unsigned f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(x[xOffset], oY[offset]);
@@ -340,7 +339,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (sd::Unsigned f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto offset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         oZ[offset] = OpType::op(x[offset], oY[yOffset]);
@@ -359,7 +358,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       auto oY = y + tadOffsets[i];
 
       PRAGMA_OMP_SIMD
-      for (sd::Unsigned f = 0; f < tadLength; f++) {
+      for (sd::LongType f = 0; f < tadLength; f++) {
         auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
         auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
         auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
@@ -373,10 +372,10 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
 template <typename X, typename OpType>
 static void execRank1(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, 0);
-  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, 0);
-  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, 0);
-  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, 0);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo,  static_cast<sd::LongType>(0));
+  sd::LongType xStrd0 = shape::strideAt(xShapeInfo,  static_cast<sd::LongType>(0));
+  sd::LongType yStrd0 = shape::strideAt(yShapeInfo,  static_cast<sd::LongType>(0));
+  sd::LongType zStrd0 = shape::strideAt(zShapeInfo,  static_cast<sd::LongType>(0));
 
   auto func = PRAGMA_THREADS_FOR {
     if (zStrd0 == 1 && xStrd0 == 1 && yStrd0 == 0) {
@@ -389,22 +388,22 @@ static void execRank1(const X *x, const sd::LongType *xShapeInfo, const X *y, co
       for (auto i0 = start; i0 < stop; ++i0) z[i0 * zStrd0] = OpType::op(x[i0 * xStrd0], y[i0 * yStrd0]);
     }
   };
-  samediff::Threads::parallel_tad(func, 0, zAxis0);
+  samediff::Threads::parallel_tad(func,  static_cast<sd::LongType>(0), zAxis0);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
 static void execRank2(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::Unsigned zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
-  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
-  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
-  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 1);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)   : static_cast<sd::LongType>(1) );
+  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)   : static_cast<sd::LongType>(1) );
+  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)   : static_cast<sd::LongType>(1) );
+  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)   : static_cast<sd::LongType>(1) );
 
-  sd::Unsigned zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
-  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
-  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
-  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
+  sd::LongType zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) );
+  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) );
+  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) );
+  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) );
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i0 = start; i0 < stop; ++i0) {
@@ -413,37 +412,37 @@ static void execRank2(const X *x, const sd::LongType *xShapeInfo, const X *y, co
       auto z0 = z + i0 * zStrd0;
 
       if (zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 0)
-        for (sd::Unsigned i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(x0[i1], *y0);
+        for (sd::LongType i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(x0[i1], *y0);
       else if (zStrd1 == 1 && xStrd1 == 0 && yStrd1 == 1)
-        for (sd::Unsigned i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(*x0, y0[i1]);
+        for (sd::LongType i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(*x0, y0[i1]);
       else if (zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 1)
-        for (sd::Unsigned i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(x0[i1], y0[i1]);
+        for (sd::LongType i1 = 0; i1 < zAxis1; ++i1) z0[i1] = OpType::op(x0[i1], y0[i1]);
       else
-        for (sd::Unsigned i1 = 0; i1 < zAxis1; ++i1) z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1]);
+        for (sd::LongType i1 = 0; i1 < zAxis1; ++i1) z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1]);
     }
   };
 
-  samediff::Threads::parallel_tad(func, 0, zAxis0);
+  samediff::Threads::parallel_tad(func,  static_cast<sd::LongType>(0), zAxis0);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
 static void execRank3(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::Unsigned zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
-  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
-  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
-  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 2);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(2));
+  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(2));
+  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(2));
+  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(2));
 
-  sd::Unsigned zAxis1 = shape::sizeAt(zShapeInfo, 1);
-  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, 1);
-  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, 1);
-  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, 1);
+  sd::LongType zAxis1 = shape::sizeAt(zShapeInfo,  static_cast<sd::LongType>(1));
+  sd::LongType xStrd1 = shape::strideAt(xShapeInfo,  static_cast<sd::LongType>(1));
+  sd::LongType yStrd1 = shape::strideAt(yShapeInfo,  static_cast<sd::LongType>(1));
+  sd::LongType zStrd1 = shape::strideAt(zShapeInfo,  static_cast<sd::LongType>(1));
 
-  sd::Unsigned zAxis2 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
-  sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
-  sd::LongType yStrd2 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
-  sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
+  sd::LongType zAxis2 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(0) );
+  sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(0) );
+  sd::LongType yStrd2 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(0) );
+  sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(0) );
 
   auto func = PRAGMA_THREADS_FOR_2D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -453,43 +452,43 @@ static void execRank3(const X *x, const sd::LongType *xShapeInfo, const X *y, co
         auto z1 = z + i0 * zStrd0 + i1 * zStrd1;
 
         if (zStrd2 == 1 && xStrd2 == 1 && yStrd2 == 0)
-          for (sd::Unsigned i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(x1[i2], *y1);
+          for (sd::LongType i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(x1[i2], *y1);
         else if (zStrd2 == 1 && xStrd2 == 0 && yStrd2 == 1)
-          for (sd::Unsigned i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(*x1, y1[i2]);
+          for (sd::LongType i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(*x1, y1[i2]);
         else if (zStrd2 == 1 && xStrd2 == 1 && yStrd2 == 1)
-          for (sd::Unsigned i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(x1[i2], y1[i2]);
+          for (sd::LongType i2 = 0; i2 < zAxis2; ++i2) z1[i2] = OpType::op(x1[i2], y1[i2]);
         else
-          for (sd::Unsigned i2 = 0; i2 < zAxis2; ++i2) z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2]);
+          for (sd::LongType i2 = 0; i2 < zAxis2; ++i2) z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2]);
       }
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, zAxis0, 1, 0, zAxis1, 1);
+  samediff::Threads::parallel_for(func,  static_cast<sd::LongType>(0), zAxis0,  static_cast<sd::LongType>(1),  static_cast<sd::LongType>(0), zAxis1,  static_cast<sd::LongType>(1));
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
 static void execRank4(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::Unsigned zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
-  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
-  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
-  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 3);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)    : static_cast<sd::LongType>(3));
+  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)    : static_cast<sd::LongType>(3));
+  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)    : static_cast<sd::LongType>(3));
+  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)    : static_cast<sd::LongType>(3));
 
-  sd::Unsigned zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 2);
-  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 2);
-  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 2);
-  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 2);
+  sd::LongType zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)  : static_cast<sd::LongType>(2));
+  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)  : static_cast<sd::LongType>(2));
+  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)  : static_cast<sd::LongType>(2));
+  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)  : static_cast<sd::LongType>(2));
 
-  sd::Unsigned zAxis2 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 1);
-  sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 1);
-  sd::LongType yStrd2 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 1);
-  sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 1);
+  sd::LongType zAxis2 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(1) );
+  sd::LongType xStrd2 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(1) );
+  sd::LongType yStrd2 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(1) );
+  sd::LongType zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(2)  : static_cast<sd::LongType>(1) );
 
-  sd::Unsigned zAxis3 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
-  sd::LongType xStrd3 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
-  sd::LongType yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
-  sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
+  sd::LongType zAxis3 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(0) );
+  sd::LongType xStrd3 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(0) );
+  sd::LongType yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(0) );
+  sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(0) );
 
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -500,67 +499,67 @@ static void execRank4(const X *x, const sd::LongType *xShapeInfo, const X *y, co
           auto z2 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2;
 
           if (zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 0)
-            for (sd::Unsigned i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(x2[i3], *y2);
+            for (sd::LongType i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(x2[i3], *y2);
           else if (zStrd3 == 1 && xStrd3 == 0 && yStrd3 == 1)
-            for (sd::Unsigned i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(*x2, y2[i3]);
+            for (sd::LongType i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(*x2, y2[i3]);
           else if (zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 1)
-            for (sd::Unsigned i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(x2[i3], y2[i3]);
+            for (sd::LongType i3 = 0; i3 < zAxis3; ++i3) z2[i3] = OpType::op(x2[i3], y2[i3]);
           else
-            for (sd::Unsigned i3 = 0; i3 < zAxis3; ++i3) z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
+            for (sd::LongType i3 = 0; i3 < zAxis3; ++i3) z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
         }
       }
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, zAxis0, 1, 0, zAxis1, 1, 0, zAxis2, 1);
+  samediff::Threads::parallel_for(func,  static_cast<sd::LongType>(0), zAxis0,  static_cast<sd::LongType>(1),  static_cast<sd::LongType>(0), zAxis1,  static_cast<sd::LongType>(1),  static_cast<sd::LongType>(0), zAxis2,  static_cast<sd::LongType>(1));
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
 static void execRank5(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, X *z,
                       const sd::LongType *zShapeInfo) {
-  sd::Unsigned zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 4);
-  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 4);
-  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 4);
-  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 0 : 4);
+  sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(4));
+  sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(4));
+  sd::LongType yStrd0 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(4));
+  sd::LongType zStrd0 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0)  : static_cast<sd::LongType>(4));
 
-  sd::Unsigned zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 3);
-  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 3);
-  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 3);
-  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 3);
+  sd::LongType zAxis1 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)    : static_cast<sd::LongType>(3));
+  sd::LongType xStrd1 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)    : static_cast<sd::LongType>(3));
+  sd::LongType yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)    : static_cast<sd::LongType>(3));
+  sd::LongType zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(1)    : static_cast<sd::LongType>(3));
 
-  sd::Unsigned zAxis2 = shape::sizeAt(zShapeInfo, 2);
-  sd::LongType xStrd2 = shape::strideAt(xShapeInfo, 2);
-  sd::LongType yStrd2 = shape::strideAt(yShapeInfo, 2);
-  sd::LongType zStrd2 = shape::strideAt(zShapeInfo, 2);
+  sd::LongType zAxis2 = shape::sizeAt(zShapeInfo,  static_cast<sd::LongType>(2));
+  sd::LongType xStrd2 = shape::strideAt(xShapeInfo,  static_cast<sd::LongType>(2));
+  sd::LongType yStrd2 = shape::strideAt(yShapeInfo,  static_cast<sd::LongType>(2));
+  sd::LongType zStrd2 = shape::strideAt(zShapeInfo,  static_cast<sd::LongType>(2));
 
-  sd::Unsigned zAxis3 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 1);
-  sd::LongType xStrd3 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 1);
-  sd::LongType yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 1);
-  sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 1);
+  sd::LongType zAxis3 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(1) );
+  sd::LongType xStrd3 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(1) );
+  sd::LongType yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(1) );
+  sd::LongType zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3  : static_cast<sd::LongType>(1) );
 
-  sd::Unsigned zAxis4 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
-  sd::LongType xStrd4 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
-  sd::LongType yStrd4 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
-  sd::LongType zStrd4 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
+  sd::LongType zAxis4 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 4  : static_cast<sd::LongType>(0) );
+  sd::LongType xStrd4 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? 4  : static_cast<sd::LongType>(0) );
+  sd::LongType yStrd4 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 4  : static_cast<sd::LongType>(0) );
+  sd::LongType zStrd4 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 4  : static_cast<sd::LongType>(0) );
 
   auto func = PRAGMA_THREADS_FOR_3D {
     for (auto i0 = start_x; i0 < stop_x; ++i0) {
       for (auto i1 = start_y; i1 < stop_y; ++i1) {
         for (auto i2 = start_z; i2 < stop_z; ++i2) {
-          for (sd::Unsigned i3 = 0; i3 < zAxis3; ++i3) {
+          for (sd::LongType i3 = 0; i3 < zAxis3; ++i3) {
             auto x3 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3;
             auto y3 = y + i0 * yStrd0 + i1 * yStrd1 + i2 * yStrd2 + i3 * yStrd3;
             auto z3 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2 + i3 * zStrd3;
 
             if (zStrd4 == 1 && xStrd4 == 1 && yStrd4 == 0)
-              for (sd::Unsigned i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(x3[i4], *y3);
+              for (sd::LongType i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(x3[i4], *y3);
             else if (zStrd4 == 1 && xStrd4 == 0 && yStrd4 == 1)
-              for (sd::Unsigned i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(*x3, y3[i4]);
+              for (sd::LongType i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(*x3, y3[i4]);
             else if (zStrd4 == 1 && xStrd4 == 1 && yStrd4 == 1)
-              for (sd::Unsigned i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(x3[i4], y3[i4]);
+              for (sd::LongType i4 = 0; i4 < zAxis4; ++i4) z3[i4] = OpType::op(x3[i4], y3[i4]);
             else
-              for (sd::Unsigned i4 = 0; i4 < zAxis4; ++i4)
+              for (sd::LongType i4 = 0; i4 < zAxis4; ++i4)
                 z3[i4 * zStrd4] = OpType::op(x3[i4 * xStrd4], y3[i4 * yStrd4]);
           }
         }
@@ -568,7 +567,7 @@ static void execRank5(const X *x, const sd::LongType *xShapeInfo, const X *y, co
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, zAxis0, 1, 0, zAxis1, 1, 0, zAxis2, 1);
+  samediff::Threads::parallel_for(func,  static_cast<sd::LongType>(0), zAxis0,  static_cast<sd::LongType>(1),  static_cast<sd::LongType>(0), zAxis1,  static_cast<sd::LongType>(1),  static_cast<sd::LongType>(0), zAxis2,  static_cast<sd::LongType>(1));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -590,7 +589,7 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, shape::length(zShapeInfo));
+  samediff::Threads::parallel_for(func,  static_cast<sd::LongType>(0), shape::length(zShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -58,61 +58,28 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
-   if (false) {
-    auto func = PRAGMA_THREADS_FOR_2D {
-      T const* col;
-      T* im;
-
-      int imRow, imCol;
-
-      for (auto b = start_x; b < stop_x; b += inc_x) {
-        for (auto c = start_y; c < stop_y; c += inc_y) {
-          for (int kRow = 0; kRow < kH; ++kRow) {
-            for (int kCol = 0; kCol < kW; ++kCol) {
-              for (int colH = 0; colH < oH; ++colH) {
-                for (int colW = 0; colW < oW; ++colW) {
-                  imRow = (-pH + kRow * dH) + colH * sH;
-                  imCol = (-pW + kCol * dW) + colW * sW;
-
-                  col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
-                        colH * colStride4 + colW * colStride5;
-                  im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
-
-                  if (static_cast<LongType>(imRow) < static_cast<LongType>(iH) &&
-                      static_cast<LongType>(imCol) < static_cast<LongType>(iW))
-                    *im += *col;
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
-  } else {
     auto func = PRAGMA_THREADS_FOR {
-      T *col, *im;
-
       for (auto b = start; b < stop; b++) {
         T* im0 = imBuff + b * imStride0;
         T const* col4 = colBuff + b * colStride0;
-        for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
+        for (sd::LongType colH = 0; colH < oH; ++colH, col4 += colStride4) {
           T const* col5 = col4;
-          for (int colW = 0; colW < oW; ++colW, col5 += colStride5) {
+          for (sd::LongType colW = 0; colW < oW; ++colW, col5 += colStride5) {
             T const* col1 = col5;
             T* im1 = im0;
-            for (int c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
-              int imRow = (-pH + colH * sH);
+            for (sd::LongType c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
+              sd::LongType imRow = (-pH + colH * sH);
               T const* col2 = col1;
               T* im2 = im1 + imRow * imStride2;
-              for (int kRow = 0; kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH * imStride2) {
-                int imCol = -pW + colW * sW;
+              for (sd::LongType kRow = 0; kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH * imStride2) {
+                sd::LongType imCol = -pW + colW * sW;
                 T const* col3 = col2;
                 T* im3 = im2 + imCol * imStride3;
-                for (int kCol = 0; kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW * imStride3) {
+                for (sd::LongType kCol = 0; kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW * imStride3) {
                   if (static_cast<LongType>(imRow) < static_cast<LongType>(iH) &&
-                      static_cast<LongType>(imCol) < static_cast<LongType>(iW))
+                      static_cast<LongType>(imRow) >= 0 &&
+                      static_cast<LongType>(imCol) < static_cast<LongType>(iW) &&
+                      static_cast<LongType>(imCol) >= 0)
                     *im3 += *col3;
                 }
               }
@@ -123,7 +90,7 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
     };
 
     samediff::Threads::parallel_tad(func, 0, bS);
-  }
+
 }
 
 void col2im(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType sH, const LongType sW, const LongType pH,

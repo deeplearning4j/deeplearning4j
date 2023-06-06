@@ -43,9 +43,9 @@ static void xwPlusBiasMKLDNN(const NDArray* x, const NDArray* weights, const NDA
   const auto xRank = x->rankOf();
 
   // [M,K] x [K,N] = [M,N]
-  const int M = x->sizeAt(0);
-  const int K = x->sizeAt(1);  // K == wK
-  const int N = z->sizeAt(1);
+  const sd::LongType M = x->sizeAt(0);
+  const sd::LongType K = x->sizeAt(1);  // K == wK
+  const sd::LongType N = z->sizeAt(1);
 
   dnnl::memory::dims xShape = dnnl::memory::dims({M, K});
   dnnl::memory::dims wShape = dnnl::memory::dims({N, K});
@@ -114,7 +114,7 @@ static void xwPlusBiasMKLDNN(const NDArray* x, const NDArray* weights, const NDA
   dnnl::inner_product_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -153,9 +153,9 @@ static void xwPlusBiasBp(const NDArray* x, const NDArray* weights, const NDArray
   const auto xRank = x->rankOf();
 
   // [M,K] x [K,N] = [M,N]
-  const int M = x->sizeAt(0);
-  const int K = x->sizeAt(1);  // K == wK
-  const int N = dLdz->sizeAt(1);
+  const sd::LongType M = x->sizeAt(0);
+  const sd::LongType K = x->sizeAt(1);  // K == wK
+  const sd::LongType N = dLdz->sizeAt(1);
   // input dims
   dnnl::memory::dims xShape = dnnl::memory::dims({M, K});
   dnnl::memory::dims wShape = dnnl::memory::dims({N, K});

@@ -69,9 +69,9 @@ DECLARE_SHAPE_FN(random_gamma) {
     ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShapeBroadcasted, block.workspace());
     additionalShape = additionalShapeBroadcasted;
   }
-  auto lastDim = shape::sizeAt(alphaShape, 0);
+  auto lastDim = shape::sizeAt(alphaShape, static_cast<sd::LongType>(0));
   auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(alphaShape);
-  for (auto i = 0; i < shape::rank(additionalShape); i++) shape.push_back(shape::sizeAt(additionalShape, i));
+  for (sd::LongType i = 0; i < shape::rank(additionalShape); i++) shape.push_back(shape::sizeAt(additionalShape, i));
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
   return SHAPELIST(newShape);
 }

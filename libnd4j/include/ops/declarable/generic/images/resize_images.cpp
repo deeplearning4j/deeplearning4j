@@ -116,7 +116,7 @@ DECLARE_SHAPE_FN(resize_images) {
     }
   }
 
-  double ratio = shape::sizeAt(in, 1) / (0.0 + shape::sizeAt(in, 2));
+  double ratio = shape::sizeAt(in, static_cast<sd::LongType>(1)) / (0.0 + shape::sizeAt(in, static_cast<sd::LongType>(2)));
   if (block.numB() > 1) {
     if (B_ARG(1)) {
       width = math::sd_ceil<double, int>(height / ratio);

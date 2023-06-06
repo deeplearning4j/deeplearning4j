@@ -49,7 +49,7 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
   const auto yRank = y->rankOf();
   const auto zRank = z->rankOf();
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
 
   // fill permutation vector appropriately if transposition is required
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
@@ -76,10 +76,10 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
                                                                     z->sizeAt(-2), z->sizeAt(-1)}) /*, false*/);
 
   // [M,K] x [K,N] = [M,N]
-  const int64_t M = (xRank > 1) ? xTR->sizeAt(-2) : 1;
-  const int64_t K = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
-  const int64_t N = (yRank > 1) ? yTR->sizeAt(-1) : 1;
-  const int64_t bS = (xRank > 2) ? xTR->sizeAt(0) : 1;  // [bS, M,K] x [bS, K,N] = [bS, M,N]
+  const sd::LongType M = (xRank > 1) ? xTR->sizeAt(-2) : 1;
+  const sd::LongType K = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
+  const sd::LongType N = (yRank > 1) ? yTR->sizeAt(-1) : 1;
+  const sd::LongType bS = (xRank > 2) ? xTR->sizeAt(0) : 1;  // [bS, M,K] x [bS, K,N] = [bS, M,N]
 
   dnnl::memory::dims xShape = xRank < 3 ? dnnl::memory::dims({M, K}) : dnnl::memory::dims({bS, M, K});
   dnnl::memory::dims yShape = xRank < 3 ? dnnl::memory::dims({K, N}) : dnnl::memory::dims({bS, K, N});
@@ -211,19 +211,19 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
 
   if (x->isEmpty() || y->isEmpty()) return sd::Status::OK;
 
-  int iSize = (int)block.getIArguments()->size();
+  sd::LongType iSize = (sd::LongType)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;
 
   // optional use alpha nad beta
-  iSize = (int)block.getTArguments()->size();
+  iSize = (sd::LongType)block.getTArguments()->size();
   float alpha = iSize > 0 ? T_ARG(0) : 1.0;
   float beta = iSize > 1 ? T_ARG(1) : 0.0;
 
-  const int xRank = x->rankOf();
-  const int yRank = y->rankOf();
-  const int zRank = z->rankOf();
+  const sd::LongType xRank = x->rankOf();
+  const sd::LongType yRank = y->rankOf();
+  const sd::LongType zRank = z->rankOf();
 
   if (transZ) {
     x = INPUT_VARIABLE(1);
@@ -233,10 +233,10 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     transY = !temp;
   }
 
-  const int xLastDim = transX ? -2 : -1;
-  const int yLastDim = transY ? -2 : -1;
-  const int xLastButOneDim = transX ? -1 : -2;
-  const int yLastButOneDim = transY ? -1 : -2;
+  const sd::LongType xLastDim = transX ? -2 : -1;
+  const sd::LongType yLastDim = transY ? -2 : -1;
+  const sd::LongType xLastButOneDim = transX ? -1 : -2;
+  const sd::LongType yLastButOneDim = transY ? -1 : -2;
 
   // ******* input validation ******* //
   REQUIRE_TRUE(xRank > 0 && yRank > 0, 0,

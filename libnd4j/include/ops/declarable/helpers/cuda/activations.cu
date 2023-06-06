@@ -61,7 +61,7 @@ void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const v
     const auto xVal = x[xzOffset];
 
     if (xVal < 0) {
-      for (sd::Unsigned j = 0; j < yRank; ++j)
+      for (sd::LongType j = 0; j < yRank; ++j)
         if (yShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       z[xzOffset] = xVal * y[shape::getOffset(yShapeInfo, coords + 1)];
@@ -138,7 +138,7 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
     const auto grO = dLdO[dLdOOffset];
 
     if (xVal < 0) {
-      for (sd::Unsigned j = 0; j < alphaRank; ++j)
+      for (sd::LongType j = 0; j < alphaRank; ++j)
         if (alphaShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       const auto alphaOffset = shape::getOffset(alphaShapeInfo, coords + 1);

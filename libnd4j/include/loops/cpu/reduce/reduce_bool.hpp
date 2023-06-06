@@ -143,7 +143,7 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
   // merge results
-  for (int e = 1; e < maxThreads; e++) intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+  for (sd::LongType e = 1; e < maxThreads; e++) intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
 
   // return result
   return OpType::postProcess(intermediate[0], length, extraParams);
@@ -154,19 +154,19 @@ template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
                                             const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                            const sd::LongType *zShapeInfo, const long long int *dims) {
+                                            const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
   X *extraParams = reinterpret_cast<X *>(vextraParams);
 
-  const int xRank = shape::rank(xShapeInfo);
-  const int zRank = shape::rank(zShapeInfo);
+  const sd::LongType xRank = shape::rank(xShapeInfo);
+  const sd::LongType zRank = shape::rank(zShapeInfo);
 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     const auto startingVal = OpType::startingValue(x);
     const auto zLen = shape::length(zShapeInfo);
-
-    for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
+    if(z != nullptr)
+      for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
     return;
   }
 

@@ -49,7 +49,7 @@ static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::L
   __syncthreads();
 
   // aggregate sums in shared memory
-  for (sd::Unsigned activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+  for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
     if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
     __syncthreads();
   }
@@ -80,7 +80,7 @@ static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::L
 
       __syncthreads();
 
-      for (sd::Unsigned activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+      for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
         if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
         __syncthreads();
       }

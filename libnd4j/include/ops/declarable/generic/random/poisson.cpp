@@ -49,7 +49,7 @@ DECLARE_SHAPE_FN(random_poisson) {
   auto shape = in->template asVectorT<sd::LongType>();
   auto lambdaShape = inputShape->at(1);
   auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(lambdaShape);
-  for (auto d = 0; d < shape::rank(lambdaShape); ++d) {
+  for (sd::LongType d = 0; d < shape::rank(lambdaShape); ++d) {
     shape.emplace_back(shape::sizeAt(lambdaShape, d));
   }
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);

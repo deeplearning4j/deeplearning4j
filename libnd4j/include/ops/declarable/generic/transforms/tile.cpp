@@ -90,7 +90,7 @@ DECLARE_SHAPE_FN(tile) {
   REQUIRE_TRUE(repProd > 0, 0, "TILE op: reps can't contain 0s");
 
   std::vector<sd::LongType> shape(inRank);
-  for (int e = 0; e < shape::rank(inShape); e++) shape[e] = shape::sizeAt(inShape, e) * reps[e];
+  for (sd::LongType e = 0; e < shape::rank(inShape); e++) shape[e] = shape::sizeAt(inShape, e) * reps[e];
 
   auto newShape =
       ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
@@ -172,7 +172,7 @@ DECLARE_SHAPE_FN(tile_bp) {
                "got %i and %i correspondingly !",
                inRank, gradOShape[0]);
 
-  for (int i = 0; i < inRank; ++i)
+  for (sd::LongType i = 0; i < inRank; ++i)
     REQUIRE_TRUE(shape::sizeAt(gradOShape, i) == shape::sizeAt(inShape, i) * reps[i], 0,
                  "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
 

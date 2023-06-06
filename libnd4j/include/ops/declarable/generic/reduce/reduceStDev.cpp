@@ -31,7 +31,11 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
+  //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
+  if(input->lengthOf() == 0) {
+    output->assign(1);
+    return sd::Status::OK;
+  }
   bool keepDims = false;       // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   bool biasCorrected = false;  // block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
 
@@ -94,7 +98,7 @@ DECLARE_SHAPE_FN(reduce_stdev) {
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   auto outShapeInfo =
-      ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
+      ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
 }
@@ -141,11 +145,11 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
   const sd::LongType N = input->lengthOf() / gradO->lengthOf();
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
 
-  auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
+  auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
 
   NDArray variance(mean.shapeInfo(), true,
                    block.launchContext());  // create empty array with shape matching shape of mean array
-  input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, dimensions);
+  input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, &dimensions);
 
   sd::ops::divide_no_nan divideNoNan;
   auto inputMinusMean  = (*input - mean);
@@ -154,7 +158,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
 
   if (!keepDims) {
     auto gradOShapeKeepDims =
-        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     if (!gradO->isScalar()) {
       *gradI *= gradO->reshape(gradO->ordering(),
                                ShapeUtils::pullShapeFromShapeInfo(

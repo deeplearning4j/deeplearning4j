@@ -58,10 +58,10 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
 
   std::vector<LongType> dimension = {-1};
 
-  auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, dimension, true);
+  auto maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
   auto logitsExp = (*logits - maxAlongDim).transform(transform::Exp, nullptr);
   auto logSoftMax =
-      -((logitsExp / logitsExp.reduceAlongDimension(reduce::Sum, dimension, true)).transform(transform::Log));
+      -((logitsExp / logitsExp.reduceAlongDimension(reduce::Sum, &dimension, true)).transform(transform::Log));
 
   helpers::scatterForLoss(block.launchContext(), *labels, logSoftMax, *output, false);
 
@@ -134,8 +134,8 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
 
   std::vector<LongType> dimension = {-1};
 
-  NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimension, true)).transform(transform::Exp);
-  softmax /= softmax.reduceAlongDimension(reduce::Sum, dimension, true);
+  NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, &dimension, true)).transform(transform::Exp);
+  softmax /= softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
 
   // dEdp = softmax - 1 (or 0)
   dLdp->assign(softmax);

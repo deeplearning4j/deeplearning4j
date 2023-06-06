@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   auto internal = (*input);
   internal -= maxVals;
   internal.applyTransform(transform::Exp, internal);
-  internal.reduceAlongDimension(reduce::Sum, *output, axes, keepDims, false);  //, (void*)&maxVals);
+  internal.reduceAlongDimension(reduce::Sum, *output, &axes, keepDims, false);  //, (void*)&maxVals);
   output->applyTransform(transform::Log, *output);
   (*output) += maxVals;
   return sd::Status::OK;
@@ -70,7 +70,7 @@ DECLARE_SHAPE_FN(reduce_logsumexp) {
     axes = *block.getIArguments();
   }
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0),
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &axes, inputShape->at(0),
                                                       keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);

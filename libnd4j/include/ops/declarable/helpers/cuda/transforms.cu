@@ -92,7 +92,7 @@ void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                const sd::LongType* zShapeInfo, const sd::Unsigned diagLen) {
+                                const sd::LongType* zShapeInfo, const sd::LongType diagLen) {
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
@@ -118,7 +118,7 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
     sharedMem[threadIdx.x] = 0;
 
-    for (sd::Unsigned i = threadIdx.x; i < diagLen; i += blockDim.x) {
+    for (sd::LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
       coords[zRank] = coords[zRank + 1] = i;
       const auto xOffset = shape::getOffset(xShapeInfo, coords);
       sharedMem[threadIdx.x] += x[xOffset];
@@ -141,7 +141,7 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
 template <typename T>
 static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                               const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                              const sd::LongType* zShapeInfo, const sd::Unsigned diagLen) {
+                              const sd::LongType* zShapeInfo, const sd::LongType diagLen) {
   traceCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, diagLen);
 }
 
@@ -149,7 +149,7 @@ static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
   PointersManager manager(context, "trace");
 
-  const sd::Unsigned diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
+  const sd::LongType diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
   const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = 1024;

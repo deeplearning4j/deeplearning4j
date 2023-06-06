@@ -368,6 +368,9 @@
 #define SD_GENERIC_NUMERIC_TYPES SKIP_FIRST_COMMA(SD_GENERIC_NUMERIC_TYPES_L)
 #endif
 
+#define SD_NATIVE_FLOAT_TYPES  (sd::DataType::FLOAT32, float), (sd::DataType::DOUBLE, double)
+
+
 ///////////FULL LIST FOR THE METHODS WHICH SHOULD BE DEFINED FOR GENERAL TYPES///////////////
 #define SD_COMMON_TYPES_ALL                                                                                         \
   (sd::DataType::HALF, float16), (sd::DataType::FLOAT32, float), (sd::DataType::DOUBLE, double),                    \

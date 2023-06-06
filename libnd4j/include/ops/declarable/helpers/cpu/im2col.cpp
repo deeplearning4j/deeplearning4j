@@ -109,9 +109,10 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
 
                   col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                         colH * colStride4 + colW * colStride5;
-
                   if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
-                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW))
+                      static_cast<LongType>(imRow) < 0 ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
+                      static_cast<LongType>(imCol) < 0)
                     *col = zeroPadVal;
                   else {
                     im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;

@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     std::vector<sd::LongType> shapeInfo(outRank);
 
     shapeInfo[0] = indicesShapeInfo[1];  // vector - how many elements
-    for (int e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
+    for (sd::LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
     auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                            shape::order(inShapeInfo), shapeInfo);
@@ -100,7 +100,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
   std::vector<sd::LongType> shapeInfo(outRank);
   auto indices = INPUT_VARIABLE(block.width() - 1);
   shapeInfo[0] = indices->lengthOf();  // vector - how many elements
-  for (int e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
+  for (sd::LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
   auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                          shape::order(inShapeInfo), shapeInfo);

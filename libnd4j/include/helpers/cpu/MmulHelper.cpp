@@ -210,8 +210,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
   if (!typeFloat && !typeDouble) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
-    // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_COMMON_TYPES,
-    // SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   } else {
     std::vector<NDArray*> toDelete;
 
@@ -261,13 +259,12 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
                                         pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double)beta,
                                         pC->bufferAsT<double>(), ldc);
     }
-
     if (pC != C) {
       C->assign(pC);
-      delete pC;
+      //     delete pC;
     }
-    if (pA != A) delete pA;
-    if (pB != B) delete pB;
+    /* if (pA != A) delete pA;
+     if (pB != B) delete pB;*/
   }
 
   return C;
@@ -380,8 +377,7 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), SD_NUMERIC_TYPES);
-  // BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta,
-  // Z->buffer()), SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+
 
   return Z;
 }
@@ -505,17 +501,36 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   const sd::LongType aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
       cNaxis(cRank - 1);
 
-  std::vector<sd::LongType> aBatchDims, bBatchDims, cBatchDims;
+  std::vector<sd::LongType> *aBatchDims, *bBatchDims, *cBatchDims;
+  if (aRank > 2) {
+    sd::LongType aaxes[2];
+    aaxes[0] = aMaxis;
+    aaxes[1] = aKaxis;
+    aBatchDims = ShapeUtils::evalDimsToExclude(aRank,2,aaxes);
+  }
+  if (bRank > 2) {
+    sd::LongType baxes[2];
+    baxes[0] = bKaxis;
+    baxes[1] = bNaxis;
+    bBatchDims = ShapeUtils::evalDimsToExclude(bRank, 2,baxes);
+  }
 
-  if (aRank > 2) aBatchDims = ShapeUtils::evalDimsToExclude(aRank, {aMaxis, aKaxis});
-  if (bRank > 2) bBatchDims = ShapeUtils::evalDimsToExclude(bRank, {bKaxis, bNaxis});
-  if (cRank > 2) cBatchDims = ShapeUtils::evalDimsToExclude(cRank, {cMaxis, cNaxis});
+  if (cRank > 2) {
+    sd::LongType caxes[2];
+    caxes[0] = cMaxis;
+    caxes[1] = cNaxis;
+    cBatchDims = ShapeUtils::evalDimsToExclude(cRank, 2,caxes);
+  }
 
 
   BUILD_SINGLE_SELECTOR_THRICE(A->dataType(), batchedGemm,
-                               (A, B, C, aBatchDims.data(), bBatchDims.data(), cBatchDims.data(), aMaxis, aKaxis,
-                                bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
+                               (A, B, C, aBatchDims->data(), bBatchDims->data(), cBatchDims->data(), aMaxis, aKaxis,
+                                   bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
                                SD_NUMERIC_TYPES);
+
+  delete aBatchDims;
+  delete bBatchDims;
+  delete cBatchDims;
 
   return C;
 }

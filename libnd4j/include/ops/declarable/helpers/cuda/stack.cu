@@ -89,7 +89,7 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
-    for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
       void* zBuff = output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
@@ -171,7 +171,7 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
         input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
-    for (sd::Unsigned i = 0; i < numOfSubArrs; ++i) {
+    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
       auto xBuff = input.specialBufferWithOffset(xTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign, nullptr, xTadShapeInfo, xBuff,

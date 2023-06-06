@@ -125,8 +125,8 @@ DECLARE_SHAPE_FN(deconv2d) {
                "CUSTOM DECONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                shape::rank(weightsShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -293,7 +293,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   // ----- calculation of gradB ----- //
   if (gradB) {
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}, false));
-    gradO->reduceAlongDimension(reduce::Sum, *gradB, {0, 2, 3});  // sum over bS, oH, oW
+    std::vector<sd::LongType> axesForReduction = {0, 2, 3};  // bS, oH, oW
+    gradO->reduceAlongDimension(reduce::Sum, *gradB, &axesForReduction);  // sum over bS, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 
@@ -322,8 +323,8 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
       "CUSTOM DECONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, shape::rank(gradOShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height

@@ -36,7 +36,7 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
   std::vector<sd::LongType> tadDimensions(dimSize);
   for (e = 2; e < limg; e++) tadDimensions[e - 2] = (*intArgs)[e];
 
-  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions);
+  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions.size(),tadDimensions.data());
 
   // increasing counter to skip numIndices
   e++;
@@ -45,8 +45,9 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      auto inSubArr = input(indices[i], dimsToExclude, true);
-      auto updSubArr = updates(i, dimsToExclude, true);
+      auto inSubArr = input(indices[i], *dimsToExclude, true);
+      auto updSubArr = updates(i, *dimsToExclude, true);
+      delete dimsToExclude;
       if (inSubArr.lengthOf() != updSubArr.lengthOf()) continue;
 
       switch (opCode) {
@@ -99,7 +100,7 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, c
     } break;
 
     default:
-      throw std::invalid_argument("helpers::scatterSimple: operation is not implemented for given id !");
+      THROW_EXCEPTION("helpers::scatterSimple: operation is not implemented for given id !");
   }
 }
 

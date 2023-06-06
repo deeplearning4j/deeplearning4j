@@ -89,8 +89,8 @@ DECLARE_SHAPE_FN(dilation2d) {
   auto input = inputShape->at(0);
   auto weights = inputShape->at(1);
 
-  const int bS = shape::sizeAt(input, 0);
-  const int iC = shape::sizeAt(input, 3);
+  const int bS = shape::sizeAt(input, static_cast<sd::LongType>(0));
+  const int iC = shape::sizeAt(input, static_cast<sd::LongType>(3));
   const bool isSameShape = INT_ARG(0) == 1;
 
   std::vector<sd::LongType> strides(4);

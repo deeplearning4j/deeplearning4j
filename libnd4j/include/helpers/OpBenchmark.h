@@ -39,16 +39,16 @@ class SD_LIB_EXPORT OpBenchmark {
   NDArray *_x = nullptr;
   NDArray *_y = nullptr;
   NDArray *_z = nullptr;
-  std::vector<sd::LongType> _axis;
+  std::vector<sd::LongType> *_axis;
 
  public:
   OpBenchmark() = default;
   OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z);
   OpBenchmark(std::string name, NDArray *x, NDArray *z);
-  OpBenchmark(std::string name, NDArray *x, NDArray *z, std::initializer_list<sd::LongType> axis);
+  OpBenchmark(std::string name, NDArray *x, NDArray *z, std::initializer_list<sd::LongType> *axis);
   OpBenchmark(std::string name, NDArray *x, NDArray *z, std::vector<sd::LongType> axis);
-  OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::initializer_list<sd::LongType> axis);
-  OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::vector<sd::LongType> axis);
+  OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::initializer_list<sd::LongType> *axis);
+  OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z, std::vector<sd::LongType> *axis);
 
   void setOpNum(int opNum);
   void setTestName(std::string testName);

@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
                "BatchToSpaceND: rank of blockShape array must be equal to one, but got %i instead !",
                blockShape->rankOf());
 
-  const sd::Unsigned numOfSpatialDims = blockShape->sizeAt(0);
+  const sd::LongType numOfSpatialDims = blockShape->sizeAt(0);
 
   const auto product = blockShape->reduceNumber(sd::reduce::Prod).e<sd::LongType>(0);
   REQUIRE_TRUE(input->sizeAt(0) % product == 0, 0,
@@ -74,9 +74,9 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
   }
 
   // FIXME - should we use this time-consuming validation ?
-  for (sd::Unsigned i = 0; i < numOfSpatialDims; ++i) {
-    const auto cropLeft = crop->e<sd::Unsigned>(i, 0);
-    const auto cropRight = crop->e<sd::Unsigned>(i, 1);
+  for (sd::LongType i = 0; i < numOfSpatialDims; ++i) {
+    const auto cropLeft = crop->e<sd::LongType>(i, 0);
+    const auto cropRight = crop->e<sd::LongType>(i, 1);
     const auto outSpatialDim = input->sizeAt(i + 1) * blockShape->e<sd::LongType>(i) - cropLeft - cropRight;
     REQUIRE_TRUE(
         outSpatialDim >= 0, 0,
@@ -128,9 +128,9 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
 
   outShape[0] /= product;
 
-  for (sd::Unsigned i = 0; i < numOfSpatialDims; ++i)
+  for (sd::LongType i = 0; i < numOfSpatialDims; ++i)
     outShape[i + 1] = outShape[i + 1] * INPUT_VARIABLE(1)->e<sd::LongType>(i) -
-                      INPUT_VARIABLE(2)->e<sd::Unsigned>(i, 0) - INPUT_VARIABLE(2)->e<sd::Unsigned>(i, 1);
+                      INPUT_VARIABLE(2)->e<sd::LongType>(i, 0) - INPUT_VARIABLE(2)->e<sd::LongType>(i, 1);
 
   return SHAPELIST(
       ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));

@@ -400,7 +400,8 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
   // for rank>5
   if (rank > 5) {
     const int channelDim = isNCHW ? 1 : input.rankOf() - 1;  // second or last
-    const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add, {channelDim}, bias, output);
+    std::vector<sd::LongType> channelDimVec = {channelDim};
+    const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add,&channelDimVec , bias, output);
     return;
   }
 
@@ -597,7 +598,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
       } else {
         // the same can be applied for NCHW case
         // generic F case
-        // continous case is missing
+        // continuous case is missing
 
         if (rank == 4) {
           channel_generic_F<X, Y, 4, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC,

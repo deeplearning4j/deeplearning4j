@@ -44,7 +44,7 @@ class NDArrayCudaBasicsTests : public testing::Test {
 static cudaError_t allocateDeviceMem(LaunchContext& lc, std::vector<void*>& devicePtrs,
                                      const std::vector<std::pair<void*, size_t>>& hostData) {
   if (devicePtrs.size() != hostData.size())
-    throw std::invalid_argument("prepareDataForCuda: two input sts::vectors should same sizes !");
+    THROW_EXCEPTION("prepareDataForCuda: two input sts::vectors should same sizes !");
 
   cudaError_t cudaResult;
 

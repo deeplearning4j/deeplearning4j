@@ -69,9 +69,10 @@ void softmaxDerivative(sd::LaunchContext* context, const NDArray& input, NDArray
     BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector,
                           (context, input.buffer(), input.shapeInfo(), output.buffer()), SD_FLOAT_TYPES);
   } else {
-    auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+    std::vector<sd::LongType> dimVec = {dimension};
+    auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, &dimVec, true);
     (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
+    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dimVec, true);
     output /= sumAlongDim;
     output *= (1.f - output);  // derivative
   }
@@ -222,9 +223,10 @@ void logSoftmax(sd::LaunchContext* context, const NDArray& input, NDArray& outpu
     } else
       output = 0.;
   } else {
-    auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+    std::vector<sd::LongType> dimVector = {dimension};
+    auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, &dimVector, true);
     (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
+    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dimVector, true);
     output /= sumAlongDim;
     output.applyTransform(transform::Log, output);
   }

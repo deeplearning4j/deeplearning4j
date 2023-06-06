@@ -77,7 +77,7 @@ SD_DEVICE void loadSharedChunkFromMem(int *s_data, const int *g_idata, int n, in
   s_data[ai + bankOffsetA] = g_idata[mem_ai];
 
   if (isNP2) {  // compile-time decision
-    s_data[bi + bankOffsetB] = (bi < n) ? g_idata[mem_bi] : 0;
+    s_data[bi + bankOffsetB] = (bi < n) ? g_idata[mem_bi]  : static_cast<sd::LongType>(0) ;
   } else {
     s_data[bi + bankOffsetB] = g_idata[mem_bi];
   }
@@ -220,7 +220,7 @@ SD_KERNEL static void execEncoderKernelP1(const void *dx, sd::LongType N, void *
   // data
   sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int pass = tid < N && sd::math::sd_abs<T>(x[tid]) >= static_cast<T>(threshold) ? 1 : 0;
+  int pass = tid < N && sd::math::sd_abs<T>(x[tid]) >= static_cast<T>(threshold) ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) ;
   int bp = __syncthreads_count(pass);
 
   if (threadIdx.x == 0) {
@@ -275,7 +275,7 @@ SD_KERNEL static void execEncoderKernelP3(void *dx, int *offsets, sd::LongType N
   auto value = tid < N ? x[tid] : (T)0.f;
 
   // out-of-limit threads just declare they have no changes
-  auto pred = tid >= N ? 0 : sd::math::sd_abs<T>(value) >= static_cast<T>(threshold) ? 1 : 0;
+  auto pred = tid >= N ? static_cast<sd::LongType>(0)  : sd::math::sd_abs<T>(value) >= static_cast<T>(threshold) ? static_cast<sd::LongType>(1)   : static_cast<sd::LongType>(0) ;
   auto w_i = threadIdx.x / warpSize;  // warp index (or, warp number) - index of the Warp within TOTAL_WARPS
   auto t_i = threadIdx.x % warpSize;  // thread index within a warp
   unsigned int t_m = INT_MAX >> (warpSize - t_i - 1);  // thread mask (ERROR IN THE PAPER minus one is required)

@@ -668,24 +668,24 @@ class SD_LIB_EXPORT NDArray {
    * place of reduced dimensions
    */
 
-  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> &dimensions,
-                               const bool keepDims = false) const;
-
-  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> &dimensions,
-                               const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false) const;
 
-  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false) const;
 
-  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<LongType> *dimensions,
                                const bool keepDims = false) const;
-  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> &dimensions,
+  NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<LongType> *dimensions,
+                               const bool keepDims = false) const;
+
+  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<LongType> *dimensions,
+                               const bool keepDims = false) const;
+  NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<LongType> *dimensions,
                                const bool keepDims = false) const;
 
   /**
@@ -695,13 +695,13 @@ class SD_LIB_EXPORT NDArray {
    *  keepDims - if true then put unities in place of reduced dimensions
    *  extras - extra parameters
    */
-  void reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target, const std::vector<LongType> &dimensions,
+  void reduceAlongDimension(sd::reduce::FloatOps op, NDArray &target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<LongType> &dimensions,
+  void reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<LongType> &dimensions,
+  void reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
-  void reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<LongType> &dimensions,
+  void reduceAlongDimension(sd::reduce::LongOps op, NDArray &target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true) const;
 
   /**
@@ -735,7 +735,7 @@ class SD_LIB_EXPORT NDArray {
    *  returns index of max element in a given array (optionally: along given dimension(s))
    *  dimensions - optional vector with dimensions
    */
-  sd::LongType argMax(std::initializer_list<int> dimensions = {});
+  sd::LongType argMax(std::initializer_list<LongType> dimensions = {});
 
   // FIXME: remove this method eventually
   void makeBothActual() const {
@@ -791,16 +791,16 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    *  extraParams - extra parameters for operation
    */
-  void applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<LongType> dimensions, const NDArray &tad,
+  void applyBroadcast(sd::broadcast::Ops op, const std::initializer_list<LongType> *dimensions, const NDArray &tad,
                       NDArray &target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::Ops op, const std::vector<LongType> &dimensions, const NDArray &tad, NDArray &target,
+  void applyBroadcast(sd::broadcast::Ops op, const std::vector<LongType> *dimensions, const NDArray &tad, NDArray &target,
                       ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongType> &dimensions, const NDArray &tad,
+  void applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongType> *dimensions, const NDArray &tad,
                       NDArray &target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongType> &dimensions, const NDArray &tad, NDArray &target,
+  void applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongType> *dimensions, const NDArray &tad, NDArray &target,
                       ExtraArguments *extraArgs = nullptr);
 
   /**
@@ -907,7 +907,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> &dimensions,
+  NDArray applyIndexReduce(sd::indexreduce::Ops op, const std::vector<LongType> *dimensions,
                            const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -916,7 +916,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  void applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<LongType> &dimensions,
+  void applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const std::vector<LongType> *dimensions,
                         const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -932,7 +932,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along (tads not axis)
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> &dimensions,
+  NDArray applyAllReduce3(sd::reduce3::Ops op, const NDArray &other, const std::vector<LongType> *dimensions,
                           const ExtraArguments *extraParams = nullptr) const;
 
   /**
@@ -950,14 +950,14 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to calculate variance along
    */
   NDArray varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                 const std::vector<LongType> &dimensions) const;
+                                 const std::vector<LongType> *dimensions) const;
   NDArray varianceAlongDimension(sd::variance::Ops op, const bool biasCorrected,
-                                 const std::initializer_list<LongType> &dimensions) const;
+                                 const std::initializer_list<LongType> *dimensions) const;
 
   void varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                              const std::vector<LongType> &dimensions) const;
+                              const std::vector<LongType> *dimensions) const;
   void varianceAlongDimension(sd::variance::Ops op, NDArray &target, const bool biasCorrected,
-                              const std::initializer_list<LongType> &dimensions) const;
+                              const std::initializer_list<LongType> *dimensions) const;
 
 #endif
 
@@ -983,7 +983,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - array of dimensions to point on
    */
   sd::LongType tensorsAlongDimension(std::initializer_list<LongType> dimensions) const;
-  sd::LongType tensorsAlongDimension(const std::vector<LongType> &dimensions) const;
+  sd::LongType tensorsAlongDimension(const std::vector<LongType> *dimensions) const;
 
   /**
    *  returns true if elements of two arrays are equal to within given epsilon value
@@ -1815,7 +1815,8 @@ bool NDArray::isSameShapeStrict(const NDArray &other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
   if (this->_shapeInfo == nullptr) return false;
-
+  if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0)
+    THROW_EXCEPTION("NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated.");
   return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY || this->lengthOf() < 1;
 }
 
@@ -1846,7 +1847,7 @@ T &NDArray::r(const sd::LongType i) {
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
   syncToHost();
   tickWriteHost();
@@ -1858,11 +1859,11 @@ T &NDArray::r(const sd::LongType i) {
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j) {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
-    throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
   tickWriteHost();
@@ -1873,9 +1874,9 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j) {
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k) {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
-    throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
   if (DataTypeUtils::fromT<T>() != _dataType)
-    throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
 
   syncToHost();
   tickWriteHost();
@@ -1886,9 +1887,9 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k) 
 template <typename T>
 T &NDArray::r(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType w) {
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
-    throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
   if (DataTypeUtils::fromT<T>() != _dataType)
-    throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
 
   syncToHost();
   tickWriteHost();
@@ -1903,7 +1904,7 @@ T NDArray::t(const sd::LongType i) const {
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
 
   syncToHost();
@@ -1915,11 +1916,11 @@ T NDArray::t(const sd::LongType i) const {
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j) const {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
-    throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
+    THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
 
@@ -1930,11 +1931,11 @@ T NDArray::t(const sd::LongType i, const sd::LongType j) const {
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k) const {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
-    throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
   }
   syncToHost();
 
@@ -1945,11 +1946,11 @@ T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k) c
 template <typename T>
 T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType w) const {
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
-    throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
   }
   syncToHost();
 

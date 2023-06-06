@@ -35,14 +35,14 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CUDA) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 -
   // paddingModee;
-  const auto kH = INT_ARG(0);
-  const auto kW = INT_ARG(1);
-  const auto sH = INT_ARG(2);
-  const auto sW = INT_ARG(3);
-  auto pH = INT_ARG(4);
-  auto pW = INT_ARG(5);
-  const auto dH = INT_ARG(6);
-  const auto dW = INT_ARG(7);
+  const sd::LongType kH = INT_ARG(0);
+  const sd::LongType kW = INT_ARG(1);
+  const sd::LongType sH = INT_ARG(2);
+  const sd::LongType sW = INT_ARG(3);
+  sd::LongType pH = INT_ARG(4);
+  sd::LongType pW = INT_ARG(5);
+  const sd::LongType dH = INT_ARG(6);
+  const sd::LongType dW = INT_ARG(7);
   const auto paddingMode = static_cast<bool>(INT_ARG(8));
   const int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 0-NCHW, 1-NHWC
 
@@ -51,11 +51,11 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CUDA) {
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D CUDNN op: dilation must not be zero, but got instead {%i, %i}", dH,
                dW);
 
-  int oH = 0;
-  int oW = 0;
+  sd::LongType oH = 0;
+  sd::LongType oW = 0;
 
-  const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
-  const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
+  const sd::LongType iH = static_cast<sd::LongType>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
+  const sd::LongType iW = static_cast<sd::LongType>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
 
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
@@ -85,14 +85,14 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CUDA) {
   auto gradO = INPUT_VARIABLE(1);   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
-  const auto kH = INT_ARG(0);                                                 // filter(kernel) height
-  const auto kW = INT_ARG(1);                                                 // filter(kernel) width
-  const auto sH = INT_ARG(2);                                                 // strides height
-  const auto sW = INT_ARG(3);                                                 // strides width
-  auto pH = INT_ARG(4);                                                       // paddings height
-  auto pW = INT_ARG(5);                                                       // paddings width
-  const auto dH = INT_ARG(6);                                                 // dilations height
-  const auto dW = INT_ARG(7);                                                 // dilations width
+  const sd::LongType kH = INT_ARG(0);                                                 // filter(kernel) height
+  const sd::LongType kW = INT_ARG(1);                                                 // filter(kernel) width
+  const sd::LongType sH = INT_ARG(2);                                                 // strides height
+  const sd::LongType sW = INT_ARG(3);                                                 // strides width
+  sd::LongType pH = INT_ARG(4);                                                       // paddings height
+  sd::LongType pW = INT_ARG(5);                                                       // paddings width
+  const sd::LongType dH = INT_ARG(6);                                                 // dilations height
+  const sd::LongType dW = INT_ARG(7);                                                 // dilations width
   const auto paddingMode = INT_ARG(8);                                        // 0-VALID, 1-SAME
   const auto isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 0-NCHW, 1-NHWC
 
@@ -101,9 +101,9 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CUDA) {
   REQUIRE_TRUE(dH != 0 && dW != 0, 0, "MAXPOOL2D_BP CUDNN op: dilation must not be zero, but got instead {%i, %i}", dH,
                dW);
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 

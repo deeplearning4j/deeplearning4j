@@ -32,11 +32,11 @@ template <typename X, typename Y>
 SD_KERNEL static void inTopKCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
                                  const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                  const sd::LongType* xTadShapeInfo, const sd::LongType* xTadOffsets,
-                                 const sd::Unsigned k) {
+                                 const sd::LongType k) {
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<bool*>(vz);
 
-  __shared__ sd::Unsigned sharedMem[SD_CUDA_BLOCK_SIZE];
+  __shared__ sd::LongType sharedMem[SD_CUDA_BLOCK_SIZE];
   __shared__ X elemToCompare;
   __shared__ const X* xTad;
   __shared__ sd::LongType idx, xTadLen;
@@ -58,7 +58,7 @@ SD_KERNEL static void inTopKCuda(const void* vx, const sd::LongType* xShapeInfo,
   __syncthreads();
 
   // aggregate sum
-  for (sd::Unsigned activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+  for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
     if (threadIdx.x < activeThreads) sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
     __syncthreads();
   }
@@ -72,14 +72,14 @@ static void inTopKCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                const void* vy, const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                const sd::LongType* xTadShapeInfo, const sd::LongType* xTadOffsets,
-                               const sd::Unsigned k) {
+                               const sd::LongType k) {
   inTopKCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                            zShapeInfo, xTadShapeInfo, xTadOffsets, k);
 }
 
 ///////////////////////////////////////////////////////////////////
 sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* predictions, const NDArray* targets,
-                         NDArray* output, const sd::Unsigned k) {
+                         NDArray* output, const sd::LongType k) {
   PointersManager manager(context, "in_top_k");
 
   const auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(predictions->shapeInfo(), {1});
@@ -169,7 +169,7 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, sd::LongType const* 
 
       // at this point we have local part ready for merge and define global maximum for this iteration, and local
       // maximum for next iteration
-      for (sd::Unsigned activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+      for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
         if (threadIdx.x < activeThreads) {
           if (tempValues[0] < tempValues[0 + activeThreads * scanWidth]) {
             tempValues[0] = tempValues[0 + activeThreads * scanWidth];
@@ -244,7 +244,7 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, sd::LongType const* 
 
 template <typename X, typename Y>
 static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
-                               const sd::Unsigned k, bool needSort) {
+                               const sd::LongType k, bool needSort) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
   auto packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
@@ -275,7 +275,7 @@ static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input,
 }
 
 sd::Status topKFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
-                       const sd::Unsigned k, bool needSort) {
+                       const sd::LongType k, bool needSort) {
   input->syncToDevice();
 
   BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_,

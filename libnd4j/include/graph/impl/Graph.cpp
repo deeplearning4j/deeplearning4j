@@ -386,7 +386,7 @@ void Graph::addNode(Node *node) {
   if (node->isScoped()) {
     if (_mappedScopes.count(node->scopeId()) < 1) {
       sd_printf("Requested scope [%i/%s] wasn't created yet\n", node->scopeId(), node->scopeName()->c_str());
-      throw std::invalid_argument("Unknown scope requested");
+      THROW_EXCEPTION("Unknown scope requested");
     }
 
     Scope *scope = _mappedScopes.at(node->scopeId());

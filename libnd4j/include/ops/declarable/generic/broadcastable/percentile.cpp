@@ -96,7 +96,7 @@ DECLARE_SHAPE_FN(percentile) {
   }
 
   std::vector<sd::LongType> axises = *block.getIArguments();
-  auto outputShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShapeInfo), axises, inputShapeInfo, keepDims,
+  auto outputShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShapeInfo), &axises, inputShapeInfo, keepDims,
                                                          false, block.getWorkspace());
 
   return SHAPELIST(outputShapeInfo);

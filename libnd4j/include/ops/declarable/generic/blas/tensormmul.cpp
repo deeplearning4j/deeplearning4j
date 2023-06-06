@@ -68,9 +68,9 @@ DECLARE_SHAPE_FN(tensormmul) {
   int axe0_size = INT_ARG(0);
   int axe1_size = INT_ARG(axe0_size + 1);
   std::vector<sd::LongType> axes_0(axe0_size), axes_1(axe1_size);
-  for (int e = 0; e < axe0_size; e++) axes_0[e] = (int)INT_ARG(e + 1);
+  for (int e = 0; e < axe0_size; e++) axes_0[e] = INT_ARG(e + 1);
 
-  for (int e = 0; e < axe1_size; e++) axes_1[e] = (int)INT_ARG(e + axe0_size + 2);
+  for (int e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
   // evaluate shapes
   std::vector<sd::LongType> permutAt, permutBt;
@@ -117,8 +117,8 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
 
   // building axes
   std::vector<sd::LongType> axes0(axe0Size), axes1(axe1Size);
-  for (sd::Unsigned e = 0; e < axe0Size; e++) axes0[e] = (int)INT_ARG(e + 1);
-  for (sd::Unsigned e = 0; e < axe1Size; e++) axes1[e] = (int)INT_ARG(e + axe0Size + 2);
+  for (sd::LongType e = 0; e < axe0Size; e++) axes0[e] = INT_ARG(e + 1);
+  for (sd::LongType e = 0; e < axe1Size; e++) axes1[e] = INT_ARG(e + axe0Size + 2);
 
   std::vector<sd::LongType> permutAt, permutBt;
   std::vector<sd::LongType> shapeAt, shapeBt;
@@ -133,24 +133,32 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
     return sd::Status::OK;
   }
 
-  std::vector<sd::LongType> axesA = ShapeUtils::evalDimsToExclude(Arank, axes0);
-  std::vector<sd::LongType> axesB = ShapeUtils::evalDimsToExclude(Brank, axes1);
+  std::vector<sd::LongType> *axesA = ShapeUtils::evalDimsToExclude(Arank, 1,axes0.data());
+  std::vector<sd::LongType> *axesB = ShapeUtils::evalDimsToExclude(Brank, 1,axes1.data());
 
-  std::vector<sd::LongType> axesAdLdC, axesBdLdC;
+  std::vector<sd::LongType> *axesAdLdC, *axesBdLdC;
   if (dLdCrank > 1) {
-    axesAdLdC.resize(axesA.size());
-    std::iota(axesAdLdC.begin(), axesAdLdC.end(), 0);
-    axesBdLdC = ShapeUtils::evalDimsToExclude(dLdCrank, axesAdLdC);
+    axesAdLdC = new std::vector<sd::LongType>();
+    axesAdLdC->resize(axesA->size());
+    std::iota(axesAdLdC->begin(), axesAdLdC->end(), 0);
+    axesBdLdC = ShapeUtils::evalDimsToExclude(dLdCrank, 1,axesAdLdC->data());
   } else {
-    axesAdLdC.push_back(0);
-    axesBdLdC.push_back(0);
+    axesAdLdC = new std::vector<sd::LongType>();
+    axesBdLdC = new std::vector<sd::LongType>();
+    axesAdLdC->push_back(0);
+    axesBdLdC->push_back(0);
   }
 
   // calculate dLdA
-  MmulHelper::tensorDot(dLdC, B, dLdA, axesBdLdC, axesB, permutAt);
+  MmulHelper::tensorDot(dLdC, B, dLdA, *axesBdLdC, *axesB, permutAt);
 
   // calculate dLdB
-  MmulHelper::tensorDot(A, dLdC, dLdB, axesA, axesAdLdC, permutBt);
+  MmulHelper::tensorDot(A, dLdC, dLdB, *axesA, *axesAdLdC, permutBt);
+
+  delete axesA;
+  delete axesB;
+  delete axesAdLdC;
+  delete axesBdLdC;
 
   return sd::Status::OK;
 }

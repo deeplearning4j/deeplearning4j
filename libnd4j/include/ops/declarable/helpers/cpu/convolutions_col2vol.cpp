@@ -63,29 +63,40 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
 
   if (volume.ordering() == 'c' && columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.shapeInfo()) &&
       shape::strideDescendingCAscendingF(columns.shapeInfo())) {
+    const LongType sizeColBuff = columns.lengthOf();  // Total size of colBuff
+    const LongType sizeVolBuff = volume.lengthOf();  // Total size of volBuff
+
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
-      int volDep, volRow, volCol;
+      sd::LongType volDep, volRow, volCol;
 
-      for (int b = start; b < stop; b++) {
-        for (int c = 0; c < iC; c++) {
-          for (int kDep = 0; kDep < kD; ++kDep) {
-            for (int kRow = 0; kRow < kH; ++kRow) {
-              for (int kCol = 0; kCol < kW; ++kCol) {
-                for (int colD = 0; colD < oD; ++colD) {
-                  for (int colH = 0; colH < oH; ++colH) {
-                    for (int colW = 0; colW < oW; ++colW) {
+      for (sd::LongType b = start; b < stop; b++) {
+        for (sd::LongType c = 0; c < iC; c++) {
+          for (sd::LongType kDep = 0; kDep < kD; ++kDep) {
+            for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+              for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
+                for (sd::LongType colD = 0; colD < oD; ++colD) {
+                  for (sd::LongType colH = 0; colH < oH; ++colH) {
+                    for (sd::LongType colW = 0; colW < oW; ++colW) {
                       volDep = -pD + kDep * dD + colD * sD;
                       volRow = -pH + kRow * dH + colH * sH;
                       volCol = -pW + kCol * dW + colW * sW;
 
-                      if (static_cast<LongType>(volDep) < static_cast<LongType>(iD) &&
-                          static_cast<LongType>(volRow) < static_cast<LongType>(iH) &&
-                          static_cast<LongType>(volCol) < static_cast<LongType>(iW)) {
-                        col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
-                              kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
-                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
-                              volCol * volStride4;
+                      if (volDep >= 0 && volDep < iD &&
+                          volRow >= 0 && volRow < iH &&
+                          volCol >= 0 && volCol < iW) {
+
+                        auto colIndex = b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
+                                        kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+                        auto volIndex = b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
+                                        volCol * volStride4;
+
+                        if (colIndex >= sizeColBuff || volIndex >= sizeVolBuff) {
+                          continue;  // Skip to the next iteration if the indices are out of bounds.
+                        }
+
+                        col = colBuff + colIndex;
+                        vol = volBuff + volIndex;
                         *vol += *col;
                       }
                     }
@@ -101,29 +112,40 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
     samediff::Threads::parallel_tad(func, 0, bS);
 
   } else {
+    const LongType sizeColBuff = columns.lengthOf();  // Total size of colBuff
+    const LongType sizeVolBuff = volume.lengthOf();  // Total size of volBuff
+
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
-      int volDep, volRow, volCol;
+      sd::LongType volDep, volRow, volCol;
 
-      for (int b = start; b < stop; b++) {
-        for (int colD = 0; colD < oD; colD++) {
-          for (int colH = 0; colH < oH; ++colH) {
-            for (int colW = 0; colW < oW; ++colW) {
-              for (int c = 0; c < iC; ++c) {
-                for (int kDep = 0; kDep < kD; ++kDep) {
-                  for (int kRow = 0; kRow < kH; ++kRow) {
-                    for (int kCol = 0; kCol < kW; ++kCol) {
+      for (sd::LongType b = start; b < stop; b++) {
+        for (sd::LongType colD = 0; colD < oD; colD++) {
+          for (sd::LongType colH = 0; colH < oH; ++colH) {
+            for (sd::LongType colW = 0; colW < oW; ++colW) {
+              for (sd::LongType c = 0; c < iC; ++c) {
+                for (sd::LongType kDep = 0; kDep < kD; ++kDep) {
+                  for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+                    for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
                       volDep = (-pD + kDep * dD) + colD * sD;
                       volRow = (-pH + kRow * dH) + colH * sH;
                       volCol = (-pW + kCol * dW) + colW * sW;
 
-                      if (static_cast<LongType>(volDep) < static_cast<LongType>(iD) &&
-                          static_cast<LongType>(volRow) < static_cast<LongType>(iH) &&
-                          static_cast<LongType>(volCol) < static_cast<LongType>(iW)) {
-                        col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
-                              kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
-                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
-                              volCol * volStride4;
+                      if (volDep >= 0 && volDep < iD &&
+                          volRow >= 0 && volRow < iH &&
+                          volCol >= 0 && volCol < iW) {
+
+                        auto colIndex = b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
+                                        kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+                        auto volIndex = b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
+                                        volCol * volStride4;
+
+                        if (colIndex >= sizeColBuff || volIndex >= sizeVolBuff) {
+                          continue;  // Skip to the next iteration if the indices are out of bounds.
+                        }
+
+                        col = colBuff + colIndex;
+                        vol = volBuff + volIndex;
                         *vol += *col;
                       }
                     }

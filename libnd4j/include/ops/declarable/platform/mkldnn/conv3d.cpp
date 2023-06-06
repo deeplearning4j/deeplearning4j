@@ -36,14 +36,14 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
 static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, NDArray *output,
-                         const int kD, const int kH, const int kW, const int sD, const int sH, const int sW,
-                         const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
+                         const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW,
+                         const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                          const int paddingMode, const int isNCDHW, const int wFormat) {
   // mkl support weights  in [oC, iC, kD, kH, kW] format only
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
@@ -64,7 +64,7 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
   dnnl::memory::dims wDims = {oC, iC, kD, kH, kW};
   dnnl::memory::dims zDims = {bS, oC, oD, oH, oW};
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {4, 3, 0, 1, 2};  // [kD, kH, kW, iC, oC] -> [oC, iC, kD, kH, kW]
   else if (2 == wFormat)
@@ -102,7 +102,7 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
   dnnl::convolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -137,15 +137,15 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
 
 //////////////////////////////////////////////////////////////////////
 static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
-                           NDArray *gradI, NDArray *gradW, NDArray *gradB, const int kD, const int kH, const int kW,
-                           const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
-                           const int dD, const int dH, const int dW, const int paddingMode, const int isNCDHW,
+                           NDArray *gradI, NDArray *gradW, NDArray *gradB, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
+                           const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
+                           const sd::LongType dD, const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCDHW,
                            const int wFormat) {
   // mkl support weights/gradW in [oC, iC, kD, kH, kW] format only
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
@@ -168,7 +168,7 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
 
   auto type = dnnl::memory::data_type::f32;
 
-  std::vector<int> permut;
+  std::vector<sd::LongType> permut;
   if (0 == wFormat)
     permut = {4, 3, 0, 1, 2};  // [kD, kH, kW, iC, oC] -> [oC, iC, kD, kH, kW]
   else if (2 == wFormat)
@@ -228,7 +228,7 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
                                                                              op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<int, dnnl::memory> args;
+  std::unordered_map<sd::LongType, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -283,217 +283,9 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
-}
-
-/*
-//////////////////////////////////////////////////////////////////////
-static void conv3dMKLDNN(sd::graph::Context &block,
-                        const NDArray *input, const NDArray *weights, const NDArray *bias,
-                              NDArray *output,
-                        const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, int pD, int
-pH, int pW, const int dD, const int dH, const int dW, const int paddingMode, const int isNCDHW) {
-
-    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width,
-output channels, output depth/height/width; int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding
-indexes ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
-indIOioC, indIOioD, indWiC, indWoC, indWkD);
-
-    dnnl_memory_desc_t empty;
-    dnnl::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md( empty);
-    dnnl::memory::desc user_src_md(empty), user_weights_md(empty), user_bias_md(empty), user_dst_md( empty);
-
-    dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
-
-    onednnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
-                                           isNCDHW,
-                                           bS, iC, iD, iH, iW, oC, oD, oH, oW, input, nullptr, weights,
-                                           nullptr, bias, output,
-                                           &conv_src_md, nullptr, &conv_weights_md, nullptr,
-                                           &conv_bias_md, &conv_dst_md,
-                                           &user_src_md, nullptr, &user_weights_md, nullptr,
-                                           &user_bias_md, &user_dst_md,
-                                           conv_strides, conv_padding, conv_padding_r, conv_dilation);
-    auto conv_desc = bias != nullptr ? convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto,
-conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r) :
-convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_dst_md,
-conv_strides, conv_dilation, conv_padding, conv_padding_r);
-
-    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-    dnnl::stream stream(engine);
-
-    auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, engine);
-    auto user_src_memory = dnnl::memory(user_src_md, engine, const_cast<NDArray *>(input)->buffer());
-    auto user_weights_memory = dnnl::memory(user_weights_md, engine, const_cast<NDArray *>(weights)->buffer());
-    auto user_dst_memory = dnnl::memory(user_dst_md, engine, output->buffer());
-
-    auto conv_src_memory = user_src_memory;
-    if (conv_prim_desc.src_desc() != user_src_memory.get_desc()) {
-        conv_src_memory = dnnl::memory(conv_prim_desc.src_desc(), engine);
-        reorder(user_src_memory, conv_src_memory).execute(stream, user_src_memory, conv_src_memory);
-    }
-
-    auto conv_weights_memory = user_weights_memory;
-    if (conv_prim_desc.weights_desc() != user_weights_memory.get_desc()) {
-        conv_weights_memory = dnnl::memory(conv_prim_desc.weights_desc(), engine);
-        reorder(user_weights_memory, conv_weights_memory).execute(stream, user_weights_memory, conv_weights_memory);
-    }
-
-    auto conv_dst_memory = user_dst_memory;
-    if (conv_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-        conv_dst_memory = dnnl::memory(conv_prim_desc.dst_desc(), engine);
-    }
-
-    if (bias != nullptr) {
-        auto conv_bias_memory = dnnl::memory(conv_prim_desc.bias_desc(), engine, bias->buffer());
-        convolution_forward(conv_prim_desc).execute(stream, {{DNNL_ARG_SRC,     conv_src_memory},
-                                                             {DNNL_ARG_WEIGHTS, conv_weights_memory},
-                                                             {DNNL_ARG_BIAS,    conv_bias_memory},
-                                                             {DNNL_ARG_DST,     conv_dst_memory}});
-    }
-    else {
-        convolution_forward(conv_prim_desc).execute(stream, {{DNNL_ARG_SRC,     conv_src_memory},
-                                                             {DNNL_ARG_WEIGHTS, conv_weights_memory},
-                                                             {DNNL_ARG_DST,     conv_dst_memory}});
-    }
-
-    if (conv_prim_desc.dst_desc() != user_dst_memory.get_desc())
-        reorder(conv_dst_memory, user_dst_memory).execute(stream, conv_dst_memory, user_dst_memory);
-
-    stream.wait();
 }
 
 
-//////////////////////////////////////////////////////////////////////
-static void conv3dBpMKLDNN(sd::graph::Context &block,
-                            const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
-                            NDArray *gradI, NDArray *gradW, NDArray *gradB,
-                            const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, int pD,
-int pH, int pW, const int dD, const int dH, const int dW, const int paddingMode, const int isNCDHW) {
-
-    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width,
-output channels, output depth/height/width; int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding
-indexes ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
-indIOioC, indIOioD, indWiC, indWoC, indWkD);
-
-    dnnl_memory_desc_t empty;
-    dnnl::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty), conv_diff_weights_md(empty),
-conv_bias_md(empty), conv_dst_md(empty); dnnl::memory::desc user_src_md(empty), user_diff_src_md(empty),
-user_weights_md(empty), user_diff_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
-
-    dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
-
-    onednnUtils::getMKLDNNMemoryDescConv3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode,
-                                           isNCDHW,
-                                           bS, iC, iD, iH, iW, oC, oD, oH, oW, input, gradI, weights,
-                                           gradW, gradB, gradO,
-                                           &conv_src_md, &conv_diff_src_md, &conv_weights_md,
-                                           &conv_diff_weights_md, &conv_bias_md, &conv_dst_md,
-                                           &user_src_md, &user_diff_src_md, &user_weights_md,
-                                           &user_diff_weights_md, &user_bias_md, &user_dst_md,
-                                           conv_strides, conv_padding, conv_padding_r, conv_dilation);
-
-    auto conv_desc = gradB != nullptr ? convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto,
-conv_src_md, conv_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r) :
-convolution_forward::desc(prop_kind::forward, algorithm::convolution_auto, conv_src_md, conv_weights_md, conv_dst_md,
-conv_strides, conv_dilation, conv_padding, conv_padding_r);
-
-    auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc,
-onednnUtils::getEngine(LaunchContext::defaultContext()->engine()));
-
-    auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-    dnnl::stream stream(engine);
-
-    if (gradW != nullptr) {
-
-        auto convW_desc = gradB != nullptr ? convolution_backward_weights::desc(algorithm::convolution_auto,
-conv_src_md, conv_diff_weights_md, conv_bias_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r)
-                                           : convolution_backward_weights::desc(algorithm::convolution_auto,
-conv_src_md, conv_diff_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);        auto
-engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-
-        auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, engine, conv_prim_desc);
-
-        auto userW_src_memory = dnnl::memory(user_src_md, engine, const_cast<NDArray *>(input)->buffer());
-        auto userW_weights_memory = dnnl::memory(user_diff_weights_md, engine, gradW->buffer());
-        auto userW_dst_memory = dnnl::memory(user_dst_md, engine, const_cast<NDArray *>(gradO)->buffer());
-
-        auto convW_src_memory = userW_src_memory;
-        if (convW_prim_desc.src_desc() != userW_src_memory.get_desc()) {
-            convW_src_memory = dnnl::memory(convW_prim_desc.src_desc(), engine);
-            reorder(userW_src_memory, convW_src_memory).execute(stream, userW_src_memory, convW_src_memory);
-        }
-
-        auto convW_weights_memory = userW_weights_memory;
-        if (convW_prim_desc.diff_weights_desc() != userW_weights_memory.get_desc()) {
-            convW_weights_memory = dnnl::memory(convW_prim_desc.diff_weights_desc(), engine);
-        }
-
-        auto convW_dst_memory = userW_dst_memory;
-        if (convW_prim_desc.diff_dst_desc() != userW_dst_memory.get_desc()) {
-            convW_dst_memory = dnnl::memory(convW_prim_desc.diff_dst_desc(), engine);
-            reorder(userW_dst_memory, convW_dst_memory).execute(stream, userW_dst_memory, convW_dst_memory);
-        }
-
-        if (gradB != nullptr) {
-
-            auto convW_bias_memory = dnnl::memory(convW_prim_desc.diff_bias_desc(), engine, gradB->buffer());
-
-            convolution_backward_weights(convW_prim_desc).execute(stream,
-                                                                  {{DNNL_ARG_SRC,          convW_src_memory},
-                                                                   {DNNL_ARG_DIFF_DST,     convW_dst_memory},
-                                                                   {DNNL_ARG_DIFF_WEIGHTS, convW_weights_memory},
-                                                                   {DNNL_ARG_DIFF_BIAS,    convW_bias_memory}});
-        }
-        else {
-            convolution_backward_weights(convW_prim_desc).execute(stream,
-                                                                  {{DNNL_ARG_SRC,          convW_src_memory},
-                                                                   {DNNL_ARG_DIFF_DST,     convW_dst_memory},
-                                                                   {DNNL_ARG_DIFF_WEIGHTS, convW_weights_memory}});
-        }
-
-        if (convW_prim_desc.diff_weights_desc() != userW_weights_memory.get_desc())
-            reorder(convW_weights_memory, userW_weights_memory).execute(stream, convW_weights_memory,
-userW_weights_memory);
-
-        stream.wait();
-    }
-    if (gradI != nullptr) {
-        auto convI_desc = convolution_backward_data::desc(algorithm::convolution_auto, conv_diff_src_md,
-conv_weights_md, conv_dst_md, conv_strides, conv_dilation, conv_padding, conv_padding_r);
-
-        auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, engine, conv_prim_desc);
-        auto userI_src_memory = dnnl::memory(user_diff_src_md, engine, gradI->buffer());
-        auto userI_weights_memory = dnnl::memory(user_weights_md, engine, const_cast<NDArray *>(weights)->buffer());
-        auto userI_dst_memory = dnnl::memory(user_dst_md, engine, const_cast<NDArray *>(gradO)->buffer());
-
-        auto convI_src_memory = userI_src_memory;
-        if (convI_prim_desc.diff_src_desc() != userI_src_memory.get_desc())
-            convI_src_memory = dnnl::memory(convI_prim_desc.diff_src_desc(), engine);
-
-        auto convI_weights_memory = userI_weights_memory;
-        if (convI_prim_desc.weights_desc() != userI_weights_memory.get_desc()) {
-            convI_weights_memory = dnnl::memory(convI_prim_desc.weights_desc(), engine);
-            reorder(userI_weights_memory, convI_weights_memory).execute(stream, userI_weights_memory,
-convI_weights_memory);
-        }
-
-        auto convI_dst_memory = userI_dst_memory;
-        if (convI_prim_desc.diff_dst_desc() != userI_dst_memory.get_desc()) {
-            convI_dst_memory = dnnl::memory(convI_prim_desc.diff_dst_desc(), engine);
-            reorder(userI_dst_memory, convI_dst_memory).execute(stream, userI_dst_memory, convI_dst_memory);
-        }
-
-        convolution_backward_data(convI_prim_desc).execute(stream,
-                                                           {{DNNL_ARG_DIFF_DST, convI_dst_memory},
-                                                            {DNNL_ARG_WEIGHTS,  convI_weights_memory},
-                                                            {DNNL_ARG_DIFF_SRC, convI_src_memory}});
-
-        if (convI_prim_desc.diff_src_desc() != userI_src_memory.get_desc())
-            reorder(convI_src_memory, userI_src_memory).execute(stream, convI_src_memory, userI_src_memory);
-    }
-}
-*/
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
@@ -509,27 +301,27 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
                "CUSTOM CONV3D MKLDNN OP: rank of weights array must be equal to 5, but got %i instead !",
                weights->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  sd::LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  sd::LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<sd::LongType>(weights->sizeAt(2));  // filter(kernel) width
+  sd::LongType sD = INT_ARG(3);                                                          // strides depth
+  sd::LongType sH = INT_ARG(4);                                                          // strides height
+  sd::LongType sW = INT_ARG(5);                                                          // strides width
+  sd::LongType pD = INT_ARG(6);                                                          // paddings depth
+  sd::LongType pH = INT_ARG(7);                                                          // paddings height
+  sd::LongType pW = INT_ARG(8);                                                          // paddings width
+  sd::LongType dD = INT_ARG(9);                                                          // dilations depth
+  sd::LongType dH = INT_ARG(10);                                                         // dilations height
+  sd::LongType dW = INT_ARG(11);                                                         // dilations width
   int paddingMode = INT_ARG(12);                                                // 0-SAME,  1-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, iC, oC], 1 - [oC, iC, kD, kH, kW], 2 - [oC, kD, kH, kW, iC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
@@ -588,34 +380,34 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CPU) {
                "%i instead !",
                gradO->rankOf());
 
-  int kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));  // filter(kernel) depth
-  int kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));  // filter(kernel) height
-  int kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(weights->sizeAt(2));  // filter(kernel) width
-  int sD = INT_ARG(3);                                                          // strides depth
-  int sH = INT_ARG(4);                                                          // strides height
-  int sW = INT_ARG(5);                                                          // strides width
-  int pD = INT_ARG(6);                                                          // paddings depth
-  int pH = INT_ARG(7);                                                          // paddings height
-  int pW = INT_ARG(8);                                                          // paddings width
-  int dD = INT_ARG(9);                                                          // dilations depth
-  int dH = INT_ARG(10);                                                         // dilations height
-  int dW = INT_ARG(11);                                                         // dilations width
+  sd::LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) depth
+  sd::LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) height
+  sd::LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<sd::LongType>(weights->sizeAt(2));  // filter(kernel) width
+  sd::LongType sD = INT_ARG(3);                                                          // strides depth
+  sd::LongType sH = INT_ARG(4);                                                          // strides height
+  sd::LongType sW = INT_ARG(5);                                                          // strides width
+  sd::LongType pD = INT_ARG(6);                                                          // paddings depth
+  sd::LongType pH = INT_ARG(7);                                                          // paddings height
+  sd::LongType pW = INT_ARG(8);                                                          // paddings width
+  sd::LongType dD = INT_ARG(9);                                                          // dilations depth
+  sd::LongType dH = INT_ARG(10);                                                         // dilations height
+  sd::LongType dW = INT_ARG(11);                                                         // dilations width
   int paddingMode = INT_ARG(12);                                                // 1-SAME,  0-VALID
   int isNCDHW = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;          // INT_ARG(13): 1-NDHWC, 0-NCDHW
   int wFormat = block.getIArguments()->size() > 14
                     ? INT_ARG(14)
                     : 0;  // 0 - [kD, kH, kW, iC, oC], 1 - [oC, iC, kD, kH, kW], 2 - [oC, kD, kH, kW, iC]
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
   if (paddingMode)  // SAME
     ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-  int trueoD, trueoH, trueoW;  // true output depth/height/width
+  sd::LongType trueoD, trueoH, trueoW;  // true output depth/height/width
   ConvolutionUtils::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                       iW, paddingMode);
 

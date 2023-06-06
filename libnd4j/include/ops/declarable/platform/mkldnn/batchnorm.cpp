@@ -60,9 +60,9 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
   dnnl::memory::dims dims;
   dnnl::memory::format_tag format;
 
-  const int indHW = isNCHW ? 2 : 1;
-  const int bS = x->sizeAt(0);
-  const int iC = isNCHW ? x->sizeAt(1) : x->sizeAt(-1);
+  const sd::LongType indHW = isNCHW ? 2 : 1;
+  const sd::LongType bS = x->sizeAt(0);
+  const sd::LongType iC = isNCHW ? x->sizeAt(1) : x->sizeAt(-1);
 
   int iD, iH, iW;
 
@@ -154,7 +154,7 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
   // dLdI - same shape as x
   // dLdW - same shape as weights, dLdW({0,1, 0,0}) contains grad_gamma and dLdW({1,2, 0,0}) contains grad_beta
 
-  const int xRank = x->rankOf();
+  const sd::LongType xRank = x->rankOf();
 
   // input type
   dnnl::memory::data_type type = dnnl::memory::data_type::f32;
@@ -167,11 +167,11 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
   dnnl::memory::dims dims;
   dnnl::memory::format_tag format;
 
-  const int indHW = isNCHW ? 2 : 1;
-  const int bS = x->sizeAt(0);
-  const int iC = isNCHW ? x->sizeAt(1) : x->sizeAt(-1);
+  const sd::LongType indHW = isNCHW ? 2 : 1;
+  const sd::LongType bS = x->sizeAt(0);
+  const sd::LongType iC = isNCHW ? x->sizeAt(1) : x->sizeAt(-1);
 
-  int iD, iH, iW;
+  sd::LongType iD, iH, iW;
 
   if (xRank == 2) {
     dims = {bS, iC};
@@ -284,7 +284,7 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
   // dLdI = dfdm / N + (2/N) * dfdv * (dvdm/2  + (x - m))
   // dLdI = gamma * (  stdInv * -g_sum/N + (2/N) * dfdv * (dvdm/2  + (x - m))  )
 
-  std::vector<int> axes = isNCHW ? std::vector<int>{1} : std::vector<int>{xRank - 1};
+  std::vector<sd::LongType> axes = isNCHW ? std::vector<int>{1} : std::vector<int>{xRank - 1};
   const auto excludedAxes = ShapeUtils::evalDimsToExclude(x->rankOf(), axes);
 
   // inversed batch size 1 / N
@@ -345,16 +345,16 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
   if (applyOffset) beta = INPUT_VARIABLE(3 + (int)applyScale);
 
   const int numOfIntArgs = block.getIArguments()->size();
-  const int inRank = input->rankOf();
+  const sd::LongType inRank = input->rankOf();
 
   // get axes args to normalize input array over
-  std::vector<int> axes;
+  std::vector<sd::LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
     axes.push_back(inRank - 1);  // default dimension to reduce along is last dimension
 
-  const int numOfAxes = axes.size();
+  const sd::LongType numOfAxes = axes.size();
   REQUIRE_TRUE(numOfAxes == 1, 0,
                "BATCHNORM_MKLDNN op: mkl dnn library supports only one axis which represents channel dimension, but "
                "got %i axes instead!",
@@ -423,7 +423,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
   if (applyOffset) beta = INPUT_VARIABLE(3 + (int)applyScale);
 
   const int numOfIntArgs = block.getIArguments()->size();
-  std::vector<int> axes;
+  std::vector<sd::LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
@@ -479,15 +479,15 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
     dLdG = OUTPUT_VARIABLE(3);
   }
   if (applyOffset) {
-    beta = INPUT_VARIABLE(3 + (int)applyScale);
-    dLdB = OUTPUT_VARIABLE(3 + (int)applyScale);
+    beta = INPUT_VARIABLE(3 + (sd::LongType)applyScale);
+    dLdB = OUTPUT_VARIABLE(3 + (sd::LongType)applyScale);
   }
 
   const int numOfIntArgs = block.getIArguments()->size();
   const int inRank = input->rankOf();
 
   // get axes args to normalize input array over
-  std::vector<int> axes;
+  std::vector<sd::LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
@@ -583,18 +583,18 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
     dLdG = OUTPUT_VARIABLE(3);
   }
   if (applyOffset) {
-    beta = INPUT_VARIABLE(4 + (int)applyScale);
-    dLdB = OUTPUT_VARIABLE(3 + (int)applyScale);
+    beta = INPUT_VARIABLE(4 + (sd::LongType)applyScale);
+    dLdB = OUTPUT_VARIABLE(3 + (sd::LongType)applyScale);
   }
 
   const int numOfIntArgs = block.getIArguments()->size();
-  std::vector<int> axes;
+  std::vector<sd::LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
     axes.push_back(input->rankOf() - 1);  // default dimension to reduce along is last dimension
 
-  const int inRank = input->rankOf();
+  const sd::LongType inRank = input->rankOf();
   Requirements req("ONEDNN BATCHNORM_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&

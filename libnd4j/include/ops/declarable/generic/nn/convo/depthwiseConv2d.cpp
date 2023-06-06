@@ -101,8 +101,8 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
                "CUSTOM DEPTHWISECONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weightsShapeInfo[0]);
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -124,11 +124,11 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
     indIiH = 2;
   }
 
-  const LongType bS = shape::sizeAt(inputShapeInfo, 0);           // batch size
-  const LongType iH = shape::sizeAt(inputShapeInfo, indIiH);      // input height
-  const LongType iW = shape::sizeAt(inputShapeInfo, indIiH + 1);  // input width
-  const LongType iC = shape::sizeAt(inputShapeInfo, indIOioC);    // input channels
-  const LongType mC = shape::sizeAt(weightsShapeInfo, indWmC);    // channels multiplier(oC = iC*mC)
+  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(0));           // batch size
+  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH));      // input height
+  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH + 1));  // input width
+  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIOioC));    // input channels
+  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(indWmC));    // channels multiplier(oC = iC*mC)
   const LongType oC = iC * mC;                                    // output channels
 
   std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
@@ -260,8 +260,8 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
                "got %i instead !",
                rank, shape::rank(gradOShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 0));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, 1));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -283,11 +283,11 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
     indIiH = 2;
   }
 
-  const LongType bS = shape::sizeAt(inputShapeInfo, 0);           // batch size
-  const LongType iH = shape::sizeAt(inputShapeInfo, indIiH);      // input height
-  const LongType iW = shape::sizeAt(inputShapeInfo, indIiH + 1);  // input width
-  const LongType iC = shape::sizeAt(inputShapeInfo, indIOioC);    // input channels
-  const LongType mC = shape::sizeAt(weightsShapeInfo, indWmC);    // channels multiplier(oC = iC*mC)
+  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(0));           // batch size
+  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH));      // input height
+  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH + 1));  // input width
+  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIOioC));    // input channels
+  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(indWmC));    // channels multiplier(oC = iC*mC)
   const LongType oC = iC * mC;                                    // output channels
 
   LongType trueoH, trueoW;  // correct output height, width

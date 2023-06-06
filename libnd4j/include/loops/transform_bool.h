@@ -70,12 +70,13 @@ class TransformBool {
 
 #else
   static void exec(int opNum, const void *dx, const sd::LongType *xShapeInfo, void *result,
-                   const sd::LongType *resultShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
+                   const sd::LongType *resultShapeInfo, void *extraParams, long long int threadId,
+                   long long int numThreads);
 
   template <typename OpType>
   static SD_LIB_EXPORT void exec(const void *dx, const sd::LongType *xShapeInfo, void *result,
-                                 const sd::LongType *resultShapeInfo, void *extraParams, uint64_t threadId,
-                                 uint64_t numThreads);
+                                 const sd::LongType *resultShapeInfo, void *extraParams, long long int threadId,
+                                 long long int numThreads);
 #endif
 };
 }  // namespace transform

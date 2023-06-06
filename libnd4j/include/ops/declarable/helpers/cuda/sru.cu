@@ -179,7 +179,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
   // time loop
-  for (sd::Unsigned t = 0; t < time; ++t) {
+  for (sd::LongType t = 0; t < time; ++t) {
     // evaluate sigmoids
     T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
     T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
@@ -356,7 +356,7 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
   T gbR = 0.f;
 
   // time loop
-  for (sd::Unsigned t = 0; t < time; ++t) {
+  for (sd::LongType t = 0; t < time; ++t) {
     // evaluate sigmoids
     T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
     T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));

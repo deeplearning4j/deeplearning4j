@@ -75,19 +75,19 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
 
   if (saved.size() == 0) {
     sd_printf("ListDiff: search returned no results", "");
-    throw std::invalid_argument("Op validation failed");
+    THROW_EXCEPTION("Op validation failed");
   } else {
     auto z0 = output1;  // OUTPUT_VARIABLE(0); //new NDArray<T>('c', {(int) saved.size()});
     auto z1 = output2;  // OUTPUT_VARIABLE(1); //new NDArray<T>('c', {(int) saved.size()});
 
     if (z0->lengthOf() != saved.size()) {
       sd_printf("ListDiff: output/actual size mismatch", "");
-      throw std::invalid_argument("Op validation failed");
+      THROW_EXCEPTION("Op validation failed");
     }
 
     if (z1->lengthOf() != saved.size()) {
       sd_printf("ListDiff: output/actual indices size mismatch", "");
-      throw std::invalid_argument("Op validation failed");
+      THROW_EXCEPTION("Op validation failed");
     }
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
     for (int e = 0; e < indices.size(); e++) {

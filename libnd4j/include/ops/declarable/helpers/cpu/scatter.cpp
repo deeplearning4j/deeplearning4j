@@ -126,7 +126,8 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
 
     samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
   } else {
-    std::vector<sd::LongType > dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank - 1});
+    std::vector<sd::LongType> dims = {indRank - 1};
+    std::vector<sd::LongType > *dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, dims.size(),dims.data());
     std::vector<sd::LongType > dimsToExcludeUpd(indRank - 1);
     std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
@@ -134,8 +135,7 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
       std::vector<sd::LongType> idxRangeOut(2 * outRank, 0);
 
       for (auto i = start; i < stop; i++) {
-        NDArray indSubArr = indices(i, dimsToExcludeInd);
-
+        NDArray indSubArr = indices(i, *dimsToExcludeInd);
         for (sd::LongType j = 0; j < indLastDim; ++j) {
           idxRangeOut[2 * j] = indSubArr.e<sd::LongType>(j);
           idxRangeOut[2 * j + 1] = idxRangeOut[2 * j] + 1;
@@ -150,6 +150,9 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
 
     samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1,
                                     lock ? 1 : sd::Environment::getInstance().maxThreads());
+
+    delete dimsToExcludeInd;
+
   }
 }
 
@@ -160,28 +163,31 @@ void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray&
   // for example if updates is {a,b,c} then indices should be {a,b}
 
   const sd::LongType indicesLen = indices.lengthOf();
-
-  std::vector<sd::LongType > dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
+  std::vector<sd::LongType> dim = {-1};
+  std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), dim.size(),dim.data());
 
   if (!calcGrad) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto subArr = updates(i, dimsToExclude);
+        auto subArr = updates(i, *dimsToExclude);
         output.p(i, subArr.e(indices.e<sd::LongType>(i)));
       }
     };
 
     samediff::Threads::parallel_for(func, 0, indicesLen);
+
+    delete dimsToExclude;
   } else {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        auto subArr = updates(i, dimsToExclude);
+        auto subArr = updates(i, *dimsToExclude);
         auto ind = indices.e<sd::LongType>(i);
         subArr.p(ind, subArr.e(ind) - 1.);
       }
     };
 
     samediff::Threads::parallel_for(func, 0, indicesLen);
+    delete dimsToExclude;
   }
 }
 

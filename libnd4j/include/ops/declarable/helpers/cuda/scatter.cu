@@ -167,7 +167,7 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const sd
 
         if (zCoords[0] != zFirstCoord) continue;
 
-        for (sd::Unsigned k = 0; k < yRank - xRank; ++k) yCoords[xRank + k] = zCoords[k + 1];
+        for (sd::LongType k = 0; k < yRank - xRank; ++k) yCoords[xRank + k] = zCoords[k + 1];
 
         yOffset = shape::getOffset(yShapeInfo, yCoords);
         zOffset = shape::getOffset(zShapeInfo, zCoords);
@@ -259,11 +259,11 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const sd::Lo
       yOffset = shape::getOffset(yShapeInfo, yCoords);
       xOffset =
           shape::getOffset(xShapeInfo, yCoords);  // first xRank coordinates in yCoords are the same for y and x -> for
-      // (sd::Unsigned j = 0; j < xRank; ++j) xCoords[j] = yCoords[j];
+      // (sd::LongType j = 0; j < xRank; ++j) xCoords[j] = yCoords[j];
 
       zCoords[0] = x[xOffset];
 
-      for (sd::Unsigned j = 0; j < yRank - xRank; ++j) zCoords[j + 1] = yCoords[xRank + j];
+      for (sd::LongType j = 0; j < yRank - xRank; ++j) zCoords[j + 1] = yCoords[xRank + j];
 
       zOffset = shape::getOffset(zShapeInfo, zCoords);
     }
@@ -415,7 +415,7 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
         if (!matched) continue;
 
-        for (sd::Unsigned k = xLastDim; k < zRank; ++k) yCoords[yRank - zRank + k] = zCoords[k];
+        for (sd::LongType k = xLastDim; k < zRank; ++k) yCoords[yRank - zRank + k] = zCoords[k];
 
         yOffset = shape::getOffset(yShapeInfo, yCoords);
         zOffset = shape::getOffset(zShapeInfo, zCoords);

@@ -30,7 +30,6 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 // test op, non-divergent
 OP_IMPL(testop2i2o, 2, 2, true) {
-  // sd_printf("CPU op used!\n","");
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
 

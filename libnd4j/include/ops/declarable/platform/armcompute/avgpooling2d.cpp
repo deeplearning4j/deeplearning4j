@@ -38,14 +38,14 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same
   // mode;
 
-  const auto kH = INT_ARG(0);
-  const auto kW = INT_ARG(1);
-  const auto sH = INT_ARG(2);
-  const auto sW = INT_ARG(3);
-  auto pH = INT_ARG(4);
-  auto pW = INT_ARG(5);
-  const auto dH = INT_ARG(6);
-  const auto dW = INT_ARG(7);
+  const sd::LongType kH = INT_ARG(0);
+  const sd::LongType kW = INT_ARG(1);
+  const sd::LongType sH = INT_ARG(2);
+  const sd::LongType sW = INT_ARG(3);
+  sd::LongType pH = INT_ARG(4);
+  sd::LongType pW = INT_ARG(5);
+  const sd::LongType dH = INT_ARG(6);
+  const sd::LongType dW = INT_ARG(7);
   const auto paddingMode = INT_ARG(8);
   const auto extraParam0 = INT_ARG(9);
   const int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 0-NCHW, 1-NHWC
@@ -60,10 +60,10 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
   auto dataLayout = isNCHW ? arm_compute::DataLayout::NCHW : arm_compute::DataLayout::NHWC;
 
   // Calculate individual paddings
-  unsigned int padLeft, padTop, padRight, padBottom;
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType padLeft, padTop, padRight, padBottom;
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
@@ -95,8 +95,8 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
 PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  const int dH = INT_ARG(6);
-  const int dW = INT_ARG(7);
+  const sd::LongType dH = INT_ARG(6);
+  const sd::LongType dW = INT_ARG(7);
   // Data types supported: QASYMM8/QASYMM8_SIGNED/F16/F32
   // for now, we will ignore F16 as it shoulde be preconditioned for pool size 2,3 and arm64-v8.2-a architecture
   Requirements req("ARMCOMPUTE AVGPOOL2d OP");

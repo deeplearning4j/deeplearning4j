@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(reduce_norm1, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Norm1, *output, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Norm1, *output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
         "REDUCE_NORM1 OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
+  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
                                                    keepDims, false, block.getWorkspace()));
 }
 
@@ -139,7 +139,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
 
   if (!keepDims && gradO->lengthOf() > 1) {
     auto gradOShapeKeepDims =
-        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     *gradI *= gradO->reshape(gradO->ordering(),
                              ShapeUtils::pullShapeFromShapeInfo(
                                  gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]

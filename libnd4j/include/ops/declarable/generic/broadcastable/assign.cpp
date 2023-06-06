@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
+      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(epsNext);

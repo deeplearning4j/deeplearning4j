@@ -118,9 +118,9 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
   const sd::LongType time = x->sizeAt(0);   // time - number of time steps
   const sd::LongType bS = x->sizeAt(1);     // bS - batch size
   const sd::LongType K = x->sizeAt(2) / 2;  // K - number of features
-
+  std::vector<sd::LongType> dims2 = {1, 2};
   //  x = x * mask
-  if (mask) x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);  // apply mask
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims2, *mask, *x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
@@ -204,9 +204,10 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
   const sd::LongType time = x->sizeAt(0);  // time - number of time steps
   const sd::LongType bS = x->sizeAt(1);
   const sd::LongType K = x->sizeAt(2) / 2;
+  std::vector<sd::LongType> dims2 = {1, 2};
 
   //  x = x * mask
-  if (mask) x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);  // apply mask
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims2, *mask, *x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  [time x bS x 2*K] * [2*K x 6*K] = [time x bS x 6*K]

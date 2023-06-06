@@ -59,13 +59,13 @@ static void upsampling3d_(const NDArray& input, NDArray& output, const LongType 
 
   // loop through output array
   auto func = PRAGMA_THREADS_FOR_3D {
-    sd::Unsigned xCoord2, xCoord3, xCoord4;
+    sd::LongType xCoord2, xCoord3, xCoord4;
 
     for (sd::LongType b = start_x; b < stop_x; b += inc_x) {
       for (sd::LongType c = start_y; c < stop_y; c += inc_y) {
         for (sd::LongType d = start_z; d < stop_z; d += inc_z) {
           for (sd::LongType h = 0; h < oH; ++h) {
-            for (sd::Unsigned w = 0; w < oW; ++w) {
+            for (sd::LongType w = 0; w < oW; ++w) {
               xCoord2 = d / factorD;
               xCoord3 = h / factorH;
               xCoord4 = w / factorW;

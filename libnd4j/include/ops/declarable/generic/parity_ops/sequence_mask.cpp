@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(sequence_mask) {
   int lastDimension = maxInd;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
   outShapeInfo[0] = outRank;
-  for (int i = 0; i < outRank - 1; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
+  for (sd::LongType i = 0; i < outRank - 1; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
   outShapeInfo[outRank] = lastDimension;
 
   ShapeUtils::updateStridesAndType(outShapeInfo, dtype, shape::order(in));

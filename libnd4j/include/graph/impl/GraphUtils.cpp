@@ -50,7 +50,6 @@ bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
   std::string name = *(filtered[0].getOpName());
 
   for (int e = 1; e < filtered.size(); e++) {
-    //        sd_printf(">%s<, %lu %lu\n", name.c_str(), ops.size(), filtered.size());
     if (0 == filtered[e].getOpName()->compare(name)) {
       // there is a match
       auto fi = std::find_if(ops.begin(), ops.end(),
@@ -144,19 +143,6 @@ int GraphUtils::runPreprocessor(char const* input, char const* output) {
 #endif
 
     char const* cxx = cmd.c_str();  //;getenv("CXX");
-                                    //    if (cxx == nullptr) {
-    //        sd_printf("Cannot retrieve mandatory environment variable 'CXX'. Please set up the variable and try
-    //        again.", ""); exit(3);
-    //    }
-    // char* pathEnv = getenv("PATH");
-    // std::string pathStr("PATH=./;");
-    // pathStr += pathEnv;
-
-    // sd_printf("%s\n", pathStr.c_str());
-    //    char const* env[] = {// "HOME=/tmp",
-    //                          pathStr.c_str(),
-    //                          (char *)0 };
-
     // to retrieve c++ version (hardcoded 6): c++ -v 2>&1 | tail -1 | awk '{v = int($3); print v;}'
 
     std::vector<char*> params;      //(9);

@@ -33,7 +33,6 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
   std::vector<sd::LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
@@ -57,7 +56,7 @@ CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Sum, *output, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Sum, *output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -86,7 +85,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
                  "REDUCE_SUM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
                  inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), dimensions, inputShape->at(0),
+  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
                                                    keepDims, false, block.getWorkspace()));
 }
 
@@ -126,7 +125,7 @@ CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
 
   if (!keepDims) {
     auto gradOShapeKeepDims =
-        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
+        ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     auto r = gradO->reshape(gradO->ordering(),
                             ShapeUtils::pullShapeFromShapeInfo(
                                 gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]

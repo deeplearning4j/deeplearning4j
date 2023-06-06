@@ -84,7 +84,7 @@ static void tanhMKLDNN(const NDArray* x, NDArray* z) {
 PLATFORM_IMPL(tanh, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  const int rank = input->rankOf();
+  const sd::LongType rank = input->rankOf();
   REQUIRE_TRUE(rank <= 6, 0, "TANH_MKLDNN OP: the rank of input must be less or qual 6, but got rank = %i instead !",
                rank);
 
@@ -170,8 +170,8 @@ PLATFORM_IMPL(tanh_bp, ENGINE_CPU) {
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
 
-  const int rank = input->rankOf();
-  const int dLdzRank = dLdz->rankOf();
+  const sd::LongType rank = input->rankOf();
+  const sd::LongType dLdzRank = dLdz->rankOf();
 
   REQUIRE_TRUE(rank <= 6 && dLdzRank <= 6, 0,
                "TANH_BP_MKLDNN OP: the rank of input and dLdz must be less or qual 6, but got input rank = %i and dLdz "

@@ -378,10 +378,11 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
   dLdWcx.assign(mmul(xT, dLdZc));                        // [iS, bS] × [bS, nU] = [iS, nU]
   dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));  // [nU, bS] × [bS, nU] = [nU, nU]
 
-  dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, {0}));  // [nU]
-  dLdbu.assign(dLdZu.reduceAlongDimension(reduce::Sum, {0}));  // [nU]
+  std::vector<sd::LongType> zeroVec = {0};
+  dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
+  dLdbu.assign(dLdZu.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
 
-  dLdbc->assign(dLdZc.reduceAlongDimension(reduce::Sum, {0}));  // [nU]
+  dLdbc->assign(dLdZc.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -487,8 +488,9 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, 
   // dLdWx
   *dLdWx += mmul(x->transpose(), dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
+  std::vector<sd::LongType> zeroVec = {0};
   // dLdb
-  *dLdb += dLdz.reduceAlongDimension(reduce::Sum, {0});  // [bS, 3*nOut] -> reduce -> [3*nOut];
+  *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &zeroVec);  // [bS, 3*nOut] -> reduce -> [3*nOut];
 
   dLdzc *= r;
 

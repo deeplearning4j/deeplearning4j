@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 SD_LIB_HIDDEN void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
-                          const std::vector<int>& intArgs);
+                          const std::vector<LongType>& intArgs);
 
 }
 }  // namespace ops

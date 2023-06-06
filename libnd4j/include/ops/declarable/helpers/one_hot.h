@@ -30,7 +30,7 @@ namespace ops {
 namespace helpers {
 
 SD_LIB_HIDDEN void onehot(const sd::LaunchContext *context, const NDArray *indices, NDArray *output,
-                          const sd::Unsigned axis, const sd::Unsigned depth, const double on, const double off);
+                          const sd::LongType axis, const sd::LongType depth, const double on, const double off);
 
 }
 }  // namespace ops

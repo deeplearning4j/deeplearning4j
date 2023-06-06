@@ -36,7 +36,7 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
                                          const sd::LongType* zTadOffsets, const sd::LongType numTads,
                                          const sd::LongType tadLen, const bool exclusive, const bool reverse) {
   __shared__ T *shared, lastElemInChunk;
-  __shared__ sd::Unsigned numTadChunks, blockDim2;
+  __shared__ sd::LongType numTadChunks, blockDim2;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -52,7 +52,7 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
   sd::LongType sharedInd(2 * threadIdx.x), leftArrInd, rightArrInd, step;
   T xLeft, xRight;
 
-  for (sd::Unsigned i = 0; i < numTadChunks; ++i) {
+  for (sd::LongType i = 0; i < numTadChunks; ++i) {
     leftArrInd = sharedInd + i * blockDim2;
     rightArrInd = leftArrInd + 1;
 
@@ -74,11 +74,11 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
 
     step = 1;
 
-    for (sd::Unsigned d = blockDim.x; d > 0; d /= 2) {
+    for (sd::LongType d = blockDim.x; d > 0; d /= 2) {
       __syncthreads();
       if (threadIdx.x < d) {
-        sd::Unsigned left = step * (sharedInd + 1) - 1;
-        sd::Unsigned right = step * (sharedInd + 2) - 1;
+        sd::LongType left = step * (sharedInd + 1) - 1;
+        sd::LongType right = step * (sharedInd + 2) - 1;
         shared[right] = (op == scalar::Add) ? (shared[right] + shared[left]) : (shared[right] * shared[left]);
       }
       step *= 2;
@@ -87,13 +87,13 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
     if (threadIdx.x == 0) shared[blockDim2 - 1] = (op == scalar::Add) ? 0 : 1;
     __syncthreads();
 
-    for (sd::Unsigned d = 1; d < blockDim2; d *= 2) {
+    for (sd::LongType d = 1; d < blockDim2; d *= 2) {
       step /= 2;
 
       __syncthreads();
       if (threadIdx.x < d) {
-        sd::Unsigned left = step * (sharedInd + 1) - 1;
-        sd::Unsigned right = step * (sharedInd + 2) - 1;
+        sd::LongType left = step * (sharedInd + 1) - 1;
+        sd::LongType right = step * (sharedInd + 2) - 1;
         T temp = shared[left];
         shared[left] = shared[right];
         shared[right] = (op == scalar::Add) ? (shared[right] + temp) : (shared[right] * temp);

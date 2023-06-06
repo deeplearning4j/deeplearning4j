@@ -76,13 +76,13 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
+      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
     } else
       gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
+      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(preY);
@@ -135,13 +135,13 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
-      auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
+      auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
     } else
       gradX->assign(preX);
 
     if (axisY.size() > 0) {
-      auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
+      auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(preY);

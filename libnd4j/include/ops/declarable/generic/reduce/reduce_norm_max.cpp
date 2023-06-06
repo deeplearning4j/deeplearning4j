@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::NormMax, *output, dimensions, keepDims);
+  input->reduceAlongDimension(reduce::NormMax, *output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -91,7 +91,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace()));
+      ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace()));
 }
 
 DECLARE_TYPES(reduce_norm_max) {
@@ -133,10 +133,12 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
     gradI->p(ind, sign * gradO->e(0));
 
   } else {
-    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, dimensions);
+    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);
+    auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, indicesArr,
-        ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));  // 6 corresponds to copy operation
+        *vec);  // 6 corresponds to copy operation
+    delete vec;
     *gradI *= input->transform(sd::transform::Sign);
   }
 

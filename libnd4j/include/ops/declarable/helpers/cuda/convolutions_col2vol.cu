@@ -67,29 +67,29 @@ static SD_KERNEL void col2volCuda(const void* columns, const sd::LongType* colSh
 
     const auto bSiCoffset = coords[0] * colShapeInfo[9] + coords[1] * colShapeInfo[10];
 
-    const sd::Unsigned imD = coords[2] + pD;
-    const sd::Unsigned imH = coords[3] + pH;
-    const sd::Unsigned imW = coords[4] + pW;
+    const sd::LongType imD = coords[2] + pD;
+    const sd::LongType imH = coords[3] + pH;
+    const sd::LongType imW = coords[4] + pW;
 
-    const sd::Unsigned colDstart = (imD < kD) ? 0 : (imD - kD) / sD + 1;
-    const sd::Unsigned colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
-    const sd::Unsigned colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
+    const sd::LongType colDstart = (imD < kD) ? 0 : (imD - kD) / sD + 1;
+    const sd::LongType colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
+    const sd::LongType colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    const sd::Unsigned colDend = sd::math::sd_min<sd::Unsigned>(imD / sD + 1, oD);
-    const sd::Unsigned colHend = sd::math::sd_min<sd::Unsigned>(imH / sH + 1, oH);
-    const sd::Unsigned colWend = sd::math::sd_min<sd::Unsigned>(imW / sW + 1, oW);
+    const sd::LongType colDend = sd::math::sd_min<sd::LongType>(imD / sD + 1, oD);
+    const sd::LongType colHend = sd::math::sd_min<sd::LongType>(imH / sH + 1, oH);
+    const sd::LongType colWend = sd::math::sd_min<sd::LongType>(imW / sW + 1, oW);
 
     T val = 0;
 
-    for (sd::Unsigned colD = colDstart; colD < colDend; ++colD) {
+    for (sd::LongType colD = colDstart; colD < colDend; ++colD) {
       coords[2] = imD - colD * sD;
       if (coords[2] % dD != 0) continue;
 
-      for (sd::Unsigned colH = colHstart; colH < colHend; ++colH) {
+      for (sd::LongType colH = colHstart; colH < colHend; ++colH) {
         coords[3] = imH - colH * sH;
         if (coords[3] % dH != 0) continue;
 
-        for (sd::Unsigned colW = colWstart; colW < colWend; ++colW) {
+        for (sd::LongType colW = colWstart; colW < colWend; ++colW) {
           coords[4] = imW - colW * sW;
           if (coords[4] % dW != 0) continue;
 

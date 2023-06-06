@@ -64,7 +64,7 @@ sd::Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
           extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
     } else {
       // TAD
-      std::vector<sd::LongType> dims(axis);
+      std::vector<sd::LongType> dims = {axis};
 
       for (int e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
@@ -76,15 +76,16 @@ sd::Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
 
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
-            z->shapeInfo(), dims, z->getContext()->getWorkspace());
+            z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
         zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
-      std::vector<sd::LongType> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+      std::vector<sd::LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
-                                          zShapeInfoD, dims2.data(), dims2.size());
+                                          zShapeInfoD, dims2->data(), dims2->size());
+      delete dims2;
 
     }
 
@@ -117,15 +118,17 @@ sd::Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
 
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
-            z->shapeInfo(), dims, z->getContext()->getWorkspace());
+            z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
         zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
       }
 
-      std::vector<sd::LongType> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+      std::vector<sd::LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
-                                          zShapeInfoD, dims2.data(), dims2.size());
+                                          zShapeInfoD, dims2->data(), dims2->size());
+
+      delete dims2;
 
     }
   }
@@ -156,8 +159,9 @@ ShapeList* LegacyReduceBoolOp::calculateOutputShape(ShapeList* inputShape, sd::g
   if (axis.size() == shape::rank(inShape)) allAxes = true;
 
   // in this case we're building proper shape for reduction
-  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inShape), axis, inShape, DataType::BOOL, keepDims,
-                                                   !newFormat, block.workspace()));
+  auto info = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), &axis, inShape, DataType::BOOL, keepDims,
+                                              !newFormat, block.workspace());
+  return SHAPELIST(info);
 }
 }  // namespace ops
 }  // namespace sd

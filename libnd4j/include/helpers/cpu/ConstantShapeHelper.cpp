@@ -167,7 +167,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
   newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);              // order
 
   if (!dimensions.empty()) {
-    for (sd::Unsigned k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
+    for (sd::LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
       if (j < dimensions.size() && dimensions[j] == i) {
         shape::shapeOf(newShapeInfo)[i] = shape::shapeOf(minShapeInfo)[k];
         shape::stride(newShapeInfo)[i] = shape::stride(minShapeInfo)[k++];
@@ -201,19 +201,18 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo,
-                                                                                const std::vector<sd::LongType>& dimsWithUnities,
+ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* maxShapeInfo, const std::vector<LongType>* dimsWithUnities,
                                                                                 sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = nullptr;
-  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()),
+  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo) - dimsWithUnities->size()),
            sd::LongType);
 
   sd::LongType temp;
-  if (dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
-    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
-    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
+  if (dimsWithUnities->size() == 1 && shape::isCommonVector(maxShapeInfo, temp) && temp == dimsWithUnities->at(0)) {
+    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(maxShapeInfo), 1,&temp);
+    shape::excludeUnitiesFromShapeInfo(maxShapeInfo, dims->data(), dims->size(), newShapeInfo);
   } else {
-    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities.data(), dimsWithUnities.size(), newShapeInfo);
+    shape::excludeUnitiesFromShapeInfo(maxShapeInfo, dimsWithUnities->data(), dimsWithUnities->size(), newShapeInfo);
   }
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);

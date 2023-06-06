@@ -79,15 +79,6 @@ bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport 
     close(fd);
   }
 
-  /*
-  struct rusage _usage;
-
-  auto res = getrusage(RUSAGE_SELF, &_usage);
-
-  report.setRSS(_usage.ru_maxrss);
-
-  //sd_printf("Usage: %lld; %lld; %lld; %lld;\n", _usage.ru_ixrss, _usage.ru_idrss, _usage.ru_isrss, _usage.ru_maxrss);
-   */
 
   return true;
 #endif
