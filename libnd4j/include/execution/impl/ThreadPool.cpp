@@ -57,7 +57,7 @@ static void executionLoop_(int thread_id, BlockingQueue<CallableWithArguments *>
         c->finish();
       } break;
       default:
-        throw std::runtime_error("Don't know what to do with provided Callable");
+        THROW_EXCEPTION("Don't know what to do with provided Callable");
     }
   }
 }
@@ -98,7 +98,7 @@ ThreadPool::ThreadPool() {
     CPU_ZERO(&cpuset);
     CPU_SET(e, &cpuset);
     int rc = pthread_setaffinity_np(_threads[e]->native_handle(), sizeof(cpu_set_t), &cpuset);
-    if (rc != 0) throw std::runtime_error("Failed to set pthread affinity");
+    if (rc != 0) THROW_EXCEPTION("Failed to set pthread affinity");
 #endif
     /*
 #if defined(_WIN32) || defined(_WIN64)
@@ -107,7 +107,7 @@ ThreadPool::ThreadPool() {
         auto mask = (static_cast<DWORD_PTR>(1) << e);
         auto result = SetThreadAffinityMask(_threads[e]->native_handle(), mask);
         if (!result)
-            throw std::runtime_error("Failed to set pthread affinity");
+            THROW_EXCEPTION("Failed to set pthread affinity");
     }
 
     // that's fine. no need for time_critical here

@@ -1356,7 +1356,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (!in.isEmpty())
                 inputBuffers.put(cnt, in.data().opaqueBuffer());
 
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer());
         }
 
 

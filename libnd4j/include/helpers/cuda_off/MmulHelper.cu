@@ -222,20 +222,20 @@ SD_HOST static void usualDot(const dim3& blocksPerGrid, const dim3& threadsPerBl
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta,
                              const char outOrder) {
-  if (A->rankOf() != 2) throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
-  if (B->rankOf() != 2) throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
+  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
+  if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
 
   const auto M = A->sizeAt(0);
   const auto K = A->sizeAt(1);
   const auto N = B->sizeAt(1);
 
   if (C != nullptr && C->rankOf() != 2)
-    throw std::runtime_error("MmulHelper::mmulMxM cuda: rank of C array is not equal 2 !");
-  if (B->sizeAt(0) != K) throw std::runtime_error("MmulHelper::mmulMxM cuda: B array has wrong number of rows !");
+    THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of C array is not equal 2 !");
+  if (B->sizeAt(0) != K) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: B array has wrong number of rows !");
   if (C != nullptr && C->sizeAt(0) != M)
-    throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of rows !");
+    THROW_EXCEPTION("MmulHelper::mmulMxM cuda: C array has wrong number of rows !");
   if (C != nullptr && C->sizeAt(1) != N)
-    throw std::runtime_error("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
+    THROW_EXCEPTION("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
 
   if (C == nullptr)
     C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
@@ -366,18 +366,18 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
                              const char outOrder) {
   sd::LongType  xLenDim, yLenDim(0);
 
-  if (A->rankOf() != 2) throw std::runtime_error("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
+  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
-    throw std::runtime_error("MmulHelper::mmulMxV cuda: X array must be vector !");
+    THROW_EXCEPTION("MmulHelper::mmulMxV cuda: X array must be vector !");
 
   const auto M = A->sizeAt(0);
   const auto N = A->sizeAt(1);
 
   if (Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim))
-    throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array must be vector !");
-  if (X->lengthOf() != N) throw std::runtime_error("MmulHelper::mmulMxV cuda: X vector has wrong length !");
+    THROW_EXCEPTION("MmulHelper::mmulMxV cuda: Y array must be vector !");
+  if (X->lengthOf() != N) THROW_EXCEPTION("MmulHelper::mmulMxV cuda: X vector has wrong length !");
   if (Y != nullptr && Y->lengthOf() != M)
-    throw std::runtime_error("MmulHelper::mmulMxV cuda: Y array has wrong length !");
+    THROW_EXCEPTION("MmulHelper::mmulMxV cuda: Y array has wrong length !");
 
   if (Y == nullptr)
     Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
@@ -471,15 +471,15 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
   sd::LongType  xLenDim(0), yLenDim(0);
 
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
-    throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
+    THROW_EXCEPTION("MmulHelper::dot cuda: X array must be vector !");
   if (!shape::isCommonVector(Y->shapeInfo(), yLenDim))
-    throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
-  if (Z != nullptr && !Z->isScalar()) throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+    THROW_EXCEPTION("MmulHelper::dot cuda: Y array must be vector !");
+  if (Z != nullptr && !Z->isScalar()) THROW_EXCEPTION("MmulHelper::dot cuda: Z array must be scalar !");
 
   const auto length = X->lengthOf();
 
   if (Y->lengthOf() != length)
-    throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+    THROW_EXCEPTION("MmulHelper::dot cuda: lengths of input vectors are different !");
 
   if (Z == nullptr)
     Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
@@ -624,18 +624,18 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
   // input ranks validation
   if (aRank > bRank && bRank != 2)
-    throw std::runtime_error("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
+    THROW_EXCEPTION("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
   else if (bRank > aRank && aRank != 2)
-    throw std::runtime_error("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
+    THROW_EXCEPTION("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
   else if (aRank == bRank) {
     for (int i = 0; i < aRank - 2; ++i)
       if (A->sizeAt(i) != B->sizeAt(i))
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
   }
 
   if (A->sizeAt(-1) != B->sizeAt(-2))
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
 
   // validation of C array
@@ -645,7 +645,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
   if (C != nullptr) {
     if (!C->isSameShape(cExpectedShape))
-      throw std::runtime_error("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication !");
+      THROW_EXCEPTION("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication !");
   } else
     C = new NDArray(outOrder, cExpectedShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());

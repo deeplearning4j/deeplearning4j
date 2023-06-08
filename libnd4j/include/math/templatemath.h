@@ -917,7 +917,7 @@ namespace sd {
             auto sum = Z(0.);
             auto denom = Z(1.);
             if (a <= X(0.000001))
-                // throw std::runtime_error("Cannot calculate gamma for a zero val.");
+                // THROW_EXCEPTION("Cannot calculate gamma for a zero val.");
                 return Z(0);
 
             for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {

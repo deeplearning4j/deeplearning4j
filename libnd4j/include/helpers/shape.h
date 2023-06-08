@@ -345,7 +345,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE int checkArrangeArray(T *arr, int arrLength, int sh
  * @param rearrange the order to re arrange
  * @param rank the rank of the rearrange array
  */
-SD_LIB_EXPORT SD_HOST_DEVICE void permute(ShapeInformation **info, sd::LongType *rearrange, int rank);
+SD_LIB_EXPORT SD_HOST_DEVICE void permute(ShapeInformation **info, sd::LongType *rearrange, long long int rank);
 
 /**
  * Returns whether the
@@ -1272,13 +1272,10 @@ SD_INLINE SD_HOST_DEVICE sd::LongType getIndexOffset(sd::LongType index, const s
       sd::LongType coords[SD_MAX_RANK];
       shape::index2coords(index,shapeInfo,coords);
       auto getOffset = shape::getOffset(shapeInfo,coords,0);
-      sd_printf("EWS <= 0 c ordering offset %lld\n",getOffset);
-
       return getOffset;
     }
   }
 
-  sd_printf("getIndexOffset: Unknown order/ews %c/%lld\n", order, ews);
   //f ordering
   sd::LongType offset = 0;
 
@@ -2256,7 +2253,7 @@ SD_INLINE SD_HOST_DEVICE bool isContiguous(const sd::LongType *shapeInfo) {
 // object
 SD_INLINE SD_HOST void checkDimensions(const sd::LongType rank, std::vector<sd::LongType> *dimensions) {
   int dimSize = dimensions->size();
-  if (dimSize == 0) throw std::runtime_error("shape::checkDimensions method: array of dimensions is empty!");
+  if (dimSize == 0) THROW_EXCEPTION("shape::checkDimensions method: array of dimensions is empty!");
   // check presence of negative dimensions and if they are present transform them to positive ones -dim -> rank - |dim|
   for (auto &dim : *dimensions)
     if (dim < 0) dim += rank;
@@ -2269,11 +2266,11 @@ SD_INLINE SD_HOST void checkDimensions(const sd::LongType rank, std::vector<sd::
   // check whether number of dimensions is to big (>rank)
   dimSize = dimensions->size();
   if (dimSize > rank)
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "shape::checkDimensions method: number of input dimensions is too big ( > rank of array)!");
   // check if min dimension is still negative and whether max dimension is bigger then rank-1
   if (dimensions->at(0) < 0 || dimensions->back() > (rank - 1))
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "shape::checkDimensions method: the negative dimension is still present in input array after transform or the "
         "too big dimension is present ( > rank of array) !");
 }

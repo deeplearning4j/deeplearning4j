@@ -97,7 +97,7 @@
     cudaError_t tRes = cudaStreamSynchronize(*STREAM); \
     checkCudaErrors(tRes);                             \
     if (tRes != 0) {                                   \
-      throw std::runtime_error();                      \
+      THROW_EXCEPTION();                      \
     };                                                 \
   }
 #define DEBUG_KERNEL(STREAM, OP_NUM)                                                             \
@@ -109,7 +109,7 @@
       std::string tOp = "Kernel OpNum failed: [" + sd::StringUtils::valueToString<int>(OP_NUM) + \
                         std::string("]; File: ") + tFile + std::string(":") +                    \
                         sd::StringUtils::valueToString<int>(__LINE__);                           \
-      throw std::runtime_error(tOp.c_str());                                                     \
+      THROW_EXCEPTION(tOp.c_str());                                                     \
     };                                                                                           \
   }
 
@@ -2669,7 +2669,7 @@ void throwException(const char* exceptionMessage);
 #if defined(SD_GCC_FUNCTRACE)
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
 #else
-#define THROW_EXCEPTION(exceptionMessage) throw std::runtime_error(exceptionMessage);
+#define THROW_EXCEPTION(exceptionMessage) THROW_EXCEPTION(exceptionMessage);
 #endif
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, LENGTH);
@@ -2801,7 +2801,7 @@ void throwException(const char* exceptionMessage);
 #ifdef __CUDABLAS__
 #define checkCudaErrors(ERR)                                        \
   if (ERR != 0) {                                                   \
-    throw std::runtime_error("CUDA stream synchronization failed"); \
+    THROW_EXCEPTION("CUDA stream synchronization failed"); \
   }
 #endif
 

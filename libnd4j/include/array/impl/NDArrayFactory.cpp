@@ -97,7 +97,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
   if (descriptor->arrLength() != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
-    throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
+    THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
   bool* hostBuffer = nullptr;
@@ -123,7 +123,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
   if (descriptor->arrLength() != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
-    throw std::runtime_error("NDArrayFactory::create: data size doesn't match shape");
+    THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
@@ -884,7 +884,7 @@ NDArray NDArrayFactory::string(const std::vector<sd::LongType>& shape, const std
 
 NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = sd::graph::getFileSize(fileName);
-  if (size < 0) throw std::runtime_error("File doesn't exit");
+  if (size < 0) THROW_EXCEPTION("File doesn't exit");
 
   auto pNPY = reinterpret_cast<char*>(::numpyFromFile(std::string(fileName)));
 

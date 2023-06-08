@@ -42,7 +42,7 @@ OpArgsHolder::OpArgsHolder() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 OpArgsHolder::OpArgsHolder(const OpArgsHolder& other) {
-  throw std::runtime_error("OpArgsHolder::OpArgsHolder copy constructor: don't use me !");
+  THROW_EXCEPTION("OpArgsHolder::OpArgsHolder copy constructor: don't use me !");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -81,7 +81,7 @@ OpArgsHolder::OpArgsHolder(OpArgsHolder&& other) noexcept
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 OpArgsHolder& OpArgsHolder::operator=(const OpArgsHolder& other) {
-  throw std::runtime_error("OpArgsHolder::OpArgsHolder assignment operator: don't use me !");
+  THROW_EXCEPTION("OpArgsHolder::OpArgsHolder assignment operator: don't use me !");
 }
 
 ////////////////////////////////////////////////////////////////////////

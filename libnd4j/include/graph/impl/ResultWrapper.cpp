@@ -26,7 +26,7 @@
 namespace sd {
 namespace graph {
 ResultWrapper::ResultWrapper(sd::LongType size, sd::Pointer ptr) {
-  if (size <= 0) throw std::runtime_error("FlatResult size should be > 0");
+  if (size <= 0) THROW_EXCEPTION("FlatResult size should be > 0");
 
   _size = size;
   _pointer = ptr;

@@ -1,3 +1,23 @@
+
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j;
 
 import com.github.javaparser.ParserConfiguration;
@@ -17,7 +37,9 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class BlasLapackGenerator {
 
@@ -47,6 +69,17 @@ public class BlasLapackGenerator {
                     " */\n";
     private static String codeGenWarning =
             "\n//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================\n\n";
+
+
+    private static Set<String> methodsToSkip = new HashSet<>(Arrays.asList(
+            "LAPACK_zlangb_base",
+            "LAPACK_lsame_base",
+            "LAPACK_clangb_base",
+            "LAPACK_lsame_base",
+            "LAPACK_dlangb_base",
+            "LAPACK_slangb_base"
+
+            ));
 
 
     public BlasLapackGenerator(File nd4jApiRootDir) {
@@ -80,6 +113,7 @@ public class BlasLapackGenerator {
         Arrays.stream(clazz.getMethods())
                 .filter(input -> !objectMethods.contains(input))
                 .filter(input -> !input.getName().equals("map") && !input.getName().equals("init"))
+                .filter(input -> !methodsToSkip.contains(input.getName()))
                 .forEach(method -> {
                     MethodSpec.Builder builder = MethodSpec.methodBuilder(
                                     method.getName()
@@ -128,7 +162,7 @@ public class BlasLapackGenerator {
 
 
     public static void main(String...args) throws Exception {
-        BlasLapackGenerator blasLapackGenerator = new BlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/"));
+        BlasLapackGenerator blasLapackGenerator = new BlasLapackGenerator(new File("../../nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/"));
         blasLapackGenerator.parse();
         String generated = FileUtils.readFileToString(blasLapackGenerator.getTargetFile(), Charset.defaultCharset());
         generated = generated.replaceAll("\\{\\s+\\}",";");

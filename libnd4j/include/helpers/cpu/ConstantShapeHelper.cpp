@@ -61,7 +61,7 @@ ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *d
   int deviceId = 0;
   std::lock_guard<std::mutex> lock(_mutex);
   if(_cache.empty()) {
-    throw std::runtime_error("Cache is empty!");
+    THROW_EXCEPTION("Cache is empty!");
   }
 
   if (_cache[deviceId].count(*descriptor) == 0) {

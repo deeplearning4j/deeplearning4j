@@ -758,19 +758,19 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
                                                               LongType threadId, LongType numThreads) {
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
   if(xShapeInfo == nullptr) {
-    throw std::runtime_error("Input x shape info was null!");
+    THROW_EXCEPTION("Input x shape info was null!");
   }
 
   if(xShapeInfo[0] > SD_MAX_RANK || xShapeInfo[0] < 0) {
-    throw std::runtime_error("x shape info appears to be corrupt. This is likely due to deallocation.");
+    THROW_EXCEPTION("x shape info appears to be corrupt. This is likely due to deallocation.");
   }
 
   if(zShapeInfo[0] > SD_MAX_RANK || zShapeInfo[0] < 0) {
-    throw std::runtime_error("z shape info appears to be corrupt. This is likely due to deallocation.");
+    THROW_EXCEPTION("z shape info appears to be corrupt. This is likely due to deallocation.");
   }
 
   if(zShapeInfo == nullptr) {
-    throw std::runtime_error("Input z shape info was null!");
+    THROW_EXCEPTION("Input z shape info was null!");
   }
 
 

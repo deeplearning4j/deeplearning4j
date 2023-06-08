@@ -64,16 +64,22 @@ DECLARE_TYPES(permute) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(permute) {
+  sd_printf("permute calc shape: About to obtain variable for first input\n",0);
+  sd_printf("First shape is \n",0);
+  shape::printShapeInfo(inputShape->at(0));
+  sd_printf("Array first is nullptr: %d\n",block.array(0) == nullptr);
   auto x = INPUT_VARIABLE(0);
 
-  if (block.width() == 1 && block.getIArguments()->size() == 0)
+  if (block.width() == 1 && block.getIArguments()->size() == 0) {
+    sd_printf("Block width 1 and no iArgs\n",0);
     return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
-
+  }
   std::vector<sd::LongType > permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getIArguments();
 
   auto outputShapeInfo =
       ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
-
+  sd_printf("permute calc shape: About to print shape info\n",0);
+  shape::printShapeInfo(outputShapeInfo);
   return SHAPELIST(outputShapeInfo);
 }
 

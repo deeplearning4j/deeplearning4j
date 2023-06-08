@@ -1140,7 +1140,7 @@
     default: {                                                                 \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
       fflush(stdout);                                                          \
-      throw std::runtime_error("bad data type");                               \
+      THROW_EXCEPTION("bad data type");                               \
     }                                                                          \
   }
 #define BUILD_SINGLE_SELECTOR_TWICE(XTYPE, NAME, SIGNATURE, TYPES)             \
@@ -1149,7 +1149,7 @@
     default: {                                                                 \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
       fflush(stdout);                                                          \
-      throw std::runtime_error("bad data type");                               \
+      THROW_EXCEPTION("bad data type");                               \
     }                                                                          \
   }
 #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES)            \
@@ -1158,7 +1158,7 @@
     default: {                                                                 \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
       fflush(stdout);                                                          \
-      throw std::runtime_error("bad data type");                               \
+      THROW_EXCEPTION("bad data type");                               \
     }                                                                          \
   }
 
@@ -1168,7 +1168,7 @@
     default: {                                                                 \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); \
       fflush(stdout);                                                          \
-      throw std::runtime_error("bad data type");                               \
+      THROW_EXCEPTION("bad data type");                               \
     }                                                                          \
   }
 #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)                \
@@ -1177,7 +1177,7 @@
     default: {                                                                                \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                \
       fflush(stdout);                                                                         \
-      throw std::runtime_error("bad data type");                                              \
+      THROW_EXCEPTION("bad data type");                                              \
     }                                                                                         \
   }
 #define BUILD_TRIPLE_SELECTOR(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z)                 \
@@ -1186,7 +1186,7 @@
     default: {                                                                                                 \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                                 \
       fflush(stdout);                                                                                          \
-      throw std::runtime_error("bad data type");                                                               \
+      THROW_EXCEPTION("bad data type");                                                               \
     }                                                                                                          \
   }
 #define BUILD_TRIPLE_TEMPLATE(NAME, SIGNATURE, TYPES_X, TYPES_Y, TYPES_Z) \
@@ -1199,7 +1199,7 @@
     default: {                                                                                               \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);                               \
       fflush(stdout);                                                                                        \
-      throw std::runtime_error("bad data type");                                                             \
+      THROW_EXCEPTION("bad data type");                                                             \
     }                                                                                                        \
   }
 #else
@@ -1251,7 +1251,7 @@
     } else {                                                                             \
       printf("[ERROR] Unknown dtypeX=%d on %s:%d\n", YTYPE, __FILE__, __LINE__);         \
       fflush(stdout);                                                                    \
-      throw std::runtime_error("Unknown Z operand");                                     \
+      THROW_EXCEPTION("Unknown Z operand");                                     \
     };                                                                                   \
     break;                                                                               \
   };

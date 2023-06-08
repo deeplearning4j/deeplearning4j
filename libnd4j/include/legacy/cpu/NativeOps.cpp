@@ -500,7 +500,7 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffer,
                                   void **shapeInfo, void **specialShapeInfo) {
   if(shapeInfo == nullptr)
-    throw std::runtime_error("Input shape info was null!");
+    THROW_EXCEPTION("Input shape info was null!");
 
 
   OpaqueDataBuffer  **buffers = (OpaqueDataBuffer **) buffer;
@@ -1306,7 +1306,7 @@ sd::TadPack *tadOnlyShapeInfo(sd::LongType const *hXShapeInfo, LongType *dimensi
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 
 
@@ -1318,7 +1318,7 @@ sd::LongType const *getPrimaryShapeInfo(sd::TadPack *pack) {
 
 sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) {
   if(pack->primaryOffsets() == nullptr)
-    throw std::runtime_error("getPrimaryOffsets: primaryOffsets is nullptr!");
+    THROW_EXCEPTION("getPrimaryOffsets: primaryOffsets is nullptr!");
   return const_cast<sd::LongType *>(pack->primaryOffsets());
 }
 
@@ -1716,7 +1716,7 @@ sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, s
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -1814,7 +1814,7 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
     int fd = open(fileName, O_RDWR, 0);  // checking for failed fopen
     if (fd < 0) {
       sd_printf("Errno: %i\n", errno);
-      throw std::runtime_error("Failed to open file for MMAP");
+      THROW_EXCEPTION("Failed to open file for MMAP");
     }
     void *ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
@@ -1830,7 +1830,7 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -1925,11 +1925,11 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
     if(shape_ == nullptr) {
-      throw std::runtime_error("Input shape was null!");
+      THROW_EXCEPTION("Input shape was null!");
     }
 
     if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      throw std::runtime_error("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
+      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
     }
 
     // we shouldn't copy buffer if that's empty array
@@ -1945,7 +1945,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
   }
 
   auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
+  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
 
@@ -1975,16 +1975,17 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
     if(shape_ == nullptr) {
-      throw std::runtime_error("Input shape was null!");
+      THROW_EXCEPTION("Input shape was null!");
     }
 
     if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      throw std::runtime_error("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
+      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
     }
 
     // we shouldn't copy buffer if that's empty array
     InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    auto array = new sd::NDArray(opaqueBuff->dataBuffer(), shape_, varSpace.launchContext(), false);
+    auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
+    auto array = new sd::NDArray(buff, shape_, varSpace.launchContext(), false);
 
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);
@@ -1994,7 +1995,7 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
   }
 
   auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
+  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
 
@@ -2015,7 +2016,7 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -2031,7 +2032,7 @@ OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -2077,7 +2078,7 @@ sd::ShapeList *calculateOutputShapesFromContext(sd::graph::Context *ctx, sd::Lon
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
     auto status = op->validateDataTypes(*ctx);
-    if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
+    if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
     sd::ShapeList inShapes;
 
     for (int e = 0; e < ctx->width(); e++) {
@@ -2212,7 +2213,7 @@ sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType ha
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -2707,7 +2708,7 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
 void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
-    throw std::runtime_error("Invalid rank for shape buffer.");
+    THROW_EXCEPTION("Invalid rank for shape buffer.");
   std::vector<sd::LongType> shape;
   std::vector<sd::LongType> strides;
   //shape, stride, data type
@@ -2871,7 +2872,7 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -2897,7 +2898,7 @@ sd::ConstantDataBuffer *constantBuffer(sd::DataType dtype, sd::ConstantDescripto
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -2920,7 +2921,7 @@ sd::graph::Context *createGraphContext(int nodeId) {
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 sd::graph::RandomGenerator *getGraphContextRandomGenerator(sd::graph::Context *ptr) { return &ptr->randomGenerator(); }
@@ -2942,11 +2943,11 @@ void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer
 void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
                                 OpaqueDataBuffer *specialShapeInfo) {
   if(ptr == nullptr)
-    throw std::runtime_error("Context pointer is null!");
+    THROW_EXCEPTION("Context pointer is null!");
   if(shapeInfo == nullptr)
-    throw std::runtime_error("ShapeInfo  pointer is null!");
+    THROW_EXCEPTION("ShapeInfo  pointer is null!");
   if(shapeInfo->primary() == nullptr)
-    throw std::runtime_error("ShapeInfo primary pointer is null!");
+    THROW_EXCEPTION("ShapeInfo primary pointer is null!");
   sd::LongType *shapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfo->primary());
   if(shapeInfoCast[0] > SD_MAX_RANK || shapeInfoCast[0] < 0) {
     std::string error;
@@ -2957,7 +2958,7 @@ void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer 
     error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shapebuffer.");
     error += std::string(" value was: ");
     error  += std::to_string(shapeInfoCast[0]);
-    throw std::runtime_error(error.c_str());
+    THROW_EXCEPTION(error.c_str());
   }
 
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
@@ -3003,7 +3004,7 @@ sd::graph::RandomGenerator *createRandomGenerator(sd::LongType rootSeed, sd::Lon
 
 sd::LongType getRandomGeneratorRootState(sd::graph::RandomGenerator *ptr) {
   if(ptr == nullptr)
-    throw std::runtime_error("Unable to get the root state from a null pointer. Please ensure this is created.");
+    THROW_EXCEPTION("Unable to get the root state from a null pointer. Please ensure this is created.");
   return ptr->rootState();
 }
 
@@ -3011,7 +3012,7 @@ sd::LongType getRandomGeneratorNodeState(sd::graph::RandomGenerator *ptr) { retu
 
 void setRandomGeneratorStates(sd::graph::RandomGenerator *ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
   if(ptr == nullptr)
-    throw std::runtime_error("Unable to get the root state from a null pointer. Please ensure this is created.");
+    THROW_EXCEPTION("Unable to get the root state from a null pointer. Please ensure this is created.");
 
   ptr->setStates(rootSeed, nodeSeed);
 }
@@ -3315,13 +3316,13 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
 sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
-    throw std::runtime_error("dbPrimaryBuffer: dataBuffer is nullptr");
+    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is nullptr");
   return dataBuffer->primary();
 }
 

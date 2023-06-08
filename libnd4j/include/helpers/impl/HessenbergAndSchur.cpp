@@ -31,7 +31,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 Hessenberg<T>::Hessenberg(const NDArray& matrix) {
-  if (matrix.rankOf() != 2) throw std::runtime_error("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
+  if (matrix.rankOf() != 2) THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) == 1) {
     _Q = NDArray(matrix.ordering(), {1, 1}, matrix.dataType(), matrix.getContext());
@@ -41,7 +41,7 @@ Hessenberg<T>::Hessenberg(const NDArray& matrix) {
   }
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
-    throw std::runtime_error("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
+    THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
 
   _H = matrix.dup();
   _Q = matrix.ulike();
@@ -88,10 +88,10 @@ void Hessenberg<T>::evalData() {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 Schur<T>::Schur(const NDArray& matrix) {
-  if (matrix.rankOf() != 2) throw std::runtime_error("ops::helpers::Schur constructor: input matrix must be 2D !");
+  if (matrix.rankOf() != 2) THROW_EXCEPTION("ops::helpers::Schur constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
-    throw std::runtime_error("ops::helpers::Schur constructor: input array must be 2D square matrix !");
+    THROW_EXCEPTION("ops::helpers::Schur constructor: input array must be 2D square matrix !");
 
   evalData(matrix);
 }
@@ -231,10 +231,10 @@ void Schur<T>::initFrancisQR(const int ind1, const int ind2, const NDArray& shif
 template <typename T>
 void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const NDArray& householderVec) {
   if (!(ind2 >= ind1))
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::Schur:doFrancisQR: wrong input indexes, condition ind2 >= ind1 must be true !");
   if (!(ind2 <= ind3 - 2))
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::Schur:doFrancisQR: wrong input indexes, condition iind2 <= ind3-2 must be true !");
 
   const int numCols = t.sizeAt(1);

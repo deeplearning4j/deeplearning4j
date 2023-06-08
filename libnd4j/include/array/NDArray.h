@@ -1596,6 +1596,8 @@ bool NDArray::isAttached() { return this->_context->getWorkspace() != nullptr; }
 template <typename T, typename R>
 struct TemplatedGetter {
   static R get(void const *buffer, sd::LongType index) {
+    if(buffer == nullptr)
+      THROW_EXCEPTION("TemplatedGetter: Buffer is nullptr!");
     auto b = reinterpret_cast<T const *>(buffer);
     auto v = static_cast<R>(b[index]);
     return v;
@@ -1622,16 +1624,16 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     if(buffer == nullptr) {
-      throw std::runtime_error("Returned buffer from cache was null!");
+      THROW_EXCEPTION("Returned buffer from cache was null!");
     }
     _shapeInfo = buffer->primary();
     _shapeInfoD = buffer->special();
     if(_shapeInfo == nullptr) {
-      throw std::runtime_error("Set shape info was null in setsShapeInfo for long long");
+      THROW_EXCEPTION("Set shape info was null in setsShapeInfo for long long");
     }
 
     if(_shapeInfo[0] > SD_MAX_RANK || _shapeInfo[0] < 0)
-      throw std::runtime_error("Set shape info buffer was corrupt. Please check for deallocation.");
+      THROW_EXCEPTION("Set shape info buffer was corrupt. Please check for deallocation.");
 
     _dataType = ArrayOptions::dataType(_shapeInfo);
     if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
@@ -1687,7 +1689,7 @@ sd::LongType NDArray::lengthOf() const { return _length; }
 sd::LongType NDArray::rows() const {
   if (this->rankOf() == 1) return 1;
 
-  if (this->rankOf() > 2) throw std::runtime_error("Array with rank > 2 can't have rows");
+  if (this->rankOf() > 2) THROW_EXCEPTION("Array with rank > 2 can't have rows");
 
   return shapeOf()[0];
 }
@@ -1696,7 +1698,7 @@ sd::LongType NDArray::rows() const {
 sd::LongType NDArray::columns() const {
   if (this->rankOf() == 1) return this->lengthOf();
 
-  if (this->rankOf() > 2) throw std::runtime_error("Array with rank > 2 can't have columns");
+  if (this->rankOf() > 2) THROW_EXCEPTION("Array with rank > 2 can't have columns");
 
   return shapeOf()[1];
 }
@@ -1968,12 +1970,12 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
 
 ////////////////////////////////////////////////////////////////////////
 const void *NDArray::buffer() const {
-  return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void *NDArray::buffer() {
-  return _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

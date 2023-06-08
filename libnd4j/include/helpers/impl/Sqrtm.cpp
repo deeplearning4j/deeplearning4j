@@ -39,7 +39,7 @@ static void sqrtmQuasiTrianDiag(const NDArray& matrixT, NDArray& sqrtT) {
     if (i == rows - 1 || matrixT.t<T>(i + 1, i) == (T)0) {
       const auto elemT = matrixT.t<T>(i, i);
       if (elemT < (T)0)
-        throw std::runtime_error(
+        THROW_EXCEPTION(
             "ops::helpers::Sqrtm::sqrtmQuasiTrianDiag: can't take sqrt of negative diagonal element of T matrix !");
       sqrtT.r<T>(i, i) = math::sd_sqrt<T, T>(elemT);
     } else {
@@ -236,9 +236,9 @@ static void sqrtmQuasiTrianOffDiag(const NDArray& matrixT, NDArray& sqrtT) {
 template <typename T>
 void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
   if (in.rankOf() != 2 || in.sizeAt(0) != in.sizeAt(1))
-    throw std::runtime_error("ops::helpers::Sqrtm::calc: input matrix must have rank 2 and be square !");
+    THROW_EXCEPTION("ops::helpers::Sqrtm::calc: input matrix must have rank 2 and be square !");
   if (!out.isSameShape(in))
-    throw std::runtime_error("ops::helpers::Sqrtm::calc: output matrix must have the same shape as input one!");
+    THROW_EXCEPTION("ops::helpers::Sqrtm::calc: output matrix must have the same shape as input one!");
 
   if (in.lengthOf() == 1) {
     out.r<T>(0) = math::sd_sqrt<T, T>(in.t<T>(0));

@@ -764,7 +764,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
      buffer);
 
       if (rng == nullptr)
-          throw std::runtime_error("RNG initialization failed");
+          THROW_EXCEPTION("RNG initialization failed");
 
       auto x = NDArrayFactory::create_<float>('c', {5, 3});
       auto variableSpace = new VariableSpace();

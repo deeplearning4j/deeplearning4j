@@ -89,7 +89,7 @@ namespace samediff {
 		}
 			  break;
 		default:
-			throw std::runtime_error("");
+			THROW_EXCEPTION("");
 		}
 		return Span3(startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 	}
@@ -144,7 +144,7 @@ namespace samediff {
 		}
 			  break;
 		default:
-			throw std::runtime_error("");
+			THROW_EXCEPTION("");
 		}
 	}
 
@@ -453,7 +453,7 @@ namespace samediff {
 	int Threads::parallel_for(FUNC_1D function, sd::LongType start, sd::LongType stop, sd::LongType increment,
                                   sd::LongType numThreads) {
 		if (start > stop)
-			throw std::runtime_error("Threads::parallel_for got start > stop");
+			THROW_EXCEPTION("Threads::parallel_for got start > stop");
 
 		auto delta = (stop - start);
 
@@ -472,10 +472,10 @@ namespace samediff {
 
 	int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, uint64_t numThreads, bool debug) {
 		if (startX > stopX)
-			throw std::runtime_error("Threads::parallel_for got startX > stopX");
+			THROW_EXCEPTION("Threads::parallel_for got startX > stopX");
 
 		if (startY > stopY)
-			throw std::runtime_error("Threads::parallel_for got startY > stopY");
+			THROW_EXCEPTION("Threads::parallel_for got startY > stopY");
 
 		// number of elements per loop
 		auto delta_x = (stopX - startX);
@@ -563,13 +563,13 @@ namespace samediff {
 
 	int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ, uint64_t numThreads) {
 		if (startX > stopX)
-			throw std::runtime_error("Threads::parallel_for got startX > stopX");
+			THROW_EXCEPTION("Threads::parallel_for got startX > stopX");
 
 		if (startY > stopY)
-			throw std::runtime_error("Threads::parallel_for got startY > stopY");
+			THROW_EXCEPTION("Threads::parallel_for got startY > stopY");
 
 		if (startZ > stopZ)
-			throw std::runtime_error("Threads::parallel_for got startZ > stopZ");
+			THROW_EXCEPTION("Threads::parallel_for got startZ > stopZ");
 
 		auto delta_x = stopX - startX;
 		auto delta_y = stopY - startY;
@@ -691,7 +691,7 @@ namespace samediff {
 	int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, sd::LongType start, sd::LongType stop,
                                        sd::LongType increment, sd::LongType numThreads) {
 		if (start > stop)
-			throw std::runtime_error("Threads::parallel_long got start > stop");
+			THROW_EXCEPTION("Threads::parallel_long got start > stop");
 
 		auto delta = (stop - start);
 		if (delta == 0 || numThreads == 1)
@@ -753,7 +753,7 @@ namespace samediff {
 
 	double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop, int64_t increment, uint64_t numThreads) {
 		if (start > stop)
-			throw std::runtime_error("Threads::parallel_long got start > stop");
+			THROW_EXCEPTION("Threads::parallel_long got start > stop");
 
 		auto delta = (stop - start);
 		if (delta == 0 || numThreads == 1)
@@ -821,7 +821,7 @@ namespace samediff {
                                                 size_t type_size,
                                                 uint32_t req_numThreads) {
 		if (start > stop)
-			throw std::runtime_error("Threads::parallel_for got start > stop");
+			THROW_EXCEPTION("Threads::parallel_for got start > stop");
 		auto num_elements = (stop - start);
 		//this way we preserve increment starts offset
 		//so we will partition considering delta but not total elements

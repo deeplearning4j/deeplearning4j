@@ -989,7 +989,7 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
           double y = arrayT->e<double>(f);
 
           if (sd::math::sd_re(x, y) > 0.1) {
-            throw std::runtime_error("boom");
+            THROW_EXCEPTION("boom");
           }
         }
         ASSERT_TRUE(false);

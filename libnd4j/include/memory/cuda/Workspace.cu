@@ -234,7 +234,7 @@ void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numByte
       return result;
     } break;
     default:
-      throw std::runtime_error("Unknown MemoryType was passed in");
+      THROW_EXCEPTION("Unknown MemoryType was passed in");
   }
 }
 

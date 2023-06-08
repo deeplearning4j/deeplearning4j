@@ -44,11 +44,11 @@ namespace sd {
         sd::LongType bRank = bShapeInfo[0];
 
         if (axeAsize != axeBsize)
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::evalShapeForTensorDot method: the numbers of a axes and b axes to make dot product along must "
                     "have identical values !");
         if (axeAsize > aRank || axeBsize > bRank)
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::evalShapeForTensorDot method: the length of vector of a or b axes is larger than array rank !");
 
         // axes validation
@@ -56,7 +56,7 @@ namespace sd {
             if (axesA[i] < 0) axesA[i] += aRank;
             if (axesB[i] < 0) axesB[i] += bRank;
             if (aShapeInfo[axesA[i] + 1] != bShapeInfo[axesB[i] + 1])
-                throw std::runtime_error(
+                THROW_EXCEPTION(
                         "ShapeUtils::evalShapeForTensorDot method: the dimensions at given axes for both input arrays must be the "
                         "same !");
         }
@@ -64,11 +64,11 @@ namespace sd {
         // check whether axesA and axesB contain only unique numbers
         std::set<sd::LongType> uniqueElems(axesA.begin(), axesA.end());
         if ((sd::LongType)uniqueElems.size() != axeAsize)
-            throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !");
+            THROW_EXCEPTION("ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !");
         uniqueElems.clear();
         uniqueElems = std::set<sd::LongType>(axesB.begin(), axesB.end());
         if ((sd::LongType)uniqueElems.size() != axeBsize)
-            throw std::runtime_error("ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !");
+            THROW_EXCEPTION("ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !");
 
         std::vector<sd::LongType> list_A, list_B;
         for (sd::LongType i = 0; i < aRank; i++)
@@ -340,7 +340,7 @@ namespace sd {
                                                       sd::memory::Workspace* workspace, const bool setContigStrides) {
 
         if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
+            THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
 
         auto shapeInfoLength = shape::shapeInfoLength(rank);
 
@@ -360,7 +360,7 @@ namespace sd {
 
 
         auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-        RELEASE(shapeInfoNew, workspace);
+       // RELEASE(shapeInfoNew, workspace);
         delete descriptor;
         return ret;
     }
@@ -473,7 +473,7 @@ namespace sd {
 
         // evaluate shapeInfo for resulting array
         if (resultShapeInfo != nullptr)
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "std::runtime_error(ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty "
                     "(=nullptr) !");
 
@@ -507,7 +507,7 @@ namespace sd {
     bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, sd::LongType*& resultShapeInfo,
                                                   memory::Workspace* workspace) {
         if (resultShapeInfo != nullptr)
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::evalCommonBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !");
 
         sd::LongType size = arrays.size();
@@ -573,7 +573,7 @@ namespace sd {
         sd::LongType repsSize = reps.size();
         sd::LongType product = 1;
         for (const auto& item : reps) product *= item;
-        if (product == 0) throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
+        if (product == 0) THROW_EXCEPTION("NDArray::tile method: one of the elements in reps array is zero !");
 
         sd::LongType rankOld = arr.rankOf();
         sd::LongType diff = rankOld - repsSize;
@@ -681,7 +681,7 @@ namespace sd {
     }
 
     std::string ShapeUtils::shapeInfoAsString(const sd::LongType* shapeInfo) {
-        if (!shapeInfo) throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+        if (!shapeInfo) THROW_EXCEPTION("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
 
         std::string result;
 
@@ -698,7 +698,7 @@ namespace sd {
     }
 
     std::string ShapeUtils::shapeAsString(const LongType rank, const sd::LongType* shapeInfo) {
-        if (!shapeInfo) throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+        if (!shapeInfo) THROW_EXCEPTION("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
 
         std::string result;
 
@@ -714,7 +714,7 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
     std::vector<sd::LongType> ShapeUtils::shapeAsVector(const sd::LongType* shapeInfo) {
-        if (!shapeInfo) throw std::runtime_error("ShapeUtils::shapeAsVector method: input shapeInfo must not be nullptr !");
+        if (!shapeInfo) THROW_EXCEPTION("ShapeUtils::shapeAsVector method: input shapeInfo must not be nullptr !");
 
         std::vector<sd::LongType> vector(shapeInfo[0]);
 
@@ -844,7 +844,7 @@ namespace sd {
                                                            const std::vector<sd::LongType>& shapeTo) {
         auto rank = shapeFrom.size();
         if (rank != shapeTo.size())
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
 
         if (std::equal(begin(shapeFrom), end(shapeFrom),
@@ -864,7 +864,7 @@ namespace sd {
 
         if (std::find(begin(permutation), end(permutation), -2) !=
             end(permutation))  // if -2 is still present in vector then permutation is impossible
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
 
         return permutation;
@@ -874,7 +874,7 @@ namespace sd {
     std::vector<sd::LongType> ShapeUtils::composeShapeUsingDimsAndIdx(const std::vector<LongType>& dimsAndIdx) {
         auto size = dimsAndIdx.size();
         if (size % 2 != 0)
-            throw std::runtime_error(
+            THROW_EXCEPTION(
                     "ShapeUtils::composeShapeUsingDimsAndIdx static method: the size of input vector must be even !");
 
         size /= 2;
@@ -885,7 +885,7 @@ namespace sd {
         for (sd::LongType i = 0; i < size; ++i) {
             index = dimsAndIdx[i + size];
             if (index > size - 1)
-                throw std::runtime_error("ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !");
+                THROW_EXCEPTION("ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !");
             shape[index] = dimsAndIdx[i];
         }
 

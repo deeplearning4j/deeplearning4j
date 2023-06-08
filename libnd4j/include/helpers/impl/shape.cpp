@@ -162,20 +162,20 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, cons
     errorMessage += std::to_string(shapeInfo == nullptr);
     errorMessage += " dimension null: %d";
     errorMessage += std::to_string(dimension == nullptr);
-    throw std::runtime_error(errorMessage.c_str());
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   if(dimensionLength == 0)
     return 0;
 
   if(shapeInfo[0] > SD_MAX_RANK || shapeInfo[0] < 0)
-    throw std::runtime_error("Corrupt shape information found. Potentially dellocated?");
+    THROW_EXCEPTION("Corrupt shape information found. Potentially dellocated?");
 
 
 
   if (dimensionLength == 1) {
     if(dimension[0] > SD_MAX_RANK || dimension[0] < 0)
-      throw std::runtime_error("Corrupt dimension information found. Potentially dellocated?");
+      THROW_EXCEPTION("Corrupt dimension information found. Potentially dellocated?");
 
     return shape::shapeOf(shapeInfo)[dimension[0]];
   } else {
@@ -852,7 +852,7 @@ SD_HOST void doPermuteSwap(sd::LongType length, sd::LongType **shape, sd::LongTy
   }
 
   bool inOrder = true;
-  for (int i = 0; i < length - 1; i++) {
+  for (sd::LongType i = 0; i < length - 1; i++) {
     inOrder = inOrder && rearrange[i] + 1 == rearrange[i + 1];
   }
 
@@ -901,11 +901,11 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rea
   // check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute
   if (len == 1) return;
 
-  const int rank = shape::rank(shapeInfo);
+  const sd::LongType rank = shape::rank(shapeInfo);
 
   // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well
   bool isPermutNecessary = false;
-  for (int i = 0; i < rank; ++i)
+  for (sd::LongType i = 0; i < rank; ++i)
     if (rearrange[i] != i) {
       isPermutNecessary = true;
       break;
@@ -914,7 +914,7 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rea
   if (!isPermutNecessary) return;
 
   // check whether rearrange contains correct indexes
-  for (int i = 0; i < rank; ++i) {
+  for (sd::LongType i = 0; i < rank; ++i) {
     if (rearrange[i] >= rank || rearrange[i] < 0) {
       sd_printf(
           "shape::doPermuteShapeInfo function failed: rearrange indexes are incorrect. Given permute indices must be < rank and >= 0.  Rearrange at index %d was %d\n",
@@ -925,7 +925,7 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rea
   // if everything is ok then perform permute
   auto temp = new sd::LongType[shape::shapeInfoLength(rank) - 3];
   memcpy(temp, shapeInfo, sizeof(sd::LongType) * (shape::shapeInfoLength(rank) - 3));
-  for (int i = 0; i < rank; ++i) {
+  for (sd::LongType i = 0; i < rank; ++i) {
     shapeInfo[i + 1] = temp[rearrange[i] + 1];
     shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
   }
@@ -942,7 +942,7 @@ SD_HOST sd::LongType *createPermuteIndexes(sd::LongType originalRank, sd::LongTy
   traceNew(17);
 
   sd::LongType *ret = new sd::LongType[originalRank];
-  for (int i = 0; i < delta; i++) {
+  for (sd::LongType i = 0; i < delta; i++) {
     ret[i] = i + dimensionLength;
   }
 
@@ -958,7 +958,7 @@ SD_HOST sd::LongType *createPermuteIndexes(sd::LongType originalRank, sd::LongTy
  * @param rearrange the order to re arrange
  * @param rank the rank of the rearrange array
  */
-SD_HOST void permute(ShapeInformation **info, sd::LongType *rearrange, int rank) {
+SD_HOST void permute(ShapeInformation **info, sd::LongType *rearrange, long long int rank) {
   ShapeInformation *infoDeref = *info;
   checkArrangeArray(rearrange, rank, rank);
   shape::doPermuteSwap(rank, &infoDeref->shape, rearrange);
@@ -1370,7 +1370,7 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
     return;
   if(shapeInfo != nullptr) {
     if(shapeInfo[0] > 32 || shapeInfo[0] < 0)
-      throw std::runtime_error("Input shape buffer is corrupt. First rank is < 0 or greater than the max rank of 32.");
+      THROW_EXCEPTION("Input shape buffer is corrupt. First rank is < 0 or greater than the max rank of 32.");
   }
 
   int rank = shape::rank(shapeInfo);
@@ -1802,11 +1802,11 @@ SD_HOST bool canReshape(const sd::LongType oldRank, sd::LongType *oldShape, cons
 //////////////////////////////////////////////////////////////////////
 void calcOffsets(const sd::LongType *shapeInfo, sd::LongType *offsets, const char order) {
   if(shapeInfo == nullptr)
-    throw std::runtime_error("calcOffsets: shapeInfo is nullptr !");
+    THROW_EXCEPTION("calcOffsets: shapeInfo is nullptr !");
   if(offsets == nullptr)
-    throw std::runtime_error("calcOffsets: offsets is nullptr !");
+    THROW_EXCEPTION("calcOffsets: offsets is nullptr !");
   if(shapeInfo[0] < 0 || shapeInfo[0] > SD_MAX_RANK)
-    throw std::runtime_error("calcOffsets: shapeInfo[0] is invalid !");
+    THROW_EXCEPTION("calcOffsets: shapeInfo[0] is invalid !");
   // firstly consider simple case when ews > 0
   const sd::LongType ews = shape::elementWiseStride(shapeInfo);
 

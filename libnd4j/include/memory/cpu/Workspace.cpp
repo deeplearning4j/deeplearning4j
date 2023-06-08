@@ -169,7 +169,7 @@ void Workspace::scopeOut() {
 sd::LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
 
 void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numBytes) {
-  if (type == DEVICE) throw std::runtime_error("CPU backend doesn't have device memory");
+  if (type == DEVICE) THROW_EXCEPTION("CPU backend doesn't have device memory");
 
   return this->allocateBytes(numBytes);
 }

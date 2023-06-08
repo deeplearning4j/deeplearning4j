@@ -462,7 +462,7 @@ SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
     case UTF32:
       return std::string("UTF32");
     default:
-      throw std::runtime_error("Unknown data type used");
+      THROW_EXCEPTION("Unknown data type used");
   }
 }
 
@@ -537,7 +537,7 @@ SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(sd::DataType type) 
     default: {
       sd_printf("Unknown DataType used: [%i]\n", asInt(type));
 #ifndef __CUDA_ARCH__
-      throw std::runtime_error("Unknown DataType requested");
+      THROW_EXCEPTION("Unknown DataType requested");
 #endif
     }
   }

@@ -133,7 +133,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const sd::LongType* x
 template <typename T>
 void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,
                                const bool includeEdges) {
-  if (isS()) throw std::runtime_error("NDArray::fillAsTriangular: you can't use this method on String array!");
+  if (isS()) THROW_EXCEPTION("NDArray::fillAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
@@ -204,7 +204,7 @@ BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
-  if (isS()) throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
+  if (isS()) THROW_EXCEPTION("NDArray::setIdentity: you can't use this method on String array!");
 
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
@@ -228,13 +228,13 @@ void NDArray::swapUnsafe(NDArray& other) {
   auto xType = this->dataType();
 
   if (xType != other.dataType())
-    throw std::runtime_error("NDArray::swapUnsage method: both arrays must have the same data type");
+    THROW_EXCEPTION("NDArray::swapUnsage method: both arrays must have the same data type");
 
   if (specialBuffer() == nullptr || other.specialBuffer() == nullptr)
-    throw std::runtime_error("NDArray::swapUnsafe method: input array should not be empty!");
+    THROW_EXCEPTION("NDArray::swapUnsafe method: input array should not be empty!");
 
   if (lengthOf() != other.lengthOf())
-    throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
+    THROW_EXCEPTION("NDArray::swapUnsafe method: input arrays should have the same length!");
 
   PointersManager manager(getContext(), "NDArray::swapUnsafe");
 
@@ -251,7 +251,7 @@ void NDArray::swapUnsafe(NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::synchronize(const char* msg) const {
   auto res = cudaStreamSynchronize(*(getContext()->getCudaStream()));
-  if (res != 0) throw std::runtime_error(msg + std::string(": synchronization failed !"));
+  if (res != 0) THROW_EXCEPTION(msg + std::string(": synchronization failed !"));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -324,7 +324,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   sd::LongType product = 1;
   for (const auto& item : reps) product *= item;
 
-  if (product < 1) throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
+  if (product < 1) THROW_EXCEPTION("NDArray::tile method: one of the elements in reps array is zero !");
 
   int rankOld = rankOf();
   int diff = rankOld - dim;
@@ -368,12 +368,12 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
 // change an array by repeating it the number of times given by reps.
 void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const {
   auto repProd = shape::prodLong(reps.data(), reps.size());
-  if (repProd < 1) throw std::runtime_error("NDArray::tile: reps can't contain 0s");
+  if (repProd < 1) THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
 
   // evaluate true tile shapeInfo for comparison with target shapeInfo
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   if (!shape::equalsSoft(newShapeInfo, target.shapeInfo())) {
-    throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
   }
 
   // fill newBuff, loop through all elements of newBuff
@@ -393,11 +393,11 @@ void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const
 //////////////////////////////////////////////////////////////////////////
 void NDArray::tile(NDArray& target) const {
   if (rankOf() > target.rankOf())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
 
   if (!ShapeUtils::areShapesBroadcastable(*this, target))
-    throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
 
   // fill newBuff, loop through all elements of newBuff
   // looping through getBuffer() goes automatically by means of getSubArrayIndex applying
@@ -579,7 +579,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
     cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
 
     cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
-    if (cudaResult != 0) throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
+    if (cudaResult != 0) THROW_EXCEPTION("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
 
     for (sd::LongType i = 0; i < _length; i++)
       printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[getOffset(i)]);

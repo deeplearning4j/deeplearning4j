@@ -82,7 +82,7 @@ inline pairwise::Ops fromBroadcastToPairwise(broadcast::Ops op) {
     case broadcast::PowDerivative:
       return pairwise::PowDerivative;
     default:
-      throw std::runtime_error("fromBroadcastToPairwise: Not convertible operation");
+      THROW_EXCEPTION("fromBroadcastToPairwise: Not convertible operation");
   }
 }
 
@@ -112,7 +112,7 @@ inline pairwise::BoolOps fromBroadcastToPairwiseBool(broadcast::BoolOps op) {
     case broadcast::Not:
       return pairwise::Not;
     default:
-      throw std::runtime_error("fromBroadcastToPairwiseBool: Not convertible operation");
+      THROW_EXCEPTION("fromBroadcastToPairwiseBool: Not convertible operation");
   }
 }
 
@@ -133,7 +133,7 @@ inline pairwise::IntOps fromBroadcastToPairwiseInt(broadcast::IntOps op) {
     case broadcast::IntOps::CyclicShiftRight:
       return pairwise::IntOps::CyclicShiftRight;
     default:
-      throw std::runtime_error("fromBroadcastToPairwiseInt: Not convertible operation");
+      THROW_EXCEPTION("fromBroadcastToPairwiseInt: Not convertible operation");
   }
 }
 }  // namespace sd

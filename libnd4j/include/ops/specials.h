@@ -48,10 +48,10 @@ class SD_LIB_EXPORT SpecialTypeConverter {
 template <typename T>
 class SD_LIB_EXPORT SpecialMethods {
  public:
-  static void concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output, int axis);
-  static void concatCpuGeneric(int dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
+  static void concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output, const LongType axis);
+  static void concatCpuGeneric(LongType dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
                                void *result, sd::LongType const *resultShapeInfo);
-  static void splitCpuGeneric(const NDArray &input, const std::vector<NDArray *> &outArrs, int axis);
+  static void splitCpuGeneric(const NDArray &input, const std::vector<NDArray *> &outArrs, const LongType axis);
   static void accumulateGeneric(void **x, void *z, const sd::LongType *zShapeInfo, int n, sd::LongType length);
   static void averageGeneric(void **x, void *z, const sd::LongType *zShapeInfo, int n, sd::LongType length,
                              bool propagate);

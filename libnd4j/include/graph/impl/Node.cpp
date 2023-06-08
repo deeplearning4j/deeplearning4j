@@ -104,7 +104,7 @@ ContextPrototype* sd::graph::Node::getContextPrototype() {
 }
 
 void sd::graph::Node::setContextPrototype(ContextPrototype* block) {
-  if (_protoContext != nullptr) throw std::runtime_error("Block already exists");
+  if (_protoContext != nullptr) THROW_EXCEPTION("Block already exists");
 
   _protoContext = block;
 }
@@ -349,7 +349,7 @@ sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<in
 
       this->setContextPrototype(block);
     } else
-      throw std::runtime_error("wrong custom operation given");
+      THROW_EXCEPTION("wrong custom operation given");
   }
 };
 
@@ -427,7 +427,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
     if (this->opType() == OpType_LOGIC && this->opNum() == 100L) {
       if (node->extraInteger()->size() < 1) {
         sd_printf("Node_%i is type of Enter, but has no FrameID defined\n", this->id());
-        throw std::runtime_error("Enter node must have FrameID specified");
+        THROW_EXCEPTION("Enter node must have FrameID specified");
       }
 
       this->setFrameId(node->extraInteger()->Get(0));
@@ -520,7 +520,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
       auto op = sd::ops::OpRegistrator::getInstance().getOperation(this->opNum());
       if (op == nullptr) {
         sd_verbose("Can't find operation: %lld\n", this->opNum());
-        throw std::runtime_error("Can't find requested operation");
+        THROW_EXCEPTION("Can't find requested operation");
       }
 
       auto block = new ContextPrototype(nullptr, this->id());
@@ -655,7 +655,7 @@ void sd::graph::Node::deleteOpByType(OpType opType, void* op) {
       delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
       break;
     default:
-      throw std::runtime_error("Bad opType passed in");
+      THROW_EXCEPTION("Bad opType passed in");
   }
 }
 
@@ -700,7 +700,7 @@ sd::ops::DeclarableOp* sd::graph::Node::buildOpByType(OpType opType, int numInpu
     case OpType_BROADCAST_BOOL:
       return new sd::ops::LegacyBroadcastBoolOp(opNum);
     default:
-      throw std::runtime_error("Bad opType passed in");
+      THROW_EXCEPTION("Bad opType passed in");
   }
 }
 

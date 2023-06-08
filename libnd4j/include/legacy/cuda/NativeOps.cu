@@ -853,7 +853,7 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-    if (zType != sd::DataType::BOOL) throw std::runtime_error("execReduceBool requires Z operand to have BOOL type");
+    if (zType != sd::DataType::BOOL) THROW_EXCEPTION("execReduceBool requires Z operand to have BOOL type");
 
     auto xLength = shape::length(hXShapeInfo);
     auto blockWidth = 256;
@@ -2411,7 +2411,7 @@ void sortByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeIn
 
     if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
 
-    if (xLength != yLength) throw std::runtime_error("sortByKey: keys and values must have the same size");
+    if (xLength != yLength) THROW_EXCEPTION("sortByKey: keys and values must have the same size");
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
@@ -2477,7 +2477,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
 
     if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
 
-    if (xLength != yLength) throw std::runtime_error("sortByValue: keys and values must have the same size");
+    if (xLength != yLength) THROW_EXCEPTION("sortByValue: keys and values must have the same size");
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
@@ -2601,17 +2601,17 @@ void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo
 
 void sortCooIndices(sd::Pointer *extraPointers, sd::LongType *indices, void *values, sd::LongType length,
                     const sd::LongType *xShapeInfo) {
-  throw std::runtime_error("sortCooIndices:: Not implemented yet");
+  THROW_EXCEPTION("sortCooIndices:: Not implemented yet");
 }
 
 void ravelMultiIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
                      sd::LongType *shapeInfo, int mode) {
-  throw std::runtime_error("ravelMultiIndex:: Not implemented yet");
+  THROW_EXCEPTION("ravelMultiIndex:: Not implemented yet");
 }
 
 void unravelIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
                   sd::LongType *shapeInfo) {
-  throw std::runtime_error("unravelIndex:: Not implemented yet");
+  THROW_EXCEPTION("unravelIndex:: Not implemented yet");
 }
 
 sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::LongType length) { return nullptr; }
@@ -2694,11 +2694,11 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
     if(shape_ == nullptr) {
-      throw std::runtime_error("Input shape was null!");
+      THROW_EXCEPTION("Input shape was null!");
     }
 
     if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      throw std::runtime_error("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
+      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
     }
 
     // we shouldn't copy buffer if that's empty array
@@ -2713,7 +2713,7 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
   }
 
   auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) throw std::runtime_error("Data types validation failed");
+  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
 
@@ -2751,7 +2751,7 @@ sd::ShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType h
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    throw std::runtime_error(e.what());
+    THROW_EXCEPTION(e.what());
   }
 }
 
@@ -3132,7 +3132,7 @@ void deleteResultWrapper(sd::Pointer ptr) {
 
 int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer dX, sd::LongType const *dXShapeInfo, int N,
                       float threshold) {
-  throw std::runtime_error("estimateThreshold: Not implemented yet");
+  THROW_EXCEPTION("estimateThreshold: Not implemented yet");
 }
 
 /*
@@ -3831,7 +3831,7 @@ void setVedaDeviceLibFolder(std::string path){
 void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
-    throw std::runtime_error("Invalid rank for shape buffer.");
+    THROW_EXCEPTION("Invalid rank for shape buffer.");
   std::vector<sd::LongType> shape;
   std::vector<sd::LongType> strides;
   //shape, stride, data type
@@ -3887,7 +3887,7 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
 void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffer,
                                   void **shapeInfo, void **specialShapeInfo) {
   if(shapeInfo == nullptr)
-    throw std::runtime_error("Input shape info was null!");
+    THROW_EXCEPTION("Input shape info was null!");
 
 
   OpaqueDataBuffer  **buffers = (OpaqueDataBuffer **) buffer;
@@ -3896,7 +3896,7 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
 
   for(int i = 0; i < numArrays; i++) {
     if(shapeInfo[i] == nullptr)
-      throw std::runtime_error("Input shape at index was null!");
+      THROW_EXCEPTION("Input shape at index was null!");
 
 
     sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();

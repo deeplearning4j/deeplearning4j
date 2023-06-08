@@ -187,7 +187,7 @@ SD_INLINE SD_HOST_DEVICE sd::DataType ArrayOptions::dataType(const sd::LongType 
       // shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape",
       // const_cast<sd::LongType*>(shapeInfo));
 #ifndef __CUDA_ARCH__
-      throw std::runtime_error("Bad datatype A");
+      THROW_EXCEPTION("Bad datatype A");
 #endif
     }
   } else if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
@@ -206,7 +206,7 @@ SD_INLINE SD_HOST_DEVICE sd::DataType ArrayOptions::dataType(const sd::LongType 
     return sd::DataType::UTF32;
   else {
 #ifndef __CUDA_ARCH__
-    throw std::runtime_error("Bad datatype B");
+    THROW_EXCEPTION("Bad datatype B");
 #endif
   }
 }
@@ -260,7 +260,7 @@ SD_INLINE SD_HOST_DEVICE SparseType ArrayOptions::sparseType(const sd::LongType 
 
 SD_INLINE SD_HOST_DEVICE SparseType ArrayOptions::sparseType(sd::LongType *shapeInfo) {
 #ifndef __CUDA_ARCH__
-  if (!isSparseArray(shapeInfo)) throw std::runtime_error("Not a sparse array");
+  if (!isSparseArray(shapeInfo)) THROW_EXCEPTION("Not a sparse array");
 #endif
 
   if (hasPropertyBitSet(shapeInfo, ARRAY_CSC))
@@ -369,7 +369,7 @@ SD_INLINE SD_HOST_DEVICE void ArrayOptions::setDataType(sd::LongType *shapeInfo,
       break;
     default:
 #ifndef __CUDA_ARCH__
-      throw std::runtime_error("Can't set unknown data type");
+      THROW_EXCEPTION("Can't set unknown data type");
 #else
       printf("Can't set unknown data type");
 #endif

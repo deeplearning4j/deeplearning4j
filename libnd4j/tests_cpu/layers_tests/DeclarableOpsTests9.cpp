@@ -108,7 +108,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     sd::LongType *buffer = new sd::LongType[N];
     auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
     if (rng == nullptr)
-        throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
+        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template
 execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.shapeInfo(), extraParams); const
@@ -140,7 +140,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     sd::LongType *buffer = new sd::LongType[N];
     auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
     if (rng == nullptr)
-        throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
+        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template
 execTransform<randomOps::ExponentialDistributionInv<double>>(rng, y.getBuffer(), y.shapeInfo(), x.getBuffer(),
@@ -171,7 +171,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     sd::LongType *buffer = new sd::LongType[N];
     auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
     if (rng == nullptr)
-        throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
+        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng,
 x.getBuffer(), x.shapeInfo(), extraParams); const double actualMean = x.meanNumber().e<double>(0); const double
@@ -204,7 +204,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 #ifndef __CUDABLAS__
     sd::random::RandomBuffer* rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
     if (rng == nullptr)
-        throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
+        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng,
 y.getBuffer(), y.shapeInfo(), x.getBuffer(), x.shapeInfo(), extraParams);

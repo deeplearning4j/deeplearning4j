@@ -168,7 +168,7 @@ NDArray* NDArrayList::stack() {
   }
 
   if(inputs[0] == nullptr) {
-    throw std::runtime_error("First input element was a null ptr!");
+    THROW_EXCEPTION("First input element was a null ptr!");
   }
 
   auto inShapeInfo = inputs[0]->shapeInfo();
@@ -234,7 +234,7 @@ NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
   auto tads = array->allTensorsAlongDimension(*axis);
   int indicesSize = indices.size();
 
-  if (tads.size() != indicesSize) throw std::runtime_error("Number of TADs should match number of indices");
+  if (tads.size() != indicesSize) THROW_EXCEPTION("Number of TADs should match number of indices");
 
   for (int e = 0; e < indicesSize; e++) tads.at(e)->assign(_chunks[indices[e]]);
 

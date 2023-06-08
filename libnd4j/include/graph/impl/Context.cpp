@@ -159,7 +159,7 @@ Variable *Context::getVariable(int idx) {
   if (idx >= this->_inputs.size()) {
     sd_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx,
               this->_inputs.size());
-    throw std::runtime_error("Context: bad Variable index");
+    THROW_EXCEPTION("Context: bad Variable index");
   }
 
   auto p = this->_inputs[idx];
@@ -176,8 +176,8 @@ Variable *Context::getVariable(int idx) {
       sd::LongType maxLen = sd::math::sd_min<sd::LongType>(16, array->lengthOf() - 1);
 
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
-                this->_nodeId, idx, shape_.c_str(), (int)array->ews(), array->ordering(), type.c_str());
-      array->printIndexedBuffer("Values",maxLen - 2);
+                this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
+      array->printIndexedBuffer("Values",maxLen);
 
     } else {
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s]; mean value: [%f]\n",
@@ -191,7 +191,7 @@ Variable *Context::getVariable(int idx) {
 Variable *Context::variable(int idx) { return getVariable(idx); }
 
 Variable *Context::variable(std::initializer_list<int> p) {
-  if (p.size() != 2) throw std::runtime_error("Variable address should have size of 2");
+  if (p.size() != 2) THROW_EXCEPTION("Variable address should have size of 2");
 
   std::vector<int> vec(p);
   std::pair<int, int> pair(vec[0], vec[1]);
@@ -208,7 +208,7 @@ Variable *Context::variable(std::pair<int, int> &p) {
     return _variableSpace->getVariable(p);
   } catch (std::exception &e) {
     sd_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
-    throw std::runtime_error("Bad variable");
+    THROW_EXCEPTION("Bad variable");
   }
 }
 
@@ -272,7 +272,7 @@ void Context::pushNDArrayListToVariableSpace(std::pair<int, int> &pair, NDArrayL
 Variable *Context::ensureVariable(int idx) {
   std::pair<int, int> pair(this->nodeId(), idx);
 
-  if (_variableSpace == nullptr) throw std::runtime_error("Context::ensureVariable VariableSpace is NULL!");
+  if (_variableSpace == nullptr) THROW_EXCEPTION("Context::ensureVariable VariableSpace is NULL!");
 
   if (!_variableSpace->hasVariable(pair)) {
     auto var = new Variable(nullptr, nullptr, this->nodeId(), idx);
@@ -394,7 +394,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
     error += std::string("Shape Buffer at index ");
     error += std::string(" " + index);
     error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
-    throw std::runtime_error(error.c_str());
+    THROW_EXCEPTION(error.c_str());
   }
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;

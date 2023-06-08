@@ -91,8 +91,6 @@ DECLARE_TYPES(pad) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64})  // INT32 with TF
-      //        ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF, but used also INT64 due
-      //        long shapes
       ->setSameMode(true);
 }
 
@@ -120,7 +118,6 @@ DECLARE_SHAPE_FN(pad) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo);
-  RELEASE(outShapeInfo, block.getWorkspace());
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
   delete descriptor;
   return ret;

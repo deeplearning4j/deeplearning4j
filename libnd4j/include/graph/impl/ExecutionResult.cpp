@@ -59,19 +59,19 @@ void ExecutionResult::emplace_back(Variable* variable) {
 
 Variable* ExecutionResult::at(int position) {
   if (position >= _variables.size())
-    throw std::runtime_error("Position index is higher then number of variables stored");
+    THROW_EXCEPTION("Position index is higher then number of variables stored");
 
   return _variables.at(position);
 }
 
 Variable* ExecutionResult::byId(std::string& id) {
-  if (_stringIdMap.count(id) == 0) throw std::runtime_error("Can't find specified ID");
+  if (_stringIdMap.count(id) == 0) THROW_EXCEPTION("Can't find specified ID");
 
   return _stringIdMap.at(id);
 }
 
 Variable* ExecutionResult::byId(std::pair<int, int>& id) {
-  if (_pairIdMap.count(id) == 0) throw std::runtime_error("Can't find specified ID");
+  if (_pairIdMap.count(id) == 0) THROW_EXCEPTION("Can't find specified ID");
 
   return _pairIdMap.at(id);
 }

@@ -162,7 +162,7 @@ struct VEDA {
 
   VEDA_HANDLE& getVEDA_HANDLE(int device_index) {
     if (ve_handles.size() < 1) {
-      throw std::runtime_error("No Ve device found");
+      THROW_EXCEPTION("No Ve device found");
     }
     // we will let to throw out of range error for the other cases
     return ve_handles.at(device_index);

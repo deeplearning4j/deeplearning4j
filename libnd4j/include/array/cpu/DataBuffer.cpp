@@ -79,7 +79,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 /////////////////////////
 void DataBuffer::memcpy(const DataBuffer& dst, const DataBuffer& src) {
   if (src._lenInBytes > dst._lenInBytes)
-    throw std::runtime_error("DataBuffer::memcpy: Source data buffer is larger than destination");
+    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
 
   std::memcpy(dst._primaryBuffer, src._primaryBuffer, src._lenInBytes);
   dst.readPrimary();

@@ -44,7 +44,7 @@ class SD_LIB_EXPORT CudaManagedRandomGenerator {
   void *operator new(size_t len) {
     void *ptr;
     auto res = cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
-    if (res != 0) throw std::runtime_error("CudaManagedRandomGenerator: failed to allocate memory");
+    if (res != 0) THROW_EXCEPTION("CudaManagedRandomGenerator: failed to allocate memory");
 
     return ptr;
   }

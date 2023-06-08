@@ -223,7 +223,7 @@ std::vector<Pair> &Environment::capabilities() { return _capabilities; }
 void Environment::setDefaultFloatDataType(sd::DataType dtype) {
   if (dtype != sd::DataType::FLOAT32 && dtype != sd::DataType::DOUBLE && dtype != sd::DataType::FLOAT8 &&
       dtype != sd::DataType::HALF)
-    throw std::runtime_error("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
+    THROW_EXCEPTION("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
 
   _dataType.store(dtype);
 }

@@ -32,31 +32,31 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 
 public interface BLASLapackDelegator {
-   float cblas_sdsdot(int arg0, float arg1, float[] arg2, int arg3, float[] arg4, int arg5) ;
-
    float cblas_sdsdot(int arg0, float arg1, FloatPointer arg2, int arg3, FloatPointer arg4,
       int arg5) ;
+
+   float cblas_sdsdot(int arg0, float arg1, float[] arg2, int arg3, float[] arg4, int arg5) ;
 
    float cblas_sdsdot(int arg0, float arg1, FloatBuffer arg2, int arg3, FloatBuffer arg4,
       int arg5) ;
 
-   double cblas_dsdot(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
-
    double cblas_dsdot(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4) ;
 
+   double cblas_dsdot(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
+
    double cblas_dsdot(int arg0, float[] arg1, int arg2, float[] arg3, int arg4) ;
+
+   float cblas_sdot(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
 
    float cblas_sdot(int arg0, float[] arg1, int arg2, float[] arg3, int arg4) ;
 
    float cblas_sdot(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4) ;
 
-   float cblas_sdot(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
-
    double cblas_ddot(int arg0, DoubleBuffer arg1, int arg2, DoubleBuffer arg3, int arg4) ;
 
-   double cblas_ddot(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
-
    double cblas_ddot(int arg0, double[] arg1, int arg2, double[] arg3, int arg4) ;
+
+   double cblas_ddot(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
 
    void cblas_cdotu_sub(int arg0, Pointer arg1, int arg2, Pointer arg3, int arg4,
       Pointer arg5) ;
@@ -72,53 +72,51 @@ public interface BLASLapackDelegator {
 
    float cblas_sasum(int arg0, FloatPointer arg1, int arg2) ;
 
+   float cblas_sasum(int arg0, float[] arg1, int arg2) ;
+
    float cblas_sasum(int arg0, FloatBuffer arg1, int arg2) ;
 
-   float cblas_sasum(int arg0, float[] arg1, int arg2) ;
+   double cblas_dasum(int arg0, DoublePointer arg1, int arg2) ;
 
    double cblas_dasum(int arg0, double[] arg1, int arg2) ;
 
    double cblas_dasum(int arg0, DoubleBuffer arg1, int arg2) ;
 
-   double cblas_dasum(int arg0, DoublePointer arg1, int arg2) ;
-
    float cblas_scasum(int arg0, Pointer arg1, int arg2) ;
 
    double cblas_dzasum(int arg0, Pointer arg1, int arg2) ;
 
-   float cblas_snrm2(int arg0, FloatPointer arg1, int arg2) ;
+   float cblas_snrm2(int arg0, float[] arg1, int arg2) ;
 
    float cblas_snrm2(int arg0, FloatBuffer arg1, int arg2) ;
 
-   float cblas_snrm2(int arg0, float[] arg1, int arg2) ;
+   float cblas_snrm2(int arg0, FloatPointer arg1, int arg2) ;
+
+   double cblas_dnrm2(int arg0, DoublePointer arg1, int arg2) ;
 
    double cblas_dnrm2(int arg0, double[] arg1, int arg2) ;
 
    double cblas_dnrm2(int arg0, DoubleBuffer arg1, int arg2) ;
 
-   double cblas_dnrm2(int arg0, DoublePointer arg1, int arg2) ;
-
    float cblas_scnrm2(int arg0, Pointer arg1, int arg2) ;
 
    double cblas_dznrm2(int arg0, Pointer arg1, int arg2) ;
+
+   long cblas_isamax(int arg0, float[] arg1, int arg2) ;
 
    long cblas_isamax(int arg0, FloatBuffer arg1, int arg2) ;
 
    long cblas_isamax(int arg0, FloatPointer arg1, int arg2) ;
 
-   long cblas_isamax(int arg0, float[] arg1, int arg2) ;
-
-   long cblas_idamax(int arg0, DoubleBuffer arg1, int arg2) ;
+   long cblas_idamax(int arg0, double[] arg1, int arg2) ;
 
    long cblas_idamax(int arg0, DoublePointer arg1, int arg2) ;
 
-   long cblas_idamax(int arg0, double[] arg1, int arg2) ;
+   long cblas_idamax(int arg0, DoubleBuffer arg1, int arg2) ;
 
    long cblas_icamax(int arg0, Pointer arg1, int arg2) ;
 
    long cblas_izamax(int arg0, Pointer arg1, int arg2) ;
-
-   void cblas_saxpy(int arg0, float arg1, float[] arg2, int arg3, float[] arg4, int arg5) ;
 
    void cblas_saxpy(int arg0, float arg1, FloatPointer arg2, int arg3, FloatPointer arg4,
       int arg5) ;
@@ -126,10 +124,12 @@ public interface BLASLapackDelegator {
    void cblas_saxpy(int arg0, float arg1, FloatBuffer arg2, int arg3, FloatBuffer arg4,
       int arg5) ;
 
-   void cblas_daxpy(int arg0, double arg1, DoublePointer arg2, int arg3, DoublePointer arg4,
-      int arg5) ;
+   void cblas_saxpy(int arg0, float arg1, float[] arg2, int arg3, float[] arg4, int arg5) ;
 
    void cblas_daxpy(int arg0, double arg1, DoubleBuffer arg2, int arg3, DoubleBuffer arg4,
+      int arg5) ;
+
+   void cblas_daxpy(int arg0, double arg1, DoublePointer arg2, int arg3, DoublePointer arg4,
       int arg5) ;
 
    void cblas_daxpy(int arg0, double arg1, double[] arg2, int arg3, double[] arg4,
@@ -141,31 +141,31 @@ public interface BLASLapackDelegator {
 
    void cblas_scopy(int arg0, float[] arg1, int arg2, float[] arg3, int arg4) ;
 
-   void cblas_scopy(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
-
    void cblas_scopy(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4) ;
 
-   void cblas_dcopy(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
+   void cblas_scopy(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
+
+   void cblas_dcopy(int arg0, double[] arg1, int arg2, double[] arg3, int arg4) ;
 
    void cblas_dcopy(int arg0, DoubleBuffer arg1, int arg2, DoubleBuffer arg3, int arg4) ;
 
-   void cblas_dcopy(int arg0, double[] arg1, int arg2, double[] arg3, int arg4) ;
+   void cblas_dcopy(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
 
    void cblas_ccopy(int arg0, Pointer arg1, int arg2, Pointer arg3, int arg4) ;
 
    void cblas_zcopy(int arg0, Pointer arg1, int arg2, Pointer arg3, int arg4) ;
 
-   void cblas_sswap(int arg0, float[] arg1, int arg2, float[] arg3, int arg4) ;
-
    void cblas_sswap(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4) ;
+
+   void cblas_sswap(int arg0, float[] arg1, int arg2, float[] arg3, int arg4) ;
 
    void cblas_sswap(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4) ;
 
-   void cblas_dswap(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
+   void cblas_dswap(int arg0, double[] arg1, int arg2, double[] arg3, int arg4) ;
 
    void cblas_dswap(int arg0, DoubleBuffer arg1, int arg2, DoubleBuffer arg3, int arg4) ;
 
-   void cblas_dswap(int arg0, double[] arg1, int arg2, double[] arg3, int arg4) ;
+   void cblas_dswap(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4) ;
 
    void cblas_cswap(int arg0, Pointer arg1, int arg2, Pointer arg3, int arg4) ;
 
@@ -180,14 +180,14 @@ public interface BLASLapackDelegator {
    void cblas_srot(int arg0, float[] arg1, int arg2, float[] arg3, int arg4, float arg5,
       float arg6) ;
 
-   void cblas_drot(int arg0, double[] arg1, int arg2, double[] arg3, int arg4, double arg5,
-      double arg6) ;
+   void cblas_drot(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4,
+      double arg5, double arg6) ;
 
    void cblas_drot(int arg0, DoubleBuffer arg1, int arg2, DoubleBuffer arg3, int arg4,
       double arg5, double arg6) ;
 
-   void cblas_drot(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4,
-      double arg5, double arg6) ;
+   void cblas_drot(int arg0, double[] arg1, int arg2, double[] arg3, int arg4, double arg5,
+      double arg6) ;
 
    void cblas_srotg(FloatBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, FloatBuffer arg3) ;
 
@@ -204,13 +204,13 @@ public interface BLASLapackDelegator {
    void cblas_drotg(DoublePointer arg0, DoublePointer arg1, DoublePointer arg2,
       DoublePointer arg3) ;
 
-   void cblas_srotm(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4,
-      FloatBuffer arg5) ;
+   void cblas_srotm(int arg0, float[] arg1, int arg2, float[] arg3, int arg4, float[] arg5) ;
 
    void cblas_srotm(int arg0, FloatPointer arg1, int arg2, FloatPointer arg3, int arg4,
       FloatPointer arg5) ;
 
-   void cblas_srotm(int arg0, float[] arg1, int arg2, float[] arg3, int arg4, float[] arg5) ;
+   void cblas_srotm(int arg0, FloatBuffer arg1, int arg2, FloatBuffer arg3, int arg4,
+      FloatBuffer arg5) ;
 
    void cblas_drotm(int arg0, DoublePointer arg1, int arg2, DoublePointer arg3, int arg4,
       DoublePointer arg5) ;
@@ -221,16 +221,13 @@ public interface BLASLapackDelegator {
    void cblas_drotm(int arg0, DoubleBuffer arg1, int arg2, DoubleBuffer arg3, int arg4,
       DoubleBuffer arg5) ;
 
-   void cblas_srotmg(float[] arg0, float[] arg1, float[] arg2, float arg3, float[] arg4) ;
-
    void cblas_srotmg(FloatPointer arg0, FloatPointer arg1, FloatPointer arg2, float arg3,
       FloatPointer arg4) ;
 
+   void cblas_srotmg(float[] arg0, float[] arg1, float[] arg2, float arg3, float[] arg4) ;
+
    void cblas_srotmg(FloatBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, float arg3,
       FloatBuffer arg4) ;
-
-   void cblas_drotmg(DoublePointer arg0, DoublePointer arg1, DoublePointer arg2, double arg3,
-      DoublePointer arg4) ;
 
    void cblas_drotmg(double[] arg0, double[] arg1, double[] arg2, double arg3,
       double[] arg4) ;
@@ -238,17 +235,20 @@ public interface BLASLapackDelegator {
    void cblas_drotmg(DoubleBuffer arg0, DoubleBuffer arg1, DoubleBuffer arg2, double arg3,
       DoubleBuffer arg4) ;
 
-   void cblas_sscal(int arg0, float arg1, FloatBuffer arg2, int arg3) ;
+   void cblas_drotmg(DoublePointer arg0, DoublePointer arg1, DoublePointer arg2, double arg3,
+      DoublePointer arg4) ;
 
    void cblas_sscal(int arg0, float arg1, float[] arg2, int arg3) ;
 
    void cblas_sscal(int arg0, float arg1, FloatPointer arg2, int arg3) ;
 
+   void cblas_sscal(int arg0, float arg1, FloatBuffer arg2, int arg3) ;
+
+   void cblas_dscal(int arg0, double arg1, DoubleBuffer arg2, int arg3) ;
+
    void cblas_dscal(int arg0, double arg1, DoublePointer arg2, int arg3) ;
 
    void cblas_dscal(int arg0, double arg1, double[] arg2, int arg3) ;
-
-   void cblas_dscal(int arg0, double arg1, DoubleBuffer arg2, int arg3) ;
 
    void cblas_cscal(int arg0, Pointer arg1, Pointer arg2, int arg3) ;
 
@@ -258,14 +258,17 @@ public interface BLASLapackDelegator {
 
    void cblas_zdscal(int arg0, double arg1, Pointer arg2, int arg3) ;
 
-   void cblas_sgemv(int arg0, int arg1, int arg2, int arg3, float arg4, float[] arg5,
-      int arg6, float[] arg7, int arg8, float arg9, float[] arg10, int arg11) ;
-
    void cblas_sgemv(int arg0, int arg1, int arg2, int arg3, float arg4, FloatPointer arg5,
       int arg6, FloatPointer arg7, int arg8, float arg9, FloatPointer arg10, int arg11) ;
 
    void cblas_sgemv(int arg0, int arg1, int arg2, int arg3, float arg4, FloatBuffer arg5,
       int arg6, FloatBuffer arg7, int arg8, float arg9, FloatBuffer arg10, int arg11) ;
+
+   void cblas_sgemv(int arg0, int arg1, int arg2, int arg3, float arg4, float[] arg5,
+      int arg6, float[] arg7, int arg8, float arg9, float[] arg10, int arg11) ;
+
+   void cblas_dgemv(int arg0, int arg1, int arg2, int arg3, double arg4, double[] arg5,
+      int arg6, double[] arg7, int arg8, double arg9, double[] arg10, int arg11) ;
 
    void cblas_dgemv(int arg0, int arg1, int arg2, int arg3, double arg4, DoublePointer arg5,
       int arg6, DoublePointer arg7, int arg8, double arg9, DoublePointer arg10, int arg11) ;
@@ -273,32 +276,29 @@ public interface BLASLapackDelegator {
    void cblas_dgemv(int arg0, int arg1, int arg2, int arg3, double arg4, DoubleBuffer arg5,
       int arg6, DoubleBuffer arg7, int arg8, double arg9, DoubleBuffer arg10, int arg11) ;
 
-   void cblas_dgemv(int arg0, int arg1, int arg2, int arg3, double arg4, double[] arg5,
-      int arg6, double[] arg7, int arg8, double arg9, double[] arg10, int arg11) ;
-
    void cblas_cgemv(int arg0, int arg1, int arg2, int arg3, Pointer arg4, Pointer arg5,
       int arg6, Pointer arg7, int arg8, Pointer arg9, Pointer arg10, int arg11) ;
 
    void cblas_zgemv(int arg0, int arg1, int arg2, int arg3, Pointer arg4, Pointer arg5,
       int arg6, Pointer arg7, int arg8, Pointer arg9, Pointer arg10, int arg11) ;
 
-   void cblas_sger(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
-      FloatPointer arg6, int arg7, FloatPointer arg8, int arg9) ;
-
    void cblas_sger(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
       FloatBuffer arg6, int arg7, FloatBuffer arg8, int arg9) ;
 
+   void cblas_sger(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
+      FloatPointer arg6, int arg7, FloatPointer arg8, int arg9) ;
+
    void cblas_sger(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
       float[] arg6, int arg7, float[] arg8, int arg9) ;
+
+   void cblas_dger(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
+      double[] arg6, int arg7, double[] arg8, int arg9) ;
 
    void cblas_dger(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
       DoublePointer arg6, int arg7, DoublePointer arg8, int arg9) ;
 
    void cblas_dger(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8, int arg9) ;
-
-   void cblas_dger(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
-      double[] arg6, int arg7, double[] arg8, int arg9) ;
 
    void cblas_cgeru(int arg0, int arg1, int arg2, Pointer arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7, Pointer arg8, int arg9) ;
@@ -312,23 +312,23 @@ public interface BLASLapackDelegator {
    void cblas_zgerc(int arg0, int arg1, int arg2, Pointer arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7, Pointer arg8, int arg9) ;
 
-   void cblas_strsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatBuffer arg5,
-      int arg6, FloatBuffer arg7, int arg8) ;
+   void cblas_strsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatPointer arg5,
+      int arg6, FloatPointer arg7, int arg8) ;
 
    void cblas_strsv(int arg0, int arg1, int arg2, int arg3, int arg4, float[] arg5, int arg6,
       float[] arg7, int arg8) ;
 
-   void cblas_strsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatPointer arg5,
-      int arg6, FloatPointer arg7, int arg8) ;
-
-   void cblas_dtrsv(int arg0, int arg1, int arg2, int arg3, int arg4, double[] arg5,
-      int arg6, double[] arg7, int arg8) ;
+   void cblas_strsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatBuffer arg5,
+      int arg6, FloatBuffer arg7, int arg8) ;
 
    void cblas_dtrsv(int arg0, int arg1, int arg2, int arg3, int arg4, DoubleBuffer arg5,
       int arg6, DoubleBuffer arg7, int arg8) ;
 
    void cblas_dtrsv(int arg0, int arg1, int arg2, int arg3, int arg4, DoublePointer arg5,
       int arg6, DoublePointer arg7, int arg8) ;
+
+   void cblas_dtrsv(int arg0, int arg1, int arg2, int arg3, int arg4, double[] arg5,
+      int arg6, double[] arg7, int arg8) ;
 
    void cblas_ctrsv(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5, int arg6,
       Pointer arg7, int arg8) ;
@@ -360,23 +360,23 @@ public interface BLASLapackDelegator {
    void cblas_ztrmv(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5, int arg6,
       Pointer arg7, int arg8) ;
 
-   void cblas_ssyr(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
-      FloatBuffer arg6, int arg7) ;
+   void cblas_ssyr(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
+      float[] arg6, int arg7) ;
 
    void cblas_ssyr(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
       FloatPointer arg6, int arg7) ;
 
-   void cblas_ssyr(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
-      float[] arg6, int arg7) ;
+   void cblas_ssyr(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
+      FloatBuffer arg6, int arg7) ;
 
    void cblas_dsyr(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6, int arg7) ;
 
-   void cblas_dsyr(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
-      DoublePointer arg6, int arg7) ;
-
    void cblas_dsyr(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
       double[] arg6, int arg7) ;
+
+   void cblas_dsyr(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
+      DoublePointer arg6, int arg7) ;
 
    void cblas_cher(int arg0, int arg1, int arg2, float arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7) ;
@@ -384,23 +384,23 @@ public interface BLASLapackDelegator {
    void cblas_zher(int arg0, int arg1, int arg2, double arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7) ;
 
-   void cblas_ssyr2(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
-      float[] arg6, int arg7, float[] arg8, int arg9) ;
-
    void cblas_ssyr2(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
       FloatPointer arg6, int arg7, FloatPointer arg8, int arg9) ;
 
    void cblas_ssyr2(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
       FloatBuffer arg6, int arg7, FloatBuffer arg8, int arg9) ;
 
-   void cblas_dsyr2(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
-      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9) ;
+   void cblas_ssyr2(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
+      float[] arg6, int arg7, float[] arg8, int arg9) ;
 
    void cblas_dsyr2(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8, int arg9) ;
 
    void cblas_dsyr2(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
       double[] arg6, int arg7, double[] arg8, int arg9) ;
+
+   void cblas_dsyr2(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
+      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9) ;
 
    void cblas_cher2(int arg0, int arg1, int arg2, Pointer arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7, Pointer arg8, int arg9) ;
@@ -424,11 +424,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, int arg13) ;
 
    void cblas_dgbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, double arg6,
-      double[] arg7, int arg8, double[] arg9, int arg10, double arg11, double[] arg12, int arg13) ;
-
-   void cblas_dgbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, double arg6,
       DoubleBuffer arg7, int arg8, DoubleBuffer arg9, int arg10, double arg11, DoubleBuffer arg12,
       int arg13) ;
+
+   void cblas_dgbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, double arg6,
+      double[] arg7, int arg8, double[] arg9, int arg10, double arg11, double[] arg12, int arg13) ;
 
    void cblas_cgbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, Pointer arg6,
       Pointer arg7, int arg8, Pointer arg9, int arg10, Pointer arg11, Pointer arg12, int arg13) ;
@@ -436,14 +436,14 @@ public interface BLASLapackDelegator {
    void cblas_zgbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, Pointer arg6,
       Pointer arg7, int arg8, Pointer arg9, int arg10, Pointer arg11, Pointer arg12, int arg13) ;
 
-   void cblas_ssbmv(int arg0, int arg1, int arg2, int arg3, float arg4, FloatPointer arg5,
-      int arg6, FloatPointer arg7, int arg8, float arg9, FloatPointer arg10, int arg11) ;
-
    void cblas_ssbmv(int arg0, int arg1, int arg2, int arg3, float arg4, FloatBuffer arg5,
       int arg6, FloatBuffer arg7, int arg8, float arg9, FloatBuffer arg10, int arg11) ;
 
    void cblas_ssbmv(int arg0, int arg1, int arg2, int arg3, float arg4, float[] arg5,
       int arg6, float[] arg7, int arg8, float arg9, float[] arg10, int arg11) ;
+
+   void cblas_ssbmv(int arg0, int arg1, int arg2, int arg3, float arg4, FloatPointer arg5,
+      int arg6, FloatPointer arg7, int arg8, float arg9, FloatPointer arg10, int arg11) ;
 
    void cblas_dsbmv(int arg0, int arg1, int arg2, int arg3, double arg4, double[] arg5,
       int arg6, double[] arg7, int arg8, double arg9, double[] arg10, int arg11) ;
@@ -454,20 +454,20 @@ public interface BLASLapackDelegator {
    void cblas_dsbmv(int arg0, int arg1, int arg2, int arg3, double arg4, DoublePointer arg5,
       int arg6, DoublePointer arg7, int arg8, double arg9, DoublePointer arg10, int arg11) ;
 
+   void cblas_stbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float[] arg6,
+      int arg7, float[] arg8, int arg9) ;
+
    void cblas_stbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
       FloatBuffer arg6, int arg7, FloatBuffer arg8, int arg9) ;
 
    void cblas_stbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
       FloatPointer arg6, int arg7, FloatPointer arg8, int arg9) ;
 
-   void cblas_stbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float[] arg6,
-      int arg7, float[] arg8, int arg9) ;
+   void cblas_dtbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
+      double[] arg6, int arg7, double[] arg8, int arg9) ;
 
    void cblas_dtbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8, int arg9) ;
-
-   void cblas_dtbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
-      double[] arg6, int arg7, double[] arg8, int arg9) ;
 
    void cblas_dtbmv(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5,
       DoublePointer arg6, int arg7, DoublePointer arg8, int arg9) ;
@@ -526,14 +526,14 @@ public interface BLASLapackDelegator {
    void cblas_ztpmv(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5,
       Pointer arg6, int arg7) ;
 
-   void cblas_stpsv(int arg0, int arg1, int arg2, int arg3, int arg4, float[] arg5,
-      float[] arg6, int arg7) ;
+   void cblas_stpsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatPointer arg5,
+      FloatPointer arg6, int arg7) ;
 
    void cblas_stpsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatBuffer arg5,
       FloatBuffer arg6, int arg7) ;
 
-   void cblas_stpsv(int arg0, int arg1, int arg2, int arg3, int arg4, FloatPointer arg5,
-      FloatPointer arg6, int arg7) ;
+   void cblas_stpsv(int arg0, int arg1, int arg2, int arg3, int arg4, float[] arg5,
+      float[] arg6, int arg7) ;
 
    void cblas_dtpsv(int arg0, int arg1, int arg2, int arg3, int arg4, double[] arg5,
       double[] arg6, int arg7) ;
@@ -550,23 +550,23 @@ public interface BLASLapackDelegator {
    void cblas_ztpsv(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5,
       Pointer arg6, int arg7) ;
 
-   void cblas_ssymv(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
-      float[] arg6, int arg7, float arg8, float[] arg9, int arg10) ;
-
    void cblas_ssymv(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
       FloatPointer arg6, int arg7, float arg8, FloatPointer arg9, int arg10) ;
+
+   void cblas_ssymv(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
+      float[] arg6, int arg7, float arg8, float[] arg9, int arg10) ;
 
    void cblas_ssymv(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
       FloatBuffer arg6, int arg7, float arg8, FloatBuffer arg9, int arg10) ;
 
-   void cblas_dsymv(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
-      DoublePointer arg6, int arg7, double arg8, DoublePointer arg9, int arg10) ;
+   void cblas_dsymv(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
+      double[] arg6, int arg7, double arg8, double[] arg9, int arg10) ;
 
    void cblas_dsymv(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6, int arg7, double arg8, DoubleBuffer arg9, int arg10) ;
 
-   void cblas_dsymv(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
-      double[] arg6, int arg7, double arg8, double[] arg9, int arg10) ;
+   void cblas_dsymv(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
+      DoublePointer arg6, int arg7, double arg8, DoublePointer arg9, int arg10) ;
 
    void cblas_chemv(int arg0, int arg1, int arg2, Pointer arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7, Pointer arg8, Pointer arg9, int arg10) ;
@@ -574,17 +574,14 @@ public interface BLASLapackDelegator {
    void cblas_zhemv(int arg0, int arg1, int arg2, Pointer arg3, Pointer arg4, int arg5,
       Pointer arg6, int arg7, Pointer arg8, Pointer arg9, int arg10) ;
 
+   void cblas_sspmv(int arg0, int arg1, int arg2, float arg3, float[] arg4, float[] arg5,
+      int arg6, float arg7, float[] arg8, int arg9) ;
+
    void cblas_sspmv(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4,
       FloatBuffer arg5, int arg6, float arg7, FloatBuffer arg8, int arg9) ;
 
    void cblas_sspmv(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4,
       FloatPointer arg5, int arg6, float arg7, FloatPointer arg8, int arg9) ;
-
-   void cblas_sspmv(int arg0, int arg1, int arg2, float arg3, float[] arg4, float[] arg5,
-      int arg6, float arg7, float[] arg8, int arg9) ;
-
-   void cblas_dspmv(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4,
-      DoublePointer arg5, int arg6, double arg7, DoublePointer arg8, int arg9) ;
 
    void cblas_dspmv(int arg0, int arg1, int arg2, double arg3, double[] arg4, double[] arg5,
       int arg6, double arg7, double[] arg8, int arg9) ;
@@ -592,20 +589,23 @@ public interface BLASLapackDelegator {
    void cblas_dspmv(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4,
       DoubleBuffer arg5, int arg6, double arg7, DoubleBuffer arg8, int arg9) ;
 
-   void cblas_sspr(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
-      FloatBuffer arg6) ;
-
-   void cblas_sspr(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
-      FloatPointer arg6) ;
+   void cblas_dspmv(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4,
+      DoublePointer arg5, int arg6, double arg7, DoublePointer arg8, int arg9) ;
 
    void cblas_sspr(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
       float[] arg6) ;
 
-   void cblas_dspr(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
-      double[] arg6) ;
+   void cblas_sspr(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
+      FloatPointer arg6) ;
+
+   void cblas_sspr(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
+      FloatBuffer arg6) ;
 
    void cblas_dspr(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6) ;
+
+   void cblas_dspr(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
+      double[] arg6) ;
 
    void cblas_dspr(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
       DoublePointer arg6) ;
@@ -619,17 +619,17 @@ public interface BLASLapackDelegator {
    void cblas_sspr2(int arg0, int arg1, int arg2, float arg3, FloatPointer arg4, int arg5,
       FloatPointer arg6, int arg7, FloatPointer arg8) ;
 
-   void cblas_sspr2(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
-      FloatBuffer arg6, int arg7, FloatBuffer arg8) ;
-
    void cblas_sspr2(int arg0, int arg1, int arg2, float arg3, float[] arg4, int arg5,
       float[] arg6, int arg7, float[] arg8) ;
 
-   void cblas_dspr2(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
-      DoublePointer arg6, int arg7, DoublePointer arg8) ;
+   void cblas_sspr2(int arg0, int arg1, int arg2, float arg3, FloatBuffer arg4, int arg5,
+      FloatBuffer arg6, int arg7, FloatBuffer arg8) ;
 
    void cblas_dspr2(int arg0, int arg1, int arg2, double arg3, DoubleBuffer arg4, int arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8) ;
+
+   void cblas_dspr2(int arg0, int arg1, int arg2, double arg3, DoublePointer arg4, int arg5,
+      DoublePointer arg6, int arg7, DoublePointer arg8) ;
 
    void cblas_dspr2(int arg0, int arg1, int arg2, double arg3, double[] arg4, int arg5,
       double[] arg6, int arg7, double[] arg8) ;
@@ -653,15 +653,15 @@ public interface BLASLapackDelegator {
       int arg6, Pointer arg7, Pointer arg8, int arg9) ;
 
    void cblas_sgemm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float arg6,
-      float[] arg7, int arg8, float[] arg9, int arg10, float arg11, float[] arg12, int arg13) ;
-
-   void cblas_sgemm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float arg6,
       FloatBuffer arg7, int arg8, FloatBuffer arg9, int arg10, float arg11, FloatBuffer arg12,
       int arg13) ;
 
    void cblas_sgemm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float arg6,
       FloatPointer arg7, int arg8, FloatPointer arg9, int arg10, float arg11, FloatPointer arg12,
       int arg13) ;
+
+   void cblas_sgemm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, float arg6,
+      float[] arg7, int arg8, float[] arg9, int arg10, float arg11, float[] arg12, int arg13) ;
 
    void cblas_dgemm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, double arg6,
       double[] arg7, int arg8, double[] arg9, int arg10, double arg11, double[] arg12, int arg13) ;
@@ -681,26 +681,26 @@ public interface BLASLapackDelegator {
       Pointer arg7, int arg8, Pointer arg9, int arg10, Pointer arg11, Pointer arg12, int arg13) ;
 
    void cblas_ssymm(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
-      float[] arg6, int arg7, float[] arg8, int arg9, float arg10, float[] arg11, int arg12) ;
-
-   void cblas_ssymm(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
       FloatBuffer arg6, int arg7, FloatBuffer arg8, int arg9, float arg10, FloatBuffer arg11,
       int arg12) ;
+
+   void cblas_ssymm(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
+      float[] arg6, int arg7, float[] arg8, int arg9, float arg10, float[] arg11, int arg12) ;
 
    void cblas_ssymm(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
       FloatPointer arg6, int arg7, FloatPointer arg8, int arg9, float arg10, FloatPointer arg11,
       int arg12) ;
 
    void cblas_dsymm(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
-      double[] arg6, int arg7, double[] arg8, int arg9, double arg10, double[] arg11, int arg12) ;
+      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9, double arg10, DoublePointer arg11,
+      int arg12) ;
 
    void cblas_dsymm(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8, int arg9, double arg10, DoubleBuffer arg11,
       int arg12) ;
 
    void cblas_dsymm(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
-      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9, double arg10, DoublePointer arg11,
-      int arg12) ;
+      double[] arg6, int arg7, double[] arg8, int arg9, double arg10, double[] arg11, int arg12) ;
 
    void cblas_csymm(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5,
       Pointer arg6, int arg7, Pointer arg8, int arg9, Pointer arg10, Pointer arg11, int arg12) ;
@@ -736,19 +736,19 @@ public interface BLASLapackDelegator {
       float[] arg6, int arg7, float[] arg8, int arg9, float arg10, float[] arg11, int arg12) ;
 
    void cblas_ssyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
-      FloatPointer arg6, int arg7, FloatPointer arg8, int arg9, float arg10, FloatPointer arg11,
-      int arg12) ;
-
-   void cblas_ssyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
       FloatBuffer arg6, int arg7, FloatBuffer arg8, int arg9, float arg10, FloatBuffer arg11,
       int arg12) ;
 
-   void cblas_dsyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
-      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9, double arg10, DoublePointer arg11,
+   void cblas_ssyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, float arg5,
+      FloatPointer arg6, int arg7, FloatPointer arg8, int arg9, float arg10, FloatPointer arg11,
       int arg12) ;
 
    void cblas_dsyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
       DoubleBuffer arg6, int arg7, DoubleBuffer arg8, int arg9, double arg10, DoubleBuffer arg11,
+      int arg12) ;
+
+   void cblas_dsyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
+      DoublePointer arg6, int arg7, DoublePointer arg8, int arg9, double arg10, DoublePointer arg11,
       int arg12) ;
 
    void cblas_dsyr2k(int arg0, int arg1, int arg2, int arg3, int arg4, double arg5,
@@ -761,22 +761,22 @@ public interface BLASLapackDelegator {
       Pointer arg6, int arg7, Pointer arg8, int arg9, Pointer arg10, Pointer arg11, int arg12) ;
 
    void cblas_strmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
-      float arg7, FloatBuffer arg8, int arg9, FloatBuffer arg10, int arg11) ;
-
-   void cblas_strmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       float arg7, FloatPointer arg8, int arg9, FloatPointer arg10, int arg11) ;
 
    void cblas_strmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
+      float arg7, FloatBuffer arg8, int arg9, FloatBuffer arg10, int arg11) ;
+
+   void cblas_strmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       float arg7, float[] arg8, int arg9, float[] arg10, int arg11) ;
+
+   void cblas_dtrmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
+      double arg7, double[] arg8, int arg9, double[] arg10, int arg11) ;
 
    void cblas_dtrmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       double arg7, DoublePointer arg8, int arg9, DoublePointer arg10, int arg11) ;
 
    void cblas_dtrmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       double arg7, DoubleBuffer arg8, int arg9, DoubleBuffer arg10, int arg11) ;
-
-   void cblas_dtrmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
-      double arg7, double[] arg8, int arg9, double[] arg10, int arg11) ;
 
    void cblas_ctrmm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       Pointer arg7, Pointer arg8, int arg9, Pointer arg10, int arg11) ;
@@ -785,10 +785,10 @@ public interface BLASLapackDelegator {
       Pointer arg7, Pointer arg8, int arg9, Pointer arg10, int arg11) ;
 
    void cblas_strsm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
-      float arg7, float[] arg8, int arg9, float[] arg10, int arg11) ;
+      float arg7, FloatBuffer arg8, int arg9, FloatBuffer arg10, int arg11) ;
 
    void cblas_strsm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
-      float arg7, FloatBuffer arg8, int arg9, FloatBuffer arg10, int arg11) ;
+      float arg7, float[] arg8, int arg9, float[] arg10, int arg11) ;
 
    void cblas_strsm(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6,
       float arg7, FloatPointer arg8, int arg9, FloatPointer arg10, int arg11) ;
@@ -826,21 +826,28 @@ public interface BLASLapackDelegator {
    void cblas_zher2k(int arg0, int arg1, int arg2, int arg3, int arg4, Pointer arg5,
       Pointer arg6, int arg7, Pointer arg8, int arg9, double arg10, Pointer arg11, int arg12) ;
 
-   int LAPACK_lsame_base(BytePointer arg0, BytePointer arg1, int arg2, int arg3, long arg4,
-      long arg5) ;
-
-   int LAPACK_lsame_base(byte[] arg0, byte[] arg1, int arg2, int arg3, long arg4,
-      long arg5) ;
-
-   int LAPACK_lsame_base(ByteBuffer arg0, ByteBuffer arg1, int arg2, int arg3, long arg4,
-      long arg5) ;
-
    void LAPACK_cbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8,
       float[] arg9, float[] arg10, int[] arg11, float[] arg12, int[] arg13, float[] arg14,
       int[] arg15, float[] arg16, int[] arg17, float[] arg18, float[] arg19, float[] arg20,
       float[] arg21, float[] arg22, float[] arg23, float[] arg24, float[] arg25, float[] arg26,
       int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
+
+   void LAPACK_cbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
+      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, FloatBuffer arg9,
+      FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13, FloatBuffer arg14,
+      IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18, FloatBuffer arg19,
+      FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22, FloatBuffer arg23, FloatBuffer arg24,
+      FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29,
+      long arg30, long arg31, long arg32, long arg33) ;
+
+   void LAPACK_cbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
+      FloatBuffer arg23, FloatBuffer arg24, FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27,
+      IntBuffer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_cbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8, FloatPointer arg9,
@@ -852,12 +859,13 @@ public interface BLASLapackDelegator {
       long arg32, long arg33) ;
 
    void LAPACK_cbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
-      FloatBuffer arg23, FloatBuffer arg24, FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27,
-      IntBuffer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
+      BytePointer arg3, BytePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
+      FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15,
+      FloatPointer arg16, IntPointer arg17, FloatPointer arg18, FloatPointer arg19,
+      FloatPointer arg20, FloatPointer arg21, FloatPointer arg22, FloatPointer arg23,
+      FloatPointer arg24, FloatPointer arg25, FloatPointer arg26, IntPointer arg27,
+      IntPointer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_cbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
@@ -866,22 +874,12 @@ public interface BLASLapackDelegator {
       float[] arg24, float[] arg25, float[] arg26, int[] arg27, int[] arg28, long arg29, long arg30,
       long arg31, long arg32, long arg33) ;
 
-   void LAPACK_cbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, FloatBuffer arg9,
-      FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13, FloatBuffer arg14,
-      IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18, FloatBuffer arg19,
-      FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22, FloatBuffer arg23, FloatBuffer arg24,
-      FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29,
-      long arg30, long arg31, long arg32, long arg33) ;
-
-   void LAPACK_cbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
-      FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15,
-      FloatPointer arg16, IntPointer arg17, FloatPointer arg18, FloatPointer arg19,
-      FloatPointer arg20, FloatPointer arg21, FloatPointer arg22, FloatPointer arg23,
-      FloatPointer arg24, FloatPointer arg25, FloatPointer arg26, IntPointer arg27,
-      IntPointer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
+   void LAPACK_dbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
+      int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
+      double[] arg18, double[] arg19, double[] arg20, double[] arg21, double[] arg22,
+      double[] arg23, double[] arg24, double[] arg25, double[] arg26, int[] arg27, int[] arg28,
+      long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_dbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8, DoublePointer arg9,
@@ -893,14 +891,6 @@ public interface BLASLapackDelegator {
       long arg32, long arg33) ;
 
    void LAPACK_dbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8,
-      double[] arg9, double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14,
-      int[] arg15, double[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
-      double[] arg21, double[] arg22, double[] arg23, double[] arg24, double[] arg25,
-      double[] arg26, int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32,
-      long arg33) ;
-
-   void LAPACK_dbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
       IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
@@ -909,12 +899,13 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31,
       long arg32, long arg33) ;
 
-   void LAPACK_dbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
-      double[] arg18, double[] arg19, double[] arg20, double[] arg21, double[] arg22,
-      double[] arg23, double[] arg24, double[] arg25, double[] arg26, int[] arg27, int[] arg28,
-      long arg29, long arg30, long arg31, long arg32, long arg33) ;
+   void LAPACK_dbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8,
+      double[] arg9, double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14,
+      int[] arg15, double[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
+      double[] arg21, double[] arg22, double[] arg23, double[] arg24, double[] arg25,
+      double[] arg26, int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32,
+      long arg33) ;
 
    void LAPACK_dbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, DoubleBuffer arg9,
@@ -950,13 +941,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
       long arg32, long arg33) ;
 
-   void LAPACK_sbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22, float[] arg23,
-      float[] arg24, float[] arg25, float[] arg26, int[] arg27, int[] arg28, long arg29, long arg30,
-      long arg31, long arg32, long arg33) ;
-
    void LAPACK_sbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8,
       float[] arg9, float[] arg10, int[] arg11, float[] arg12, int[] arg13, float[] arg14,
@@ -965,12 +949,11 @@ public interface BLASLapackDelegator {
       int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_sbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, FloatBuffer arg9,
-      FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13, FloatBuffer arg14,
-      IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18, FloatBuffer arg19,
-      FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22, FloatBuffer arg23, FloatBuffer arg24,
-      FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29,
-      long arg30, long arg31, long arg32, long arg33) ;
+      int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22, float[] arg23,
+      float[] arg24, float[] arg25, float[] arg26, int[] arg27, int[] arg28, long arg29, long arg30,
+      long arg31, long arg32, long arg33) ;
 
    void LAPACK_sbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
@@ -981,22 +964,30 @@ public interface BLASLapackDelegator {
       FloatPointer arg24, FloatPointer arg25, FloatPointer arg26, IntPointer arg27,
       IntPointer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
+   void LAPACK_sbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
+      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, FloatBuffer arg9,
+      FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13, FloatBuffer arg14,
+      IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18, FloatBuffer arg19,
+      FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22, FloatBuffer arg23, FloatBuffer arg24,
+      FloatBuffer arg25, FloatBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29,
+      long arg30, long arg31, long arg32, long arg33) ;
+
    void LAPACK_zbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8, DoublePointer arg9,
-      DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
-      DoublePointer arg14, IntPointer arg15, DoublePointer arg16, IntPointer arg17,
-      DoublePointer arg18, DoublePointer arg19, DoublePointer arg20, DoublePointer arg21,
-      DoublePointer arg22, DoublePointer arg23, DoublePointer arg24, DoublePointer arg25,
-      DoublePointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
-      long arg32, long arg33) ;
+      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, DoubleBuffer arg9,
+      DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13, DoubleBuffer arg14,
+      IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18, DoubleBuffer arg19,
+      DoubleBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, DoubleBuffer arg23,
+      DoubleBuffer arg24, DoubleBuffer arg25, DoubleBuffer arg26, IntBuffer arg27, IntBuffer arg28,
+      long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_zbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8,
-      double[] arg9, double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14,
-      int[] arg15, double[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
-      double[] arg21, double[] arg22, double[] arg23, double[] arg24, double[] arg25,
-      double[] arg26, int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32,
-      long arg33) ;
+      BytePointer arg3, BytePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
+      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
+      DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
+      DoublePointer arg16, IntPointer arg17, DoublePointer arg18, DoublePointer arg19,
+      DoublePointer arg20, DoublePointer arg21, DoublePointer arg22, DoublePointer arg23,
+      DoublePointer arg24, DoublePointer arg25, DoublePointer arg26, IntPointer arg27,
+      IntPointer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
 
    void LAPACK_zbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
@@ -1014,50 +1005,64 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg26, IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31,
       long arg32, long arg33) ;
 
-   void LAPACK_zbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
-      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
-      DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
-      DoublePointer arg16, IntPointer arg17, DoublePointer arg18, DoublePointer arg19,
-      DoublePointer arg20, DoublePointer arg21, DoublePointer arg22, DoublePointer arg23,
-      DoublePointer arg24, DoublePointer arg25, DoublePointer arg26, IntPointer arg27,
-      IntPointer arg28, long arg29, long arg30, long arg31, long arg32, long arg33) ;
-
    void LAPACK_zbbcsd_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, DoubleBuffer arg9,
-      DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13, DoubleBuffer arg14,
-      IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18, DoubleBuffer arg19,
-      DoubleBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, DoubleBuffer arg23,
-      DoubleBuffer arg24, DoubleBuffer arg25, DoubleBuffer arg26, IntBuffer arg27, IntBuffer arg28,
-      long arg29, long arg30, long arg31, long arg32, long arg33) ;
+      IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8, DoublePointer arg9,
+      DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
+      DoublePointer arg14, IntPointer arg15, DoublePointer arg16, IntPointer arg17,
+      DoublePointer arg18, DoublePointer arg19, DoublePointer arg20, DoublePointer arg21,
+      DoublePointer arg22, DoublePointer arg23, DoublePointer arg24, DoublePointer arg25,
+      DoublePointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
+      long arg32, long arg33) ;
 
-   void LAPACK_dbdsdc_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_dbdsdc_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
+   void LAPACK_zbbcsd_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8,
+      double[] arg9, double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14,
+      int[] arg15, double[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
+      double[] arg21, double[] arg22, double[] arg23, double[] arg24, double[] arg25,
+      double[] arg26, int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32,
+      long arg33) ;
 
    void LAPACK_dbdsdc_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
+   void LAPACK_dbdsdc_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
    void LAPACK_dbdsdc_base(String arg0, String arg1, int[] arg2, double[] arg3,
       double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
       int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_dbdsdc_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
+      DoublePointer arg7, IntPointer arg8, DoublePointer arg9, IntPointer arg10,
+      DoublePointer arg11, IntPointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_dbdsdc_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_dbdsdc_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
-      DoublePointer arg7, IntPointer arg8, DoublePointer arg9, IntPointer arg10,
-      DoublePointer arg11, IntPointer arg12, IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_dbdsdc_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_sbdsdc_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
+
+   void LAPACK_sbdsdc_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_sbdsdc_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
 
    void LAPACK_sbdsdc_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -1068,40 +1073,26 @@ public interface BLASLapackDelegator {
       float[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_sbdsdc_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
-   void LAPACK_sbdsdc_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, long arg14, long arg15) ;
-
    void LAPACK_sbdsdc_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_sbdsdc_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
-
-   void LAPACK_cbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, long arg15) ;
-
-   void LAPACK_cbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
 
    void LAPACK_cbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
       IntBuffer arg14, long arg15) ;
 
+   void LAPACK_cbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, long arg15) ;
+
    void LAPACK_cbdsqr_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
+
+   void LAPACK_cbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
 
@@ -1115,42 +1106,38 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, long arg15) ;
 
-   void LAPACK_dbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, long arg15) ;
-
-   void LAPACK_dbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
-
-   void LAPACK_dbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, long arg15) ;
-
    void LAPACK_dbdsqr_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
-
-   void LAPACK_dbdsqr_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, long arg15) ;
 
    void LAPACK_dbdsqr_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, IntPointer arg14, long arg15) ;
 
+   void LAPACK_dbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, long arg15) ;
+
+   void LAPACK_dbdsqr_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, long arg15) ;
+
+   void LAPACK_dbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
+
+   void LAPACK_dbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, long arg15) ;
+
    void LAPACK_sbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       IntPointer arg14, long arg15) ;
-
-   void LAPACK_sbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
 
    void LAPACK_sbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -1161,15 +1148,33 @@ public interface BLASLapackDelegator {
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
 
+   void LAPACK_sbdsqr_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, long arg15) ;
+
    void LAPACK_sbdsqr_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
       IntBuffer arg14, long arg15) ;
 
-   void LAPACK_sbdsqr_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, long arg15) ;
+   void LAPACK_sbdsqr_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15) ;
+
+   void LAPACK_zbdsqr_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, long arg15) ;
+
+   void LAPACK_zbdsqr_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
+
+   void LAPACK_zbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, long arg15) ;
 
    void LAPACK_zbdsqr_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
@@ -1180,35 +1185,10 @@ public interface BLASLapackDelegator {
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
 
-   void LAPACK_zbdsqr_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, long arg15) ;
-
-   void LAPACK_zbdsqr_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15) ;
-
    void LAPACK_zbdsqr_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
       IntBuffer arg14, long arg15) ;
-
-   void LAPACK_zbdsqr_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, long arg15) ;
-
-   void LAPACK_dbdsvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
-      long arg18, long arg19) ;
-
-   void LAPACK_dbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
-      int[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
-      int[] arg16, long arg17, long arg18, long arg19) ;
 
    void LAPACK_dbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -1216,10 +1196,21 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18,
       long arg19) ;
 
+   void LAPACK_dbdsvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
+      long arg18, long arg19) ;
+
    void LAPACK_dbdsvdx_base(String arg0, String arg1, String arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9, int[] arg10,
       double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, int[] arg16,
       long arg17, long arg18, long arg19) ;
+
+   void LAPACK_dbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
+      int[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
+      int[] arg16, long arg17, long arg18, long arg19) ;
 
    void LAPACK_dbdsvdx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -1237,10 +1228,10 @@ public interface BLASLapackDelegator {
       IntPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
       FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17, long arg18, long arg19) ;
 
-   void LAPACK_sbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, int[] arg10,
-      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16,
-      long arg17, long arg18, long arg19) ;
+   void LAPACK_sbdsvdx_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, int[] arg10, float[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17, long arg18,
+      long arg19) ;
 
    void LAPACK_sbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -1248,27 +1239,21 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18,
       long arg19) ;
 
-   void LAPACK_sbdsvdx_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, int[] arg10, float[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17, long arg18,
-      long arg19) ;
-
-   void LAPACK_sbdsvdx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18, long arg19) ;
-
    void LAPACK_sbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
       IntPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
       long arg18, long arg19) ;
 
-   void LAPACK_ddisna_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      DoublePointer arg4, IntPointer arg5, long arg6) ;
+   void LAPACK_sbdsvdx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18, long arg19) ;
 
-   void LAPACK_ddisna_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      double[] arg4, int[] arg5, long arg6) ;
+   void LAPACK_sbdsvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, int[] arg10,
+      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16,
+      long arg17, long arg18, long arg19) ;
 
    void LAPACK_ddisna_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
@@ -1276,40 +1261,41 @@ public interface BLASLapackDelegator {
    void LAPACK_ddisna_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
       int[] arg5, long arg6) ;
 
-   void LAPACK_ddisna_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
+   void LAPACK_ddisna_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      double[] arg4, int[] arg5, long arg6) ;
 
    void LAPACK_ddisna_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, DoublePointer arg4, IntPointer arg5, long arg6) ;
 
-   void LAPACK_sdisna_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, IntPointer arg5, long arg6) ;
+   void LAPACK_ddisna_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
 
-   void LAPACK_sdisna_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      float[] arg4, int[] arg5, long arg6) ;
-
-   void LAPACK_sdisna_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, FloatBuffer arg4, IntBuffer arg5, long arg6) ;
-
-   void LAPACK_sdisna_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
-      int[] arg5, long arg6) ;
+   void LAPACK_ddisna_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      DoublePointer arg4, IntPointer arg5, long arg6) ;
 
    void LAPACK_sdisna_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, long arg6) ;
 
+   void LAPACK_sdisna_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, IntPointer arg5, long arg6) ;
+
    void LAPACK_sdisna_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, FloatPointer arg4, IntPointer arg5, long arg6) ;
+
+   void LAPACK_sdisna_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      float[] arg4, int[] arg5, long arg6) ;
+
+   void LAPACK_sdisna_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
+      int[] arg5, long arg6) ;
+
+   void LAPACK_sdisna_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, FloatBuffer arg4, IntBuffer arg5, long arg6) ;
 
    void LAPACK_cgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
       FloatPointer arg14, IntPointer arg15, FloatPointer arg16, FloatPointer arg17,
       IntPointer arg18, long arg19) ;
-
-   void LAPACK_cgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, float[] arg17,
-      int[] arg18, long arg19) ;
 
    void LAPACK_cgbbrd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -1322,38 +1308,22 @@ public interface BLASLapackDelegator {
       float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, float[] arg17,
       int[] arg18, long arg19) ;
 
-   void LAPACK_cgbbrd_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      long arg19) ;
-
    void LAPACK_cgbbrd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
       FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15,
       FloatPointer arg16, FloatPointer arg17, IntPointer arg18, long arg19) ;
 
-   void LAPACK_dgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, long arg18) ;
+   void LAPACK_cgbbrd_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      long arg19) ;
 
-   void LAPACK_dgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, long arg18) ;
-
-   void LAPACK_dgbbrd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, long arg18) ;
-
-   void LAPACK_dgbbrd_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, long arg18) ;
+   void LAPACK_cgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, float[] arg17,
+      int[] arg18, long arg19) ;
 
    void LAPACK_dgbbrd_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -1366,12 +1336,28 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       DoublePointer arg16, IntPointer arg17, long arg18) ;
 
-   void LAPACK_sgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, long arg18) ;
+   void LAPACK_dgbbrd_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, long arg18) ;
 
-   void LAPACK_sgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+   void LAPACK_dgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, long arg18) ;
+
+   void LAPACK_dgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, long arg18) ;
+
+   void LAPACK_dgbbrd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, long arg18) ;
+
+   void LAPACK_sgbbrd_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
       float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
       long arg18) ;
@@ -1381,10 +1367,10 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17, long arg18) ;
 
-   void LAPACK_sgbbrd_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      long arg18) ;
+   void LAPACK_sgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, long arg18) ;
 
    void LAPACK_sgbbrd_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -1397,16 +1383,16 @@ public interface BLASLapackDelegator {
       FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15,
       FloatPointer arg16, IntPointer arg17, long arg18) ;
 
+   void LAPACK_sgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      long arg18) ;
+
    void LAPACK_zgbbrd_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
       DoublePointer arg17, IntPointer arg18, long arg19) ;
-
-   void LAPACK_zgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      double[] arg17, int[] arg18, long arg19) ;
 
    void LAPACK_zgbbrd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -1425,15 +1411,16 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
       long arg19) ;
 
+   void LAPACK_zgbbrd_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      double[] arg17, int[] arg18, long arg19) ;
+
    void LAPACK_zgbbrd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       DoublePointer arg16, DoublePointer arg17, IntPointer arg18, long arg19) ;
-
-   void LAPACK_cgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
 
    void LAPACK_cgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
@@ -1447,21 +1434,21 @@ public interface BLASLapackDelegator {
       int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
       long arg12) ;
 
-   void LAPACK_cgbcon_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
+   void LAPACK_cgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
 
    void LAPACK_cgbcon_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_cgbcon_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
+
    void LAPACK_dgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_dgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, int[] arg11, long arg12) ;
 
    void LAPACK_dgbcon_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -1471,6 +1458,10 @@ public interface BLASLapackDelegator {
       int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10, int[] arg11,
       long arg12) ;
 
+   void LAPACK_dgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, int[] arg11, long arg12) ;
+
    void LAPACK_dgbcon_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
@@ -1479,21 +1470,13 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_sgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_sgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
-
    void LAPACK_sgbcon_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_sgbcon_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, int[] arg11,
-      long arg12) ;
+   void LAPACK_sgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
    void LAPACK_sgbcon_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -1503,17 +1486,17 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_sgbcon_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, int[] arg11,
+      long arg12) ;
+
+   void LAPACK_sgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
+
    void LAPACK_zgbcon_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_zgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, long arg12) ;
-
-   void LAPACK_zgbcon_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12) ;
 
    void LAPACK_zgbcon_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
@@ -1527,13 +1510,21 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_cgbequ(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11) ;
+   void LAPACK_zgbcon_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, long arg12) ;
+
+   void LAPACK_zgbcon_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12) ;
 
    void LAPACK_cgbequ(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
       int[] arg11) ;
+
+   void LAPACK_cgbequ(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11) ;
 
    void LAPACK_cgbequ(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -1563,6 +1554,10 @@ public interface BLASLapackDelegator {
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11) ;
 
+   void LAPACK_zgbequ(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
+      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11) ;
+
    void LAPACK_zgbequ(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
       int[] arg11) ;
@@ -1570,10 +1565,6 @@ public interface BLASLapackDelegator {
    void LAPACK_zgbequ(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11) ;
-
-   void LAPACK_zgbequ(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
-      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11) ;
 
    void LAPACK_cgbequb(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
@@ -1623,10 +1614,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11) ;
 
-   void LAPACK_cgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, float[] arg15, float[] arg16, float[] arg17,
-      int[] arg18, long arg19) ;
+   void LAPACK_cgbrfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      long arg19) ;
 
    void LAPACK_cgbrfs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -1634,11 +1626,10 @@ public interface BLASLapackDelegator {
       FloatPointer arg14, FloatPointer arg15, FloatPointer arg16, FloatPointer arg17,
       IntPointer arg18, long arg19) ;
 
-   void LAPACK_cgbrfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      long arg19) ;
+   void LAPACK_cgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, float[] arg15, float[] arg16, float[] arg17,
+      int[] arg18, long arg19) ;
 
    void LAPACK_cgbrfs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
@@ -1656,6 +1647,11 @@ public interface BLASLapackDelegator {
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
       long arg19) ;
+
+   void LAPACK_dgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, int[] arg17,
+      int[] arg18, long arg19) ;
 
    void LAPACK_dgbrfs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
@@ -1686,16 +1682,10 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, IntBuffer arg18,
       long arg19) ;
 
-   void LAPACK_dgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, int[] arg17,
+   void LAPACK_sgbrfs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, float[] arg15, float[] arg16, int[] arg17,
       int[] arg18, long arg19) ;
-
-   void LAPACK_sgbrfs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
-      IntPointer arg18, long arg19) ;
 
    void LAPACK_sgbrfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -1703,10 +1693,11 @@ public interface BLASLapackDelegator {
       FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17, IntBuffer arg18,
       long arg19) ;
 
-   void LAPACK_sgbrfs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, float[] arg15, float[] arg16, int[] arg17,
-      int[] arg18, long arg19) ;
+   void LAPACK_sgbrfs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
+      IntPointer arg18, long arg19) ;
 
    void LAPACK_sgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
@@ -1731,33 +1722,33 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
       IntBuffer arg18, long arg19) ;
 
-   void LAPACK_zgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, double[] arg17,
-      int[] arg18, long arg19) ;
-
-   void LAPACK_zgbrfs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, double[] arg17,
-      int[] arg18, long arg19) ;
-
    void LAPACK_zgbrfs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
       DoublePointer arg14, DoublePointer arg15, DoublePointer arg16, DoublePointer arg17,
       IntPointer arg18, long arg19) ;
 
-   void LAPACK_zgbrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, DoublePointer arg15, DoublePointer arg16,
-      DoublePointer arg17, IntPointer arg18, long arg19) ;
+   void LAPACK_zgbrfs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, double[] arg17,
+      int[] arg18, long arg19) ;
+
+   void LAPACK_zgbrfs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16, double[] arg17,
+      int[] arg18, long arg19) ;
 
    void LAPACK_zgbrfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       DoubleBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
       IntBuffer arg18, long arg19) ;
+
+   void LAPACK_zgbrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, DoublePointer arg15, DoublePointer arg16,
+      DoublePointer arg17, IntPointer arg18, long arg19) ;
 
    void LAPACK_cgbsv(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9) ;
@@ -1792,6 +1783,10 @@ public interface BLASLapackDelegator {
    void LAPACK_sgbsv(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9) ;
 
+   void LAPACK_zgbsv(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9) ;
+
    void LAPACK_zgbsv(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9) ;
 
@@ -1799,15 +1794,12 @@ public interface BLASLapackDelegator {
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9) ;
 
-   void LAPACK_zgbsv(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9) ;
-
-   void LAPACK_cgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      byte[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22,
-      int[] arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_cgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, IntPointer arg10, BytePointer arg11, FloatPointer arg12, FloatPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, FloatPointer arg19, FloatPointer arg20, FloatPointer arg21,
+      FloatPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_cgbsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -1821,13 +1813,6 @@ public interface BLASLapackDelegator {
       float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
       float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22, int[] arg23,
       long arg24, long arg25, long arg26) ;
-
-   void LAPACK_cgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, IntPointer arg10, BytePointer arg11, FloatPointer arg12, FloatPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, FloatPointer arg19, FloatPointer arg20, FloatPointer arg21,
-      FloatPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_cgbsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
@@ -1844,11 +1829,18 @@ public interface BLASLapackDelegator {
       FloatBuffer arg19, FloatBuffer arg20, FloatBuffer arg21, FloatBuffer arg22, IntBuffer arg23,
       long arg24, long arg25, long arg26) ;
 
-   void LAPACK_dgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      byte[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, double[] arg19, double[] arg20, double[] arg21, int[] arg22,
+   void LAPACK_cgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      byte[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22,
       int[] arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_dgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
+      DoublePointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_dgbsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -1863,19 +1855,11 @@ public interface BLASLapackDelegator {
       double[] arg18, double[] arg19, double[] arg20, double[] arg21, int[] arg22, int[] arg23,
       long arg24, long arg25, long arg26) ;
 
-   void LAPACK_dgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
-      DoublePointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_dgbsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
-      DoublePointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_dgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      byte[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, double[] arg19, double[] arg20, double[] arg21, int[] arg22,
+      int[] arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_dgbsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -1884,11 +1868,24 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21, IntBuffer arg22, IntBuffer arg23,
       long arg24, long arg25, long arg26) ;
 
+   void LAPACK_dgbsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
+      DoublePointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+
    void LAPACK_sgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       byte[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
       int[] arg17, float[] arg18, float[] arg19, float[] arg20, float[] arg21, int[] arg22,
       int[] arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_sgbsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, byte[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, float[] arg19, float[] arg20, float[] arg21, int[] arg22, int[] arg23,
+      long arg24, long arg25, long arg26) ;
 
    void LAPACK_sgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
@@ -1904,12 +1901,6 @@ public interface BLASLapackDelegator {
       FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, FloatBuffer arg21, IntBuffer arg22,
       IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_sgbsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, byte[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, float[] arg19, float[] arg20, float[] arg21, int[] arg22, int[] arg23,
-      long arg24, long arg25, long arg26) ;
-
    void LAPACK_sgbsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, ByteBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
@@ -1924,14 +1915,6 @@ public interface BLASLapackDelegator {
       IntPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
       FloatPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
-      DoublePointer arg21, DoublePointer arg22, IntPointer arg23, long arg24, long arg25,
-      long arg26) ;
-
    void LAPACK_zgbsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       byte[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
@@ -1945,11 +1928,12 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21,
       DoubleBuffer arg22, IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zgbsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, byte[] arg11,
-      double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
-      double[] arg18, double[] arg19, double[] arg20, double[] arg21, double[] arg22, int[] arg23,
-      long arg24, long arg25, long arg26) ;
+   void LAPACK_zgbsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, ByteBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
+      IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_zgbsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
@@ -1959,21 +1943,28 @@ public interface BLASLapackDelegator {
       DoublePointer arg21, DoublePointer arg22, IntPointer arg23, long arg24, long arg25,
       long arg26) ;
 
-   void LAPACK_zgbsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, ByteBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
-      IntBuffer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_zgbsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, BytePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
+      DoublePointer arg21, DoublePointer arg22, IntPointer arg23, long arg24, long arg25,
+      long arg26) ;
 
-   void LAPACK_cgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
+   void LAPACK_zgbsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, byte[] arg11,
+      double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
+      double[] arg18, double[] arg19, double[] arg20, double[] arg21, double[] arg22, int[] arg23,
+      long arg24, long arg25, long arg26) ;
+
+   void LAPACK_cgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_cgbtrf(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_cgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_cgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_dgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6, int[] arg7) ;
@@ -1984,30 +1975,27 @@ public interface BLASLapackDelegator {
    void LAPACK_dgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_sgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6, int[] arg7) ;
-
    void LAPACK_sgbtrf(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+
+   void LAPACK_sgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_sgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_zgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_zgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_zgbtrf(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_zgbtrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7) ;
+   void LAPACK_zgbtrf(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, int[] arg6, int[] arg7) ;
 
-   void LAPACK_cgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_cgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_cgbtrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_cgbtrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -2020,13 +2008,24 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_cgbtrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_cgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_cgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11) ;
+
+   void LAPACK_dgbtrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_dgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
+
+   void LAPACK_dgbtrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_dgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
@@ -2038,49 +2037,34 @@ public interface BLASLapackDelegator {
    void LAPACK_dgbtrs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_dgbtrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+   void LAPACK_sgbtrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_dgbtrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_sgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_sgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_sgbtrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_sgbtrs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_sgbtrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_sgbtrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_zgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_sgbtrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_sgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zgbtrs_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_zgbtrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_zgbtrs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+   void LAPACK_zgbtrs_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_zgbtrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -2090,13 +2074,20 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_cgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_zgbtrs_base(String arg0, int[] arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_zgbtrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_cgebak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10,
       long arg11) ;
+
+   void LAPACK_cgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
 
    void LAPACK_cgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -2113,43 +2104,40 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
-   void LAPACK_dgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_dgebak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
    void LAPACK_dgebak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10,
       long arg11) ;
 
-   void LAPACK_dgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
-
-   void LAPACK_dgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
-
    void LAPACK_dgebak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       IntBuffer arg9, long arg10, long arg11) ;
 
-   void LAPACK_dgebak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_dgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
 
-   void LAPACK_sgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+   void LAPACK_dgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, long arg10, long arg11) ;
+
+   void LAPACK_dgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_sgebak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10,
       long arg11) ;
 
+   void LAPACK_sgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
+
    void LAPACK_sgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
-
-   void LAPACK_sgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_sgebak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -2159,37 +2147,41 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
-   void LAPACK_zgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10,
-      long arg11) ;
-
-   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
-
-   void LAPACK_zgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
-
-   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_sgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_zgebak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       IntBuffer arg9, long arg10, long arg11) ;
 
-   void LAPACK_cgebal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10,
+      long arg11) ;
+
+   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, long arg10, long arg11) ;
+
+   void LAPACK_zgebak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10, long arg11) ;
+
+   void LAPACK_zgebak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
+
+   void LAPACK_zgebak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
+
+   void LAPACK_cgebal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_cgebal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, long arg8) ;
 
-   void LAPACK_cgebal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
+   void LAPACK_cgebal_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      long arg8) ;
 
    void LAPACK_cgebal_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, long arg8) ;
@@ -2197,15 +2189,21 @@ public interface BLASLapackDelegator {
    void LAPACK_cgebal_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
 
-   void LAPACK_cgebal_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_cgebal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_dgebal_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_dgebal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_dgebal_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, long arg8) ;
 
-   void LAPACK_dgebal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_dgebal_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      long arg8) ;
 
    void LAPACK_dgebal_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -2214,51 +2212,44 @@ public interface BLASLapackDelegator {
    void LAPACK_dgebal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_dgebal_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, long arg8) ;
-
-   void LAPACK_dgebal_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_sgebal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_sgebal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, long arg8) ;
 
-   void LAPACK_sgebal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_sgebal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_sgebal_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_sgebal_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_sgebal_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zgebal_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, long arg8) ;
+   void LAPACK_sgebal_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
 
-   void LAPACK_zgebal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_sgebal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zgebal_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
-   void LAPACK_zgebal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_zgebal_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_zgebal_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, long arg8) ;
 
+   void LAPACK_zgebal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, long arg8) ;
+
    void LAPACK_zgebal_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       long arg8) ;
+
+   void LAPACK_zgebal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_cgebrd(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -2296,27 +2287,17 @@ public interface BLASLapackDelegator {
    void LAPACK_zgebrd(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10) ;
 
-   void LAPACK_zgebrd(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10) ;
-
    void LAPACK_zgebrd(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10) ;
 
-   void LAPACK_cgecon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_zgebrd(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10) ;
 
    void LAPACK_cgecon_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       long arg9) ;
-
-   void LAPACK_cgecon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
-   void LAPACK_cgecon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_cgecon_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -2326,12 +2307,19 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_cgecon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_cgecon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_cgecon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
    void LAPACK_dgecon_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
       long arg9) ;
-
-   void LAPACK_dgecon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_dgecon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -2340,27 +2328,16 @@ public interface BLASLapackDelegator {
    void LAPACK_dgecon_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
-   void LAPACK_dgecon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      long arg9) ;
-
    void LAPACK_dgecon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
-   void LAPACK_sgecon_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
+   void LAPACK_dgecon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
       long arg9) ;
 
-   void LAPACK_sgecon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_sgecon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
-   void LAPACK_sgecon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_dgecon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_sgecon_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -2370,6 +2347,24 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_sgecon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_sgecon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_sgecon_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
+      long arg9) ;
+
+   void LAPACK_sgecon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
+   void LAPACK_zgecon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
    void LAPACK_zgecon_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, long arg9) ;
@@ -2377,27 +2372,23 @@ public interface BLASLapackDelegator {
    void LAPACK_zgecon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
-   void LAPACK_zgecon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
    void LAPACK_zgecon_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_zgecon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      long arg9) ;
 
    void LAPACK_zgecon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, IntPointer arg8, long arg9) ;
 
-   void LAPACK_cgeequ(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9) ;
+   void LAPACK_zgecon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      long arg9) ;
 
    void LAPACK_cgeequ(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9) ;
+
+   void LAPACK_cgeequ(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9) ;
 
    void LAPACK_cgeequ(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -2428,20 +2419,20 @@ public interface BLASLapackDelegator {
    void LAPACK_zgeequ(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9) ;
 
-   void LAPACK_zgeequ(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9) ;
-
    void LAPACK_zgeequ(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9) ;
 
-   void LAPACK_cgeequb(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9) ;
+   void LAPACK_zgeequ(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9) ;
 
    void LAPACK_cgeequb(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9) ;
+
+   void LAPACK_cgeequb(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9) ;
 
    void LAPACK_cgeequb(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -2458,16 +2449,16 @@ public interface BLASLapackDelegator {
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9) ;
 
-   void LAPACK_sgeequb(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9) ;
+   void LAPACK_sgeequb(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      IntPointer arg9) ;
 
    void LAPACK_sgeequb(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9) ;
 
-   void LAPACK_sgeequb(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      IntPointer arg9) ;
+   void LAPACK_sgeequb(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9) ;
 
    void LAPACK_zgeequb(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9) ;
@@ -2494,10 +2485,6 @@ public interface BLASLapackDelegator {
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       IntBuffer arg14, long arg15, long arg16) ;
 
-   void LAPACK_cgees_base(String arg0, String arg1, Pointer arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
-
    void LAPACK_cgees_base(String arg0, String arg1, Pointer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
@@ -2508,14 +2495,14 @@ public interface BLASLapackDelegator {
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
       IntPointer arg14, long arg15, long arg16) ;
 
+   void LAPACK_cgees_base(String arg0, String arg1, Pointer arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
+
    void LAPACK_dgees_base(String arg0, String arg1, Pointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, long arg15, long arg16) ;
-
-   void LAPACK_dgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
 
    void LAPACK_dgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -2526,15 +2513,19 @@ public interface BLASLapackDelegator {
       int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
 
+   void LAPACK_dgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      IntPointer arg14, long arg15, long arg16) ;
+
    void LAPACK_dgees_base(String arg0, String arg1, Pointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       IntBuffer arg14, long arg15, long arg16) ;
 
-   void LAPACK_dgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      IntPointer arg14, long arg15, long arg16) ;
+   void LAPACK_dgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
 
    void LAPACK_sgees_base(String arg0, String arg1, Pointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -2544,15 +2535,6 @@ public interface BLASLapackDelegator {
    void LAPACK_sgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, int[] arg3,
       float[] arg4, int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
-
-   void LAPACK_sgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, long arg15, long arg16) ;
-
-   void LAPACK_sgees_base(String arg0, String arg1, Pointer arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
 
    void LAPACK_sgees_base(String arg0, String arg1, Pointer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -2564,15 +2546,19 @@ public interface BLASLapackDelegator {
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, long arg15, long arg16) ;
 
+   void LAPACK_sgees_base(String arg0, String arg1, Pointer arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
+
+   void LAPACK_sgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, long arg15, long arg16) ;
+
    void LAPACK_zgees_base(String arg0, String arg1, Pointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
       IntPointer arg14, long arg15, long arg16) ;
-
-   void LAPACK_zgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, int[] arg13, int[] arg14, long arg15,
-      long arg16) ;
 
    void LAPACK_zgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -2583,15 +2569,42 @@ public interface BLASLapackDelegator {
       int[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, int[] arg13, int[] arg14, long arg15, long arg16) ;
 
+   void LAPACK_zgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
+      IntPointer arg14, long arg15, long arg16) ;
+
    void LAPACK_zgees_base(String arg0, String arg1, Pointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       IntBuffer arg14, long arg15, long arg16) ;
 
-   void LAPACK_zgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
-      IntPointer arg14, long arg15, long arg16) ;
+   void LAPACK_zgees_base(BytePointer arg0, BytePointer arg1, Pointer arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, int[] arg13, int[] arg14, long arg15,
+      long arg16) ;
+
+   void LAPACK_cgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
+      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8,
+      float[] arg9, int[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14,
+      float[] arg15, int[] arg16, int[] arg17, long arg18, long arg19, long arg20) ;
+
+   void LAPACK_cgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, long arg18, long arg19,
+      long arg20) ;
+
+   void LAPACK_cgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
+      BytePointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11,
+      FloatPointer arg12, FloatPointer arg13, IntPointer arg14, FloatPointer arg15,
+      IntPointer arg16, IntPointer arg17, long arg18, long arg19, long arg20) ;
+
+   void LAPACK_cgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17,
+      long arg18, long arg19, long arg20) ;
 
    void LAPACK_cgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -2604,28 +2617,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
       long arg18, long arg19, long arg20) ;
-
-   void LAPACK_cgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17,
-      long arg18, long arg19, long arg20) ;
-
-   void LAPACK_cgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
-      BytePointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11,
-      FloatPointer arg12, FloatPointer arg13, IntPointer arg14, FloatPointer arg15,
-      IntPointer arg16, IntPointer arg17, long arg18, long arg19, long arg20) ;
-
-   void LAPACK_cgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, long arg18, long arg19,
-      long arg20) ;
-
-   void LAPACK_cgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
-      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8,
-      float[] arg9, int[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14,
-      float[] arg15, int[] arg16, int[] arg17, long arg18, long arg19, long arg20) ;
 
    void LAPACK_dgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
@@ -2664,10 +2655,15 @@ public interface BLASLapackDelegator {
       long arg21, long arg22) ;
 
    void LAPACK_sgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
-      BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17,
-      IntBuffer arg18, IntBuffer arg19, long arg20, long arg21, long arg22) ;
+      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8,
+      float[] arg9, float[] arg10, int[] arg11, float[] arg12, float[] arg13, float[] arg14,
+      int[] arg15, int[] arg16, int[] arg17, int[] arg18, int[] arg19, long arg20, long arg21,
+      long arg22) ;
+
+   void LAPACK_sgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17,
+      int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_sgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
@@ -2675,10 +2671,11 @@ public interface BLASLapackDelegator {
       FloatPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16, IntPointer arg17,
       IntPointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
 
-   void LAPACK_sgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17,
-      int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
+   void LAPACK_sgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
+      BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17,
+      IntBuffer arg18, IntBuffer arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_sgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
       BytePointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
@@ -2692,12 +2689,6 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
       FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
       IntBuffer arg19, long arg20, long arg21, long arg22) ;
-
-   void LAPACK_sgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
-      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8,
-      float[] arg9, float[] arg10, int[] arg11, float[] arg12, float[] arg13, float[] arg14,
-      int[] arg15, int[] arg16, int[] arg17, int[] arg18, int[] arg19, long arg20, long arg21,
-      long arg22) ;
 
    void LAPACK_zgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
       BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8,
@@ -2716,11 +2707,10 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       long arg18, long arg19, long arg20) ;
 
-   void LAPACK_zgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
-      long arg18, long arg19, long arg20) ;
+   void LAPACK_zgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      int[] arg17, long arg18, long arg19, long arg20) ;
 
    void LAPACK_zgeesx_base(BytePointer arg0, BytePointer arg1, Pointer arg2,
       BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
@@ -2728,56 +2718,57 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
       IntPointer arg16, IntPointer arg17, long arg18, long arg19, long arg20) ;
 
-   void LAPACK_zgeesx_base(String arg0, String arg1, Pointer arg2, String arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      int[] arg17, long arg18, long arg19, long arg20) ;
-
-   void LAPACK_cgeev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
+   void LAPACK_zgeesx_base(String arg0, String arg1, Pointer arg2, String arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
+      long arg18, long arg19, long arg20) ;
 
    void LAPACK_cgeev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
       int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
       int[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_cgeev_base(String arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_cgeev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_cgeev_base(String arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_cgeev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_cgeev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
 
    void LAPACK_cgeev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_dgeev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_dgeev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
+   void LAPACK_cgeev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_dgeev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
+   void LAPACK_dgeev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
    void LAPACK_dgeev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_dgeev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dgeev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -2789,6 +2780,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg7, IntPointer arg8, DoublePointer arg9, IntPointer arg10,
       DoublePointer arg11, IntPointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_sgeev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
    void LAPACK_sgeev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
@@ -2798,33 +2794,24 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_sgeev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
    void LAPACK_sgeev_base(String arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_sgeev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15) ;
 
    void LAPACK_sgeev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_sgeev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15) ;
+
    void LAPACK_zgeev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_zgeev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zgeev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -2835,15 +2822,25 @@ public interface BLASLapackDelegator {
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       int[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
 
+   void LAPACK_zgeev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
+      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
+
    void LAPACK_zgeev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_zgeev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
-      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_zgeev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_cgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8,
+      int[] arg9, float[] arg10, int[] arg11, int[] arg12, int[] arg13, float[] arg14,
+      float[] arg15, float[] arg16, float[] arg17, float[] arg18, int[] arg19, float[] arg20,
+      int[] arg21, long arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_cgeevx_base(String arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -2851,12 +2848,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg14, FloatPointer arg15, FloatPointer arg16, FloatPointer arg17,
       FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, long arg22,
       long arg23, long arg24, long arg25) ;
-
-   void LAPACK_cgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8,
-      int[] arg9, float[] arg10, int[] arg11, int[] arg12, int[] arg13, float[] arg14,
-      float[] arg15, float[] arg16, float[] arg17, float[] arg18, int[] arg19, float[] arg20,
-      int[] arg21, long arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_cgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -2871,13 +2862,6 @@ public interface BLASLapackDelegator {
       float[] arg18, int[] arg19, float[] arg20, int[] arg21, long arg22, long arg23, long arg24,
       long arg25) ;
 
-   void LAPACK_cgeevx_base(String arg0, String arg1, String arg2, String arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
-      IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23, long arg24,
-      long arg25) ;
-
    void LAPACK_cgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
@@ -2885,24 +2869,12 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, FloatPointer arg18, IntPointer arg19, FloatPointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_dgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_dgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8,
-      double[] arg9, int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14,
-      double[] arg15, double[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20,
-      int[] arg21, int[] arg22, long arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_dgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, int[] arg14, double[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, int[] arg22,
-      long arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_cgeevx_base(String arg0, String arg1, String arg2, String arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
+      IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23, long arg24,
+      long arg25) ;
 
    void LAPACK_dgeevx_base(String arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
@@ -2912,12 +2884,23 @@ public interface BLASLapackDelegator {
       IntPointer arg22, long arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_dgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
-      IntPointer arg12, IntPointer arg13, IntPointer arg14, DoublePointer arg15,
-      DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
-      IntPointer arg20, IntPointer arg21, IntPointer arg22, long arg23, long arg24, long arg25,
-      long arg26) ;
+      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      long arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_dgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, int[] arg14, double[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, int[] arg22,
+      long arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_dgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8,
+      double[] arg9, int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14,
+      double[] arg15, double[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20,
+      int[] arg21, int[] arg22, long arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_dgeevx_base(String arg0, String arg1, String arg2, String arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -2926,11 +2909,25 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
       long arg23, long arg24, long arg25, long arg26) ;
 
+   void LAPACK_dgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
+      IntPointer arg12, IntPointer arg13, IntPointer arg14, DoublePointer arg15,
+      DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
+      IntPointer arg20, IntPointer arg21, IntPointer arg22, long arg23, long arg24, long arg25,
+      long arg26) ;
+
    void LAPACK_sgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8,
       float[] arg9, int[] arg10, float[] arg11, int[] arg12, int[] arg13, int[] arg14,
       float[] arg15, float[] arg16, float[] arg17, float[] arg18, float[] arg19, int[] arg20,
       int[] arg21, int[] arg22, long arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_sgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, int[] arg14, float[] arg15, float[] arg16,
+      float[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21, int[] arg22,
+      long arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_sgeevx_base(String arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -2944,12 +2941,6 @@ public interface BLASLapackDelegator {
       FloatBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
       FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_sgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, int[] arg14, float[] arg15, float[] arg16,
-      float[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21, int[] arg22,
       long arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_sgeevx_base(String arg0, String arg1, String arg2, String arg3,
@@ -2966,13 +2957,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20,
       IntPointer arg21, IntPointer arg22, long arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zgeevx_base(String arg0, String arg1, String arg2, String arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
-      DoublePointer arg14, DoublePointer arg15, DoublePointer arg16, DoublePointer arg17,
-      DoublePointer arg18, IntPointer arg19, DoublePointer arg20, IntPointer arg21, long arg22,
-      long arg23, long arg24, long arg25) ;
-
    void LAPACK_zgeevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8,
       int[] arg9, double[] arg10, int[] arg11, int[] arg12, int[] arg13, double[] arg14,
@@ -2985,12 +2969,6 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16,
       DoubleBuffer arg17, DoubleBuffer arg18, IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21,
       long arg22, long arg23, long arg24, long arg25) ;
-
-   void LAPACK_zgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, long arg22,
-      long arg23, long arg24, long arg25) ;
 
    void LAPACK_zgeevx_base(String arg0, String arg1, String arg2, String arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -3006,11 +2984,24 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_cgehrd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+   void LAPACK_zgeevx_base(String arg0, String arg1, String arg2, String arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
+      DoublePointer arg14, DoublePointer arg15, DoublePointer arg16, DoublePointer arg17,
+      DoublePointer arg18, IntPointer arg19, DoublePointer arg20, IntPointer arg21, long arg22,
+      long arg23, long arg24, long arg25) ;
+
+   void LAPACK_zgeevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, long arg22,
+      long arg23, long arg24, long arg25) ;
 
    void LAPACK_cgehrd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
+
+   void LAPACK_cgehrd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
    void LAPACK_cgehrd(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
@@ -3024,29 +3015,23 @@ public interface BLASLapackDelegator {
    void LAPACK_dgehrd(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
-   void LAPACK_sgehrd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
-
    void LAPACK_sgehrd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+
+   void LAPACK_sgehrd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
 
    void LAPACK_sgehrd(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
 
-   void LAPACK_zgehrd(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
+   void LAPACK_zgehrd(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_zgehrd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
-   void LAPACK_zgehrd(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
-
-   void LAPACK_cgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, float[] arg8,
-      int[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
-      float[] arg15, int[] arg16, float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21,
-      long arg22, long arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_zgehrd(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
 
    void LAPACK_cgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8, IntPointer arg9,
@@ -3068,6 +3053,13 @@ public interface BLASLapackDelegator {
       int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23, long arg24,
       long arg25, long arg26) ;
 
+   void LAPACK_cgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, BytePointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16,
+      FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23, long arg24, long arg25, long arg26) ;
+
    void LAPACK_cgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, IntBuffer arg9,
       FloatBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13, IntBuffer arg14,
@@ -3075,11 +3067,16 @@ public interface BLASLapackDelegator {
       IntBuffer arg20, long arg21, long arg22, long arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_cgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, BytePointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16,
-      FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, float[] arg8,
+      int[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
+      float[] arg15, int[] arg16, float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21,
       long arg22, long arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_dgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, double[] arg8,
+      int[] arg9, double[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14,
+      double[] arg15, int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21,
+      long arg22, long arg23, long arg24) ;
 
    void LAPACK_dgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8, IntPointer arg9,
@@ -3088,22 +3085,10 @@ public interface BLASLapackDelegator {
       long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
 
    void LAPACK_dgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, double[] arg8,
-      int[] arg9, double[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14,
-      double[] arg15, int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21,
-      long arg22, long arg23, long arg24) ;
-
-   void LAPACK_dgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, BytePointer arg5, IntBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       IntBuffer arg18, long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
-
-   void LAPACK_dgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      String arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      int[] arg17, int[] arg18, long arg19, long arg20, long arg21, long arg22, long arg23,
-      long arg24) ;
 
    void LAPACK_dgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
@@ -3118,17 +3103,17 @@ public interface BLASLapackDelegator {
       IntPointer arg16, IntPointer arg17, IntPointer arg18, long arg19, long arg20, long arg21,
       long arg22, long arg23, long arg24) ;
 
+   void LAPACK_dgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
+      String arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      int[] arg17, int[] arg18, long arg19, long arg20, long arg21, long arg22, long arg23,
+      long arg24) ;
+
    void LAPACK_sgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8, IntPointer arg9,
       FloatPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
       long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
-
-   void LAPACK_sgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, float[] arg8,
-      int[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
-      float[] arg15, int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21,
-      long arg22, long arg23, long arg24) ;
 
    void LAPACK_sgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, BytePointer arg4, BytePointer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -3141,6 +3126,12 @@ public interface BLASLapackDelegator {
       int[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17, int[] arg18,
       long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
 
+   void LAPACK_sgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, BytePointer arg4, BytePointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
+      IntPointer arg18, long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
+
    void LAPACK_sgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8, IntBuffer arg9,
       FloatBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13, IntBuffer arg14,
@@ -3148,10 +3139,10 @@ public interface BLASLapackDelegator {
       long arg21, long arg22, long arg23, long arg24) ;
 
    void LAPACK_sgejsv_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, BytePointer arg4, BytePointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
-      IntPointer arg18, long arg19, long arg20, long arg21, long arg22, long arg23, long arg24) ;
+      BytePointer arg3, BytePointer arg4, BytePointer arg5, int[] arg6, int[] arg7, float[] arg8,
+      int[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
+      float[] arg15, int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21,
+      long arg22, long arg23, long arg24) ;
 
    void LAPACK_zgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8, IntPointer arg9,
@@ -3174,12 +3165,6 @@ public interface BLASLapackDelegator {
       long arg24, long arg25, long arg26) ;
 
    void LAPACK_zgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
-      String arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23,
-      long arg24, long arg25, long arg26) ;
-
-   void LAPACK_zgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
       String arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
       DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13, IntBuffer arg14,
       DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18, IntBuffer arg19,
@@ -3192,41 +3177,47 @@ public interface BLASLapackDelegator {
       IntPointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20,
       long arg21, long arg22, long arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_cgelq(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
-
-   void LAPACK_cgelq(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+   void LAPACK_zgejsv_base(String arg0, String arg1, String arg2, String arg3, String arg4,
+      String arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23,
+      long arg24, long arg25, long arg26) ;
 
    void LAPACK_cgelq(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
 
+   void LAPACK_cgelq(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+
+   void LAPACK_cgelq(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
+
    void LAPACK_dgelq(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
-
-   void LAPACK_dgelq(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_dgelq(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
+   void LAPACK_dgelq(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
+
    void LAPACK_sgelq(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
-
-   void LAPACK_sgelq(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_sgelq(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
+   void LAPACK_sgelq(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
+
    void LAPACK_zgelq(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
-   void LAPACK_zgelq(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
-
    void LAPACK_zgelq(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+
+   void LAPACK_zgelq(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
 
    void LAPACK_cgelq2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
@@ -3237,14 +3228,14 @@ public interface BLASLapackDelegator {
    void LAPACK_cgelq2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_dgelq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
+   void LAPACK_dgelq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6) ;
 
    void LAPACK_dgelq2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_dgelq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6) ;
+   void LAPACK_dgelq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
 
    void LAPACK_sgelq2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6) ;
@@ -3255,14 +3246,14 @@ public interface BLASLapackDelegator {
    void LAPACK_sgelq2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_zgelq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6) ;
-
    void LAPACK_zgelq2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_zgelq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
+
+   void LAPACK_zgelq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6) ;
 
    void LAPACK_cgelqf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
@@ -3273,14 +3264,14 @@ public interface BLASLapackDelegator {
    void LAPACK_cgelqf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_dgelqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_dgelqf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_dgelqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_dgelqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_sgelqf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
@@ -3291,36 +3282,40 @@ public interface BLASLapackDelegator {
    void LAPACK_sgelqf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_zgelqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
-
    void LAPACK_zgelqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_zgelqf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_cgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_zgelqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_cgels_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_cgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_cgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_cgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
+   void LAPACK_cgels_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_cgels_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_cgels_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_cgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_dgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_dgels_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
@@ -3329,10 +3324,6 @@ public interface BLASLapackDelegator {
    void LAPACK_dgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
-
-   void LAPACK_dgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_dgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
@@ -3345,6 +3336,10 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_sgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_sgels_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
@@ -3352,61 +3347,53 @@ public interface BLASLapackDelegator {
    void LAPACK_sgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_sgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_sgels_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_sgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_sgels_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_sgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_zgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+   void LAPACK_sgels_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_zgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
-
-   void LAPACK_zgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zgels_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_zgels_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_zgels_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_zgels_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_zgels_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
 
    void LAPACK_zgels_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_cgelsd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, int[] arg14) ;
+   void LAPACK_zgels_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_cgelsd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       IntBuffer arg14) ;
 
+   void LAPACK_cgelsd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, int[] arg14) ;
+
    void LAPACK_cgelsd(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
       IntPointer arg14) ;
-
-   void LAPACK_dgelsd(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, int[] arg13) ;
 
    void LAPACK_dgelsd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -3416,13 +3403,17 @@ public interface BLASLapackDelegator {
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13) ;
 
-   void LAPACK_sgelsd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      int[] arg12, int[] arg13) ;
+   void LAPACK_dgelsd(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, int[] arg13) ;
 
    void LAPACK_sgelsd(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13) ;
+
+   void LAPACK_sgelsd(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      int[] arg12, int[] arg13) ;
 
    void LAPACK_sgelsd(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -3446,25 +3437,29 @@ public interface BLASLapackDelegator {
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
       float[] arg12, int[] arg13) ;
 
-   void LAPACK_cgelss(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13) ;
-
    void LAPACK_cgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13) ;
 
-   void LAPACK_dgelss(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, int[] arg12) ;
+   void LAPACK_cgelss(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13) ;
+
+   void LAPACK_dgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12) ;
 
    void LAPACK_dgelss(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
-   void LAPACK_dgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12) ;
+   void LAPACK_dgelss(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, int[] arg12) ;
+
+   void LAPACK_sgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
    void LAPACK_sgelss(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
@@ -3474,22 +3469,18 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
-   void LAPACK_sgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
-
-   void LAPACK_zgelss(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13) ;
+   void LAPACK_zgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      IntPointer arg13) ;
 
    void LAPACK_zgelss(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13) ;
 
-   void LAPACK_zgelss(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      IntPointer arg13) ;
+   void LAPACK_zgelss(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13) ;
 
    void LAPACK_cgelsy(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
@@ -3527,6 +3518,11 @@ public interface BLASLapackDelegator {
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
+   void LAPACK_zgelsy(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      IntPointer arg13) ;
+
    void LAPACK_zgelsy(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, int[] arg13) ;
@@ -3534,15 +3530,6 @@ public interface BLASLapackDelegator {
    void LAPACK_zgelsy(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13) ;
-
-   void LAPACK_zgelsy(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      IntPointer arg13) ;
-
-   void LAPACK_cgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_cgemlq_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -3558,6 +3545,10 @@ public interface BLASLapackDelegator {
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
       int[] arg12, int[] arg13, long arg14, long arg15) ;
 
+   void LAPACK_cgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_cgemlq_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
@@ -3568,13 +3559,8 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgemlq_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_dgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+   void LAPACK_dgemlq_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dgemlq_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
@@ -3582,8 +3568,13 @@ public interface BLASLapackDelegator {
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgemlq_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+   void LAPACK_dgemlq_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
+   void LAPACK_dgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dgemlq_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
@@ -3596,6 +3587,11 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_sgemlq_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
    void LAPACK_sgemlq_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
@@ -3604,11 +3600,6 @@ public interface BLASLapackDelegator {
    void LAPACK_sgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_sgemlq_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
 
    void LAPACK_sgemlq_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
@@ -3624,14 +3615,14 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
+   void LAPACK_zgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_zgemlq_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_zgemlq_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zgemlq_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -3652,43 +3643,43 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_cgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
+   void LAPACK_cgemqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_cgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_cgemqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_cgemqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
-
-   void LAPACK_cgemqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+   void LAPACK_cgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
 
    void LAPACK_cgemqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+   void LAPACK_cgemqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
+
+   void LAPACK_cgemqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_dgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_dgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
 
    void LAPACK_dgemqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
@@ -3708,50 +3699,45 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_sgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
-
    void LAPACK_sgemqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_sgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
    void LAPACK_sgemqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
       int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_sgemqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_sgemqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_zgemqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_sgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
+   void LAPACK_sgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_sgemqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_zgemqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_zgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
    void LAPACK_zgemqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_zgemqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zgemqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
@@ -3764,23 +3750,19 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_cgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_cgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_cgemqrt_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_zgemqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
 
    void LAPACK_cgemqrt_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_cgemqrt_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_cgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
@@ -3792,13 +3774,13 @@ public interface BLASLapackDelegator {
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_dgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_cgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
+   void LAPACK_cgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
 
    void LAPACK_dgemqrt_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
@@ -3806,23 +3788,28 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgemqrt_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_dgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
-      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_dgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dgemqrt_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_sgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_dgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
+      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
+
+   void LAPACK_dgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
+   void LAPACK_dgemqrt_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_sgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
@@ -3843,15 +3830,29 @@ public interface BLASLapackDelegator {
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
+   void LAPACK_sgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_sgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_zgemqrt_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15) ;
+
    void LAPACK_zgemqrt_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
+
+   void LAPACK_zgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
+      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_zgemqrt_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
@@ -3865,16 +3866,6 @@ public interface BLASLapackDelegator {
    void LAPACK_zgemqrt_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_zgemqrt_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_zgemqrt_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
-      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_cgeql2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
@@ -3903,26 +3894,23 @@ public interface BLASLapackDelegator {
    void LAPACK_sgeql2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6) ;
 
-   void LAPACK_zgeql2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6) ;
+   void LAPACK_zgeql2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
 
    void LAPACK_zgeql2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_zgeql2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
-
-   void LAPACK_cgeqlf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, int[] arg7) ;
-
-   void LAPACK_cgeqlf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
+   void LAPACK_zgeql2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6) ;
 
    void LAPACK_cgeqlf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_dgeqlf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
+   void LAPACK_cgeqlf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
+
+   void LAPACK_cgeqlf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_dgeqlf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6, int[] arg7) ;
@@ -3930,23 +3918,26 @@ public interface BLASLapackDelegator {
    void LAPACK_dgeqlf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_sgeqlf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+   void LAPACK_dgeqlf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_sgeqlf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
 
+   void LAPACK_sgeqlf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+
    void LAPACK_sgeqlf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
+
+   void LAPACK_zgeqlf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_zgeqlf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_zgeqlf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
-
-   void LAPACK_zgeqlf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_cgeqp3(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9) ;
@@ -3962,17 +3953,17 @@ public interface BLASLapackDelegator {
    void LAPACK_dgeqp3(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
 
-   void LAPACK_dgeqp3(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
-
    void LAPACK_dgeqp3(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
-   void LAPACK_sgeqp3(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
+   void LAPACK_dgeqp3(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
    void LAPACK_sgeqp3(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+
+   void LAPACK_sgeqp3(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
 
    void LAPACK_sgeqp3(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
@@ -3988,26 +3979,23 @@ public interface BLASLapackDelegator {
    void LAPACK_zgeqp3(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9) ;
 
-   void LAPACK_cgeqr(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
-
    void LAPACK_cgeqr(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
    void LAPACK_cgeqr(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
 
+   void LAPACK_cgeqr(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
+
    void LAPACK_dgeqr(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
-
-   void LAPACK_dgeqr(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_dgeqr(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
-   void LAPACK_sgeqr(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
+   void LAPACK_dgeqr(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_sgeqr(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, int[] arg8) ;
@@ -4015,8 +4003,8 @@ public interface BLASLapackDelegator {
    void LAPACK_sgeqr(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
-   void LAPACK_zgeqr(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
+   void LAPACK_sgeqr(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8) ;
 
    void LAPACK_zgeqr(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8) ;
@@ -4024,8 +4012,8 @@ public interface BLASLapackDelegator {
    void LAPACK_zgeqr(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8) ;
 
-   void LAPACK_cgeqr2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
+   void LAPACK_zgeqr(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8) ;
 
    void LAPACK_cgeqr2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6) ;
@@ -4033,23 +4021,26 @@ public interface BLASLapackDelegator {
    void LAPACK_cgeqr2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_dgeqr2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
-
-   void LAPACK_dgeqr2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
+   void LAPACK_cgeqr2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
 
    void LAPACK_dgeqr2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6) ;
 
-   void LAPACK_sgeqr2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6) ;
+   void LAPACK_dgeqr2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
+
+   void LAPACK_dgeqr2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_sgeqr2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_sgeqr2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
+
+   void LAPACK_sgeqr2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6) ;
 
    void LAPACK_zgeqr2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
@@ -4060,14 +4051,17 @@ public interface BLASLapackDelegator {
    void LAPACK_zgeqr2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6) ;
 
+   void LAPACK_cgeqrf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_cgeqrf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_cgeqrf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_cgeqrf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_dgeqrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_dgeqrf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
@@ -4075,8 +4069,8 @@ public interface BLASLapackDelegator {
    void LAPACK_dgeqrf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_dgeqrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_sgeqrf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_sgeqrf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
@@ -4084,26 +4078,23 @@ public interface BLASLapackDelegator {
    void LAPACK_sgeqrf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_sgeqrf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_zgeqrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
-
    void LAPACK_zgeqrf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_zgeqrf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_zgeqrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_cgeqrfp(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
 
-   void LAPACK_cgeqrfp(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
-
    void LAPACK_cgeqrfp(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
+
+   void LAPACK_cgeqrfp(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_dgeqrfp(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6, int[] arg7) ;
@@ -4117,38 +4108,38 @@ public interface BLASLapackDelegator {
    void LAPACK_sgeqrfp(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
 
-   void LAPACK_sgeqrfp(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
-
    void LAPACK_sgeqrfp(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
+
+   void LAPACK_sgeqrfp(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_zgeqrfp(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6, int[] arg7) ;
 
-   void LAPACK_zgeqrfp(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
-
    void LAPACK_zgeqrfp(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_cgeqrt(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8) ;
-
-   void LAPACK_cgeqrt(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8) ;
+   void LAPACK_zgeqrfp(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_cgeqrt(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8) ;
 
+   void LAPACK_cgeqrt(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8) ;
+
+   void LAPACK_cgeqrt(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8) ;
+
    void LAPACK_dgeqrt(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8) ;
 
-   void LAPACK_dgeqrt(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8) ;
-
    void LAPACK_dgeqrt(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8) ;
+
+   void LAPACK_dgeqrt(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8) ;
 
    void LAPACK_sgeqrt(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8) ;
@@ -4180,20 +4171,20 @@ public interface BLASLapackDelegator {
    void LAPACK_dgeqrt2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
 
-   void LAPACK_dgeqrt2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
-
    void LAPACK_dgeqrt2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_sgeqrt2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6) ;
+   void LAPACK_dgeqrt2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_sgeqrt2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_sgeqrt2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+
+   void LAPACK_sgeqrt2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6) ;
 
    void LAPACK_zgeqrt2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
@@ -4213,23 +4204,26 @@ public interface BLASLapackDelegator {
    void LAPACK_cgeqrt3(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
 
+   void LAPACK_dgeqrt3(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
+
    void LAPACK_dgeqrt3(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
 
    void LAPACK_dgeqrt3(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_dgeqrt3(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
-
-   void LAPACK_sgeqrt3(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6) ;
+   void LAPACK_sgeqrt3(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
 
    void LAPACK_sgeqrt3(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_sgeqrt3(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+   void LAPACK_sgeqrt3(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6) ;
+
+   void LAPACK_zgeqrt3(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
    void LAPACK_zgeqrt3(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
@@ -4237,47 +4231,39 @@ public interface BLASLapackDelegator {
    void LAPACK_zgeqrt3(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_zgeqrt3(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
-
-   void LAPACK_cgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16,
-      long arg17) ;
+   void LAPACK_cgerfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16, long arg17) ;
 
    void LAPACK_cgerfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
       FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17) ;
 
+   void LAPACK_cgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16,
+      long arg17) ;
+
    void LAPACK_cgerfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       FloatBuffer arg13, FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
-
-   void LAPACK_cgerfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16, long arg17) ;
-
-   void LAPACK_cgerfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
 
    void LAPACK_cgerfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
       FloatPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17) ;
 
+   void LAPACK_cgerfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
+
    void LAPACK_dgerfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       DoublePointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17) ;
-
-   void LAPACK_dgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, int[] arg16,
-      long arg17) ;
 
    void LAPACK_dgerfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -4292,6 +4278,11 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
       DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17) ;
+
+   void LAPACK_dgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, int[] arg16,
+      long arg17) ;
 
    void LAPACK_dgerfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
@@ -4309,34 +4300,29 @@ public interface BLASLapackDelegator {
       int[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, int[] arg16,
       long arg17) ;
 
-   void LAPACK_sgerfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17) ;
-
    void LAPACK_sgerfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
       float[] arg12, float[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17) ;
 
-   void LAPACK_sgerfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17) ;
+   void LAPACK_sgerfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17) ;
 
    void LAPACK_sgerfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
       FloatPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17) ;
 
+   void LAPACK_sgerfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17) ;
+
    void LAPACK_zgerfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16, long arg17) ;
-
-   void LAPACK_zgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16,
-      long arg17) ;
 
    void LAPACK_zgerfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -4346,6 +4332,11 @@ public interface BLASLapackDelegator {
    void LAPACK_zgerfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16, long arg17) ;
+
+   void LAPACK_zgerfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16,
+      long arg17) ;
 
    void LAPACK_zgerfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -4358,14 +4349,17 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, DoublePointer arg13, DoublePointer arg14, DoublePointer arg15,
       IntPointer arg16, long arg17) ;
 
+   void LAPACK_cgerq2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
+
    void LAPACK_cgerq2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_cgerq2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6) ;
 
-   void LAPACK_cgerq2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
+   void LAPACK_dgerq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
 
    void LAPACK_dgerq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, int[] arg6) ;
@@ -4373,20 +4367,14 @@ public interface BLASLapackDelegator {
    void LAPACK_dgerq2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_dgerq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
-
-   void LAPACK_sgerq2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6) ;
-
    void LAPACK_sgerq2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_sgerq2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_zgerq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6) ;
+   void LAPACK_sgerq2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6) ;
 
    void LAPACK_zgerq2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6) ;
@@ -4394,23 +4382,29 @@ public interface BLASLapackDelegator {
    void LAPACK_zgerq2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6) ;
 
+   void LAPACK_zgerq2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6) ;
+
    void LAPACK_cgerqf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
-
-   void LAPACK_cgerqf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_cgerqf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_dgerqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_cgerqf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+
+   void LAPACK_dgerqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_dgerqf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_dgerqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
+   void LAPACK_dgerqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
+   void LAPACK_sgerqf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_sgerqf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
@@ -4418,26 +4412,14 @@ public interface BLASLapackDelegator {
    void LAPACK_sgerqf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_sgerqf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_zgerqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_zgerqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_zgerqf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_zgerqf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_cgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, int[] arg14, long arg15) ;
-
-   void LAPACK_cgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      IntPointer arg14, long arg15) ;
+   void LAPACK_zgerqf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_cgesdd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -4448,20 +4430,38 @@ public interface BLASLapackDelegator {
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
       float[] arg12, int[] arg13, int[] arg14, long arg15) ;
 
-   void LAPACK_cgesdd_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, long arg15) ;
-
    void LAPACK_cgesdd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
       IntPointer arg13, IntPointer arg14, long arg15) ;
 
-   void LAPACK_dgesdd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14) ;
+   void LAPACK_cgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      IntPointer arg14, long arg15) ;
+
+   void LAPACK_cgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, int[] arg14, long arg15) ;
+
+   void LAPACK_cgesdd_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, long arg15) ;
+
+   void LAPACK_dgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, int[] arg13, long arg14) ;
+
+   void LAPACK_dgesdd_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14) ;
+
+   void LAPACK_dgesdd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14) ;
 
    void LAPACK_dgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
@@ -4472,42 +4472,33 @@ public interface BLASLapackDelegator {
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       int[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
-   void LAPACK_dgesdd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14) ;
-
-   void LAPACK_dgesdd_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14) ;
-
-   void LAPACK_dgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, int[] arg13, long arg14) ;
-
-   void LAPACK_sgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14) ;
-
-   void LAPACK_sgesdd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+   void LAPACK_dgesdd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14) ;
 
    void LAPACK_sgesdd_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
       int[] arg12, int[] arg13, long arg14) ;
 
-   void LAPACK_sgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, int[] arg12, int[] arg13, long arg14) ;
+   void LAPACK_sgesdd_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14) ;
 
    void LAPACK_sgesdd_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14) ;
+
+   void LAPACK_sgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14) ;
+
+   void LAPACK_sgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
    void LAPACK_sgesdd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
@@ -4519,6 +4510,11 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
       IntBuffer arg13, IntBuffer arg14, long arg15) ;
 
+   void LAPACK_zgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
+      IntPointer arg14, long arg15) ;
+
    void LAPACK_zgesdd_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
       double[] arg10, int[] arg11, double[] arg12, int[] arg13, int[] arg14, long arg15) ;
@@ -4526,11 +4522,6 @@ public interface BLASLapackDelegator {
    void LAPACK_zgesdd_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       int[] arg11, double[] arg12, int[] arg13, int[] arg14, long arg15) ;
-
-   void LAPACK_zgesdd_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12, IntPointer arg13,
-      IntPointer arg14, long arg15) ;
 
    void LAPACK_zgesdd_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
@@ -4542,26 +4533,23 @@ public interface BLASLapackDelegator {
       IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       IntBuffer arg14, long arg15) ;
 
-   void LAPACK_cgesv(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7) ;
-
    void LAPACK_cgesv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_cgesv(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_dgesv(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_cgesv(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_dgesv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
+   void LAPACK_dgesv(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_dgesv(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_sgesv(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7) ;
 
    void LAPACK_sgesv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
@@ -4569,22 +4557,25 @@ public interface BLASLapackDelegator {
    void LAPACK_sgesv(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_sgesv(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7) ;
+
+   void LAPACK_zgesv(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_zgesv(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_zgesv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
-   void LAPACK_zgesv(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_dsgesv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
    void LAPACK_dsgesv(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, float[] arg10,
       int[] arg11, int[] arg12) ;
-
-   void LAPACK_dsgesv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
    void LAPACK_dsgesv(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
@@ -4603,6 +4594,20 @@ public interface BLASLapackDelegator {
       DoublePointer arg9, FloatPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13) ;
 
+   void LAPACK_cgesvd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, long arg15, long arg16) ;
+
+   void LAPACK_cgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, long arg15, long arg16) ;
+
+   void LAPACK_cgesvd_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, float[] arg13, int[] arg14, long arg15, long arg16) ;
+
    void LAPACK_cgesvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, float[] arg13, int[] arg14, long arg15, long arg16) ;
@@ -4617,19 +4622,14 @@ public interface BLASLapackDelegator {
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       FloatBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
 
-   void LAPACK_cgesvd_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, float[] arg13, int[] arg14, long arg15, long arg16) ;
+   void LAPACK_dgesvd_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_cgesvd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, long arg15, long arg16) ;
-
-   void LAPACK_cgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, long arg15, long arg16) ;
+   void LAPACK_dgesvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
 
    void LAPACK_dgesvd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
@@ -4640,33 +4640,20 @@ public interface BLASLapackDelegator {
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
       int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgesvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
-   void LAPACK_dgesvd_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_dgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_dgesvd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_dgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
-
    void LAPACK_sgesvd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_sgesvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_sgesvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -4682,34 +4669,38 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
+   void LAPACK_sgesvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_sgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
-
-   void LAPACK_zgesvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
 
    void LAPACK_zgesvd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
 
+   void LAPACK_zgesvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
+
    void LAPACK_zgesvd_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, long arg15, long arg16) ;
-
-   void LAPACK_zgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
 
    void LAPACK_zgesvd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
       IntBuffer arg14, long arg15, long arg16) ;
+
+   void LAPACK_zgesvd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
 
    void LAPACK_zgesvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
@@ -4753,22 +4744,33 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, IntPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21,
       long arg22, long arg23, long arg24) ;
 
+   void LAPACK_dgesvdx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_dgesvdx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
+      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
+      int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
    void LAPACK_dgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
+   void LAPACK_dgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
    void LAPACK_dgesvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       IntPointer arg9, IntPointer arg10, IntPointer arg11, DoublePointer arg12, DoublePointer arg13,
       IntPointer arg14, DoublePointer arg15, IntPointer arg16, DoublePointer arg17,
       IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_dgesvdx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
-      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
-      int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_dgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
@@ -4777,27 +4779,10 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_dgesvdx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_dgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_sgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, int[] arg10,
       int[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
       float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_sgesvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      IntPointer arg9, IntPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
-      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_sgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -4823,23 +4808,11 @@ public interface BLASLapackDelegator {
       float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
       int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_zgesvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, IntPointer arg11, DoublePointer arg12, DoublePointer arg13,
-      IntPointer arg14, DoublePointer arg15, IntPointer arg16, DoublePointer arg17,
-      IntPointer arg18, DoublePointer arg19, IntPointer arg20, IntPointer arg21, long arg22,
-      long arg23, long arg24) ;
-
-   void LAPACK_zgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      double[] arg17, int[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22, long arg23,
-      long arg24) ;
-
-   void LAPACK_zgesvdx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
-      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
-      int[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22, long arg23, long arg24) ;
+   void LAPACK_sgesvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      IntPointer arg9, IntPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
+      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_zgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -4847,6 +4820,18 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
       IntBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22, long arg23,
       long arg24) ;
+
+   void LAPACK_zgesvdx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, IntPointer arg11, DoublePointer arg12, DoublePointer arg13,
+      IntPointer arg14, DoublePointer arg15, IntPointer arg16, DoublePointer arg17,
+      IntPointer arg18, DoublePointer arg19, IntPointer arg20, IntPointer arg21, long arg22,
+      long arg23, long arg24) ;
+
+   void LAPACK_zgesvdx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
+      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
+      int[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22, long arg23, long arg24) ;
 
    void LAPACK_zgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
@@ -4861,43 +4846,45 @@ public interface BLASLapackDelegator {
       IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
       DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22, long arg23, long arg24) ;
 
-   void LAPACK_cgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17,
-      long arg18) ;
-
-   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, IntPointer arg15, long arg16, long arg17, long arg18) ;
+   void LAPACK_zgesvdx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      double[] arg17, int[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22, long arg23,
+      long arg24) ;
 
    void LAPACK_cgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
 
-   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17, long arg18) ;
+   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, IntPointer arg15, long arg16, long arg17, long arg18) ;
 
-   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
+   void LAPACK_cgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17,
+      long arg18) ;
 
    void LAPACK_cgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17, long arg18) ;
 
+   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
+
+   void LAPACK_cgesvj_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17, long arg18) ;
+
    void LAPACK_dgesvj_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15, long arg16) ;
-
-   void LAPACK_dgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15, long arg16) ;
 
    void LAPACK_dgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -4908,20 +4895,34 @@ public interface BLASLapackDelegator {
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15, long arg16) ;
 
-   void LAPACK_dgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15, long arg16) ;
-
    void LAPACK_dgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15, long arg16) ;
 
+   void LAPACK_dgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15, long arg16) ;
+
+   void LAPACK_dgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15, long arg16) ;
+
+   void LAPACK_sgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15, long arg16) ;
+
    void LAPACK_sgesvj_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15, long arg16) ;
+
+   void LAPACK_sgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15, long arg16) ;
 
    void LAPACK_sgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
@@ -4936,30 +4937,15 @@ public interface BLASLapackDelegator {
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
       int[] arg12, int[] arg13, long arg14, long arg15, long arg16) ;
 
-   void LAPACK_sgesvj_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15, long arg16) ;
-
-   void LAPACK_sgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15, long arg16) ;
+   void LAPACK_zgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
 
    void LAPACK_zgesvj_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17, long arg18) ;
-
-   void LAPACK_zgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16, long arg17,
-      long arg18) ;
-
-   void LAPACK_zgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
 
    void LAPACK_zgesvj_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
@@ -4976,6 +4962,17 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
       IntBuffer arg14, IntBuffer arg15, long arg16, long arg17, long arg18) ;
 
+   void LAPACK_zgesvj_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16, long arg17,
+      long arg18) ;
+
+   void LAPACK_cgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      float[] arg17, float[] arg18, float[] arg19, float[] arg20, int[] arg21, long arg22,
+      long arg23, long arg24) ;
+
    void LAPACK_cgesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
       BytePointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
@@ -4983,11 +4980,18 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24) ;
 
-   void LAPACK_cgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      float[] arg17, float[] arg18, float[] arg19, float[] arg20, int[] arg21, long arg22,
-      long arg23, long arg24) ;
+   void LAPACK_cgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
+      ByteBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
+      FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23, long arg24) ;
+
+   void LAPACK_cgesvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      IntPointer arg8, BytePointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
+      IntPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
+      FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
+      IntPointer arg21, long arg22, long arg23, long arg24) ;
 
    void LAPACK_cgesvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10, float[] arg11,
@@ -5002,23 +5006,11 @@ public interface BLASLapackDelegator {
       FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22,
       long arg23, long arg24) ;
 
-   void LAPACK_cgesvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      IntPointer arg8, BytePointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
-      IntPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
-      FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
-      IntPointer arg21, long arg22, long arg23, long arg24) ;
-
-   void LAPACK_cgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      ByteBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
-      FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23, long arg24) ;
-
-   void LAPACK_dgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, byte[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22,
+   void LAPACK_dgesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23, long arg24) ;
 
    void LAPACK_dgesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
@@ -5028,24 +5020,10 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, DoublePointer arg18, DoublePointer arg19, IntPointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24) ;
 
-   void LAPACK_dgesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
-      long arg23, long arg24) ;
-
    void LAPACK_dgesvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8, byte[] arg9, double[] arg10,
       double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
       double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22,
-      long arg23, long arg24) ;
-
-   void LAPACK_dgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23, long arg24) ;
 
    void LAPACK_dgesvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
@@ -5055,12 +5033,18 @@ public interface BLASLapackDelegator {
       DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
       IntPointer arg20, IntPointer arg21, long arg22, long arg23, long arg24) ;
 
-   void LAPACK_sgesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
-      BytePointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
-      IntPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
-      FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20,
-      IntPointer arg21, long arg22, long arg23, long arg24) ;
+   void LAPACK_dgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
+      ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
+      long arg23, long arg24) ;
+
+   void LAPACK_dgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, byte[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22,
+      long arg23, long arg24) ;
 
    void LAPACK_sgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10,
@@ -5068,17 +5052,19 @@ public interface BLASLapackDelegator {
       float[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21, long arg22, long arg23,
       long arg24) ;
 
+   void LAPACK_sgesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
+      BytePointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
+      IntPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
+      FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20,
+      IntPointer arg21, long arg22, long arg23, long arg24) ;
+
    void LAPACK_sgesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, ByteBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
       IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
       FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23, long arg24) ;
-
-   void LAPACK_sgesvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10, float[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, float[] arg17,
-      float[] arg18, float[] arg19, int[] arg20, int[] arg21, long arg22, long arg23, long arg24) ;
 
    void LAPACK_sgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -5093,18 +5079,17 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24) ;
 
+   void LAPACK_sgesvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, int[] arg8, byte[] arg9, float[] arg10, float[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, float[] arg17,
+      float[] arg18, float[] arg19, int[] arg20, int[] arg21, long arg22, long arg23, long arg24) ;
+
    void LAPACK_zgesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
       BytePointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
       IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
       DoublePointer arg17, DoublePointer arg18, DoublePointer arg19, DoublePointer arg20,
       IntPointer arg21, long arg22, long arg23, long arg24) ;
-
-   void LAPACK_zgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, byte[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21, long arg22,
-      long arg23, long arg24) ;
 
    void LAPACK_zgesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -5119,13 +5104,6 @@ public interface BLASLapackDelegator {
       double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21, long arg22,
       long arg23, long arg24) ;
 
-   void LAPACK_zgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, long arg22,
-      long arg23, long arg24) ;
-
    void LAPACK_zgesvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, BytePointer arg9, DoublePointer arg10, DoublePointer arg11,
@@ -5133,23 +5111,36 @@ public interface BLASLapackDelegator {
       DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
       DoublePointer arg20, IntPointer arg21, long arg22, long arg23, long arg24) ;
 
-   void LAPACK_cgetf2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5) ;
+   void LAPACK_zgesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
+      ByteBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, long arg22,
+      long arg23, long arg24) ;
+
+   void LAPACK_zgesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, byte[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21, long arg22,
+      long arg23, long arg24) ;
 
    void LAPACK_cgetf2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       int[] arg5) ;
 
+   void LAPACK_cgetf2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5) ;
+
    void LAPACK_cgetf2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
-
-   void LAPACK_dgetf2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      int[] arg5) ;
 
    void LAPACK_dgetf2(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5) ;
 
    void LAPACK_dgetf2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
+
+   void LAPACK_dgetf2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      int[] arg5) ;
 
    void LAPACK_sgetf2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       int[] arg5) ;
@@ -5181,20 +5172,20 @@ public interface BLASLapackDelegator {
    void LAPACK_dgetrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       int[] arg5) ;
 
-   void LAPACK_dgetrf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5) ;
-
    void LAPACK_dgetrf(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
 
-   void LAPACK_sgetrf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      int[] arg5) ;
-
-   void LAPACK_sgetrf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+   void LAPACK_dgetrf(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5) ;
 
    void LAPACK_sgetrf(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
+
+   void LAPACK_sgetrf(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5) ;
+
+   void LAPACK_sgetrf(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      int[] arg5) ;
 
    void LAPACK_zgetrf(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       int[] arg5) ;
@@ -5223,14 +5214,14 @@ public interface BLASLapackDelegator {
    void LAPACK_dgetrf2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
 
-   void LAPACK_sgetrf2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      int[] arg5) ;
-
    void LAPACK_sgetrf2(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5) ;
 
    void LAPACK_sgetrf2(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
+
+   void LAPACK_sgetrf2(int[] arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      int[] arg5) ;
 
    void LAPACK_zgetrf2(int[] arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       int[] arg5) ;
@@ -5241,14 +5232,14 @@ public interface BLASLapackDelegator {
    void LAPACK_zgetrf2(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5) ;
 
-   void LAPACK_cgetri(int[] arg0, float[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, int[] arg6) ;
-
    void LAPACK_cgetri(IntBuffer arg0, FloatBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_cgetri(IntPointer arg0, FloatPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+
+   void LAPACK_cgetri(int[] arg0, float[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      int[] arg5, int[] arg6) ;
 
    void LAPACK_dgetri(int[] arg0, double[] arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
@@ -5277,8 +5268,8 @@ public interface BLASLapackDelegator {
    void LAPACK_zgetri(IntPointer arg0, DoublePointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_cgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_cgetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_cgetrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
@@ -5288,22 +5279,19 @@ public interface BLASLapackDelegator {
       FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, long arg9) ;
 
-   void LAPACK_cgetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_cgetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8, long arg9) ;
+   void LAPACK_cgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_cgetrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_cgetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8, long arg9) ;
+
    void LAPACK_dgetrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
       long arg9) ;
-
-   void LAPACK_dgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_dgetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -5311,6 +5299,9 @@ public interface BLASLapackDelegator {
 
    void LAPACK_dgetrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_dgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_dgetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -5320,19 +5311,13 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
-   void LAPACK_sgetrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
-      long arg9) ;
-
-   void LAPACK_sgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
    void LAPACK_sgetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, long arg9) ;
 
-   void LAPACK_sgetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_sgetrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
+      long arg9) ;
 
    void LAPACK_sgetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8, long arg9) ;
@@ -5341,16 +5326,15 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_sgetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_sgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
    void LAPACK_zgetrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
       long arg9) ;
-
-   void LAPACK_zgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_zgetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
 
    void LAPACK_zgetrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
@@ -5363,13 +5347,16 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_zgetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_zgetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
    void LAPACK_cgetsls_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_cgetsls_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_cgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -5378,28 +5365,25 @@ public interface BLASLapackDelegator {
    void LAPACK_cgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_cgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_cgetsls_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_dgetsls_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_cgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_cgetsls_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
 
    void LAPACK_dgetsls_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_dgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_dgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+   void LAPACK_dgetsls_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_dgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -5409,13 +5393,16 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_dgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_dgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_sgetsls_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_sgetsls_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_sgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -5424,12 +5411,23 @@ public interface BLASLapackDelegator {
    void LAPACK_sgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
+   void LAPACK_sgetsls_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
+   void LAPACK_sgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_sgetsls_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_sgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+   void LAPACK_zgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_zgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_zgetsls_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
@@ -5440,52 +5438,45 @@ public interface BLASLapackDelegator {
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_zgetsls_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
+   void LAPACK_zgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_zgetsls_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zgetsls_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_zgetsls_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_cggbak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      long arg11, long arg12) ;
+   void LAPACK_cggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
 
    void LAPACK_cggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
 
-   void LAPACK_cggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
+   void LAPACK_cggbak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      long arg11, long arg12) ;
 
    void LAPACK_cggbak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11,
       long arg12) ;
 
-   void LAPACK_cggbak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
-
    void LAPACK_cggbak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
 
-   void LAPACK_dggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
+   void LAPACK_cggbak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
 
    void LAPACK_dggbak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11, long arg12) ;
+
+   void LAPACK_dggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
 
    void LAPACK_dggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -5495,13 +5486,21 @@ public interface BLASLapackDelegator {
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11,
       long arg12) ;
 
+   void LAPACK_dggbak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
+
    void LAPACK_dggbak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
 
-   void LAPACK_dggbak_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
+   void LAPACK_sggbak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11,
+      long arg12) ;
+
+   void LAPACK_sggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
 
    void LAPACK_sggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
@@ -5511,14 +5510,6 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11, long arg12) ;
 
-   void LAPACK_sggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
-
-   void LAPACK_sggbak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11,
-      long arg12) ;
-
    void LAPACK_sggbak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
@@ -5527,21 +5518,21 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
 
-   void LAPACK_zggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
-
-   void LAPACK_zggbak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11, long arg12) ;
-
    void LAPACK_zggbak_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11, long arg12) ;
 
+   void LAPACK_zggbak_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
+
    void LAPACK_zggbak_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11,
       long arg12) ;
+
+   void LAPACK_zggbak_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11, long arg12) ;
 
    void LAPACK_zggbak_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -5551,17 +5542,9 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11, long arg12) ;
 
-   void LAPACK_cggbal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
-
    void LAPACK_cggbal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10,
       int[] arg11, long arg12) ;
-
-   void LAPACK_cggbal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
 
    void LAPACK_cggbal_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
@@ -5571,6 +5554,14 @@ public interface BLASLapackDelegator {
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
 
+   void LAPACK_cggbal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
+
+   void LAPACK_cggbal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
+
    void LAPACK_cggbal_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
@@ -5579,17 +5570,13 @@ public interface BLASLapackDelegator {
       DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_dggbal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, long arg12) ;
-
-   void LAPACK_dggbal_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12) ;
-
    void LAPACK_dggbal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
       long arg12) ;
+
+   void LAPACK_dggbal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, long arg12) ;
 
    void LAPACK_dggbal_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -5599,13 +5586,9 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_sggbal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_sggbal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, long arg12) ;
+   void LAPACK_dggbal_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12) ;
 
    void LAPACK_sggbal_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -5615,29 +5598,29 @@ public interface BLASLapackDelegator {
       int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10, int[] arg11,
       long arg12) ;
 
-   void LAPACK_sggbal_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
-
    void LAPACK_sggbal_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_zggbal_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
+   void LAPACK_sggbal_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_zggbal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, long arg12) ;
+   void LAPACK_sggbal_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, long arg12) ;
+
+   void LAPACK_sggbal_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12) ;
 
    void LAPACK_zggbal_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_zggbal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
-      long arg12) ;
+   void LAPACK_zggbal_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, long arg12) ;
 
    void LAPACK_zggbal_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -5647,16 +5630,19 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_zggbal_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12) ;
+
+   void LAPACK_zggbal_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, int[] arg6, int[] arg7, double[] arg8, double[] arg9, double[] arg10, int[] arg11,
+      long arg12) ;
+
    void LAPACK_cgges_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
       FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
       FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_cgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -5669,6 +5655,12 @@ public interface BLASLapackDelegator {
       float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
       float[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
+   void LAPACK_cgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
+
    void LAPACK_cgges_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
@@ -5676,12 +5668,24 @@ public interface BLASLapackDelegator {
       IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_dgges_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
+      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_dgges_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
+      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23) ;
+
+   void LAPACK_dgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
       DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
@@ -5704,18 +5708,11 @@ public interface BLASLapackDelegator {
       double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
       double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_dgges_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
-      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_dgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
-      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
-      long arg22, long arg23) ;
+   void LAPACK_sgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_sgges_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -5723,29 +5720,12 @@ public interface BLASLapackDelegator {
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16,
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
-
-   void LAPACK_sgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
-      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_sgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_sgges_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, float[] arg11,
       float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
       int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_sgges_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_sgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
@@ -5753,28 +5733,28 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_zgges_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
-      long arg22, long arg23) ;
+   void LAPACK_sgges_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_sgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
+      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_zgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
       double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
       int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_zgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_zgges_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_zgges_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23) ;
 
    void LAPACK_zgges_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -5789,17 +5769,28 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_cgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_zgges_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_zgges_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, Pointer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9,
       float[] arg10, float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15,
       float[] arg16, int[] arg17, float[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
+
+   void LAPACK_cgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -5824,29 +5815,18 @@ public interface BLASLapackDelegator {
       IntPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
       FloatPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_dgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
-      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
-      long arg22, long arg23) ;
+   void LAPACK_dgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
+      DoublePointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
+      IntPointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20,
+      long arg21, long arg22, long arg23) ;
 
    void LAPACK_dgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9,
       double[] arg10, double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15,
       int[] arg16, double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
-
-   void LAPACK_dgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
-      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_dgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_dgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -5855,11 +5835,28 @@ public interface BLASLapackDelegator {
       IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_dgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
-      DoublePointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
-      IntPointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20,
-      long arg21, long arg22, long arg23) ;
+      Pointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
+      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_dgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
+      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23) ;
+
+   void LAPACK_dgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_sgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9,
+      float[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15,
+      int[] arg16, float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
+      long arg23) ;
 
    void LAPACK_sgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -5869,21 +5866,10 @@ public interface BLASLapackDelegator {
       long arg22, long arg23) ;
 
    void LAPACK_sgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9,
-      float[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15,
-      int[] arg16, float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_sgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_sgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, float[] arg11,
-      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
-      int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_sgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -5898,29 +5884,10 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_zgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
-      long arg22, long arg23) ;
-
-   void LAPACK_zgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9,
-      double[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
-      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_zgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
-      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_zgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_sgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, float[] arg11,
+      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
+      int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_zgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -5929,11 +5896,35 @@ public interface BLASLapackDelegator {
       IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_zgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9,
+      double[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
+      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
+      long arg23) ;
+
+   void LAPACK_zgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       DoublePointer arg16, IntPointer arg17, DoublePointer arg18, IntPointer arg19,
       IntPointer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_zgges3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
+      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_zgges3_base(String arg0, String arg1, String arg2, Pointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23) ;
+
+   void LAPACK_zgges3_base(String arg0, String arg1, String arg2, Pointer arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
       IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8, IntPointer arg9,
@@ -5942,13 +5933,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, FloatPointer arg19, IntPointer arg20, FloatPointer arg21,
       IntPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
       long arg27, long arg28, long arg29) ;
-
-   void LAPACK_cggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, BytePointer arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8,
-      int[] arg9, int[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14,
-      float[] arg15, int[] arg16, float[] arg17, float[] arg18, float[] arg19, int[] arg20,
-      float[] arg21, int[] arg22, int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27,
-      long arg28, long arg29) ;
 
    void LAPACK_cggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, BytePointer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -5963,6 +5947,13 @@ public interface BLASLapackDelegator {
       float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
       float[] arg18, float[] arg19, int[] arg20, float[] arg21, int[] arg22, int[] arg23,
       int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_cggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, BytePointer arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8,
+      int[] arg9, int[] arg10, float[] arg11, float[] arg12, float[] arg13, int[] arg14,
+      float[] arg15, int[] arg16, float[] arg17, float[] arg18, float[] arg19, int[] arg20,
+      float[] arg21, int[] arg22, int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27,
+      long arg28, long arg29) ;
 
    void LAPACK_cggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
       IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8, IntBuffer arg9,
@@ -5980,6 +5971,27 @@ public interface BLASLapackDelegator {
       long arg26, long arg27, long arg28, long arg29) ;
 
    void LAPACK_dggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, double[] arg11,
+      double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
+      double[] arg18, double[] arg19, double[] arg20, int[] arg21, int[] arg22, int[] arg23,
+      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_dggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
+      IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
+      IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
+      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_dggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, BytePointer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28,
+      long arg29) ;
+
+   void LAPACK_dggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
       IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8, IntPointer arg9,
       IntPointer arg10, DoublePointer arg11, DoublePointer arg12, DoublePointer arg13,
       DoublePointer arg14, IntPointer arg15, DoublePointer arg16, IntPointer arg17,
@@ -5995,33 +6007,26 @@ public interface BLASLapackDelegator {
       long arg28, long arg29) ;
 
    void LAPACK_dggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, BytePointer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28,
-      long arg29) ;
-
-   void LAPACK_dggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, double[] arg11,
-      double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
-      double[] arg18, double[] arg19, double[] arg20, int[] arg21, int[] arg22, int[] arg23,
-      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
-
-   void LAPACK_dggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
-      IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
-      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28, long arg29) ;
-
-   void LAPACK_dggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, BytePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, DoublePointer arg11,
       DoublePointer arg12, DoublePointer arg13, DoublePointer arg14, IntPointer arg15,
       DoublePointer arg16, IntPointer arg17, DoublePointer arg18, DoublePointer arg19,
       DoublePointer arg20, IntPointer arg21, IntPointer arg22, IntPointer arg23, IntPointer arg24,
       IntPointer arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_sggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, float[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, float[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
+      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_sggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, BytePointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
+      FloatPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
+      IntPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
+      IntPointer arg21, IntPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25,
+      long arg26, long arg27, long arg28, long arg29) ;
 
    void LAPACK_sggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
       IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8, IntPointer arg9,
@@ -6038,20 +6043,6 @@ public interface BLASLapackDelegator {
       int[] arg21, int[] arg22, int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27,
       long arg28, long arg29) ;
 
-   void LAPACK_sggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, BytePointer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28,
-      long arg29) ;
-
-   void LAPACK_sggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, float[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, float[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
-      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
-
    void LAPACK_sggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
       IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8, IntBuffer arg9,
       IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13, FloatBuffer arg14,
@@ -6060,27 +6051,25 @@ public interface BLASLapackDelegator {
       IntBuffer arg25, long arg26, long arg27, long arg28, long arg29) ;
 
    void LAPACK_sggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, BytePointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
-      FloatPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
-      IntPointer arg17, FloatPointer arg18, FloatPointer arg19, FloatPointer arg20,
-      IntPointer arg21, IntPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25,
-      long arg26, long arg27, long arg28, long arg29) ;
+      Pointer arg3, BytePointer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28,
+      long arg29) ;
 
    void LAPACK_zggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8, IntPointer arg9,
-      IntPointer arg10, DoublePointer arg11, DoublePointer arg12, DoublePointer arg13,
-      IntPointer arg14, DoublePointer arg15, IntPointer arg16, DoublePointer arg17,
-      DoublePointer arg18, DoublePointer arg19, IntPointer arg20, DoublePointer arg21,
-      IntPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
-      long arg27, long arg28, long arg29) ;
+      IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
+      IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13, IntBuffer arg14,
+      DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, DoubleBuffer arg18,
+      DoubleBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, IntBuffer arg22, IntBuffer arg23,
+      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28, long arg29) ;
 
-   void LAPACK_zggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      Pointer arg3, BytePointer arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8,
-      int[] arg9, int[] arg10, double[] arg11, double[] arg12, double[] arg13, int[] arg14,
-      double[] arg15, int[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20,
-      double[] arg21, int[] arg22, int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27,
-      long arg28, long arg29) ;
+   void LAPACK_zggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, double[] arg11,
+      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
+      double[] arg18, double[] arg19, int[] arg20, double[] arg21, int[] arg22, int[] arg23,
+      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
 
    void LAPACK_zggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, BytePointer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -6091,17 +6080,12 @@ public interface BLASLapackDelegator {
       long arg29) ;
 
    void LAPACK_zggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, double[] arg11,
-      double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
-      double[] arg18, double[] arg19, int[] arg20, double[] arg21, int[] arg22, int[] arg23,
-      int[] arg24, int[] arg25, long arg26, long arg27, long arg28, long arg29) ;
-
-   void LAPACK_zggesx_base(String arg0, String arg1, String arg2, Pointer arg3, String arg4,
-      IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8, IntBuffer arg9,
-      IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13, IntBuffer arg14,
-      DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, DoubleBuffer arg18,
-      DoubleBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, IntBuffer arg22, IntBuffer arg23,
-      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28, long arg29) ;
+      IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8, IntPointer arg9,
+      IntPointer arg10, DoublePointer arg11, DoublePointer arg12, DoublePointer arg13,
+      IntPointer arg14, DoublePointer arg15, IntPointer arg16, DoublePointer arg17,
+      DoublePointer arg18, DoublePointer arg19, IntPointer arg20, DoublePointer arg21,
+      IntPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
+      long arg27, long arg28, long arg29) ;
 
    void LAPACK_zggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       Pointer arg3, BytePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
@@ -6110,6 +6094,23 @@ public interface BLASLapackDelegator {
       IntPointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
       IntPointer arg20, DoublePointer arg21, IntPointer arg22, IntPointer arg23, IntPointer arg24,
       IntPointer arg25, long arg26, long arg27, long arg28, long arg29) ;
+
+   void LAPACK_zggesx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      Pointer arg3, BytePointer arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8,
+      int[] arg9, int[] arg10, double[] arg11, double[] arg12, double[] arg13, int[] arg14,
+      double[] arg15, int[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20,
+      double[] arg21, int[] arg22, int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27,
+      long arg28, long arg29) ;
+
+   void LAPACK_cggev_base(String arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
+      long arg17, long arg18) ;
+
+   void LAPACK_cggev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
 
    void LAPACK_cggev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -6127,32 +6128,21 @@ public interface BLASLapackDelegator {
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_cggev_base(String arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
-      long arg17, long arg18) ;
-
-   void LAPACK_cggev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
-
    void LAPACK_cggev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_dggev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
-      long arg18) ;
+   void LAPACK_dggev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
 
-   void LAPACK_dggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
-      int[] arg16, long arg17, long arg18) ;
+   void LAPACK_dggev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, int[] arg16,
+      long arg17, long arg18) ;
 
    void LAPACK_dggev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6160,31 +6150,27 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_dggev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, int[] arg16,
-      long arg17, long arg18) ;
-
-   void LAPACK_dggev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
-
    void LAPACK_dggev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       IntPointer arg16, long arg17, long arg18) ;
 
+   void LAPACK_dggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
+      int[] arg16, long arg17, long arg18) ;
+
+   void LAPACK_dggev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
+      long arg18) ;
+
    void LAPACK_sggev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
       FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17, long arg18) ;
-
-   void LAPACK_sggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17,
-      long arg18) ;
 
    void LAPACK_sggev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -6197,16 +6183,21 @@ public interface BLASLapackDelegator {
       int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_sggev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
-
    void LAPACK_sggev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
       FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16,
       long arg17, long arg18) ;
+
+   void LAPACK_sggev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
+
+   void LAPACK_sggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17,
+      long arg18) ;
 
    void LAPACK_zggev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
@@ -6214,26 +6205,21 @@ public interface BLASLapackDelegator {
       DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_zggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
-      int[] arg16, long arg17, long arg18) ;
-
    void LAPACK_zggev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
       DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_zggev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      long arg17, long arg18) ;
-
    void LAPACK_zggev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
       IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
+
+   void LAPACK_zggev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
+      int[] arg16, long arg17, long arg18) ;
 
    void LAPACK_zggev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
@@ -6241,15 +6227,15 @@ public interface BLASLapackDelegator {
       IntPointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
       IntPointer arg16, long arg17, long arg18) ;
 
+   void LAPACK_zggev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      long arg17, long arg18) ;
+
    void LAPACK_cggev3_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       IntPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17, long arg18) ;
-
-   void LAPACK_cggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
-      long arg17, long arg18) ;
 
    void LAPACK_cggev3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -6273,16 +6259,16 @@ public interface BLASLapackDelegator {
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
 
+   void LAPACK_cggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
+      long arg17, long arg18) ;
+
    void LAPACK_dggev3_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       IntPointer arg13, DoublePointer arg14, IntPointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
-
-   void LAPACK_dggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
-      int[] arg16, long arg17, long arg18) ;
 
    void LAPACK_dggev3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6290,10 +6276,10 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_dggev3_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, int[] arg16,
-      long arg17, long arg18) ;
+   void LAPACK_dggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
+      int[] arg16, long arg17, long arg18) ;
 
    void LAPACK_dggev3_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -6306,15 +6292,10 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       IntPointer arg16, long arg17, long arg18) ;
 
-   void LAPACK_sggev3_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17, long arg18) ;
-
-   void LAPACK_sggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17,
-      long arg18) ;
+   void LAPACK_dggev3_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, int[] arg16,
+      long arg17, long arg18) ;
 
    void LAPACK_sggev3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -6332,11 +6313,32 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
       FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
 
+   void LAPACK_sggev3_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, IntPointer arg16, long arg17, long arg18) ;
+
+   void LAPACK_sggev3_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, long arg17,
+      long arg18) ;
+
    void LAPACK_sggev3_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
       FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16,
       long arg17, long arg18) ;
+
+   void LAPACK_zggev3_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
+      long arg17, long arg18) ;
+
+   void LAPACK_zggev3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17,
+      long arg18) ;
 
    void LAPACK_zggev3_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
@@ -6349,27 +6351,16 @@ public interface BLASLapackDelegator {
       int[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
       int[] arg16, long arg17, long arg18) ;
 
-   void LAPACK_zggev3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17,
-      long arg18) ;
-
-   void LAPACK_zggev3_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
-      long arg17, long arg18) ;
-
-   void LAPACK_zggev3_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
-
    void LAPACK_zggev3_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
       IntPointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
       IntPointer arg16, long arg17, long arg18) ;
+
+   void LAPACK_zggev3_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
 
    void LAPACK_cggevx_base(String arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -6379,13 +6370,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg22, FloatPointer arg23, IntPointer arg24, FloatPointer arg25,
       IntPointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
       long arg32) ;
-
-   void LAPACK_cggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8,
-      float[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
-      int[] arg15, int[] arg16, float[] arg17, float[] arg18, float[] arg19, float[] arg20,
-      float[] arg21, float[] arg22, float[] arg23, int[] arg24, float[] arg25, int[] arg26,
-      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_cggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -6411,6 +6395,13 @@ public interface BLASLapackDelegator {
       long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_cggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8,
+      float[] arg9, float[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14,
+      int[] arg15, int[] arg16, float[] arg17, float[] arg18, float[] arg19, float[] arg20,
+      float[] arg21, float[] arg22, float[] arg23, int[] arg24, float[] arg25, int[] arg26,
+      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
+
+   void LAPACK_cggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, IntPointer arg15, IntPointer arg16, FloatPointer arg17,
@@ -6427,13 +6418,6 @@ public interface BLASLapackDelegator {
       DoublePointer arg22, DoublePointer arg23, DoublePointer arg24, IntPointer arg25,
       IntPointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
       long arg32) ;
-
-   void LAPACK_dggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8,
-      double[] arg9, double[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14,
-      int[] arg15, int[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
-      double[] arg21, double[] arg22, double[] arg23, double[] arg24, int[] arg25, int[] arg26,
-      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_dggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6467,6 +6451,13 @@ public interface BLASLapackDelegator {
       DoublePointer arg24, IntPointer arg25, IntPointer arg26, IntPointer arg27, IntPointer arg28,
       long arg29, long arg30, long arg31, long arg32) ;
 
+   void LAPACK_dggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8,
+      double[] arg9, double[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14,
+      int[] arg15, int[] arg16, int[] arg17, double[] arg18, double[] arg19, double[] arg20,
+      double[] arg21, double[] arg22, double[] arg23, double[] arg24, int[] arg25, int[] arg26,
+      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
+
    void LAPACK_sggevx_base(String arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
@@ -6475,13 +6466,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg22, FloatPointer arg23, FloatPointer arg24, IntPointer arg25,
       IntPointer arg26, IntPointer arg27, IntPointer arg28, long arg29, long arg30, long arg31,
       long arg32) ;
-
-   void LAPACK_sggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8,
-      float[] arg9, float[] arg10, float[] arg11, float[] arg12, int[] arg13, float[] arg14,
-      int[] arg15, int[] arg16, int[] arg17, float[] arg18, float[] arg19, float[] arg20,
-      float[] arg21, float[] arg22, float[] arg23, float[] arg24, int[] arg25, int[] arg26,
-      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_sggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -6497,6 +6481,13 @@ public interface BLASLapackDelegator {
       int[] arg17, float[] arg18, float[] arg19, float[] arg20, float[] arg21, float[] arg22,
       float[] arg23, float[] arg24, int[] arg25, int[] arg26, int[] arg27, int[] arg28, long arg29,
       long arg30, long arg31, long arg32) ;
+
+   void LAPACK_sggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8,
+      float[] arg9, float[] arg10, float[] arg11, float[] arg12, int[] arg13, float[] arg14,
+      int[] arg15, int[] arg16, int[] arg17, float[] arg18, float[] arg19, float[] arg20,
+      float[] arg21, float[] arg22, float[] arg23, float[] arg24, int[] arg25, int[] arg26,
+      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_sggevx_base(String arg0, String arg1, String arg2, String arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -6524,35 +6515,12 @@ public interface BLASLapackDelegator {
       DoublePointer arg25, IntPointer arg26, IntPointer arg27, IntPointer arg28, long arg29,
       long arg30, long arg31, long arg32) ;
 
-   void LAPACK_zggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8,
-      double[] arg9, double[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14,
-      int[] arg15, int[] arg16, double[] arg17, double[] arg18, double[] arg19, double[] arg20,
-      double[] arg21, double[] arg22, double[] arg23, int[] arg24, double[] arg25, int[] arg26,
-      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
-
-   void LAPACK_zggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21,
-      DoubleBuffer arg22, DoubleBuffer arg23, IntBuffer arg24, DoubleBuffer arg25, IntBuffer arg26,
-      IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31, long arg32) ;
-
    void LAPACK_zggevx_base(String arg0, String arg1, String arg2, String arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, int[] arg16,
       double[] arg17, double[] arg18, double[] arg19, double[] arg20, double[] arg21,
       double[] arg22, double[] arg23, int[] arg24, double[] arg25, int[] arg26, int[] arg27,
       int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
-
-   void LAPACK_zggevx_base(String arg0, String arg1, String arg2, String arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21,
-      DoubleBuffer arg22, DoubleBuffer arg23, IntBuffer arg24, DoubleBuffer arg25, IntBuffer arg26,
-      IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31, long arg32) ;
 
    void LAPACK_zggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
@@ -6563,20 +6531,39 @@ public interface BLASLapackDelegator {
       DoublePointer arg25, IntPointer arg26, IntPointer arg27, IntPointer arg28, long arg29,
       long arg30, long arg31, long arg32) ;
 
+   void LAPACK_zggevx_base(String arg0, String arg1, String arg2, String arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21,
+      DoubleBuffer arg22, DoubleBuffer arg23, IntBuffer arg24, DoubleBuffer arg25, IntBuffer arg26,
+      IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31, long arg32) ;
+
+   void LAPACK_zggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, DoubleBuffer arg21,
+      DoubleBuffer arg22, DoubleBuffer arg23, IntBuffer arg24, DoubleBuffer arg25, IntBuffer arg26,
+      IntBuffer arg27, IntBuffer arg28, long arg29, long arg30, long arg31, long arg32) ;
+
+   void LAPACK_zggevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8,
+      double[] arg9, double[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14,
+      int[] arg15, int[] arg16, double[] arg17, double[] arg18, double[] arg19, double[] arg20,
+      double[] arg21, double[] arg22, double[] arg23, int[] arg24, double[] arg25, int[] arg26,
+      int[] arg27, int[] arg28, long arg29, long arg30, long arg31, long arg32) ;
+
    void LAPACK_cggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
-
-   void LAPACK_cggglm(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, int[] arg12) ;
 
    void LAPACK_cggglm(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
-   void LAPACK_dggglm(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+   void LAPACK_cggglm(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
       int[] arg11, int[] arg12) ;
 
    void LAPACK_dggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
@@ -6587,67 +6574,61 @@ public interface BLASLapackDelegator {
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12) ;
 
+   void LAPACK_dggglm(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, int[] arg12) ;
+
    void LAPACK_sggglm(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
       int[] arg11, int[] arg12) ;
-
-   void LAPACK_sggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
    void LAPACK_sggglm(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
-   void LAPACK_zggglm(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, int[] arg12) ;
-
-   void LAPACK_zggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
+   void LAPACK_sggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
    void LAPACK_zggglm(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12) ;
 
-   void LAPACK_cgghd3_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+   void LAPACK_zggglm(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12) ;
 
-   void LAPACK_cgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
-
-   void LAPACK_cgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_cgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
-
-   void LAPACK_cgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+   void LAPACK_zggglm(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, int[] arg12) ;
 
    void LAPACK_cgghd3_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_dgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_cgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_dgghd3_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
-      long arg17) ;
+   void LAPACK_cgghd3_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+
+   void LAPACK_cgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_cgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_cgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
    void LAPACK_dgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6659,33 +6640,29 @@ public interface BLASLapackDelegator {
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
       long arg17) ;
 
-   void LAPACK_dgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
    void LAPACK_dgghd3_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_sgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_dgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+
+   void LAPACK_dgghd3_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
+      long arg17) ;
+
+   void LAPACK_dgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
    void LAPACK_sgghd3_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
-
-   void LAPACK_sgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_sgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
    void LAPACK_sgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -6697,6 +6674,35 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
+   void LAPACK_sgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+
+   void LAPACK_sgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, float[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+
+   void LAPACK_sgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
+      long arg17) ;
+
+   void LAPACK_zgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
    void LAPACK_zgghd3_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
@@ -6707,47 +6713,23 @@ public interface BLASLapackDelegator {
       double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
       long arg17) ;
 
-   void LAPACK_zgghd3_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_zgghd3_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, int[] arg15, long arg16,
-      long arg17) ;
-
-   void LAPACK_zgghd3_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
    void LAPACK_zgghd3_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_cgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_cgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_cgghrd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_cgghrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_cgghrd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_cgghrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+   void LAPACK_cgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
 
    void LAPACK_cgghrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
@@ -6755,14 +6737,19 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_cgghrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15) ;
+
+   void LAPACK_cgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_dgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_dgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dgghrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6773,29 +6760,19 @@ public interface BLASLapackDelegator {
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_dgghrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15) ;
-
    void LAPACK_dgghrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_sgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+   void LAPACK_dgghrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_sgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_sgghrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
+   void LAPACK_dgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_sgghrd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
@@ -6811,14 +6788,24 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_sgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_sgghrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_sgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
    void LAPACK_zgghrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_zgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zgghrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -6829,15 +6816,23 @@ public interface BLASLapackDelegator {
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
+   void LAPACK_zgghrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
+
    void LAPACK_zgghrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_zgghrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_zgghrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_cgglse(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
    void LAPACK_cgglse(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -6846,10 +6841,6 @@ public interface BLASLapackDelegator {
    void LAPACK_cgglse(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
       int[] arg11, int[] arg12) ;
-
-   void LAPACK_cgglse(IntPointer arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12) ;
 
    void LAPACK_dgglse(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
@@ -6899,17 +6890,17 @@ public interface BLASLapackDelegator {
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, IntPointer arg11) ;
 
-   void LAPACK_dggqrf(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      int[] arg11) ;
+   void LAPACK_dggqrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      DoublePointer arg9, IntPointer arg10, IntPointer arg11) ;
 
    void LAPACK_dggqrf(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11) ;
 
-   void LAPACK_dggqrf(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      DoublePointer arg9, IntPointer arg10, IntPointer arg11) ;
+   void LAPACK_dggqrf(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      int[] arg11) ;
 
    void LAPACK_sggqrf(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
@@ -6947,10 +6938,6 @@ public interface BLASLapackDelegator {
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, IntPointer arg11) ;
 
-   void LAPACK_dggrqf(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      int[] arg11) ;
-
    void LAPACK_dggrqf(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11) ;
@@ -6958,6 +6945,10 @@ public interface BLASLapackDelegator {
    void LAPACK_dggrqf(IntPointer arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, IntPointer arg11) ;
+
+   void LAPACK_dggrqf(int[] arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      int[] arg11) ;
 
    void LAPACK_sggrqf(int[] arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
@@ -6983,12 +6974,6 @@ public interface BLASLapackDelegator {
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, IntPointer arg11) ;
 
-   void LAPACK_cggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, float[] arg22,
-      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
-
    void LAPACK_cggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
@@ -6996,18 +6981,11 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21,
       FloatPointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_cggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, FloatBuffer arg22,
-      IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
-
-   void LAPACK_cggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, int[] arg19, float[] arg20, int[] arg21, float[] arg22, int[] arg23,
-      int[] arg24, long arg25, long arg26, long arg27) ;
+   void LAPACK_cggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, float[] arg22,
+      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_cggsvd3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -7023,18 +7001,18 @@ public interface BLASLapackDelegator {
       IntPointer arg17, FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21,
       FloatPointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_dggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
-      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_cggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, FloatBuffer arg22,
+      IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_dggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, int[] arg22,
-      int[] arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_cggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, int[] arg19, float[] arg20, int[] arg21, float[] arg22, int[] arg23,
+      int[] arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_dggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -7043,17 +7021,17 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22,
       IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
+   void LAPACK_dggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
+      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+
    void LAPACK_dggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
       int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
       double[] arg18, int[] arg19, double[] arg20, int[] arg21, int[] arg22, int[] arg23,
-      long arg24, long arg25, long arg26) ;
-
-   void LAPACK_dggsvd3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
       long arg24, long arg25, long arg26) ;
 
    void LAPACK_dggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
@@ -7064,12 +7042,18 @@ public interface BLASLapackDelegator {
       DoublePointer arg20, IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24,
       long arg25, long arg26) ;
 
-   void LAPACK_sggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
-      IntPointer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_dggsvd3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
+      long arg24, long arg25, long arg26) ;
+
+   void LAPACK_dggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, int[] arg22,
+      int[] arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_sggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
@@ -7077,18 +7061,12 @@ public interface BLASLapackDelegator {
       int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
       long arg24, long arg25, long arg26) ;
 
-   void LAPACK_sggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      IntBuffer arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_sggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23, long arg24,
-      long arg25, long arg26) ;
+   void LAPACK_sggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
+      IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_sggsvd3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -7104,19 +7082,18 @@ public interface BLASLapackDelegator {
       IntPointer arg17, FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21,
       IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
-      IntPointer arg21, DoublePointer arg22, IntPointer arg23, IntPointer arg24, long arg25,
-      long arg26, long arg27) ;
+   void LAPACK_sggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23, long arg24,
+      long arg25, long arg26) ;
 
-   void LAPACK_zggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, double[] arg22,
-      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
+   void LAPACK_sggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_zggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -7125,11 +7102,25 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, DoubleBuffer arg22,
       IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
 
+   void LAPACK_zggsvd3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
+      IntPointer arg21, DoublePointer arg22, IntPointer arg23, IntPointer arg24, long arg25,
+      long arg26, long arg27) ;
+
    void LAPACK_zggsvd3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
       int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
       double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16, int[] arg17,
       double[] arg18, int[] arg19, double[] arg20, int[] arg21, double[] arg22, int[] arg23,
       int[] arg24, long arg25, long arg26, long arg27) ;
+
+   void LAPACK_zggsvd3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, double[] arg22,
+      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_zggsvd3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -7146,13 +7137,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg20, IntPointer arg21, DoublePointer arg22, IntPointer arg23,
       IntPointer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_cggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, IntPointer arg20, FloatPointer arg21,
-      FloatPointer arg22, FloatPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
-      long arg27, long arg28) ;
+   void LAPACK_cggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, int[] arg19, int[] arg20, float[] arg21, float[] arg22, float[] arg23,
+      int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
 
    void LAPACK_cggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
@@ -7167,11 +7156,13 @@ public interface BLASLapackDelegator {
       FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
       FloatBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
 
-   void LAPACK_cggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, int[] arg19, int[] arg20, float[] arg21, float[] arg22, float[] arg23,
-      int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
+   void LAPACK_cggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, IntPointer arg20, FloatPointer arg21,
+      FloatPointer arg22, FloatPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
+      long arg27, long arg28) ;
 
    void LAPACK_cggsvp3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -7188,32 +7179,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg22, FloatPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
       long arg27, long arg28) ;
 
-   void LAPACK_dggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      DoublePointer arg14, IntPointer arg15, DoublePointer arg16, IntPointer arg17,
-      DoublePointer arg18, IntPointer arg19, IntPointer arg20, DoublePointer arg21,
-      DoublePointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
-
-   void LAPACK_dggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
-      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
-
-   void LAPACK_dggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
-      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
-      IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
-
-   void LAPACK_dggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
-      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
-
    void LAPACK_dggsvp3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
@@ -7229,18 +7194,43 @@ public interface BLASLapackDelegator {
       IntPointer arg20, DoublePointer arg21, DoublePointer arg22, IntPointer arg23,
       IntPointer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_sggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, IntPointer arg20, FloatPointer arg21,
-      FloatPointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
+   void LAPACK_dggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
+      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
+
+   void LAPACK_dggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
+      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
+      IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
+
+   void LAPACK_dggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      DoublePointer arg14, IntPointer arg15, DoublePointer arg16, IntPointer arg17,
+      DoublePointer arg18, IntPointer arg19, IntPointer arg20, DoublePointer arg21,
+      DoublePointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
+
+   void LAPACK_dggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
+      int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_sggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
       float[] arg11, int[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
       int[] arg17, float[] arg18, int[] arg19, int[] arg20, float[] arg21, float[] arg22,
       int[] arg23, int[] arg24, long arg25, long arg26, long arg27) ;
+
+   void LAPACK_sggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
+      int[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, int[] arg19, int[] arg20, float[] arg21, float[] arg22, int[] arg23,
+      int[] arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_sggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -7249,11 +7239,12 @@ public interface BLASLapackDelegator {
       FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
       IntBuffer arg23, IntBuffer arg24, long arg25, long arg26, long arg27) ;
 
-   void LAPACK_sggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
-      int[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, int[] arg19, int[] arg20, float[] arg21, float[] arg22, int[] arg23,
-      int[] arg24, long arg25, long arg26, long arg27) ;
+   void LAPACK_sggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, IntPointer arg20, FloatPointer arg21,
+      FloatPointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
 
    void LAPACK_sggsvp3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -7269,6 +7260,34 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, IntPointer arg19, IntPointer arg20, FloatPointer arg21,
       FloatPointer arg22, IntPointer arg23, IntPointer arg24, long arg25, long arg26, long arg27) ;
 
+   void LAPACK_zggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
+      IntPointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
+      DoublePointer arg16, IntPointer arg17, DoublePointer arg18, IntPointer arg19,
+      IntPointer arg20, DoublePointer arg21, DoublePointer arg22, DoublePointer arg23,
+      IntPointer arg24, IntPointer arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_zggsvp3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, DoubleBuffer arg23,
+      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_zggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
+      double[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_zggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
+      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
+      DoubleBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
+
    void LAPACK_zggsvp3_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
@@ -7283,54 +7302,26 @@ public interface BLASLapackDelegator {
       int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
       double[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
 
-   void LAPACK_zggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
-      DoubleBuffer arg18, IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22,
-      DoubleBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_zggsvp3_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, int[] arg20, double[] arg21, double[] arg22,
-      double[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_zggsvp3_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, DoubleBuffer arg23,
-      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_zggsvp3_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
-      IntPointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
-      DoublePointer arg16, IntPointer arg17, DoublePointer arg18, IntPointer arg19,
-      IntPointer arg20, DoublePointer arg21, DoublePointer arg22, DoublePointer arg23,
-      IntPointer arg24, IntPointer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_cgtcon_base(String arg0, IntPointer arg1, FloatPointer arg2,
-      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, long arg11) ;
-
    void LAPACK_cgtcon_base(BytePointer arg0, int[] arg1, float[] arg2, float[] arg3,
       float[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
       long arg11) ;
+
+   void LAPACK_cgtcon_base(String arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_cgtcon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       FloatBuffer arg8, FloatBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_cgtcon_base(String arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, long arg11) ;
+   void LAPACK_cgtcon_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_cgtcon_base(String arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_cgtcon_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+   void LAPACK_cgtcon_base(String arg0, IntPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, long arg11) ;
 
@@ -7338,10 +7329,6 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10,
       IntPointer arg11, long arg12) ;
-
-   void LAPACK_dgtcon_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, int[] arg11, long arg12) ;
 
    void LAPACK_dgtcon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -7351,46 +7338,46 @@ public interface BLASLapackDelegator {
       double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
       int[] arg10, int[] arg11, long arg12) ;
 
-   void LAPACK_dgtcon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
-
    void LAPACK_dgtcon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10,
       IntPointer arg11, long arg12) ;
 
+   void LAPACK_dgtcon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
+
+   void LAPACK_dgtcon_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, int[] arg11, long arg12) ;
+
    void LAPACK_sgtcon_base(String arg0, IntPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_sgtcon_base(BytePointer arg0, int[] arg1, float[] arg2, float[] arg3,
-      float[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
 
    void LAPACK_sgtcon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       FloatBuffer arg8, FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_sgtcon_base(String arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, int[] arg11,
-      long arg12) ;
-
    void LAPACK_sgtcon_base(String arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
+
+   void LAPACK_sgtcon_base(BytePointer arg0, int[] arg1, float[] arg2, float[] arg3,
+      float[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
 
    void LAPACK_sgtcon_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_sgtcon_base(String arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10, int[] arg11,
+      long arg12) ;
+
    void LAPACK_zgtcon_base(String arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zgtcon_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, long arg11) ;
 
    void LAPACK_zgtcon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -7408,16 +7395,15 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_zgtcon_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, long arg11) ;
+
    void LAPACK_cgtrfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       IntPointer arg14, FloatPointer arg15, FloatPointer arg16, FloatPointer arg17,
       FloatPointer arg18, IntPointer arg19, long arg20) ;
-
-   void LAPACK_cgtrfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9,
-      int[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15,
-      float[] arg16, float[] arg17, float[] arg18, int[] arg19, long arg20) ;
 
    void LAPACK_cgtrfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -7425,10 +7411,10 @@ public interface BLASLapackDelegator {
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
       FloatBuffer arg18, IntBuffer arg19, long arg20) ;
 
-   void LAPACK_cgtrfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
-      float[] arg17, float[] arg18, int[] arg19, long arg20) ;
+   void LAPACK_cgtrfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9,
+      int[] arg10, float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15,
+      float[] arg16, float[] arg17, float[] arg18, int[] arg19, long arg20) ;
 
    void LAPACK_cgtrfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -7442,16 +7428,10 @@ public interface BLASLapackDelegator {
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
       FloatPointer arg17, FloatPointer arg18, IntPointer arg19, long arg20) ;
 
-   void LAPACK_dgtrfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
-      IntPointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
-      DoublePointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, long arg20) ;
-
-   void LAPACK_dgtrfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
-      double[] arg16, double[] arg17, int[] arg18, int[] arg19, long arg20) ;
+   void LAPACK_cgtrfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
+      float[] arg17, float[] arg18, int[] arg19, long arg20) ;
 
    void LAPACK_dgtrfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -7470,12 +7450,28 @@ public interface BLASLapackDelegator {
       IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
       IntBuffer arg19, long arg20) ;
 
+   void LAPACK_dgtrfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
+      IntPointer arg12, DoublePointer arg13, IntPointer arg14, DoublePointer arg15,
+      DoublePointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, long arg20) ;
+
+   void LAPACK_dgtrfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
+      double[] arg16, double[] arg17, int[] arg18, int[] arg19, long arg20) ;
+
    void LAPACK_dgtrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10,
       DoublePointer arg11, IntPointer arg12, DoublePointer arg13, IntPointer arg14,
       DoublePointer arg15, DoublePointer arg16, DoublePointer arg17, IntPointer arg18,
       IntPointer arg19, long arg20) ;
+
+   void LAPACK_sgtrfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
+      float[] arg17, int[] arg18, int[] arg19, long arg20) ;
 
    void LAPACK_sgtrfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
@@ -7494,10 +7490,11 @@ public interface BLASLapackDelegator {
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, long arg20) ;
 
-   void LAPACK_sgtrfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
-      float[] arg17, int[] arg18, int[] arg19, long arg20) ;
+   void LAPACK_sgtrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
+      FloatPointer arg17, IntPointer arg18, IntPointer arg19, long arg20) ;
 
    void LAPACK_sgtrfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -7505,11 +7502,16 @@ public interface BLASLapackDelegator {
       IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
       IntBuffer arg19, long arg20) ;
 
-   void LAPACK_sgtrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
-      FloatPointer arg17, IntPointer arg18, IntPointer arg19, long arg20) ;
+   void LAPACK_zgtrfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, IntBuffer arg19, long arg20) ;
+
+   void LAPACK_zgtrfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, int[] arg19, long arg20) ;
 
    void LAPACK_zgtrfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
@@ -7528,17 +7530,6 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16,
       DoubleBuffer arg17, DoubleBuffer arg18, IntBuffer arg19, long arg20) ;
 
-   void LAPACK_zgtrfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, int[] arg19, long arg20) ;
-
-   void LAPACK_zgtrfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, IntBuffer arg19, long arg20) ;
-
    void LAPACK_zgtrfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, IntPointer arg10,
@@ -7546,17 +7537,14 @@ public interface BLASLapackDelegator {
       DoublePointer arg15, DoublePointer arg16, DoublePointer arg17, DoublePointer arg18,
       IntPointer arg19, long arg20) ;
 
-   void LAPACK_cgtsv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+   void LAPACK_cgtsv(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
    void LAPACK_cgtsv(int[] arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
 
-   void LAPACK_cgtsv(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
-
-   void LAPACK_dgtsv(int[] arg0, int[] arg1, double[] arg2, double[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7) ;
+   void LAPACK_cgtsv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_dgtsv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
@@ -7565,24 +7553,40 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       IntPointer arg7) ;
 
+   void LAPACK_dgtsv(int[] arg0, int[] arg1, double[] arg2, double[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7) ;
+
    void LAPACK_sgtsv(int[] arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
       float[] arg5, int[] arg6, int[] arg7) ;
-
-   void LAPACK_sgtsv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_sgtsv(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_sgtsv(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+
    void LAPACK_zgtsv(int[] arg0, int[] arg1, double[] arg2, double[] arg3, double[] arg4,
       double[] arg5, int[] arg6, int[] arg7) ;
-
-   void LAPACK_zgtsv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_zgtsv(IntPointer arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       IntPointer arg7) ;
+
+   void LAPACK_zgtsv(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7) ;
+
+   void LAPACK_cgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      float[] arg17, float[] arg18, float[] arg19, float[] arg20, int[] arg21, long arg22,
+      long arg23) ;
+
+   void LAPACK_cgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22,
+      long arg23) ;
 
    void LAPACK_cgtsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9,
@@ -7597,25 +7601,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, FloatPointer arg19, FloatPointer arg20, IntPointer arg21, long arg22,
       long arg23) ;
 
-   void LAPACK_cgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_cgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      float[] arg17, float[] arg18, float[] arg19, float[] arg20, int[] arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_cgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
-      FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23) ;
-
    void LAPACK_cgtsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       FloatPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11,
@@ -7623,18 +7608,11 @@ public interface BLASLapackDelegator {
       FloatPointer arg16, FloatPointer arg17, FloatPointer arg18, FloatPointer arg19,
       FloatPointer arg20, IntPointer arg21, long arg22, long arg23) ;
 
-   void LAPACK_dgtsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
-      DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
-      DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
-      IntPointer arg20, IntPointer arg21, long arg22, long arg23) ;
-
-   void LAPACK_dgtsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
-      double[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21,
-      long arg22, long arg23) ;
+   void LAPACK_cgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
+      FloatBuffer arg19, FloatBuffer arg20, IntBuffer arg21, long arg22, long arg23) ;
 
    void LAPACK_dgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -7643,17 +7621,17 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23) ;
 
+   void LAPACK_dgtsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      DoublePointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
+      DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
+      DoublePointer arg16, DoublePointer arg17, DoublePointer arg18, DoublePointer arg19,
+      IntPointer arg20, IntPointer arg21, long arg22, long arg23) ;
+
    void LAPACK_dgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
       int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
       double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_dgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23) ;
 
    void LAPACK_dgtsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
@@ -7663,12 +7641,18 @@ public interface BLASLapackDelegator {
       IntPointer arg15, DoublePointer arg16, DoublePointer arg17, DoublePointer arg18,
       DoublePointer arg19, IntPointer arg20, IntPointer arg21, long arg22, long arg23) ;
 
-   void LAPACK_sgtsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, FloatPointer arg17,
-      FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21, long arg22,
+   void LAPACK_dgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
       long arg23) ;
+
+   void LAPACK_dgtsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
+      double[] arg16, double[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21,
+      long arg22, long arg23) ;
 
    void LAPACK_sgtsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, float[] arg9,
@@ -7676,11 +7660,11 @@ public interface BLASLapackDelegator {
       float[] arg16, float[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_sgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
+   void LAPACK_sgtsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, IntPointer arg15, FloatPointer arg16, FloatPointer arg17,
+      FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21, long arg22,
       long arg23) ;
 
    void LAPACK_sgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
@@ -7689,11 +7673,12 @@ public interface BLASLapackDelegator {
       float[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21, long arg22,
       long arg23) ;
 
-   void LAPACK_sgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
-      FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22, long arg23) ;
+   void LAPACK_sgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22,
+      long arg23) ;
 
    void LAPACK_sgtsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
@@ -7701,6 +7686,25 @@ public interface BLASLapackDelegator {
       FloatPointer arg12, IntPointer arg13, FloatPointer arg14, IntPointer arg15,
       FloatPointer arg16, FloatPointer arg17, FloatPointer arg18, FloatPointer arg19,
       IntPointer arg20, IntPointer arg21, long arg22, long arg23) ;
+
+   void LAPACK_sgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, FloatBuffer arg18,
+      FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, long arg22, long arg23) ;
+
+   void LAPACK_zgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21, long arg22,
+      long arg23) ;
+
+   void LAPACK_zgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
+      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, long arg22,
+      long arg23) ;
 
    void LAPACK_zgtsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
@@ -7715,18 +7719,12 @@ public interface BLASLapackDelegator {
       double[] arg16, double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_zgtsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
-      DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_zgtsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, double[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      double[] arg17, double[] arg18, double[] arg19, double[] arg20, int[] arg21, long arg22,
-      long arg23) ;
+   void LAPACK_zgtsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
+      DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, DoublePointer arg10,
+      IntPointer arg11, DoublePointer arg12, IntPointer arg13, DoublePointer arg14,
+      IntPointer arg15, DoublePointer arg16, DoublePointer arg17, DoublePointer arg18,
+      DoublePointer arg19, DoublePointer arg20, IntPointer arg21, long arg22, long arg23) ;
 
    void LAPACK_zgtsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -7734,13 +7732,6 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17,
       DoubleBuffer arg18, DoubleBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, long arg22,
       long arg23) ;
-
-   void LAPACK_zgtsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
-      DoublePointer arg7, DoublePointer arg8, DoublePointer arg9, DoublePointer arg10,
-      IntPointer arg11, DoublePointer arg12, IntPointer arg13, DoublePointer arg14,
-      IntPointer arg15, DoublePointer arg16, DoublePointer arg17, DoublePointer arg18,
-      DoublePointer arg19, DoublePointer arg20, IntPointer arg21, long arg22, long arg23) ;
 
    void LAPACK_cgttrf(IntBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
@@ -7751,23 +7742,26 @@ public interface BLASLapackDelegator {
    void LAPACK_cgttrf(IntPointer arg0, FloatPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_dgttrf(int[] arg0, double[] arg1, double[] arg2, double[] arg3, double[] arg4,
-      int[] arg5, int[] arg6) ;
-
    void LAPACK_dgttrf(IntBuffer arg0, DoubleBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_dgttrf(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
       DoublePointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_sgttrf(int[] arg0, float[] arg1, float[] arg2, float[] arg3, float[] arg4,
+   void LAPACK_dgttrf(int[] arg0, double[] arg1, double[] arg2, double[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
 
    void LAPACK_sgttrf(IntBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
+   void LAPACK_sgttrf(int[] arg0, float[] arg1, float[] arg2, float[] arg3, float[] arg4,
+      int[] arg5, int[] arg6) ;
+
    void LAPACK_sgttrf(IntPointer arg0, FloatPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+
+   void LAPACK_zgttrf(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
+      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
    void LAPACK_zgttrf(int[] arg0, double[] arg1, double[] arg2, double[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
@@ -7775,55 +7769,55 @@ public interface BLASLapackDelegator {
    void LAPACK_zgttrf(IntBuffer arg0, DoubleBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_zgttrf(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
-      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
+   void LAPACK_cgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_cgttrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
       float[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_cgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_cgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_cgttrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_cgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_cgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_cgttrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_dgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_cgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_dgttrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       double[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
       int[] arg10, long arg11) ;
 
-   void LAPACK_dgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_dgttrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
+   void LAPACK_dgttrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
+      IntPointer arg7, DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_dgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_dgttrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
-      IntPointer arg7, DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_dgttrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
+   void LAPACK_dgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_dgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+
+   void LAPACK_sgttrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_sgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
@@ -7833,24 +7827,29 @@ public interface BLASLapackDelegator {
       float[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_sgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_sgttrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
+   void LAPACK_sgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_sgttrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_sgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_sgttrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_zgttrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       double[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9,
       int[] arg10, long arg11) ;
+
+   void LAPACK_zgttrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
+   void LAPACK_zgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_zgttrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
@@ -7860,33 +7859,21 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_zgttrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
-
    void LAPACK_zgttrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       IntPointer arg7, DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zgttrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_chbev_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_chbev_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12, long arg13) ;
 
-   void LAPACK_chbev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
-
    void LAPACK_chbev_base(String arg0, String arg1, int[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
       long arg12, long arg13) ;
+
+   void LAPACK_chbev_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_chbev_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -7897,13 +7884,9 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
 
-   void LAPACK_zhbev_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12, long arg13) ;
-
-   void LAPACK_zhbev_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, long arg12, long arg13) ;
+   void LAPACK_chbev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
 
    void LAPACK_zhbev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -7913,30 +7896,29 @@ public interface BLASLapackDelegator {
       int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
       int[] arg11, long arg12, long arg13) ;
 
-   void LAPACK_zhbev_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
-
    void LAPACK_zhbev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
 
-   void LAPACK_chbev_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, long arg13,
-      long arg14) ;
+   void LAPACK_zhbev_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
 
-   void LAPACK_chbev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, long arg13, long arg14) ;
+   void LAPACK_zhbev_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, long arg12, long arg13) ;
+
+   void LAPACK_zhbev_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12, long arg13) ;
 
    void LAPACK_chbev_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
 
-   void LAPACK_chbev_2stage_base(String arg0, String arg1, int[] arg2, int[] arg3,
+   void LAPACK_chbev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, long arg13, long arg14) ;
 
@@ -7950,14 +7932,19 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
+   void LAPACK_chbev_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, long arg13,
+      long arg14) ;
+
+   void LAPACK_chbev_2stage_base(String arg0, String arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_zhbev_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, long arg13,
       long arg14) ;
-
-   void LAPACK_zhbev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zhbev_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -7978,10 +7965,24 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
+   void LAPACK_zhbev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
+
+   void LAPACK_chbevd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
    void LAPACK_chbevd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+
+   void LAPACK_chbevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
    void LAPACK_chbevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
@@ -7996,62 +7997,43 @@ public interface BLASLapackDelegator {
       int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
       int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
-   void LAPACK_chbevd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_chbevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_zhbevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
    void LAPACK_zhbevd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_zhbevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16,
-      long arg17) ;
-
-   void LAPACK_zhbevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
    void LAPACK_zhbevd_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
-
-   void LAPACK_zhbevd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
    void LAPACK_zhbevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_chbevd_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
-      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_zhbevd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zhbevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16,
+      long arg17) ;
 
    void LAPACK_chbevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
-   void LAPACK_chbevd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_chbevd_2stage_base(String arg0, String arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+   void LAPACK_chbevd_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
    void LAPACK_chbevd_2stage_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -8063,15 +8045,24 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_zhbevd_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
-      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_chbevd_2stage_base(String arg0, String arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+
+   void LAPACK_chbevd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
    void LAPACK_zhbevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
       int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16,
       long arg17) ;
+
+   void LAPACK_zhbevd_2stage_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
+      IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
    void LAPACK_zhbevd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -8093,31 +8084,18 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_chbevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22,
-      long arg23, long arg24, long arg25) ;
+   void LAPACK_chbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
+      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
+      IntPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21,
+      IntPointer arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_chbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
       int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
       int[] arg17, float[] arg18, float[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23,
       long arg24, long arg25) ;
-
-   void LAPACK_chbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25) ;
-
-   void LAPACK_chbevx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, float[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23, long arg24,
-      long arg25) ;
 
    void LAPACK_chbevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -8127,11 +8105,30 @@ public interface BLASLapackDelegator {
       long arg25) ;
 
    void LAPACK_chbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
-      FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
-      IntPointer arg17, FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21,
-      IntPointer arg22, long arg23, long arg24, long arg25) ;
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      long arg23, long arg24, long arg25) ;
+
+   void LAPACK_chbevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, FloatPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22,
+      long arg23, long arg24, long arg25) ;
+
+   void LAPACK_chbevx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, float[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23, long arg24,
+      long arg25) ;
+
+   void LAPACK_zhbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
+      double[] arg16, int[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21,
+      int[] arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_zhbevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
@@ -8140,23 +8137,11 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, DoublePointer arg19, IntPointer arg20,
       IntPointer arg21, IntPointer arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_zhbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
-      double[] arg16, int[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21,
-      int[] arg22, long arg23, long arg24, long arg25) ;
-
    void LAPACK_zhbevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, DoubleBuffer arg16, IntBuffer arg17,
       DoubleBuffer arg18, DoubleBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25) ;
-
-   void LAPACK_zhbevx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, int[] arg22,
       long arg23, long arg24, long arg25) ;
 
    void LAPACK_zhbevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
@@ -8173,31 +8158,11 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, DoublePointer arg19, IntPointer arg20,
       IntPointer arg21, IntPointer arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_chbevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
-      IntPointer arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_chbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      int[] arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9,
-      float[] arg10, int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15,
-      float[] arg16, int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21,
-      int[] arg22, int[] arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_chbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      IntBuffer arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_chbevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
-      long arg24, long arg25, long arg26) ;
+   void LAPACK_zhbevx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, double[] arg19, int[] arg20, int[] arg21, int[] arg22,
+      long arg23, long arg24, long arg25) ;
 
    void LAPACK_chbevx_2stage_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -8207,24 +8172,37 @@ public interface BLASLapackDelegator {
       long arg24, long arg25, long arg26) ;
 
    void LAPACK_chbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      int[] arg3, int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9,
+      float[] arg10, int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15,
+      float[] arg16, int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21,
+      int[] arg22, int[] arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_chbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, FloatPointer arg16,
       IntPointer arg17, FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21,
       IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zhbevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
-      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_chbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zhbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      int[] arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
-      double[] arg16, int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21,
-      int[] arg22, int[] arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_chbevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
+      IntPointer arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_chbevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
+      long arg24, long arg25, long arg26) ;
 
    void LAPACK_zhbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -8238,6 +8216,19 @@ public interface BLASLapackDelegator {
       double[] arg10, int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
       double[] arg16, int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21,
       int[] arg22, int[] arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_zhbevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      int[] arg3, int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15,
+      double[] arg16, int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21,
+      int[] arg22, int[] arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_zhbevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
+      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_zhbevx_2stage_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -8253,24 +8244,6 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
       IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_chbgst_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_chbgst_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_chbgst_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
-   void LAPACK_chbgst_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      float[] arg12, int[] arg13, long arg14, long arg15) ;
-
    void LAPACK_chbgst_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, IntBuffer arg13,
@@ -8281,6 +8254,29 @@ public interface BLASLapackDelegator {
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
       IntPointer arg13, long arg14, long arg15) ;
 
+   void LAPACK_chbgst_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      float[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_chbgst_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_chbgst_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
+
+   void LAPACK_chbgst_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, float[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_zhbgst_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
    void LAPACK_zhbgst_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
@@ -8290,24 +8286,34 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_zhbgst_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
    void LAPACK_zhbgst_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, double[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_zhbgst_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
+      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_zhbgst_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_zhbgst_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
-      DoublePointer arg12, IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_chbgv_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
+      FloatPointer arg13, IntPointer arg14, long arg15, long arg16) ;
+
+   void LAPACK_chbgv_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, long arg15, long arg16) ;
+
+   void LAPACK_chbgv_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, long arg15, long arg16) ;
 
    void LAPACK_chbgv_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -8318,29 +8324,14 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
       int[] arg11, float[] arg12, float[] arg13, int[] arg14, long arg15, long arg16) ;
 
-   void LAPACK_chbgv_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, long arg15, long arg16) ;
-
    void LAPACK_chbgv_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
       float[] arg12, float[] arg13, int[] arg14, long arg15, long arg16) ;
 
-   void LAPACK_chbgv_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, long arg15, long arg16) ;
-
-   void LAPACK_chbgv_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
-      FloatPointer arg13, IntPointer arg14, long arg15, long arg16) ;
-
-   void LAPACK_zhbgv_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
+   void LAPACK_zhbgv_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
 
    void LAPACK_zhbgv_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
@@ -8352,19 +8343,24 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
 
-   void LAPACK_zhbgv_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, int[] arg14, long arg15, long arg16) ;
-
-   void LAPACK_zhbgv_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, long arg15, long arg16) ;
+   void LAPACK_zhbgv_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
 
    void LAPACK_zhbgv_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11,
       DoublePointer arg12, DoublePointer arg13, IntPointer arg14, long arg15, long arg16) ;
+
+   void LAPACK_zhbgv_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, int[] arg14, long arg15, long arg16) ;
+
+   void LAPACK_chbgvd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17, int[] arg18,
+      long arg19, long arg20) ;
 
    void LAPACK_chbgvd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -8372,21 +8368,16 @@ public interface BLASLapackDelegator {
       FloatPointer arg14, IntPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
       long arg19, long arg20) ;
 
-   void LAPACK_chbgvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17,
-      int[] arg18, long arg19, long arg20) ;
-
    void LAPACK_chbgvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       IntBuffer arg13, FloatBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       IntBuffer arg18, long arg19, long arg20) ;
 
-   void LAPACK_chbgvd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17, int[] arg18,
-      long arg19, long arg20) ;
+   void LAPACK_chbgvd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, int[] arg16, int[] arg17,
+      int[] arg18, long arg19, long arg20) ;
 
    void LAPACK_chbgvd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -8400,6 +8391,12 @@ public interface BLASLapackDelegator {
       IntPointer arg13, FloatPointer arg14, IntPointer arg15, IntPointer arg16, IntPointer arg17,
       IntPointer arg18, long arg19, long arg20) ;
 
+   void LAPACK_zhbgvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17,
+      IntBuffer arg18, long arg19, long arg20) ;
+
    void LAPACK_zhbgvd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
@@ -8410,12 +8407,6 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
       double[] arg10, int[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15,
       int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20) ;
-
-   void LAPACK_zhbgvd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, IntBuffer arg16, IntBuffer arg17,
-      IntBuffer arg18, long arg19, long arg20) ;
 
    void LAPACK_zhbgvd_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
@@ -8434,32 +8425,6 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, IntPointer arg15,
       IntPointer arg16, IntPointer arg17, IntPointer arg18, long arg19, long arg20) ;
 
-   void LAPACK_chbgvx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      IntPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, FloatPointer arg18,
-      FloatPointer arg19, IntPointer arg20, FloatPointer arg21, FloatPointer arg22,
-      IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_chbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, float[] arg19, int[] arg20, float[] arg21, float[] arg22,
-      int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_chbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
-      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_chbgvx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, float[] arg19, int[] arg20, float[] arg21, float[] arg22, int[] arg23,
-      int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
-
    void LAPACK_chbgvx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
@@ -8475,6 +8440,32 @@ public interface BLASLapackDelegator {
       FloatPointer arg22, IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26,
       long arg27, long arg28) ;
 
+   void LAPACK_chbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, FloatBuffer arg19, IntBuffer arg20, FloatBuffer arg21, FloatBuffer arg22,
+      IntBuffer arg23, IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_chbgvx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      IntPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, FloatPointer arg18,
+      FloatPointer arg19, IntPointer arg20, FloatPointer arg21, FloatPointer arg22,
+      IntPointer arg23, IntPointer arg24, IntPointer arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_chbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, float[] arg19, int[] arg20, float[] arg21, float[] arg22,
+      int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_chbgvx_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, float[] arg19, int[] arg20, float[] arg21, float[] arg22, int[] arg23,
+      int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
+
    void LAPACK_zhbgvx_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
@@ -8482,12 +8473,6 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, DoublePointer arg19, IntPointer arg20,
       DoublePointer arg21, DoublePointer arg22, IntPointer arg23, IntPointer arg24,
       IntPointer arg25, long arg26, long arg27, long arg28) ;
-
-   void LAPACK_zhbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, double[] arg19, int[] arg20, double[] arg21, double[] arg22,
-      int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
 
    void LAPACK_zhbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -8503,13 +8488,6 @@ public interface BLASLapackDelegator {
       double[] arg18, double[] arg19, int[] arg20, double[] arg21, double[] arg22, int[] arg23,
       int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
 
-   void LAPACK_zhbgvx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      DoubleBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, IntBuffer arg23,
-      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
-
    void LAPACK_zhbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11,
@@ -8518,9 +8496,31 @@ public interface BLASLapackDelegator {
       IntPointer arg20, DoublePointer arg21, DoublePointer arg22, IntPointer arg23,
       IntPointer arg24, IntPointer arg25, long arg26, long arg27, long arg28) ;
 
+   void LAPACK_zhbgvx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      DoubleBuffer arg19, IntBuffer arg20, DoubleBuffer arg21, DoubleBuffer arg22, IntBuffer arg23,
+      IntBuffer arg24, IntBuffer arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_zhbgvx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, double[] arg19, int[] arg20, double[] arg21, double[] arg22,
+      int[] arg23, int[] arg24, int[] arg25, long arg26, long arg27, long arg28) ;
+
+   void LAPACK_chbtrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
+
    void LAPACK_chbtrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12, long arg13) ;
+
+   void LAPACK_chbtrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12,
+      long arg13) ;
 
    void LAPACK_chbtrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10,
@@ -8535,13 +8535,9 @@ public interface BLASLapackDelegator {
       int[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
       long arg12, long arg13) ;
 
-   void LAPACK_chbtrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
-
-   void LAPACK_chbtrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12,
+   void LAPACK_zhbtrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12,
       long arg13) ;
 
    void LAPACK_zhbtrd_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
@@ -8549,27 +8545,22 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
 
-   void LAPACK_zhbtrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, long arg12, long arg13) ;
-
-   void LAPACK_zhbtrd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12,
-      long arg13) ;
-
    void LAPACK_zhbtrd_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
       int[] arg11, long arg12, long arg13) ;
-
-   void LAPACK_zhbtrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
 
    void LAPACK_zhbtrd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
+
+   void LAPACK_zhbtrd_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
+
+   void LAPACK_zhbtrd_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_checon_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -8577,6 +8568,10 @@ public interface BLASLapackDelegator {
 
    void LAPACK_checon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_checon_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      IntPointer arg8, long arg9) ;
 
    void LAPACK_checon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -8589,38 +8584,31 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       long arg9) ;
 
-   void LAPACK_checon_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      IntPointer arg8, long arg9) ;
-
    void LAPACK_zhecon_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       long arg9) ;
 
-   void LAPACK_zhecon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_zhecon_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zhecon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, long arg9) ;
 
-   void LAPACK_zhecon_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_zhecon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, long arg9) ;
 
    void LAPACK_zhecon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
       long arg9) ;
 
-   void LAPACK_zhecon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, long arg9) ;
+   void LAPACK_zhecon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_checon_3_base(String arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, long arg10) ;
-
-   void LAPACK_checon_3_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10) ;
 
    void LAPACK_checon_3_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -8629,27 +8617,26 @@ public interface BLASLapackDelegator {
    void LAPACK_checon_3_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10) ;
 
+   void LAPACK_checon_3_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, IntPointer arg9, long arg10) ;
+
    void LAPACK_checon_3_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, long arg10) ;
 
-   void LAPACK_checon_3_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, IntPointer arg9, long arg10) ;
+   void LAPACK_checon_3_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10) ;
+
+   void LAPACK_zhecon_3_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, long arg10) ;
 
    void LAPACK_zhecon_3_base(String arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10) ;
 
    void LAPACK_zhecon_3_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      long arg10) ;
-
-   void LAPACK_zhecon_3_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, long arg10) ;
-
-   void LAPACK_zhecon_3_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
       long arg10) ;
 
@@ -8661,12 +8648,13 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10) ;
 
+   void LAPACK_zhecon_3_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      long arg10) ;
+
    void LAPACK_cheequb_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       long arg9) ;
-
-   void LAPACK_cheequb_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_cheequb_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -8683,18 +8671,18 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_cheequb_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, long arg9) ;
+
    void LAPACK_zheequb_base(String arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, IntPointer arg8, long arg9) ;
-
-   void LAPACK_zheequb_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zheequb_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, long arg9) ;
 
-   void LAPACK_zheequb_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+   void LAPACK_zheequb_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zheequb_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
@@ -8705,13 +8693,8 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, IntPointer arg8, long arg9) ;
 
-   void LAPACK_cheev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_cheev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10,
-      long arg11) ;
+   void LAPACK_zheequb_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_cheev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -8724,24 +8707,28 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, long arg10, long arg11) ;
 
+   void LAPACK_cheev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
+
+   void LAPACK_cheev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10,
+      long arg11) ;
+
    void LAPACK_cheev_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
-   void LAPACK_zheev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_zheev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10,
-      long arg11) ;
+   void LAPACK_zheev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_zheev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
 
-   void LAPACK_zheev_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10, long arg11) ;
+   void LAPACK_zheev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
 
    void LAPACK_zheev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -8751,13 +8738,13 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
+   void LAPACK_zheev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10,
+      long arg11) ;
+
    void LAPACK_cheev_2stage_base(String arg0, String arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_cheev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
-      float[] arg3, int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9,
-      long arg10, long arg11) ;
 
    void LAPACK_cheev_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -8767,21 +8754,21 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10,
       long arg11) ;
 
-   void LAPACK_cheev_2stage_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, long arg10, long arg11) ;
-
    void LAPACK_cheev_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
+   void LAPACK_cheev_2stage_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, long arg10, long arg11) ;
+
+   void LAPACK_cheev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
+      float[] arg3, int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9,
+      long arg10, long arg11) ;
+
    void LAPACK_zheev_2stage_base(String arg0, String arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_zheev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
-      double[] arg3, int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8,
-      int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_zheev_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -8791,22 +8778,22 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10,
       long arg11) ;
 
+   void LAPACK_zheev_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
+
    void LAPACK_zheev_2stage_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, long arg10, long arg11) ;
 
-   void LAPACK_zheev_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_zheev_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
+      double[] arg3, int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8,
+      int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_cheevd_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12, long arg13,
       long arg14) ;
-
-   void LAPACK_cheevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_cheevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -8817,6 +8804,10 @@ public interface BLASLapackDelegator {
       float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, int[] arg11,
       int[] arg12, long arg13, long arg14) ;
 
+   void LAPACK_cheevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      int[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_cheevd_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12, long arg13, long arg14) ;
@@ -8824,6 +8815,15 @@ public interface BLASLapackDelegator {
    void LAPACK_cheevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
+      long arg13, long arg14) ;
+
+   void LAPACK_zheevd_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
+      int[] arg12, long arg13, long arg14) ;
+
+   void LAPACK_zheevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
 
    void LAPACK_zheevd_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
@@ -8835,15 +8835,6 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       int[] arg11, int[] arg12, long arg13, long arg14) ;
 
-   void LAPACK_zheevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      long arg13, long arg14) ;
-
-   void LAPACK_zheevd_base(String arg0, String arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, int[] arg11,
-      int[] arg12, long arg13, long arg14) ;
-
    void LAPACK_zheevd_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12, long arg13, long arg14) ;
@@ -8853,23 +8844,19 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
+   void LAPACK_cheevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
+      float[] arg3, int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9,
+      int[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_cheevd_2stage_base(String arg0, String arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
-   void LAPACK_cheevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
-      float[] arg3, int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9,
-      int[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
-
    void LAPACK_cheevd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
-
-   void LAPACK_cheevd_2stage_base(String arg0, String arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_cheevd_2stage_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -8880,14 +8867,14 @@ public interface BLASLapackDelegator {
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
+   void LAPACK_cheevd_2stage_base(String arg0, String arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      int[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_zheevd_2stage_base(String arg0, String arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
-
-   void LAPACK_zheevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
-      double[] arg3, int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8,
-      int[] arg9, int[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zheevd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -8898,15 +8885,19 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       int[] arg11, int[] arg12, long arg13, long arg14) ;
 
+   void LAPACK_zheevd_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
+      long arg13, long arg14) ;
+
    void LAPACK_zheevd_2stage_base(String arg0, String arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
 
-   void LAPACK_zheevd_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
-      long arg13, long arg14) ;
+   void LAPACK_zheevd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
+      double[] arg3, int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8,
+      int[] arg9, int[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_cheevr_base(String arg0, String arg1, String arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
@@ -8920,19 +8911,6 @@ public interface BLASLapackDelegator {
       int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16,
       int[] arg17, float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23,
       long arg24, long arg25) ;
-
-   void LAPACK_cheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25) ;
-
-   void LAPACK_cheevr_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16, int[] arg17,
-      float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23, long arg24,
-      long arg25) ;
 
    void LAPACK_cheevr_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -8948,18 +8926,25 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22,
       long arg23, long arg24, long arg25) ;
 
+   void LAPACK_cheevr_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
+      int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16, int[] arg17,
+      float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23, long arg24,
+      long arg25) ;
+
+   void LAPACK_cheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      long arg23, long arg24, long arg25) ;
+
    void LAPACK_zheevr_base(String arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       DoublePointer arg13, IntPointer arg14, IntPointer arg15, DoublePointer arg16,
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21,
       IntPointer arg22, long arg23, long arg24, long arg25) ;
-
-   void LAPACK_zheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15,
-      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, int[] arg21,
-      int[] arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_zheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -8974,13 +8959,6 @@ public interface BLASLapackDelegator {
       double[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23, long arg24,
       long arg25) ;
 
-   void LAPACK_zheevr_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22, long arg23, long arg24,
-      long arg25) ;
-
    void LAPACK_zheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
@@ -8988,31 +8966,24 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21,
       IntPointer arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_cheevr_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      IntPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, FloatPointer arg18,
-      IntPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22, long arg23,
-      long arg24, long arg25) ;
+   void LAPACK_zheevr_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22, long arg23, long arg24,
+      long arg25) ;
+
+   void LAPACK_zheevr_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15,
+      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, int[] arg21,
+      int[] arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_cheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       int[] arg3, float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9,
       float[] arg10, int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15,
       float[] arg16, int[] arg17, float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22,
       long arg23, long arg24, long arg25) ;
-
-   void LAPACK_cheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
-      FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
-      long arg23, long arg24, long arg25) ;
-
-   void LAPACK_cheevr_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23,
-      long arg24, long arg25) ;
 
    void LAPACK_cheevr_2stage_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -9028,18 +8999,32 @@ public interface BLASLapackDelegator {
       FloatPointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22,
       long arg23, long arg24, long arg25) ;
 
+   void LAPACK_cheevr_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, float[] arg13, int[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, int[] arg20, int[] arg21, int[] arg22, long arg23,
+      long arg24, long arg25) ;
+
+   void LAPACK_cheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, IntBuffer arg15, FloatBuffer arg16, IntBuffer arg17,
+      FloatBuffer arg18, IntBuffer arg19, IntBuffer arg20, IntBuffer arg21, IntBuffer arg22,
+      long arg23, long arg24, long arg25) ;
+
+   void LAPACK_cheevr_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      IntPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17, FloatPointer arg18,
+      IntPointer arg19, IntPointer arg20, IntPointer arg21, IntPointer arg22, long arg23,
+      long arg24, long arg25) ;
+
    void LAPACK_zheevr_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
       DoublePointer arg13, IntPointer arg14, IntPointer arg15, DoublePointer arg16,
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21,
       IntPointer arg22, long arg23, long arg24, long arg25) ;
-
-   void LAPACK_zheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      int[] arg3, double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15,
-      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, int[] arg21,
-      int[] arg22, long arg23, long arg24, long arg25) ;
 
    void LAPACK_zheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -9050,6 +9035,12 @@ public interface BLASLapackDelegator {
 
    void LAPACK_zheevr_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15,
+      double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, int[] arg21,
+      int[] arg22, long arg23, long arg24, long arg25) ;
+
+   void LAPACK_zheevr_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      int[] arg3, double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
       double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, int[] arg15,
       double[] arg16, int[] arg17, double[] arg18, int[] arg19, int[] arg20, int[] arg21,
       int[] arg22, long arg23, long arg24, long arg25) ;
@@ -9068,33 +9059,27 @@ public interface BLASLapackDelegator {
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, IntPointer arg20, IntPointer arg21,
       IntPointer arg22, long arg23, long arg24, long arg25) ;
 
-   void LAPACK_cheevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
-      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_cheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
       int[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
       float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_cheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
-      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17,
-      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cheevx_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
       int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10, int[] arg11,
       float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
       int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_cheevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_cheevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
+      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_cheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
+      FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17,
+      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7,
@@ -9103,18 +9088,24 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_zheevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
-      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
-      long arg22, long arg23) ;
+   void LAPACK_cheevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_zheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
       double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15,
       int[] arg16, double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
+
+   void LAPACK_zheevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
+      DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
+      long arg22, long arg23) ;
 
    void LAPACK_zheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
@@ -9127,12 +9118,6 @@ public interface BLASLapackDelegator {
       double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16, double[] arg17,
       int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_zheevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_zheevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
@@ -9140,11 +9125,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_cheevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
-      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_zheevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cheevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       int[] arg3, float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9,
@@ -9152,16 +9137,22 @@ public interface BLASLapackDelegator {
       int[] arg16, float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
 
+   void LAPACK_cheevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
+      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
    void LAPACK_cheevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_cheevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
-      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+   void LAPACK_cheevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, IntPointer arg16, FloatPointer arg17, IntPointer arg18,
+      IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_cheevx_2stage_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -9176,6 +9167,12 @@ public interface BLASLapackDelegator {
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
+   void LAPACK_zheevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
+      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
    void LAPACK_zheevx_2stage_base(String arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, DoublePointer arg7, IntPointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
@@ -9183,20 +9180,14 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_zheevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      int[] arg3, double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
+   void LAPACK_zheevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
       double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15,
       int[] arg16, double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
 
    void LAPACK_zheevx_2stage_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
-      IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_zheevx_2stage_base(String arg0, String arg1, String arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
+      int[] arg3, double[] arg4, int[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
       double[] arg10, int[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15,
       int[] arg16, double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
@@ -9214,18 +9205,15 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_chegst_base(IntPointer arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_chegst_base(int[] arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_chegst_base(int[] arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_chegst_base(IntBuffer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
-   void LAPACK_chegst_base(int[] arg0, String arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_chegst_base(IntPointer arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_chegst_base(IntBuffer arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
@@ -9234,11 +9222,11 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
+   void LAPACK_chegst_base(int[] arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
    void LAPACK_zhegst_base(IntPointer arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_zhegst_base(int[] arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhegst_base(IntBuffer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -9250,6 +9238,9 @@ public interface BLASLapackDelegator {
    void LAPACK_zhegst_base(IntBuffer arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
+   void LAPACK_zhegst_base(int[] arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
    void LAPACK_zhegst_base(IntPointer arg0, BytePointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
@@ -9258,10 +9249,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, long arg13,
       long arg14) ;
-
-   void LAPACK_chegv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_chegv_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -9282,14 +9269,14 @@ public interface BLASLapackDelegator {
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
+   void LAPACK_chegv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_zhegv_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, long arg13,
       long arg14) ;
-
-   void LAPACK_zhegv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zhegv_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -9299,6 +9286,10 @@ public interface BLASLapackDelegator {
    void LAPACK_zhegv_base(int[] arg0, String arg1, String arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, long arg13, long arg14) ;
+
+   void LAPACK_zhegv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zhegv_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -9310,19 +9301,14 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
       IntPointer arg12, long arg13, long arg14) ;
 
-   void LAPACK_chegv_2stage_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, long arg13,
-      long arg14) ;
-
-   void LAPACK_chegv_2stage_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, long arg13, long arg14) ;
-
    void LAPACK_chegv_2stage_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
+
+   void LAPACK_chegv_2stage_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_chegv_2stage_base(int[] arg0, String arg1, String arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
@@ -9333,26 +9319,22 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, long arg13,
       long arg14) ;
 
+   void LAPACK_chegv_2stage_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, long arg13,
+      long arg14) ;
+
    void LAPACK_chegv_2stage_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
-
-   void LAPACK_zhegv_2stage_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, long arg13,
-      long arg14) ;
-
-   void LAPACK_zhegv_2stage_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zhegv_2stage_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
 
-   void LAPACK_zhegv_2stage_base(int[] arg0, String arg1, String arg2, int[] arg3,
+   void LAPACK_zhegv_2stage_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
       int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
 
@@ -9366,14 +9348,19 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
       IntPointer arg12, long arg13, long arg14) ;
 
+   void LAPACK_zhegv_2stage_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, long arg13,
+      long arg14) ;
+
+   void LAPACK_zhegv_2stage_base(int[] arg0, String arg1, String arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_chegvd_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
-
-   void LAPACK_chegvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
    void LAPACK_chegvd_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -9384,20 +9371,35 @@ public interface BLASLapackDelegator {
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10, float[] arg11,
       int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
-   void LAPACK_chegvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
    void LAPACK_chegvd_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
+   void LAPACK_chegvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_chegvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+
    void LAPACK_zhegvd_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zhegvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
+      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zhegvd_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
+      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
+      IntPointer arg12, IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16,
+      long arg17) ;
 
    void LAPACK_zhegvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
@@ -9412,30 +9414,6 @@ public interface BLASLapackDelegator {
    void LAPACK_zhegvd_base(int[] arg0, String arg1, String arg2, int[] arg3, double[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
-
-   void LAPACK_zhegvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
-   void LAPACK_zhegvd_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
-      IntPointer arg12, IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16,
-      long arg17) ;
-
-   void LAPACK_chegvx_base(IntPointer arg0, String arg1, String arg2, String arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
-      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
-      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
-      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
-      IntPointer arg23, long arg24, long arg25, long arg26) ;
-
-   void LAPACK_chegvx_base(int[] arg0, BytePointer arg1, BytePointer arg2, BytePointer arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
-      int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
-      long arg24, long arg25, long arg26) ;
 
    void LAPACK_chegvx_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -9455,6 +9433,19 @@ public interface BLASLapackDelegator {
       FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
       IntBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18,
       IntBuffer arg19, FloatBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
+      long arg24, long arg25, long arg26) ;
+
+   void LAPACK_chegvx_base(IntPointer arg0, String arg1, String arg2, String arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
+      FloatPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, FloatPointer arg13,
+      IntPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
+      FloatPointer arg18, IntPointer arg19, FloatPointer arg20, IntPointer arg21, IntPointer arg22,
+      IntPointer arg23, long arg24, long arg25, long arg26) ;
+
+   void LAPACK_chegvx_base(int[] arg0, BytePointer arg1, BytePointer arg2, BytePointer arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
+      int[] arg11, int[] arg12, float[] arg13, int[] arg14, float[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, float[] arg20, int[] arg21, int[] arg22, int[] arg23,
       long arg24, long arg25, long arg26) ;
 
    void LAPACK_chegvx_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
@@ -9484,11 +9475,12 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg18, IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22,
       IntBuffer arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zhegvx_base(int[] arg0, String arg1, String arg2, String arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, int[] arg22,
-      int[] arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_zhegvx_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, DoublePointer arg16,
+      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
+      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
 
    void LAPACK_zhegvx_base(IntBuffer arg0, String arg1, String arg2, String arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -9497,65 +9489,45 @@ public interface BLASLapackDelegator {
       IntBuffer arg19, DoubleBuffer arg20, IntBuffer arg21, IntBuffer arg22, IntBuffer arg23,
       long arg24, long arg25, long arg26) ;
 
-   void LAPACK_zhegvx_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, DoublePointer arg16,
-      IntPointer arg17, DoublePointer arg18, IntPointer arg19, DoublePointer arg20,
-      IntPointer arg21, IntPointer arg22, IntPointer arg23, long arg24, long arg25, long arg26) ;
+   void LAPACK_zhegvx_base(int[] arg0, String arg1, String arg2, String arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, double[] arg13, int[] arg14, double[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, double[] arg20, int[] arg21, int[] arg22,
+      int[] arg23, long arg24, long arg25, long arg26) ;
 
-   void LAPACK_cherfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
-      FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17) ;
+   void LAPACK_cherfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
+      float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16, long arg17) ;
 
    void LAPACK_cherfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
       int[] arg4, float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
       int[] arg11, float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16,
       long arg17) ;
 
+   void LAPACK_cherfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12, FloatPointer arg13,
+      FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17) ;
+
    void LAPACK_cherfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12,
       FloatBuffer arg13, FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
-
-   void LAPACK_cherfs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
-      float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16, long arg17) ;
-
-   void LAPACK_cherfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
 
    void LAPACK_cherfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, FloatPointer arg12,
       FloatPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17) ;
 
-   void LAPACK_zherfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16, long arg17) ;
+   void LAPACK_cherfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17) ;
 
    void LAPACK_zherfs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       int[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16,
       long arg17) ;
-
-   void LAPACK_zherfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17) ;
-
-   void LAPACK_zherfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
-      double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16, long arg17) ;
-
-   void LAPACK_zherfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
-      DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17) ;
 
    void LAPACK_zherfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
@@ -9563,12 +9535,28 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, DoublePointer arg13, DoublePointer arg14, DoublePointer arg15,
       IntPointer arg16, long arg17) ;
 
+   void LAPACK_zherfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12, DoubleBuffer arg13,
+      DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17) ;
+
+   void LAPACK_zherfs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16, long arg17) ;
+
+   void LAPACK_zherfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10, int[] arg11,
+      double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16, long arg17) ;
+
+   void LAPACK_zherfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17) ;
+
    void LAPACK_chesv_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_chesv_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_chesv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -9577,28 +9565,20 @@ public interface BLASLapackDelegator {
    void LAPACK_chesv_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_chesv_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_chesv_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_zhesv_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_chesv_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_chesv_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zhesv_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
-
-   void LAPACK_zhesv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_zhesv_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zhesv_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -9608,13 +9588,20 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_zhesv_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_zhesv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_zhesv_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, IntPointer arg10, long arg11) ;
+
    void LAPACK_chesv_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_chesv_aa_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_chesv_aa_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -9622,6 +9609,10 @@ public interface BLASLapackDelegator {
 
    void LAPACK_chesv_aa_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
+
+   void LAPACK_chesv_aa_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
 
    void LAPACK_chesv_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -9631,37 +9622,33 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
-   void LAPACK_zhesv_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zhesv_aa_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
+   void LAPACK_zhesv_aa_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
    void LAPACK_zhesv_aa_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_zhesv_aa_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_zhesv_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_zhesv_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_zhesv_aa_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_zhesv_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_zhesv_aa_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
    void LAPACK_chesv_aa_2stage_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14) ;
-
-   void LAPACK_chesv_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
    void LAPACK_chesv_aa_2stage_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -9672,33 +9659,24 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
-   void LAPACK_chesv_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14) ;
-
    void LAPACK_chesv_aa_2stage_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14) ;
 
-   void LAPACK_zhesv_aa_2stage_base(String arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14) ;
+   void LAPACK_chesv_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14) ;
 
-   void LAPACK_zhesv_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14) ;
+   void LAPACK_chesv_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
    void LAPACK_zhesv_aa_2stage_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14) ;
-
-   void LAPACK_zhesv_aa_2stage_base(String arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14) ;
 
    void LAPACK_zhesv_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -9710,13 +9688,22 @@ public interface BLASLapackDelegator {
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       IntPointer arg13, long arg14) ;
 
+   void LAPACK_zhesv_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14) ;
+
+   void LAPACK_zhesv_aa_2stage_base(String arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14) ;
+
+   void LAPACK_zhesv_aa_2stage_base(String arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14) ;
+
    void LAPACK_chesv_rk_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_chesv_rk_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
 
    void LAPACK_chesv_rk_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -9726,29 +9713,17 @@ public interface BLASLapackDelegator {
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, int[] arg11,
       long arg12) ;
 
-   void LAPACK_chesv_rk_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
-
    void LAPACK_chesv_rk_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_zhesv_rk_base(String arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
+   void LAPACK_chesv_rk_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_zhesv_rk_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+   void LAPACK_chesv_rk_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       int[] arg11, long arg12) ;
-
-   void LAPACK_zhesv_rk_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
-
-   void LAPACK_zhesv_rk_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10, int[] arg11,
-      long arg12) ;
 
    void LAPACK_zhesv_rk_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -9758,6 +9733,26 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_zhesv_rk_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10, int[] arg11,
+      long arg12) ;
+
+   void LAPACK_zhesv_rk_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
+
+   void LAPACK_zhesv_rk_base(String arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
+
+   void LAPACK_zhesv_rk_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
+
+   void LAPACK_chesv_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_chesv_rook_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
@@ -9766,28 +9761,20 @@ public interface BLASLapackDelegator {
       int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_chesv_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_chesv_rook_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_chesv_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
    void LAPACK_chesv_rook_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_chesv_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_zhesv_rook_base(String arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zhesv_rook_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_zhesv_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -9797,24 +9784,28 @@ public interface BLASLapackDelegator {
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
+   void LAPACK_zhesv_rook_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+
    void LAPACK_zhesv_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_zhesv_rook_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
+   void LAPACK_zhesv_rook_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
+   void LAPACK_chesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, float[] arg14, float[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, long arg20, long arg21) ;
 
    void LAPACK_chesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       FloatPointer arg14, FloatPointer arg15, FloatPointer arg16, IntPointer arg17,
       FloatPointer arg18, IntPointer arg19, long arg20, long arg21) ;
-
-   void LAPACK_chesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, float[] arg14, float[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, long arg20, long arg21) ;
 
    void LAPACK_chesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -9827,28 +9818,23 @@ public interface BLASLapackDelegator {
       int[] arg12, float[] arg13, float[] arg14, float[] arg15, float[] arg16, int[] arg17,
       float[] arg18, int[] arg19, long arg20, long arg21) ;
 
-   void LAPACK_chesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18,
-      IntBuffer arg19, long arg20, long arg21) ;
-
    void LAPACK_chesvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, FloatPointer arg14, FloatPointer arg15, FloatPointer arg16,
       IntPointer arg17, FloatPointer arg18, IntPointer arg19, long arg20, long arg21) ;
 
+   void LAPACK_chesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, FloatBuffer arg16, IntBuffer arg17, FloatBuffer arg18,
+      IntBuffer arg19, long arg20, long arg21) ;
+
    void LAPACK_zhesvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
       DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, DoublePointer arg16,
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, long arg20, long arg21) ;
-
-   void LAPACK_zhesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, double[] arg14, double[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, long arg20, long arg21) ;
 
    void LAPACK_zhesvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -9860,6 +9846,11 @@ public interface BLASLapackDelegator {
       int[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10, double[] arg11,
       int[] arg12, double[] arg13, double[] arg14, double[] arg15, double[] arg16, int[] arg17,
       double[] arg18, int[] arg19, long arg20, long arg21) ;
+
+   void LAPACK_zhesvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, double[] arg14, double[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, long arg20, long arg21) ;
 
    void LAPACK_zhesvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -9873,17 +9864,11 @@ public interface BLASLapackDelegator {
       DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, DoublePointer arg16,
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, long arg20, long arg21) ;
 
-   void LAPACK_cheswapr_base(String arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
-
-   void LAPACK_cheswapr_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, int[] arg5, long arg6) ;
-
    void LAPACK_cheswapr_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, long arg6) ;
 
-   void LAPACK_cheswapr_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      int[] arg5, long arg6) ;
+   void LAPACK_cheswapr_base(String arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
 
    void LAPACK_cheswapr_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, long arg6) ;
@@ -9891,14 +9876,14 @@ public interface BLASLapackDelegator {
    void LAPACK_cheswapr_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
 
-   void LAPACK_zheswapr_base(String arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
+   void LAPACK_cheswapr_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      int[] arg5, long arg6) ;
 
-   void LAPACK_zheswapr_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+   void LAPACK_cheswapr_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, int[] arg5, long arg6) ;
 
-   void LAPACK_zheswapr_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, long arg6) ;
+   void LAPACK_zheswapr_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
 
    void LAPACK_zheswapr_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       int[] arg5, long arg6) ;
@@ -9909,12 +9894,15 @@ public interface BLASLapackDelegator {
    void LAPACK_zheswapr_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, long arg6) ;
 
+   void LAPACK_zheswapr_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, int[] arg5, long arg6) ;
+
+   void LAPACK_zheswapr_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, long arg6) ;
+
    void LAPACK_chetrd_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       IntPointer arg9, long arg10) ;
-
-   void LAPACK_chetrd_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
 
    void LAPACK_chetrd_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -9923,28 +9911,24 @@ public interface BLASLapackDelegator {
    void LAPACK_chetrd_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
 
-   void LAPACK_chetrd_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, long arg10) ;
-
    void LAPACK_chetrd_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10) ;
 
-   void LAPACK_zhetrd_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, long arg10) ;
+   void LAPACK_chetrd_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, long arg10) ;
+
+   void LAPACK_chetrd_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
 
    void LAPACK_zhetrd_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9,
       long arg10) ;
 
-   void LAPACK_zhetrd_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, long arg10) ;
-
-   void LAPACK_zhetrd_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10) ;
+   void LAPACK_zhetrd_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, long arg10) ;
 
    void LAPACK_zhetrd_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -9954,14 +9938,17 @@ public interface BLASLapackDelegator {
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6,
       DoublePointer arg7, IntPointer arg8, IntPointer arg9, long arg10) ;
 
+   void LAPACK_zhetrd_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10) ;
+
+   void LAPACK_zhetrd_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, long arg10) ;
+
    void LAPACK_chetrd_2stage_base(String arg0, String arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
-
-   void LAPACK_chetrd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
-      float[] arg3, int[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9,
-      float[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_chetrd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -9972,6 +9959,10 @@ public interface BLASLapackDelegator {
       int[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10,
       int[] arg11, int[] arg12, long arg13, long arg14) ;
 
+   void LAPACK_chetrd_2stage_base(BytePointer arg0, BytePointer arg1, int[] arg2,
+      float[] arg3, int[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9,
+      float[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
+
    void LAPACK_chetrd_2stage_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, long arg13, long arg14) ;
@@ -9979,6 +9970,15 @@ public interface BLASLapackDelegator {
    void LAPACK_chetrd_2stage_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
+      long arg13, long arg14) ;
+
+   void LAPACK_zhetrd_2stage_base(String arg0, String arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
+
+   void LAPACK_zhetrd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       long arg13, long arg14) ;
 
    void LAPACK_zhetrd_2stage_base(String arg0, String arg1, IntPointer arg2,
@@ -9990,15 +9990,6 @@ public interface BLASLapackDelegator {
       double[] arg3, int[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8,
       int[] arg9, double[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
 
-   void LAPACK_zhetrd_2stage_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      long arg13, long arg14) ;
-
-   void LAPACK_zhetrd_2stage_base(String arg0, String arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
-
    void LAPACK_zhetrd_2stage_base(String arg0, String arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
@@ -10009,30 +10000,30 @@ public interface BLASLapackDelegator {
       DoublePointer arg7, DoublePointer arg8, IntPointer arg9, DoublePointer arg10,
       IntPointer arg11, IntPointer arg12, long arg13, long arg14) ;
 
+   void LAPACK_chetrf_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+
    void LAPACK_chetrf_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_chetrf_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_chetrf_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_chetrf_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chetrf_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chetrf_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zhetrf_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+   void LAPACK_chetrf_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_zhetrf_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_zhetrf_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_zhetrf_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -10041,12 +10032,18 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetrf_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhetrf_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_zhetrf_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
+
+   void LAPACK_zhetrf_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_chetrf_aa_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_chetrf_aa_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chetrf_aa_base(String arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
@@ -10055,12 +10052,6 @@ public interface BLASLapackDelegator {
    void LAPACK_chetrf_aa_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_chetrf_aa_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
-   void LAPACK_chetrf_aa_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
    void LAPACK_chetrf_aa_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
@@ -10068,19 +10059,19 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zhetrf_aa_base(String arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      long arg8) ;
-
-   void LAPACK_zhetrf_aa_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
    void LAPACK_zhetrf_aa_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
+   void LAPACK_zhetrf_aa_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+      long arg8) ;
+
    void LAPACK_zhetrf_aa_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_zhetrf_aa_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhetrf_aa_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
@@ -10089,11 +10080,7 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_chetrf_aa_2stage_base(String arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_chetrf_aa_2stage_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+   void LAPACK_chetrf_aa_2stage_base(String arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
@@ -10101,25 +10088,25 @@ public interface BLASLapackDelegator {
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_chetrf_aa_2stage_base(String arg0, int[] arg1, float[] arg2, int[] arg3,
+   void LAPACK_chetrf_aa_2stage_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_chetrf_aa_2stage_base(String arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
+   void LAPACK_chetrf_aa_2stage_base(String arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_chetrf_aa_2stage_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_chetrf_aa_2stage_base(String arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
    void LAPACK_zhetrf_aa_2stage_base(String arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zhetrf_aa_2stage_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_zhetrf_aa_2stage_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -10133,13 +10120,13 @@ public interface BLASLapackDelegator {
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
+   void LAPACK_zhetrf_aa_2stage_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
    void LAPACK_zhetrf_aa_2stage_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_chetrf_rk_base(String arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      IntPointer arg8, long arg9) ;
 
    void LAPACK_chetrf_rk_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
@@ -10151,26 +10138,30 @@ public interface BLASLapackDelegator {
    void LAPACK_chetrf_rk_base(String arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
-   void LAPACK_chetrf_rk_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
-      long arg9) ;
+   void LAPACK_chetrf_rk_base(String arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      IntPointer arg8, long arg9) ;
 
    void LAPACK_chetrf_rk_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_chetrf_rk_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
+      long arg9) ;
+
    void LAPACK_zhetrf_rk_base(String arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
-
-   void LAPACK_zhetrf_rk_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zhetrf_rk_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, long arg9) ;
 
    void LAPACK_zhetrf_rk_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_zhetrf_rk_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zhetrf_rk_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
@@ -10185,34 +10176,27 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_chetrf_rook_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
    void LAPACK_chetrf_rook_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chetrf_rook_base(String arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_chetrf_rook_base(String arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_chetrf_rook_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zhetrf_rook_base(String arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_chetrf_rook_base(String arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
-   void LAPACK_zhetrf_rook_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_chetrf_rook_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhetrf_rook_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
-   void LAPACK_zhetrf_rook_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+   void LAPACK_zhetrf_rook_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhetrf_rook_base(String arg0, IntBuffer arg1, DoubleBuffer arg2,
@@ -10223,11 +10207,15 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
+   void LAPACK_zhetrf_rook_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+      long arg8) ;
+
+   void LAPACK_zhetrf_rook_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
    void LAPACK_chetri_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
-
-   void LAPACK_chetri_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_chetri_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
@@ -10235,11 +10223,17 @@ public interface BLASLapackDelegator {
    void LAPACK_chetri_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, long arg7) ;
 
+   void LAPACK_chetri_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
+
    void LAPACK_chetri_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
 
-   void LAPACK_chetri_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
+   void LAPACK_chetri_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, long arg7) ;
+
+   void LAPACK_zhetri_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
 
    void LAPACK_zhetri_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
@@ -10247,23 +10241,18 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetri_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, long arg7) ;
 
-   void LAPACK_zhetri_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_zhetri_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, long arg7) ;
+   void LAPACK_zhetri_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
    void LAPACK_zhetri_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
 
-   void LAPACK_zhetri_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
+   void LAPACK_zhetri_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, long arg7) ;
 
-   void LAPACK_chetri2_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_chetri2_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_chetri2_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
+      long arg8) ;
 
    void LAPACK_chetri2_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
@@ -10274,11 +10263,20 @@ public interface BLASLapackDelegator {
    void LAPACK_chetri2_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
-   void LAPACK_chetri2_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_chetri2_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_chetri2_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+
+   void LAPACK_zhetri2_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_zhetri2_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+      long arg8) ;
+
+   void LAPACK_zhetri2_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
@@ -10292,46 +10290,32 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetri2_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhetri2_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
-   void LAPACK_zhetri2_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_chetri2x_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chetri2x_base(String arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_chetri2x_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chetri2x_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_chetri2x_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chetri2x_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chetri2x_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zhetri2x_base(String arg0, IntPointer arg1, DoublePointer arg2,
-      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
-      long arg8) ;
+   void LAPACK_chetri2x_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_chetri2x_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhetri2x_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhetri2x_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+   void LAPACK_zhetri2x_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
-
-   void LAPACK_zhetri2x_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhetri2x_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
@@ -10340,12 +10324,19 @@ public interface BLASLapackDelegator {
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_chetri_3_base(String arg0, IntPointer arg1, FloatPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      IntPointer arg8, long arg9) ;
+   void LAPACK_zhetri2x_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_zhetri2x_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      long arg8) ;
 
    void LAPACK_chetri_3_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_chetri_3_base(String arg0, IntPointer arg1, FloatPointer arg2,
+      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      IntPointer arg8, long arg9) ;
 
    void LAPACK_chetri_3_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -10362,41 +10353,38 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
-   void LAPACK_zhetri_3_base(String arg0, IntPointer arg1, DoublePointer arg2,
+   void LAPACK_zhetri_3_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
    void LAPACK_zhetri_3_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
       double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
-   void LAPACK_zhetri_3_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
-   void LAPACK_zhetri_3_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
    void LAPACK_zhetri_3_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
       long arg9) ;
 
-   void LAPACK_zhetri_3_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
+   void LAPACK_zhetri_3_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
+   void LAPACK_zhetri_3_base(String arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
+
+   void LAPACK_zhetri_3_base(String arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_chetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_chetrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
       long arg9) ;
 
-   void LAPACK_chetrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
    void LAPACK_chetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, long arg9) ;
-
-   void LAPACK_chetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_chetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8, long arg9) ;
@@ -10405,38 +10393,42 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
-   void LAPACK_zhetrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
-      long arg9) ;
-
-   void LAPACK_zhetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_zhetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
-   void LAPACK_zhetrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_chetrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
    void LAPACK_zhetrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
       long arg9) ;
 
+   void LAPACK_zhetrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
    void LAPACK_zhetrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
+
+   void LAPACK_zhetrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_zhetrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
+      long arg9) ;
+
+   void LAPACK_zhetrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
+   void LAPACK_chetrs2_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, long arg10) ;
 
    void LAPACK_chetrs2_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, long arg10) ;
 
-   void LAPACK_chetrs2_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10) ;
-
-   void LAPACK_chetrs2_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, long arg10) ;
+   void LAPACK_chetrs2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      FloatPointer arg8, IntPointer arg9, long arg10) ;
 
    void LAPACK_chetrs2_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10) ;
@@ -10445,16 +10437,23 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, long arg10) ;
 
-   void LAPACK_chetrs2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      FloatPointer arg8, IntPointer arg9, long arg10) ;
+   void LAPACK_chetrs2_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, long arg10) ;
+
+   void LAPACK_zhetrs2_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, long arg10) ;
+
+   void LAPACK_zhetrs2_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10) ;
 
    void LAPACK_zhetrs2_base(String arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10) ;
 
-   void LAPACK_zhetrs2_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10) ;
+   void LAPACK_zhetrs2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, long arg10) ;
 
    void LAPACK_zhetrs2_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -10463,59 +10462,62 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetrs2_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, long arg10) ;
 
-   void LAPACK_zhetrs2_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, long arg10) ;
-
-   void LAPACK_zhetrs2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, long arg10) ;
+   void LAPACK_chetrs_3_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, long arg10) ;
 
    void LAPACK_chetrs_3_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10) ;
 
-   void LAPACK_chetrs_3_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
-
-   void LAPACK_chetrs_3_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, long arg10) ;
-
    void LAPACK_chetrs_3_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
-
-   void LAPACK_chetrs_3_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, long arg10) ;
 
    void LAPACK_chetrs_3_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10) ;
 
+   void LAPACK_chetrs_3_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, long arg10) ;
+
+   void LAPACK_chetrs_3_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, int[] arg9, long arg10) ;
+
+   void LAPACK_zhetrs_3_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, IntBuffer arg9, long arg10) ;
+
    void LAPACK_zhetrs_3_base(String arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
+      IntPointer arg8, IntPointer arg9, long arg10) ;
+
+   void LAPACK_zhetrs_3_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      IntBuffer arg9, long arg10) ;
+
+   void LAPACK_zhetrs_3_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10) ;
+
+   void LAPACK_zhetrs_3_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       IntPointer arg8, IntPointer arg9, long arg10) ;
 
    void LAPACK_zhetrs_3_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10) ;
 
-   void LAPACK_zhetrs_3_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, IntBuffer arg9, long arg10) ;
+   void LAPACK_chetrs_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_zhetrs_3_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, int[] arg9, long arg10) ;
+   void LAPACK_chetrs_aa_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_zhetrs_3_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      IntBuffer arg9, long arg10) ;
+   void LAPACK_chetrs_aa_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
 
-   void LAPACK_zhetrs_3_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
-      IntPointer arg8, IntPointer arg9, long arg10) ;
-
-   void LAPACK_chetrs_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
+   void LAPACK_chetrs_aa_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
@@ -10523,28 +10525,13 @@ public interface BLASLapackDelegator {
       int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10,
       long arg11) ;
 
-   void LAPACK_chetrs_aa_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_chetrs_aa_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, int[] arg10, long arg11) ;
-
-   void LAPACK_chetrs_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
-   void LAPACK_chetrs_aa_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+   void LAPACK_chetrs_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
    void LAPACK_zhetrs_aa_base(String arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
-
-   void LAPACK_zhetrs_aa_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      long arg11) ;
 
    void LAPACK_zhetrs_aa_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -10553,29 +10540,21 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetrs_aa_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10, long arg11) ;
 
-   void LAPACK_zhetrs_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, long arg11) ;
-
    void LAPACK_zhetrs_aa_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, long arg11) ;
 
+   void LAPACK_zhetrs_aa_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, long arg11) ;
+
+   void LAPACK_zhetrs_aa_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      long arg11) ;
+
    void LAPACK_chetrs_aa_2stage_base(String arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_chetrs_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
-
-   void LAPACK_chetrs_aa_2stage_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
-
-   void LAPACK_chetrs_aa_2stage_base(String arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
 
    void LAPACK_chetrs_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -10585,13 +10564,21 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
+   void LAPACK_chetrs_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
+
+   void LAPACK_chetrs_aa_2stage_base(String arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
+
+   void LAPACK_chetrs_aa_2stage_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
+
    void LAPACK_zhetrs_aa_2stage_base(String arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
-
-   void LAPACK_zhetrs_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      int[] arg11, long arg12) ;
 
    void LAPACK_zhetrs_aa_2stage_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -10601,27 +10588,17 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
       int[] arg11, long arg12) ;
 
-   void LAPACK_zhetrs_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
-
    void LAPACK_zhetrs_aa_2stage_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11, long arg12) ;
 
-   void LAPACK_chetrs_rook_base(String arg0, IntPointer arg1, IntPointer arg2,
-      FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
-      IntPointer arg8, long arg9) ;
+   void LAPACK_zhetrs_aa_2stage_base(String arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, long arg12) ;
 
-   void LAPACK_chetrs_rook_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_chetrs_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
-   void LAPACK_chetrs_rook_base(String arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+   void LAPACK_zhetrs_aa_2stage_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      int[] arg11, long arg12) ;
 
    void LAPACK_chetrs_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -10631,6 +10608,24 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_chetrs_rook_base(String arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_chetrs_rook_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, int[] arg8, long arg9) ;
+
+   void LAPACK_chetrs_rook_base(String arg0, IntPointer arg1, IntPointer arg2,
+      FloatPointer arg3, IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
+      IntPointer arg8, long arg9) ;
+
+   void LAPACK_chetrs_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
+   void LAPACK_zhetrs_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
    void LAPACK_zhetrs_rook_base(String arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
@@ -10638,28 +10633,20 @@ public interface BLASLapackDelegator {
    void LAPACK_zhetrs_rook_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
 
-   void LAPACK_zhetrs_rook_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
-
    void LAPACK_zhetrs_rook_base(String arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, int[] arg5, double[] arg6, int[] arg7, int[] arg8, long arg9) ;
-
-   void LAPACK_zhetrs_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      IntBuffer arg8, long arg9) ;
 
    void LAPACK_zhetrs_rook_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       IntPointer arg8, long arg9) ;
 
+   void LAPACK_zhetrs_rook_base(String arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      IntBuffer arg8, long arg9) ;
+
    void LAPACK_chfrk_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       FloatPointer arg9, long arg10, long arg11, long arg12) ;
-
-   void LAPACK_chfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, long arg10,
-      long arg11, long arg12) ;
 
    void LAPACK_chfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -10673,6 +10660,10 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       FloatBuffer arg9, long arg10, long arg11, long arg12) ;
 
+   void LAPACK_chfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, float[] arg5, float[] arg6, int[] arg7, float[] arg8, float[] arg9, long arg10,
+      long arg11, long arg12) ;
+
    void LAPACK_chfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       FloatPointer arg8, FloatPointer arg9, long arg10, long arg11, long arg12) ;
@@ -10685,32 +10676,27 @@ public interface BLASLapackDelegator {
       int[] arg4, double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9,
       long arg10, long arg11, long arg12) ;
 
-   void LAPACK_zhfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, long arg10, long arg11, long arg12) ;
-
    void LAPACK_zhfrk_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
       double[] arg5, double[] arg6, int[] arg7, double[] arg8, double[] arg9, long arg10,
       long arg11, long arg12) ;
 
-   void LAPACK_zhfrk_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      DoubleBuffer arg9, long arg10, long arg11, long arg12) ;
+   void LAPACK_zhfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, long arg10, long arg11, long arg12) ;
 
    void LAPACK_zhfrk_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, DoublePointer arg9, long arg10, long arg11, long arg12) ;
+
+   void LAPACK_zhfrk_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      DoubleBuffer arg9, long arg10, long arg11, long arg12) ;
 
    void LAPACK_chgeqz_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
       FloatPointer arg14, IntPointer arg15, FloatPointer arg16, IntPointer arg17,
       FloatPointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
-
-   void LAPACK_chgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      int[] arg17, float[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_chgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -10722,6 +10708,11 @@ public interface BLASLapackDelegator {
       int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
       float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16, int[] arg17,
       float[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
+
+   void LAPACK_chgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, int[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      int[] arg17, float[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_chgeqz_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -10736,14 +10727,8 @@ public interface BLASLapackDelegator {
       FloatPointer arg16, IntPointer arg17, FloatPointer arg18, IntPointer arg19, long arg20,
       long arg21, long arg22) ;
 
-   void LAPACK_dhgeqz_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
-      DoublePointer arg17, IntPointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
-
-   void LAPACK_dhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+   void LAPACK_dhgeqz_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
       double[] arg17, int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
@@ -10753,8 +10738,14 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg13, IntBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, DoubleBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, long arg20, long arg21, long arg22) ;
 
-   void LAPACK_dhgeqz_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+   void LAPACK_dhgeqz_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, IntPointer arg14, DoublePointer arg15, IntPointer arg16,
+      DoublePointer arg17, IntPointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
+
+   void LAPACK_dhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
       double[] arg11, double[] arg12, double[] arg13, int[] arg14, double[] arg15, int[] arg16,
       double[] arg17, int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
@@ -10771,27 +10762,22 @@ public interface BLASLapackDelegator {
       IntPointer arg16, DoublePointer arg17, IntPointer arg18, IntPointer arg19, long arg20,
       long arg21, long arg22) ;
 
+   void LAPACK_shgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
+      float[] arg17, int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
+
    void LAPACK_shgeqz_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
       FloatPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16,
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
 
-   void LAPACK_shgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16,
-      float[] arg17, int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
-
    void LAPACK_shgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
       FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12,
       FloatBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, FloatBuffer arg17,
       IntBuffer arg18, IntBuffer arg19, long arg20, long arg21, long arg22) ;
-
-   void LAPACK_shgeqz_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
-      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
-      int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_shgeqz_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -10806,16 +10792,16 @@ public interface BLASLapackDelegator {
       IntPointer arg16, FloatPointer arg17, IntPointer arg18, IntPointer arg19, long arg20,
       long arg21, long arg22) ;
 
+   void LAPACK_shgeqz_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10, float[] arg11,
+      float[] arg12, float[] arg13, int[] arg14, float[] arg15, int[] arg16, float[] arg17,
+      int[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
+
    void LAPACK_zhgeqz_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, DoublePointer arg11, DoublePointer arg12,
       IntPointer arg13, DoublePointer arg14, IntPointer arg15, DoublePointer arg16,
       IntPointer arg17, DoublePointer arg18, IntPointer arg19, long arg20, long arg21, long arg22) ;
-
-   void LAPACK_zhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      int[] arg17, double[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
    void LAPACK_zhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -10828,12 +10814,6 @@ public interface BLASLapackDelegator {
       double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
       int[] arg17, double[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
 
-   void LAPACK_zhgeqz_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
-      IntBuffer arg19, long arg20, long arg21, long arg22) ;
-
    void LAPACK_zhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
@@ -10841,18 +10821,22 @@ public interface BLASLapackDelegator {
       DoublePointer arg16, IntPointer arg17, DoublePointer arg18, IntPointer arg19, long arg20,
       long arg21, long arg22) ;
 
+   void LAPACK_zhgeqz_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12, IntBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, IntBuffer arg17, DoubleBuffer arg18,
+      IntBuffer arg19, long arg20, long arg21, long arg22) ;
+
+   void LAPACK_zhgeqz_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, int[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      int[] arg17, double[] arg18, int[] arg19, long arg20, long arg21, long arg22) ;
+
    void LAPACK_chpcon_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_chpcon_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       float[] arg4, float[] arg5, float[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chpcon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
-      long arg8) ;
-
-   void LAPACK_chpcon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_chpcon_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, long arg8) ;
@@ -10861,11 +10845,15 @@ public interface BLASLapackDelegator {
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7,
       long arg8) ;
 
+   void LAPACK_chpcon_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_chpcon_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
+      IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
+      long arg8) ;
+
    void LAPACK_zhpcon_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_zhpcon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhpcon_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
@@ -10874,27 +10862,19 @@ public interface BLASLapackDelegator {
    void LAPACK_zhpcon_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhpcon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_zhpcon_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_chpev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      IntPointer arg9, long arg10, long arg11) ;
+   void LAPACK_zhpcon_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_zhpcon_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_chpev_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
       float[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10,
       long arg11) ;
-
-   void LAPACK_chpev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
-
-   void LAPACK_chpev_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10, long arg11) ;
 
    void LAPACK_chpev_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
@@ -10904,13 +10884,20 @@ public interface BLASLapackDelegator {
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
+   void LAPACK_chpev_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, long arg10, long arg11) ;
+
+   void LAPACK_chpev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, long arg10, long arg11) ;
+
+   void LAPACK_chpev_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      IntPointer arg9, long arg10, long arg11) ;
+
    void LAPACK_zhpev_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
-
-   void LAPACK_zhpev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      long arg10, long arg11) ;
 
    void LAPACK_zhpev_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -10918,6 +10905,10 @@ public interface BLASLapackDelegator {
 
    void LAPACK_zhpev_base(String arg0, String arg1, int[] arg2, double[] arg3, double[] arg4,
       double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, long arg10, long arg11) ;
+
+   void LAPACK_zhpev_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      long arg10, long arg11) ;
 
    void LAPACK_zhpev_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -10927,42 +10918,42 @@ public interface BLASLapackDelegator {
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, DoublePointer arg8, IntPointer arg9, long arg10, long arg11) ;
 
+   void LAPACK_chpevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      float[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      int[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_chpevd_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, int[] arg11,
+      int[] arg12, int[] arg13, long arg14, long arg15) ;
+
    void LAPACK_chpevd_base(String arg0, String arg1, IntPointer arg2, FloatPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_chpevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      float[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      int[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_chpevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, long arg14, long arg15) ;
 
-   void LAPACK_chpevd_base(String arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10, int[] arg11,
-      int[] arg12, int[] arg13, long arg14, long arg15) ;
+   void LAPACK_chpevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
 
    void LAPACK_chpevd_base(String arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
       FloatBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
-   void LAPACK_chpevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      IntPointer arg8, FloatPointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
+   void LAPACK_zhpevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, int[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zhpevd_base(String arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
       DoublePointer arg9, IntPointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
       long arg14, long arg15) ;
-
-   void LAPACK_zhpevd_base(BytePointer arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, int[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_zhpevd_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -10973,26 +10964,25 @@ public interface BLASLapackDelegator {
       double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
       int[] arg10, int[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
-   void LAPACK_zhpevd_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
-      DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15) ;
-
    void LAPACK_zhpevd_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6,
       DoublePointer arg7, IntPointer arg8, DoublePointer arg9, IntPointer arg10, IntPointer arg11,
       IntPointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_chpevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
-      FloatPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
-      long arg19, long arg20, long arg21) ;
+   void LAPACK_zhpevd_base(String arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
+      DoubleBuffer arg9, IntBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      long arg14, long arg15) ;
 
    void LAPACK_chpevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       float[] arg4, float[] arg5, float[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, float[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16,
       int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_chpevx_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
+      float[] arg5, float[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
+      float[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16, int[] arg17,
+      int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_chpevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -11000,10 +10990,11 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       IntBuffer arg18, long arg19, long arg20, long arg21) ;
 
-   void LAPACK_chpevx_base(String arg0, String arg1, String arg2, int[] arg3, float[] arg4,
-      float[] arg5, float[] arg6, int[] arg7, int[] arg8, float[] arg9, int[] arg10, float[] arg11,
-      float[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16, int[] arg17,
-      int[] arg18, long arg19, long arg20, long arg21) ;
+   void LAPACK_chpevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, IntPointer arg7, IntPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12, IntPointer arg13,
+      FloatPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
+      long arg19, long arg20, long arg21) ;
 
    void LAPACK_chpevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -11017,27 +11008,27 @@ public interface BLASLapackDelegator {
       IntPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
       IntPointer arg18, long arg19, long arg20, long arg21) ;
 
-   void LAPACK_zhpevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
-      IntPointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16,
-      IntPointer arg17, IntPointer arg18, long arg19, long arg20, long arg21) ;
-
-   void LAPACK_zhpevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, double[] arg15,
-      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
-
    void LAPACK_zhpevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
       IntBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       IntBuffer arg18, long arg19, long arg20, long arg21) ;
 
+   void LAPACK_zhpevx_base(String arg0, String arg1, String arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, IntPointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
+      IntPointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16,
+      IntPointer arg17, IntPointer arg18, long arg19, long arg20, long arg21) ;
+
    void LAPACK_zhpevx_base(String arg0, String arg1, String arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9, int[] arg10,
       double[] arg11, double[] arg12, int[] arg13, double[] arg14, double[] arg15, int[] arg16,
       int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_zhpevx_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, int[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, double[] arg12, int[] arg13, double[] arg14, double[] arg15,
+      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_zhpevx_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, IntBuffer arg8,
@@ -11051,29 +11042,26 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, IntPointer arg13, DoublePointer arg14, DoublePointer arg15,
       IntPointer arg16, IntPointer arg17, IntPointer arg18, long arg19, long arg20, long arg21) ;
 
-   void LAPACK_chpgst_base(IntPointer arg0, String arg1, IntPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, IntPointer arg5, long arg6) ;
-
-   void LAPACK_chpgst_base(int[] arg0, BytePointer arg1, int[] arg2, float[] arg3,
-      float[] arg4, int[] arg5, long arg6) ;
+   void LAPACK_chpgst_base(int[] arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
+      int[] arg5, long arg6) ;
 
    void LAPACK_chpgst_base(IntBuffer arg0, BytePointer arg1, IntBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, IntBuffer arg5, long arg6) ;
 
-   void LAPACK_chpgst_base(int[] arg0, String arg1, int[] arg2, float[] arg3, float[] arg4,
-      int[] arg5, long arg6) ;
-
-   void LAPACK_chpgst_base(IntBuffer arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, long arg6) ;
+   void LAPACK_chpgst_base(IntPointer arg0, String arg1, IntPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, IntPointer arg5, long arg6) ;
 
    void LAPACK_chpgst_base(IntPointer arg0, BytePointer arg1, IntPointer arg2,
       FloatPointer arg3, FloatPointer arg4, IntPointer arg5, long arg6) ;
 
+   void LAPACK_chpgst_base(IntBuffer arg0, String arg1, IntBuffer arg2, FloatBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, long arg6) ;
+
+   void LAPACK_chpgst_base(int[] arg0, BytePointer arg1, int[] arg2, float[] arg3,
+      float[] arg4, int[] arg5, long arg6) ;
+
    void LAPACK_zhpgst_base(IntPointer arg0, String arg1, IntPointer arg2, DoublePointer arg3,
       DoublePointer arg4, IntPointer arg5, long arg6) ;
-
-   void LAPACK_zhpgst_base(int[] arg0, BytePointer arg1, int[] arg2, double[] arg3,
-      double[] arg4, int[] arg5, long arg6) ;
 
    void LAPACK_zhpgst_base(IntBuffer arg0, BytePointer arg1, IntBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
@@ -11081,19 +11069,18 @@ public interface BLASLapackDelegator {
    void LAPACK_zhpgst_base(int[] arg0, String arg1, int[] arg2, double[] arg3, double[] arg4,
       int[] arg5, long arg6) ;
 
+   void LAPACK_zhpgst_base(IntPointer arg0, BytePointer arg1, IntPointer arg2,
+      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, long arg6) ;
+
    void LAPACK_zhpgst_base(IntBuffer arg0, String arg1, IntBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
 
-   void LAPACK_zhpgst_base(IntPointer arg0, BytePointer arg1, IntPointer arg2,
-      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, long arg6) ;
+   void LAPACK_zhpgst_base(int[] arg0, BytePointer arg1, int[] arg2, double[] arg3,
+      double[] arg4, int[] arg5, long arg6) ;
 
    void LAPACK_chpgv_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, IntPointer arg8,
       FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12, long arg13) ;
-
-   void LAPACK_chpgv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9,
-      float[] arg10, int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_chpgv_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
@@ -11103,23 +11090,23 @@ public interface BLASLapackDelegator {
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, float[] arg10,
       int[] arg11, long arg12, long arg13) ;
 
-   void LAPACK_chpgv_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
-
    void LAPACK_chpgv_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, FloatPointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
 
+   void LAPACK_chpgv_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, FloatBuffer arg10, IntBuffer arg11, long arg12, long arg13) ;
+
+   void LAPACK_chpgv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9,
+      float[] arg10, int[] arg11, long arg12, long arg13) ;
+
    void LAPACK_zhpgv_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       IntPointer arg8, DoublePointer arg9, DoublePointer arg10, IntPointer arg11, long arg12,
       long arg13) ;
-
-   void LAPACK_zhpgv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      double[] arg10, int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_zhpgv_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -11128,6 +11115,10 @@ public interface BLASLapackDelegator {
    void LAPACK_zhpgv_base(int[] arg0, String arg1, String arg2, int[] arg3, double[] arg4,
       double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, double[] arg10,
       int[] arg11, long arg12, long arg13) ;
+
+   void LAPACK_zhpgv_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      double[] arg10, int[] arg11, long arg12, long arg13) ;
 
    void LAPACK_zhpgv_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -11143,10 +11134,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_chpgvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
-
    void LAPACK_chpgvd_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
       IntBuffer arg8, FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12,
@@ -11156,34 +11143,29 @@ public interface BLASLapackDelegator {
       float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
-   void LAPACK_chpgvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
-
    void LAPACK_chpgvd_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
 
-   void LAPACK_zhpgvd_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
-      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
-      IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+   void LAPACK_chpgvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
-   void LAPACK_zhpgvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16,
-      long arg17) ;
+   void LAPACK_chpgvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      float[] arg4, float[] arg5, float[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
 
    void LAPACK_zhpgvd_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
       IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
       IntBuffer arg13, IntBuffer arg14, IntBuffer arg15, long arg16, long arg17) ;
 
-   void LAPACK_zhpgvd_base(int[] arg0, String arg1, String arg2, int[] arg3, double[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+   void LAPACK_zhpgvd_base(int[] arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      double[] arg4, double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16,
+      long arg17) ;
 
    void LAPACK_zhpgvd_base(IntBuffer arg0, String arg1, String arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -11196,16 +11178,20 @@ public interface BLASLapackDelegator {
       DoublePointer arg11, IntPointer arg12, IntPointer arg13, IntPointer arg14, IntPointer arg15,
       long arg16, long arg17) ;
 
+   void LAPACK_zhpgvd_base(IntPointer arg0, String arg1, String arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
+      IntPointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
+      IntPointer arg13, IntPointer arg14, IntPointer arg15, long arg16, long arg17) ;
+
+   void LAPACK_zhpgvd_base(int[] arg0, String arg1, String arg2, int[] arg3, double[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, int[] arg14, int[] arg15, long arg16, long arg17) ;
+
    void LAPACK_chpgvx_base(IntPointer arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, FloatPointer arg13,
       FloatPointer arg14, IntPointer arg15, FloatPointer arg16, FloatPointer arg17,
       IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_chpgvx_base(int[] arg0, BytePointer arg1, BytePointer arg2, BytePointer arg3,
-      int[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
-      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_chpgvx_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7,
@@ -11218,18 +11204,30 @@ public interface BLASLapackDelegator {
       float[] arg11, int[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
       float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_chpgvx_base(IntBuffer arg0, String arg1, String arg2, String arg3,
-      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_chpgvx_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntPointer arg4, FloatPointer arg5, FloatPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
       FloatPointer arg13, FloatPointer arg14, IntPointer arg15, FloatPointer arg16,
       FloatPointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
+
+   void LAPACK_chpgvx_base(IntBuffer arg0, String arg1, String arg2, String arg3,
+      IntBuffer arg4, FloatBuffer arg5, FloatBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, IntBuffer arg15, FloatBuffer arg16, FloatBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_chpgvx_base(int[] arg0, BytePointer arg1, BytePointer arg2, BytePointer arg3,
+      int[] arg4, float[] arg5, float[] arg6, float[] arg7, float[] arg8, int[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, float[] arg13, float[] arg14, int[] arg15, float[] arg16,
+      float[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
+
+   void LAPACK_zhpgvx_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
+      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      DoubleBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16,
+      DoubleBuffer arg17, IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22,
+      long arg23) ;
 
    void LAPACK_zhpgvx_base(IntPointer arg0, String arg1, String arg2, String arg3,
       IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
@@ -11244,24 +11242,6 @@ public interface BLASLapackDelegator {
       double[] arg16, double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22,
       long arg23) ;
 
-   void LAPACK_zhpgvx_base(IntBuffer arg0, BytePointer arg1, BytePointer arg2,
-      BytePointer arg3, IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      DoubleBuffer arg13, DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16,
-      DoubleBuffer arg17, IntBuffer arg18, IntBuffer arg19, IntBuffer arg20, long arg21, long arg22,
-      long arg23) ;
-
-   void LAPACK_zhpgvx_base(int[] arg0, String arg1, String arg2, String arg3, int[] arg4,
-      double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
-      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
-
-   void LAPACK_zhpgvx_base(IntBuffer arg0, String arg1, String arg2, String arg3,
-      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
-      IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
-      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
-      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
-
    void LAPACK_zhpgvx_base(IntPointer arg0, BytePointer arg1, BytePointer arg2,
       BytePointer arg3, IntPointer arg4, DoublePointer arg5, DoublePointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12,
@@ -11269,14 +11249,16 @@ public interface BLASLapackDelegator {
       DoublePointer arg17, IntPointer arg18, IntPointer arg19, IntPointer arg20, long arg21,
       long arg22, long arg23) ;
 
-   void LAPACK_chprfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
-      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
-      FloatPointer arg13, IntPointer arg14, long arg15) ;
+   void LAPACK_zhpgvx_base(IntBuffer arg0, String arg1, String arg2, String arg3,
+      IntBuffer arg4, DoubleBuffer arg5, DoubleBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
+      IntBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12, DoubleBuffer arg13,
+      DoubleBuffer arg14, IntBuffer arg15, DoubleBuffer arg16, DoubleBuffer arg17, IntBuffer arg18,
+      IntBuffer arg19, IntBuffer arg20, long arg21, long arg22, long arg23) ;
 
-   void LAPACK_chprfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      float[] arg11, float[] arg12, float[] arg13, int[] arg14, long arg15) ;
+   void LAPACK_zhpgvx_base(int[] arg0, String arg1, String arg2, String arg3, int[] arg4,
+      double[] arg5, double[] arg6, double[] arg7, double[] arg8, int[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, double[] arg13, double[] arg14, int[] arg15, double[] arg16,
+      double[] arg17, int[] arg18, int[] arg19, int[] arg20, long arg21, long arg22, long arg23) ;
 
    void LAPACK_chprfs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7,
@@ -11291,6 +11273,15 @@ public interface BLASLapackDelegator {
       FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
       IntBuffer arg14, long arg15) ;
+
+   void LAPACK_chprfs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7, FloatPointer arg8,
+      IntPointer arg9, FloatPointer arg10, FloatPointer arg11, FloatPointer arg12,
+      FloatPointer arg13, IntPointer arg14, long arg15) ;
+
+   void LAPACK_chprfs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      float[] arg4, int[] arg5, float[] arg6, int[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      float[] arg11, float[] arg12, float[] arg13, int[] arg14, long arg15) ;
 
    void LAPACK_chprfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7,
@@ -11311,57 +11302,57 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, long arg15) ;
 
-   void LAPACK_zhprfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      double[] arg11, double[] arg12, double[] arg13, int[] arg14, long arg15) ;
+   void LAPACK_zhprfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
+      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
+      DoublePointer arg12, DoublePointer arg13, IntPointer arg14, long arg15) ;
 
    void LAPACK_zhprfs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9, DoubleBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
       DoubleBuffer arg13, IntBuffer arg14, long arg15) ;
 
-   void LAPACK_zhprfs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7,
-      DoublePointer arg8, IntPointer arg9, DoublePointer arg10, DoublePointer arg11,
-      DoublePointer arg12, DoublePointer arg13, IntPointer arg14, long arg15) ;
-
-   void LAPACK_chpsv_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_chpsv_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chpsv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+   void LAPACK_zhprfs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, double[] arg4,
+      int[] arg5, double[] arg6, int[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      double[] arg11, double[] arg12, double[] arg13, int[] arg14, long arg15) ;
 
    void LAPACK_chpsv_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_chpsv_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+   void LAPACK_chpsv_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_chpsv_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+
+   void LAPACK_chpsv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_chpsv_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
-   void LAPACK_zhpsv_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+   void LAPACK_chpsv_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
    void LAPACK_zhpsv_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhpsv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
+   void LAPACK_zhpsv_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
-
-   void LAPACK_zhpsv_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhpsv_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
 
-   void LAPACK_zhpsv_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
+   void LAPACK_zhpsv_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+
+   void LAPACK_zhpsv_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
+   void LAPACK_zhpsv_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
    void LAPACK_chpsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
@@ -11369,11 +11360,6 @@ public interface BLASLapackDelegator {
       FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
       FloatPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
-
-   void LAPACK_chpsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      float[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16,
-      long arg17, long arg18) ;
 
    void LAPACK_chpsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -11386,38 +11372,26 @@ public interface BLASLapackDelegator {
       float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_chpsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
-
    void LAPACK_chpsvx_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
       IntPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       IntPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, FloatPointer arg12,
       FloatPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, long arg17,
       long arg18) ;
 
-   void LAPACK_zhpsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
-      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
-      DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16, long arg17,
-      long arg18) ;
+   void LAPACK_chpsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, IntBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, FloatBuffer arg12, FloatBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, long arg17, long arg18) ;
+
+   void LAPACK_chpsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      float[] arg4, float[] arg5, int[] arg6, float[] arg7, int[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, float[] arg12, float[] arg13, float[] arg14, float[] arg15, int[] arg16,
+      long arg17, long arg18) ;
 
    void LAPACK_zhpsvx_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       double[] arg4, double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9,
       int[] arg10, double[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15,
       int[] arg16, long arg17, long arg18) ;
-
-   void LAPACK_zhpsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
-      DoubleBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17,
-      long arg18) ;
-
-   void LAPACK_zhpsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16,
-      long arg17, long arg18) ;
 
    void LAPACK_zhpsvx_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, IntBuffer arg8,
@@ -11431,11 +11405,25 @@ public interface BLASLapackDelegator {
       DoublePointer arg12, DoublePointer arg13, DoublePointer arg14, DoublePointer arg15,
       IntPointer arg16, long arg17, long arg18) ;
 
+   void LAPACK_zhpsvx_base(String arg0, String arg1, int[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, int[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, double[] arg12, double[] arg13, double[] arg14, double[] arg15, int[] arg16,
+      long arg17, long arg18) ;
+
+   void LAPACK_zhpsvx_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      IntBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, DoubleBuffer arg12,
+      DoubleBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, long arg17,
+      long arg18) ;
+
+   void LAPACK_zhpsvx_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      DoublePointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, IntPointer arg8,
+      DoublePointer arg9, IntPointer arg10, DoublePointer arg11, DoublePointer arg12,
+      DoublePointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16, long arg17,
+      long arg18) ;
+
    void LAPACK_chptrd_base(String arg0, IntPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
-
-   void LAPACK_chptrd_base(BytePointer arg0, int[] arg1, float[] arg2, float[] arg3,
-      float[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_chptrd_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       FloatBuffer arg3, FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
@@ -11443,35 +11431,35 @@ public interface BLASLapackDelegator {
    void LAPACK_chptrd_base(String arg0, int[] arg1, float[] arg2, float[] arg3, float[] arg4,
       float[] arg5, int[] arg6, long arg7) ;
 
+   void LAPACK_chptrd_base(BytePointer arg0, int[] arg1, float[] arg2, float[] arg3,
+      float[] arg4, float[] arg5, int[] arg6, long arg7) ;
+
    void LAPACK_chptrd_base(String arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
 
    void LAPACK_chptrd_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       FloatPointer arg3, FloatPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
 
-   void LAPACK_zhptrd_base(String arg0, IntPointer arg1, DoublePointer arg2,
-      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
-
-   void LAPACK_zhptrd_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
+   void LAPACK_zhptrd_base(String arg0, int[] arg1, double[] arg2, double[] arg3,
       double[] arg4, double[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_zhptrd_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
 
-   void LAPACK_zhptrd_base(String arg0, int[] arg1, double[] arg2, double[] arg3,
-      double[] arg4, double[] arg5, int[] arg6, long arg7) ;
-
-   void LAPACK_zhptrd_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
-      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
+   void LAPACK_zhptrd_base(String arg0, IntPointer arg1, DoublePointer arg2,
+      DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
    void LAPACK_zhptrd_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, DoublePointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
+   void LAPACK_zhptrd_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
+      DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
+
+   void LAPACK_zhptrd_base(BytePointer arg0, int[] arg1, double[] arg2, double[] arg3,
+      double[] arg4, double[] arg5, int[] arg6, long arg7) ;
+
    void LAPACK_chptrf_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       IntPointer arg4, long arg5) ;
-
-   void LAPACK_chptrf_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      int[] arg4, long arg5) ;
 
    void LAPACK_chptrf_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, long arg5) ;
@@ -11479,23 +11467,17 @@ public interface BLASLapackDelegator {
    void LAPACK_chptrf_base(String arg0, int[] arg1, float[] arg2, int[] arg3, int[] arg4,
       long arg5) ;
 
-   void LAPACK_chptrf_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, long arg5) ;
-
    void LAPACK_chptrf_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, IntPointer arg4, long arg5) ;
 
-   void LAPACK_zhptrf_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      IntPointer arg4, long arg5) ;
+   void LAPACK_chptrf_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, long arg5) ;
 
-   void LAPACK_zhptrf_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+   void LAPACK_chptrf_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
       int[] arg4, long arg5) ;
 
    void LAPACK_zhptrf_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, long arg5) ;
-
-   void LAPACK_zhptrf_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
-      long arg5) ;
 
    void LAPACK_zhptrf_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, long arg5) ;
@@ -11503,11 +11485,17 @@ public interface BLASLapackDelegator {
    void LAPACK_zhptrf_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, IntPointer arg4, long arg5) ;
 
+   void LAPACK_zhptrf_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      int[] arg4, long arg5) ;
+
+   void LAPACK_zhptrf_base(String arg0, int[] arg1, double[] arg2, int[] arg3, int[] arg4,
+      long arg5) ;
+
+   void LAPACK_zhptrf_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      IntPointer arg4, long arg5) ;
+
    void LAPACK_chptri_base(String arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, long arg6) ;
-
-   void LAPACK_chptri_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, long arg6) ;
 
    void LAPACK_chptri_base(BytePointer arg0, IntBuffer arg1, FloatBuffer arg2,
       IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, long arg6) ;
@@ -11515,23 +11503,14 @@ public interface BLASLapackDelegator {
    void LAPACK_chptri_base(String arg0, int[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, long arg6) ;
 
-   void LAPACK_chptri_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, long arg6) ;
-
    void LAPACK_chptri_base(BytePointer arg0, IntPointer arg1, FloatPointer arg2,
       IntPointer arg3, FloatPointer arg4, IntPointer arg5, long arg6) ;
 
-   void LAPACK_zhptri_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, long arg6) ;
+   void LAPACK_chptri_base(String arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, long arg6) ;
 
-   void LAPACK_zhptri_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, long arg6) ;
-
-   void LAPACK_zhptri_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
-
-   void LAPACK_zhptri_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, long arg6) ;
+   void LAPACK_chptri_base(BytePointer arg0, int[] arg1, float[] arg2, int[] arg3,
+      float[] arg4, int[] arg5, long arg6) ;
 
    void LAPACK_zhptri_base(String arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
@@ -11539,31 +11518,40 @@ public interface BLASLapackDelegator {
    void LAPACK_zhptri_base(BytePointer arg0, IntPointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, long arg6) ;
 
-   void LAPACK_chptrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
+   void LAPACK_zhptri_base(String arg0, int[] arg1, double[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, long arg6) ;
 
-   void LAPACK_chptrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+   void LAPACK_zhptri_base(BytePointer arg0, int[] arg1, double[] arg2, int[] arg3,
+      double[] arg4, int[] arg5, long arg6) ;
+
+   void LAPACK_zhptri_base(String arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      DoublePointer arg4, IntPointer arg5, long arg6) ;
+
+   void LAPACK_zhptri_base(BytePointer arg0, IntBuffer arg1, DoubleBuffer arg2,
+      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, long arg6) ;
+
+   void LAPACK_chptrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_chptrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7,
       long arg8) ;
 
-   void LAPACK_chptrs_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, long arg8) ;
-
-   void LAPACK_chptrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+   void LAPACK_chptrs_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
 
    void LAPACK_chptrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
 
+   void LAPACK_chptrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_chptrs_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, int[] arg7, long arg8) ;
+
    void LAPACK_zhptrs_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, long arg8) ;
-
-   void LAPACK_zhptrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_zhptrs_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7,
@@ -11572,23 +11560,21 @@ public interface BLASLapackDelegator {
    void LAPACK_zhptrs_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
       double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
-   void LAPACK_zhptrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
-
    void LAPACK_zhptrs_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7,
       long arg8) ;
+
+   void LAPACK_zhptrs_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, long arg8) ;
+
+   void LAPACK_zhptrs_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, int[] arg7, long arg8) ;
 
    void LAPACK_chsein_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
       FloatPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
       long arg19, long arg20, long arg21) ;
-
-   void LAPACK_chsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10,
-      int[] arg11, int[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16, int[] arg17,
-      int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_chsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -11601,28 +11587,28 @@ public interface BLASLapackDelegator {
       int[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16, int[] arg17, int[] arg18,
       long arg19, long arg20, long arg21) ;
 
-   void LAPACK_chsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
-      long arg19, long arg20, long arg21) ;
-
    void LAPACK_chsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
       FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
       IntPointer arg13, FloatPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
       IntPointer arg18, long arg19, long arg20, long arg21) ;
 
+   void LAPACK_chsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      FloatBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
+      long arg19, long arg20, long arg21) ;
+
+   void LAPACK_chsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10,
+      int[] arg11, int[] arg12, int[] arg13, float[] arg14, float[] arg15, int[] arg16, int[] arg17,
+      int[] arg18, long arg19, long arg20, long arg21) ;
+
    void LAPACK_dhsein_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       DoublePointer arg9, IntPointer arg10, DoublePointer arg11, IntPointer arg12, IntPointer arg13,
       IntPointer arg14, DoublePointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
       long arg19, long arg20, long arg21) ;
-
-   void LAPACK_dhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
-      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, double[] arg15,
-      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_dhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
@@ -11634,6 +11620,11 @@ public interface BLASLapackDelegator {
       double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
       double[] arg11, int[] arg12, int[] arg13, int[] arg14, double[] arg15, int[] arg16,
       int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_dhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
+      int[] arg10, double[] arg11, int[] arg12, int[] arg13, int[] arg14, double[] arg15,
+      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_dhsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -11653,6 +11644,23 @@ public interface BLASLapackDelegator {
       IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17, IntPointer arg18,
       long arg19, long arg20, long arg21) ;
 
+   void LAPACK_shsein_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
+      float[] arg11, int[] arg12, int[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17,
+      int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_shsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
+      IntPointer arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_shsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
+      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
+      long arg19, long arg20, long arg21) ;
+
    void LAPACK_shsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17,
@@ -11664,44 +11672,11 @@ public interface BLASLapackDelegator {
       IntBuffer arg13, IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17,
       IntBuffer arg18, long arg19, long arg20, long arg21) ;
 
-   void LAPACK_shsein_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
-      float[] arg11, int[] arg12, int[] arg13, int[] arg14, float[] arg15, int[] arg16, int[] arg17,
-      int[] arg18, long arg19, long arg20, long arg21) ;
-
-   void LAPACK_shsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      IntBuffer arg14, FloatBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
-      long arg19, long arg20, long arg21) ;
-
-   void LAPACK_shsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, IntPointer arg14, FloatPointer arg15, IntPointer arg16, IntPointer arg17,
-      IntPointer arg18, long arg19, long arg20, long arg21) ;
-
    void LAPACK_zhsein_base(String arg0, String arg1, String arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
       IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, IntPointer arg13,
       DoublePointer arg14, DoublePointer arg15, IntPointer arg16, IntPointer arg17,
       IntPointer arg18, long arg19, long arg20, long arg21) ;
-
-   void LAPACK_zhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15,
-      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
-
-   void LAPACK_zhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
-      IntBuffer arg18, long arg19, long arg20, long arg21) ;
-
-   void LAPACK_zhsein_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15, int[] arg16,
-      int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
 
    void LAPACK_zhsein_base(String arg0, String arg1, String arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -11709,25 +11684,46 @@ public interface BLASLapackDelegator {
       DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17, IntBuffer arg18,
       long arg19, long arg20, long arg21) ;
 
+   void LAPACK_zhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15,
+      int[] arg16, int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_zhsein_base(String arg0, String arg1, String arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, int[] arg13, double[] arg14, double[] arg15, int[] arg16,
+      int[] arg17, int[] arg18, long arg19, long arg20, long arg21) ;
+
+   void LAPACK_zhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, DoubleBuffer arg14, DoubleBuffer arg15, IntBuffer arg16, IntBuffer arg17,
+      IntBuffer arg18, long arg19, long arg20, long arg21) ;
+
    void LAPACK_zhsein_base(BytePointer arg0, BytePointer arg1, BytePointer arg2,
       IntPointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7,
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
       IntPointer arg13, DoublePointer arg14, DoublePointer arg15, IntPointer arg16,
       IntPointer arg17, IntPointer arg18, long arg19, long arg20, long arg21) ;
 
+   void LAPACK_chseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
+      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      long arg13, long arg14) ;
+
    void LAPACK_chseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
       IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12, long arg13,
       long arg14) ;
 
+   void LAPACK_chseqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
+      long arg13, long arg14) ;
+
    void LAPACK_chseqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10,
       int[] arg11, int[] arg12, long arg13, long arg14) ;
-
-   void LAPACK_chseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
-      FloatBuffer arg8, IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      long arg13, long arg14) ;
 
    void LAPACK_chseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, int[] arg9, float[] arg10, int[] arg11,
@@ -11737,10 +11733,9 @@ public interface BLASLapackDelegator {
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9, FloatBuffer arg10, IntBuffer arg11, IntBuffer arg12, long arg13, long arg14) ;
 
-   void LAPACK_chseqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, IntPointer arg9, FloatPointer arg10, IntPointer arg11, IntPointer arg12,
-      long arg13, long arg14) ;
+   void LAPACK_dhseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
+      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dhseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
       IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
@@ -11750,15 +11745,6 @@ public interface BLASLapackDelegator {
    void LAPACK_dhseqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9,
       int[] arg10, double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_dhseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
-      IntBuffer arg13, long arg14, long arg15) ;
-
-   void LAPACK_dhseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, double[] arg9, int[] arg10,
-      double[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
 
    void LAPACK_dhseqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -11770,14 +11756,29 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, DoublePointer arg9, IntPointer arg10, DoublePointer arg11,
       IntPointer arg12, IntPointer arg13, long arg14, long arg15) ;
 
-   void LAPACK_shseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
-      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+   void LAPACK_dhseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, DoubleBuffer arg9, IntBuffer arg10, DoubleBuffer arg11, IntBuffer arg12,
+      IntBuffer arg13, long arg14, long arg15) ;
+
+   void LAPACK_shseqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
+      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
+      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
+      IntPointer arg13, long arg14, long arg15) ;
+
+   void LAPACK_shseqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
+      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
       long arg14, long arg15) ;
 
    void LAPACK_shseqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
       int[] arg4, float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
+
+   void LAPACK_shseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7, FloatPointer arg8,
+      FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12, IntPointer arg13,
+      long arg14, long arg15) ;
 
    void LAPACK_shseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
       IntBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7,
@@ -11787,34 +11788,6 @@ public interface BLASLapackDelegator {
    void LAPACK_shseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
       float[] arg5, int[] arg6, float[] arg7, float[] arg8, float[] arg9, int[] arg10,
       float[] arg11, int[] arg12, int[] arg13, long arg14, long arg15) ;
-
-   void LAPACK_shseqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, FloatBuffer arg7, FloatBuffer arg8,
-      FloatBuffer arg9, IntBuffer arg10, FloatBuffer arg11, IntBuffer arg12, IntBuffer arg13,
-      long arg14, long arg15) ;
-
-   void LAPACK_shseqr_base(BytePointer arg0, BytePointer arg1, IntPointer arg2,
-      IntPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, FloatPointer arg7,
-      FloatPointer arg8, FloatPointer arg9, IntPointer arg10, FloatPointer arg11, IntPointer arg12,
-      IntPointer arg13, long arg14, long arg15) ;
-
-   void LAPACK_zhseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
-      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, long arg13,
-      long arg14) ;
-
-   void LAPACK_zhseqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
-      double[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
-
-   void LAPACK_zhseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
-      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
-      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
-      long arg13, long arg14) ;
-
-   void LAPACK_zhseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
-      int[] arg11, int[] arg12, long arg13, long arg14) ;
 
    void LAPACK_zhseqr_base(String arg0, String arg1, IntBuffer arg2, IntBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7, DoubleBuffer arg8,
@@ -11826,26 +11799,44 @@ public interface BLASLapackDelegator {
       DoublePointer arg8, IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12,
       long arg13, long arg14) ;
 
-   void LAPACK_clacgv(IntBuffer arg0, FloatBuffer arg1, IntBuffer arg2) ;
+   void LAPACK_zhseqr_base(BytePointer arg0, BytePointer arg1, int[] arg2, int[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9,
+      double[] arg10, int[] arg11, int[] arg12, long arg13, long arg14) ;
 
-   void LAPACK_clacgv(int[] arg0, float[] arg1, int[] arg2) ;
+   void LAPACK_zhseqr_base(String arg0, String arg1, IntPointer arg2, IntPointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, DoublePointer arg7, DoublePointer arg8,
+      IntPointer arg9, DoublePointer arg10, IntPointer arg11, IntPointer arg12, long arg13,
+      long arg14) ;
+
+   void LAPACK_zhseqr_base(BytePointer arg0, BytePointer arg1, IntBuffer arg2,
+      IntBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, DoubleBuffer arg7,
+      DoubleBuffer arg8, IntBuffer arg9, DoubleBuffer arg10, IntBuffer arg11, IntBuffer arg12,
+      long arg13, long arg14) ;
+
+   void LAPACK_zhseqr_base(String arg0, String arg1, int[] arg2, int[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, double[] arg7, double[] arg8, int[] arg9, double[] arg10,
+      int[] arg11, int[] arg12, long arg13, long arg14) ;
+
+   void LAPACK_clacgv(IntBuffer arg0, FloatBuffer arg1, IntBuffer arg2) ;
 
    void LAPACK_clacgv(IntPointer arg0, FloatPointer arg1, IntPointer arg2) ;
 
-   void LAPACK_zlacgv(int[] arg0, double[] arg1, int[] arg2) ;
+   void LAPACK_clacgv(int[] arg0, float[] arg1, int[] arg2) ;
 
    void LAPACK_zlacgv(IntBuffer arg0, DoubleBuffer arg1, IntBuffer arg2) ;
 
    void LAPACK_zlacgv(IntPointer arg0, DoublePointer arg1, IntPointer arg2) ;
 
-   void LAPACK_clacn2(int[] arg0, float[] arg1, float[] arg2, float[] arg3, int[] arg4,
-      int[] arg5) ;
+   void LAPACK_zlacgv(int[] arg0, double[] arg1, int[] arg2) ;
 
    void LAPACK_clacn2(IntBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5) ;
 
    void LAPACK_clacn2(IntPointer arg0, FloatPointer arg1, FloatPointer arg2,
       FloatPointer arg3, IntPointer arg4, IntPointer arg5) ;
+
+   void LAPACK_clacn2(int[] arg0, float[] arg1, float[] arg2, float[] arg3, int[] arg4,
+      int[] arg5) ;
 
    void LAPACK_dlacn2(int[] arg0, double[] arg1, double[] arg2, int[] arg3, double[] arg4,
       int[] arg5, int[] arg6) ;
@@ -11856,26 +11847,23 @@ public interface BLASLapackDelegator {
    void LAPACK_dlacn2(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
       IntPointer arg3, DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
+   void LAPACK_slacn2(IntPointer arg0, FloatPointer arg1, FloatPointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+
    void LAPACK_slacn2(int[] arg0, float[] arg1, float[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6) ;
 
    void LAPACK_slacn2(IntBuffer arg0, FloatBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
-   void LAPACK_slacn2(IntPointer arg0, FloatPointer arg1, FloatPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+   void LAPACK_zlacn2(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
+      DoublePointer arg3, IntPointer arg4, IntPointer arg5) ;
 
    void LAPACK_zlacn2(int[] arg0, double[] arg1, double[] arg2, double[] arg3, int[] arg4,
       int[] arg5) ;
 
    void LAPACK_zlacn2(IntBuffer arg0, DoubleBuffer arg1, DoubleBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, IntBuffer arg5) ;
-
-   void LAPACK_zlacn2(IntPointer arg0, DoublePointer arg1, DoublePointer arg2,
-      DoublePointer arg3, IntPointer arg4, IntPointer arg5) ;
-
-   void LAPACK_clacp2_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
-      int[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_clacp2_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
@@ -11886,23 +11874,14 @@ public interface BLASLapackDelegator {
    void LAPACK_clacp2_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
       float[] arg5, int[] arg6, long arg7) ;
 
-   void LAPACK_clacp2_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
-
    void LAPACK_clacp2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
 
-   void LAPACK_zlacp2_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
+   void LAPACK_clacp2_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
 
-   void LAPACK_zlacp2_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
-      int[] arg4, double[] arg5, int[] arg6, long arg7) ;
-
-   void LAPACK_zlacp2_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_zlacp2_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, long arg7) ;
+   void LAPACK_clacp2_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
+      int[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_zlacp2_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
@@ -11910,35 +11889,38 @@ public interface BLASLapackDelegator {
    void LAPACK_zlacp2_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
+   void LAPACK_zlacp2_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, long arg7) ;
+
+   void LAPACK_zlacp2_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
+
+   void LAPACK_zlacp2_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
+
+   void LAPACK_zlacp2_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
+      int[] arg4, double[] arg5, int[] arg6, long arg7) ;
+
+   void LAPACK_clacpy_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
+      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
+
+   void LAPACK_clacpy_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, long arg7) ;
+
+   void LAPACK_clacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
+
    void LAPACK_clacpy_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
       IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
 
    void LAPACK_clacpy_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
       int[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
-   void LAPACK_clacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_clacpy_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, long arg7) ;
-
    void LAPACK_clacpy_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
 
-   void LAPACK_clacpy_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
-
-   void LAPACK_dlacpy_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
-
    void LAPACK_dlacpy_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, int[] arg6, long arg7) ;
-
-   void LAPACK_dlacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_dlacpy_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_dlacpy_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
@@ -11946,47 +11928,56 @@ public interface BLASLapackDelegator {
    void LAPACK_dlacpy_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
-   void LAPACK_slacpy_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
-      IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
+   void LAPACK_dlacpy_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, long arg7) ;
+
+   void LAPACK_dlacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
+      DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
+
+   void LAPACK_dlacpy_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
    void LAPACK_slacpy_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
       int[] arg4, float[] arg5, int[] arg6, long arg7) ;
 
+   void LAPACK_slacpy_base(String arg0, IntPointer arg1, IntPointer arg2, FloatPointer arg3,
+      IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
+
    void LAPACK_slacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_slacpy_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
-      float[] arg5, int[] arg6, long arg7) ;
-
-   void LAPACK_slacpy_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
-      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
 
    void LAPACK_slacpy_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       FloatPointer arg3, IntPointer arg4, FloatPointer arg5, IntPointer arg6, long arg7) ;
 
-   void LAPACK_zlacpy_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
-      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
+   void LAPACK_slacpy_base(String arg0, IntBuffer arg1, IntBuffer arg2, FloatBuffer arg3,
+      IntBuffer arg4, FloatBuffer arg5, IntBuffer arg6, long arg7) ;
+
+   void LAPACK_slacpy_base(String arg0, int[] arg1, int[] arg2, float[] arg3, int[] arg4,
+      float[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_zlacpy_base(BytePointer arg0, int[] arg1, int[] arg2, double[] arg3,
       int[] arg4, double[] arg5, int[] arg6, long arg7) ;
 
+   void LAPACK_zlacpy_base(String arg0, IntPointer arg1, IntPointer arg2, DoublePointer arg3,
+      IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
+
    void LAPACK_zlacpy_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       DoubleBuffer arg3, IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
-
-   void LAPACK_zlacpy_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
-      double[] arg5, int[] arg6, long arg7) ;
 
    void LAPACK_zlacpy_base(String arg0, IntBuffer arg1, IntBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, long arg7) ;
 
+   void LAPACK_zlacpy_base(String arg0, int[] arg1, int[] arg2, double[] arg3, int[] arg4,
+      double[] arg5, int[] arg6, long arg7) ;
+
    void LAPACK_zlacpy_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
       DoublePointer arg3, IntPointer arg4, DoublePointer arg5, IntPointer arg6, long arg7) ;
 
-   void LAPACK_zlag2c(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
-
    void LAPACK_zlag2c(int[] arg0, int[] arg1, double[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6) ;
+
+   void LAPACK_zlag2c(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
+      FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
 
    void LAPACK_zlag2c(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
       FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
@@ -12000,17 +11991,14 @@ public interface BLASLapackDelegator {
    void LAPACK_slag2d(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
+   void LAPACK_dlag2s(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
+      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
+
    void LAPACK_dlag2s(int[] arg0, int[] arg1, double[] arg2, int[] arg3, float[] arg4,
       int[] arg5, int[] arg6) ;
 
    void LAPACK_dlag2s(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
-
-   void LAPACK_dlag2s(IntPointer arg0, IntPointer arg1, DoublePointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, IntPointer arg6) ;
-
-   void LAPACK_clag2z(int[] arg0, int[] arg1, float[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, int[] arg6) ;
 
    void LAPACK_clag2z(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, IntBuffer arg5, IntBuffer arg6) ;
@@ -12018,8 +12006,8 @@ public interface BLASLapackDelegator {
    void LAPACK_clag2z(IntPointer arg0, IntPointer arg1, FloatPointer arg2, IntPointer arg3,
       DoublePointer arg4, IntPointer arg5, IntPointer arg6) ;
 
-   void LAPACK_clagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9) ;
+   void LAPACK_clag2z(int[] arg0, int[] arg1, float[] arg2, int[] arg3, double[] arg4,
+      int[] arg5, int[] arg6) ;
 
    void LAPACK_clagge(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
@@ -12029,30 +12017,30 @@ public interface BLASLapackDelegator {
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9) ;
 
-   void LAPACK_dlagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9) ;
+   void LAPACK_clagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9) ;
 
    void LAPACK_dlagge(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
       IntBuffer arg9) ;
 
+   void LAPACK_dlagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9) ;
+
    void LAPACK_dlagge(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9) ;
-
-   void LAPACK_slagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9) ;
 
    void LAPACK_slagge(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       FloatBuffer arg4, FloatBuffer arg5, IntBuffer arg6, IntBuffer arg7, FloatBuffer arg8,
       IntBuffer arg9) ;
 
+   void LAPACK_slagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
+      float[] arg5, int[] arg6, int[] arg7, float[] arg8, int[] arg9) ;
+
    void LAPACK_slagge(IntPointer arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
       FloatPointer arg4, FloatPointer arg5, IntPointer arg6, IntPointer arg7, FloatPointer arg8,
       IntPointer arg9) ;
-
-   void LAPACK_zlagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9) ;
 
    void LAPACK_zlagge(IntBuffer arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
       DoubleBuffer arg4, DoubleBuffer arg5, IntBuffer arg6, IntBuffer arg7, DoubleBuffer arg8,
@@ -12062,8 +12050,8 @@ public interface BLASLapackDelegator {
       DoublePointer arg4, DoublePointer arg5, IntPointer arg6, IntPointer arg7, DoublePointer arg8,
       IntPointer arg9) ;
 
-   void LAPACK_claghe(int[] arg0, int[] arg1, float[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7) ;
+   void LAPACK_zlagge(int[] arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
+      double[] arg5, int[] arg6, int[] arg7, double[] arg8, int[] arg9) ;
 
    void LAPACK_claghe(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7) ;
@@ -12071,14 +12059,17 @@ public interface BLASLapackDelegator {
    void LAPACK_claghe(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7) ;
 
-   void LAPACK_zlaghe(int[] arg0, int[] arg1, double[] arg2, double[] arg3, int[] arg4,
-      int[] arg5, double[] arg6, int[] arg7) ;
+   void LAPACK_claghe(int[] arg0, int[] arg1, float[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7) ;
 
    void LAPACK_zlaghe(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_zlaghe(IntPointer arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7) ;
+
+   void LAPACK_zlaghe(int[] arg0, int[] arg1, double[] arg2, double[] arg3, int[] arg4,
+      int[] arg5, double[] arg6, int[] arg7) ;
 
    void LAPACK_clagsy(int[] arg0, int[] arg1, float[] arg2, float[] arg3, int[] arg4,
       int[] arg5, float[] arg6, int[] arg7) ;
@@ -12089,17 +12080,14 @@ public interface BLASLapackDelegator {
    void LAPACK_clagsy(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_dlagsy(IntPointer arg0, IntPointer arg1, DoublePointer arg2,
+      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7) ;
+
    void LAPACK_dlagsy(int[] arg0, int[] arg1, double[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7) ;
 
    void LAPACK_dlagsy(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7) ;
-
-   void LAPACK_dlagsy(IntPointer arg0, IntPointer arg1, DoublePointer arg2,
-      DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7) ;
-
-   void LAPACK_slagsy(int[] arg0, int[] arg1, float[] arg2, float[] arg3, int[] arg4,
-      int[] arg5, float[] arg6, int[] arg7) ;
 
    void LAPACK_slagsy(IntBuffer arg0, IntBuffer arg1, FloatBuffer arg2, FloatBuffer arg3,
       IntBuffer arg4, IntBuffer arg5, FloatBuffer arg6, IntBuffer arg7) ;
@@ -12107,100 +12095,31 @@ public interface BLASLapackDelegator {
    void LAPACK_slagsy(IntPointer arg0, IntPointer arg1, FloatPointer arg2, FloatPointer arg3,
       IntPointer arg4, IntPointer arg5, FloatPointer arg6, IntPointer arg7) ;
 
+   void LAPACK_slagsy(int[] arg0, int[] arg1, float[] arg2, float[] arg3, int[] arg4,
+      int[] arg5, float[] arg6, int[] arg7) ;
+
    void LAPACK_zlagsy(int[] arg0, int[] arg1, double[] arg2, double[] arg3, int[] arg4,
       int[] arg5, double[] arg6, int[] arg7) ;
-
-   void LAPACK_zlagsy(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
-      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7) ;
 
    void LAPACK_zlagsy(IntPointer arg0, IntPointer arg1, DoublePointer arg2,
       DoublePointer arg3, IntPointer arg4, IntPointer arg5, DoublePointer arg6, IntPointer arg7) ;
 
-   double LAPACK_dlamch_base(String arg0, long arg1) ;
+   void LAPACK_zlagsy(IntBuffer arg0, IntBuffer arg1, DoubleBuffer arg2, DoubleBuffer arg3,
+      IntBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, IntBuffer arg7) ;
 
    double LAPACK_dlamch_base(BytePointer arg0, long arg1) ;
 
-   double LAPACK_slamch_base(String arg0, long arg1) ;
+   double LAPACK_dlamch_base(String arg0, long arg1) ;
 
    double LAPACK_slamch_base(BytePointer arg0, long arg1) ;
 
-   double LAPACK_clangb_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, long arg7) ;
-
-   double LAPACK_clangb_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, long arg7) ;
-
-   double LAPACK_clangb_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, long arg7) ;
-
-   double LAPACK_clangb_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, long arg7) ;
-
-   double LAPACK_clangb_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, long arg7) ;
-
-   double LAPACK_clangb_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, long arg7) ;
-
-   double LAPACK_dlangb_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, long arg7) ;
-
-   double LAPACK_slangb_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      FloatPointer arg4, IntPointer arg5, FloatPointer arg6, long arg7) ;
-
-   double LAPACK_slangb_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      float[] arg4, int[] arg5, float[] arg6, long arg7) ;
-
-   double LAPACK_slangb_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      IntBuffer arg3, FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, long arg7) ;
-
-   double LAPACK_slangb_base(String arg0, int[] arg1, int[] arg2, int[] arg3, float[] arg4,
-      int[] arg5, float[] arg6, long arg7) ;
-
-   double LAPACK_slangb_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      FloatBuffer arg4, IntBuffer arg5, FloatBuffer arg6, long arg7) ;
-
-   double LAPACK_slangb_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, FloatPointer arg4, IntPointer arg5, FloatPointer arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(String arg0, IntPointer arg1, IntPointer arg2, IntPointer arg3,
-      DoublePointer arg4, IntPointer arg5, DoublePointer arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(BytePointer arg0, int[] arg1, int[] arg2, int[] arg3,
-      double[] arg4, int[] arg5, double[] arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
-      IntBuffer arg3, DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(String arg0, int[] arg1, int[] arg2, int[] arg3, double[] arg4,
-      int[] arg5, double[] arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(String arg0, IntBuffer arg1, IntBuffer arg2, IntBuffer arg3,
-      DoubleBuffer arg4, IntBuffer arg5, DoubleBuffer arg6, long arg7) ;
-
-   double LAPACK_zlangb_base(BytePointer arg0, IntPointer arg1, IntPointer arg2,
-      IntPointer arg3, DoublePointer arg4, IntPointer arg5, DoublePointer arg6, long arg7) ;
-
-   double LAPACK_clange_base(String arg0, IntPointer arg1, IntPointer arg2,
-      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, long arg6) ;
+   double LAPACK_slamch_base(String arg0, long arg1) ;
 
    double LAPACK_clange_base(BytePointer arg0, int[] arg1, int[] arg2, float[] arg3,
       int[] arg4, float[] arg5, long arg6) ;
+
+   double LAPACK_clange_base(String arg0, IntPointer arg1, IntPointer arg2,
+      FloatPointer arg3, IntPointer arg4, FloatPointer arg5, long arg6) ;
 
    double LAPACK_clange_base(BytePointer arg0, IntBuffer arg1, IntBuffer arg2,
       FloatBuffer arg3, IntBuffer arg4, FloatBuffer arg5, long arg6) ;

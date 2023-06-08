@@ -96,12 +96,12 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != zType && yType != zType)
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NativeOpExecutioner::execPairwiseTransform requires Z operand to have either X or Y type");
   if (lc == nullptr)
-    throw std::runtime_error("NativeOpExecutioner::execPairwiseTransform: launch context cannot be nullptr !");
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: launch context cannot be nullptr !");
   if (stream == nullptr)
-    throw std::runtime_error("NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr !");
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr !");
 
   dim3 launchDims(256, 1024, 8192);
 
@@ -229,10 +229,10 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isB(zType))
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
 
   if (yType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3B opType:[%i]\n", opNum);
 
@@ -289,10 +289,10 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isB(zType))
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
 
   if (yType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
   dim3 launchDims(256, 256, 1024);
 
@@ -320,10 +320,10 @@ void NativeOpExecutioner::execBroadcastInt(
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isZ(zType))
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
 
   if (yType != xType || zType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
   dim3 launchDims(256, 256, 1024);
 
@@ -351,10 +351,10 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNu
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isZ(zType))
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
 
   if (yType != xType || zType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
   dim3 launchDims;
 
@@ -384,10 +384,10 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isZ(zType))
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
 
   if (yType != xType || zType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3BI opType:[%i]\n", opNum);
 
@@ -587,7 +587,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   if (zType != sd::DataType::BOOL)
-    throw std::runtime_error("NativeOpExecutioner::execReduceBool requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execReduceBool requires Z operand to have BOOL type");
 
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
@@ -760,7 +760,7 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext* lc, int opNum,
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   if (zType != sd::DataType::BOOL)
-    throw std::runtime_error("NativeOpExecutioner::execReduceBoolScalar requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execReduceBoolScalar requires Z operand to have BOOL type");
 
   auto xLength = shape::length(hXShapeInfo);
   auto blockWidth = SD_CUDA_BLOCK_SIZE;
@@ -850,7 +850,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
   }
 
   if (xType != zType) {
-    throw std::runtime_error("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
   }
 
   dim3 launchDims(512, 512, 16384);
@@ -880,7 +880,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext* lc, int opNum, vo
   }
 
   if (!DataTypeUtils::isB(zType)) {
-    throw std::runtime_error("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
   }
 
   dim3 launchDims(512, 512, 16384);
@@ -1160,10 +1160,10 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext* lc, int opNum, void 
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
-  if (xType != yType) throw std::runtime_error("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
+  if (xType != yType) THROW_EXCEPTION("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
 
   if (!DataTypeUtils::isB(zType))
-    throw std::runtime_error("NativeOpExecutioner::execScalarBool requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarBool requires Z operand to have BOOL type");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::scalar::ScalarBoolTransform,
@@ -1192,10 +1192,10 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
-  if (xType != yType) throw std::runtime_error("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
+  if (xType != yType) THROW_EXCEPTION("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
 
   if (!DataTypeUtils::isB(zType))
-    throw std::runtime_error("NativeOpExecutioner::execScalarBool requires Z operand to have BOOL type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarBool requires Z operand to have BOOL type");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::scalar::ScalarBoolTransform,
@@ -1224,10 +1224,10 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext* lc, int opNum, void c
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
   if (xType != yType || zType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
 
   if (!DataTypeUtils::isZ(zType))
-    throw std::runtime_error("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
 
   BUILD_SINGLE_SELECTOR(
       xType, functions::scalar::ScalarIntTransform,
@@ -1257,10 +1257,10 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
   if (xType != yType || zType != xType)
-    throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
 
   if (!DataTypeUtils::isZ(zType))
-    throw std::runtime_error("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
 
   BUILD_SINGLE_SELECTOR(
       xType, functions::scalar::ScalarIntTransform,

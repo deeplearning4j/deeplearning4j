@@ -133,7 +133,7 @@ void MemoryTracker::countOut(sd::Pointer ptr) {
 
     _locker.lock();
     if (_released.count(lptr) > 0) {
-      // throw std::runtime_error("Double free!");
+      // THROW_EXCEPTION("Double free!");
     }
 
     if (_allocations.count(lptr) > 0) {
@@ -159,7 +159,7 @@ void MemoryTracker::summarize() {
                 v.second.memoryType() == MemoryType::HOST ? "HOST" : "DEVICE", v.second.stackTrace().c_str());
     }
 
-    throw std::runtime_error("Non-released allocations found");
+    THROW_EXCEPTION("Non-released allocations found");
   }
 }
 

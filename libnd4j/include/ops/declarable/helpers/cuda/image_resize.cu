@@ -957,7 +957,7 @@ sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray const* image,
     case kResizeArea:
       return resizeAreaFunctor(context, image, width, height, alignCorners, output);
     default:
-      throw std::runtime_error("helper::resizeImagesFunctor: Wrong resize method.");
+      THROW_EXCEPTION("helper::resizeImagesFunctor: Wrong resize method.");
   }
 }
 
