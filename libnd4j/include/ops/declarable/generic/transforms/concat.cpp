@@ -124,7 +124,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
   // delete dynamically allocated vectors with length=1
-  //for (sd::LongType index : arrsToDelete) delete nonEmptyArrs[index];
+ // for (sd::LongType index : arrsToDelete) delete nonEmptyArrs[index];
 
   return sd::Status::OK;
 }
@@ -144,7 +144,6 @@ DECLARE_SHAPE_FN(concat) {
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
 
   const sd::LongType numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
-  sd_printf("Number of in arrays: %lld\n",numOfInArrs);
   // first of all take into account possible presence of empty arrays
   // also if scalar is present -> use the shape of vector with length=1 instead
   ShapeList arrShapes;
@@ -153,16 +152,12 @@ DECLARE_SHAPE_FN(concat) {
   for (sd::LongType i = 0; i < numOfInArrs; ++i) {
     if (inputShape->at(i)[0] == 0) {
       if (shape::isEmpty(inputShape->at(i))) {
-        sd_printf("Empty array at index: %lld\n",i);
         arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
       } else {
-        sd_printf("Non Empty array at index: %lld\n",i);
         shape::printShapeInfo(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
         arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
       }
     } else {
-      sd_printf("Concat shape at  at index: %lld\n",i);
-      shape::printShapeInfo(inputShape->at(i));
       arrShapes.push_back(inputShape->at(i));
     }
     ++index;
@@ -212,11 +207,9 @@ DECLARE_SHAPE_FN(concat) {
 
   sd::LongType* outShapeInfo(nullptr);
   COPY_SHAPE(arrShapes.at(0), outShapeInfo);
-  sd_printf("Copied shape info\n",0);
   shape::printShapeInfo(outShapeInfo);
   // case when we have only one input array
   if (numOfNonEmptyArrs == 1) {
-    sd_printf("concat Updating strides: \n",0);
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
     return SHAPELIST(CONSTANT(outShapeInfo));
   }
@@ -226,22 +219,10 @@ DECLARE_SHAPE_FN(concat) {
     outShapeInfo[axis + 1] += arrShapes.at(i)[axis + 1];
   }
 
-
-  sd_printf("Final concat code path\n",0);
-  for (sd::LongType i = 1; i < numOfNonEmptyArrs; ++i) {
-    outShapeInfo[axis + 1] += arrShapes.at(i)[axis + 1];
-  }
-
-  sd_printf("Shape info before update strides: \n",0);
   ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
-  shape::printShapeInfo(outShapeInfo);
-  sd_printf("First input Shape info after update strides: \n",0);
-  shape::printShapeInfo(arrShapes.at(0));
 
   auto desc = new ShapeDescriptor(outShapeInfo);
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  sd_printf("Final concat shape info: \n",0);
-  shape::printShapeInfo(result);
   delete desc;
   return SHAPELIST(result);
 }

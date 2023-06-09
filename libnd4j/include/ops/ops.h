@@ -2404,7 +2404,7 @@ class ShannonEntropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2413,13 +2413,13 @@ class ShannonEntropy {
   SD_OP_DEF static InterType update(InterType old, InterType opOutput, Z *extraParams) { return opOutput + old; }
 
   SD_OP_DEF static InterType op(X d1, Z *extraParams) {
-    return static_cast<InterType>(d1) * sd::math::sd_log2<X, InterType>(d1);
+    auto p = d1 * d1;
+    return static_cast<Z>(p) * sd::math::sd_log<X, Z>(p);
   }
 
-  SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) {
-    return static_cast<Z>(-reduction);
-  }
+  SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) { return -reduction; }
 };
+
 
 template <typename X, typename Z>
 class LogEntropy {

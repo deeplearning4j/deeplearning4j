@@ -253,32 +253,33 @@ SD_LIB_HIDDEN void NDArray::applyLambda(const std::function<T(T)>& func, NDArray
 
   if (this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1)) {
     auto loop = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) z[e] = func(f[e]);
+      for (auto e = start; e < stop; e+= increment){
+        z[e] = func(f[e]);
+      }
     };
 
-    samediff::Threads::parallel_for(loop, 0, _length);
+
+    samediff::Threads::parallel_for(loop, 0, _length,1);
   } else {
     if (f == z) {
       auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e+= increment) {
           auto xOffset = this->getOffset(e);
-
           f[xOffset] = func(f[xOffset]);
         }
       };
 
-      samediff::Threads::parallel_for(loop, 0, _length);
+      samediff::Threads::parallel_for(loop, 0, _length,1);
     } else {
       auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e+= increment) {
           auto xOffset = this->getOffset(e);
           auto zOffset = target.getOffset(e);
-
           z[zOffset] = func(f[xOffset]);
         }
       };
 
-      samediff::Threads::parallel_for(loop, 0, _length);
+      samediff::Threads::parallel_for(loop, 0, _length,1);
     }
   }
 }

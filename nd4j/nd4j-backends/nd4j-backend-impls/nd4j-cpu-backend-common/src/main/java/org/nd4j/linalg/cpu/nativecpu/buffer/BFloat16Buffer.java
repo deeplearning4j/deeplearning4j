@@ -182,6 +182,10 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
 
     }
 
+    @Override
+    public void setData(boolean[] data) {
+        ((Bfloat16Indexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
 
     @Override
     protected DataBuffer create(long length) {

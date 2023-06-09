@@ -370,7 +370,8 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor cuda: can't be initialized without shapeinfo");
 
-  if ((sd::LongType)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
+  sd::LongType  rank = (sd::LongType)shapeInfo[0];
+  if (rank > SD_MAX_RANK || rank < 0)  THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
@@ -1693,7 +1694,7 @@ void NDArray::printShapeInfo(const char *msg) const {
 void NDArray::printBuffer(const char *msg, sd::LongType limit, const bool sync) const {
   if (sync) syncToHost();
 
-  if (limit == -1) limit = (int)this->lengthOf();
+  if (limit == -1) limit = (sd::LongType)this->lengthOf();
 
   if (msg != nullptr)
     printf("%s: [", msg);
@@ -1756,11 +1757,6 @@ void NDArray::printLinearBuffer() const {
 }
 //////////////////////////////////////////////////////////////////////////
 static void printFormatted(NDArray const *arr, int depth, int limit) {
-  sd_printf("Depth: %d limit: %d\n", depth, limit);
- /*
-  * TODO: JVM crash here. Supposedly to do with unitialized values. Suspect
-  * is the passed in array. Review each usage of e<..>
-  */
   if (arr->rankOf() == 1) {
     printf("[ ");
     for (sd::LongType i = 0; i < arr->lengthOf(); ++i) {
@@ -3735,25 +3731,13 @@ utf8string NDArray::e(const sd::LongType i) const {
 /////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::e(const sd::LongType i) const {
+  //note: we'd validate this but depending on how a buffer is created
+  //(basically if it's passed in as a void buffer) the number of elements
+  //can be wrong. This at least happens in calculateOutputShapes2(..) and may
+  //or may not happen in other places. Ideally, in the future we'd fix that.
+  //sometimes we don't know the number of elements.
+  //Due to this we have to omit validation here.
   const auto rp = getOffset(i);
-  if (rp >= getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::e: index is out of array length !";
-    errorMessage += " Requested index: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(i);
-    errorMessage += ", buffer length: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(getDataBuffer()->getNumElements());
-    errorMessage += ", array shape: ";
-    errorMessage += ShapeUtils::shapeAsString(this);
-    errorMessage += ", array rank: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(rankOf());
-    errorMessage += ", array order: ";
-    errorMessage += ordering();
-    errorMessage += ", offset: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(rp);
-
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
   if(getDataBuffer() != nullptr)

@@ -41,12 +41,12 @@ CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(matrix_diag_part) {
   sd::LongType const* outShapeInfo = nullptr;
   auto in = inputShape->at(0);
-  int inRank = shape::rank(in);
+  sd::LongType inRank = shape::rank(in);
 
   REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
-  int outRank = inRank - 1;
-  int lastDimension = sd::math::sd_min(shape::sizeAt(in, static_cast<sd::LongType>(-1)), shape::sizeAt(in, static_cast<sd::LongType>(-2)));
+  sd::LongType outRank = inRank - 1;
+  sd::LongType lastDimension = sd::math::sd_min<sd::LongType>(shape::sizeAt(in, static_cast<sd::LongType>(-1)), shape::sizeAt(in, static_cast<sd::LongType>(-2)));
   if (outRank == 1) {
     // output shape is a vector with size min(sizeAt(0), sizeAt(1))
     outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));

@@ -181,7 +181,10 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         copyDataFromSrc(pointer,length,offset,0);
     }
 
-
+    @Override
+    public void setData(boolean[] data) {
+        setData(ArrayUtil.toFloatArray(data));
+    }
 
     @Override
     public float[] getFloatsAt(long offset, long inc, int length) {

@@ -1985,7 +1985,7 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
     // we shouldn't copy buffer if that's empty array
     InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
     auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
-    auto array = new sd::NDArray(buff, shape_, varSpace.launchContext(), false);
+    auto array = new sd::NDArray(buff->primary(), shape_, varSpace.launchContext(),false);
 
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);

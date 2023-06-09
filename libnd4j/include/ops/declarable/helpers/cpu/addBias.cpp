@@ -177,18 +177,18 @@ static void channel_atTheEnd_generic_C(const sd::LongType* bases, const sd::Long
 template <typename T>
 static void channel_atTheEnd_continous_C(T* x, const T* b, T* z, bool inplaceOp, sd::LongType start, sd::LongType stop,
                                          sd::LongType inc) {
-  size_t nums = (stop - start);
-  size_t num_inc = nums - nums % inc;
+  sd::LongType  nums = (stop - start);
+  sd::LongType  num_inc = nums - nums % inc;
   if (inplaceOp) {
-    size_t offset_p = start;
-    for (size_t i = 0; i < num_inc; i += inc) {
+    sd::LongType  offset_p = start;
+    for (sd::LongType i = 0; i < num_inc; i += inc) {
       _add_inplace<T>(&(x[offset_p]), b, inc);
       offset_p += inc;
     }
     if (nums > num_inc) _add_inplace<T>(&(x[offset_p]), b, nums - num_inc);
   } else {
-    size_t offset_p = start;
-    for (size_t i = 0; i < num_inc; i += inc) {
+    sd::LongType offset_p = start;
+    for (sd::LongType i = 0; i < num_inc; i += inc) {
       _add<T>(&(x[offset_p]), b, &(z[offset_p]), inc);
       offset_p += inc;
     }
@@ -200,18 +200,18 @@ template <typename T, typename T2, size_t constRank>
 static void channel_NC_stride1_C(const sd::LongType*& x_strides, const sd::LongType*& bases, T* x, const T2* b, T* z,
                                  const bool& inplace, const sd::LongType yStrideC, const sd::LongType& start,
                                  const sd::LongType& stop, const sd::LongType& inc) {
-  size_t loop_count = (stop - start) / inc;
+  sd::LongType loop_count = (stop - start) / inc;
   sd::CoordsState<constRank - 1> cst;
-  size_t offset = sd::init_coords<constRank>(cst, start, bases, x_strides);
+  sd::LongType offset = sd::init_coords<constRank>(cst, start, bases, x_strides);
 
   if (!inplace) {
-    for (size_t i = 0; i < loop_count; i++) {
+    for (sd::LongType i = 0; i < loop_count; i++) {
       T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
       _add_broadcast(&(x[offset]), yy, &(z[offset]), inc);
       offset = sd::inc_coords<constRank - 1>(cst, offset);
     }
   } else {
-    for (size_t i = 0; i < loop_count; i++) {
+    for (sd::LongType i = 0; i < loop_count; i++) {
       T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
       _add_broadcast_inplace(&(x[offset]), yy, inc);
       offset = sd::inc_coords<constRank - 1>(cst, offset);
@@ -249,7 +249,7 @@ static void channel_NC_generic_C(const sd::LongType* bases, const sd::LongType* 
         T* xx = &(x[offset.first]);
         T* zz = &(z[offset.second]);
         T yy = static_cast<T>(b[ZIP_COORDS(cst, 1) * yStrideC]);
-        for (size_t j = 0; j < inc; j++) zz[j * z_stride] = xx[j * x_stride] + yy;
+        for (sd::LongType j = 0; j < inc; j++) zz[j * z_stride] = xx[j * x_stride] + yy;
         offset = sd::inc_coords<constRank - 1>(cst, offset);
       }
     }
@@ -266,7 +266,7 @@ static void channel_NC_continous_numHW_C(sd::LongType rank, const sd::LongType* 
 
   sd::CoordsState<1> cst;
   // note: we had to manually pass index
-  size_t offset_p = sd::init_coords<2>(cst, start / inc, bases, x_strides);
+  sd::LongType offset_p = sd::init_coords<2>(cst, start / inc, bases, x_strides);
 
   // partitioning was done using numHW, so we can increment from rank 2
   if (inplaceOp) {
@@ -299,17 +299,17 @@ static void channel_generic_stride_skip_F(const sd::LongType*& x_strides, const 
                                           const sd::LongType& start, const sd::LongType& stop,
                                           const sd::LongType& inc) {
   // (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
-  size_t loop_count = (stop - start) / inc;
+  sd::LongType loop_count = (stop - start) / inc;
   sd::CoordsState<constRank - 1> cst;
-  size_t offset_p = sd::init_coords<constRank, 0, false>(cst, start, bases, x_strides);
+  sd::LongType offset_p = sd::init_coords<constRank, 0, false>(cst, start, bases, x_strides);
   if (!inplace) {
-    for (size_t i = 0; i < loop_count; i++) {
+    for (sd::LongType i = 0; i < loop_count; i++) {
       T yy = static_cast<T>(b[COORDS(cst, b_index) * yStrideC]);
       _add_broadcast(&(x[offset_p]), yy, &(z[offset_p]), inc);
       offset_p = sd::inc_coords<constRank, skip, false>(cst, offset_p);
     }
   } else {
-    for (size_t i = 0; i < loop_count; i++) {
+    for (sd::LongType i = 0; i < loop_count; i++) {
       T yy = static_cast<T>(b[COORDS(cst, b_index) * yStrideC]);
       _add_broadcast_inplace(&(x[offset_p]), yy, inc);
       offset_p = sd::inc_coords<constRank, skip, false>(cst, offset_p);
@@ -331,7 +331,7 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
   } else {
     // (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 
-    size_t loop_count = (stop - start) / inc;
+    sd::LongType loop_count = (stop - start) / inc;
     sd::ZipCoordsState<constRank - 1> cst;
     sd::zip_size_t offset = sd::init_coords<constRank, 0, false>(cst, start, bases, x_strides, z_strides);
     sd::LongType x_stride = ZIP_STRIDE1(cst, 0);
@@ -343,7 +343,7 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
         offset = sd::inc_coords<constRank, 1, false>(cst, offset);
       }
     } else {
-      for (size_t i = 0; i < loop_count; i++) {
+      for (sd::LongType i = 0; i < loop_count; i++) {
         T* xx = &(x[offset.first]);
         T* zz = &(z[offset.second]);
         T yy = static_cast<T>(b[ZIP_COORDS(cst, b_index) * yStrideC]);
@@ -356,28 +356,6 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
 
 template <typename X, typename Y>
 static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
-  /*
-   if (input.rankOf() == 2 && bias.rankOf() == 1 && input.sizeAt(1) == bias.sizeAt(0) && input.ordering() == 'c') {
-       int rows = input.sizeAt(0);
-       int biasLen = bias.lengthOf();
-
-       auto inB = input.bufferAsT<X>();
-       auto bB = bias.bufferAsT<Y>();
-       auto outB = output.bufferAsT<X>();
-
-       for (int e = 0; e < rows; e++) {
-           auto row = inB + (e * biasLen);
-           auto out = outB + (e * biasLen);
-
-           for (int t = 0; t < biasLen; t++) {
-               out[t] = row[t] + bB[t];
-           }
-       }
-
-       return;
-   }
-   */
-
   auto x_shapeInfo = input.shapeInfo();
   auto z_shapeInfo = output.shapeInfo();
   auto x = input.bufferAsT<X>();
@@ -399,7 +377,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
 
   // for rank>5
   if (rank > 5) {
-    const int channelDim = isNCHW ? 1 : input.rankOf() - 1;  // second or last
+    const sd::LongType channelDim = isNCHW ? 1 : input.rankOf() - 1;  // second or last
     std::vector<sd::LongType> channelDimVec = {channelDim};
     const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add,&channelDimVec , bias, output);
     return;
@@ -443,13 +421,13 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
       bias_new = flattened_bias(b, (X*)flatBias_stack, b_stack_size, flatBias_heap, inc, yStrideC);
       if (isContinuous && inc < MIN_NN_K * MIN_NN && total_num > inc * MIN_NN_K) {
         // for small size where total_num is sufficient  we need to recreate vectorizable buffer
-        size_t old_inc = inc;
+        sd::LongType old_inc = inc;
         // sizeof bias_extra is MIN_NN * MIN_NN
-        size_t new_inc = inc < MIN_NN ? inc * MIN_NN : inc * MIN_NN / MIN_NN_K;
+        sd::LongType new_inc = inc < MIN_NN ? inc * MIN_NN : inc * MIN_NN / MIN_NN_K;
         // if there is a room then lets multiply
         new_inc =
             (new_inc * MIN_NN_K <= total_num && new_inc < MIN_NN * MIN_NN / MIN_NN_K) ? MIN_NN_K * new_inc : new_inc;
-        for (size_t i = 0; i < new_inc; i += inc) {
+        for (sd::LongType i = 0; i < new_inc; i += inc) {
           // copy to our buffer
           X* cp = &(bias_extra[i]);
           for (size_t j = 0; j < inc; j++) {
@@ -465,7 +443,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
       if (isContinuous) {
         // we can choose other inc and index for that case
         // but for now lets choose all till the last one
-        uint32_t req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+        sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
         isContinuous = false;
         if (rank > 2) {
           if (req_numThreads < 2 || bases[rank - 1] >= req_numThreads) {
@@ -552,7 +530,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
     // NC...HW case here
     size_t numNC = 1;
     size_t numHW = 1;
-    for (size_t i = 0; i < 2; i++) {
+    for (sd::LongType i = 0; i < 2; i++) {
       numNC *= bases[i];
     }
     for (sd::LongType i = 2; i < rank; i++) {
@@ -563,7 +541,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
     if (order == 'c' && isContinuous) {
       // sometimes last dimension is too big and multithreading could suffer using unfair partitioning
       // so we will do it only when inc is smaller our value or multithreading turned off
-      uint32_t req_numThreads = sd::Environment::getInstance().maxMasterThreads();
+      sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
       if (req_numThreads < 2 || numNC >= req_numThreads || inc <= 2 * 8196 || rank == 3) {
         inc = numHW;
       } else {
@@ -618,7 +596,6 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
 }
 //////////////////////////////////////////////////////////////////////////
 void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
-  // bias.rankOf() == 1 ? bias : bias.reshape(bias.ordering(), {bias.lengthOf()})
   BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), SD_FLOAT_TYPES,
                         SD_FLOAT_TYPES);
 }

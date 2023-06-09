@@ -1435,7 +1435,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray scores = Nd4j.createFromArray(new float[]{0.0029f,    0.8135f,    0.4873f});
         val op = new NonMaxSuppression(boxes,scores,2,0.5,0.5);
         val res = Nd4j.exec(op);
-        assertEquals(new long[]{1}, res[0].shape());
+        assertArrayEquals(new long[]{1}, res[0].shape());
     }
 
 
@@ -1476,7 +1476,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.createFromArray(new float[]{NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN, }).reshape(3,4);
         Polygamma op = new Polygamma(a,b);
         INDArray[] ret = Nd4j.exec(op);
-        assertEquals(expected, ret[0]);
+        assertEquals(expected.isNaN(), ret[0].isNaN());
     }
 
 

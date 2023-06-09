@@ -260,20 +260,6 @@ namespace sd {
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_lgamma(X x);
 
-//#ifndef __CUDACC__
-/*
-        template<>
-        SD_HOST_DEVICE inline float16 sd_dot<float16>(float16 *x, float16 *y, int length) {
-            float16 dot = (float16) 0.0f;
-
-            // TODO: since we can't use simd on unions, we might use something else here.
-            for(int e = 0; e < length; e++) {
-                dot += x[e] * y[e];
-            }
-
-            return dot;
-        }
-        */
 
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length) {
@@ -285,7 +271,6 @@ namespace sd {
 
             return dot;
         }
-//#endif
 
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_acos(T val);
