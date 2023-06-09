@@ -335,8 +335,6 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto list = x.allTensorsAlongDimension({1});
-  // x.printIndexedBuffer("Output broadcast");
-  // list->at(0)->printIndexedBuffer("Column 0:");
   for (int e = 0; e < list.size(); e++) ASSERT_TRUE(row.equalsTo(list.at(e)));
 }
 

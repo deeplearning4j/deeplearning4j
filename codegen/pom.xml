@@ -18,6 +18,7 @@
     <modules>
         <module>op-codegen</module>
         <module>libnd4j-gen</module>
+        <module>blas-lapack-generator</module>
     </modules>
 
 

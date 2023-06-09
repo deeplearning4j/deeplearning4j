@@ -252,7 +252,7 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 /////////////////////////
 void DataBuffer::memcpy(const DataBuffer& dst, const DataBuffer& src) {
   if (src._lenInBytes > dst._lenInBytes)
-    throw std::runtime_error("DataBuffer::memcpy: Source data buffer is larger than destination");
+    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
 
   int res = 0;
   if (src.isSpecialActual()) {

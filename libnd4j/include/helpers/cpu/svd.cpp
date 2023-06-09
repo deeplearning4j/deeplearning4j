@@ -32,7 +32,7 @@ namespace helpers {
 template <typename T>
 SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
-    throw std::runtime_error("ops::helpers::SVD constructor: input array must be 2D matrix !");
+    THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
   const int rows = matrix.sizeAt(0);
   const int cols = matrix.sizeAt(1);
@@ -73,7 +73,7 @@ template <typename T>
 SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV,
             const char t) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
-    throw std::runtime_error("ops::helpers::SVD constructor: input array must be 2D matrix !");
+    THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
   const int rows = matrix.sizeAt(0);
   const int cols = matrix.sizeAt(1);
@@ -113,7 +113,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 template <typename T>
 void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
   if (ind <= 0)
-    throw std::runtime_error("ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !");
+    THROW_EXCEPTION("ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !");
 
   int first = col1 + shift;
   T cos = _m.t<T>(first, first);
@@ -149,10 +149,10 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
 template <typename T>
 void SVD<T>::deflation2(int col1U, int col1M, int row1W, int col1W, int ind1, int ind2, int size) {
   if (ind1 >= ind2)
-    throw std::runtime_error("ops::helpers::SVD::deflation2 method: input intes must satisfy condition ind1 < ind2 !");
+    THROW_EXCEPTION("ops::helpers::SVD::deflation2 method: input intes must satisfy condition ind1 < ind2 !");
 
   if (size <= 0)
-    throw std::runtime_error("ops::helpers::SVD::deflation2 method: input size must satisfy condition size > 0 !");
+    THROW_EXCEPTION("ops::helpers::SVD::deflation2 method: input size must satisfy condition size > 0 !");
 
   T cos = _m.t<T>(col1M + ind1, col1M);
   T sin = _m.t<T>(col1M + ind2, col1M);
@@ -315,7 +315,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     for (; i > 1; --i) {
       if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
         if (math::sd_abs<T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
-          throw std::runtime_error("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
+          THROW_EXCEPTION("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
         deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
       }
     }
@@ -364,7 +364,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
       int l = k + 1;
       while (col0.t<T>(l) == (T)0.f) {
         ++l;
-        if (l >= curLen) throw std::runtime_error("ops::helpers::SVD::calcSingVals method: l >= curLen !");
+        if (l >= curLen) THROW_EXCEPTION("ops::helpers::SVD::calcSingVals method: l >= curLen !");
       }
 
       right = diag.t<T>(l);

@@ -87,7 +87,7 @@ void PointersManager::printDevContentOnDevFromHost(const void* pDev, const sd::L
   printDevContentOnDev_<T><<<512, 512, 1024, *sd::LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
   auto res = cudaStreamSynchronize(*sd::LaunchContext ::defaultContext()->getCudaStream());
   if (res != 0)
-    throw std::runtime_error("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
+    THROW_EXCEPTION("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
 }
 template void PointersManager::printDevContentOnDevFromHost<sd::LongType>(const void* pDev, const sd::LongType len,
                                                                           const int tid);
@@ -109,7 +109,7 @@ void PointersManager::printDevContentOnHost(const void* pDev, const sd::LongType
 
   cudaMemcpyAsync(pHost, pDev, sizeof(T) * len, cudaMemcpyDeviceToHost, *_context->getCudaStream());
   cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
-  if (cudaResult != 0) throw std::runtime_error("PointersManager::printCudaHost: cudaStreamSynchronize failed!");
+  if (cudaResult != 0) THROW_EXCEPTION("PointersManager::printCudaHost: cudaStreamSynchronize failed!");
 
   for (sd::LongType i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<T*>(pHost)[i]);
   printf("\n");

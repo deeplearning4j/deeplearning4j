@@ -45,7 +45,7 @@ Variable *Variable::asT() {
   // FIXME: add support for ArrayList
   if (this->_list != nullptr) {
     sd_printf("ArrayList not supported yet\n", "");
-    throw std::runtime_error("ArrayList not supported yet for asT");
+    THROW_EXCEPTION("ArrayList not supported yet for asT");
   }
 
   return result;
@@ -123,10 +123,12 @@ sd::NDArray *sd::graph::Variable::getNDArray() {
     if (_name.empty()) {
       auto nodeId = StringUtils::valueToString<int>(this->id());
       auto outputIndex = StringUtils::valueToString<int>(this->index());
-      throw std::runtime_error("Array doesn't exist for Variable <" + nodeId + ":" + outputIndex + ">");
+      auto msg = "Array doesn't exist for Variable <" + nodeId + ":" + outputIndex + ">";
+      THROW_EXCEPTION(msg.c_str());
     } else {
       auto outputIndex = StringUtils::valueToString<int>(this->index());
-      throw std::runtime_error("Array doesn't exist for Variable <" + this->_name + ":" + outputIndex + ">");
+      auto msg = "Array doesn't exist for Variable <" + this->_name + ":" + outputIndex + ">";
+      THROW_EXCEPTION(msg.c_str());
     }
   }
 
@@ -178,7 +180,7 @@ sd::graph::Variable::Variable(const sd::graph::FlatVariable *flatVariable) {
       _variableType = VariableType::NDARRAY;
     } break;
     case VarType_CONSTANT: {
-      if (flatVariable->ndarray() == nullptr) throw std::runtime_error("CONSTANT variable must have NDArray bundled");
+      if (flatVariable->ndarray() == nullptr) THROW_EXCEPTION("CONSTANT variable must have NDArray bundled");
 
       auto ar = flatVariable->ndarray();
       if (ar->dtype() == DType_UTF8) {
@@ -201,7 +203,7 @@ sd::graph::Variable::Variable(const sd::graph::FlatVariable *flatVariable) {
     } break;
     case VarType_PLACEHOLDER: {
       if (flatVariable->shape() == nullptr && flatVariable->ndarray() == nullptr)
-        throw std::runtime_error("PLACEHOLDER variable must have shape defined");
+        THROW_EXCEPTION("PLACEHOLDER variable must have shape defined");
 
       if (flatVariable->ndarray() != nullptr) {
         auto ar = flatVariable->ndarray();
@@ -219,7 +221,7 @@ sd::graph::Variable::Variable(const sd::graph::FlatVariable *flatVariable) {
       }
     } break;
     default:
-      throw std::runtime_error("Unknown variable type used");
+      THROW_EXCEPTION("Unknown variable type used");
   }
 }
 
@@ -275,7 +277,7 @@ flatbuffers::Offset<FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBuff
     // returning array
     return CreateFlatVariable(builder, fVid, stringId, static_cast<sd::graph::DType>(array->dataType()), 0, fArray);
   } else {
-    throw std::runtime_error("Variable::asFlatVariable isn't possible for NDArrayList");
+    THROW_EXCEPTION("Variable::asFlatVariable isn't possible for NDArrayList");
   }
 }
 }  // namespace graph

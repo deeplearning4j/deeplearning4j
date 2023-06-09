@@ -92,7 +92,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
    * @return
    */
   SD_INLINE int cachedEntriesForDevice(int deviceId) {
-    if (deviceId > _cache.size()) throw std::runtime_error("deviceId > number of actual devices");
+    if (deviceId > _cache.size()) THROW_EXCEPTION("deviceId > number of actual devices");
 
     return _cache[deviceId].size();
   }

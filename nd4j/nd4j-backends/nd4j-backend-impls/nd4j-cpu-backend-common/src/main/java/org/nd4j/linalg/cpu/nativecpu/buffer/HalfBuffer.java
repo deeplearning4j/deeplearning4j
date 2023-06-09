@@ -196,4 +196,9 @@ public class HalfBuffer extends BaseCpuDataBuffer {
         ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
 
     }
+
+    @Override
+    public void setData(boolean[] data) {
+        ((HalfIndexer) indexer).put(0, ArrayUtil.toFloatArray(data));
+    }
 }

@@ -31,7 +31,7 @@ namespace sd {
             template <typename T>
             JacobiSVD<T>::JacobiSVD(const NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
                 if (matrix.rankOf() != 2 || matrix.isScalar())
-                    throw std::runtime_error("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
+                    THROW_EXCEPTION("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 
                 _rows = static_cast<int>(matrix.sizeAt(0));
                 _cols = static_cast<int>(matrix.sizeAt(1));
@@ -70,7 +70,7 @@ namespace sd {
             void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation) {
                 if (i < j) {
                     if (j + 1 > block.sizeAt(0))
-                        throw std::runtime_error(
+                        THROW_EXCEPTION(
                                 "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
 
                     auto temp = block({i, j + 1, j - i, 0, 0, 0}, true, true);
@@ -78,7 +78,7 @@ namespace sd {
 
                 } else {
                     if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
-                        throw std::runtime_error(
+                        THROW_EXCEPTION(
                                 "ops::helpers::JacobiSVD mulRotationOnLeft: some or both integer arguments are out of array row range !");
 
                     NDArray temp(block.ordering(), {2, block.sizeAt(1)}, block.dataType(), block.getContext());
@@ -99,14 +99,14 @@ namespace sd {
             void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, const NDArray& rotation) {
                 if (i < j) {
                     if (j + 1 > block.sizeAt(1))
-                        throw std::runtime_error(
+                        THROW_EXCEPTION(
                                 "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
 
                     auto temp = block({0, 0, 0, i, j + 1, j - i}, true, true);
                     temp.assign(mmul(temp, rotation));
                 } else {
                     if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
-                        throw std::runtime_error(
+                        THROW_EXCEPTION(
                                 "ops::helpers::JacobiSVD mulRotationOnRight: some or both integer arguments are out of array column range !");
 
                     NDArray temp(block.ordering(), {block.sizeAt(0), 2}, block.dataType(), block.getContext());

@@ -32,7 +32,7 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer&
 
 const sd::LongType* TadPack::primaryShapeInfo() const {
   if(_tadShape.primary() == nullptr)
-    throw std::runtime_error("TadPack::primaryShapeInfo: primary shape info is nullptr!");
+    THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");
   return _tadShape.primary();
 }
 

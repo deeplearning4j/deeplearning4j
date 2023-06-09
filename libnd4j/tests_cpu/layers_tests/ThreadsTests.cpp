@@ -147,7 +147,7 @@ TEST_F(ThreadsTests, test_span_converage_1) {
           else if (loop == 2)
             sum += span.stopY() - span.startY();
           else
-            throw std::runtime_error("Bad loop!");
+            THROW_EXCEPTION("Bad loop!");
         }
 
         if (loop == 1)

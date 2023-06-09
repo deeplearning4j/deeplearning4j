@@ -45,9 +45,9 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
   int axe0_size = INT_ARG(0);
   int axe1_size = INT_ARG(axe0_size + 1);
   std::vector<sd::LongType> axes_0(axe0_size), axes_1(axe1_size);
-  for (int e = 0; e < axe0_size; e++) axes_0[e] = (int)INT_ARG(e + 1);
+  for (sd::LongType e = 0; e < axe0_size; e++) axes_0[e] = INT_ARG(e + 1);
 
-  for (int e = 0; e < axe1_size; e++) axes_1[e] = (int)INT_ARG(e + axe0_size + 2);
+  for (sd::LongType  e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
   sd_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
@@ -68,9 +68,9 @@ DECLARE_SHAPE_FN(tensormmul) {
   int axe0_size = INT_ARG(0);
   int axe1_size = INT_ARG(axe0_size + 1);
   std::vector<sd::LongType> axes_0(axe0_size), axes_1(axe1_size);
-  for (int e = 0; e < axe0_size; e++) axes_0[e] = INT_ARG(e + 1);
+  for (sd::LongType  e = 0; e < axe0_size; e++) axes_0[e] = INT_ARG(e + 1);
 
-  for (int e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
+  for (sd::LongType  e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
   // evaluate shapes
   std::vector<sd::LongType> permutAt, permutBt;
@@ -104,8 +104,8 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
   REQUIRE_TRUE((A->dataType() == B->dataType() && (dLdC->dataType() == A->dataType())), 0,
                "tensormmul_bp: A, B and dLdC data types must be the same");
 
-  int axe0Size = INT_ARG(0);
-  int axe1Size = INT_ARG(axe0Size + 1);
+  sd::LongType  axe0Size = INT_ARG(0);
+  sd::LongType  axe1Size = INT_ARG(axe0Size + 1);
 
   auto Arank = A->rankOf();
   auto Brank = B->rankOf();
@@ -133,15 +133,15 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
     return sd::Status::OK;
   }
 
-  std::vector<sd::LongType> *axesA = ShapeUtils::evalDimsToExclude(Arank, 1,axes0.data());
-  std::vector<sd::LongType> *axesB = ShapeUtils::evalDimsToExclude(Brank, 1,axes1.data());
+  std::vector<sd::LongType> *axesA = ShapeUtils::evalDimsToExclude(Arank, axes0.size(),axes0.data());
+  std::vector<sd::LongType> *axesB = ShapeUtils::evalDimsToExclude(Brank, axes1.size(),axes1.data());
 
   std::vector<sd::LongType> *axesAdLdC, *axesBdLdC;
   if (dLdCrank > 1) {
     axesAdLdC = new std::vector<sd::LongType>();
     axesAdLdC->resize(axesA->size());
     std::iota(axesAdLdC->begin(), axesAdLdC->end(), 0);
-    axesBdLdC = ShapeUtils::evalDimsToExclude(dLdCrank, 1,axesAdLdC->data());
+    axesBdLdC = ShapeUtils::evalDimsToExclude(dLdCrank, axesAdLdC->size(),axesAdLdC->data());
   } else {
     axesAdLdC = new std::vector<sd::LongType>();
     axesBdLdC = new std::vector<sd::LongType>();

@@ -122,7 +122,7 @@ sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::pair<int, int>& 
     return _paired.at(pair);
   }
   sd_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
-  throw std::runtime_error("Unknown variable requested");
+  THROW_EXCEPTION("Unknown variable requested");
 }
 
 bool sd::graph::VariableSpace::hasVariable(int id) { return _variables.count(id) == 1 || _temporary.count(id) == 1; }

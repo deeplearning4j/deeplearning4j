@@ -169,12 +169,12 @@ void sd::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     for (int i = cArrs.size() - 1; i > 0; --i) {
       if (cArrs[i]->buffer() != cArrs[i - 1]->buffer() || cArrs[i]->specialBuffer() != cArrs[i - 1]->specialBuffer())
         cArrs[i - 1]->assign(cArrs[i]);
-      //delete cArrs[i];
+      delete cArrs[i];
     }
   }
 
-  // if (aPR != a) delete aPR;
-  // if (bPR != b) delete bPR;
+  if (aPR != a) delete aPR;
+  if (bPR != b) delete bPR;
 }
 
 //////////////////////////////////////////////////////////////////////////

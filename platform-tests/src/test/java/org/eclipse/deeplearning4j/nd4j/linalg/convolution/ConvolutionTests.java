@@ -1386,7 +1386,7 @@ public class ConvolutionTests extends BaseNd4jTestWithBackends {
 
                                                         INDArray in = Nd4j.rand(new int[] {m, d, h, w});
                                                         INDArray outOrig = OldConvolution.im2col(in, kh, kw, sh, sw, ph,
-                                                                pw, -1, cAll); //Old implementation
+                                                                pw, 0, cAll); //Old implementation
 
 
                                                         INDArray outNew = Convolution.im2col(in, kh, kw, sh, sw, ph, pw,

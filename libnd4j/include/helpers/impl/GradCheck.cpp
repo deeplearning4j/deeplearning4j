@@ -110,7 +110,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
             "GradCheck::checkGrad: got wrong value for numerical gradient for input array # %i and its element at "
             "position %lld ! \n",
             i, j);
-        throw std::runtime_error("");
+        THROW_EXCEPTION("");
       }
 
       // get analytical gradient
@@ -120,7 +120,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
             "GradCheck::checkGrad: got wrong value for analytical gradient for input array # %i and its element at "
             "position %lld ! \n",
             i, j);
-        throw std::runtime_error("");
+        THROW_EXCEPTION("");
       }
 
       // printf("%lld: num = %.15f, ana = %.15f\n", j, numericalGrad, analyticGrad);

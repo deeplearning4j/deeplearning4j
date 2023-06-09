@@ -290,7 +290,7 @@ void IndexUtils::unravelIndex(sd::LongType *indices, sd::LongType *flatIndices, 
     // throw error if one occurred in loop
     sd_printf("Largest raveled index is: %d, ", maxRaveledIndex) std::vector<sd::LongType> v(shape, shape + rank);
     sd_printv("Shape: ", v);
-    throw std::runtime_error("sparse::IndexUtils::unravelIndex Cannot unravel index");
+    THROW_EXCEPTION("sparse::IndexUtils::unravelIndex Cannot unravel index");
   }
 
   delete[] unravelOrder;

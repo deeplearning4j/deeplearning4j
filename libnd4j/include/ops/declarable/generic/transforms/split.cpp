@@ -45,10 +45,10 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
 
     if (a->isScalar()) {
       // axis goes first
-      axis = a->e<int>(0);
+      axis = a->e<sd::LongType>(0);
       input = b;
     } else if (b->isScalar()) {
-      axis = b->e<int>(0);
+      axis = b->e<sd::LongType>(0);
       input = a;
     }
   }
@@ -101,13 +101,13 @@ DECLARE_SHAPE_FN(split) {
     if (shape::isScalar(shape0)) {
       input = shape1;
       auto _a = INPUT_VARIABLE(0);
-      axis = _a->e<int>(0);
+      axis = _a->e<sd::LongType>(0);
       dataType = ArrayOptions::dataType(shape1);
       inputVar = 1;
     } else if (shape::isScalar(shape1)) {
       input = shape0;
       auto _a = INPUT_VARIABLE(1);
-      axis = _a->e<int>(0);
+      axis = _a->e<sd::LongType>(0);
       dataType = ArrayOptions::dataType(shape0);
       inputVar = 0;
     }

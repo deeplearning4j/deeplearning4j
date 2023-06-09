@@ -165,12 +165,17 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(byte[] data) {
-       float[] floats = new float[data.length];
-       for(int i = 0; i < data.length; i++) {
-           floats[i] = data[i];
-       }
+        float[] floats = new float[data.length];
+        for(int i = 0; i < data.length; i++) {
+            floats[i] = data[i];
+        }
 
-       setData(floats);
+        setData(floats);
+    }
+
+    @Override
+    public void setData(boolean[] data) {
+        setData(ArrayUtil.toFloatArray(data));
     }
 
     @Override

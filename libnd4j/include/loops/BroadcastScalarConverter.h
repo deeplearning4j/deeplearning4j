@@ -64,7 +64,7 @@ inline scalar::Ops convertToScalar(broadcast::Ops op) {
     case broadcast::SquaredSubtract:
       return scalar::SquaredSubtract;
     default:
-      throw std::runtime_error("Not convertible operation");
+      THROW_EXCEPTION("Not convertible operation");
   }
 }
 }  // namespace sd

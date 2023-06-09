@@ -228,6 +228,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
         op.validateDataTypes(oc);
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(z != null) {
+                if(!x.isScalar() && !z.isScalar())
+                    Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
+                            " Got: x=%ndShape, z=%ndShape", x, z);
+                z.assign(x);
+                return z;
+            } else {
+                setZ(x.dup(), op, oc);
+                return z;
+            }
+        }
 
         val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toLongVector() : null);
         if (extraz.get() == null)
@@ -1354,9 +1368,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().opaqueBuffer());
+                inputBuffers.put(cnt, in.data().opaqueBuffer().primaryBuffer());
 
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer());
         }
 
 
@@ -1412,7 +1426,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         OpaqueShapeList ptrptr;
         try {
-            ptrptr = loop.calculateOutputShapes3(null,
+            ptrptr = loop.calculateOutputShapes2(null,
                     hash, inputBuffers, inputShapes, nIn, tArgs,
                     nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 

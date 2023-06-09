@@ -135,7 +135,7 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
     }
 
     if (fullUV && std::vector<sd::LongType>({n, n}) != VT->getShapeAsVector())
-      throw std::runtime_error("svdQR: wrong shape of VT array !");
+      THROW_EXCEPTION("svdQR: wrong shape of VT array !");
     else if (!fullUV && std::vector<sd::LongType>({minDim, n}) != VT->getShapeAsVector())
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
   }
@@ -270,25 +270,25 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   // U [m, m] or [m, n] if fullUV = false and m > n
   // V [n, n] or [n, m] if fullUV = false and m < n
 
-  if (A->rankOf() != 2) throw std::runtime_error("svdJcb: rank of A array is not equal 2 !");
+  if (A->rankOf() != 2) THROW_EXCEPTION("svdJcb: rank of A array is not equal 2 !");
 
   int m = A->sizeAt(0);
   int n = A->sizeAt(1);
   const int minDim = m < n ? m : n;
 
   if (std::vector<sd::LongType>({minDim}) != S->getShapeAsVector())
-    throw std::runtime_error("svdJcb: wrong shape of S array !");
+    THROW_EXCEPTION("svdJcb: wrong shape of S array !");
 
   if (calcUV) {
     if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector())
-      throw std::runtime_error("svdJcb: wrong shape of U array !");
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
     else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector())
-      throw std::runtime_error("svdJcb: wrong shape of U array !");
+      THROW_EXCEPTION("svdJcb: wrong shape of U array !");
 
     if (fullUV && std::vector<sd::LongType>({n, n}) != V->getShapeAsVector())
-      throw std::runtime_error("svdJcb: wrong shape of V array !");
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
     else if (!fullUV && std::vector<sd::LongType>({n, minDim}) != V->getShapeAsVector())
-      throw std::runtime_error("svdJcb: wrong shape of V array !");
+      THROW_EXCEPTION("svdJcb: wrong shape of V array !");
   }
 
   NDArray* pA = const_cast<NDArray*>(A);
@@ -463,20 +463,20 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
   const int minDim = m < n ? m : n;
   const sd::LongType bS = A->lengthOf() / (m * n);
 
-  if (m > 32 || n > 32) throw std::runtime_error("svdBatched: numbers of rows and columns should be <= 32 !");
+  if (m > 32 || n > 32) THROW_EXCEPTION("svdBatched: numbers of rows and columns should be <= 32 !");
 
-  if (minDim != S->sizeAt(-1)) throw std::runtime_error("svdBatched: wrong shape of S array !");
+  if (minDim != S->sizeAt(-1)) THROW_EXCEPTION("svdBatched: wrong shape of S array !");
 
   if (calcUV) {
-    if (U->sizeAt(-2) != m) throw std::runtime_error("svdBatched: wrong shape of U array !");
-    if (U->sizeAt(-1) != (fullUV ? m : minDim)) throw std::runtime_error("svdBatched: wrong shape of U array !");
+    if (U->sizeAt(-2) != m) THROW_EXCEPTION("svdBatched: wrong shape of U array !");
+    if (U->sizeAt(-1) != (fullUV ? m : minDim)) THROW_EXCEPTION("svdBatched: wrong shape of U array !");
     if (U->lengthOf() / (U->sizeAt(-2) * U->sizeAt(-1)) != bS)
-      throw std::runtime_error("svdBatched: wrong shape of U array !");
+      THROW_EXCEPTION("svdBatched: wrong shape of U array !");
 
-    if (V->sizeAt(-2) != n) throw std::runtime_error("svdBatched: wrong shape of V array !");
-    if (V->sizeAt(-1) != (fullUV ? n : minDim)) throw std::runtime_error("svdBatched: wrong shape of V array !");
+    if (V->sizeAt(-2) != n) THROW_EXCEPTION("svdBatched: wrong shape of V array !");
+    if (V->sizeAt(-1) != (fullUV ? n : minDim)) THROW_EXCEPTION("svdBatched: wrong shape of V array !");
     if (V->lengthOf() / (V->sizeAt(-2) * V->sizeAt(-1)) != bS)
-      throw std::runtime_error("svdBatched: wrong shape of V array !");
+      THROW_EXCEPTION("svdBatched: wrong shape of V array !");
   }
 
   NDArray* pA = const_cast<NDArray*>(A);

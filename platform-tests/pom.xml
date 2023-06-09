@@ -94,7 +94,7 @@
         <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=1:replace_intrin=0:detect_leaks=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload>/usr/lib64/libasan.so.8</preload>
+        <preload>/usr/lib64/libasan.so.8:/usr/local/lib/libjemalloc.so.2</preload>
         <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
     </properties>

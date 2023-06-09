@@ -141,7 +141,7 @@ void ContextBuffers::initialize() {
   _execStream = new cudaStream_t();
   _specialStream = new cudaStream_t();
   if (nullptr == _execStream || nullptr == _specialStream)
-    throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+    THROW_EXCEPTION("Failed to allocate memory for new CUDA stream");
 
   res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
   if (res != 0) throw cuda_exception::build("Failed to create default CUDA stream with launch context", res);

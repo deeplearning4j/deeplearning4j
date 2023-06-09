@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
-  const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
+  const sd::LongType channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
 
   REQUIRE_TRUE(bias->rankOf() == 1, 0, "BIASADD CUSTOM_OP: bias array should have rank = 1, but got %i instead !",
                bias->rankOf());
@@ -53,7 +53,6 @@ CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
                ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(output).c_str());
 
   helpers::addBias(block, *input, *bias, *output, isNCHW);
-  // input->applyBroadcast(sd::broadcast::Add, {channelDim}, bias, output);
 
   return sd::Status::OK;
 }

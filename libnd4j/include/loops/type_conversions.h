@@ -68,7 +68,7 @@ class SD_LIB_HIDDEN TypeCast {
   static SD_HOST void convertFromThreshold(sd::Pointer *extras, const void *dx, sd::LongType N, void *dz);
 
   SD_INLINE static SD_HOST sd::LongType estimateQuantizedSize(sd::LongType rawSize) {
-    if (rawSize <= 0) throw std::runtime_error("Input size for quantization can't be <= 0");
+    if (rawSize <= 0) THROW_EXCEPTION("Input size for quantization can't be <= 0");
 
     // 2 fp32 values for max/min, and rawSize number of BYTES
     return 8 + rawSize;

@@ -89,10 +89,10 @@ void *ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef __CUDABLAS__
   sd::Pointer ptr;
   auto res = cudaMalloc(reinterpret_cast<void **>(&ptr), length * elementSize);
-  if (res != 0) throw std::runtime_error("Can't allocate CUDA memory");
+  if (res != 0) THROW_EXCEPTION("Can't allocate CUDA memory");
 #else  // CPU branch
   auto ptr = new int8_t[length * elementSize];
-  if (!ptr) throw std::runtime_error("Can't allocate memory");
+  if (!ptr) THROW_EXCEPTION("Can't allocate memory");
 #endif
 
   return ptr;

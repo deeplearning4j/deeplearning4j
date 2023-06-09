@@ -601,7 +601,7 @@ uint8_t *readFlatBuffers(const char *filename) {
   long fileLen = getFileSize(filename);
   if (fileLen < 0) {
     sd_printf("File [%s] wasn't found. Please check path and permissions\n", filename);
-    throw std::runtime_error("File not found");
+    THROW_EXCEPTION("File not found");
   }
 
   sd_debug("File length: %i\n", fileLen);

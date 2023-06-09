@@ -72,7 +72,7 @@ void GraphProfile::recordEvent(const char *name) {
   std::string k = name;
   if (_timers.count(k) == 0) {
     sd_printf("Can't find timer key: [%s]", name);
-    throw std::runtime_error("Missing timer key");
+    THROW_EXCEPTION("Missing timer key");
   }
   auto t0 = _timers[k];
   auto t1 = std::chrono::system_clock::now();

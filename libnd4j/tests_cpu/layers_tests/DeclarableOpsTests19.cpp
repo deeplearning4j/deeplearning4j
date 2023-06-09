@@ -208,7 +208,7 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
     auto f = initial.e<float>(e);
     if (f != 0.5f) {
       sd_printf("initial[%i] = %f\n", e, f);
-      throw std::runtime_error("");
+      THROW_EXCEPTION("");
     }
   }
   ASSERT_EQ(neg, initial);
@@ -253,7 +253,7 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
       auto f = initial.e<float>(e);
       if (f != 0.5f) {
         sd_printf("initial[%i] = %f\n", e, f);
-        throw std::runtime_error("");
+        THROW_EXCEPTION("");
       }
     }
     */

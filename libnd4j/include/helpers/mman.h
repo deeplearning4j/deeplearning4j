@@ -149,14 +149,14 @@ void _mmap(sd::LongType *result, size_t length, const char *fileName) {
   if (h == INVALID_HANDLE_VALUE) {
     errno = __map_mman_error(GetLastError(), EPERM);
     sd_printf("Error code: %i\n", (int)errno);
-    throw std::runtime_error("CreateFile failed");
+    THROW_EXCEPTION("CreateFile failed");
   }
 
   fm = CreateFileMapping(h, NULL, protect, dwMaxSizeHigh, dwMaxSizeLow, NULL);
 
   if (fm == NULL) {
     errno = __map_mman_error(GetLastError(), EPERM);
-    throw std::runtime_error("CreateFileMapping failed");
+    THROW_EXCEPTION("CreateFileMapping failed");
   }
 
   map = MapViewOfFile(fm, desiredAccess, dwFileOffsetHigh, dwFileOffsetLow, length);
@@ -165,7 +165,7 @@ void _mmap(sd::LongType *result, size_t length, const char *fileName) {
 
   if (map == NULL) {
     errno = __map_mman_error(GetLastError(), EPERM);
-    throw std::runtime_error("MapViewOfFile failed");
+    THROW_EXCEPTION("MapViewOfFile failed");
   }
 
   result[0] = reinterpret_cast<sd::LongType>(map);

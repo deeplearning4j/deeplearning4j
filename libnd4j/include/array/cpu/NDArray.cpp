@@ -53,7 +53,7 @@ sd::LongType const* NDArray::platformShapeInfo() const { return shapeInfo(); }
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges) {
-  if (isS()) throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
+  if (isS()) THROW_EXCEPTION("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
@@ -140,7 +140,7 @@ BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular,
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
-  if (isS()) throw std::runtime_error("NDArray::setIdentity: you can't use this method on String array!");
+  if (isS()) THROW_EXCEPTION("NDArray::setIdentity: you can't use this method on String array!");
 
   this->nullify();
 
@@ -201,13 +201,13 @@ void NDArray::swapUnsafe(NDArray& other) {
   auto xType = this->dataType();
 
   if (xType != other.dataType())
-    throw std::runtime_error("NDArray::swapUnsage method: both arrays must have the same data type");
+    THROW_EXCEPTION("NDArray::swapUnsage method: both arrays must have the same data type");
 
   if (buffer() == nullptr || other.buffer() == nullptr)
-    throw std::runtime_error("NDArray::swapUnsafe method: input array should not be empty!");
+    THROW_EXCEPTION("NDArray::swapUnsafe method: input array should not be empty!");
 
   if (lengthOf() != other.lengthOf())
-    throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
+    THROW_EXCEPTION("NDArray::swapUnsafe method: input arrays should have the same length!");
 
   BUILD_SINGLE_SELECTOR(xType, templatedSwap,
                         (buffer(), other.buffer(), shapeInfo(), other.shapeInfo(), this->lengthOf()), SD_COMMON_TYPES);
@@ -334,7 +334,7 @@ void* NDArray::specialBuffer() {
 
 ////////////////////////////////////////////////////////////////////////
 void const* NDArray::specialBuffer() const {
-  if (!_buffer->special()) return nullptr;
+  if (_buffer == nullptr || _buffer->special() == nullptr) return nullptr;
   // FIXME: this should be fixed once CUDA backend added
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
@@ -346,7 +346,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
 
   sd::LongType product = 1;
   for (const auto& item : reps) product *= item;
-  if (product == 0) throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
+  if (product == 0) THROW_EXCEPTION("NDArray::tile method: one of the elements in reps array is zero !");
 
   int rankOld = rankOf();
   int diff = rankOld - repsSize;
@@ -406,13 +406,13 @@ delete desc;
 // change an array by repeating it the number of times given by reps.
 void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const {
   auto repProd = shape::prodLong(reps.data(), reps.size());
-  if (repProd < 1) throw std::runtime_error("NDArray::tile: reps can't contain 0s");
+  if (repProd < 1) THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
 
   // evaluate true tile shapeInfo for comparison with target shapeInfo
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   if (!shape::equalsSoft(newShapeInfo, target.shapeInfo())) {
     delete[] newShapeInfo;
-    throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
   }
 
   // fill newBuff, loop through all elements of newBuff
@@ -445,11 +445,11 @@ void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const
 //////////////////////////////////////////////////////////////////////////
 void NDArray::tile(NDArray& target) const {
   if (rankOf() > target.rankOf())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
 
   if (!ShapeUtils::areShapesBroadcastable(*this, target))
-    throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
 
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying

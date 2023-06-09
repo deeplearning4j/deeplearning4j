@@ -160,7 +160,7 @@ class SD_LIB_EXPORT DataTypeConversions {
       } break;
       default: {
         sd_printf("Unsupported DataType requested: [%i]\n", static_cast<int>(dataType));
-        throw std::runtime_error("Unsupported DataType");
+        THROW_EXCEPTION("Unsupported DataType");
       }
     }
   }

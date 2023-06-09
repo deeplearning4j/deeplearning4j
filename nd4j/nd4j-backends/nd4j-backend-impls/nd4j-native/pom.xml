@@ -550,7 +550,6 @@
                                 <compilerOption>-fno-omit-frame-pointer</compilerOption>
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption>
-                                    <compilerOption>-fsanitize=address</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

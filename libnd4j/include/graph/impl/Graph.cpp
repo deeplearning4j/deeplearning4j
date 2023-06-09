@@ -223,7 +223,7 @@ SD_MAP_IMPL<int, Node *> *Graph::getMapped() { return _mapped; }
 SD_MAP_IMPL<int, std::vector<Node *> *> *Graph::getOnion() { return _onion; }
 
 void Graph::injectNode(Node *node) {
-  if (node->getLayer() < 0) throw std::runtime_error("Only nodes with non-negative layer defined can be inserted");
+  if (node->getLayer() < 0) THROW_EXCEPTION("Only nodes with non-negative layer defined can be inserted");
 
   std::pair<int, Node *> pair(node->id(), node);
   if (_mapped->count(pair.first) > 0) return;
@@ -627,7 +627,7 @@ sd::Status Graph::buildGraph() {
         sd_printf("Unmapped node: [%i]\n", node->id());
       }
 
-      throw std::runtime_error("Unable to build graph");
+      THROW_EXCEPTION("Unable to build graph");
     }
   }
 
@@ -831,7 +831,7 @@ Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
         std::pair<int, int> vp(out->first(), out->second());
         if (!_variableSpace->hasVariable(vp)) {
           sd_verbose("Non-existent variable requested: %i\n", out);
-          throw std::runtime_error("Non-existent variable requested");
+          THROW_EXCEPTION("Non-existent variable requested");
         }
 
         // TODO: fix this .first
@@ -1168,7 +1168,7 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
 Scope *Graph::scopeById(int id) {
   if (_mappedScopes.count(id) == 0) {
     sd_printf("Requested Scope [%i] doesn't exist\n", id);
-    throw std::runtime_error("Non-existent Scope was requested");
+    THROW_EXCEPTION("Non-existent Scope was requested");
   }
 
   return _mappedScopes.at(id);

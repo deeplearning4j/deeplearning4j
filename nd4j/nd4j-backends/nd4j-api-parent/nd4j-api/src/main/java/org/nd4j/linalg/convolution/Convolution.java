@@ -293,7 +293,7 @@ public class Convolution {
             long oH = (img.size(2) - (kh + (kh - 1) * (1 - 1)) + 2 * ph) / sy + 1;
             long oW = (img.size(3) - (kw + (kw - 1) * (1 - 1)) + 2 * pw) / sx + 1;
 
-            output = Nd4j.createUninitialized(img.dataType(), new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
+            output = Nd4j.valueArrayOf( new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, pval, img.dataType());
         }
 
         Im2col im2col = Im2col.builder()

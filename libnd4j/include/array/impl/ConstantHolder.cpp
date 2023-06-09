@@ -52,7 +52,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void ConstantHolder::addBuffer, (Co
                       SD_COMMON_TYPES);
 
 ConstantDataBuffer* ConstantHolder::getConstantDataBuffer(sd::DataType dataType) {
-  if (!hasBuffer(dataType)) throw std::runtime_error("Requested dataType is absent in storage");
+  if (!hasBuffer(dataType)) THROW_EXCEPTION("Requested dataType is absent in storage");
 
   return &_buffers[dataType];
 }

@@ -85,7 +85,7 @@ sd::graph::Variable *VariableProxy::getVariable(int id) {
   if (_backed->hasVariable(id)) return _backed->getVariable(id);
 
   sd_printf("Unable to get Variable to proxy: [%i]\n", id);
-  throw std::runtime_error("Bad arguments");
+  THROW_EXCEPTION("Bad arguments");
 }
 
 sd::graph::Variable *VariableProxy::getVariable(int id, int idx) {
@@ -94,7 +94,7 @@ sd::graph::Variable *VariableProxy::getVariable(int id, int idx) {
   if (_backed->hasVariable(id, idx)) return _backed->getVariable(id, idx);
 
   sd_printf("Unable to get Variable to proxy: [%i:%i]\n", id, idx);
-  throw std::runtime_error("Bad arguments");
+  THROW_EXCEPTION("Bad arguments");
 }
 
 sd::graph::Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
@@ -103,7 +103,7 @@ sd::graph::Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
   if (_backed->hasVariable(pair)) return _backed->getVariable(pair);
 
   sd_printf("Unable to get Variable to proxy: [%i:%i]\n", pair.first, pair.second);
-  throw std::runtime_error("Bad arguments");
+  THROW_EXCEPTION("Bad arguments");
 }
 
 sd::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
@@ -112,7 +112,7 @@ sd::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
   if (_backed->hasVariable(symbol)) return _backed->getVariable(symbol);
 
   sd_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
-  throw std::runtime_error("Bad arguments");
+  THROW_EXCEPTION("Bad arguments");
 }
 
 void VariableProxy::replaceVariable(Variable *variable) {

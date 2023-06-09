@@ -33,13 +33,13 @@ namespace helpers {
 // A{M,K} * x{K,N} = b{M,N}
 template <typename T>
 void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
-  if (A.rankOf() != 2) throw std::runtime_error("FullPivLU::solve: input matrix A must be 2D !");
+  if (A.rankOf() != 2) THROW_EXCEPTION("FullPivLU::solve: input matrix A must be 2D !");
 
   if (A.sizeAt(0) != b.sizeAt(0))
-    throw std::runtime_error("FullPivLU::solve: A and b must have the same number of rows !");
+    THROW_EXCEPTION("FullPivLU::solve: A and b must have the same number of rows !");
 
   if (A.sizeAt(1) != x.sizeAt(0))
-    throw std::runtime_error("FullPivLU::solve: number of A columns must be equal to number of x rows !");
+    THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
   NDArray LU = A.dup();
 

@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
+static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const LongType axis) {
   sd::LongType numSplits = outArrs.size();
 
   const auto sizeofT = input.sizeOfT();

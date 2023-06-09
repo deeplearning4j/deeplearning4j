@@ -21,18 +21,18 @@ template <typename T>
 SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third,
                                                   const std::function<T(T, T, T)>& func, NDArray& target) {
   if (dataType() != DataTypeUtils::fromT<T>())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyTriplewiseLambda<T> method: wrong template parameter T, its type should be the same as type of "
         "this array!");
   if (dataType() != second.dataType() || dataType() != third.dataType() || dataType() != target.dataType())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyTriplewiseLambda<T> method: bother four arrays (this, second, third, target) should have the "
         "same type !");
 
   if (this->lengthOf() != second.lengthOf() || this->lengthOf() != third.lengthOf() || !this->isSameShape(second) ||
       !this->isSameShape(third)) {
     sd_printf("applyTriplewiseLambda requires all operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismatch");
+    THROW_EXCEPTION("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();
@@ -119,17 +119,17 @@ template <typename T>
 SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T, T)>& func,
                                                 NDArray& target) {
   if (dataType() != DataTypeUtils::fromT<T>())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyPairwiseLambda<T> method: wrong template parameter T, its type should be the same as type of "
         "this array!");
   if (dataType() != other.dataType() || dataType() != target.dataType())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyPairwiseLambda<T> method: all three arrays (this, other, target) must have the same type !");
 
   // scalar is broadcastable
   if (this->lengthOf() != other.lengthOf() && !this->isScalar() && !other.isScalar()) {
     sd_printf("applyPairwiseLambda requires both operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismatch");
+    THROW_EXCEPTION("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();
@@ -242,43 +242,44 @@ template SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other,
 template <typename T>
 SD_LIB_HIDDEN void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
   if (dataType() != DataTypeUtils::fromT<T>())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyLambda<T> method: wrong template parameter T, its type should be the same as type of this "
         "array!");
   if (dataType() != target.dataType())
-    throw std::runtime_error("NDArray::applyLambda<T> method: types of this and target array should match !");
+    THROW_EXCEPTION("NDArray::applyLambda<T> method: types of this and target array should match !");
 
   auto f = this->bufferAsT<T>();
   auto z = target.bufferAsT<T>();
 
   if (this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1)) {
     auto loop = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) z[e] = func(f[e]);
+      for (auto e = start; e < stop; e+= increment){
+        z[e] = func(f[e]);
+      }
     };
 
-    samediff::Threads::parallel_for(loop, 0, _length);
+
+    samediff::Threads::parallel_for(loop, 0, _length,1);
   } else {
     if (f == z) {
       auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e+= increment) {
           auto xOffset = this->getOffset(e);
-
           f[xOffset] = func(f[xOffset]);
         }
       };
 
-      samediff::Threads::parallel_for(loop, 0, _length);
+      samediff::Threads::parallel_for(loop, 0, _length,1);
     } else {
       auto loop = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e+= increment) {
           auto xOffset = this->getOffset(e);
           auto zOffset = target.getOffset(e);
-
           z[zOffset] = func(f[xOffset]);
         }
       };
 
-      samediff::Threads::parallel_for(loop, 0, _length);
+      samediff::Threads::parallel_for(loop, 0, _length,1);
     }
   }
 }
@@ -301,11 +302,11 @@ template SD_LIB_HIDDEN void NDArray::applyLambda(const std::function<bool(bool)>
 template <typename T>
 SD_LIB_HIDDEN void NDArray::applyIndexedLambda(const std::function<T(sd::LongType, T)>& func, NDArray& target) {
   if (dataType() != DataTypeUtils::fromT<T>())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyIndexedLambda<T> method: wrong template parameter T, its type should be the same as type of "
         "this array!");
   if (dataType() != target.dataType())
-    throw std::runtime_error("NDArray::applyIndexedLambda<T> method: types of this and target array should match !");
+    THROW_EXCEPTION("NDArray::applyIndexedLambda<T> method: types of this and target array should match !");
 
   auto f = this->bufferAsT<T>();
   auto z = target.bufferAsT<T>();
@@ -373,15 +374,15 @@ template <typename T>
 SD_LIB_HIDDEN void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(sd::LongType, T, T)>& func,
                                                        NDArray& target) {
   if (dataType() != DataTypeUtils::fromT<T>())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyIndexedPairwiseLambda<T> method: wrong template parameter T, its type should be the same as "
         "type of this array!");
   if (dataType() != target.dataType())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "NDArray::applyIndexedPairwiseLambda<T> method: types of this and target array should match !");
   if (this->lengthOf() != other.lengthOf()) {
     sd_printf("applyIndexedPairwiseLambda requires both operands to have the same shape\n", "");
-    throw std::runtime_error("Shapes mismatch");
+    THROW_EXCEPTION("Shapes mismatch");
   }
 
   auto f = this->bufferAsT<T>();

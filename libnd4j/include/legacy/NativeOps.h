@@ -1287,7 +1287,7 @@ static const char* getNpyArrayNameFromMap(void* map, int index, char* nameBuffer
       memcpy(nameBuffer, it->first.c_str(), len_of_str);
     }
   }
-  throw std::runtime_error("No array at index.");
+  THROW_EXCEPTION("No array at index.");
 }
 
 static void* getNpyArrayFromMap(void* map, int index) {
@@ -1302,7 +1302,7 @@ static void* getNpyArrayFromMap(void* map, int index) {
       return arr;
     }
   }
-  throw std::runtime_error("No array at index.");
+  THROW_EXCEPTION("No array at index.");
 }
 
 SD_LIB_EXPORT int dataTypeFromNpyHeader(void* header);

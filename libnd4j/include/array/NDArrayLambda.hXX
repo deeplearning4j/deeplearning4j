@@ -61,7 +61,7 @@ class LambdaHelper {
                                        const sd::LongType *zShapeInfo, Lambda lambda) {
     lambdaKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, lambda);
     auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) throw std::runtime_error("NDArray::applyLambda execution failed");
+    if (err != 0) THROW_EXCEPTION("NDArray::applyLambda execution failed");
   }
 
   template <typename Lambda>
@@ -69,7 +69,7 @@ class LambdaHelper {
                                               void *vz, const sd::LongType *zShapeInfo, Lambda lambda) {
     lambdaIndexedKernel<T, Lambda><<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, lambda);
     auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) throw std::runtime_error("NDArray::applyIndexedLambda execution failed");
+    if (err != 0) THROW_EXCEPTION("NDArray::applyIndexedLambda execution failed");
   }
 
   template <typename Lambda>
@@ -83,7 +83,7 @@ class LambdaHelper {
           <<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
     }
     auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) throw std::runtime_error("NDArray::applyPairwiseLambda execution failed");
+    if (err != 0) THROW_EXCEPTION("NDArray::applyPairwiseLambda execution failed");
   }
 
   template <typename Lambda>
@@ -94,7 +94,7 @@ class LambdaHelper {
     lambdaIndexedPairwiseKernel<T, Lambda>
         <<<256, 512, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
     auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) throw std::runtime_error("NDArray::applyIndexedPairwiseLambda execution failed");
+    if (err != 0) THROW_EXCEPTION("NDArray::applyIndexedPairwiseLambda execution failed");
   }
 
   template <typename Lambda>
@@ -105,7 +105,7 @@ class LambdaHelper {
     lambdaTriplewiseKernel<T, Lambda>
         <<<256, 512, 1024, *stream>>>(vw, wShapeInfo, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, lambda);
     auto err = cudaStreamSynchronize(*stream);
-    if (err != 0) throw std::runtime_error("NDArray::applyTriplewiseLambda execution failed");
+    if (err != 0) THROW_EXCEPTION("NDArray::applyTriplewiseLambda execution failed");
   }
 };
 
@@ -313,7 +313,7 @@ template <typename Lambda>
 void NDArray::applyLambda(Lambda func, NDArray &target) {
   auto dtype = this->dataType();
 
-  if (dtype != target.dataType()) throw std::runtime_error("NDArray::applyLambda X/Z data types must be the same");
+  if (dtype != target.dataType()) THROW_EXCEPTION("NDArray::applyLambda X/Z data types must be the same");
   // throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR(
@@ -330,7 +330,7 @@ void NDArray::applyPairwiseLambda(const NDArray &other, Lambda func, NDArray &ta
   auto dtype = this->dataType();
 
   if (dtype != target.dataType() || dtype != other.dataType())
-    throw std::runtime_error("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
+    THROW_EXCEPTION("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
   // throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
   bool otherIsScalar = other.isScalar();
   prepareSpecialUse({&target}, {this, &other});
@@ -348,7 +348,7 @@ template <typename Lambda>
 void NDArray::applyIndexedLambda(Lambda func, NDArray &target) {
   auto dtype = this->dataType();
   if (dtype != target.dataType())
-    throw std::runtime_error("NDArray::applyIndexedLambda X/Z data types must be the same");
+    THROW_EXCEPTION("NDArray::applyIndexedLambda X/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR(
@@ -364,7 +364,7 @@ template <typename Lambda>
 void NDArray::applyIndexedPairwiseLambda(NDArray &other, Lambda func, NDArray &target) {
   auto dtype = this->dataType();
   if (dtype != target.dataType() || dtype != other.dataType())
-    throw std::runtime_error("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
+    THROW_EXCEPTION("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this, &other});
   BUILD_SINGLE_SELECTOR(
@@ -382,7 +382,7 @@ void NDArray::applyTriplewiseLambda(NDArray &second, NDArray &third, Lambda func
   auto dtype = this->dataType();
 
   if (dtype != target.dataType() || dtype != second.dataType() || dtype != third.dataType())
-    throw std::runtime_error("NDArray::applyTriplewiseLambda X/Y/Z data types must be the same");
+    THROW_EXCEPTION("NDArray::applyTriplewiseLambda X/Y/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this, &second, &third});
   BUILD_SINGLE_SELECTOR(

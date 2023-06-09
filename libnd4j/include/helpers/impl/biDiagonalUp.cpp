@@ -35,7 +35,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix)
           NDArray(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())) {
   // input validation
   if (matrix.rankOf() != 2 || matrix.isScalar())
-    throw std::runtime_error("ops::helpers::biDiagonalizeUp constructor: input array must be 2D matrix !");
+    THROW_EXCEPTION("ops::helpers::biDiagonalizeUp constructor: input array must be 2D matrix !");
 
   _HHmatrix.assign(&matrix);
   _HHbidiag.assign(0.);
@@ -49,7 +49,7 @@ void BiDiagonalUp::_evalData() {
   const auto cols = _HHmatrix.sizeAt(1);
 
   if (rows < cols)
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::BiDiagonalizeUp::evalData method: this procedure is applicable only for input matrix with rows "
         ">= cols !");
 

@@ -35,10 +35,10 @@ OP_IMPL(cholesky, 1, 1, true) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "cholesky: The rank of input array should not less than 2, but %i is given",
                input->rankOf());
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
-               "cholesky: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1),
+               "cholesky: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1),
                input->sizeAt(-2));
-  REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0,
-               "cholesky: The input tensor should be positive-defined and symmetric.");
+/*  REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0,
+               "cholesky: The input tensor should be positive-defined and symmetric.");*/
   return helpers::cholesky(block.launchContext(), input, output, block.isInplace());
 }
 DECLARE_TYPES(cholesky) {

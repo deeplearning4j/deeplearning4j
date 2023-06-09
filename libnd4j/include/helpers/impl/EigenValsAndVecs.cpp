@@ -30,10 +30,10 @@ namespace helpers {
 template <typename T>
 EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
   if (matrix.rankOf() != 2)
-    throw std::runtime_error("ops::helpers::EigenValsAndVecs constructor: input matrix must be 2D !");
+    THROW_EXCEPTION("ops::helpers::EigenValsAndVecs constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
-    throw std::runtime_error("ops::helpers::EigenValsAndVecs constructor: input array must be 2D square matrix !");
+    THROW_EXCEPTION("ops::helpers::EigenValsAndVecs constructor: input array must be 2D square matrix !");
 
   Schur<T> schur(matrix);
 
@@ -63,7 +63,7 @@ void calcEigenVals_(const NDArray& schurMatrixT, NDArray& _Vals) {
       _Vals.r<T>(i, 1) = T(0);                     // imaginary part
 
       if (!math::sd_isfin<T>(_Vals.t<T>(i, 0))) {
-        throw std::runtime_error("ops::helpers::igenValsAndVec::calcEigenVals: got infinite eigen value !");
+        THROW_EXCEPTION("ops::helpers::igenValsAndVec::calcEigenVals: got infinite eigen value !");
         return;
       }
 
@@ -88,7 +88,7 @@ void calcEigenVals_(const NDArray& schurMatrixT, NDArray& _Vals) {
       if (!(math::sd_isfin<T>(_Vals.t<T>(i, 0)) && math::sd_isfin<T>(_Vals.t<T>(i + 1, 0)) &&
             math::sd_isfin<T>(_Vals.t<T>(i, 1))) &&
           math::sd_isfin<T>(_Vals.t<T>(i + 1, 1))) {
-        throw std::runtime_error("ops::helpers::igenValsAndVec::calcEigenVals: got infinite eigen value !");
+        THROW_EXCEPTION("ops::helpers::igenValsAndVec::calcEigenVals: got infinite eigen value !");
         return;
       }
 
@@ -222,7 +222,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
       }
       n--;
     } else
-      throw std::runtime_error("ops::helpers::EigenValsAndVecs::calcEigenVecs: internal bug !");
+      THROW_EXCEPTION("ops::helpers::EigenValsAndVecs::calcEigenVecs: internal bug !");
   }
 
   for (int j = numOfCols - 1; j >= 0; j--)

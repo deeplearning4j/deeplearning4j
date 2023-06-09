@@ -53,7 +53,7 @@ ResultSet::ResultSet(const sd::graph::FlatResult* result) {
           new NDArray((char)shapeInfo.at(shapeInfo.size() - 1), shape, DataTypeUtils::fromFlatDataType(var->dtype()));
     } else {
       sd_printf("Either shape or NDArray should be defined in FlatResult variable\n", "");
-      throw std::runtime_error("Empty variable");
+      THROW_EXCEPTION("Empty variable");
     }
 
     _content.push_back(array);

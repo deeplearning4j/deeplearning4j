@@ -33,11 +33,11 @@ template <typename T>
 void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX) {
   // input validation
   if (x.rankOf() != 1 && !x.isScalar())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::Householder::evalHHmatrixData method: input array must have rank = 1 or to be scalar!");
 
   if (!x.isScalar() && x.lengthOf() != tail.lengthOf() + 1)
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity "
         "compared to input x vector!");
 
@@ -69,7 +69,7 @@ template <typename T>
 void Householder<T>::evalHHmatrixDataI(NDArray& x, T& coeff, T& normX) {
   // input validation
   if (x.rankOf() != 1 && !x.isScalar())
-    throw std::runtime_error(
+    THROW_EXCEPTION(
         "ops::helpers::Householder::evalHHmatrixDataI method: input array must have rank = 1 or to be scalar!");
 
   int rows = (int)x.lengthOf() - 1;

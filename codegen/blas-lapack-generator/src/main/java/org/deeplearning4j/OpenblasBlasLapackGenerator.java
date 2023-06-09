@@ -1,3 +1,22 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j;
 
 import com.github.javaparser.ParserConfiguration;
@@ -28,76 +47,76 @@ public class OpenblasBlasLapackGenerator {
     private File rootDir;
     private File targetFile;
 
-    private Map<String,String> casting = new HashMap<String,String>(){{
-        put("LAPACKE_sgees","openblas.LAPACK_S_SELECT2");
-        put("LAPACKE_dgees","openblas.LAPACK_D_SELECT2");
-        put("LAPACKE_cgees","openblas.LAPACK_C_SELECT1");
-        put("LAPACKE_zgees","openblas.LAPACK_Z_SELECT1");
-        put("LAPACKE_sgeesx","openblas.LAPACK_S_SELECT2");
-        put("LAPACKE_dgeesx","openblas.LAPACK_D_SELECT2");
-        put("LAPACKE_cgeesx","openblas.LAPACK_C_SELECT1");
-        put("LAPACKE_zgeesx","openblas.LAPACK_Z_SELECT1");
-        put("LAPACKE_sgges","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dgges","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cgges","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zgges","openblas.LAPACK_Z_SELECT2");
-        put("LAPACKE_sgges3","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dgges3","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cgges3","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zgges3","openblas.LAPACK_Z_SELECT2");
-        put("LAPACKE_sggesx","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dggesx","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cggesx","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zggesx","openblas.LAPACK_Z_SELECT2");
-        put("LAPACKE_sgees_work","openblas.LAPACK_S_SELECT2");
-        put("LAPACKE_dgees_work","openblas.LAPACK_D_SELECT2");
-        put("LAPACKE_cgees_work","openblas.LAPACK_C_SELECT1");
-        put("LAPACKE_zgees_work","openblas.LAPACK_Z_SELECT1");
-        put("LAPACKE_sgeesx_work","openblas.LAPACK_S_SELECT2");
-        put("LAPACKE_dgeesx_work","openblas.LAPACK_D_SELECT2");
-        put("LAPACKE_cgeesx_work","openblas.LAPACK_C_SELECT1");
-        put("LAPACKE_zgeesx_work","openblas.LAPACK_Z_SELECT1");
-        put("LAPACKE_sgges_work","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dgges_work","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cgges_work","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zgges_work","openblas.LAPACK_Z_SELECT2");
-        put("LAPACKE_sgges3_work","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dgges3_work","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cgges3_work","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zgges3_work","openblas.LAPACK_Z_SELECT2");
-        put("LAPACKE_sggesx_work","openblas.LAPACK_S_SELECT3");
-        put("LAPACKE_dggesx_work","openblas.LAPACK_D_SELECT3");
-        put("LAPACKE_cggesx_work","openblas.LAPACK_C_SELECT2");
-        put("LAPACKE_zggesx_work","openblas.LAPACK_Z_SELECT2");
+    private Map<String,String> casting = new HashMap<>() {{
+        put("LAPACKE_sgees", "openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgees", "openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgees", "openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgees", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgeesx", "openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgeesx", "openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgeesx", "openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgeesx", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgges", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges", "openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgges3", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges3", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges3", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges3", "openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sggesx", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dggesx", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cggesx", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zggesx", "openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgees_work", "openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgees_work", "openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgees_work", "openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgees_work", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgeesx_work", "openblas.LAPACK_S_SELECT2");
+        put("LAPACKE_dgeesx_work", "openblas.LAPACK_D_SELECT2");
+        put("LAPACKE_cgeesx_work", "openblas.LAPACK_C_SELECT1");
+        put("LAPACKE_zgeesx_work", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACKE_sgges_work", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges_work", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges_work", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges_work", "openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sgges3_work", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dgges3_work", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cgges3_work", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zgges3_work", "openblas.LAPACK_Z_SELECT2");
+        put("LAPACKE_sggesx_work", "openblas.LAPACK_S_SELECT3");
+        put("LAPACKE_dggesx_work", "openblas.LAPACK_D_SELECT3");
+        put("LAPACKE_cggesx_work", "openblas.LAPACK_C_SELECT2");
+        put("LAPACKE_zggesx_work", "openblas.LAPACK_Z_SELECT2");
 
-        put("LAPACK_sgges3_base","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dgges3_base","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cgges3_base","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zgges3_base","openblas.LAPACK_Z_SELECT2");
-
-
-        put("LAPACK_sgges_base","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dgges_base","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cgges_base","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zgges_base","openblas.LAPACK_Z_SELECT2");
+        put("LAPACK_sgges3_base", "openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges3_base", "openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges3_base", "openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges3_base", "openblas.LAPACK_Z_SELECT2");
 
 
-        put("LAPACK_sggesx_base","openblas.LAPACK_S_SELECT3");
-        put("LAPACK_dggesx_base","openblas.LAPACK_D_SELECT3");
-        put("LAPACK_cggesx_base","openblas.LAPACK_C_SELECT2");
-        put("LAPACK_zggesx_base","openblas.LAPACK_Z_SELECT2");
+        put("LAPACK_sgges_base", "openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dgges_base", "openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cgges_base", "openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zgges_base", "openblas.LAPACK_Z_SELECT2");
+
+
+        put("LAPACK_sggesx_base", "openblas.LAPACK_S_SELECT3");
+        put("LAPACK_dggesx_base", "openblas.LAPACK_D_SELECT3");
+        put("LAPACK_cggesx_base", "openblas.LAPACK_C_SELECT2");
+        put("LAPACK_zggesx_base", "openblas.LAPACK_Z_SELECT2");
 
         //LAPACK_zgeesx
-        put("LAPACK_cgees_base","openblas.LAPACK_C_SELECT1");
-        put("LAPACK_dgees_base","openblas.LAPACK_D_SELECT2");
-        put("LAPACK_zgees_base","openblas.LAPACK_Z_SELECT1");
-        put("LAPACK_sgees_base","openblas.LAPACK_S_SELECT2");
+        put("LAPACK_cgees_base", "openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgees_base", "openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgees_base", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgees_base", "openblas.LAPACK_S_SELECT2");
 
 
-        put("LAPACK_cgeesx_base","openblas.LAPACK_C_SELECT1");
-        put("LAPACK_dgeesx_base","openblas.LAPACK_D_SELECT2");
-        put("LAPACK_zgeesx_base","openblas.LAPACK_Z_SELECT1");
-        put("LAPACK_sgeesx_base","openblas.LAPACK_S_SELECT2");
+        put("LAPACK_cgeesx_base", "openblas.LAPACK_C_SELECT1");
+        put("LAPACK_dgeesx_base", "openblas.LAPACK_D_SELECT2");
+        put("LAPACK_zgeesx_base", "openblas.LAPACK_Z_SELECT1");
+        put("LAPACK_sgeesx_base", "openblas.LAPACK_S_SELECT2");
 
     }};
     private static String copyright =
@@ -152,8 +171,7 @@ public class OpenblasBlasLapackGenerator {
                     if(method.getReturnType().equals(Void.TYPE)) {
                         codeStatement.append("openblas." + method.getName() + "(");
 
-                    } else if(method.getReturnType().equals(int.class)){
-                        //codeStatement.append("return 0;");
+                    } else if(method.getReturnType().equals(int.class)) {
                         codeStatement.append("return openblas." + method.getName() + "(");
 
                     } else if(method.getReturnType().equals(double.class)) {

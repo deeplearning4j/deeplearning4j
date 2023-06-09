@@ -38,14 +38,14 @@ namespace sd {
  * @param axis
  * @return int
  */
-SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
+SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, LongType axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();
   if (rank > axis) {
     if (input.ordering() == 'c') {
       // check before the axis
-      for (int i = 0; i < axis; i++) {
+      for (sd::LongType i = 0; i < axis; i++) {
         isAllOne = isAllOne && (shapes[i] == 1);
       }
     } else {
@@ -67,8 +67,9 @@ struct InputArgsCase2 {
 };
 
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output, const int axis) {
-  const int numOfInArrs = inArrs.size();
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output,
+                                         const LongType axis) {
+  const sd::LongType numOfInArrs = inArrs.size();
   const auto sizeofT = output.sizeOfT();
 
   T *zBuff = output.bufferAsT<T>();
@@ -95,12 +96,12 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
     std::vector<T *> zPtrList;
     T *z = output.bufferAsT<T>();
-    for (int i = 0; i < numOfInArrs; i++) {
+    for (sd::LongType i = 0; i < numOfInArrs; i++) {
       zPtrList.push_back(z);
       z += inArrs[i]->lengthOf();
     }
-    auto func = [&inArrs, &zPtrList](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
-      for (int i = start; i < stop; ++i) {
+    auto func = [&inArrs, &zPtrList](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+      for (sd::LongType i = start; i < stop; ++i) {
         const auto memAmountToCopy = inArrs[i]->lengthOf();
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
 #if defined(__NEC__)
@@ -109,7 +110,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
           zPtr[j] = inputPtr[j];
         }
 #else
-        memcpy(zPtrList[i], inputPtr, memAmountToCopy * sizeof(T));
+          auto zPtr = zPtrList[i];
+                for (int j = 0; j < memAmountToCopy; j++) {
+                  zPtr[j] = inputPtr[j];
+                }
 #endif
       }
     };
@@ -208,23 +212,24 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
  * along a particular dimension
  */
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
+void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
                                          void *vresult, sd::LongType const *resultShapeInfo) {
   auto result = reinterpret_cast<T *>(vresult);
   std::vector<const NDArray *> inputs(numArrays);
 
   NDArray output(static_cast<void *>(result), resultShapeInfo);
 
-  for (int i = 0; i < numArrays; ++i)
+  for (sd::LongType i = 0; i < numArrays; ++i)
     inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]));
 
   sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
-  for (int i = 0; i < numArrays; ++i) delete inputs[i];
+  //for (sd::LongType i = 0; i < numArrays; ++i) delete inputs[i];
 }
 
 template <typename T>
-void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<NDArray *> &outArrs, const int axis) {
+void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<NDArray *> &outArrs,
+                                        const LongType axis) {
   int numSplits = outArrs.size();
 
   const auto sizeofT = input.sizeOfT();
@@ -328,7 +333,7 @@ void SpecialMethods<T>::averageGeneric(void **vx, void *vz, sd::LongType const *
     z = x[0];
 
     PRAGMA_OMP_SIMD
-    for (uint64_t i = 0; i < length; i++) {
+    for (sd::LongType i = 0; i < length; i++) {
       z[i] /= static_cast<T>(n);
     }
 
@@ -538,7 +543,6 @@ sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const
   const T t(threshold);
   const T thalf = t / two;
 
-  // auto func = PRAGMA_REDUCE_LONG {
   sd::LongType retVal = 0L;
 
   PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+ : retVal)
@@ -578,8 +582,5 @@ sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const
   }
 
   return retVal;
-  //};
-
-  // return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
 }
 }  // namespace sd

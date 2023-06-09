@@ -27,13 +27,13 @@ namespace helpers {
 
 template <typename T>
 void matrixBandPart_(NDArray* input, NDArray* output, sd::LongType lowerBand, sd::LongType upperBand) {
-  // TO DO: retrieve all 2D submatricies with last dimensions and process them with given bands
+  // TO DO: retrieve all 2D submatrices with last dimensions and process them with given bands
   sd::LongType M = input->sizeAt(-2);
   sd::LongType N = input->sizeAt(-1);
   sd::LongType lastDim = input->rankOf() - 1;
   sd::LongType preLastDim = input->rankOf() - 2;
-  ResultSet listOut = output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
-  ResultSet listDiag = input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
+  ResultSet listOut = output->allTensorsAlongDimension({preLastDim, lastDim});
+  ResultSet listDiag = input->allTensorsAlongDimension({preLastDim, lastDim});
   for (sd::LongType e = 0; e < static_cast<sd::LongType>(listOut.size()); ++e) {
     NDArray* inputMatrix = listDiag.at(e);
     NDArray* outputMatrix = listOut.at(e);
