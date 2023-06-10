@@ -64,20 +64,22 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   if (shape::order(imShapeBuffer) == 'c' && shape::order(colShapeBuffer) == 'c' &&
       shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
     auto func = PRAGMA_THREADS_FOR_2D {
-      for (auto b = start_x; b < stop_x; b++) {
-        for (auto c = start_y; c < stop_y; c++) {
-          for (int kRow = 0; kRow < kH; ++kRow) {
-            for (int kCol = 0; kCol < kW; ++kCol) {
-              for (int colH = 0; colH < oH; ++colH) {
-                for (int colW = 0; colW < oW; ++colW) {
-                  int imRow = (-pH + kRow * dH) + colH * sH;
-                  int imCol = (-pW + kCol * dW) + colW * sW;
+      for (sd::LongType b = start_x; b < stop_x; b++) {
+        for (sd::LongType c = start_y; c < stop_y; c++) {
+          for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+            for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
+              for (sd::LongType colH = 0; colH < oH; ++colH) {
+                for (sd::LongType colW = 0; colW < oW; ++colW) {
+                  sd::LongType imRow = (-pH + kRow * dH) + colH * sH;
+                  sd::LongType imCol = (-pW + kCol * dW) + colW * sW;
 
                   auto col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
                              colH * colStride4 + colW * colStride5;
 
                   if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
-                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW))
+                      static_cast<LongType>(imRow) < 0 ||
+                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
+                      static_cast<LongType>(imCol) < 0)
                     *col = zeroPadVal;
                   else {
                     auto im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
@@ -96,14 +98,14 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
     auto func = PRAGMA_THREADS_FOR_2D {
       T* col;
       T const* im;
-      int imRow, imCol;
+      sd::LongType imRow, imCol;
 
       for (auto b = start_x; b < stop_x; b += inc_x) {
         for (auto colH = start_y; colH < stop_y; colH += inc_y) {
-          for (int colW = 0; colW < oW; ++colW) {
-            for (int c = 0; c < iC; ++c) {
-              for (int kRow = 0; kRow < kH; ++kRow) {
-                for (int kCol = 0; kCol < kW; ++kCol) {
+          for (sd::LongType colW = 0; colW < oW; ++colW) {
+            for (sd::LongType c = 0; c < iC; ++c) {
+              for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+                for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
                   imRow = (-pH + kRow * dH) + colH * sH;
                   imCol = (-pW + kCol * dW) + colW * sW;
 

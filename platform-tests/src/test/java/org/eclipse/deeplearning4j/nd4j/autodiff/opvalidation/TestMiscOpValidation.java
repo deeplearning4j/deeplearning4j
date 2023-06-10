@@ -604,6 +604,50 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTensorGradTensorMmul2(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sameDiff = SameDiff.create();
+        // Define two 3D tensors
+        INDArray aArray = Nd4j.create(new float[]{
+                1, 2, 3, 4, 5, 6, 7, 8, 9,
+                10, 11, 12, 13, 14, 15, 16, 17, 18
+        }, new int[]{2, 3, 3});
+        INDArray bArray = Nd4j.create(new float[]{
+                19, 20, 21, 22, 23, 24, 25, 26, 27,
+                28, 29, 30, 31, 32, 33, 34, 35, 36
+        }, new int[]{2, 3, 3});
+
+        // Create a SameDiff instance
+        SameDiff sd = SameDiff.create();
+
+        // Convert INDArrays to SDVariables
+        SDVariable a = sd.var("A", aArray);
+        SDVariable b = sd.var("B", bArray);
+
+        //new int[][]{{2}, {1}}
+        // Perform tensor multiplication
+        SDVariable c = sd.tensorMmul("C",a, b,new int[]{2},new int[]{1});
+
+
+        Map<String,INDArray> placeholders = new HashMap<>();
+        placeholders.put("A",aArray);
+        placeholders.put("B",bArray);
+
+
+        Map<String, INDArray> stringINDArrayMap = sd.calculateGradients(placeholders,"A","B",c.name());
+        System.out.println();
+
+
+
+        String err = OpValidation.validate(new TestCase(sameDiff));
+        assertNull(err);
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMulGradient(Nd4jBackend backend) {

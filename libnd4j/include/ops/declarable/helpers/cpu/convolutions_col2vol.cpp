@@ -63,9 +63,7 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
 
   if (volume.ordering() == 'c' && columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.shapeInfo()) &&
       shape::strideDescendingCAscendingF(columns.shapeInfo())) {
-    const LongType sizeColBuff = columns.lengthOf();  // Total size of colBuff
-    const LongType sizeVolBuff = volume.lengthOf();  // Total size of volBuff
-
+    sd_printf("col2vol: c and stride descending case\n",0);
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
       sd::LongType volDep, volRow, volCol;
@@ -78,9 +76,9 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
                 for (sd::LongType colD = 0; colD < oD; ++colD) {
                   for (sd::LongType colH = 0; colH < oH; ++colH) {
                     for (sd::LongType colW = 0; colW < oW; ++colW) {
-                      volDep = -pD + kDep * dD + colD * sD;
-                      volRow = -pH + kRow * dH + colH * sH;
-                      volCol = -pW + kCol * dW + colW * sW;
+                      volDep = (-pD + kDep * dD) + colD * sD;
+                      volRow = (-pH + kRow * dH) + colH * sH;
+                      volCol = (-pW + kCol * dW) + colW * sW;
 
                       if (volDep >= 0 && volDep < iD &&
                           volRow >= 0 && volRow < iH &&
@@ -91,9 +89,7 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
                         auto volIndex = b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
                                         volCol * volStride4;
 
-                        if (colIndex >= sizeColBuff || volIndex >= sizeVolBuff) {
-                          continue;  // Skip to the next iteration if the indices are out of bounds.
-                        }
+
 
                         col = colBuff + colIndex;
                         vol = volBuff + volIndex;
@@ -112,8 +108,7 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
     samediff::Threads::parallel_tad(func, 0, bS);
 
   } else {
-    const LongType sizeColBuff = columns.lengthOf();  // Total size of colBuff
-    const LongType sizeVolBuff = volume.lengthOf();  // Total size of volBuff
+    sd_printf("col2vol: other case\n",0);
 
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
@@ -139,10 +134,6 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
                                         kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
                         auto volIndex = b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
                                         volCol * volStride4;
-
-                        if (colIndex >= sizeColBuff || volIndex >= sizeVolBuff) {
-                          continue;  // Skip to the next iteration if the indices are out of bounds.
-                        }
 
                         col = colBuff + colIndex;
                         vol = volBuff + volIndex;
