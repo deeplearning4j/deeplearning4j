@@ -120,13 +120,11 @@ CUSTOM_OP_IMPL(tensormmul_bp, 3, 2, false, 0, -1) {
   for (sd::LongType e = 0; e < axe0Size; e++) axes0.push_back(INT_ARG(e + 1));
   for (sd::LongType e = 0; e < axe1Size; e++) axes1.push_back(INT_ARG(e + axe0Size + 2));
 
-  sd_printf("axes0Size: %lld axesBSize %lld\n", axe0Size, axe1Size);
   std::vector<sd::LongType> permutAt, permutBt;
   std::vector<sd::LongType> shapeAt, shapeBt;
 
   auto outShape = ShapeUtils::evalShapeForTensorDot(A, B, axes0, axes1, permutAt, permutBt, shapeAt, shapeBt);
 
-  // special case for scalar value
 
   std::vector<sd::LongType> *axesA = ShapeUtils::evalDimsToExclude(Arank, axes0.size(),axes0.data());
   std::vector<sd::LongType> *axesB = ShapeUtils::evalDimsToExclude(Brank, axes1.size(),axes1.data());

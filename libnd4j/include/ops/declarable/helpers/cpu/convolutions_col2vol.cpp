@@ -63,7 +63,6 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
 
   if (volume.ordering() == 'c' && columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.shapeInfo()) &&
       shape::strideDescendingCAscendingF(columns.shapeInfo())) {
-    sd_printf("col2vol: c and stride descending case\n",0);
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
       sd::LongType volDep, volRow, volCol;
@@ -108,8 +107,6 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
     samediff::Threads::parallel_tad(func, 0, bS);
 
   } else {
-    sd_printf("col2vol: other case\n",0);
-
     auto func = PRAGMA_THREADS_FOR {
       T *col, *vol;
       sd::LongType volDep, volRow, volCol;
