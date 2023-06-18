@@ -174,9 +174,13 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
   if (A->dataType() != B->dataType())
     throw datatype_exception::build("mmulMxM expects all data types to be the same", A->dataType(), B->dataType());
 
-  if (C != nullptr && A->dataType() != C->dataType())
-    throw datatype_exception::build("mmulMxM expects all data types to be the same", A->dataType(), C->dataType());
-
+  if (C != nullptr && A->dataType() != C->dataType()) {
+    std::string errorMessage;
+    errorMessage = "mmulMxM expects all data types to be the same";
+    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
+    errorMessage += "B: " + DataTypeUtils::asString(B->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of A array is not equal 2 !");
   if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of B array is not equal 2 !");
 
@@ -261,10 +265,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     }
     if (pC != C) {
       C->assign(pC);
-      //     delete pC;
+      delete pC;
     }
-    /* if (pA != A) delete pA;
-     if (pB != B) delete pB;*/
+    if (pA != A) delete pA;
+    if (pB != B) delete pB;
   }
 
   return C;

@@ -1694,7 +1694,7 @@ void NDArray::printShapeInfo(const char *msg) const {
 void NDArray::printBuffer(const char *msg, sd::LongType limit, const bool sync) const {
   if (sync) syncToHost();
 
-  if (limit == -1) limit = (sd::LongType)this->lengthOf();
+  if (limit == -1) limit = this->lengthOf();
 
   if (msg != nullptr)
     printf("%s: [", msg);
@@ -1756,7 +1756,7 @@ void NDArray::printLinearBuffer() const {
   fflush(stdout);
 }
 //////////////////////////////////////////////////////////////////////////
-static void printFormatted(NDArray const *arr, int depth, int limit) {
+static void printFormatted(NDArray const *arr, LongType depth, LongType limit) {
   if (arr->rankOf() == 1) {
     printf("[ ");
     for (sd::LongType i = 0; i < arr->lengthOf(); ++i) {
@@ -1773,7 +1773,7 @@ static void printFormatted(NDArray const *arr, int depth, int limit) {
     printf("]\n");
   } else if (arr->rankOf() == 2) {
     sd::LongType rows = arr->rows();
-    sd::LongType cols = arr->columns();
+    sd::LongType cols = limit < 0 ? arr->columns() : sd::math::sd_min<sd::LongType>(limit,cols);
     char *padding = new char[depth + 1];
     memset(padding, ' ', depth);
     padding[depth] = 0;
@@ -1781,12 +1781,9 @@ static void printFormatted(NDArray const *arr, int depth, int limit) {
     for (sd::LongType row = 0; row < rows; ++row) {
       if (row && depth > 0) printf("%s", padding);
       printf("[");
-      sd::LongType colLimit = limit >= cols ? cols : limit;
-      for (sd::LongType col = 0; col < colLimit; col++) {
+      for (sd::LongType col = 0; col < cols; col++) {
         if (col > 0) printf(", ");
         if (arr->isR()) {
-          arr->printShapeInfo("Shape info before print:");
-          sd_printf("Row %lld column %lld\n",row,col);
           printf("%f", arr->e<float>(row, col));
         } else if (arr->isZ()) {
           printf("%lld", arr->e<sd::LongType>(row, col));
@@ -1806,11 +1803,9 @@ static void printFormatted(NDArray const *arr, int depth, int limit) {
   } else {
     sd::LongType restCount = 2;
     printf("[");
-    std::vector<sd::LongType> dim;
-    dim.push_back(0);
-    restCount = ShapeUtils::getNumOfSubArrs(arr->shapeInfo(), dim);
+    restCount = ShapeUtils::getNumOfSubArrs(arr->shapeInfo(), {0});
     for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
-      NDArray subArr = (*arr)(arrIndex, dim);
+      NDArray subArr = (*arr)(arrIndex, {0});
       printFormatted(&subArr, depth + 1, limit);
       if (arrIndex < restCount - 1) {
         for (sd::LongType i = 1; i < arr->rankOf(); ++i) printf("\n");
@@ -1832,25 +1827,26 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   if (msg) printf("%s: ", msg);
 
   if (this->isEmpty()) {
-    printf("Empty\n");
+    sd_printf("Empty\n",0);
   } else if (this->rankOf() == 0) {
-    if (this->isZ())
-      printf("%lld\n", this->e<sd::LongType>(0));
-    else if (this->isR())
-      printf("%.8f\n", this->e<float>(0));
-    else if (this->isB()) {
-      printf("%s\n", this->e<bool>(0) ? "true" : "false");
+    if (this->isZ()) {
+      sd_printf("%lld\n", this->e<sd::LongType>(0));
+    } else if (this->isR()) {
+      sd_printf("%.8f\n", this->e<float>(0));
+    } else if (this->isB()) {
+      sd_printf("%s\n", this->e<bool>(0) ? "true" : "false");
     } else if (this->isS()) {
       sd_printf("\"%s\"\n", this->e<std::string>(0).c_str());
     }
-  } else if (rowFlag && ews() == 1)
+  } else if (rowFlag && ews() == 1) {
     printBuffer(nullptr, limit);
+  }
   else {
     if(_buffer == nullptr)
       THROW_EXCEPTION("NULL buffer found but shape is not empty.");
-    if (msg) printf("\n");
+    if (msg) sd_printf("\n",0);
     printFormatted(this, 1, limit);
-    printf("\n");
+    sd_printf("\n",0);
   }
   fflush(stdout);
 }
@@ -3263,7 +3259,21 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   const bool isOutShapeEmpty = std::find(cshape.begin(), cshape.end(), 0) != cshape.end();
 
-  if (isEmpty() && !isOutShapeEmpty) THROW_EXCEPTION("NDArray::reshapei: can't reshape empty array to non-empty !");
+  if (isEmpty() && !isOutShapeEmpty) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: can't reshape empty array to non-empty !\n";
+    errorMessage += "Empty array shape: ";
+    errorMessage += ShapeUtils::shapeAsString(shapeInfo());
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
@@ -3279,20 +3289,33 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   int numberNegativesOnes = 0;
 
   sd::LongType *shape_ = shape.data();
-  for (int i = 0; i < (int)shape.size(); i++) {
+  for (sd::LongType i = 0; i < shape.size(); i++) {
     if (shape[i] < 0) {
-      if (numberNegativesOnes >= 1) THROW_EXCEPTION("NDArray::reshapei: only one dimension can be negative at once");
+      if (numberNegativesOnes >= 1) {
+        std::string errorMessage;
+        errorMessage += "NDArray::reshapei: only one dimension can be negative at once !\n";
+        errorMessage += "Shape: ";
+        errorMessage += ShapeUtils::shapeAsString(this);
+        errorMessage += "\n";
+        errorMessage += "New shape: ";
+        errorMessage += ShapeUtils::shapeAsString(shape);
+        errorMessage += "\n";
+        errorMessage += "Order: ";
+        errorMessage += this->ordering();
+        errorMessage += "\n";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
 
       numberNegativesOnes++;
 
-      int shapeLength = 1;
-      for (int j = 0; j < (int)shape.size(); j++)
+      sd::LongType shapeLength = 1;
+      for (sd::LongType j = 0; j < shape.size(); j++)
         if (i != j) shapeLength *= shape_[j];
 
       sd::LongType realShape = sd::math::sd_abs<sd::LongType>(lengthOf() / shapeLength);
       auto thisNewShape = new sd::LongType[shape.size()];
 
-      for (int j = 0; j < (int)shape.size(); j++)
+      for (sd::LongType j = 0; j < shape.size(); j++)
         if (i != j)
           thisNewShape[j] = shape_[j];
         else
@@ -3302,7 +3325,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     }
   }
 
-  for (int e = 0; e < (int)shape.size(); e++) shape[e] = shape_[e];
+  for (sd::LongType e = 0; e < shape.size(); e++) shape[e] = shape_[e];
 
   if (numberNegativesOnes > 0) delete[] shape_;
 
@@ -3310,10 +3333,30 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   for (const auto &item : shape) arrLength *= item;
 
   if (platformBuffer() == nullptr || arrLength != this->lengthOf()) {
-    this->printShapeInfo("Mismatched shape");
-    sd::Logger::printv("Shape requested: ", shape);
-    sd_debug("Requested length in reshape: %i; Existing length: %i;\n", arrLength, this->lengthOf());
-    THROW_EXCEPTION("NDArray::reshapei: bad input shape!");
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: bad length of new shape !\n";
+    errorMessage += "Shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += ShapeUtils::shapeAsString(shape);
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    errorMessage += "Length of new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    errorMessage += "Length of array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Number of elements in array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Number of elements in new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   sd::LongType *shapeInfoNew;
@@ -3766,24 +3809,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j) const {
   }
 
   sd::LongType indices[2] = {i,j};
-  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,this->_offset);
-  if (xOffset >= this->getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::e: buffer offset is greater than  number of elements!";
-    errorMessage += " Requested offset: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(xOffset);
-    errorMessage += ", buffer length: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(getDataBuffer()->getNumElements());
-    errorMessage += ", array shape: ";
-    errorMessage += ShapeUtils::shapeAsString(this);
-    errorMessage += ", array rank: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(rankOf());
-    errorMessage += ", array order: ";
-    errorMessage += ordering();
-    errorMessage += ", offset: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(xOffset);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
@@ -5179,7 +5205,7 @@ NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool kee
   auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
   NDArray result(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + bufferOffset());
   result._isView = true;
-  
+
   return result;
 }
 

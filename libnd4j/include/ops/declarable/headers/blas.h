@@ -59,7 +59,7 @@ DECLARE_CUSTOM_OP(matmul_bp, 3, 2, false, 0, -2);
  */
 #if NOT_EXCLUDED(OP_tensormmul)
 DECLARE_CUSTOM_OP(tensormmul, 2, 1, false, 0, -1);
-DECLARE_CUSTOM_OP(tensormmul_bp, 3, 2, false, 0, -1);
+DECLARE_CUSTOM_OP(tensormmul_bp, 4, 2, false, 0, -1);
 #endif
 
 /**

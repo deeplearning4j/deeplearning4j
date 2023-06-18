@@ -124,7 +124,7 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), gradients.get(0), axes).outputVariables());
+        return Arrays.asList(new TensorMmulBp(sameDiff, larg(), rarg(), outputVariable(),gradients.get(0), axes).outputVariables());
     }
 
     @Override
@@ -184,7 +184,7 @@ public class TensorMmul extends DynamicCustomOp {
             List<Long> xDims = new ArrayList<>();
             List<Long> yDims = new ArrayList<>();
             int currCount = 1;
-            for(int i = 0; i < numDimensionsX; i++) {
+            for(int i = currCount; i < numDimensionsX + 1; i++) {
                 xDims.add(iArguments.get(i));
                 currCount++;
             }
