@@ -3060,17 +3060,17 @@ public class Nd4j {
      * @param seed  the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(long seed, @NonNull long... shape) {
+    public static INDArray randWithSeed(long seed, @NonNull long... shape) {
         INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
-        return rand(ret, seed);
+        return randWithSeed(ret, seed);
     }
 
     /**
-     * @deprecated use {@link Nd4j#rand(long, long...)}
+     * @deprecated use {@link Nd4j#randWithSeed(long, long...)}
      */
     @Deprecated
-    public static INDArray rand(int[] shape, long seed) {
-        return rand(seed, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
+    public static INDArray randWithSeed(int[] shape, long seed) {
+        return randWithSeed(seed, ArrayUtil.toLongArray(shape)).castTo(Nd4j.defaultFloatingPointType());
     }
 
 
@@ -3360,7 +3360,7 @@ public class Nd4j {
      * @param seed the  seed to use
      * @return the given target array
      */
-    public static INDArray rand(INDArray target, long seed) {
+    public static INDArray randWithSeed(INDArray target, long seed) {
         Nd4j.getRandom().setSeed(seed);
         return getExecutioner().exec(new UniformDistribution(target), Nd4j.getRandom());
     }

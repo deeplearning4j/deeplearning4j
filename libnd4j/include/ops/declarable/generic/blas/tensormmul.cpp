@@ -157,6 +157,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
     axes_a_grad.erase(std::remove(axes_a_grad.begin(), axes_a_grad.end(), axes0Sum[i]), axes_a_grad.end());
 
 
+
   //part of matrix multiply axes before matrix multiply happens
   std::vector<sd::LongType> axes_b_grad;
   for(sd::LongType i = 0; i < Brank; ++i)
@@ -215,12 +216,14 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   std::vector<sd::LongType> empty;
   auto newB = B->permute(bPermuteAxesBefore);
 
+
   //perform the actual matrix multiplication
   MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA,empty, empty, aPermArgsAfter);
   MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter);
 
   if(originalDC != dC)
     delete dC;
+
 
   return sd::Status::OK;
 }

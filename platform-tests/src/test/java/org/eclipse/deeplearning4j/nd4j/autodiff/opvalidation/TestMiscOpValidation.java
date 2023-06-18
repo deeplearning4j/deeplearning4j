@@ -615,6 +615,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
                 10, 11, 12, 13, 14, 15, 16, 17, 18
         }, new int[]{2, 3, 3});
         INDArray bArray = Nd4j.create(new double[]{
+
                 19, 20, 21, 22, 23, 24, 25, 26, 27,
                 28, 29, 30, 31, 32, 33, 34, 35, 36
         }, new int[]{2, 3, 3});
@@ -630,7 +631,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         SDVariable a = sd.var("A", aArray);
         SDVariable b = sd.var("B", bArray);
 
-        //shapeInfo dLdC: [4,  2,3,2,3,  18,6,3,1,  16384,1,99]
+
         //new int[][]{{2}, {1}}
         // Perform tensor multiplication
         SDVariable c = sd.tensorMmul("C",a, b,new int[]{2},new int[]{1});
@@ -711,6 +712,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         assertEquals(gradBAssertion, grads.get("B"));
 
     }
+
 
 
 
