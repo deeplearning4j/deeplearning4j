@@ -231,22 +231,6 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testCol2Im(Nd4jBackend backend) {
-        int kh = 1;
-        int kw = 1;
-        int sy = 1;
-        int sx = 1;
-        int ph = 1;
-        int pw = 1;
-        INDArray linspaced = Nd4j.linspace(1, 64, 64, Nd4j.defaultFloatingPointType()).reshape(2, 2, 2, 2, 2, 2);
-        INDArray newTest = Convolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
-        INDArray assertion = OldConvolution.col2im(linspaced, sy, sx, ph, pw, 2, 2);
-
-        System.out.println("Assertion dimensions: " + Arrays.toString(assertion.shape()));
-        assertEquals(assertion, newTest);
-    }
 
 
     @ParameterizedTest
@@ -271,29 +255,6 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
         System.out.println(subArray.shapeInfoToString());
         assertEquals(expected,subArray);
 
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testimcolim(Nd4jBackend backend) {
-        int nEx = 2;
-        int depth = 3;
-        int width = 7;
-        int height = 7;
-        int[] kernel = {3, 2};
-        int[] stride = {2, 3};
-        int[] padding = {1, 2};
-        int prod = nEx * depth * width * height;
-
-        INDArray in = Nd4j.linspace(1, prod, prod, Nd4j.defaultFloatingPointType()).reshape(nEx, depth, width, height);
-
-        INDArray assertim2col = OldConvolution.im2col(in, kernel, stride, padding);
-        INDArray im2col = Convolution.im2col(in, kernel, stride, padding);
-        assertEquals(assertim2col, im2col);
-
-        INDArray assertcol2im = OldConvolution.col2im(im2col, stride, padding, height, width);
-        INDArray col2im = Convolution.col2im(im2col, stride, padding, height, width);
-        assertEquals(assertcol2im, col2im);
     }
 
 

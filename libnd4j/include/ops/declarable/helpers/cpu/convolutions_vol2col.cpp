@@ -64,14 +64,14 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD,
       T *col, *vol;
       int volDep, volRow, volCol;
 
-      for (int b = start_x; b < stop_x; b += inc_x) {
-        for (int c = start_y; c < stop_y; c += inc_y) {
-          for (int kDep = start_z; kDep < stop_z; kDep += inc_z) {
-            for (int kRow = 0; kRow < kH; ++kRow) {
-              for (int kCol = 0; kCol < kW; ++kCol) {
-                for (int colD = 0; colD < oD; ++colD) {
-                  for (int colH = 0; colH < oH; ++colH) {
-                    for (int colW = 0; colW < oW; ++colW) {
+      for (sd::LongType b = start_x; b < stop_x; b += inc_x) {
+        for (sd::LongType c = start_y; c < stop_y; c += inc_y) {
+          for (sd::LongType kDep = start_z; kDep < stop_z; kDep += inc_z) {
+            for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+              for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
+                for (sd::LongType colD = 0; colD < oD; ++colD) {
+                  for (sd::LongType colH = 0; colH < oH; ++colH) {
+                    for (sd::LongType colW = 0; colW < oW; ++colW) {
                       volDep = (-pD + kDep * dD) + colD * sD;
                       volRow = (-pH + kRow * dH) + colH * sH;
                       volCol = (-pW + kCol * dW) + colW * sW;
@@ -79,9 +79,9 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD,
                       col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
                             kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
 
-                      if (static_cast<LongType>(volDep) >= static_cast<LongType>(iD) ||
-                          static_cast<LongType>(volRow) >= static_cast<LongType>(iH) ||
-                          static_cast<LongType>(volCol) >= static_cast<LongType>(iW))
+                      if (volDep < 0 || volDep >= iD ||
+                          volRow < 0 || volRow >= iH ||
+                          volCol < 0 || volCol >= iW)
                         *col = static_cast<T>(0.);
                       else {
                         vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
@@ -103,7 +103,8 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD,
   } else {
     auto func = PRAGMA_THREADS_FOR_2D {
       T *col, *vol;
-      int volDep, volRow, volCol;
+      sd::LongType volDep, volRow, volCol;
+
       for (LongType b = start_x; b < stop_x; b++) {
         for (LongType colD = start_y; colD < stop_y; colD++) {
           for (LongType colH = 0; colH < oH; ++colH) {
@@ -119,9 +120,9 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD,
                       col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
                             kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
 
-                      if (static_cast<LongType>(volDep) >= static_cast<LongType>(iD) ||
-                          static_cast<LongType>(volRow) >= static_cast<LongType>(iH) ||
-                          static_cast<LongType>(volCol) >= static_cast<LongType>(iW))
+                      if (volDep < 0 || volDep >= iD ||
+                          volRow < 0 || volRow >= iH ||
+                          volCol < 0 || volCol >= iW)
                         *col = static_cast<T>(0.f);
                       else {
                         vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 +
@@ -139,7 +140,6 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const LongType sD,
     };
 
     samediff::Threads::parallel_for(func, 0, bS, 1, 0, oD, 1);
-    // func(0, 0, bS, 1, 0, oD, 1);
   }
 }
 

@@ -108,7 +108,6 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
   MmulHelper::tensorDot(&columns, weights, output, {1, 2, 3, 4}, wAxes, permutForOutput);
 
   if (bias)
-    // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
     helpers::addBias(block, *output, *bias, *output, isNCDHW);
 
   if (!isNCDHW) delete input;
@@ -315,7 +314,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
   //----- calculation of gradO -----//
   if (gradB) {
-    if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
+    if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}, false));
     gradO->reduceAlongDimension(reduce::Sum, *gradB, &gradOaxesForDot);  // sum over bS oD oH oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
@@ -354,9 +353,9 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
           ? inputShape->at(3)
           : inputShape->at(2);  // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
 
-  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) depth
-  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) height
-  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(2)));  // filter(kernel) width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(2)));  // filter(kernel) width
   LongType sD = INT_ARG(3);                                                                          // strides depth
   LongType sH = INT_ARG(4);                                                                          // strides height
   LongType sW = INT_ARG(5);                                                                          // strides width
@@ -386,7 +385,7 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
       "CUSTOM CONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, gradOShapeInfo);
 
-  int indIOioC, indIiD, indWoC(0 == wFormat ? 4 : 0);
+  sd::LongType indIOioC, indIiD, indWoC(0 == wFormat ? 4 : 0);
   if (!isNCDHW) {
     indIOioC = 4;
     indIiD = 1;

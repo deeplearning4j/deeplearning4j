@@ -46,8 +46,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
       oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
       oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
     } else if (paddingMode == 1) {  // same
-      oH = (int)math::sd_ceil<double, double>(iH * 1. / sH);
-      oW = (int)math::sd_ceil<double, double>(iW * 1. / sW);
+      oH = static_cast<sd::LongType>(math::sd_ceil<double, double>(iH * 1. / sH));
+      oW = static_cast<sd::LongType>(math::sd_ceil<double, double>(iW * 1. / sW));
     } else {                   // causal
       oH = (iH - 1) / sH + 1;  // 2*pH = (kH-1)*dH
       oW = (iW - 1) / sW + 1;
