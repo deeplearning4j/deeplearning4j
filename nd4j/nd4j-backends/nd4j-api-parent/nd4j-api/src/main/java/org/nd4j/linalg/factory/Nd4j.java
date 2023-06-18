@@ -3568,7 +3568,7 @@ public class Nd4j {
 
     /**
      * Create 2D float array based on java 2d float array.
-     * @param data java 2d arrau.
+     * @param data java 2d array.
      * @return the created ndarray.
      */
     public static INDArray create(float[][] data) {
@@ -3577,7 +3577,7 @@ public class Nd4j {
 
     /**
      * Create 2D float array based on java 2d float array and ordering.
-     * @param data java 2d arrau.
+     * @param data java 2d array.
      * @param ordering Fortran 'f' or C/C++ 'c' ordering.
      * @return the created ndarray.
      */

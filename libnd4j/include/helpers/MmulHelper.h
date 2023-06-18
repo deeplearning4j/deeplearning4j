@@ -59,6 +59,12 @@ class SD_LIB_EXPORT MmulHelper {
   static void tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c, const std::vector<LongType>& axes_a,
                         const std::vector<LongType>& axes_b, const std::vector<LongType>& permutForC = {});
 
+  static void computeNewShapesAndAxes(
+      const NDArray& as_, const std::vector<LongType>& axes_a,
+      const NDArray& bs, const std::vector<LongType>& axes_b,
+      std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
+      std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b
+      );
 #ifndef __JAVACPP_HACK__
   /**
    *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must
@@ -71,6 +77,11 @@ class SD_LIB_EXPORT MmulHelper {
   static sd::NDArray* tensorDot(const sd::NDArray* a, const sd::NDArray* b,
                                 const std::vector<std::vector<sd::LongType>>& modifA,
                                 const std::vector<std::vector<sd::LongType>>& modifB);
+
+  static void tensorDot2(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c,
+                         const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
+                         std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
+                         std::vector<LongType>& permuteCt);
 #endif
 
   static void matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY,

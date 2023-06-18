@@ -20083,21 +20083,17 @@ opList {
     argType: INPUT_TENSOR
     argIndex: 1
   }
+    argDescriptor {
+      name: "C"
+      argType: INPUT_TENSOR
+      argIndex: 2
+    }
   argDescriptor {
     name: "dLdC"
     argType: INPUT_TENSOR
-    argIndex: 2
-  }
-  argDescriptor {
-    name: "dldx"
-    argType: INPUT_TENSOR
     argIndex: 3
   }
-  argDescriptor {
-    name: "dldy"
-    argType: INPUT_TENSOR
-    argIndex: 4
-  }
+
 }
 opList {
   name: "test_output_reshape"

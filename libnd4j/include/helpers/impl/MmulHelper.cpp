@@ -27,6 +27,10 @@
 #include <array/NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <vector>
+#include <numeric>
+#include <algorithm>
+#include <iterator>
 
 namespace sd {
 
@@ -67,13 +71,128 @@ sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* A, const sd::NDArray* 
   return c;
 }
 
+
+void sd::MmulHelper::computeNewShapesAndAxes(
+    const NDArray& as_, const std::vector<LongType>& axes_a,
+    const NDArray& bs, const std::vector<LongType>& axes_b,
+    std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
+    std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b
+) {
+
+
+  std::vector<LongType> as_shape = as_.getShapeAsVector();
+  std::vector<LongType> bs_shape = bs.getShapeAsVector();
+
+  std::vector<LongType> notin_a;
+  for(LongType k = 0; k < as_shape.size(); ++k) {
+    if(std::find(axes_a.begin(), axes_a.end(), k) == axes_a.end())
+      notin_a.push_back(k);
+  }
+
+
+
+  newaxes_a.clear();
+  std::copy(notin_a.begin(), notin_a.end(), std::back_inserter(newaxes_a));
+  std::copy(axes_a.begin(), axes_a.end(), std::back_inserter(newaxes_a));
+
+  LongType N2_a = std::accumulate(axes_a.begin(), axes_a.end(), 1L, [&](LongType product, LongType i){
+    return product * as_shape[i];
+  });
+
+  newshape_a.clear();
+  newshape_a.push_back(std::accumulate(notin_a.begin(), notin_a.end(), 1L, [&](LongType product, LongType i){
+    return product * as_shape[i];
+  }));
+  newshape_a.push_back(N2_a);
+
+
+
+  std::vector<LongType> notin_b;
+  for(LongType k = 0; k < bs_shape.size(); ++k) {
+    if(std::find(axes_b.begin(), axes_b.end(), k) == axes_b.end())
+      notin_b.push_back(k);
+  }
+
+
+  newaxes_b.clear();
+  std::copy(axes_b.begin(), axes_b.end(), std::back_inserter(newaxes_b));
+  std::copy(notin_b.begin(), notin_b.end(), std::back_inserter(newaxes_b));
+
+
+
+  LongType N2_b = std::accumulate(axes_b.begin(), axes_b.end(), 1L, [&](LongType product, LongType i){
+    return product * bs_shape[i];
+  });
+
+
+
+  newshape_b.clear();
+  newshape_b.push_back(N2_b);
+  newshape_b.push_back(std::accumulate(notin_b.begin(), notin_b.end(), 1L, [&](LongType product, LongType i){
+    return product * bs_shape[i];
+  }));
+
+
+}
+
 //////////////////////////////////////////////////////////////////////////
+void sd::MmulHelper::tensorDot2(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c,
+                                const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
+                                std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
+                                std::vector<LongType>& permuteCt) {
+
+
+  // check whether permutation is required
+  NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt));
+
+
+
+  std::vector<sd::LongType> shapeAt, shapeBt;
+
+  std::vector<sd::LongType > permutAtDummy, permuteBtDummy;
+
+  std::vector<sd::LongType> newshape_a, newaxes_a, newshape_b, newaxes_b;
+  MmulHelper::computeNewShapesAndAxes(*a, axes_a, *b, axes_b, newshape_a, newaxes_a, newshape_b, newaxes_b);
+
+
+  const NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt));
+  const NDArray* bP = permuteBt.empty() ? b : new NDArray(b->permute(permuteBt));
+
+
+  auto apReshaped = aP->permute(newaxes_a).reshape('c', newshape_a,true);
+  const NDArray* aPR =  new NDArray(apReshaped);
+  auto bpReshape = bP->permute(newaxes_b).reshape('c', newshape_b,true);
+  const NDArray* bPR = new NDArray(bpReshape);
+
+
+  std::vector<sd::LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
+  NDArray* cPR = new NDArray(cP->reshape('c', requiredCshape, true));
+
+  mmul(aPR, bPR, cPR, 1.0, 0.0);
+
+
+
+  if (cPR->buffer() != cP->buffer() ||
+      cPR->specialBuffer() != cP->specialBuffer()) {  // this means both permute and reshape have been performed on c, cP
+    cP->assign(cPR);
+  }
+
+  if (aP != aPR) delete aPR;
+  if (bP != bPR) delete bPR;
+  if (a != aP) delete aP;
+  if (b != bP) delete bP;
+
+  if (cP != cPR) delete cPR;
+  if (c != cP) delete cP;
+}
 void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::NDArray* c,
                                const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                                const std::vector<LongType>& permutForC) {
+
   std::vector<sd::LongType> permutAt, permutBt;
   std::vector<sd::LongType> shapeAt, shapeBt;
   ShapeUtils::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
+
 
   // check whether permutation is required
   NDArray* cP = permutForC.empty() ? c : new NDArray(c->permute(permutForC));
@@ -228,8 +347,8 @@ NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b,
 sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::NDArray* C, const double alpha,
                               const double beta, const char outOrder) {
   sd::LongType  lenDim;
-  const int aRank = A->rankOf();
-  const int bRank = B->rankOf();
+  const sd::LongType aRank = A->rankOf();
+  const sd::LongType bRank = B->rankOf();
   const bool isAVector = shape::isCommonVector(A->shapeInfo(), lenDim);
   const bool isBVector = shape::isCommonVector(B->shapeInfo(), lenDim);
 

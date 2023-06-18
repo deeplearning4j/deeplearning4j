@@ -32,16 +32,14 @@ class SD_LIB_EXPORT ShapeUtils {
  public:
   // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for
   // transposition of two input arrays
-  static std::vector<sd::LongType> evalShapeForTensorDot(const sd::LongType* aShapeInfo, const sd::LongType* bShapeInfo,
-                                                         std::vector<sd::LongType> axesA, std::vector<sd::LongType> axesB,
-                                                         std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
-                                                         std::vector<sd::LongType>& shapeAt,
-                                                         std::vector<sd::LongType>& shapeBt);
-  static std::vector<sd::LongType> evalShapeForTensorDot(const NDArray* a, const NDArray* b,
-                                                         const std::vector<sd::LongType>& axesA, const std::vector<sd::LongType>& axesB,
-                                                         std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
-                                                         std::vector<sd::LongType>& shapeAt,
-                                                         std::vector<sd::LongType>& shapeBt);
+  static std::vector<LongType> evalShapeForTensorDot(
+      const sd::LongType* aShapeInfo, const sd::LongType* bShapeInfo, const std::vector<LongType> axesA,
+      const std::vector<LongType> axesB, std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
+      std::vector<sd::LongType>& shapeAt, std::vector<sd::LongType>& shapeBt);
+  static std::vector<LongType> evalShapeForTensorDot(
+      const NDArray* a, const NDArray* b, const std::vector<sd::LongType>& axesA,
+      const std::vector<sd::LongType>& axesB, std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
+      std::vector<sd::LongType>& shapeAt, std::vector<sd::LongType>& shapeBt);
 
   // evaluate resulting shape after reduce operation
   static const sd::LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, const NDArray& arr,

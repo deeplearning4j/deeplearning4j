@@ -589,8 +589,8 @@ public class TestMiscOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getRandom().setSeed(12345);
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Nd4j.rand(new long[]{2, 2, 2}).castTo(DataType.DOUBLE);
-        INDArray arr2 = Nd4j.rand(new long[]{2, 2, 2}).castTo(DataType.DOUBLE);
+        INDArray arr = Nd4j.linspace(1,8,8).reshape(2, 2, 2).castTo(DataType.DOUBLE);
+        INDArray arr2 = Nd4j.linspace(1,8,8).reshape(2,2,2).castTo(DataType.DOUBLE);
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr2);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[]{0}, new int[]{1},false,false,false);
@@ -608,19 +608,21 @@ public class TestMiscOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testTensorGradTensorMmul2(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getRandom().setSeed(12345);
-        SameDiff sameDiff = SameDiff.create();
         // Define two 3D tensors
-        INDArray aArray = Nd4j.create(new float[]{
+        INDArray aArray = Nd4j.create(new double[]{
                 1, 2, 3, 4, 5, 6, 7, 8, 9,
                 10, 11, 12, 13, 14, 15, 16, 17, 18
         }, new int[]{2, 3, 3});
-        INDArray bArray = Nd4j.create(new float[]{
+        INDArray bArray = Nd4j.create(new double[]{
+
                 19, 20, 21, 22, 23, 24, 25, 26, 27,
                 28, 29, 30, 31, 32, 33, 34, 35, 36
         }, new int[]{2, 3, 3});
+
+        //shapeInfo dLdC: [4,  2,3,2,3,  18,6,3,1,  16384,1,99]
+        INDArray dldC = Nd4j.ones(2,3,2,3);
+
 
         // Create a SameDiff instance
         SameDiff sd = SameDiff.create();
@@ -628,6 +630,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
         // Convert INDArrays to SDVariables
         SDVariable a = sd.var("A", aArray);
         SDVariable b = sd.var("B", bArray);
+
 
         //new int[][]{{2}, {1}}
         // Perform tensor multiplication
@@ -637,16 +640,81 @@ public class TestMiscOpValidation extends BaseOpValidation {
         Map<String,INDArray> placeholders = new HashMap<>();
         placeholders.put("A",aArray);
         placeholders.put("B",bArray);
+        Map<String,INDArray> outs = sd.output(placeholders,"C");
+        Map<String, INDArray> grads = sd.calculateGradients(placeholders, "A", "B");
+        // Create the first ND4J array
+        double[][][] arrayData = new double[][][] {
+                {
+                        {25890.0, 28968.0, 32046.0},
+                        {63402.0, 70935.0, 78468.0},
+                        {100914.0, 112902.0, 124890.0}
+                },
+                {
+                        {138426.0, 154869.0, 171312.0},
+                        {175938.0, 196836.0, 217734.0},
+                        {213450.0, 238803.0, 264156.0}
+                }
+        };
+
+        INDArray gradAAssertion = Nd4j.create(arrayData);
+        double[][][][] array = {
+                {
+                        {
+                                {138.0, 144.0, 150.0},
+                                {192.0, 198.0, 204.0}
+                        },
+                        {
+                                {336.0, 351.0, 366.0},
+                                {471.0, 486.0, 501.0}
+                        },
+                        {
+                                {534.0, 558.0, 582.0},
+                                {750.0, 774.0, 798.0}
+                        }
+                },
+                {
+                        {
+                                {732.0, 765.0, 798.0},
+                                {1029.0, 1062.0, 1095.0}
+                        },
+                        {
+                                {930.0, 972.0, 1014.0},
+                                {1308.0, 1350.0, 1392.0}
+                        },
+                        {
+                                {1128.0, 1179.0, 1230.0},
+                                {1587.0, 1638.0, 1689.0}
+                        }
+                }
+        };
 
 
-        Map<String, INDArray> stringINDArrayMap = sd.calculateGradients(placeholders,"A","B",c.name());
-        System.out.println();
 
 
+        INDArray cAssertion = Nd4j.create(array);
 
-        String err = OpValidation.validate(new TestCase(sameDiff));
-        assertNull(err);
+        double[][][] gradBAssertionData = new double[][][] {
+                {
+                        {9522.0, 23346.0, 37170.0},
+                        {10548.0, 25857.0, 41166.0},
+                        {11574.0, 28368.0, 45162.0}
+                },
+                {
+                        {50994.0, 64818.0, 78642.0},
+                        {56475.0, 71784.0, 87093.0},
+                        {61956.0, 78750.0, 95544.0}
+                }
+        };
+
+        INDArray gradBAssertion = Nd4j.create(gradBAssertionData);
+        assertEquals(cAssertion,outs.get("C"));
+        assertEquals(gradAAssertion, grads.get("A"));
+        assertEquals(gradBAssertion, grads.get("B"));
+
     }
+
+
+
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -717,7 +785,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testMmulGradients(Nd4jBackend backend){
+    public void testMmulGradients(Nd4jBackend backend) {
         int[] aShape = new int[]{2,3};
         int[] bShape = new int[]{3,4};
         List<String> failed = new ArrayList<>();
@@ -853,7 +921,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
 
-        sd.fit(iterator, 1); // backward pass throws exception
+        sd.fit(iterator, 1);
     }
 
     @ParameterizedTest
@@ -884,7 +952,9 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
 
-        sd.fit(iterator, 1); // backward pass throws exception
+
+
+        sd.fit(iterator, 1);
     }
 
     @ParameterizedTest
@@ -1554,7 +1624,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testIsNonDecreasingIsStrictlyIncr(){
+    public void testIsNonDecreasingIsStrictlyIncr() {
         List<long[]> shapes = Arrays.asList(null, new long[]{12}, new long[]{1,12}, new long[]{3,4}, new long[]{2,2,3});
 
         List<String> failed = new ArrayList<>();
@@ -1706,8 +1776,8 @@ public class TestMiscOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.create(FLOAT, shape);
 
         INDArray outExp = out.like();
-        for( int i=0; i<32; i++ ){
-            for( int j=0; j<12; j++ ){
+        for( int i = 0; i < 32; i++ ){
+            for( int j = 0; j < 12; j++) {
                 INDArray sub1 = arr1.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray sub2 = arr2.get(NDArrayIndex.point(i), NDArrayIndex.point(j), NDArrayIndex.all(), NDArrayIndex.all());
                 INDArray mmul = sub1.mmul(sub2.transpose());
@@ -1742,7 +1812,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
         op.setOutputArgument(0, out);
         Nd4j.exec(op);
-//        System.out.println(out);
 
         INDArray exp = Nd4j.valueArrayOf(shape, 64.0, FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
         assertEquals(exp, out);
@@ -1792,7 +1861,7 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTensorMmulShape2(){
+    public void testTensorMmulShape2() {
         INDArray a = Nd4j.create(new double[]{2}).reshape(1);
         INDArray b = Nd4j.create(new double[]{1, 2, 3, 4}).reshape(2, 1, 2);
         INDArray c = Nd4j.tensorMmul(a, b, new int[][]{new int[]{0}, new int[]{1}});
