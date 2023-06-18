@@ -124,6 +124,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   auto dC = INPUT_VARIABLE(3);
   auto originalDC = dC;
 
+  //scalar case, tile value to be whatever the c value is. common when directly attached to the loss
   if(dC->isScalar()) {
     dC = new NDArray('c',C->getShapeAsVector(), dC->dataType(), dC->getContext());
   }
@@ -132,11 +133,12 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   auto gradA = OUTPUT_VARIABLE(0);
   auto gradB = OUTPUT_VARIABLE(1);
 
-
+  
   sd::LongType axe0_size = INT_ARG(0);
   sd::LongType axe1_size = INT_ARG(axe0_size + 1);
   std::vector<sd::LongType> axes0Sum(axe0_size), axes1Sum(axe1_size);
 
+  //find the passed in axes for the feed forward
   for (sd::LongType e = 0; e < axe0_size; e++) axes0Sum[e] = INT_ARG(e + 1);
   for (sd::LongType  e = 0; e < axe1_size; e++) axes1Sum[e] = INT_ARG(e + axe0_size + 2);
 
@@ -146,6 +148,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   auto dCrank = dC->rankOf();
 
 
+  //part of the permtue axes before matrix multiply happens
   std::vector<sd::LongType> axes_a_grad;
   for(sd::LongType i = 0; i < Arank; ++i)
     axes_a_grad.push_back(i);
@@ -154,6 +157,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
     axes_a_grad.erase(std::remove(axes_a_grad.begin(), axes_a_grad.end(), axes0Sum[i]), axes_a_grad.end());
 
 
+  //part of matrix multiply axes before matrix multiply happens
   std::vector<sd::LongType> axes_b_grad;
   for(sd::LongType i = 0; i < Brank; ++i)
     axes_b_grad.push_back(i);
@@ -161,10 +165,12 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   for(sd::LongType i = 0; i < axes1Sum.size(); ++i)
     axes_b_grad.erase(std::remove(axes_b_grad.begin(), axes_b_grad.end(), axes1Sum[i]), axes_b_grad.end());
 
+  //used for post result permute to reshape result to be expected output
   std::vector<sd::LongType> grad_a_axes;
   grad_a_axes.insert(grad_a_axes.end(), axes_a_grad.begin(), axes_a_grad.end());
   grad_a_axes.insert(grad_a_axes.end(), axes1Sum.begin(), axes1Sum.end());
 
+  //used for post result permute to reshape result to be expected output
   std::vector<sd::LongType> grad_b_axes;
   grad_b_axes.insert(grad_b_axes.end(), axes0Sum.begin(), axes0Sum.end());
   grad_b_axes.insert(grad_b_axes.end(), axes_b_grad.begin(), axes_b_grad.end());
@@ -185,19 +191,20 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
     axes_a_gradB.push_back(i);
   }
 
-
-
   sd::LongType start = dCrank - axes_a_gradA.size();
   std::vector<sd::LongType> axes_b_gradB;
   for(sd::LongType i = start; i < dCrank; i++) {
     axes_b_gradB.push_back(i);
   }
 
+  //create final axes before for matrix multiply
   std::vector<sd::LongType> aPermuteAxesBefore;
   aPermuteAxesBefore.insert(aPermuteAxesBefore.end(), axes_a_grad.begin(), axes_a_grad.end());
   aPermuteAxesBefore.insert(aPermuteAxesBefore.end(), axes0Sum.begin(), axes0Sum.end());
 
 
+
+  //create final axes before for matrix multiply
   std::vector<sd::LongType> bPermuteAxesBefore;
   bPermuteAxesBefore.insert(bPermuteAxesBefore.end(), axes_b_grad.begin(), axes_b_grad.end());
   bPermuteAxesBefore.insert(bPermuteAxesBefore.end(), axes1Sum.begin(), axes1Sum.end());
@@ -208,6 +215,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   std::vector<sd::LongType> empty;
   auto newB = B->permute(bPermuteAxesBefore);
 
+  //perform the actual matrix multiplication
   MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA,empty, empty, aPermArgsAfter);
   MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter);
 
