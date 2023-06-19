@@ -28,7 +28,7 @@
 class OnesTest : public testing::Test {
  public:
   sd::LongType shapeBuffer[12] = {4, 4, 3, 1, 1, 3, 1, 1, 1, 0, 1, 99};
-  int dimension[3] = {0, 2, 3};
+  sd::LongType dimension[3] = {0, 2, 3};
   sd::LongType tadAssertionShape[10] = {3, 1, 1, 4, 1, 1, 3, 0, 3, 99};
   int dimensionLength = 3;
 };
@@ -57,7 +57,7 @@ class LabelTest : public testing::Test {
       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
       1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
   sd::LongType shapeInfo[8] = {2, 150, 3, 1, 150, 16384, 1, 102};
-  int dimension[1] = {1};
+  sd::LongType dimension[1] = {1};
   int dimensionLength = 1;
   sd::LongType tadShapeInfoAssert[8] = {2, 1, 3, 1, 150, 16384, 150, 102};
 };
@@ -74,7 +74,7 @@ class VectorTest : public testing::Test {};
 class NumTadTests : public testing::Test {
  public:
   sd::LongType shape[3] = {3, 4, 5};
-  int dimension = 0;
+  sd::LongType dimension = 0;
 };
 
 class ShapeTest : public testing::Test {
@@ -87,7 +87,7 @@ class MatrixTest : public testing::Test {
   int rows = 3;
   int cols = 4;
   int rank = 2;
-  int dims[2] = {0, 1};
+  sd::LongType dims[2] = {0, 1};
   sd::LongType expectedShapes[2][2] = {{1, 3}, {1, 4}};
   sd::LongType expectedStrides[2][2] = {{1, 4}, {1, 1}};
 };
@@ -95,16 +95,16 @@ class MatrixTest : public testing::Test {
 class TADStall : public testing::Test {
  public:
   sd::LongType shape[4] = {3, 3, 4, 5};
-  int dimensions[3] = {1, 2, 3};
+  sd::LongType dimensions[3] = {1, 2, 3};
 };
 
 class TensorOneDimTest : public testing::Test {
  public:
   int rows = 3;
   int cols = 4;
-  int dim2 = 5;
+  sd::LongType dim2 = 5;
   int rank = 3;
-  int dims[3] = {0, 1, 2};
+  sd::LongType dims[3] = {0, 1, 2};
   sd::LongType expectedShapes[3][2] = {{1, 3}, {1, 4}, {1, 5}};
   sd::LongType expectedStrides[3][2] = {{1, 20}, {1, 5}, {1, 1}};
 };
@@ -116,7 +116,7 @@ class TensorTwoDimTest : public testing::Test {
   int cols = 4;
   int dim2 = 5;
   int dimensionLength = 2;
-  int dims[3][2] = {{0, 1}, {0, 2}, {1, 2}};
+  sd::LongType dims[3][2] = {{0, 1}, {0, 2}, {1, 2}};
 
   sd::LongType shape[3]{rows, cols, dim2};
 
@@ -144,7 +144,7 @@ class TensorTwoFromFourDDimTest : public testing::Test {
   // Along dimension 1,3: expect matrix with shape [cols,dim3]
   // Along dimension 2,3: expect matrix with shape [dim2,dim3]
 
-  int dims[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+  sd::LongType dims[6][2] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
 
   sd::LongType expectedShapes[6][2] = {{rows, cols}, {rows, dim2}, {rows, dim3},
                                        {cols, dim2}, {cols, dim3}, {dim2, dim3}};
@@ -163,7 +163,7 @@ class LeadingOnes : public testing::Test {
   sd::LongType shapeBufferF[16] = {4, 1, 1, 4, 4, 1, 1, 1, 4, 16384, 1, 102};  // shapes with data type DOUBLE
   sd::LongType shapeBufferC[16] = {4, 1, 1, 4, 4, 16, 16, 4, 1, 16384, 1, 99};
   int dimensionLength = 2;
-  int dimension[2] = {2, 3};
+  sd::LongType dimension[2] = {2, 3};
   sd::LongType tadAssertionC[10] = {3, 4, 4, 1, 4, 1, 16, 16384, 1, 99};
   sd::LongType tadCAssertionF[10] = {3, 4, 4, 1, 1, 4, 1, 16384, 1, 102};
 };
@@ -177,8 +177,6 @@ TEST_F(LeadingOnes, OnesTest) {
   fTad->init(shapeBufferF, dimension, dimensionLength);
   fTad->createTadOnlyShapeInfo();
   fTad->createOffsets();
-  // shape::printShapeInfoLinear(cTad->tadOnlyShapeInfo);
-  // shape::printShapeInfoLinear(fTad->tadOnlyShapeInfo);
   ASSERT_TRUE(arrsEquals(10, tadCAssertionF, fTad->tadOnlyShapeInfo));
   ASSERT_TRUE(arrsEquals(10, tadAssertionC, cTad->tadOnlyShapeInfo));
 
@@ -191,7 +189,7 @@ class NormalThreeFourFive : public testing::Test {
   sd::LongType assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 5, 99};
   sd::LongType inputShapeBuffer[10] = {3, 3, 4, 5, 20, 5, 1, 16384, 1, 99};
   int dimensionLength = 2;
-  int dimension[2] = {0, 1};
+  sd::LongType dimension[2] = {0, 1};
 };
 
 TEST_F(NormalThreeFourFive, DimensionTest) {
@@ -207,7 +205,7 @@ TEST_F(NormalThreeFourFive, DimensionTest) {
 class DimensionWarning : public testing::Test {
  public:
   int dimensionLength = 2;
-  int dimensions[2] = {0, 1};
+  sd::LongType dimensions[2] = {0, 1};
   sd::LongType shape[3] = {1, 5, 1};
   sd::LongType *shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape);
 
@@ -225,7 +223,7 @@ TEST_F(DimensionWarning, ShapeWarning) {
 class TadRank : public testing::Test {
   sd::LongType shapeBuffer[12] = {4, 2, 1, 3, 3, 9, 9, 3, 1, 0, 1, 99};
   int dimensionLength = 2;
-  int dimension[2] = {2, 3};
+  sd::LongType dimension[2] = {2, 3};
 };
 
 class TestRemoveIndex : public testing::Test {};
@@ -254,7 +252,7 @@ class LengthPerSliceTest : public testing::Test {};
 class ExpectedValuesTest : public testing::Test {
  public:
   sd::LongType mainShape[4] = {9, 7, 5, 3};
-  int testDimensions[3] = {0, 2, 3};
+  sd::LongType testDimensions[3] = {0, 2, 3};
 };
 
 class BeginOneTadTest : public testing::Test {
@@ -262,8 +260,7 @@ class BeginOneTadTest : public testing::Test {
   sd::LongType assertionShapeBuffer[8] = {2, 3, 5, 1, 3, 16384, 1, 102};
   sd::LongType inputShapeBuffer[10] = {3, 1, 3, 5, 1, 1, 3, 16384, 0, 102};
   int dimensionLength = 2;
-  int dimension[2] = {1, 2};
-  // error: [2,1,1,1,1,0,1,97]
+  sd::LongType dimension[2] = {1, 2};
 };
 
 class FourDTest : public testing::Test {
@@ -278,10 +275,10 @@ INDArray sum40 = array4d.sum(0);
   sd::LongType threeDShape[3] = {1, 10, 10};
   sd::LongType fourDShape[4] = {1, 10, 10, 10};
   sd::LongType *threeDShapeBuffer = nullptr, *fourDShapeBuffer = nullptr;
-  int dimensionThree = 1;
-  int dimensionThreeTwo = 0;
-  int dimensionFour = 0;
-  int dimensionLength = 1;
+  sd::LongType dimensionThree = 1;
+  sd::LongType dimensionThreeTwo = 0;
+  sd::LongType dimensionFour = 0;
+  sd::LongType dimensionLength = 1;
   FourDTest() {
     threeDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 3, threeDShape);
     fourDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 4, fourDShape);
@@ -319,23 +316,17 @@ class RowVectorOnesTest : public testing::Test {
   float data[12] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   sd::LongType assertionBuffer[10] = {3, 4, 1, 1, 3, 1, 1, 8192, 0, 99};
   int dimensionLength = 3;
-  int dimension[3] = {0, 2, 3};
+  sd::LongType dimension[3] = {0, 2, 3};
 };
 
-// TEST_F(RowVectorOnesTest,TadShape) {
-//     shape::TAD *tad = new shape::TAD(shapeBuffer,dimension,dimensionLength);
-//     tad->createTadOnlyShapeInfo();
-//     tad ->createOffsets();
-//     ASSERT_TRUE(arrsEquals(10,assertionBuffer,tad->tadOnlyShapeInfo));
-//     delete tad;
-// }
+
 
 class SixDTest : public testing::Test {
  public:
   sd::LongType inputShapeBuffer[16] = {6, 1, 1, 4,  4,  4,     4, 1,
                                        1, 1, 4, 16, 64, 16384, 1, 102};  // shape with double data type
   int dimensionLength = 2;
-  int dimension[2] = {2, 3};
+  sd::LongType dimension[2] = {2, 3};
   sd::LongType assertionShapeBuffer[8] = {2, 4, 4, 1, 4, 16384, 1, 102};  // also double typed shape
 };
 
@@ -355,7 +346,7 @@ class TrailingTest : public testing::Test {
  public:
   sd::LongType inputShapeBuffer[12] = {4, 5, 5, 5, 1, 1, 5, 25, 125, 16384, 1, 102};
   int dimensionLength = 1;
-  int dimension[1] = {0};
+  sd::LongType dimension[1] = {0};
   sd::LongType assertionShapeBuffer[8] = {2, 1, 5, 125, 1, 16384, 1, 102};
 };
 
@@ -373,7 +364,7 @@ class ScalarTest : public testing::Test {
  public:
   sd::LongType inputShapeBuffer[12] = {3, 2, 3, 4, 12, 4, 1, 16384, 1, 99};
   int dimensionLength = 1;
-  int dimension[1] = {1};
+  sd::LongType dimension[1] = {1};
   sd::LongType assertionShapeBuffer[8] = {2, 1, 1, 1, 1, 16384, 1, 99};
 };
 /*
@@ -391,7 +382,7 @@ class ThreeTest : public testing::Test {
  public:
   sd::LongType inputShapeBuffer[10] = {3, 4, 3, 2, 6, 2, 1, 16384, 1, 99};
   int dimensionLength = 1;
-  int dimension[1] = {0};
+  sd::LongType dimension[1] = {0};
   sd::LongType assertionShapeBuffer[8] = {2, 1, 4, 1, 6, 16384, 6, 99};
 };
 
@@ -450,7 +441,7 @@ TEST_F(OrderTest, testOrder) {
 }
 
 TEST_F(ThreeDTest, TensorAlongDimensionTest) {
-  int dimension[2] = {0, 2};
+  sd::LongType dimension[2] = {0, 2};
   sd::LongType tadShapeAssertion[2] = {3, 5};
   sd::LongType strideAssertion[2] = {20, 1};
   shape::TAD *tad = new shape::TAD;
@@ -488,14 +479,14 @@ TEST_F(TADStall, TestStall) {
 TEST_F(LengthPerSliceTest, TestLengthPerSlice) {
   sd::LongType firstShape[2] = {5, 3};
   int lengthPerSliceAssertionFirst = 3;
-  int firstDimension = 0;
+  sd::LongType firstDimension = 0;
   int lengthPerSliceTest = shape::lengthPerSlice(2, firstShape, &firstDimension, 1);
   ASSERT_EQ(lengthPerSliceAssertionFirst, lengthPerSliceTest);
 }
 
 TEST_F(PermuteTest, PermuteShapeBufferTest) {
-  int permuteOrder[4] = {3, 2, 1, 0};
-  int normalOrder[4] = {0, 1, 2, 3};
+  sd::LongType permuteOrder[4] = {3, 2, 1, 0};
+  sd::LongType normalOrder[4] = {0, 1, 2, 3};
   sd::LongType shapeToPermute[4] = {5, 3, 2, 6};
   sd::LongType permutedOrder[4] = {6, 2, 3, 5};
   auto shapeBufferOriginal = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shapeToPermute);
@@ -596,7 +587,7 @@ TEST_F(TensorTwoFromFourDDimTest, TadTwoFromFourDimTest) {
   // Along dimension 2,3: expect matrix with shape [dim2,dim3]
   auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shape);
   for (int i = 0; i < 3; i++) {
-    int *dimArr = dims[i];
+    sd::LongType *dimArr = dims[i];
     sd::LongType *expectedShape = expectedShapes[i];
     shape::TAD *tad = new shape::TAD;
     tad->init(baseShapeBuffer, dimArr, dimensionLength);
@@ -621,7 +612,7 @@ TEST_F(TensorTwoDimTest, TadTwoDimTest) {
   auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape);
 
   for (int i = 0; i < 3; i++) {
-    int *dimArr = dims[i];
+    sd::LongType *dimArr = dims[i];
     sd::LongType *expectedShape = expectedShapes[i];
     shape::TAD *tad = new shape::TAD;
     tad->init(baseShapeBuffer, dimArr, dimensionLength);
@@ -697,11 +688,11 @@ TEST_F(MatrixTest, TadDimensionsForMatrix) {
 TEST_F(VectorTest, VectorTadShape) {
   sd::LongType rowVector[2] = {2, 2};
   auto rowBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVector);
-  int rowDimension = 1;
+  sd::LongType rowDimension = 1;
 
   sd::LongType columnVector[2] = {2, 2};
   auto colShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, columnVector);
-  int colDimension = 0;
+  sd::LongType colDimension = 0;
 
   shape::TAD *rowTad = new shape::TAD;
   rowTad->init(rowBuffer, &rowDimension, 1);

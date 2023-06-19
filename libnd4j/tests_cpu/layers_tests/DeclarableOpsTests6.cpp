@@ -1642,9 +1642,6 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printShapeInfo("Output shape");
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1654,8 +1651,9 @@ TEST_F(DeclarableOpsTests6, Test_Reduce3_Edge) {
   auto x = NDArrayFactory::create<double>('c', {3, 4, 5});
   auto y = NDArrayFactory::create<double>('c', {3, 4, 5});
 
-  std::vector<int> dims = {0, 1};
-  auto z = x.applyReduce3(reduce3::CosineSimilarity, y, dims);
+  std::vector<sd::LongType> dims = {0, 1};
+
+  auto z = x.applyAllReduce3(reduce3::CosineSimilarity, y, &dims);
   ASSERT_TRUE(&z != nullptr);
 }
 

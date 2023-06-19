@@ -87,23 +87,7 @@ TEST_F(AttentionTests, basic_dot_product_attention_with_mask) {
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//AB 2019/05/28 - Segfault on ppc64le - See issue #7657
-TEST_F(AttentionTests, basic_dot_product_attention_bp_with_mask) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto mask = NDArrayFactory::create<float>('c', {10, 3});
-    mask.assign(1.);
 
-    sd::ops::dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &eps, &mask}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
-
-    delete result;
-}
- */
 
 TEST_F(AttentionTests, multi_head_input_dot_product_attention_with_mask) {
   auto keys = NDArrayFactory::create<float>('c', {2, 5, 4, 3});

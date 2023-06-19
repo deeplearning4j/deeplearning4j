@@ -449,7 +449,8 @@ TEST_F(NDArrayTest, TestTranspose2) {
 TEST_F(NDArrayTest, TestReduceAlongDimension1) {
   NDArray array('c', {2, 2}, {1, 2, 3, 4}, sd::DataType::FLOAT32);
 
-  auto res = array.reduceAlongDimension(reduce::Sum, {0});
+  std::vector<sd::LongType> zero = {0};
+  auto res = array.reduceAlongDimension(reduce::Sum,&zero);
 
   ASSERT_EQ(2, res.lengthOf());
 
@@ -461,8 +462,8 @@ TEST_F(NDArrayTest, TestReduceAlongDimension1) {
 TEST_F(NDArrayTest, TestReduceAlongDimension2) {
   float *c = new float[4]{1, 2, 3, 4};
   auto array = new NDArray(c, cShape);
-
-  auto res = array->reduceAlongDimension(reduce::Sum, {1});
+  std::vector<sd::LongType> one = {1};
+  auto res = array->reduceAlongDimension(reduce::Sum,&one);
 
   ASSERT_EQ(2, res.lengthOf());
 
@@ -615,14 +616,18 @@ TEST_F(NDArrayTest, TestReductionAny1) {
   array.p(2, 0.0f);
   array.p(3, 0.0f);
   array.syncToDevice();
-  auto result0 = array.reduceAlongDimension(reduce::Any, {0});
+
+  std::vector<sd::LongType> zero = {0};
+  std::vector<sd::LongType> one = {1};
+
+  auto result0 = array.reduceAlongDimension(reduce::Any,&zero);
 
   ASSERT_EQ(2, result0.lengthOf());
 
   ASSERT_NEAR(1.0f, result0.e<float>(0), 1e-5f);
   ASSERT_NEAR(1.0f, result0.e<float>(1), 1e-5f);
 
-  auto result1 = array.reduceAlongDimension(reduce::Any, {1});
+  auto result1 = array.reduceAlongDimension(reduce::Any,&one);
 
   ASSERT_EQ(2, result1.lengthOf());
 
@@ -637,8 +642,13 @@ TEST_F(NDArrayTest, TestReductionAll1) {
   array.p(2, 0.0f);
   array.p(3, 0.0f);
 
-  auto result0 = array.reduceAlongDimension(reduce::All, {0});
-  auto result1 = array.reduceAlongDimension(reduce::All, {1});
+  //create vectors of sd::LongType containing 0 and 1
+  std::vector<sd::LongType> zero = {0};
+  std::vector<sd::LongType> one = {1};
+
+
+  auto result0 = array.reduceAlongDimension(reduce::All, &zero);
+  auto result1 = array.reduceAlongDimension(reduce::All, &one);
 
   ASSERT_EQ(2, result0.lengthOf());
   ASSERT_EQ(2, result1.lengthOf());
@@ -663,10 +673,7 @@ TEST_F(NDArrayTest, TestChecks5) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTile1) {
-  // float arr1[6] = {1,2,3,4,5,6};
-  // sd::LongType shape1[8] = {2,2,3,3,1,8192,1,99};
-  // float arr2[48] = {1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6,1,2,3,1,2,3,4,5,6,4,5,6};
-  // sd::LongType shape2[10] = {3,2,4,6,24,6,1,8192,1,99};
+
 
   NDArray array1(arr1, shape1);  // {2,3}
   NDArray array2(arr2, shape2);  // {2,4,6}
@@ -1227,7 +1234,7 @@ TEST_F(NDArrayTest, TestNegSize1) {
 TEST_F(NDArrayTest, Permute1) {
   sd::LongType shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
   sd::LongType shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
-  const std::initializer_list<int> perm = {2, 0, 1};
+  const std::initializer_list<sd::LongType> perm = {2, 0, 1};
 
   NDArray arr1(shape1, true);
   NDArray arr2(shape2, true);
@@ -1241,7 +1248,7 @@ TEST_F(NDArrayTest, Permute1) {
 TEST_F(NDArrayTest, Permute2) {
   sd::LongType shape1[] = {3, 5, 10, 15, 150, 15, 1, 8192, 1, 99};
   sd::LongType shape2[] = {3, 15, 5, 10, 1, 150, 15, 8192, 0, 99};
-  const std::initializer_list<int> perm = {2, 0, 1};
+  const std::initializer_list<sd::LongType> perm = {2, 0, 1};
 
   NDArray arr1(shape1, true);
   NDArray arr2(shape2, true);
@@ -1272,10 +1279,9 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
   NDArray exp(ebuf, eshape);
 
   ASSERT_TRUE(row->equalsTo(&expRow));
+  std::vector<sd::LongType> dims = {1};
+  x.applyBroadcast(broadcast::Add, &dims, *row, x);
 
-  x.applyBroadcast(broadcast::Add, {1}, *row, x);
-
-  // x.printBuffer("Result");
 
   ASSERT_TRUE(x.equalsTo(&exp));
 
@@ -1288,7 +1294,6 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
 TEST_F(NDArrayTest, TestIndexedPut2) {
   auto x = NDArrayFactory::create<float>('f', {2, 2});
-  // x.printShapeInfo("x shape");
   x.p(1, 1.0f);
 
   // x.printBuffer("after");
@@ -1578,7 +1583,6 @@ TEST_F(NDArrayTest, TestStdDev5) {
   }
   float stdF = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<float>(0);
   double stdD = arrayD.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<double>(0);
-  // sd_printf("Variance is %f(%f)\n", stdF, stdD);
   ASSERT_NEAR(stdD, 0.2, 1.0e-8);    // 1/5 = 0.2
   ASSERT_NEAR(stdF, 0.2f, 1.0e-5f);  // 1/5 = 0.2
 }
@@ -1587,12 +1591,12 @@ TEST_F(NDArrayTest, TestStdDev5) {
 TEST_F(NDArrayTest, TestApplyIndexReduce1) {
   float xBuff[] = {1, 5, 2, 12, 9, 3, 10, 7, 4, 11, 6, 8};
   sd::LongType xShapeInfo[] = {3, 2, 3, 2, 6, 2, 1, 8192, 1, 99};
-  std::vector<int> dim = {0, 1};
+  std::vector<sd::LongType> dim = {0, 1};
 
   NDArray x(xBuff, xShapeInfo);
   auto exp = NDArrayFactory::create<sd::LongType>({3, 1});
 
-  auto result = x.applyIndexReduce(indexreduce::IndexMax, dim);
+  auto result = x.applyIndexReduce(indexreduce::IndexMax, &dim);
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -1623,7 +1627,9 @@ TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
   NDArray y(yBuff, xShapeInfo);
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1.414214f, 1.414214f, 5.385165f, 5.385165f});
 
-  auto result = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
+  std::vector<sd::LongType> dims = {1};
+
+  auto result = x.applyAllReduce3(reduce3::EuclideanDistance, y, &dims);
 
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
@@ -1640,8 +1646,9 @@ TEST_F(NDArrayTest, applyReduce3EuclideanDistance) {
   NDArray x(xBuff, xShapeInfo);
   NDArray y(yBuff, xShapeInfo);
   NDArray exp(expBuff, expShapeInfo);
+  std::vector<sd::LongType> dims = {1};
 
-  auto result = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
+  auto result = x.applyAllReduce3(reduce3::EuclideanDistance, y,&dims);
 
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
@@ -1656,8 +1663,9 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
 
   NDArray x(xBuff, xShapeInfo);
   NDArray exp(expBuff, expShapeInfo);
+  std::vector<sd::LongType> dims = {1};
 
-  auto result = x.varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, {1});
+  auto result = x.varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &dims);
 
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
@@ -1673,17 +1681,23 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension2) {
   NDArray x(xBuff, xShapeInfo);
   NDArray exp(expBuff, expShapeInfo);
 
-  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
+  std::vector<sd::LongType> dims = {1};
+
+  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, &dims);
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestVarianceAlongDimension3) {
-  NDArray x = NDArrayFactory::create<double>('c', {10, 10});  //(xBuff, xShapeInfo);
-  NDArray exp = NDArrayFactory::create<double>('c', {10});    //(expBuff, expShapeInfo);
+  NDArray x = NDArrayFactory::create<double>('c', {10, 10});
+  NDArray exp = NDArrayFactory::create<double>('c', {10});
   x.linspace(1);                                              // 1, 2, 3, ..., 100
   exp.assign(825.f);
-  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
+
+
+  std::vector<sd::LongType> dims = {0};
+
+  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false,&dims);
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -1694,7 +1708,9 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension4) {
   NDArray exp = NDArrayFactory::create<double>('c', {1, 12});    //(expBuff, expShapeInfo);
   x.linspace(1);                                                 // 1, 2, 3, ..., 100
   exp.assign(1716.);
-  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
+  std::vector<sd::LongType> dims = {0};
+
+  auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, &dims);
   ASSERT_TRUE(exp.isSameShapeStrict(result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -1822,7 +1838,9 @@ TEST_F(NDArrayTest, TestBroadcast_1) {
 
   bias.linspace(1);
 
-  input.applyBroadcast(broadcast::Add, {1}, bias, input);
+  std::vector<sd::LongType> dims = {1};
+
+  input.applyBroadcast(broadcast::Add, &dims, bias, input);
 
   // input.printBuffer("result");
   ASSERT_TRUE(exp.equalsTo(&input));

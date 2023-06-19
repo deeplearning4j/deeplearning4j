@@ -37,13 +37,7 @@ using namespace sd::graph;
 
 class GraphTests : public testing::Test {
  public:
-  /*
-  int cShape[] = {2, 2, 2, 2, 1, 0, 1, 99};
-  int fShape[] = {2, 2, 2, 1, 2, 0, 1, 102};
-   */
   GraphTests() {
-    // Environment::getInstance().setDebug(true);
-    // Environment::getInstance().setVerbose(true);
   }
 };
 

@@ -1890,7 +1890,7 @@ TEST_F(DeclarableOpsTests1, Transpose1) {
 TEST_F(DeclarableOpsTests1, Permute1) {
   sd::LongType shapeX[] = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
   sd::LongType shapeExp[] = {3, 15, 5, 10, 50, 10, 1, 0, 1, 99};
-  const std::vector<int> perm = {2, 0, 1};
+  const std::vector<sd::LongType> perm = {2, 0, 1};
 
   ArrayOptions::setDataType(shapeX, sd::DataType::FLOAT32);
   ArrayOptions::setDataType(shapeExp, sd::DataType::FLOAT32);
@@ -1927,7 +1927,7 @@ TEST_F(DeclarableOpsTests1, TestArgumentsValidation1) {
   ArrayOptions::setDataType(shapeX, sd::DataType::FLOAT32);
   ArrayOptions::setDataType(shapeExp, sd::DataType::FLOAT32);
 
-  const std::vector<int> perm = {2, 0, 1};
+  const std::vector<sd::LongType> perm = {2, 0, 1};
   auto x = new NDArray(shapeX);
   auto exp = new NDArray(shapeExp);
 
@@ -2041,41 +2041,7 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-/*
-TEST_F(DeclarableOpsTests1, Sum1) {
 
-    float xBuff[] = {1, 2, 3, 4, 5, 6, 7, 8};
-    int xShape[]  = {2, 4, 2, 2, 1, 0, 1, 99};
-    float expBuff[] = {16, 20};
-    int expShape[]  = {2, 1, 2, 2, 1, 0, 1, 99};
-
-    const std::vector<int> dimensions = {1,0};
-
-    auto x = NDArrayFactory::create_<float>(xBuff, xShape);
-    auto z = NDArrayFactory::create_<float>(1, 2, 'c');
-    auto exp(expBuff, expShape);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(1, z);
-
-    auto block = new Context(1, variableSpace, false);  // not-in-place
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    *arguments = dimensions;
-
-    sd::ops::sum<float> sum;
-    sd::Status status = sum.execute(block);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-
-    ASSERT_EQ(sd::Status::OK, status);
-    ASSERT_TRUE(result->equalsTo(&exp));
-
-    delete block;
-    delete variableSpace;
-}
-*/
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
@@ -2089,7 +2055,7 @@ TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  1,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                                 // dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;

@@ -37,7 +37,6 @@
 #include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/headers/compat.h>
-#include <ops/declarable/headers/compression.h>
 #include <ops/declarable/headers/convo.h>
 #include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/headers/decoder.h>

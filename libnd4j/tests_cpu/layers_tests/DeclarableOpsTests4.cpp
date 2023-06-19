@@ -588,7 +588,7 @@ TEST_F(DeclarableOpsTests4, avgpool2d_13) {
   // variableSpace->putVariable(1, &z);
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;
@@ -628,7 +628,7 @@ TEST_F(DeclarableOpsTests4, avgpool2d_14) {
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;
@@ -672,7 +672,7 @@ TEST_F(DeclarableOpsTests4, Avgpool2d_test15) {
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 1,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;

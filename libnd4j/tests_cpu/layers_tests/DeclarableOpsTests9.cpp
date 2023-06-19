@@ -1127,8 +1127,8 @@ TEST_F(DeclarableOpsTests9, test_broadcast_bool_1) {
   auto y = NDArrayFactory::create<double>('c', {1, 2, 4, 4});
   auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
 
-  std::vector<int> dims = {0, 2, 3, 4};
-  x.applyBroadcast(broadcast::LessThan, dims, y, z);
+  std::vector<sd::LongType> dims = {0, 2, 3, 4};
+  x.applyBroadcast(broadcast::LessThan, &dims, y, z);
 }
 
 TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
@@ -1140,8 +1140,8 @@ TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
 
   auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
 
-  std::vector<int> dims = {0, 2, 3, 4};
-  x.applyBroadcast(broadcast::LessThan, dims, y, z);
+  std::vector<sd::LongType> dims = {0, 2, 3, 4};
+  x.applyBroadcast(broadcast::LessThan, &dims, y, z);
 }
 
 TEST_F(DeclarableOpsTests9, test_unstack_1) {
@@ -1845,9 +1845,9 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test7) {
   std::vector<sd::LongType> strides2 = {t1};
   ShapeDescriptor desc1(DataType::BOOL, 'c', shape1, strides1, s1);
   ShapeDescriptor desc2(DataType::UINT8, 'c', shape2, strides2, t1);
-  auto x = NDArrayFactory::create(desc1);
-  auto output = NDArrayFactory::create(desc2);
-  auto exp = NDArrayFactory::create(desc2);
+  auto x = NDArrayFactory::create(&desc1);
+  auto output = NDArrayFactory::create(&desc2);
+  auto exp = NDArrayFactory::create(&desc2);
   auto threshold = NDArrayFactory::create<bool>(true);
   auto buff = x.bufferAsT<bool>();
   uint8_t* expBuff = exp.bufferAsT<uint8_t>();
@@ -1892,9 +1892,9 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test8) {
   std::vector<sd::LongType> strides2 = {t3, t2, t1};
   ShapeDescriptor desc1(DataType::BOOL, 'c', shape1, strides1, 0);
   ShapeDescriptor desc2(DataType::UINT8, 'c', shape2, strides2, 0);
-  auto x = NDArrayFactory::create(desc1);
-  auto output = NDArrayFactory::create(desc2);
-  auto exp = NDArrayFactory::create(desc2);
+  auto x = NDArrayFactory::create(&desc1);
+  auto output = NDArrayFactory::create(&desc2);
+  auto exp = NDArrayFactory::create(&desc2);
   auto threshold = NDArrayFactory::create<bool>(true);
   auto buff = x.bufferAsT<bool>();
   uint8_t* expBuff = exp.bufferAsT<uint8_t>();

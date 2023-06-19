@@ -2419,7 +2419,7 @@ TEST_F(ConvolutionTests2, maxpool2d_1) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
@@ -2452,15 +2452,13 @@ TEST_F(ConvolutionTests2, maxpool2d_2) {
 
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
@@ -2493,15 +2491,13 @@ TEST_F(ConvolutionTests2, maxpool2d_3) {
 
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
@@ -2534,15 +2530,13 @@ TEST_F(ConvolutionTests2, maxpool2d_4) {
 
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
@@ -2552,7 +2546,6 @@ TEST_F(ConvolutionTests2, maxpool2d_4) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2583,7 +2576,7 @@ TEST_F(ConvolutionTests2, maxpool2d_5) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
@@ -3391,7 +3384,7 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_1) {
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
   block->fillInputs({-2});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                                 // dilation Height/Width; 8 - same mode;
@@ -3580,7 +3573,7 @@ TEST_F(ConvolutionTests2, avgpool2d_bp_1) {
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
   block->fillInputs({-2});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  1,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                                 // dilation Height/Width; 8 - same mode, 9 - extraParam0 (unnecessary for avg mode), 10

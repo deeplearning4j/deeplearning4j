@@ -228,13 +228,15 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test1) {
   NDArray exp2('c', {1, 1}, std::vector<double>{1}, sd::DataType::INT64);
   NDArray exp3('c', {2}, std::vector<double>{1, 2}, sd::DataType::INT64);
 
-  auto scalar1 = x.reduceAlongDimension(sd::reduce::CountNonZero, {} /*whole range*/);
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType>  dimOne = {1};
+  auto scalar1 = x.reduceAlongDimension(sd::reduce::CountNonZero,&empty /*whole range*/);
   ASSERT_EQ(scalar1, exp1);
 
-  auto scalar2 = x.reduceAlongDimension(sd::reduce::CountZero, {} /*whole range*/, true);
+  auto scalar2 = x.reduceAlongDimension(sd::reduce::CountZero, &empty /*whole range*/, true);
   ASSERT_EQ(scalar2, exp2);
 
-  auto scalar3 = x.reduceAlongDimension(sd::reduce::CountNonZero, {1});
+  auto scalar3 = x.reduceAlongDimension(sd::reduce::CountNonZero,&dimOne);
   ASSERT_EQ(scalar3, exp3);
 }
 
@@ -243,13 +245,14 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test2) {
   NDArray x('c', {2, 2}, {0, 1, 2, 3}, sd::DataType::INT32);
   NDArray exp1('c', {}, std::vector<double>{1.5}, sd::DataType::FLOAT32);
   NDArray exp2('c', {2}, {0.5, 2.5}, sd::DataType::FLOAT32);
-
-  auto scalar1 = x.reduceAlongDimension(sd::reduce::Mean, {} /*whole range*/);
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType>  dimOne = {1};
+  auto scalar1 = x.reduceAlongDimension(sd::reduce::Mean, &empty /*whole range*/);
   // scalar1->printShapeInfo();
   // scalar1->printIndexedBuffer();
   ASSERT_EQ(scalar1, exp1);
 
-  auto scalar2 = x.reduceAlongDimension(sd::reduce::Mean, {1});
+  auto scalar2 = x.reduceAlongDimension(sd::reduce::Mean, &dimOne);
   ASSERT_EQ(scalar2, exp2);
 }
 
@@ -258,11 +261,12 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test3) {
   NDArray x('c', {2, 2}, {0.5, 1.5, 2.5, 3.5}, sd::DataType::HALF);
   NDArray exp1('c', {}, std::vector<double>{8.}, sd::DataType::HALF);
   NDArray exp2('c', {2}, {2., 6.}, sd::DataType::HALF);
-
-  auto scalar1 = x.reduceAlongDimension(sd::reduce::Sum, {} /*whole range*/);
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType>  dimOne = {1};
+  auto scalar1 = x.reduceAlongDimension(sd::reduce::Sum, &empty /*whole range*/);
   ASSERT_EQ(scalar1, exp1);
 
-  auto scalar2 = x.reduceAlongDimension(sd::reduce::Sum, {1});
+  auto scalar2 = x.reduceAlongDimension(sd::reduce::Sum, &dimOne);
   ASSERT_EQ(scalar2, exp2);
 }
 
@@ -271,11 +275,12 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test4) {
   NDArray x('c', {2, 2}, {10.5, 1.5, -2.5, -3.5}, sd::DataType::HALF);
   NDArray exp1('c', {}, std::vector<double>{1}, sd::DataType::BOOL);
   NDArray exp2('c', {2}, std::vector<double>{1, 0}, sd::DataType::BOOL);
-
-  auto scalar1 = x.reduceAlongDimension(sd::reduce::IsPositive, {} /*whole range*/);
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType>  dimOne = {1};
+  auto scalar1 = x.reduceAlongDimension(sd::reduce::IsPositive, &empty /*whole range*/);
   ASSERT_EQ(scalar1, exp1);
 
-  auto scalar2 = x.reduceAlongDimension(sd::reduce::IsPositive, {1});
+  auto scalar2 = x.reduceAlongDimension(sd::reduce::IsPositive, &dimOne);
   ASSERT_EQ(scalar2, exp2);
 }
 
@@ -1151,14 +1156,14 @@ TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test1) {
   NDArray exp1('c', {2, 3}, {11, 21, 31, 42, 52, 62}, sd::DataType::INT32);
   NDArray exp2('c', {2, 3}, {11, 21, 31, 42, 52, 62}, sd::DataType::FLOAT32);
   NDArray exp3('c', {2, 3}, {11, 21, 31, 41, 51, 61}, sd::DataType::INT32);
-
-  x1.applyBroadcast(sd::broadcast::Add, {0}, x2, x3);
+  std::vector<sd::LongType> dimZero = {0};
+  x1.applyBroadcast(sd::broadcast::Add, &dimZero, x2, x3);
   ASSERT_EQ(x3, exp1);
 
-  x1.applyBroadcast(sd::broadcast::Add, {0}, x4, x5);
+  x1.applyBroadcast(sd::broadcast::Add, &dimZero, x4, x5);
   ASSERT_EQ(x5, exp2);
 
-  x1.applyBroadcast(sd::broadcast::Add, {0}, x6, x3);
+  x1.applyBroadcast(sd::broadcast::Add, &dimZero, x6, x3);
   ASSERT_EQ(x3, exp3);
 }
 
@@ -1544,13 +1549,17 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
   NDArray exp2('c', {2}, {2, 2}, sd::DataType::INT64);
   NDArray exp3('c', {3}, {1, 1, 1}, sd::DataType::INT64);
 
-  NDArray scalar = x1.applyIndexReduce(sd::indexreduce::IndexMax, {0, 1});
+  std::vector<sd::LongType> zerOone = {0, 1};
+  std::vector<sd::LongType> zero = {0};
+  std::vector<sd::LongType> one = {1};
+
+  NDArray scalar = x1.applyIndexReduce(sd::indexreduce::IndexMax, &zerOone);
   ASSERT_EQ(scalar, exp1);
 
-  NDArray vec1 = x1.applyIndexReduce(sd::indexreduce::IndexMax, {1});
+  NDArray vec1 = x1.applyIndexReduce(sd::indexreduce::IndexMax, &one);
   ASSERT_EQ(vec1, exp2);
 
-  NDArray vec2 = x1.applyIndexReduce(sd::indexreduce::IndexMax, {0});
+  NDArray vec2 = x1.applyIndexReduce(sd::indexreduce::IndexMax, &zero);
   ASSERT_EQ(vec2, exp3);
 }
 
@@ -1564,10 +1573,14 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
   NDArray exp2('c', {2}, {2, 2}, sd::DataType::INT64);
   NDArray exp3('c', {3}, {1, 1, 1}, sd::DataType::INT64);
 
-  x1.applyIndexReduce(sd::indexreduce::IndexMax, scalar, {0, 1});
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType>  dimOne = {1};
+
+  std::vector<sd::LongType> zeroOne = {0, 1};
+  x1.applyIndexReduce(sd::indexreduce::IndexMax, scalar, &zeroOne);
   ASSERT_EQ(scalar, exp1);
 
-  x1.applyIndexReduce(sd::indexreduce::IndexMax, vec1, {1});
+  x1.applyIndexReduce(sd::indexreduce::IndexMax, vec1, &dimOne);
   ASSERT_EQ(vec1, exp2);
 
   x1.applyIndexReduce(sd::indexreduce::IndexMax, vec2, {0});
@@ -1614,16 +1627,16 @@ TEST_F(MultiDataTypeTests, applyReduce3_test2) {
   result = x3.applyReduce3(reduce3::Dot, x4, {0, 1});
   ASSERT_EQ(result, exp2);
 
-  result = x5.applyReduce3(reduce3::Dot, x6, std::vector<int>({0}));
+  result = x5.applyReduce3(reduce3::Dot, x6, std::vector<sd::LongType>({0}));
   ASSERT_EQ(result, exp3);
 
-  result = x5.applyReduce3(reduce3::Dot, x6, std::vector<int>({1}));
+  result = x5.applyReduce3(reduce3::Dot, x6, std::vector<sd::LongType>({1}));
   ASSERT_EQ(result, exp4);
 
-  result = x8.applyReduce3(reduce3::Dot, x7, std::vector<int>({0}));
+  result = x8.applyReduce3(reduce3::Dot, x7, std::vector<sd::LongType>({0}));
   ASSERT_EQ(result, exp5);
 
-  result = x8.applyReduce3(reduce3::Dot, x7, std::vector<int>({1}));
+  result = x8.applyReduce3(reduce3::Dot, x7, std::vector<sd::LongType>({1}));
   ASSERT_EQ(result, exp6);
 }
 
@@ -1713,41 +1726,7 @@ TEST_F(MultiDataTypeTests, RowCol_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-/*
-TEST_F(MultiDataTypeTests, tile_test1) {
 
-    NDArray x1('c', {2,1}, {0,1}, sd::DataType::INT32);
-    NDArray x2('c', {2,1}, {0.5,1.5}, sd::DataType::DOUBLE);
-    NDArray x3('c', {2,2}, sd::DataType::INT32);
-    NDArray x4('c', {2,2}, sd::DataType::DOUBLE);
-    NDArray x5('c', {1,2}, {0.5,1.5}, sd::DataType::DOUBLE);;
-    NDArray x6('c', {2,2}, sd::DataType::FLOAT32);
-    NDArray x7('c', {2,2}, sd::DataType::BOOL);
-
-    NDArray exp1('c', {2,2}, {0,0,1,1}, sd::DataType::DOUBLE);
-    NDArray exp2('c', {2,2}, {0.5,1.5,0.5,1.5}, sd::DataType::FLOAT32);
-    NDArray exp3('c', {2,2}, {0,0,1,1}, sd::DataType::INT32);
-    NDArray exp4('c', {2,2}, {0,0,1,1}, sd::DataType::BOOL);
-
-    x1.tile({1,2}, x4);
-    ASSERT_EQ(x4, exp1);
-
-    x2.tile({1,2}, x3);
-    ASSERT_EQ(x3, exp3);
-
-    x1.tile({1,2}, x7);
-    ASSERT_EQ(x7, exp4);
-
-    x1.tile(x4);
-    ASSERT_EQ(x4, exp1);
-
-    x2.tile(x3);
-    ASSERT_EQ(x3, exp3);
-
-    x1.tile(x7);
-    ASSERT_EQ(x7, exp4);
-}
-*/
 
 #if defined(HAS_INT) && defined(HAS_DOUBLE) && defined(HAS_FLOAT32)
 //////////////////////////////////////////////////////////////////////
@@ -1827,14 +1806,11 @@ TEST_F(MultiDataTypeTests, Test_Cast_2) {
 
   asBool.assign(first);
 
-  // asBool.printIndexedBuffer("asBool");
   asBool.applyTransform(transform::Not, _not);
 
-  // _not.printIndexedBuffer("_not");
 
   asFloat.assign(_not);
 
-  // asFloat.printIndexedBuffer("asFloat");
   ASSERT_EQ(exp, asFloat);
 }
 
@@ -1855,28 +1831,26 @@ TEST_F(MultiDataTypeTests, divide_bool_test1) {
   try {
     x1 /= x2;
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 
   try {
     NDArray x3 = 150. / x2;
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 
   try {
     x1.divRowVector(x4, x3);
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 
   try {
-    x1.applyBroadcast(sd::broadcast::FloorDiv, {1}, x4, x3);
+
+    std::vector<sd::LongType> one = {1};
+    x1.applyBroadcast(sd::broadcast::FloorDiv,&one, x4, x3);
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 

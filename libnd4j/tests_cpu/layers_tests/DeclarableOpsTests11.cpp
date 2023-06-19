@@ -3590,10 +3590,6 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
   auto *dLdw = results.at(1);
   auto *dLdl = results.at(2);
 
-  // dLdp->printIndexedBuffer();
-
-  // ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
-  // ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
   ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
   ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 }
@@ -3601,7 +3597,8 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
   NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
-  auto sumDiff = labels.reduceAlongDimension(reduce::Sum, {1}, true);
+  std::vector<sd::LongType> dim = {0};
+  auto sumDiff = labels.reduceAlongDimension(reduce::Sum,&dim , true);
 
   NDArray numOfNonZero(sumDiff.shapeInfo(), sd::DataType::INT64, false);
   numOfNonZero.assign(1);

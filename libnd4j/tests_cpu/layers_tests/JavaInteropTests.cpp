@@ -840,7 +840,7 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
   auto y = NDArrayFactory::create<float>('c', {3, 4, 5});
   auto z = NDArrayFactory::create<float>('c', {5});
 
-  auto dims = NDArrayFactory::create<int>('c', {2}, {0, 1});
+  auto dims = NDArrayFactory::create<sd::LongType>('c', {2}, {0, 1});
   dims.syncToHost();
 
   sd::LaunchContext *context = sd::LaunchContext::defaultContext();
@@ -851,8 +851,9 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
                                      nullptr, context->getCudaSpecialStream(), context->getReductionPointer()};
 #endif
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), {0, 1});
-  auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), {0, 1});
+  std::vector<sd::LongType> dims2 = {0, 1};
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims2);
+  auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), &dims2);
 
   NDArray::prepareSpecialUse({&z}, {&x, &y, &dims});
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -862,29 +863,15 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
 
   execReduce3Tad(extraPointers, 2, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf, y.shapeInfo(),
                  y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf, dims.shapeInfo(),
-                 dims.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(),
-                 packY.platformOffsets());
+                 dims.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(), packY->platformShapeInfo(),
+                 packY->platformOffsets());
 
   NDArray::registerSpecialUse({&z}, {&x, &y, &dims});
 
   delete[] extraPointers;
 }
 
-/*
-TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
-    Environment::getInstance().setDebug(true);
-    Environment::getInstance().setVerbose(false);
 
-    auto pl = sd::graph::readFlatBuffers("./resources/simpleif_0_1.fb");
-    auto ptr = executeFlatGraph(nullptr, pl);
-
-    Environment::getInstance().setDebug(false);
-    Environment::getInstance().setVerbose(false);
-
-    delete[] pl;
-    delete ptr;
-}
-*/
 
 TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
   auto input = NDArrayFactory::create<double>(

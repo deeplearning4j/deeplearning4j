@@ -668,8 +668,6 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
   NDArray input4('c', {1, 5}, {47, 48, 49, 410, 411}, sd::DataType::INT32);
   NDArray input5('c', {5, 3}, {51, 52, 53, 54, 55, 56, 57, 58, 59, 510, 511, 512, 513, 514, 515}, sd::DataType::INT32);
 
-  // NDArray indices('c', {1}, {2}, sd::DataType::INT32);
-  // NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, sd::DataType::FLOAT32);
 
   std::vector<NDArray *> arrayList({&input1, &input2, &input3, &input4, &input5});
   ASSERT_TRUE(sd::ops::helpers::multiUnique(arrayList));
@@ -753,10 +751,10 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
   PointersManager pm(LaunchContext::defaultContext(), "pullRows");
   auto pidx = reinterpret_cast<sd::LongType *>(pm.replicatePointer(indexes, 4 * sizeof(sd::LongType)));
 
-  std::vector<int> dims = {1};
+  std::vector<sd::LongType> dims = {1};
 
-  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
-  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
+  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims);
+  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), &dims);
 
   sd::Pointer nativeStart[2];
 
@@ -766,8 +764,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
   OpaqueDataBuffer xBuf(x.dataBuffer());
   OpaqueDataBuffer zBuf(z.dataBuffer());
   pullRows(nativeStart, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), 4, pidx,
-           xTadPack.platformShapeInfo(), xTadPack.platformOffsets(), zTadPack.platformShapeInfo(),
-           zTadPack.platformOffsets());
+           xTadPack->platformShapeInfo(), xTadPack->platformOffsets(), zTadPack->platformShapeInfo(),
+           zTadPack->platformOffsets());
 
   ASSERT_TRUE(z.equalsTo(exp));
   pm.synchronize();
@@ -786,10 +784,10 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
   PointersManager pm(LaunchContext::defaultContext(), "pullRows");
   auto pidx = reinterpret_cast<sd::LongType *>(pm.replicatePointer(indexes, 4 * sizeof(sd::LongType)));
 
-  std::vector<int> dims = {1};
+  std::vector<sd::LongType> dims = {1};
 
-  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
-  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
+  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims);
+  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), &dims);
 
   sd::Pointer nativeStart[2];
 #ifdef __CUDABLAS__
@@ -798,8 +796,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
   OpaqueDataBuffer xBuf(x.dataBuffer());
   OpaqueDataBuffer zBuf(z.dataBuffer());
   pullRows(nativeStart, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), 4, pidx,
-           xTadPack.platformShapeInfo(), xTadPack.platformOffsets(), zTadPack.platformShapeInfo(),
-           zTadPack.platformOffsets());
+           xTadPack->platformShapeInfo(), xTadPack->platformOffsets(), zTadPack->platformShapeInfo(),
+           zTadPack->platformOffsets());
 
   ASSERT_TRUE(z.equalsTo(exp));
   pm.synchronize();
@@ -3347,7 +3345,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test12_Input_Strided) {
     }
 
     ShapeDescriptor desc(DataType::INT32, 'c', {5, 6, 7, channel}, relaxed_strides, 0);
-    auto input = NDArrayFactory::create(desc);
+    auto input = NDArrayFactory::create(&desc);
     input.assign(input_ews);
     for (auto antialias : antialias_options) {
       for (int i = 0; i < sizeof(methods) / sizeof(methods[0]); i++) {

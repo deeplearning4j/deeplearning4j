@@ -22,7 +22,6 @@
 #include <graph/Graph.h>
 #include <graph/Node.h>
 #include <graph/profiling/GraphProfilingHelper.h>
-#include <helpers/BenchmarkHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/GradCheck.h>

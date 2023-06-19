@@ -2529,7 +2529,9 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
   auto data = NDArrayFactory::create<double>('c', {10, 10});
   data.linspace(1);
 
-  auto means = data.reduceAlongDimension(reduce::Sum, {0});
+  std::vector<sd::LongType> dim = {0};
+
+  auto means = data.reduceAlongDimension(reduce::Sum, &dim);
   auto deviance =
       NDArrayFactory::create<double>('c', {10},
                                      {825., 825., 825., 825., 825., 825., 825., 825., 825.,
@@ -2538,19 +2540,15 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
 
   auto counts = NDArrayFactory::create<double>(10.0);
 
-  //    auto expMeans = NDArrayFactory::create<double>('c', {10, 10});
-
-  //    auto expDeviance = NDArrayFactory::create<double>('c', {10, 10});
   auto squared = NDArrayFactory::create<double>('c', {10, 10});
   data.applyTransform(transform::Square, squared);
-  auto ssSquared = squared.reduceAlongDimension(reduce::Sum, {0});
-  //    ssSquared->printBuffer("Sum squared");
-  //    squared.printBuffer("Squared");
+
+
+  auto ssSquared = squared.reduceAlongDimension(reduce::Sum, &dim);
+
   sd::ops::normalize_moments op;
   auto results = op.evaluate({&counts, &means, &ssSquared}, {0.0}, {0});
   means /= counts;
-  //    sd::ops::normalize_moments op;
-  //    auto results = op.evaluate({&counts, means, deviance}, {0.0}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_EQ(results.size(), 2);
@@ -2558,19 +2556,11 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
   auto outputMeans = results.at(0);
   auto outputDeviance = results.at(1);
 
-  //    outputMeans->printIndexedBuffer("Means");
-  //    outputDeviance->printIndexedBuffer("Variance");
-  //    deviance.printIndexedBuffer("Expected");
-  //    means->printIndexedBuffer("Expected means");
   ASSERT_TRUE(means.isSameShape(outputMeans));
   ASSERT_TRUE(means.equalsTo(outputMeans));
   ASSERT_TRUE(deviance.isSameShape(outputDeviance));
   ASSERT_TRUE(deviance.equalsTo(outputDeviance));
-  // delete deviance;
-  //    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
-  //    ASSERT_TRUE(expMeans.equalsTo(outputMeans));
-  //    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
-  //    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2588,12 +2578,7 @@ TEST_F(DeclarableOpsTests8, Test_Moments_1) {
   auto outputMeans = result.at(0);
   auto outputVariance = result.at(1);
 
-  //    outputMeans->printIndexedBuffer("Means");
-  //    outputVariance->printIndexedBuffer("Variance");
-  //    outputMeans->printShapeInfo("Result shape");
 
-  //    ASSERT_TRUE(exp.isSameShape(output));
-  //    ASSERT_TRUE(exp.equalsTo(output));
   ASSERT_TRUE(expMeans.isSameShape(outputMeans));
   ASSERT_TRUE(expMeans.equalsTo(outputMeans));
   ASSERT_TRUE(expVariance.isSameShape(outputVariance));

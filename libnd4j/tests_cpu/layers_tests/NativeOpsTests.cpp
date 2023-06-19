@@ -552,16 +552,16 @@ TEST_F(NativeOpsTests, Reduce3Test_4) {
   y.assign(2.);
   x.syncToDevice();
   dimension.syncToHost();
-  int *dimensions = reinterpret_cast<int *>(dimension.buffer());
+  sd::LongType *dimensions = reinterpret_cast<sd::LongType *>(dimension.buffer());
   auto tadPackX =
       sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
   auto tadPackY =
       sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), dimensions, dimension.lengthOf());
 
-  auto hTADShapeInfoX = tadPackX.primaryShapeInfo();
-  auto hTADOffsetsX = tadPackX.primaryOffsets();
-  auto hTADShapeInfoY = tadPackY.primaryShapeInfo();
-  auto hTADOffsetsY = tadPackY.primaryOffsets();
+  auto hTADShapeInfoX = tadPackX->primaryShapeInfo();
+  auto hTADOffsetsX = tadPackX->primaryOffsets();
+  auto hTADShapeInfoY = tadPackY->primaryShapeInfo();
+  auto hTADOffsetsY = tadPackY->primaryOffsets();
 
   OpaqueDataBuffer xBuf(x.dataBuffer());
   OpaqueDataBuffer yBuf(y.dataBuffer());
@@ -850,8 +850,8 @@ TEST_F(NativeOpsTests, ScalarTadTest_1) {
   // y.assign(2.);
   x.syncToDevice();
   z.syncToDevice();
-  auto dimension = NDArrayFactory::create<int>({0, 1});
-  auto dimensions = reinterpret_cast<int *>(dimension.buffer());
+  auto dimension = NDArrayFactory::create<sd::LongType>({0, 1});
+  auto dimensions = reinterpret_cast<sd::LongType *>(dimension.buffer());
   auto tadPackX =
       sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
   auto tadPackZ =
@@ -864,8 +864,8 @@ TEST_F(NativeOpsTests, ScalarTadTest_1) {
 
   ::execScalarTad(extra, scalar::Multiply, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &expBuf, exp.shapeInfo(),
                   exp.specialShapeInfo(), &yBuf, y.shapeInfo(), y.specialShapeInfo(), nullptr, &dimBuf,
-                  dimension.shapeInfo(), dimension.specialShapeInfo(), tadPackX.primaryShapeInfo(),
-                  tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
+                  dimension.shapeInfo(), dimension.specialShapeInfo(), tadPackX->primaryShapeInfo(),
+                  tadPackX->primaryOffsets(), tadPackZ->primaryShapeInfo(), tadPackZ->primaryOffsets());
   //    x.printIndexedBuffer("Input");
   //    exp.printIndexedBuffer("Reduce All");
   ASSERT_TRUE(exp.equalsTo(z));
@@ -889,12 +889,10 @@ TEST_F(NativeOpsTests, ScalarTadTest_2) {
   x.assign(false);
   x.p(5, true);
   x.p(15, true);
-  // z.linspace(10., 10.);
-  // y.assign(2.);
   x.syncToDevice();
   z.syncToDevice();
-  auto dimension = NDArrayFactory::create<int>({0, 1});
-  auto dimensions = reinterpret_cast<int *>(dimension.buffer());
+  auto dimension = NDArrayFactory::create<sd::LongType>({0, 1});
+  auto dimensions = reinterpret_cast<sd::LongType *>(dimension.buffer());
   auto tadPackX =
       sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
   auto tadPackZ =
@@ -908,10 +906,9 @@ TEST_F(NativeOpsTests, ScalarTadTest_2) {
 
   ::execScalarBoolTad(extra, scalar::And, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &expBuf, exp.shapeInfo(),
                       exp.specialShapeInfo(), &yBuf, y.shapeInfo(), y.specialShapeInfo(), nullptr, &dimBuf,
-                      dimension.shapeInfo(), dimension.specialShapeInfo(), tadPackX.primaryShapeInfo(),
-                      tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
-  //    x.printIndexedBuffer("Input");
-  //    exp.printIndexedBuffer("And");
+                      dimension.shapeInfo(), dimension.specialShapeInfo(), tadPackX->primaryShapeInfo(),
+                      tadPackX->primaryOffsets(), tadPackZ->primaryShapeInfo(), tadPackZ->primaryOffsets());
+
   ASSERT_TRUE(exp.e<bool>(5) == z.e<bool>(5) && exp.e<bool>(15));
 }
 
@@ -937,10 +934,8 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
   x.syncToDevice();
   z.syncToDevice();
   int d = 0;
-  auto dimension = NDArrayFactory::create<int>('c', {1}, {d});
-  auto dimensions = reinterpret_cast<int *>(dimension.buffer());
-  // auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dimensions,
-  // dimension.lengthOf());
+  auto dimension = NDArrayFactory::create<sd::LongType>('c', {1}, {d});
+  auto dimensions = reinterpret_cast<sd::LongType *>(dimension.buffer());
   auto tadPackZ =
       sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
   exp.linspace(1);
@@ -949,13 +944,10 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
 
   ::specialConcat(extra, 0, 2, datas, shapes, z.buffer(), z.shapeInfo(), nullptr, nullptr);
 
-  //    exp.printIndexedBuffer("Exp");
-  //    z.printIndexedBuffer("Concat");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
 TEST_F(NativeOpsTests, InitializeTest_1) {
-  //    ::initializeDevicesAndFunctions();
 }
 
 TEST_F(NativeOpsTests, MallocTest_1) {
@@ -968,8 +960,6 @@ TEST_F(NativeOpsTests, MallocTest_1) {
 TEST_F(NativeOpsTests, OMPTest_1) {
   auto maxThreads = ::ompGetMaxThreads();
   auto numThreads = ::ompGetNumThreads();
-  //::setOmpMinThreads(maxThreads);
-  //::setOmpNumThreads(numThreads);
 }
 
 TEST_F(NativeOpsTests, CreateTest_1) {
@@ -1003,10 +993,10 @@ TEST_F(NativeOpsTests, PullRowsTest_1) {
   PointersManager pm(LaunchContext::defaultContext(), "NativeOpsTests::pullRows");
   auto pidx = reinterpret_cast<sd::LongType *>(pm.replicatePointer(indexes, 4 * sizeof(sd::LongType)));
 
-  std::vector<int> dims = {1};
+  std::vector<sd::LongType> dims = {1};
 
-  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
-  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
+  auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims);
+  auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), &dims);
 
   sd::Pointer nativeStart[2];
 
@@ -1017,17 +1007,17 @@ TEST_F(NativeOpsTests, PullRowsTest_1) {
   OpaqueDataBuffer zBuf(z.dataBuffer());
 
   pullRows(nativeStart, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), 4, pidx,
-           xTadPack.platformShapeInfo(), xTadPack.platformOffsets(), zTadPack.platformShapeInfo(),
-           zTadPack.platformOffsets());
+           xTadPack->platformShapeInfo(), xTadPack->platformOffsets(), zTadPack->platformShapeInfo(),
+           zTadPack->platformOffsets());
 
   ASSERT_TRUE(z.equalsTo(exp));
   pm.synchronize();
 }
 
 TEST_F(NativeOpsTests, TadPackTest_1) {
-  int dimension[] = {1};
+  sd::LongType dimension[] = {1};
   int const dimensionLength = 1;
-  auto x = NDArrayFactory::create<int>('c', {2, 3, 4});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 3, 4});
   sd::TadPack *pack = ::tadOnlyShapeInfo(x.shapeInfo(), dimension, dimensionLength);
   ASSERT_TRUE(pack != nullptr);
   delete pack;
@@ -1096,8 +1086,8 @@ TEST_F(NativeOpsTests, ShuffleTest_1) {
   sd::Pointer dzShapeList[] = {(sd::Pointer)z.specialShapeInfo(), (sd::Pointer)z.specialShapeInfo()};
   int shuffleMap[] = {1, 0, 4, 3, 2};
   auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), {1});
-  sd::Pointer zListOffset[] = {(sd::Pointer)zTadPack.platformOffsets(), (sd::Pointer)zTadPack.platformOffsets()};
-  sd::Pointer zListTADs[] = {(sd::Pointer)zTadPack.platformShapeInfo(), (sd::Pointer)zTadPack.platformShapeInfo()};
+  sd::Pointer zListOffset[] = {(sd::Pointer)zTadPack->platformOffsets(), (sd::Pointer)zTadPack->platformOffsets()};
+  sd::Pointer zListTADs[] = {(sd::Pointer)zTadPack->platformShapeInfo(), (sd::Pointer)zTadPack->platformShapeInfo()};
   ::shuffle(nullptr, xList, xShapeList, dxList, dxShapeList, zList, zShapeList, dzList, dzShapeList, 2, shuffleMap,
             zListTADs, zListOffset);
   //    z.printIndexedBuffer("RES");
@@ -1264,13 +1254,12 @@ TEST_F(NativeOpsTests, SortTest_4) {
   auto exp =
       NDArrayFactory::create<int>('c', {3, 6}, {1, 5, 5, 10, 34, 120, 3, 29, 78, 111, 138, 331, 4, 50, 56, 71, 73, 91});
 
-  std::vector<int> dims({1});
+  std::vector<sd::LongType> dims({1});
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), {1});
   ::sortTad(nullptr, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(),
-            sortedVals.specialShapeInfo(), dims.data(), dims.size(), packX.platformShapeInfo(), packX.platformOffsets(),
+            sortedVals.specialShapeInfo(), dims.data(), dims.size(), packX->platformShapeInfo(), packX->platformOffsets(),
             false);
-  //    sortedVals.printBuffer("OUT");
-  //    exp.printIndexedBuffer("EXP");
+
   ASSERT_TRUE(sortedVals.equalsTo(exp));
 }
 
@@ -1290,15 +1279,13 @@ TEST_F(NativeOpsTests, SortTests_5) {
   extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
 
-  int axis = 1;
+  sd::LongType axis = 1;
 
   ::sortTadByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                  v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
   k.tickWriteDevice();
   v.tickWriteDevice();
 
-  //    k.printIndexedBuffer("k");
-  //    v.printIndexedBuffer("v");
 
   ASSERT_EQ(ek, k);
   ASSERT_EQ(ev, v);
@@ -1320,7 +1307,7 @@ TEST_F(NativeOpsTests, SortTests_6) {
   extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
 
-  int axis = 1;
+  sd::LongType axis = 1;
 
   ::sortTadByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(),
                    v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
@@ -1331,22 +1318,8 @@ TEST_F(NativeOpsTests, SortTests_6) {
   ASSERT_EQ(ev, v);
 }
 
-// TEST_F(NativeOpsTests, MapTests_1) {
-//#ifdef __CUDABLAS__
-//    return ;
-//#endif
-//#ifdef GTEST_OS_LINUX
-//    auto ptrMap = ::mmapFile(nullptr, "/tmp/maptest.$$$", 100LL);
-//
-//    ::munmapFile(nullptr, ptrMap, 100LL);
-//#endif
-//
-//}
 
 TEST_F(NativeOpsTests, MapTests_1) {
-  // printf("Custom ops: %s\n", ::getAllCustomOps());
-  // printf("All ops: %s\n", ::getAllOperations());
-
   ::getAllCustomOps();
   ::getAllOperations();
 }

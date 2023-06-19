@@ -158,28 +158,28 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
   auto x = NDArrayFactory::create<float>('c', {100, 100});
   x.linspace(1);
 
-  std::vector<int> empty;
-  std::vector<int> dims({1});
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType> dims({1});
   sd::ops::norm op;
 
   auto result0 = op.evaluate({&x}, {0.}, {});
 
   auto z0 = result0.at(0);
-  auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty);
+  auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, &empty);
   ASSERT_TRUE(exp0.isSameShape(z0));
   ASSERT_TRUE(exp0.equalsTo(z0));
 
   auto result1 = op.evaluate({&x}, {1.}, {1});
   ASSERT_EQ(result1.status(), sd::Status::OK);
   auto z1 = result1.at(0);
-  auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims);
+  auto exp1 = x.reduceAlongDimension(reduce::Norm2, &dims);
   ASSERT_TRUE(exp1.isSameShape(z1));
   ASSERT_TRUE(exp1.equalsTo(z1));
 
   auto result4 = op.evaluate({&x}, {4.}, {1});
 
   auto z4 = result4.at(0);
-  auto exp4 = x.reduceAlongDimension(reduce::NormMax, dims);
+  auto exp4 = x.reduceAlongDimension(reduce::NormMax, &dims);
   ASSERT_TRUE(exp4.isSameShape(z4));
   ASSERT_TRUE(exp4.equalsTo(z4));
 }
@@ -189,28 +189,28 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
   x.linspace(1);
   auto axis = NDArrayFactory::create<sd::LongType>('c', {1, 1}, {1});
 
-  std::vector<int> empty;
-  std::vector<int> dims({1});
+  std::vector<sd::LongType> empty;
+  std::vector<sd::LongType> dims({1});
   sd::ops::norm op;
 
   auto result0 = op.evaluate({&x}, {0}, {});
 
   auto z0 = result0.at(0);
-  auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty);
+  auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, &empty);
   ASSERT_TRUE(exp0.isSameShape(z0));
   ASSERT_TRUE(exp0.equalsTo(z0));
 
   auto result1 = op.evaluate({&x, &axis}, {1}, {});
 
   auto z1 = result1.at(0);
-  auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims);
+  auto exp1 = x.reduceAlongDimension(reduce::Norm2, &dims);
   ASSERT_TRUE(exp1.isSameShape(z1));
   ASSERT_TRUE(exp1.equalsTo(z1));
 
   auto result4 = op.evaluate({&x, &axis}, {4}, {});
 
   auto z4 = result4.at(0);
-  auto exp4 = x.reduceAlongDimension(reduce::NormMax, dims);
+  auto exp4 = x.reduceAlongDimension(reduce::NormMax, &dims);
   ASSERT_TRUE(exp4.isSameShape(z4));
   ASSERT_TRUE(exp4.equalsTo(z4));
 }
