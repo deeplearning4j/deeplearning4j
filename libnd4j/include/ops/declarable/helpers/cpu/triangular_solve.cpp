@@ -115,10 +115,7 @@ BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
 template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool adjoint, NDArray* output) {
-  sd_print("triangularSolveFunctor_\n");
-  leftInput->printIndexedBuffer("leftInput");
-  rightInput->printIndexedBuffer("rightInput");
-  output->printIndexedBuffer("output");
+
 
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
