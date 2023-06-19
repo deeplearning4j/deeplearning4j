@@ -76,7 +76,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
     public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMLayerConfig LSTMLayerConfig) {
-        super( lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast),null);
+        super( lstmWeights.argsWithInputs(x,maxTSLength, cLast, yLast),null);
         this.configuration = LSTMLayerConfig;
         this.weights = lstmWeights;
         addIArgument(iArgs());

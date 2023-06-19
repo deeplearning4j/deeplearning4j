@@ -1804,8 +1804,6 @@ public class TestLayerOpValidation extends BaseOpValidation {
         int numUnits = 7;
         int sL = 3; //small just for test
 
-        SameDiff sd = SameDiff.create();
-
         // notations:
         // bS - batch size, numExamples
         // sL - sequence length, number of time steps, timeLength
@@ -1838,6 +1836,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
 
         LSTMLayerWeights weights = LSTMLayerWeights.builder()
+                .irWeights(Nd4j.rand(DataType.DOUBLE, 2, numUnits, 4 * numUnits))
+                .iWeights(Nd4j.rand(DataType.DOUBLE, 2, nIn, 4 * numUnits))
                 .build();
 
         INDArray[] indArrays = Nd4j.rnn().lstmLayer(
@@ -1846,8 +1846,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
 
         long[] out = new long[]{bS, sL, 2 * numUnits};
-
-        //assertArrayEquals(out, outputs.getOutput().eval().shape());
+        assertArrayEquals(out, indArrays[0].shape());
 
 
     }
