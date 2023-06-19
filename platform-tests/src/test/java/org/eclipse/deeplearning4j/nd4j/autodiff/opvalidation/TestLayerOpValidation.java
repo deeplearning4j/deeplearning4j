@@ -1793,6 +1793,66 @@ public class TestLayerOpValidation extends BaseOpValidation {
         assertNull(err);
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void LSTMLayerTestCase3Array(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        int bS = 5;
+        int nIn = 3;
+        int numUnits = 7;
+        int sL = 3; //small just for test
+
+        // notations:
+        // bS - batch size, numExamples
+        // sL - sequence length, number of time steps, timeLength
+        // nIn - input size, inOutSize
+
+        //  TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+        //  NST: shape [numExamples, inOutSize, timeLength]<br>
+        //  NTS: shape [numExamples, timeLength, inOutSize]<br>
+        //  for bidirectional:
+        //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
+        INDArray in = Nd4j.rand(DataType.DOUBLE, bS, sL, nIn);
+
+
+        // when directionMode >= 2 (BIDIR_CONCAT=3)
+        // Wx, Wr [2, nIn, 4*nOut]
+        // hI, cI [2, bS, nOut]
+        INDArray cLast =Nd4j.zeros(DataType.DOUBLE, 2, bS, numUnits);
+        INDArray yLast = Nd4j.zeros(DataType.DOUBLE, 2, bS, numUnits);
+
+        LSTMLayerConfig c = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.NTS)
+                .directionMode(LSTMDirectionMode.BIDIR_CONCAT)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.SOFTPLUS)
+                .outAct(LSTMActivations.SOFTPLUS)
+                .retFullSequence(true)
+                .retLastC(false)
+                .retLastH(false)
+                .build();
+
+
+        LSTMLayerWeights weights = LSTMLayerWeights.builder()
+                .irWeights(Nd4j.rand(DataType.DOUBLE, 2, numUnits, 4 * numUnits))
+                .iWeights(Nd4j.rand(DataType.DOUBLE, 2, nIn, 4 * numUnits))
+                .build();
+
+        INDArray[] indArrays = Nd4j.rnn().lstmLayer(
+                in, cLast, yLast, null,weights,
+                c);
+
+
+        long[] out = new long[]{bS, sL, 2 * numUnits};
+        assertArrayEquals(out, indArrays[0].shape());
+
+
+    }
+
+
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void GRUTestCase(Nd4jBackend backend) {
