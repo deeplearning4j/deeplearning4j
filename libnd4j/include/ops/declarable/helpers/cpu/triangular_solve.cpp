@@ -48,7 +48,6 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
                                  bool const unitsOnDiag, NDArray* output) {
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
-  // output->r<T>(0,0) = rightInput->t<T>(0,0) / leftInput->t<T>(0,0);
   for (sd::LongType r = 0; r < rows; r++) {
     for (sd::LongType j = 0; j < cols; j++) {
       auto sum = rightInput->t<T>(r, j);
@@ -110,18 +109,21 @@ void triangularSolve2D(sd::LaunchContext* context, NDArray const& leftInput, NDA
 }
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
                       (sd::LaunchContext * context, NDArray const& leftInput, NDArray const& rightInput,
-                       bool const lower, bool const unitsOnDiag, NDArray& output),
+                          bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
 
 template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool adjoint, NDArray* output) {
+
+
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
-
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
+     if(i >= rightPart.size() || i > outputPart.size())
+       break;
       if (lower) {
         lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
       } else {

@@ -2669,7 +2669,7 @@ void throwException(const char* exceptionMessage);
 #if defined(SD_GCC_FUNCTRACE)
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
 #else
-#define THROW_EXCEPTION(exceptionMessage) THROW_EXCEPTION(exceptionMessage);
+#define THROW_EXCEPTION(exceptionMessage) throw std::runtime_error(exceptionMessage);
 #endif
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, LENGTH);

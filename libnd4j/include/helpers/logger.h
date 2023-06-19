@@ -41,6 +41,7 @@
 #define sd_verbose(FORMAT, ...) \
   if (sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
 #define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR) sd::Logger::printv(FORMAT, VECTOR);
 
 #else
@@ -49,6 +50,7 @@
 #define sd_logger(FORMAT, A, ...)
 #define sd_verbose(FORMAT, ...)
 #define sd_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define sd_print(FORMAT) sd::Logger::infoEmpty(FORMAT);
 #define sd_printv(FORMAT, VECTOR)
 
 #endif
@@ -57,6 +59,7 @@ namespace sd {
 class SD_LIB_EXPORT Logger {
  public:
   static SD_HOST void info(const char *format, ...);
+  static SD_HOST void infoEmpty(const char *format);
 
   static SD_HOST void printv(const char *format, const std::vector<int> &vec);
   static SD_HOST void printv(const char *format, const std::vector<sd::LongType> &vec);

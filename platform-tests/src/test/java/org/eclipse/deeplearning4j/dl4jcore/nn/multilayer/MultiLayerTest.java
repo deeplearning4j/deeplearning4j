@@ -780,7 +780,8 @@ public class MultiLayerTest extends BaseDL4JTest {
             final int seqLen = 6;
             INDArray param = Nd4j.create(new double[] { 0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00 }).reshape(1, -1);
             graph.setParams(param);
-            INDArray input = Nd4j.rand(new int[] { minibatch, nIn, seqLen }, 12);
+            Nd4j.getRandom().setSeed(12);
+            INDArray input = Nd4j.rand(new long[] { minibatch, nIn, seqLen });
             INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
             graph.setInput(input);
             INDArray output = graph.feedForward(false, false).get(2);

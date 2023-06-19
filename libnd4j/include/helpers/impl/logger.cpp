@@ -31,6 +31,12 @@ SD_HOST void Logger::info(const char *format, ...) {
   fflush(stdout);
 }
 
+SD_HOST void Logger::infoEmpty(const char *format) {
+  printf(format);
+  fflush(stdout);
+}
+
+
 SD_HOST void Logger::printv(const char *format, const std::vector<int> &vec) {
   printf("%s: {", format);
   for (int e = 0; e < vec.size(); e++) {

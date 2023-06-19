@@ -36,11 +36,9 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(
     const sd::LongType* aShapeInfo, const sd::LongType* bShapeInfo, const std::vector<LongType> axesA,
     const std::vector<LongType> axesB, std::vector<sd::LongType>& permutAt, std::vector<sd::LongType>& permutBt,
     std::vector<sd::LongType>& shapeAt, std::vector<sd::LongType>& shapeBt) {
-  //vector.size() is unreliable
   sd::LongType axeAsize = static_cast<sd::LongType>(axesA.size());
   sd::LongType axeBsize =  static_cast<sd::LongType>(axesB.size());
 
-  sd_printf("axeAsize: %i; axeBsize: %i;\n", axeAsize, axeBsize);
 
   sd::LongType aRank = aShapeInfo[0];
   sd::LongType bRank = bShapeInfo[0];

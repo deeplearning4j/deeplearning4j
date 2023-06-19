@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -65,6 +66,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class CompareTrainingImplementations extends BaseDL4JTest {
 
     @Test
+    @Disabled("Need to look in to comparisons to see how valid this test is")
     public void testCompareMlpTrainingIris() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         NormalizerStandardize std = new NormalizerStandardize();

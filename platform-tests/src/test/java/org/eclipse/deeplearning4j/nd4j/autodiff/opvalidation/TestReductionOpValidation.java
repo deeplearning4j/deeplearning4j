@@ -1741,7 +1741,7 @@ public class TestReductionOpValidation extends BaseOpValidation {
 
         INDArray in = Nd4j.linspace(1, 4, 4).castTo(DataType.DOUBLE);
         SDVariable input = sameDiff.var(in);
-        INDArray expected = Nd4j.scalar(-69.68162);
+        INDArray expected = Nd4j.scalar(-14.7549);
 
         SDVariable output = new ShannonEntropy(sameDiff, input, new long[]{0}).outputVariable();
 

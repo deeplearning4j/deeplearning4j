@@ -57,7 +57,6 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
-            "lstsq/.*",
             //expects 2 outputs we only output 1
             "non_max_suppression_v4/float16_with_thresholds",
             "non_max_suppression_v4/float32_with_thresholds",

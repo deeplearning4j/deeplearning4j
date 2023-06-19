@@ -804,7 +804,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
             graph.setParams(param);
 
-            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);
+            Nd4j.getRandom().setSeed(12);
+            INDArray input = Nd4j.rand(new long[]{minibatch, nIn, seqLen});
             INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
 
             INDArray output = graph.outputSingle(false, false, input);
@@ -826,7 +827,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
-    public void testExternalErrorsInvalid(){
+    public void testExternalErrorsInvalid() {
 
         int nIn = 2;
         int nOut = 4;

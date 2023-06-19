@@ -57,7 +57,7 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().enableDebugMode(true);
         Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray input = Nd4j.createFromArray(
-                new float[]{
+                new double[]{
                         10.f,  14.f,
                         14.f,  20.f,
                         74.f,  86.f,
@@ -66,9 +66,8 @@ public class SDLinalgTest extends BaseNd4jTestWithBackends {
         ).reshape(2,2,2);
 
         INDArray expected = Nd4j.createFromArray(
-                new float[]{
-                        3.1622777f, 0.f,  4.427189f,  0.6324552f,
-                        8.602325f,  0.f,  9.997296f, 0.23248f
+                new double[]{
+                        3.1622777,0.0,4.427189,0.6324555,8.602325,0.0,9.997297,0.23249528
                 }
         ).reshape(2,2,2);
 

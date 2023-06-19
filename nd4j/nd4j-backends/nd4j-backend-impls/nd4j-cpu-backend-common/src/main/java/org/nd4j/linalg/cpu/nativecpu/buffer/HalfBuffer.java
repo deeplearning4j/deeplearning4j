@@ -181,6 +181,7 @@ public class HalfBuffer extends BaseCpuDataBuffer {
 
     }
 
+
     @Override
     public void setData(short[] data) {
         float[] bFloats = new float[data.length];

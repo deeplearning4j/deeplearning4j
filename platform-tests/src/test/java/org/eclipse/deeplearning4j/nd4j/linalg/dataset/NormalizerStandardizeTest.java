@@ -319,8 +319,10 @@ public class NormalizerStandardizeTest extends BaseNd4jTestWithBackends {
             int i = 0;
             // Randomly generate scaling constants and add offsets
             // to get aA and bB
-            INDArray aA = a == 1 ? Nd4j.ones(1, nFeatures) : Nd4j.rand(new int[]{1, nFeatures}, randSeed).mul(a); //a = 1, don't scale
-            INDArray bB = Nd4j.rand(new int[]{1, nFeatures}, randSeed).mul(b); //b = 0 this zeros out
+            Nd4j.getRandom().setSeed(randSeed);
+            INDArray aA = a == 1 ? Nd4j.ones(1, nFeatures) : Nd4j.rand(new long[]{1, nFeatures}).mul(a); //a = 1, don't scale
+            Nd4j.getRandom().setSeed(randSeed);
+            INDArray bB = Nd4j.rand(new long[]{1, nFeatures}).mul(b); //b = 0 this zeros out
             // transform ndarray as X = aA + bB * X
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
             INDArray randomFeaturesTransform = Nd4j.zeros(nSamples, nFeatures);

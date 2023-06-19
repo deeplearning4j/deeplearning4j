@@ -181,33 +181,12 @@ void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, con
   triangularSolveFunctor_<T>(context, const_cast<NDArray*>(&leftInput), const_cast<NDArray*>(&rightInput), lower,
                              unitsOnDiag, &output);
 
-  // leftInput.syncToHost(); rightInput.syncToHost(); output.syncToHost();
-  // T const* pLeftPart = (T const*)leftInput.getBuffer();
-  // T const* pRightPart = (T const*)rightInput.getBuffer();
-  // T* pOutputPart = (T*)output.buffer();
-  // auto rows = leftInput.rows();
-  // auto cols = leftInput.columns();
-  // if (lower) {
-  //     lowerTriangularSolve<T>(pLeftPart, leftInput.shapeInfo(), pRightPart, rightInput.shapeInfo(), unitsOnDiag,
-  //     pOutputPart, output.shapeInfo(), rows, cols);
-  // } else {
-  //     upperTriangularSolve<T>(pLeftPart, leftInput.shapeInfo(), pRightPart, rightInput.shapeInfo(), unitsOnDiag,
-  //     pOutputPart, output.shapeInfo(), rows, cols);
-  // }
-  // output.syncToDevice();
+
 }
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
                       (sd::LaunchContext * context, NDArray const& leftInput, NDArray const& rightInput,
                        bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
-//            template void triangularSolve2D<float>(sd::LaunchContext* context, NDArray const& leftInput, NDArray
-//            const& rightInput, bool const lower, bool const unitsOnDiag, NDArray& output); template void
-//            triangularSolve2D<bfloat16>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const&
-//            rightInput, bool const lower, bool const unitsOnDiag, NDArray& output); template void
-//            triangularSolve2D<float16>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const&
-//            rightInput, bool const lower, bool const unitsOnDiag, NDArray& output); template void
-//            triangularSolve2D<double>(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput,
-//            bool const lower, bool const unitsOnDiag, NDArray& output);
 
 sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower,
                                   bool unitsOnDiag, NDArray* output) {
