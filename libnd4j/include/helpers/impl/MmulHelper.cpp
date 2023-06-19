@@ -212,10 +212,10 @@ void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::N
   mmul(aPR, bPR, cPR, 1.0, 0.0);
 
   if (cPR->buffer() != cP->buffer() ||
-      cPR->specialBuffer() != cP->specialBuffer())  // this means both permute and reshape have been performed on c, cP
+      cPR->specialBuffer() != cP->specialBuffer()) {  // this means both permute and reshape have been performed on c, cP
     // always points on c->buffer()
     cP->assign(cPR);
-
+  }
   if (aP != aPR) delete aPR;
   if (bP != bPR) delete bPR;
   if (a != aP) delete aP;

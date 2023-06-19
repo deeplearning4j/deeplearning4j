@@ -285,7 +285,7 @@ public class PreProcessor3D4DTest extends BaseNd4jTestWithBackends {
     }
 
     private void test3dRevert(DataNormalization SUT) {
-        INDArray features = Nd4j.rand(new int[] {5, 2, 10}, 12345).muli(2).addi(1);
+        INDArray features = Nd4j.rand(DataType.DOUBLE,new long[] {5, 2, 10}).muli(2).addi(1);
         DataSet data = new DataSet(features, Nd4j.zeros(5, 1, 10));
         DataSet dataCopy = data.copy();
 

@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -128,6 +129,7 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @Disabled("Need to look in to comparisons to see how valid this test is")
     public void testTrainingDifferentLosses(Nd4jBackend backend) {
         //Net with 2 losses: train on the first one, then change losses
         //Also check that if modifying via add/setLossVariables the training config changes

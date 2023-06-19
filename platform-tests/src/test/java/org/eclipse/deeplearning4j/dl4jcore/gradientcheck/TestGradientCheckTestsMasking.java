@@ -185,7 +185,7 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
-            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
+            INDArray input = Nd4j.rand(DataType.DOUBLE,new long[]{miniBatchSize, nIn, timeSeriesLength}).subi(0.5);
 
             INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize, nOut, timeSeriesLength);
 

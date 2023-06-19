@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -57,7 +58,7 @@ public class TestNDArrayWritableAndSerialization extends BaseND4JTest {
     @Test
     public void testWritableSerializationSingle() throws Exception {
 
-        INDArray arrC = Nd4j.rand(new int[] {1, 10}, 'c');
+        INDArray arrC = Nd4j.rand(DataType.DOUBLE,'c',new long[] {1, 10});
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput da = new DataOutputStream(baos);
@@ -81,8 +82,8 @@ public class TestNDArrayWritableAndSerialization extends BaseND4JTest {
     @Test
     public void testWritableSerialization() throws Exception {
 
-        INDArray arrC = Nd4j.rand(new int[] {10, 20}, 'c');
-        INDArray arrF = Nd4j.rand(new int[] {10, 20}, 'f');
+        INDArray arrC = Nd4j.rand(DataType.DOUBLE,'c',new long[] {10, 20});
+        INDArray arrF = Nd4j.rand(DataType.DOUBLE, 'f',new long[] {10, 20});
 
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -115,7 +116,7 @@ public class TestNDArrayWritableAndSerialization extends BaseND4JTest {
         //NDArrayWritable implements WritableComparable - we need to make sure this operates as expected...
 
         //First: check C vs. F order, same contents
-        INDArray arrC = Nd4j.rand(new int[] {10, 20}, 'c');
+        INDArray arrC = Nd4j.rand(DataType.DOUBLE,'c',new long[] {10, 20});
         INDArray arrF = arrC.dup('f');
 
         NDArrayWritable wC = new NDArrayWritable(arrC);

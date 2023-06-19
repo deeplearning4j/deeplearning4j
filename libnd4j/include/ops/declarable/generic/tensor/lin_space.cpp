@@ -33,15 +33,15 @@ CUSTOM_OP_IMPL(lin_space, 0, 1, false, 0, 0) {
 
   const int nInputs = block.width();
   bool bInputs = (3 == nInputs || 3 == block.numI() || (2 == block.numT() && block.numI() > 0));
-  auto endSpecified = block.numB() > 0 ? B_ARG(0) : false;
+  auto endSpecified = block.numB() > 0 ? B_ARG(0) : nInputs >= 2;
   REQUIRE_TRUE(bInputs, 0,
                "lin_space OP: Have to be supplied correct inputs, input size or T_ARG size have to be equal 3, but got "
                "inputs - %i, T_ARGS - %i!",
                nInputs, block.numT());
 
   auto start = (nInputs > 0) ? INPUT_VARIABLE(0)->e<double>(0) : static_cast<double>(T_ARG(0));
-  auto stepOrEndNum = (nInputs > 0) ? INPUT_VARIABLE(1)->e<double>(0) : static_cast<double>(T_ARG(1));
-  auto numOfElements = (nInputs > 0) ? INPUT_VARIABLE(2)->e<sd::LongType>(0) : static_cast<sd::LongType>(I_ARG(0));
+  auto stepOrEndNum = (nInputs > 1) ? INPUT_VARIABLE(1)->e<double>(0) : static_cast<double>(T_ARG(1));
+  auto numOfElements = (nInputs > 2) ? INPUT_VARIABLE(2)->e<sd::LongType>(0) : static_cast<sd::LongType>(I_ARG(0));
 
   if (numOfElements == 1) {
     output->assign(start);

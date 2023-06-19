@@ -221,8 +221,6 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA,empty, empty, aPermArgsAfter);
   MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter);
 
-  if(originalDC != dC)
-    delete dC;
 
 
   return sd::Status::OK;

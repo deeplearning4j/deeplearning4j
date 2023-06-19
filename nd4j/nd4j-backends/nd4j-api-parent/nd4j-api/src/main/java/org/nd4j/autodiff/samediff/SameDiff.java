@@ -4947,7 +4947,6 @@ public class SameDiff extends SDBaseOps {
 
         //Key is gradient variable name
         SameDiff gradFn = getFunction(GRAD_FN_KEY);
-        gradFn.setEnableCache(false);
         gradFn.setListeners(listeners);
         ExecutionResult gradExecResult = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
         Map<String,INDArray> grads = null;

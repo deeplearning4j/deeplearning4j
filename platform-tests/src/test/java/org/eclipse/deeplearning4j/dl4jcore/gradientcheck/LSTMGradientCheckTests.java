@@ -164,7 +164,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
         for (boolean graves : gravesLSTM) {
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
+            INDArray input = Nd4j.rand(DataType.DOUBLE,'f',new long[]{miniBatchSize, nIn, timeSeriesLength}).subi(0.5);
 
             INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
             for (int i = 0; i < miniBatchSize; i++) {
