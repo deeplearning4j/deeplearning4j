@@ -166,7 +166,7 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
       }
 
 
-    } else if(infVector == nullptr && contextWidth > 0) {
+    } else if(infVector != nullptr && contextWidth > 0) {
       PRAGMA_OMP_SIMD
       for (int i = 0; i < vectorLength; i++) {
         neu1[i] = (infVector[i] + neu1[i]) / (contextWidth);
@@ -184,6 +184,7 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
 
 
     }
+
 
     auto nsStarter = ngStarter;
     auto irow = nsStarter;
@@ -966,17 +967,35 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
   if ((context.rankOf() == 0 || context.rankOf() == 1) && (indices.rankOf() == 1 || indices.rankOf() == 0)) {
     auto hsRounds = codes.lengthOf();
 
+    //convert every inline parameter below in to a variable
     BUILD_SINGLE_SELECTOR(
         xType, cbow_,
-        (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector,
-            target.isEmpty() ? -1 : target.e<int>(0), ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
-            context.bufferAsT<int>(), lockedWords.bufferAsT<int>(),
-            indices.bufferAsT<int>(), codes.bufferAsT<int>(), alpha.e<double>(0),
-            randomValue.e<sd::LongType>(0), (int)context.lengthOf(), hsRounds, nsRounds, (int)syn0.sizeAt(0),
-            (int)syn0.sizeAt(1), (int)expTable.lengthOf(), (int)negTable.lengthOf(),
-            numLabels.isEmpty() ? 0 : numLabels.e<int>(0), trainWords,minLearningRate,iterations),
+        (syn0,
+         syn1,
+         syn1Neg,
+         expTable,
+         negTable,
+         inferenceVector,
+            target.isEmpty() ? -1 : target.e<int>(0),
+            ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
+            context.isEmpty() ? nullptr : context.bufferAsT<int>(),
+            lockedWords.isEmpty() ? nullptr : lockedWords.bufferAsT<int>(),
+            indices.isEmpty() ? nullptr : indices.bufferAsT<int>(),
+            codes.isEmpty() ? nullptr : codes.bufferAsT<int>(),
+            alpha.isEmpty() ? 0.025 : alpha.e<double>(0),
+            randomValue.isEmpty() ? -1 : randomValue.e<sd::LongType>(0),
+            (int)context.lengthOf(),
+            hsRounds,
+            nsRounds,
+            (int)syn0.sizeAt(0),
+            syn1.isEmpty() ? 0 : (int)syn0.sizeAt(1),
+            expTable.isEmpty() ? 0 : (int)expTable.lengthOf(),
+            negTable.isEmpty() ? 0 : (int)negTable.lengthOf(),
+            numLabels.isEmpty() ? 0 : numLabels.e<int>(0),
+            trainWords,minLearningRate,iterations),
         SD_NATIVE_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
+    sd_printf("CBOW: context rank %i, indices rank %i\n", context.rankOf(), indices.rankOf());
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
         (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, context, lockedWords, target, ngStarter,

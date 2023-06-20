@@ -2232,8 +2232,7 @@ TEST_F(DeclarableOpsTests1, sru_bp) {
   auto gradW = resultsBP.at(1);
   auto gradB = resultsBP.at(2);
   auto gradInit = resultsBP.at(3);
-  // expGradX.printBuffer("Exp GRAD");
-  // gradX->printBuffer("Res GRAD");
+
   ASSERT_TRUE(expGradX.equalsTo(gradX, 1e-4));
   ASSERT_TRUE(expGradW.equalsTo(gradW));
   ASSERT_TRUE(expGradB.equalsTo(gradB));
@@ -2276,8 +2275,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_1) {
 
   auto output = results.at(0);
   auto state = results.at(1);
-  // state->printBuffer();
-  // output->printBuffer();
+
 
   ASSERT_TRUE(expState.equalsTo(state));
   ASSERT_TRUE(expOut.equalsTo(output));
@@ -2355,9 +2353,10 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
   NDArray expGradX('c', {N, bS, 2 * K}, expGradXBuff);
   NDArray expGradW('c', {N, 2 * K, 6 * K}, expGradWBuff);
   auto expGradB = NDArrayFactory::create<double>('c', {4 * K});
-  gradBias.reduceAlongDimension(reduce::Sum, expGradB, {0});  // [bS, 4K] -> [4K]
-  NDArray expGradInit('c', {bS, 2 * K}, expGradInitBuff);
+  std::vector<sd::LongType> *dim = new std::vector<sd::LongType>({0});
+  gradBias.reduceAlongDimension(reduce::Sum, expGradB, dim);  // [bS, 4K] -> [4K]
 
+  NDArray expGradInit('c', {bS, 2 * K}, expGradInitBuff);
   input.assign(1.5);
   weights.assign(0.5);
   bias.assign(0.3);

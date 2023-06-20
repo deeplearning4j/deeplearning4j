@@ -60,9 +60,6 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
   ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((sd::LongType *)shapeList->at(0))[2]);
   ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((sd::LongType *)shapeList->at(0))[3]);
 
-  // int *ptr = (int *) shapeList[0];
-  // delete[] ptr;
-  // delete shapeList;
 
   deleteShapeList((sd::Pointer)shapeList);
 }
@@ -1663,19 +1660,24 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
 }
 
 TEST_F(JavaInteropTests, test_expandable_array_op_1) {
+  sd_print("Before x array\n");
   auto x = NDArrayFactory::string({2}, {"first string", "second"});
   auto d = NDArrayFactory::string(" ", sd::DataType::UTF8);
 
-  auto z0 = NDArrayFactory::create<sd::LongType>('c', {6});
+  sd_print("Before z arrays\n");
+  std::vector<sd::LongType> shape = {6};
+  auto z0 = NDArrayFactory::create<sd::LongType>('c', shape);
   auto z1 = NDArrayFactory::string({3}, {"", "", ""});
 
   auto exp0 = NDArrayFactory::create<sd::LongType>({0, 0, 0, 1, 1, 0});
   auto exp1 = NDArrayFactory::string({3}, {"first", "string", "second"});
 
+  sd_print("Before interop buffers\n");
   InteropDataBuffer iz0(z0.dataBuffer());
   InteropDataBuffer iz1(z1.dataBuffer());
-
+  sd_print("After interop buffers\n");
   Context ctx(1);
+  sd_print("About to set input arrays\n");
   ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
   ctx.setInputArray(1, d.buffer(), d.shapeInfo(), d.specialBuffer(), d.specialShapeInfo());
   ctx.setOutputArray(0, &iz0, z0.shapeInfo(), z0.specialShapeInfo());

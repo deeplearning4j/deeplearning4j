@@ -321,7 +321,8 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
 TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
   auto x = NDArrayFactory::create<float>('c', {1, 0});
   auto y = NDArrayFactory::create<int>(0);
-  auto e = NDArrayFactory::create<sd::LongType>('c', {0});
+  std::vector<sd::LongType> dim = {0};
+  auto e = NDArrayFactory::create<sd::LongType>('c',dim);
 
   sd::ops::argmax op;
   // sd::ops::reduce_max op;
@@ -2148,8 +2149,10 @@ TEST_F(DeclarableOpsTests14, Stack_17) {
 }
 
 TEST_F(DeclarableOpsTests14, Stack_18) {
-  auto x = NDArrayFactory::create<float>('c', {0});
-  auto e = NDArrayFactory::create<float>('c', {1, 0});
+  std::vector<sd::LongType> dimZero = {0};
+  std::vector<sd::LongType> dims = {1, 0};
+  auto x = NDArrayFactory::create<float>('c', dimZero);
+  auto e = NDArrayFactory::create<float>('c', dims);
 
   sd::ops::stack op;
   auto result = op.evaluate({&x}, {}, {0});
@@ -2166,8 +2169,9 @@ TEST_F(DeclarableOpsTests14, Stack_18) {
 }
 
 TEST_F(DeclarableOpsTests14, Stack_19) {
+  std::vector<sd::LongType> dimZero = {0};
   auto x = NDArrayFactory::empty<float>();
-  auto e = NDArrayFactory::create<float>('c', {0});
+  auto e = NDArrayFactory::create<float>('c', dimZero);
 
   sd::ops::stack op;
   auto result = op.evaluate({&x}, {}, {0});

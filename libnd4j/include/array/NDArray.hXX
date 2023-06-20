@@ -4485,8 +4485,7 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
     THROW_EXCEPTION(
         "NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
-  std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
-
+  std::vector<sd::LongType> *copy =  new std::vector<sd::LongType>(*dimensions);
   if (checkTargetShape) {
     auto newShape =
         ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, false, getContext()->getWorkspace());
@@ -4519,6 +4518,9 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
   synchronize("NDArray::reduceAlongDimension SameOps");
 
   NDArray::registerSpecialUse({&target}, {this});
+
+  delete copy;
+
 }
 
 //////////////////////////////////////////////////////////////////////////

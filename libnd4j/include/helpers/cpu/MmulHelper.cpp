@@ -510,12 +510,16 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     aaxes[0] = aMaxis;
     aaxes[1] = aKaxis;
     aBatchDims = ShapeUtils::evalDimsToExclude(aRank,2,aaxes);
+  } else {
+    aBatchDims = new std::vector<sd::LongType>();
   }
   if (bRank > 2) {
     sd::LongType baxes[2];
     baxes[0] = bKaxis;
     baxes[1] = bNaxis;
     bBatchDims = ShapeUtils::evalDimsToExclude(bRank, 2,baxes);
+  } else {
+    bBatchDims = new std::vector<sd::LongType>();
   }
 
   if (cRank > 2) {
@@ -523,6 +527,8 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     caxes[0] = cMaxis;
     caxes[1] = cNaxis;
     cBatchDims = ShapeUtils::evalDimsToExclude(cRank, 2,caxes);
+  } else {
+    cBatchDims = new std::vector<sd::LongType>();
   }
 
 
@@ -531,9 +537,12 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
                                    bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
                                SD_NUMERIC_TYPES);
 
-  delete aBatchDims;
-  delete bBatchDims;
-  delete cBatchDims;
+  if(aBatchDims != nullptr)
+    delete aBatchDims;
+  if(bBatchDims != nullptr)
+    delete bBatchDims;
+  if(cBatchDims != nullptr)
+    delete cBatchDims;
 
   return C;
 }

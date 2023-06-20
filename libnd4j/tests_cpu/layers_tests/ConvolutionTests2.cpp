@@ -1563,11 +1563,11 @@ TEST_F(ConvolutionTests2, deconv3d_test2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, deconv3d_test3) {
-  int bS = 2, iD = 4, iH = 4, iW = 4, iC = 2, oC = 3, kD = 2, kH = 2, kW = 2, sD = 1, sH = 1, sW = 1, pD = 0, pH = 0,
+  sd::LongType bS = 2, iD = 4, iH = 4, iW = 4, iC = 2, oC = 3, kD = 2, kH = 2, kW = 2, sD = 1, sH = 1, sW = 1, pD = 0, pH = 0,
       pW = 0, dD = 1, dH = 1, dW = 1;
-  int oD = 3, oH = 3, oW = 3;
-  int paddingMode = 0;  // 1-SAME, 0-VALID;
-  int dataFormat = 0;   // 1-NDHWC, 0-NCDHW
+  sd::LongType oD = 3, oH = 3, oW = 3;
+  sd::LongType paddingMode = 0;  // 1-SAME, 0-VALID;
+  sd::LongType dataFormat = 0;   // 1-NDHWC, 0-NCDHW
 
   auto input = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
   auto weights = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});

@@ -1726,7 +1726,6 @@ TEST_F(DeclarableOpsTests12, pad_tests12) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2424,8 +2423,6 @@ TEST_F(DeclarableOpsTests12, Pad_SGO_Test_1) {
 
   auto res = op.evaluate({&in, &pad}, {10.0}, {0});
   ASSERT_EQ(res.status(), sd::Status::OK);
-  // res.at(0)->printIndexedBuffer("PAD_SGO");
-  // exp.printIndexedBuffer("PAD_EXP");
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }
 

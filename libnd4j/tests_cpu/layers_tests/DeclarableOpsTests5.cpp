@@ -1946,7 +1946,8 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_empty_1) {
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
   auto i0 = NDArrayFactory::create<int>('c', {2}, {2, 3});
-  auto i1 = NDArrayFactory::create<int>('c', {0});
+  std::vector<sd::LongType> zero = {0};
+  auto i1 = NDArrayFactory::create<int>('c', zero);
   auto i2 = NDArrayFactory::create<int>('c', {2}, {0, 1});
 
   auto d0 = NDArrayFactory::create<double>('c', {2, 5},

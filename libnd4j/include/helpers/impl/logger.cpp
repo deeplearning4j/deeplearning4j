@@ -32,8 +32,8 @@ SD_HOST void Logger::info(const char *format, ...) {
 }
 
 SD_HOST void Logger::infoEmpty(const char *format) {
+ if(format != nullptr)
   printf(format);
-  fflush(stdout);
 }
 
 

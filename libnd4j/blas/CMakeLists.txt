@@ -364,7 +364,6 @@ if(SD_CUDA)
 
 
         if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-            # TODO: come back for backward
             add_library(samediff_obj OBJECT  ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES} ${HELPERS_CPP}
                     ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
@@ -651,7 +650,7 @@ elseif(SD_CPU OR SD_AURORA)
 
     #This breaks the build. Normally you want to run tests anyways.
     if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME}    ${EXTERNAL_DEPENDENCY_LIBS} ${CALL_STACK} ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(${SD_LIBRARY_NAME}    ${EXTERNAL_DEPENDENCY_LIBS}  ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
         target_include_directories (${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
     endif()
 

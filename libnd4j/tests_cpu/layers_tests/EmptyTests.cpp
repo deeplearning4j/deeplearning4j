@@ -146,9 +146,12 @@ TEST_F(EmptyTests, Test_dup_1) {
 }
 
 TEST_F(EmptyTests, test_empty_scatter_1) {
-  auto x = NDArrayFactory::create<float>('c', {5});
-  auto indices = NDArrayFactory::create<int>('c', {0});
-  auto updates = NDArrayFactory::create<float>('c', {0});
+
+  std::vector<sd::LongType> shape = {5};
+  std::vector<sd::LongType> zero = {0};
+  auto x = NDArrayFactory::create<float>('c', shape);
+  auto indices = NDArrayFactory::create<int>('c', zero);
+  auto updates = NDArrayFactory::create<float>('c',zero);
 
   x.linspace(1.0f);
 
@@ -163,8 +166,9 @@ TEST_F(EmptyTests, test_empty_scatter_1) {
 TEST_F(EmptyTests, test_empty_scatter_2) {
   NDArray x('c', {5}, sd::DataType::FLOAT32);
   NDArray z('c', {5}, sd::DataType::FLOAT32);
-  auto indices = NDArrayFactory::create<int>('c', {0});
-  auto updates = NDArrayFactory::create<float>('c', {0});
+  std::vector<sd::LongType> zero = {0};
+  auto indices = NDArrayFactory::create<int>('c', zero);
+  auto updates = NDArrayFactory::create<float>('c',zero);
 
   x.linspace(1.0f);
 
@@ -199,7 +203,8 @@ TEST_F(EmptyTests, test_shaped_empty_2) {
 }
 
 TEST_F(EmptyTests, test_shaped_empty_3) {
-  auto empty = NDArrayFactory::create<float>('c', {0});
+  std::vector<sd::LongType> zero = {0};
+  auto empty = NDArrayFactory::create<float>('c', zero);
   std::vector<sd::LongType> shape = {0};
 
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());

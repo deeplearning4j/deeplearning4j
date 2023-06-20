@@ -152,9 +152,6 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 TEST_F(ConstantShapeHelperTests, basic_test_5) {
   auto arrayA = NDArrayFactory::create<int>(1);
   auto arrayB = NDArrayFactory::create_<float>('c', {128, 256});
-
-  // arrayA.printShapeInfo("A");
-  // arrayB->printShapeInfo("B");
   ASSERT_EQ(0, arrayA.rankOf());
   ASSERT_EQ(2, arrayB->rankOf());
   ASSERT_NE(arrayA.dataType(), arrayB->dataType());
@@ -165,9 +162,6 @@ TEST_F(ConstantShapeHelperTests, basic_test_5) {
 TEST_F(ConstantShapeHelperTests, basic_test_6) {
   ShapeDescriptor descriptorA(sd::DataType::INT32, 'c', {});
   ShapeDescriptor descriptorB(sd::DataType::FLOAT32, 'c', {10, 10});
-
-  // ASSERT_FALSE(descriptorA < descriptorB);
-  // ASSERT_TRUE(descriptorB < descriptorA);
 
   ASSERT_TRUE(descriptorA < descriptorB);
   ASSERT_FALSE(descriptorB < descriptorA);
