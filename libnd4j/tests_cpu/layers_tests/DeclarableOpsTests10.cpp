@@ -1834,7 +1834,7 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test2) {
       {1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8., 8.5, 9., 9.5, 10., 10.5, 11., 11.5, 12.});
 
   sd::ops::lin_space op;
-  auto result = op.evaluate({}, {1, 12}, {23});
+  auto result = op.evaluate({}, {1, 12}, {23}, {true}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
   ASSERT_EQ(res->dataType(), sd::DataType::FLOAT32);
@@ -1847,7 +1847,7 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test3) {
                  sd::DataType::DOUBLE);
 
   sd::ops::lin_space op;
-  auto result = op.evaluate({}, {1, 12}, {23}, {}, {sd::DOUBLE});
+  auto result = op.evaluate({}, {1, 12}, {23}, {true}, {sd::DOUBLE});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
 

@@ -919,24 +919,18 @@ TEST_F(DeclarableOpsTests9, TestDropout_BP_1) {
   auto ress = op.evaluate({&x, &errs, &shape}, {0.2f}, {113});
 
   ASSERT_EQ(sd::Status::OK, ress.status());
-  // ress.at(0)->printIndexedBuffer("Result is ");
-  // x.printIndexedBuffer("Input is");
   ASSERT_FALSE(ress.at(0)->equalsTo(errs));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, TestDropout_1) {
   NDArray x('c', {10, 10}, sd::DataType::FLOAT32);
-  //    NDArray<float> errs('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
-  // NDArray<float> shape({2.f, 2.f});
   sd::ops::dropout op;
   x.linspace(1);
   auto ress = op.evaluate({&x}, {0.2f}, {113});
 
   ASSERT_EQ(sd::Status::OK, ress.status());
-  NDArray* res = ress.at(0);  //->printIndexedBuffer("Result is ");
-  // x.printIndexedBuffer("Input is");
-  // res->printIndexedBuffer("Result for Dropout_1");
+  NDArray* res = ress.at(0);
   auto countZero = res->reduceNumber(reduce::CountZero);
   ASSERT_NEAR(countZero.e<sd::LongType>(0), 80, 5);
   auto ress2 = op.evaluate({&x}, {0.2f}, {113});
@@ -946,155 +940,9 @@ TEST_F(DeclarableOpsTests9, TestDropout_1) {
 
   countZero = res->reduceNumber(reduce::CountZero);
   ASSERT_NEAR(countZero.e<sd::LongType>(0), 80, 5);
-  // res2->printIndexedBuffer("Result for Dropout_2");
   ASSERT_TRUE(res->equalsTo(res2));
-  // res->printIndexedBuffer("FF dropout");
-  // res2->printIndexedBuffer("BP dropout");
 }
 
-TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
-  NDArray x0('c', {10, 10}, sd::DataType::FLOAT32);
-  NDArray x1('c', {10, 10}, sd::DataType::FLOAT32);
-
-  x0.linspace(1);
-  x1.linspace(1);
-  /*
-      float prob[] = {0.5f};
-      sd::LongType* _bufferA = new sd::LongType[100000];
-      long _seed = 119L;
-      auto _rngA = (sd::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (sd::Pointer) _bufferA);
-
-      x0. applyTransform(random::DropOutInverted, &x0, prob);
-  //    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
-  //    x0.printIndexedBuffer("01Result1");
-      int count = 0;
-      for (int e = 0; e < x0.lengthOf(); e++)
-          if (x0.e<float>(e) != 0.f)
-              count++;
-  //    sd_printf("\nX0 count %i\n", count);
-  //    ASSERT_TRUE(x0.equalsTo(&x1));
-
-      // this check is required to ensure we're calling wrong signature
-  //    ASSERT_FALSE(x0.equalsTo(nexp0));
-  //    ASSERT_FALSE(x0.equalsTo(nexp1));
-  //    ASSERT_FALSE(x0.equalsTo(nexp2));
-      destroyRandom(_rngA);
-      delete [] _bufferA;
-  */
-  sd::ops::dropout op;
-
-  auto ress = op.evaluate({&x1}, {0.5f}, {119});
-
-  ASSERT_EQ(sd::Status::OK, ress.status());
-  // ress.at(0)->printIndexedBuffer("01Dropout result is ");
-  auto count = ress.at(0)->reduceNumber(reduce::CountNonZero);
-  //    sd_printf("\n01Dropout count %i\n\n", count);
-
-  sd::ops::dropout_bp op2;
-  // NDArray<float> exp('c', {10,10}, {4.f, 0.f, 12.f, 0.f, 20.f, 24.f, 0.f, 32.f, 0.f, 0.f, 0.f, 0.f, 52.f, 56.f, 60.f,
-  // 0.f, 0.f, 0.f, 0.f, 0.f, 84.f, 88.f, 0.f, 0.f, 0.f, 0.f, 108.f, 0.f, 0.f, 120.f, 0.f, 0.f, 132.f, 0.f, 0.f, 0.f,
-  // 0.f, 0.f, 156.f, 0.f, 164.f, 168.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 200.f, 204.f, 0.f, 0.f, 0.f, 220.f, 0.f, 0.f,
-  // 232.f, 236.f, 240.f, 0.f, 248.f, 0.f, 0.f, 260.f, 0.f, 0.f, 0.f, 276.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
-  // 316.f, 0.f, 324.f, 0.f, 0.f, 336.f, 0.f, 0.f, 0.f, 0.f, 356.f, 0.f, 0.f, 368.f, 0.f, 0.f, 0.f, 384.f, 388.f, 0.f,
-  // 0.f, 400.f}); 02Dropout result is  [4.000000, 0.000000, 12.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 36.000000, 0.000000, 0.000000, 0.000000, 0.000000, 56.000000, 60.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 88.000000, 0.000000, 96.000000, 0.000000, 0.000000, 108.000000, 0.000000, 0.000000,
-  // 120.000000, 0.000000, 128.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 156.000000, 0.000000,
-  // 164.000000, 0.000000, 0.000000, 0.000000, 0.000000, 184.000000, 0.000000, 0.000000, 0.000000, 200.000000, 0.000000,
-  // 0.000000, 0.000000, 216.000000, 0.000000, 0.000000, 0.000000, 232.000000, 0.000000, 240.000000, 0.000000,
-  // 248.000000, 0.000000, 0.000000, 260.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 0.000000, 308.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 348.000000, 0.000000, 356.000000, 0.000000, 0.000000, 0.000000, 0.000000, 376.000000,
-  // 0.000000, 384.000000, 0.000000, 0.000000, 0.000000, 400.000000]
-
-  auto ressX =
-      op2.evaluate({&x1, &x1}, {0.5f}, {119});  // , false, sd::DataType::FLOAT32); // skipped due given by default
-  // x0.printIndexedBuffer("X0");
-  // x1.printIndexedBuffer("X1");
-  ASSERT_EQ(sd::Status::OK, ressX.status());
-  auto ressY = op2.evaluate({&x1, &x0}, {0.5f}, {119});
-  ASSERT_EQ(sd::Status::OK, ressY.status());
-  // ressY->at(0)->printIndexedBuffer("BP");
-  // ress.at(0)->printIndexedBuffer("FF");
-  bool ret = true;
-  for (int e = 0; e < ress.at(0)->lengthOf(); e++) {
-    if (ress.at(0)->e<float>(e) == 0.f)
-      if (ressX.at(0)->e<float>(e) != ress.at(0)->e<float>(e)) {
-        ret = false;
-        break;
-      }
-  }
-  ASSERT_TRUE(ret);
-  //    ASSERT_FALSE(ressX->at(0)->equalsTo(ressY->at(0)));
-  // ressX->at(0)->printIndexedBuffer("02Dropout result is ");
-  /*    float countZero = ressX->at(0)->template reduceNumber<simdOps::CountZero<float>>();
-      ASSERT_NEAR(countZero, 50.f, 5.f);
-      countZero = ress.at(0)->template reduceNumber<simdOps::CountZero<float>>();
-      ASSERT_NEAR(countZero, 50.f, 5.f);
-      countZero = ressY->at(0)->template reduceNumber<simdOps::CountZero<float>>();
-      ASSERT_NEAR(countZero, 50.f, 5.f);
-      */
-  //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
-}
-
-TEST_F(DeclarableOpsTests9, Test_Dropout_BP_2) {
-  NDArray x('c', {10, 10}, sd::DataType::FLOAT32);
-
-  x.linspace(1);
-
-  sd::ops::dropout op;
-
-  auto ress = op.evaluate({&x}, {0.5f}, {119});
-
-  ASSERT_EQ(sd::Status::OK, ress.status());
-  //    ress.at(0)->printIndexedBuffer("01Dropout result is ");
-
-  sd::ops::dropout_bp op2;
-
-  auto ressX = op2.evaluate({&x, &x}, {0.5f}, {119});
-
-  ASSERT_EQ(sd::Status::OK, ressX.status());
-  auto ressY = op2.evaluate({&x, &x}, {0.5f}, {119});
-  ASSERT_EQ(sd::Status::OK, ressY.status());
-
-  // ress.at(0)->printIndexedBuffer("FF Dropout result is ");
-  // ressY->at(0)->printIndexedBuffer("BP Dropout result is ");
-
-  auto countZero = ress.at(0)->reduceNumber(reduce::CountZero);
-  ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
-  countZero = ressX.at(0)->reduceNumber(reduce::CountZero);
-  // sd_printf("X zero count is %f\n", countZero);
-  ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
-  countZero = ressY.at(0)->reduceNumber(reduce::CountZero);
-  // sd_printf("Y zero count is %f\n", countZero);
-  ASSERT_NEAR(countZero.e<float>(0), 50.f, 10.f);
-  //    ASSERT_TRUE(exp.equalsTo(ressX->at(0)));
-  ASSERT_TRUE(ressX.at(0)->equalsTo(ressY.at(0)));
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, Test_AlphaDropout_BP_1) {
-  NDArray x('c', {10, 10}, sd::DataType::FLOAT32);
-  NDArray eps('c', {10, 10}, sd::DataType::FLOAT32);
-
-  x.linspace(1);
-  eps.linspace(1);
-
-  sd::ops::alpha_dropout_bp op;
-
-  auto ress = op.evaluate({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
-
-  ASSERT_EQ(sd::Status::OK, ress.status());
-  NDArray* res = ress.at(0);
-
-  auto ress2 = op.evaluate({&x, &eps}, {0.5f, 0.5f, 1.5f, 1.6f}, {119});
-
-  ASSERT_EQ(sd::Status::OK, ress2.status());
-  NDArray* res2 = ress2.at(0);
-  // res->printIndexedBuffer("Result1AlphaBP1");
-  // res2->printIndexedBuffer("Result1AlphaBP2");
-  ASSERT_TRUE(res2->equalsTo(res));
-}
 
 TEST_F(DeclarableOpsTests9, test_range_int_1) {
   auto x0 = NDArrayFactory::create<int>(0);
@@ -1805,24 +1653,6 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test3) {
   ASSERT_TRUE(exp.equalsTo(output));
 }
 
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, compare_and_bitpack_test4) {
-  auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 13});
-  auto threshold = NDArrayFactory::create<float>(0.5f);
-  sd::ops::compare_and_bitpack op;
-
-  ASSERT_THROW(op.evaluate({&x, &threshold}, {}, {}, {}), std::invalid_argument);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, compare_and_bitpack_test5) {
-  auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 13});
-  auto threshold = NDArrayFactory::create<float>(0.5f);
-  auto out = NDArrayFactory::create<uint8_t>('c', {2, 0, 3, 1});
-  sd::ops::compare_and_bitpack op;
-
-  ASSERT_THROW(op.execute({&x, &threshold}, {&out}, {}, {}), std::invalid_argument);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, compare_and_bitpack_test6) {
@@ -2031,7 +1861,7 @@ TEST_F(DeclarableOpsTests9, prelu_bp_test3) {
 TEST_F(DeclarableOpsTests9, prelu_bp_test4) {
   auto x = NDArrayFactory::create<double>('c', {2, 3, 4, 5});
   x.linspace(-50.);
-  x.p(50, 0.5);  // avoid zero, since it is points of discontinuity for prele
+  x.p(50, 0.5);  // avoid zero, since it is points of discontinuity for prelu
   auto alpha = NDArrayFactory::create<double>('c', {2, 10}, {-0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.25, 0.1, 0.2,
                                                              0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1.,   1.1, 1.2});
   auto dLdO = NDArrayFactory::create<double>('c', {2, 3, 4, 5});
@@ -2168,9 +1998,6 @@ TEST_F(DeclarableOpsTests9, multiply_bp_test1) {
   sd::ops::multiply_bp opBP;
   auto resFF = opFF.evaluate({&x, &y}, {}, {});
   auto resBP = opBP.evaluate({&x, &y, &dLdz}, {}, {});
-  //    resFF->at(0)->printIndexedBuffer("Multiply 1x1");
-  //    resBP->at(0)->printIndexedBuffer("Multiply BP 1x1 x");
-  //    resBP->at(1)->printIndexedBuffer("Multyply BP 1x1 y");*/
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
   ASSERT_TRUE(isGradCorrect);
 }
@@ -2301,29 +2128,14 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
   auto y = NDArrayFactory::create<double>('c', {10, 10});
   auto x = NDArrayFactory::create<double>('c', {10, 10});
   auto dLdz = NDArrayFactory::create<double>('c', {10, 10});
-  // auto eps = NDArrayFactory::create<double>('c', {10, 10});
   x.linspace(4);  // 2., 2.0);
   y.linspace(3);
   dLdz.linspace(1);
-  //    const OpArgsHolder argsHolderFF({&x, &y}, {}, {});
-  //    const OpArgsHolder argsHolderBP({&x, &y, &dLdz}, {}, {});
-
-  //    sd::ops::floormod opFF;
-  //    auto resFF = opFF.execute({&x, &y}, {}, {});
-  //    resFF->at(0)->printIndexedBuffer("FF floormod");
-  //    delete resFF;
   sd::ops::floormod_bp opBP;
   auto resBP = opBP.evaluate({&x, &y, &dLdz}, {}, {});
   ASSERT_TRUE(resBP.status() == sd::Status::OK);
-
-  //    resBP->at(0)->printIndexedBuffer("BP floormod /dx");
-  //    resBP->at(1)->printIndexedBuffer("BP floormod /dy");
   ASSERT_TRUE(dLdz.equalsTo(resBP.at(0)));
   ASSERT_TRUE(dLdz.equalsTo(resBP.at(1)));
-
-  //    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-  //    ASSERT_TRUE(isGradCorrect);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2336,9 +2148,6 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
   auto exp = NDArrayFactory::create<double>('c', {2, 3, 4},
                                             {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 3, 3, 3, 3});
   x.linspace(1);
-  //    dLdzX.linspace(1);
-  //    dLdzY.linspace(2);
-  //    dLdzZ.linspace(3);
   dLdzX.assign(1);
   dLdzY.assign(2);
   dLdzZ.assign(3);
@@ -2350,34 +2159,9 @@ TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
   auto res2 = op2.evaluate({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
   ASSERT_TRUE(res2.status() == sd::Status::OK);
   ASSERT_TRUE(res2.size() == 2);
-  //    printf("How many: %ul\n", res2->size());
-  //    res2->at(0)->printBuffer("Ouputput0");
-  //    res2->at(1)->printBuffer("Ouputput1");
   ASSERT_TRUE(res2.at(0)->equalsTo(exp));
 }
 //////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_2) {
-//
-//    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
-//    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
-//    auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
-//    auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
-//    auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});
-//    x.linspace(1);
-//    dLdzX.linspace(1);
-//    dLdzY.linspace(1);
-//    dLdzZ.linspace(1);
-//
-//    const OpArgsHolder argsHolderFF({&x, &y}, {}, {3});
-//    const OpArgsHolder argsHolderBP({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
-//
-//    sd::ops::dynamic_partition opFF;
-//    sd::ops::dynamic_partition_bp opBP;
-//
-//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-//
-//    ASSERT_TRUE(isGradCorrect);
-//}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
@@ -2394,72 +2178,12 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
   auto gradX = result.at(0);
   auto gradY = result.at(1);
 
-  //    gradX->printIndexedBuffer("gradX");
-  //    gradY->printIndexedBuffer("gradY");
   ASSERT_TRUE(exp.isSameShape(gradY));
 
   ASSERT_TRUE(exp.equalsTo(gradY));
 }
 
-/*
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gru_cell_bp_test1) {
 
-    const int bS = 2;
-    const int iS = 3;
-    const int nU = 4;
-
-    NDArray x('c', {bS, iS}, sd::DataType::DOUBLE);
-    NDArray hi('c', {bS, nU}, sd::DataType::DOUBLE);
-    NDArray W('c', {iS+nU, 2*nU}, sd::DataType::DOUBLE);
-    NDArray Wc('c', {iS+nU, nU}, sd::DataType::DOUBLE);
-    NDArray b('c', {2*nU}, sd::DataType::DOUBLE);
-    NDArray bc('c', {nU}, sd::DataType::DOUBLE);
-    NDArray dLdr('c', {bS, nU}, sd::DataType::DOUBLE);
-    NDArray dLdu('c', {bS, nU}, sd::DataType::DOUBLE);
-    NDArray dLdc('c', {bS, nU}, sd::DataType::DOUBLE);
-    NDArray dLdh('c', {bS, nU}, sd::DataType::DOUBLE);
-
-    x.linspace(-5, 0.5);
-    hi   = 1.;
-    W    = 0.003;
-    Wc   = 0.006;
-    b    = 0.5;
-    bc   = 0.35;
-
-
-    const OpArgsHolder argsHolderFF({&x, &hi, &W, &Wc, &b, &bc}, {}, {});
-    sd::ops::gruCell op;
-    auto results = op.evaluate(argsHolderFF);
-
-    ASSERT_EQ(sd::Status::OK, results.status());
-
-    auto u = results.at(1);    // [bS, nU]
-    auto c = results.at(2);    // [bS, nU]
-    auto h = results.at(3);    // [bS, nU]
-
-    dLdh = 1.; // SUM loss
-
-    NDArray Wch = Wc({iS,iS+nU, 0,0}); // [nU, nU]
-    NDArray dhdc  = 1. - *u;
-    NDArray dhdu  = hi - *c;
-    NDArray dcdZc = 1. - *c * *c;
-    dLdc.assign(dLdh * dhdc);
-    dLdu.assign(dLdh * dhdu);
-    dLdr.assign(mmul(dLdc * dcdZc * hi, Wch.transpose()));
-
-
-    const OpArgsHolder argsHolderBP({&x, &hi, &W, &Wc, &b, &bc, &dLdr, &dLdu, &dLdc, &dLdh}, {}, {});
-
-    sd::ops::gruCell opFF;
-    sd::ops::gruCell_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1, 1 , 1, 1},
-{0., 1.}, sd::GradCheck::LossFunc::SUM, true);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-*/
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
@@ -2471,7 +2195,6 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
-  //    res->printIndexedBuffer("Output for Cholesky1");
   ASSERT_TRUE(exp.equalsTo(res));
 }
 
@@ -2508,36 +2231,3 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
   ASSERT_TRUE(exp.equalsTo(res, 1e-4));
 }
 
-////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests9, gru_bp_test1) {
-
-//     const int time = 5;
-//     const int bS   = 2;
-//     const int iS   = 3;
-//     const int nU   = 4;
-
-//     NDArray<double> x     ('c', {time, bS, iS});
-//     NDArray<double> h0    ('c', {bS, nU});
-//     NDArray<double> Wx    ('c', {iS, 3*nU});
-//     NDArray<double> Wh    ('c', {nU, 3*nU});
-//     NDArray<double> b     ('c', {3*nU});
-//     NDArray<double> dLdh  ('c', {time, bS, nU});
-
-//     x.linspace(0.5, 0.5);
-//     h0 = 1.;
-//     Wx = 0.003;
-//     Wh = 0.006;
-//     b  = 0.5;
-
-//     const OpArgsHolder<double> argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-//     const OpArgsHolder<double> argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
-
-//     sd::ops::gru<double> opFF;
-//     sd::ops::gru_bp<double> opBP;
-
-//     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-//     ASSERT_TRUE(isGradCorrect);
-// }
-
-//

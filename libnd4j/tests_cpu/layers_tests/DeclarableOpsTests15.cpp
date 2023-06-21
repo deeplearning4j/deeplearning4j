@@ -120,7 +120,6 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
   auto result = op.evaluate({&x}, {2.});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Adjusted Constrast");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
@@ -136,7 +135,6 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_3) {
   auto result = op.evaluate({&x}, {2.});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Adjusted Constrast");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
@@ -152,7 +150,6 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_4) {
   auto result = op.evaluate({&x}, {2.}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Adjusted Constrast");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
@@ -164,37 +161,9 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_5) {
   auto result = op.evaluate({&x}, {2.}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Adjusted Constrast");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
-/*
- * public void testAdjustContrast1() {
-        INDArray in = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,0.7271f,0.1804f,
-            0.5056f,0.8925f,0.5461f,0.9234f,0.0856f,0.7938f,0.6591f,0.5555f,0.1596f,0.3087f,0.1548f,0.4695f,
-            0.9939f,0.6113f,0.6765f,0.1800f,0.6750f,0.2246f,0.0509f,0.4601f,0.8284f,0.2354f,0.9752f,0.8361f,
-            0.2585f,0.4189f,0.7028f,0.7679f,0.5373f,0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,0.8428f,0.7494f,
-            0.0755f,0.6245f,0.3491f,0.5793f,0.5730f,0.1822f,0.6420f,0.9143f,0.3019f,
-            0.3574f,0.1704f,0.8395f,0.5468f,0.0744f,0.9011f,0.6574f,0.4124f,0.2445f,0.4248f,0.5219f,
-            0.6952f,0.4900f,0.2158f,0.9549f,0.1386f,0.1544f,0.5365f,0.0134f,0.4163f,0.1456f,0.4109f,
-                0.2484f, 0.3330f,0.2974f,0.6636f,0.3808f,0.8664f, 0.1896f, 0.7530f, 0.7215f, 0.6612f, 0.7270f,
-            0.5704f,0.2666f,0.7453f,0.0444f,0.3024f,0.4850f,0.7982f,0.0965f,0.7843f,0.5075f,
-            0.0844f,0.8370f,0.6103f,0.4604f,0.6087f, 0.8594f, 0.4599f, 0.6714f, 0.2744f, 0.1981f, 0.4143f,
-            0.7821f,0.3505f,0.5040f,0.1180f,0.8307f,0.1817f,0.8442f,0.5074f,0.4471f,0.5105f,0.6666f,
-            0.2576f,0.2341f,0.6801f,0.2652f,0.5394f,0.4690f,0.6146f,0.1210f,0.2576f,0.0769f,0.4643f,
-            0.1628f,0.2026f,0.3774f,0.0506f,0.3462f,0.5720f,0.0838f,0.4228f,0.0588f,0.5362f,0.4756f,
-            0.2530f,0.1778f,0.0751f,0.8977f,0.3648f,0.3065f,0.4739f,0.7014f,0.4473f,0.5171f,0.1744f,
-            0.3487f,0.7759f,0.9491f,0.2072f,0.2182f,0.6520f,0.3092f,0.9545f,0.1881f,0.9579f,0.1785f,
-            0.9636f,0.4830f,0.6569f,0.3353f,0.9997f,0.5869f,0.5747f,0.0238f,0.2943f,0.5248f,0.5879f,
-            .7266f,0.1965f,0.9167f,0.9726f,0.9206f,0.0519f,0.2997f,0.0039f,0.7652f,0.5498f,
-            0.3794f,0.3791f,0.3528f,0.2873f,0.8082f,0.4732f,0.4399f,0.6606f,0.5991f,0.0034f,0.4874f
-        }).reshape(8,8,3,1);
-        INDArray out = Nd4j.create(DataType.FLOAT, in.shape());
-        INDArray[] res = Nd4j.exec(new AdjustContrast(in, 2.0, out));
-        assertArrayEquals(out.shape(), in.shape());
-        //assertEquals(expected, out);
-    }
- * */
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_6) {
   auto x = NDArrayFactory::create<float>(
@@ -253,9 +222,6 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_6) {
   auto result = op.evaluate({&x}, {2.}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printBuffer("Adjusted Constrast6");
-  //    e.printBuffer("Adjusted Expected 6");
-  //    ASSERT_TRUE(e.equalsTo(out));
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_7) {
@@ -310,15 +276,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_7) {
        0.10189578,  0.5628958,  0.68909574,  0.96649575,  -0.09370419, 1.3466958,   1.4584957,   1.3544958,
        -0.3829042,  0.11269578, -0.47890422, 1.0436958,   0.6128957,   0.27209583,  0.2714958,   0.21889582,
        0.08789578,  1.1296958,  0.4596958,   0.39309582,  0.8344958,   0.71149576,  -0.4799042,  0.4880958});
-  //    x.linspace(1.);
   sd::ops::adjust_contrast_v2 op;
   auto result = op.evaluate({&x}, {2.}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printBuffer("Adjusted Constrast7");
-  //    e.printBuffer("Adjusted expected 7");
   auto diff = e - *out;
-  //    diff.printBuffer("Adjusted subtract 7");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
@@ -331,7 +293,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_1) {
   auto result = op.evaluate({&x}, {(int)sd::DataType::DOUBLE});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Casted result");
   ASSERT_TRUE(e.equalsTo(out));
 }
 
@@ -386,8 +347,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_4_1) {
 
   auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
-
-  //    e.printIndexedBuffer("Double to int64");
   auto res = result.at(0);
   ASSERT_EQ(*res, e);
 }
@@ -404,8 +363,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
   auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto res = result.at(0);
-
-  //    res->printIndexedBuffer("BITCAST5");
   ASSERT_TRUE(e.equalsTo(res));
 }
 
@@ -420,8 +377,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
   auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto res = result.at(0);
-
-  //    res->printIndexedBuffer("BITCAST6");
   ASSERT_TRUE(e.equalsTo(res));
 }
 TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
@@ -437,7 +392,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto res = result.at(0);
 
-  //    res->printIndexedBuffer("BITCAST7");
   ASSERT_TRUE(e.equalsTo(res));
 }
 
@@ -495,8 +449,8 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
   try {
     auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
     ASSERT_TRUE(false);
-  } catch (std::invalid_argument& e) {
-    //
+  } catch (std::runtime_error& e) {
+
   }
 }
 
@@ -513,8 +467,8 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
   try {
     auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
     ASSERT_TRUE(false);
-  } catch (std::invalid_argument& e) {
-    //
+  } catch (std::runtime_error& e) {
+
   }
 }
 
@@ -569,9 +523,6 @@ TEST_F(DeclarableOpsTests15, test_hashCode_1) {
   auto resultA0 = op.evaluate({&x});
   auto resultA1 = op.evaluate({&x});
   auto resultB0 = op.evaluate({&y});
-  //    resultA0->at(0)->printIndexedBuffer("A0");
-  //    resultA1->at(0)->printIndexedBuffer("A1");
-  //    resultB0->at(0)->printIndexedBuffer("B0");
   ASSERT_EQ(*resultA0.at(0), *resultA1.at(0));
   ASSERT_NE(*resultA0.at(0), *resultB0.at(0));
 }
@@ -588,18 +539,14 @@ TEST_F(DeclarableOpsTests15, test_hashCode_2) {
   auto resultA1 = op.evaluate({&x});
   auto resultB0 = op.evaluate({&y});
 
-  //    resultA0->at(0)->printIndexedBuffer("A0");
-  //    resultA1->at(0)->printIndexedBuffer("A1");
-  //    resultB0->at(0)->printIndexedBuffer("B0");
-
   ASSERT_EQ(*resultA0.at(0), *resultA1.at(0));
   ASSERT_NE(*resultA0.at(0), *resultB0.at(0));
 }
 
 TEST_F(DeclarableOpsTests15, test_rank_1) {
   auto array = NDArrayFactory::create<float>('c', {4, 64});
-  auto e = NDArrayFactory::create<int>('c', {}, {2});
-  auto z = NDArrayFactory::create<int>('c', {});
+  auto e = NDArrayFactory::create<sd::LongType>('c', {}, {2});
+  auto z = NDArrayFactory::create<sd::LongType>(0);
 
   sd::ops::rank op;
   auto result = op.execute({&array}, {&z}, {}, {}, {});
@@ -609,7 +556,7 @@ TEST_F(DeclarableOpsTests15, test_rank_1) {
 
 TEST_F(DeclarableOpsTests15, test_rank_2) {
   auto array = NDArrayFactory::create<float>('c', {4, 64});
-  auto e = NDArrayFactory::create<int>('c', {}, {2});
+  auto e = NDArrayFactory::create<sd::LongType>(2);
 
   sd::ops::rank op;
   auto result = op.evaluate({&array}, {}, {});
@@ -653,7 +600,6 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
 
   auto z = result.at(0);
 
-  // z->printIndexedBuffer("Z");
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
@@ -690,10 +636,6 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_3) {
   cLast = 3;
 
   for (int t = 0; t < seqLen; ++t) {
-    // section 1
-    // auto ft = f({0,0, 0,0, t,t+1});
-    // auto temp = ft * cLast;
-
     // section 2
     auto ft = f({0, 0, 0, 0, t, t + 1});
     auto temp1 = ft.reshape('f', {bS, nIn});
@@ -1538,612 +1480,6 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
     if (!sd::math::sd_isnan(dLdyB->e<float>(i)) && !sd::math::sd_isnan(dLdyExpB.e<float>(i)))
       ASSERT_NEAR(dLdyB->e<float>(i), dLdyExpB.e<float>(i), 0.00001);
   }
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP1) {
-  NDArray A('c', {1, 2, 3}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6}, sd::DataType::FLOAT32);
-  NDArray B('c', {1, 2, 4}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 4}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.1}, sd::DataType::FLOAT32);
-
-  NDArray dLdA('c', {1, 2, 3}, {3.3, 8.5, 13.36, 3.7, 9.54, 15.}, sd::DataType::FLOAT32);
-  NDArray dLdB('c', {1, 2, 4}, {3.38, 4.04, 4.7, 5.13, 3.83, 4.58, 5.33, 5.82}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 0, 1, 2, 0, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP2) {
-  NDArray A('c', {1, 2, 3}, {2, 2, 2, 2, 2, 2}, sd::DataType::FLOAT32);
-  NDArray B('c', {1, 2, 3}, {3, 3, 3, 3, 3, 3}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {1}, {1}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(B.isSameShape(*dLdAbp));
-  ASSERT_TRUE(B.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(A.isSameShape(*dLdBbp));
-  ASSERT_TRUE(A.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP3) {
-  NDArray A('c', {3, 2, 2}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::FLOAT32);
-  NDArray B('c', {4, 2, 2}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 4}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2}, sd::DataType::FLOAT32);
-
-  NDArray dA('c', {3, 2, 2}, {3.9, 4., 4.1, 4.2, 9.82, 10.08, 10.34, 10.6, 15.74, 16.16, 16.58, 17.},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {4, 2, 2},
-             {4.07, 4.22, 4.37, 4.52, 4.82, 5., 5.18, 5.36, 5.57, 5.78, 5.99, 6.2, 6.32, 6.56, 6.8, 7.04},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP4) {
-  NDArray A('c', {3, 4, 1}, {0.4, 3, 5, 9, 23, 0.12, 8, 9, 0.1, 0, 124, 3}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 4, 1}, {4, 13, .5, 19, 2.3, 1.2, 18, .9}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 2}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6}, sd::DataType::FLOAT32);
-
-  NDArray dLdA('c', {3, 4, 1}, {7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94},
-               sd::DataType::FLOAT32);
-  NDArray dLdB('c', {2, 4, 1}, {30.49, 3.456, 201.9, 26.1, 32.84, 3.768, 215.6, 28.2}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP5) {
-  NDArray A('c', {3, 4, 1, 1}, {0.4, 3, 5, 9, 23, 0.12, 8, 9, 0.1, 0, 124, 3}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 4, 1, 1}, {4, 13, .5, 19, 2.3, 1.2, 18, .9}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 1, 2, 1}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6}, sd::DataType::FLOAT32);
-
-  NDArray dLdA('c', {3, 4, 1, 1}, {7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94},
-               sd::DataType::FLOAT32);
-  NDArray dLdB('c', {2, 4, 1, 1}, {30.49, 3.456, 201.9, 26.1, 32.84, 3.768, 215.6, 28.2}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP6) {
-  NDArray A('c', {2, 2, 2}, {2, 2, 2, 2, 2, 2, 2, 2}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 2, 2}, {3, 3, 3, 3, 3, 3, 3, 3}, sd::DataType::FLOAT32);
-
-  auto dLdC = NDArrayFactory::create<float>(1.f);
-
-  sd::ops::tensormmul_bp op_bp;
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {3, 0, 1, 2, 3, 0, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(B.isSameShape(*dLdAbp));
-  ASSERT_TRUE(B.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(A.isSameShape(*dLdBbp));
-  ASSERT_TRUE(A.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP7) {
-  NDArray A('c', {3, 4, 1}, {0.4, 3, 5, 9, 23, 0.12, 8, 9, 0.1, 0, 124, 3}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 4, 1}, {4, 13, .5, 19, 2.3, 1.2, 18, .9}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 1, 2, 1}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6}, sd::DataType::FLOAT32);
-
-  NDArray dLdA('c', {3, 4, 1}, {7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94},
-               sd::DataType::FLOAT32);
-  NDArray dLdB('c', {2, 4, 1}, {30.49, 3.456, 201.9, 26.1, 32.84, 3.768, 215.6, 28.2}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {1, 1, 1, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP8) {
-  NDArray A('c', {1, 1, 4, 3}, {0.4, 3, 5, 9, 23, 0.12, 8, 9, 0.1, 0, 124, 3}, sd::DataType::FLOAT32);
-  NDArray B('c', {1, 1, 4, 2}, {4, 13, .5, 19, 2.3, 1.2, 18, .9}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 2}, {1.1, 1.2, 1.3, 1.4, 1.5, 1.6}, sd::DataType::FLOAT32);
-
-  NDArray dLdA('c', {1, 1, 4, 3}, {20., 23.4, 26.8, 23.35, 27.25, 31.15, 3.97, 4.67, 5.37, 20.88, 24.66, 28.44},
-               sd::DataType::FLOAT32);
-  NDArray dLdB('c', {1, 1, 4, 2}, {11.84, 12.68, 39.98, 43.192, 20.65, 22.36, 165.7, 178.4}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {3, 0, 1, 2, 3, 0, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP9) {
-  NDArray A('c', {3, 2, 2, 1}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::FLOAT32);
-  NDArray B('c', {4, 2, 2, 1}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 1, 4, 1}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2}, sd::DataType::FLOAT32);
-
-  NDArray dA('c', {3, 2, 2, 1}, {3.9, 4., 4.1, 4.2, 9.82, 10.08, 10.34, 10.6, 15.74, 16.16, 16.58, 17.},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {4, 2, 2, 1},
-             {4.07, 4.22, 4.37, 4.52, 4.82, 5., 5.18, 5.36, 5.57, 5.78, 5.99, 6.2, 6.32, 6.56, 6.8, 7.04},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP10) {
-  NDArray A('c', {1, 2, 2, 3}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::FLOAT32);
-  NDArray B('c', {1, 2, 2, 4}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {1, 3, 1, 4}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2}, sd::DataType::FLOAT32);
-
-  NDArray dA('c', {1, 2, 2, 3}, {3.3, 8.5, 13.7, 3.7, 9.54, 15.38, 4.1, 10.58, 17.06, 4.5, 11.62, 18.74},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {1, 2, 2, 4},
-             {3.38, 4.04, 4.7, 5.36, 3.83, 4.58, 5.33, 6.08, 4.28, 5.12, 5.96, 6.8, 4.73, 5.66, 6.59, 7.52},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP11) {
-  NDArray A('c', {2, 2, 3}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 2, 4}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {3, 4}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2}, sd::DataType::FLOAT32);
-
-  NDArray dA('c', {2, 2, 3}, {3.3, 8.5, 13.7, 3.7, 9.54, 15.38, 4.1, 10.58, 17.06, 4.5, 11.62, 18.74},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 2, 4},
-             {3.38, 4.04, 4.7, 5.36, 3.83, 4.58, 5.33, 6.08, 4.28, 5.12, 5.96, 6.8, 4.73, 5.66, 6.59, 7.52},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {2, 0, 1, 2, 0, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP12) {
-  NDArray A('c', {2, 2, 3}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 2, 3}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {2, 3, 2, 3},
-               {.1,  .2, .3,  .4,  .5,  .6,  .7,  .8,  .9,  1,   1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8,
-                1.9, 2., 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.,  3.1, 3.2, 3.3, 3.4, 3.5, 3.6},
-               sd::DataType::FLOAT32);
-
-  NDArray dA('c', {2, 2, 3}, {7.66, 20.26, 32.86, 8.29, 21.97, 35.65, 45.46, 58.06, 70.66, 49.33, 63.01, 76.69},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 2, 3}, {25.86, 27.36, 28.86, 28.74, 30.42, 32.1, 30.36, 31.86, 33.36, 33.78, 35.46, 37.14},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {1, 1, 1, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP13) {
-  NDArray A('c', {3, 2, 2}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2}, sd::DataType::DOUBLE);
-  NDArray B('c', {3, 2, 2}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2}, sd::DataType::DOUBLE);
-  NDArray dLdC('c', {3, 2, 3, 2},
-               {.1,  .2, .3,  .4,  .5,  .6,  .7,  .8,  .9,  1,   1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8,
-                1.9, 2., 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.,  3.1, 3.2, 3.3, 3.4, 3.5, 3.6},
-               sd::DataType::DOUBLE);
-
-  NDArray dA('c', {3, 2, 2}, {7.79, 20.57, 8.21, 21.71, 33.35, 46.13, 35.21, 48.71, 58.91, 71.69, 62.21, 75.71},
-             sd::DataType::DOUBLE);
-  NDArray dB('c', {3, 2, 2}, {26.49, 28.02, 28.41, 30.06, 29.55, 31.08, 31.71, 33.36, 32.61, 34.14, 35.01, 36.66},
-             sd::DataType::DOUBLE);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {1, 1, 1, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP14) {
-  NDArray A('c', {2, 2, 2, 2}, {2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6},
-            sd::DataType::DOUBLE);
-
-  NDArray B('c', {2, 2, 2, 2}, {3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6},
-            sd::DataType::DOUBLE);
-
-  NDArray dLdC('c', {2, 2, 2, 2, 2, 2}, {.1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-                                         .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-                                         .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6,
-                                         .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6},
-               sd::DataType::DOUBLE);
-
-  NDArray dA(
-      'c', {2, 2, 2, 2},
-      {13.88, 37.24, 13.88, 37.24, 15.32, 41.24, 15.32, 41.24, 13.88, 37.24, 13.88, 37.24, 15.32, 41.24, 15.32, 41.24},
-      sd::DataType::DOUBLE);
-  NDArray dB('c', {2, 2, 2, 2},
-             {10.76, 12.88, 15., 17.12, 12.36, 14.8, 17.24, 19.68, 19.24, 21.36, 23.48, 25.6, 22.12, 24.56, 27., 29.44},
-             sd::DataType::DOUBLE);
-
-  sd::ops::tensormmul_bp op_bp;
-
-  auto resultsBP = op_bp.evaluate({&A, &B, &dLdC}, {}, {1, 1, 1, 1}, {});
-
-  ASSERT_EQ(sd::Status::OK, resultsBP.status());
-
-  auto* dLdAbp = resultsBP.at(0);
-  auto* dLdBbp = resultsBP.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdAbp));
-  ASSERT_TRUE(dA.equalsTo(*dLdAbp));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdBbp));
-  ASSERT_TRUE(dB.equalsTo(*dLdBbp));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP15) {
-  NDArray A('c', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::FLOAT32);
-  NDArray B('f', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::FLOAT32);
-
-  NDArray dLdC('f', {2, 2}, {23.0, 24.44, 2.0, 26.}, sd::DataType::FLOAT32);
-
-  NDArray dA('c', {2, 2, 3},
-             {27., 127., 227., 77., 177., 277., 76.44, 278.20001, 479.96002, 177.32, 379.08001, 580.839966},
-             sd::DataType::FLOAT32);
-  NDArray dB('f', {2, 2, 3},
-             {194.08, 184., 336.4, 268., 241.52, 212., 383.839996, 296., 288.96002, 240., 431.27999, 324.},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP16) {
-  NDArray A('f', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::DOUBLE);
-  NDArray B('c', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::DOUBLE);
-
-  NDArray dLdC('c', {2, 2}, sd::DataType::DOUBLE);
-
-  const OpArgsHolder argsHolderFF({&A, &B}, {}, {2, 1, 2, 2, 1, 2});
-  const OpArgsHolder argsHolderBP({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2});
-
-  sd::ops::tensormmul op;
-  sd::ops::tensormmul_bp op_bp;
-
-  const bool isGradCorrect = GradCheck::checkGrad(op, op_bp, argsHolderFF, argsHolderBP, {1, 0});
-  ASSERT_TRUE(isGradCorrect);
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP17) {
-  NDArray A('f', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::DOUBLE);
-  NDArray B('f', {2, 2, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12.}, sd::DataType::DOUBLE);
-
-  NDArray dLdC('c', {2, 2}, sd::DataType::DOUBLE);
-
-  const OpArgsHolder argsHolderFF({&A, &B}, {}, {2, 1, 2, 2, 1, 2});
-  const OpArgsHolder argsHolderBP({&A, &B, &dLdC}, {}, {2, 1, 2, 2, 1, 2});
-
-  sd::ops::tensormmul op;
-  sd::ops::tensormmul_bp op_bp;
-
-  const bool isGradCorrect = GradCheck::checkGrad(op, op_bp, argsHolderFF, argsHolderBP, {1, 0});
-  ASSERT_TRUE(isGradCorrect);
-}
-
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP18a) {
-  NDArray A('c', {2, 1, 1, 1}, {-1.0034018f, -1.5826055f}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 3, 2, 1},
-            {-0.23549192f, 1.0996383f, 0.09883034f, -1.0160788f, -1.1878633f, 0.32861f, -0.11048671f, -2.555923f,
-             -0.17190187f, 0.030083546f, 0.62453437f, 1.4041749f},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {1, 1, 1, 2, 3, 1}, {-3.0080013f, 3.0177708f, 1.3436884f, 8.311761f, 0.24975249f, -5.697828f},
-               sd::DataType::FLOAT32);
-  NDArray dA('c', {2, 1, 1, 1}, {-5.109272f, -35.16991f}, sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 3, 2, 1},
-             {3.0182338f, 4.7604795f, -3.0280366f, -4.7759404f, -1.3482592f, -2.1265285f, -8.340035f, -13.154239f,
-              -0.2506021f, -0.39525965f, 5.7172103f, 9.017413f},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {1, 0, 1, 2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  dLdA->printIndexedBuffer("dLdA");
-  dA.printIndexedBuffer("dA");
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
-}
-
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP18b) {
-  NDArray A('c', {2, 1}, {-1.0034018f, -1.5826055f}, sd::DataType::FLOAT32);
-  NDArray B('c', {2, 3, 2, 1},
-            {-0.23549192f, 1.0996383f, 0.09883034f, -1.0160788f, -1.1878633f, 0.32861f, -0.11048671f, -2.555923f,
-             -0.17190187f, 0.030083546f, 0.62453437f, 1.4041749f},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {1, 2, 3, 1}, {-3.0080013f, 3.0177708f, 1.3436884f, 8.311761f, 0.24975249f, -5.697828f},
-               sd::DataType::FLOAT32);
-  NDArray dA('c', {2, 1}, {-5.109272f, -35.16991f}, sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 3, 2, 1},
-             {3.0182338f, 4.7604795f, -3.0280366f, -4.7759404f, -1.3482592f, -2.1265285f, -8.340035f, -13.154239f,
-              -0.2506021f, -0.39525965f, 5.7172103f, 9.017413f},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {1, -2, 1, -2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
-}
-
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP19) {
-  NDArray A('c', {1, 4, 4},
-            {1.0946114f, 0.21210167f, -0.13907638f, -1.0493592f, 1.5186632f, -0.6232642f, -1.2645237f, -0.5646886f,
-             0.75553244f, 0.64443725f, 1.2988646f, -1.3643093f, 0.44569862f, 0.42895862f, -0.25177997f, 0.6511963f},
-            sd::DataType::FLOAT32);
-  NDArray B('c', {4, 4},
-            {-0.20631117f, -0.3351916f, -0.49059778f, 0.976343f, 0.82378817f, -0.2437844f, -0.030423656f, 1.0651429f,
-             1.2425208f, 1.040625f, -2.1183474f, -0.36273366f, 2.1668184f, -0.794434f, 0.6742869f, 1.4766127f},
-            sd::DataType::FLOAT32);
-  NDArray dLdC('c', {1, 4, 4},
-               {1.4648695f, -0.15249155f, -0.94158435f, 1.5351883f, 0.5865028f, 0.2053428f, -0.58049774f, -0.028567377f,
-                0.027649105f, 0.953271f, -1.4072582f, -1.162804f, -0.26642397f, -0.72383404f, 1.9305837f, -0.08478144f},
-               sd::DataType::FLOAT32);
-  NDArray dA('c', {1, 4, 4},
-             {1.7097045f, 0.06706808f, -0.7701306f, -0.7323265f, 2.9077587f, 0.42032722f, -1.405354f, -0.1920572f,
-              3.0991826f, 2.182485f, 4.429202f, -5.143171f, 4.9272313f, 0.67410874f, -3.3633072f, 1.1743239f},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {4, 4},
-             {2.00359f, 0.503619f, -2.983953f, 1.9250602f, 1.974581f, -1.1562591f, -0.37881336f, 3.8675072f, 1.8841178f,
-              2.2428217f, -5.547243f, -0.25318217f, 0.72402f, -0.6912543f, 0.94283605f, 0.9095385f},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {1, -2, 1, -2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
-}
-
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP20) {
-  NDArray A('c', {2, 3, 2, 2}, {-1.104618f,   0.054949813f, -1.5429245f, 1.2395059f,   0.21299009f,  -1.9405359f,
-                                0.2876496f,   -0.90021694f, 0.21733008f, -0.5207867f,  -1.4787138f,  1.0963368f,
-                                0.4180722f,   -1.1413289f,  -0.1855793f, -0.33207336f, -1.030655f,   -0.78496057f,
-                                -0.20828249f, -0.8358334f,  0.21428165f, -0.46897757f, -0.45928282f, -0.6878806f},
-            sd::DataType::FLOAT32);
-  NDArray B('c', {2, 2}, {0.08809058f, 1.4765077f, -0.42534503f, -0.20465784f}, sd::DataType::FLOAT32);
-  NDArray dLdC('c', {2, 3, 2, 2}, {0.55896884f,  -1.3152053f,  -0.52237713f, -0.17254078f, -0.10358791f,   0.25561175f,
-                                   0.21195985f,  -2.6809795f,  0.64810824f,  0.6235199f,   -0.51219785f,   -0.9933195f,
-                                   0.115763456f, 0.65526706f,  0.04070542f,  -1.6172194f,  -0.0021990836f, -1.4791434f,
-                                   0.28636992f,  -0.98794043f, 0.21422987f,  0.4103843f,   0.25127408f,    -0.5516688f},
-               sd::DataType::FLOAT32);
-  NDArray dA('c', {2, 3, 2, 2}, {-1.8926709f,   -0.3007743f, 0.031412438f, 0.25750235f,  0.3682876f,   -3.939815f,
-                                 -0.008252345f, 0.4585274f,  0.97772413f,  -1.5117637f,  -0.40327787f, 0.42115146f,
-                                 0.9777045f,    -2.384251f,  -0.18334495f, 0.3136628f,   -2.1841605f,  -1.4334751f,
-                                 0.30365366f,   0.08038373f, 0.6248072f,   -0.79240835f, -0.17510997f, 0.0060251653f},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 2}, {-0.96445096f, 12.119483f, -3.7955897f, 4.0316315f}, sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {1, -2, 1, -2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
-}
-
-TEST_F(DeclarableOpsTests15, TestTensorMmul_BP21) {
-  NDArray A('c', {2, 3, 2, 2}, {-1.104618f,   0.054949813f, -1.5429245f, 1.2395059f,   0.21299009f,  -1.9405359f,
-                                0.2876496f,   -0.90021694f, 0.21733008f, -0.5207867f,  -1.4787138f,  1.0963368f,
-                                0.4180722f,   -1.1413289f,  -0.1855793f, -0.33207336f, -1.030655f,   -0.78496057f,
-                                -0.20828249f, -0.8358334f,  0.21428165f, -0.46897757f, -0.45928282f, -0.6878806f},
-            sd::DataType::FLOAT32);
-  NDArray B('c', {2, 2, 2},
-            {1.5363792f, -0.20325208f, 0.5527184f, 2.2368906f, -0.4360202f, 0.14528029f, 0.40532714f, 0.48687512f},
-            sd::DataType::FLOAT32);
-  NDArray dLdC(
-      'c', {2, 3, 2, 2, 2},
-      {-2.5499148f,  -3.2268374f,  -0.14375341f, -0.91169083f,  0.7695215f,   2.7614703f,  0.4784462f,    0.6114677f,
-       0.48622277f,  0.60015f,     0.023724213f, 0.17099269f,   -3.4789655f,  -1.6192687f, 0.4812305f,    -0.72021484f,
-       -0.48341087f, -3.3518937f,  -0.6941231f,  -0.6883752f,   -0.19416028f, 2.5582364f,  0.6714486f,    0.4581191f,
-       0.5397443f,   -0.5000946f,  -0.25750825f, -0.029616296f, -1.9370571f,  -0.5108343f, 0.3630441f,    -0.32749087f,
-       -1.6985986f,  -0.25642234f, 0.3649639f,   -0.25114143f,  -1.6679776f,  -1.710123f,  0.0034727156f, -0.5209858f,
-       0.075363815f, -1.0709187f,  -0.2795909f,  -0.19248249f,  -1.1007316f,  -1.4433929f, -0.07433298f,  -0.40304515f},
-      sd::DataType::FLOAT32);
-  NDArray dA('c', {2, 3, 2, 2},
-             {-3.3315463f, 0.5012243f,  -9.129614f,  7.0940714f, 0.6395385f,  -5.3303494f, 1.7040823f,   -5.700614f,
-              0.14122126f, -1.0444801f, -8.381509f,  6.1103816f, 1.0388733f,  -3.078099f,  -0.93912476f, -2.2256231f,
-              -2.7531908f, -2.2922633f, -1.4867802f, -4.999527f, 0.42739722f, -1.4239123f, -2.5609136f,  -4.063468f},
-             sd::DataType::FLOAT32);
-  NDArray dB('c', {2, 2, 2},
-             {15.738445f, 7.3535337f, 11.675377f, 21.023096f, -2.1701825f, 3.263466f, 2.1788492f, 5.34995f},
-             sd::DataType::FLOAT32);
-
-  sd::ops::tensormmul_bp op;
-  auto results = op.evaluate({&A, &B, &dLdC}, {}, {1, -2, 1, -2});
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  auto* dLdA = results.at(0);
-  auto* dLdB = results.at(1);
-
-  ASSERT_TRUE(dA.isSameShape(*dLdA));
-  ASSERT_TRUE(dA.equalsTo(*dLdA));
-
-  ASSERT_TRUE(dB.isSameShape(*dLdB));
-  ASSERT_TRUE(dB.equalsTo(*dLdB));
 }
 
 //////////////////////////////////////////////////////////////////////

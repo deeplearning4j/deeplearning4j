@@ -589,9 +589,6 @@ TEST_F(DeclarableOpsTests6, cumSum_16) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printShapeInfo();
-  // x.printShapeInfo();
-
   ASSERT_TRUE(z->ews() == 1);
   ASSERT_TRUE(x.ews() == 1);
 }
@@ -682,8 +679,6 @@ TEST_F(DeclarableOpsTests6, cumSum_19) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // exp0.printBuffer();
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -769,8 +764,6 @@ TEST_F(DeclarableOpsTests6, TestDropout_1) {
   auto res = op.evaluate({&x, &shape}, {0.2f}, {113});
 
   ASSERT_EQ(sd::Status::OK, res.status());
-  // res.at(0)->printIndexedBuffer("Result is ");
-  // x.printIndexedBuffer("Input is");
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, TestMod_1) {
@@ -782,8 +775,6 @@ TEST_F(DeclarableOpsTests6, TestMod_1) {
   auto res = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, res.status());
-  //    res.at(0)->printIndexedBuffer("MOD Result is ");
-  //    x.printIndexedBuffer("Input is");
   ASSERT_TRUE(res.at(0)->equalsTo(exp));
 }
 
@@ -798,9 +789,6 @@ TEST_F(DeclarableOpsTests6, TestMod_BP_1) {
   auto res = op.evaluate({&x, &y, &eps});
 
   ASSERT_EQ(sd::Status::OK, res.status());
-  //    res.at(0)->printIndexedBuffer("MOD_BP Result is ");
-
-  //    x.printIndexedBuffer("Input is");
   ASSERT_TRUE(res.at(0)->equalsTo(exp));
 }
 
@@ -809,7 +797,7 @@ TEST_F(DeclarableOpsTests6, TestRank_1) {
   auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
   auto y = NDArrayFactory::create<double>('c', {2, 2, 2}, {10.f, 2.f, 30.f, 4.f, 50.f, 6.f, 70.f, 8.f});
   auto eps = NDArrayFactory::create<double>('c', {2, 2, 2}, {10.f, 2.f, 30.f, 4.f, 50.f, 6.f, 70.f, 8.f});
-  auto exp = NDArrayFactory::create<int>(3);
+  auto exp = NDArrayFactory::create<sd::LongType>(3);
   sd::ops::rank op;
 
   auto res = op.evaluate({&x});
@@ -818,9 +806,9 @@ TEST_F(DeclarableOpsTests6, TestRank_1) {
 
   ASSERT_TRUE(res.at(0)->equalsTo(exp));
 }
+
+
 TEST_F(DeclarableOpsTests6, TestDropout_2) {
-  //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
-  //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
   auto x = NDArrayFactory::create<double>('c', {3, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f});
 
   sd::ops::dropout op;
@@ -831,8 +819,6 @@ TEST_F(DeclarableOpsTests6, TestDropout_2) {
 }
 
 TEST_F(DeclarableOpsTests6, TestDropout_3) {
-  //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
-  //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
   auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
   auto shape = NDArrayFactory::create<int>({1, 2});
 
@@ -861,7 +847,6 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
   ASSERT_TRUE(expI.isSameShape(res.at(1)));
   ASSERT_TRUE(x.equalsTo(res.at(0)));
   ASSERT_TRUE(expI.equalsTo(res.at(1)));
-  // x.printIndexedBuffer("Input is");
 
   ASSERT_TRUE(expI.equalsTo(res.at(1)));
 }

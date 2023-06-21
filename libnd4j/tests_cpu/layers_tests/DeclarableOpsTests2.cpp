@@ -184,8 +184,6 @@ TEST_F(DeclarableOpsTests2, gather_8) {
   auto result = op.evaluate({&input, &indices}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto *output = result.at(0);
-  // output->printShapeInfo();
-  // output->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*output));
   ASSERT_TRUE(expected.equalsTo(output));
@@ -577,8 +575,6 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer("ADL test2");
-  // expected.printIndexedBuffer("ADL expec");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1329,7 +1325,6 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));

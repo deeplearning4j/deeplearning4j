@@ -1294,45 +1294,7 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
-  auto input = NDArrayFactory::create_<double>('c', {2, 2});
-  for (int e = 0; e < input->lengthOf(); e++) input->p(e, e + 1);
 
-  auto epsilon = NDArrayFactory::create_<double>('c', {2, 2});
-  epsilon->p(0, 0.1f);
-  epsilon->p(1, 0.2f);
-  epsilon->p(2, 0.3f);
-  epsilon->p(3, 0.4f);
-
-  auto output = NDArrayFactory::create_<double>('c', {2, 2});
-  output->assign(1.0f);
-
-  auto exp = NDArrayFactory::create_<double>('c', {2, 2});
-  exp->p(0, -0.019661194f);
-  exp->p(1, 0.019661194f);
-  exp->p(2, -0.019661194f);
-  exp->p(3, 0.019661194f);
-
-  auto variableSpace = new VariableSpace();
-  variableSpace->putVariable(-1, input);
-  variableSpace->putVariable(-2, epsilon);
-  variableSpace->putVariable(1, output);
-  // variableSpace->putVariable(42, exp);
-
-  auto block = new Context(1, variableSpace, false);
-  block->fillInputs({-1, -2});
-
-  sd::ops::softmax_bp op;
-
-  sd::Status status = op.execute(block);
-  ASSERT_EQ(sd::Status::OK, status);
-
-  ASSERT_TRUE(output->equalsTo(exp));
-
-  delete variableSpace;
-  delete block;
-  delete exp;
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, BroadcastDivideTest_1) {

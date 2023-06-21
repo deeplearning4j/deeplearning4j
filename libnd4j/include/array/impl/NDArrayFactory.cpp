@@ -120,14 +120,17 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
     THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32 !");
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
 
-  if (descriptor->arrLength() != data.size()) {
+  //scalars can be created with zero length
+  if (descriptor->arrLength() != 0 && data.size() != 1 && descriptor->arrLength() != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
+  //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
+  //to create a correct length data buffer
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
-      data.data(), DataTypeUtils::fromT<T>(), descriptor->arrLength() * sizeof(T), context->getWorkspace());
+      data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
   delete descriptor;
