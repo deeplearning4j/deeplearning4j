@@ -491,9 +491,9 @@
                 </property>
             </activation>
             <properties>
-                <cuda.version>11.8</cuda.version>
-                <cudnn.version>8.6</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.8</javacpp-presets.cuda.version>
+                <cuda.version>12.1</cuda.version>
+                <cudnn.version>8.9</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
                 <test.heap.size>6g</test.heap.size>
                 <test.offheap.size>6g</test.offheap.size>
                 <surefire.forks>1</surefire.forks>

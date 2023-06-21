@@ -695,20 +695,22 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
-      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
+    std::vector<sd::LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSame(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
-                                        dims.data(), dims.size());
+                                        dims->data(), dims->size());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
+
+    delete dims;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -734,21 +736,23 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
-      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
+    std::vector<sd::LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceLong(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
-                                        dims.data(), dims.size());
+                                        dims->data(), dims->size());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
+
+    delete dims;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -811,26 +815,28 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    const std::vector<LongType> dimensions(dimension, dimension + dimensionLength);
 
     const sd::LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
-      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+      auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
+    std::vector<sd::LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceBool(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
-                                        dims.data(), dims.size());
+                                        dims->data(), dims->size());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
+
+    delete dims;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -948,21 +954,22 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo,
-                                                                                            dimensions);
+                                                                                            &dimensions);
       zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<sd::LongType>();
+    std::vector<sd::LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloat(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                          extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
-                                         dims.data(), dims.size());
+                                         dims->data(), dims->size());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
+    delete dims;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -2703,7 +2710,8 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
 
     // we shouldn't copy buffer if that's empty array
     InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    auto array = new sd::NDArray(opaqueBuff->dataBuffer(), shape_, varSpace.launchContext(), false);
+    auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
+    auto array = new sd::NDArray(buff->primary(), shape_, varSpace.launchContext(),false);
 
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);
@@ -2721,7 +2729,6 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
 
   return shapeList;
 }
-
 sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                       sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
@@ -2739,10 +2746,10 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 
-sd::ShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer *inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
+                                        sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                        sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
+                                        int numDArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
