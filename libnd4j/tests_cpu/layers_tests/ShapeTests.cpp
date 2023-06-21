@@ -55,7 +55,7 @@ TEST_F(ShapeTests, Test_Basics_2) {
 
 TEST_F(ShapeTests, Test_tadLength_1) {
   sd::LongType shape[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, -1, 102};
-  int axis[] = {2, 3};
+  sd::LongType axis[] = {2, 3};
 
   ASSERT_EQ(20, shape::tadLength(shape, axis, 2));
 }

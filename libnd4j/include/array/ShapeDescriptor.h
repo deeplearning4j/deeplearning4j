@@ -81,15 +81,14 @@ class SD_LIB_EXPORT ShapeDescriptor {
   explicit ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride,
                            const sd::LongType *orderOverride);
   explicit ShapeDescriptor(const DataType type, const sd::LongType length);
-  explicit ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const int rank);
-  explicit ShapeDescriptor(const DataType type, const char order, const std::initializer_list<sd::LongType> &shape);
+  explicit ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const LongType rank);
   explicit ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape);
   explicit ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape,
                            const std::vector<sd::LongType> &strides);
   explicit ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape,
                            const std::vector<sd::LongType> &strides, const sd::LongType ews);
   explicit ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape,
-                           const sd::LongType *strides, const int rank, sd::LongType ews, sd::LongType extras);
+                           const sd::LongType *strides, const LongType rank, sd::LongType ews, sd::LongType extras);
 
   ShapeDescriptor() = default;
   ~ShapeDescriptor() = default;

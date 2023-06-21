@@ -164,8 +164,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *dLdw = results.at(1);
-  // dLdw->printIndexedBuffer();
-  // dLdw->printShapeInfo();
 
   ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
   ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -660,8 +658,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test2) {
 
   NDArray *result = results.at(0);
 
-  //    result->printBuffer("Resized to 10x8");
-  //    expected.printBuffer("Expect for 10x8");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -695,8 +691,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test3) {
 
   NDArray *result = results.at(0);
 
-  //    result.printBuffer("Resized to 6x6");
-  //    expected.printBuffer("Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -729,9 +723,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Resized to 6x8");
-  //    expected.printBuffer("Expect for 6x8");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -772,9 +763,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Resized to 8x8");
-  //    expected.printBuffer("Expect for 8x8");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -895,9 +883,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test6) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Resized to 30x30");
-  //    expected.printBuffer("Expect for 30x30");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -940,9 +925,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Resized to 9x9");
-  //    expected.printBuffer("Expect for 9x9");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -994,9 +976,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Resized to 9x9");
-  //    testData.printBuffer("Expect for 9x9");
   ASSERT_TRUE(testData.isSameShape(result));
   ASSERT_TRUE(testData.equalsTo(result));
 }
@@ -1029,9 +1008,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1049,9 +1025,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1074,9 +1047,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1110,9 +1080,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1146,9 +1113,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result->printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1164,7 +1128,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
 
        1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 2.5f, 2.5f, 3.f,  3.5f, 3.5f, 4.5f,
        4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 7.f,  7.f,  7.5f, 8.f,  8.f,  9.f});
-  // input.linspace(1);
   auto size = NDArrayFactory::create<int>({6, 6});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input, &size}, {}, {}, {true});
@@ -1172,9 +1135,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1190,17 +1150,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test7) {
 
        1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 2.5f, 2.5f, 3.f,  3.5f, 3.5f, 4.5f,
        4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 7.f,  7.f,  7.5f, 8.f,  8.f,  9.f});
-  // input.linspace(1);
-  //    auto size = NDArrayFactory::create<int>({6, 6});
+
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1212,17 +1168,12 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
       'c', {1, 6, 6, 1},
       {1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 2.5f, 2.5f, 3.f,  3.5f, 3.5f, 4.5f,
        4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 7.f,  7.f,  7.5f, 8.f,  8.f,  9.f});
-  // input.linspace(1);
-  //    auto size = NDArrayFactory::create<int>({6, 6});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1237,8 +1188,6 @@ TEST_F(DeclarableOpsTests11, ResizeImages_Test8) {
        //            6.f, 6.f, 7.f, 7.f, 8.f, 8.f, 9.f, 9.f, 7.f, 7.f, 8.f, 8.f, 9.f, 9.f
        1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 1.f, 1.f, 1.5f, 2.f, 2.f, 3.f, 2.5f, 2.5f, 3.f,  3.5f, 3.5f, 4.5f,
        4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 4.f, 4.f, 4.5f, 5.f, 5.f, 6.f, 7.f,  7.f,  7.5f, 8.f,  8.f,  9.f});
-  // input.linspace(1);
-  //    auto size = NDArrayFactory::create<int>({6, 6});
   sd::ops::resize_images op;
   auto results =
       op.evaluate({&input}, {}, {6, 8, ops::helpers::kResizeArea},
@@ -1247,9 +1196,6 @@ TEST_F(DeclarableOpsTests11, ResizeImages_Test8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result->printBuffer("Area Resized to 6x6");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1308,7 +1254,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
        20.999989f, 21.999989f, 22.999987f, 23.999987f
 
       });
-  // input.linspace(1);
   auto size = NDArrayFactory::create<int>({10, 10});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input, &size}, {}, {});
@@ -1316,9 +1261,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 10x10");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1377,17 +1319,12 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test10) {
        20.999989f, 21.999989f, 22.999987f, 23.999987f
 
       });
-  // input.linspace(1);
-  // auto size = NDArrayFactory::create<int>({10, 10});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {10, 10});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-
-  //    result.printBuffer("Area Resized to 10x10");
-  //    expected.printBuffer("Area Expect for 6x6");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1397,50 +1334,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test11) {
   NDArray input = NDArrayFactory::create<int>(
       'c', {1, 2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
 
-  //    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 9, 4}, {
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000,
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667,
-  //            6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336,
-  //            8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998,
-  //            11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000,
-  //            3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000,
-  //            6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667,
-  //            5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336,
-  //            7.333336, 8.333336, 9.333336, 8.999999, 9.999999, 11.000000, 11.999999, 8.999999, 9.999999, 11.000000, 11.999999,
-  //            8.999998, 9.999997, 10.999997, 11.999997, 13.000003, 14.000004, 15.000003, 16.000004, 13.000003, 14.000004,
-  //            15.000003, 16.000004, 13.000003, 14.000004, 15.000003, 16.000004, 15.666671, 16.666672, 17.666672, 18.666672,
-  //            17.000006, 18.000004, 19.000006, 20.000004, 17.000006, 18.000004, 19.000006, 20.000004, 18.333344, 19.333344,
-  //            20.333345, 21.333344, 21.000006, 22.000006, 23.000006, 24.000006, 21.000006, 22.000006, 23.000006, 24.000006,
-  //            21.000002, 22.000000, 23.000002, 24.000000, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 12.999995, 13.999995, 14.999994, 15.999994, 12.999995, 13.999995,
-  //            14.999994, 15.999994, 12.999995, 13.999995, 14.999994, 15.999994, 15.666661, 16.666662, 17.666660, 18.666660,
-  //            16.999994, 17.999994, 18.999992, 19.999992, 16.999994, 17.999994, 18.999992, 19.999992, 18.333334, 19.333332,
-  //            20.333334, 21.333332, 20.999992, 21.999992, 22.999990, 23.999992, 20.999992, 21.999992, 22.999990, 23.999992,
-  //            20.999989, 21.999989, 22.999987, 23.999987
-  //
-  //    });
-  // input.linspace(1);
-  // auto size = NDArrayFactory::create<int>({10, 10});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {6, 9});
 
@@ -1448,10 +1341,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test11) {
 
   NDArray *result = results.at(0);
 
-  //    result.printBuffer("Area Resized to 6x9");
-  //    expected.printBuffer("Area Expect for 6x6");
-  //    ASSERT_TRUE(expected.isSameShape(result));
-  //    ASSERT_TRUE(expected.equalsTo(result));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1459,50 +1348,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test12) {
   NDArray input = NDArrayFactory::create<int>(
       'c', {1, 2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
 
-  //    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 9, 4}, {
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000,
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667,
-  //            6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336,
-  //            8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998,
-  //            11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000,
-  //            3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000,
-  //            6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667,
-  //            5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336,
-  //            7.333336, 8.333336, 9.333336, 8.999999, 9.999999, 11.000000, 11.999999, 8.999999, 9.999999, 11.000000, 11.999999,
-  //            8.999998, 9.999997, 10.999997, 11.999997, 13.000003, 14.000004, 15.000003, 16.000004, 13.000003, 14.000004,
-  //            15.000003, 16.000004, 13.000003, 14.000004, 15.000003, 16.000004, 15.666671, 16.666672, 17.666672, 18.666672,
-  //            17.000006, 18.000004, 19.000006, 20.000004, 17.000006, 18.000004, 19.000006, 20.000004, 18.333344, 19.333344,
-  //            20.333345, 21.333344, 21.000006, 22.000006, 23.000006, 24.000006, 21.000006, 22.000006, 23.000006, 24.000006,
-  //            21.000002, 22.000000, 23.000002, 24.000000, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 12.999995, 13.999995, 14.999994, 15.999994, 12.999995, 13.999995,
-  //            14.999994, 15.999994, 12.999995, 13.999995, 14.999994, 15.999994, 15.666661, 16.666662, 17.666660, 18.666660,
-  //            16.999994, 17.999994, 18.999992, 19.999992, 16.999994, 17.999994, 18.999992, 19.999992, 18.333334, 19.333332,
-  //            20.333334, 21.333332, 20.999992, 21.999992, 22.999990, 23.999992, 20.999992, 21.999992, 22.999990, 23.999992,
-  //            20.999989, 21.999989, 22.999987, 23.999987
-  //
-  //    });
-  // input.linspace(1);
-  // auto size = NDArrayFactory::create<int>({10, 10});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {10, 15});
 
@@ -1510,10 +1355,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test12) {
 
   NDArray *result = results.at(0);
 
-  //    result.printBuffer("Area Resized to 6x9");
-  //    expected.printBuffer("Area Expect for 6x6");
-  //    ASSERT_TRUE(expected.isSameShape(result));
-  //    ASSERT_TRUE(expected.equalsTo(result));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1521,50 +1362,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test13) {
   NDArray input = NDArrayFactory::create<int>(
       'c', {1, 2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
 
-  //    NDArray expected = NDArrayFactory::create<float>('c', {1, 8, 8, 4}, {
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000,
-  //            1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667,
-  //            6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336,
-  //            8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000,
-  //            7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000,
-  //            10.000000, 11.000000, 12.000000, 9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998,
-  //            11.999998, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000,
-  //            3.000000, 4.000000, 3.666667, 4.666667, 5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000,
-  //            6.000000, 7.000000, 8.000000, 6.333336, 7.333336, 8.333336, 9.333337, 9.000000, 10.000000, 11.000000, 12.000000,
-  //            9.000000, 10.000000, 11.000000, 12.000000, 8.999998, 9.999998, 10.999998, 11.999998, 1.000000, 2.000000, 3.000000,
-  //            4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 1.000000, 2.000000, 3.000000, 4.000000, 3.666667, 4.666667,
-  //            5.666667, 6.666667, 5.000000, 6.000000, 7.000000, 8.000000, 5.000000, 6.000000, 7.000000, 8.000000, 6.333336,
-  //            7.333336, 8.333336, 9.333336, 8.999999, 9.999999, 11.000000, 11.999999, 8.999999, 9.999999, 11.000000, 11.999999,
-  //            8.999998, 9.999997, 10.999997, 11.999997, 13.000003, 14.000004, 15.000003, 16.000004, 13.000003, 14.000004,
-  //            15.000003, 16.000004, 13.000003, 14.000004, 15.000003, 16.000004, 15.666671, 16.666672, 17.666672, 18.666672,
-  //            17.000006, 18.000004, 19.000006, 20.000004, 17.000006, 18.000004, 19.000006, 20.000004, 18.333344, 19.333344,
-  //            20.333345, 21.333344, 21.000006, 22.000006, 23.000006, 24.000006, 21.000006, 22.000006, 23.000006, 24.000006,
-  //            21.000002, 22.000000, 23.000002, 24.000000, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 13.000000, 14.000001, 15.000000, 16.000000, 13.000000, 14.000001,
-  //            15.000000, 16.000000, 13.000000, 14.000001, 15.000000, 16.000000, 15.666667, 16.666668, 17.666668, 18.666668,
-  //            17.000002, 18.000000, 19.000002, 20.000000, 17.000002, 18.000000, 19.000002, 20.000000, 18.333340, 19.333340,
-  //            20.333342, 21.333340, 21.000002, 22.000000, 22.999998, 24.000000, 21.000002, 22.000000, 22.999998, 24.000000,
-  //            20.999996, 21.999996, 22.999994, 23.999996, 12.999995, 13.999995, 14.999994, 15.999994, 12.999995, 13.999995,
-  //            14.999994, 15.999994, 12.999995, 13.999995, 14.999994, 15.999994, 15.666661, 16.666662, 17.666660, 18.666660,
-  //            16.999994, 17.999994, 18.999992, 19.999992, 16.999994, 17.999994, 18.999992, 19.999992, 18.333334, 19.333332,
-  //            20.333334, 21.333332, 20.999992, 21.999992, 22.999990, 23.999992, 20.999992, 21.999992, 22.999990, 23.999992,
-  //            20.999989, 21.999989, 22.999987, 23.999987
-  //
-  //    });
-  // input.linspace(1);
-  // auto size = NDArrayFactory::create<int>({10, 10});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input}, {}, {9, 9});
 
@@ -1572,10 +1369,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test13) {
 
   NDArray *result = results.at(0);
 
-  //    result.printBuffer("Area Resized to 8x8");
-  //    expected.printBuffer("Area Expect for 6x6");
-  //    ASSERT_TRUE(expected.isSameShape(result));
-  //    ASSERT_TRUE(expected.equalsTo(result));
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
@@ -1591,16 +1384,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
            14.f,       12.f,       12.599999f, 13.199998f, 13.999998f, 14.800002f, 15.399991f, 16.f,       15.999999f,
            16.599998f, 17.199995f, 18.f,       18.800003f, 19.399986f, 20.000002f, 19.f,       19.599998f, 20.199997f,
            20.999998f, 21.800003f, 22.399984f, 23.000002f, 20.999998f, 21.599998f, 22.199995f, 22.999998f, 23.800001f,
-           24.399984f, 25.f});  // input.linspace(1);
-  //    auto size = NDArrayFactory::create<int>({6, 6});
+           24.399984f, 25.f});
   sd::ops::resize_area op;
   auto results = op.evaluate({&input, &size}, {}, {false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-  //    result.printBuffer("Area Resized to 8x7");
-  //    expected.printBuffer("Area Expect for 8x7");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1608,7 +1398,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
   NDArray input = NDArrayFactory::create<int>(
       'c', {1, 5, 5, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25});
-  // auto size = NDArrayFactory::create<int>({8, 7});
   NDArray expected = NDArrayFactory::create<float>(
       'c', {1, 8, 7, 1},
       {1.f,        1.6f,       2.1999993f, 2.9999995f, 3.8f,       4.399997f,  5.f,        2.9999995f,
@@ -1625,8 +1414,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray *result = results.at(0);
-  //    result.printBuffer("Area Resized to 8x7");
-  //    expected.printBuffer("Area Expect for 8x7");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1664,9 +1451,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_1) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("Solve of 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1701,9 +1485,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_2) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("Solve 4x4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1728,9 +1509,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_3) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("Solve 4x4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1744,8 +1522,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4) {
 
   auto exp = NDArrayFactory::create<float>(
       'c', {2, 2, 2},
-      {//            1.524494767f,    0.432706356f,-0.518630624f,    0.737760842f,
-       //            0.819143713f,    0.720401764f, 0.264349997f,    0.444699198f
+      {
        1.5245394f, 0.4326952f, -0.51873577f, 0.7377896f, 0.81915987f, 0.72049433f, 0.2643504f, 0.44472617f});
 
   sd::ops::solve op;
@@ -1753,10 +1530,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4 Solve 4x4");
-  //    exp.printBuffer("4 Expec 4x4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1776,10 +1549,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
   auto res = op.evaluate({&a, &b}, {true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4 Solve 4x4");
-  //    exp.printBuffer("4 Expec 4x4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1799,10 +1568,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
   auto res = op.evaluate({&a, &b}, {true, false});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_2 Triangular_Solve 3x3");
-  //    exp.printBuffer("4_2 Triangular_Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1823,10 +1588,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_3) {
   auto res = op.evaluate({&a, &b}, {true, true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_3 Triangular_Solve 3x3");
-  //    exp.printBuffer("4_3 Triangular_Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1847,10 +1608,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_4) {
   auto res = op.evaluate({&a, &b}, {false});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_4 Solve 3x3");
-  //    exp.printBuffer("4_4 Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1871,10 +1628,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_5) {
   auto res = op.evaluate({&a, &b}, {true, true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_5 Solve 3x3");
-  //    exp.printBuffer("4_5 Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1895,10 +1648,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_6) {
   auto res = op.evaluate({&a, &b}, {false, true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_6 Solve 3x3");
-  //    exp.printBuffer("4_6 Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1923,10 +1672,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
   auto res = op.evaluate({&a, &b}, {true, false});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4_7 Solve 3x3");
-  //    exp.printBuffer("4_7 Expec 3x3");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1947,10 +1692,6 @@ TEST_F(DeclarableOpsTests11, Solve_Test_5) {
   auto res = op.evaluate({&a, &b}, {true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printBuffer("4 Solve 4x4");
-  //    exp.printBuffer("4 Expec 4x4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1966,10 +1707,6 @@ TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
   auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("LS Solve 2x2");
-  //    exp.printIndexedBuffer("LS Expec 2x2");
-
   ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
 }
 
@@ -1985,10 +1722,6 @@ TEST_F(DeclarableOpsTests11, SolveLS_Test_2) {
   auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("2LS Solve 2x2");
-  //    exp.printIndexedBuffer("2LS Expec 2x2");
-
   ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
 }
 
@@ -2029,9 +1762,6 @@ TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2_2) {
   auto res = op.evaluate({&a});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("L matrix is");
-  //    exp.printIndexedBuffer("L expected is");
   MmulHelper::matmul(z, z, &exp, false, true);
   ASSERT_TRUE(exp.equalsTo(a));
 }
@@ -3590,10 +3320,6 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
   auto *dLdw = results.at(1);
   auto *dLdl = results.at(2);
 
-  // dLdp->printIndexedBuffer();
-
-  // ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
-  // ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
   ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
   ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 }
@@ -3601,7 +3327,8 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
   NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
-  auto sumDiff = labels.reduceAlongDimension(reduce::Sum, {1}, true);
+  std::vector<sd::LongType> dim = {0};
+  auto sumDiff = labels.reduceAlongDimension(reduce::Sum,&dim , true);
 
   NDArray numOfNonZero(sumDiff.shapeInfo(), sd::DataType::INT64, false);
   numOfNonZero.assign(1);

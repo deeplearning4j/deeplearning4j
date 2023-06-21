@@ -301,7 +301,9 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
   samediff::Threads::parallel_tad(func, 0, ncols);
 
   // gradB
-  gradBias.reduceAlongDimension(reduce::Sum, *gradB, {0});  // [4*K]
+
+  std::vector<sd::LongType> dims = {0};
+  gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims);  // [4*K]
 
   // gradW
   x->permutei({0, 2, 1});                       // [time x bS x 2*K] -> [time x 2*K x bS]

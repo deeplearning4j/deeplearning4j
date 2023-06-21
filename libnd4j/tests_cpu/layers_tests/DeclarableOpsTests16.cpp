@@ -188,7 +188,6 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
 
   auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0,
                                          nullptr, 0);
-  // shape::printShapeInfoLinear("Result", shapes->at(0));
   ASSERT_TRUE(shape::shapeEquals(z.shapeInfo(), shapes->at(0)));
 
   delete shapes;
@@ -200,7 +199,6 @@ TEST_F(DeclarableOpsTests16, test_reverse_1) {
 
   for (auto r : rows) {
     for (auto c : columns) {
-      // sd_printf("Trying [%i, %i]\n", r, c);
       auto array = NDArrayFactory::create<float>('c', {r, c});
       auto exp = NDArrayFactory::create<float>('c', {r, c});
       auto reversed = NDArrayFactory::create<float>('c', {r, c});
@@ -395,7 +393,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
       {0.262831867f, 0.723622441f, 0.740797927f, 0.717254877f, 0.430244058f, 0.418478161f, 0.906427443f, 0.199753001f,
        0.725874603f, 0.890151322f, 0.928968489f, 0.684074104f});
 
-  // get subarray
   // get subarray
   NDArray subArrRgbs = rgbs.subarray({NDIndex::all(), NDIndex::point(0)});
   NDArray expected = hsvs.subarray({NDIndex::all(), NDIndex::point(0)});
@@ -969,21 +966,22 @@ TEST_F(DeclarableOpsTests16, clipbynorm_3) {
 
   x.linspace(100.);
 
-  auto xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
+  std::vector<sd::LongType> dimOne = {1};
+  auto xNorm1 = x.reduceAlongDimension(reduce::Norm2, &dimOne, true);
   x /= xNorm1;
-  xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
+  xNorm1 = x.reduceAlongDimension(reduce::Norm2, &dimOne, true);
 
   ASSERT_TRUE(unities.isSameShape(xNorm1));
   ASSERT_TRUE(unities.equalsTo(xNorm1));
 
   x *= scale;
-  xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
+  xNorm1 = x.reduceAlongDimension(reduce::Norm2, &dimOne, true);
 
   sd::ops::clipbynorm op;
   auto result = op.evaluate({&x}, {1.0}, {1});
   auto z = result.at(0);
 
-  auto zNorm1 = z->reduceAlongDimension(reduce::Norm2, {1}, true);
+  auto zNorm1 = z->reduceAlongDimension(reduce::Norm2, &dimOne, true);
   auto exp = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
 
   ASSERT_TRUE(exp.isSameShape(&zNorm1));
@@ -1011,13 +1009,10 @@ TEST_F(DeclarableOpsTests16, clipbynorm_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests16, clipbynorm_5) {
-  // auto x = NDArrayFactory::create<double>('c', {3, 5}, {1,2,3,4,5,  1,2,3,4,5,  1,2,3,4,5});
   auto x = NDArrayFactory::create<double>('c', {3, 5});
   auto exp = NDArrayFactory::create<double>(
       'c', {3, 5},
       {1., 2., 2.89271, 3.50524, 4.00892, 6., 7., 7.71389, 7.88678, 8.01784, 11., 12., 12.53507, 12.26833, 12.02676});
-  // auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1});
-
   x.linspace(1);
 
   sd::ops::clipbynorm op;
@@ -1140,7 +1135,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_12) {
 TEST_F(DeclarableOpsTests16, clipbynorm_13) {
   const int bS = 5;
   const int nOut = 4;
-  const int axis = 0;
+  const sd::LongType axis = 0;
   const double clip = 2.;
 
   auto x = NDArrayFactory::create<double>(
@@ -1150,7 +1145,9 @@ TEST_F(DeclarableOpsTests16, clipbynorm_13) {
   auto colVect = NDArrayFactory::create<double>('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
   auto expect = NDArrayFactory::create<double>('c', {bS, nOut});
 
-  auto norm2 = x.reduceAlongDimension(reduce::Norm2, {axis}, true);  // norm2 has shape [1, nOut]
+
+  std::vector<sd::LongType> dims = {axis};
+  auto norm2 = x.reduceAlongDimension(reduce::Norm2, &dims, true);  // norm2 has shape [1, nOut]
 
   auto y = ((x / norm2) * clip) * colVect;
   auto temp = (x / norm2) * clip;

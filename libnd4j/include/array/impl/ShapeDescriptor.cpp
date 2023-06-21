@@ -83,7 +83,7 @@ sd::LongType *ShapeDescriptor::toShapeInfo() const {
   return shapeInfo;
 }
 
-ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const int rank)
+ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const LongType rank)
     : _dataType(type), _order(order), _rank(rank), _ews(1) {
   _shape_strides.resize(2 * rank);
   auto _shape = _shape_strides.data();
@@ -95,7 +95,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape,
-                                 const sd::LongType *strides, const int rank, sd::LongType ews, sd::LongType extras) {
+                                 const sd::LongType *strides, const LongType rank, sd::LongType ews, sd::LongType extras) {
   _shape_strides.resize(2 * rank);
   _dataType = type;
   _order = order;
@@ -125,23 +125,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   fillStrides();
 }
 
-//////////////////////////////////////////////////////////////////////////
-ShapeDescriptor::ShapeDescriptor(const DataType type, const char order,
-                                 const std::initializer_list<sd::LongType> &shape)
-    : _dataType(type), _order(order) {
-  _rank = shape.size();
-  _ews = 1;
-  _shape_strides.resize(2 * _rank);
-  _order = order;
 
-  auto _shape = _shape_strides.data();
-  int i = 0;
-  for (auto x : shape) {
-    _shape[i] = x;
-    ++i;
-  }
-  fillStrides();
-}
 
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape,

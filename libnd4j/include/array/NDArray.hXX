@@ -255,6 +255,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
 NDArray::NDArray(NDArray &&other) noexcept {
   _isView = other._isView;
   _buffer = other._buffer;
+  _shapeInfoBuffer = other._shapeInfoBuffer;
   _shapeInfo = other._shapeInfo;
   _shapeInfoD = other._shapeInfoD;
   _context = other._context;
@@ -271,6 +272,7 @@ NDArray::NDArray(NDArray &&other) noexcept {
 // constructor, create empty array at given workspace
 NDArray::NDArray(sd::LaunchContext *context) {
   _buffer = std::make_shared<DataBuffer>();
+  _shapeInfoBuffer = nullptr;
   _shapeInfo = nullptr;
   _shapeInfoD = nullptr;
   _offset = 0;
@@ -552,15 +554,25 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 // constructors for vector of  strings
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string,
                  const sd::DataType dataType, sd::LaunchContext *context) {
-  if (!DataTypeUtils::isS(dataType))
-    THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
-
-  if (shape::prodLong(shape.data(), shape.size()) != string.size())
-    THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
-
+  if (!DataTypeUtils::isS(dataType)) {
+    std::string errorMessage;
+    errorMessage += "NDArray::NDArray: invalid DataType, only string dataTypes have to be used";
+    errorMessage += "Provided data type: " + DataTypeUtils::asString(dataType);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (shape::prodLong(shape.data(), shape.size()) != string.size()) {
+    std::string errorMessage;
+    errorMessage += "NDArray::NDArray: Number of strings should match length of array. ";
+    errorMessage += "Number of strings: " + std::to_string(string.size()) + ", ";
+    errorMessage += "length of array: " + std::to_string(shape::prodLong(shape.data(), shape.size()));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   for (const auto &str : string) {
     if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str))) {
-      THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
+      std::string errorMessage;
+      errorMessage += "NDArray::NDArray: invalid character in input string: ";
+      errorMessage += str;
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 
@@ -630,10 +642,9 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   }
 
   sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
-
   std::vector<sd::LongType> offsets(string.size() + 1);
   sd::LongType dataLength = 0;
-  for (int e = 0; e < string.size(); e++) {
+  for (sd::LongType e = 0; e < string.size(); e++) {
     offsets[e] = dataLength;
     dataLength += [&] {
       if (dataType == DataType::UTF16) return unicode::offsetUtf8StringInUtf16(string[e].data(), string[e].size());
@@ -643,7 +654,6 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   }
 
   offsets[string.size()] = dataLength;
-
   _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dataType, context->getWorkspace(), true);
 
   _context = context;
@@ -657,9 +667,7 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   setAttached(context->getWorkspace() != nullptr);
 
   memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(sd::LongType));
-
   auto data = reinterpret_cast<int8_t *>(bufferAsT<int8_t>() + headerLength);
-
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       auto cdata = data + offsets[e];
@@ -674,7 +682,6 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   };
 
   samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
-
   tickWriteHost();
   syncToDevice();
 }
@@ -3656,7 +3663,16 @@ template <>
 std::string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::string out of non-string array");
 
-  if (i == lengthOf()) THROW_EXCEPTION("Can't get std::string for index out of range");
+  if (i >= lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Requested index is out of range: [";
+    errorMessage += StringUtils::valueToString<sd::LongType>(i);
+    errorMessage += "] vs ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(lengthOf());
+    errorMessage += " on array with shape ";
+    errorMessage += ShapeUtils::shapeAsString(shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   if (this->dataType() == DataType::UTF16) {
     auto u16 = this->e<std::u16string>(i);
@@ -4485,13 +4501,17 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
     THROW_EXCEPTION(
         "NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
-  std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
-
+  std::vector<sd::LongType> *copy =  new std::vector<sd::LongType>(*dimensions);
   if (checkTargetShape) {
     auto newShape =
         ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, false, getContext()->getWorkspace());
-    if (!shape::shapeEquals(newShape, target.shapeInfo()))
-      THROW_EXCEPTION("NDArray::reduceAlongDimension SameOps: wrong target shape!");
+    if (!shape::shapeEquals(newShape, target.shapeInfo())) {
+      std::string errorMessage;
+      errorMessage += "NDArray::reduceAlongDimension SameOps: wrong target shape!\n";
+      errorMessage += "Expected: "; errorMessage += ShapeUtils::shapeAsString(target.shapeInfo());
+      errorMessage += " vs "; errorMessage += ShapeUtils::shapeAsString(newShape);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
   NDArray::prepareSpecialUse({&target}, {this});
@@ -4519,6 +4539,9 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
   synchronize("NDArray::reduceAlongDimension SameOps");
 
   NDArray::registerSpecialUse({&target}, {this});
+
+  delete copy;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -5264,7 +5287,7 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
     ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
-
+    _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
     _shapeInfoD = shapeBuffer->special();
@@ -5290,7 +5313,7 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo, const sd::DataType dty
         ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, true, getContext()->getWorkspace());
     ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoTemp);
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
-
+    _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
     _shapeInfoD = shapeBuffer->special();
@@ -5316,6 +5339,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
   }
 
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
+  _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer->special();
@@ -5331,6 +5355,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
+  _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
   _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer->special();

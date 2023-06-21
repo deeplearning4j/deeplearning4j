@@ -40,9 +40,10 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
   x.linspace(1);
   y.linspace(1);
   exp.linspace(1);
+  std::vector<sd::LongType> dims = {1};
 
 
-  exp.applyBroadcast(broadcast::Add, {1}, y, exp);
+  exp.applyBroadcast(broadcast::Add, &dims, y, exp);
 
   sd::ops::add op;
   auto result = op.evaluate({&x, &y});
@@ -63,8 +64,9 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
   x.linspace(1);
   y.linspace(1);
   exp.linspace(1);
+  std::vector<sd::LongType> dims = {1};
 
-  exp.applyBroadcast(broadcast::Multiply, {1}, y, exp);
+  exp.applyBroadcast(broadcast::Multiply, &dims, y, exp);
 
   sd::ops::multiply op;
   auto result = op.evaluate({&x, &y});
@@ -85,7 +87,8 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
   y.linspace(1);
   exp.linspace(1);
 
-  exp.applyBroadcast(broadcast::SquaredSubtract, {1}, y, exp);
+  std::vector<sd::LongType> dims = {1};
+  exp.applyBroadcast(broadcast::SquaredSubtract, &dims, y, exp);
 
   sd::ops::squaredsubtract op;
   auto result = op.evaluate({&x, &y});

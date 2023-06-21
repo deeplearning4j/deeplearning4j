@@ -265,10 +265,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, avgpool2d_9) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo("z shape:");
-  // z->printBuffer("z buffer:");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -588,7 +584,7 @@ TEST_F(DeclarableOpsTests4, avgpool2d_13) {
   // variableSpace->putVariable(1, &z);
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;
@@ -628,7 +624,7 @@ TEST_F(DeclarableOpsTests4, avgpool2d_14) {
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;
@@ -638,7 +634,6 @@ TEST_F(DeclarableOpsTests4, avgpool2d_14) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result->printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 
   delete variableSpace;
@@ -668,11 +663,10 @@ TEST_F(DeclarableOpsTests4, Avgpool2d_test15) {
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
-  std::vector<int>* argI = block->getIArguments();
+  std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 1,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
   // dilation Height/Width; 8 - same mode;
@@ -682,7 +676,6 @@ TEST_F(DeclarableOpsTests4, Avgpool2d_test15) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result->printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 
   delete variableSpace;
@@ -860,9 +853,6 @@ TEST_F(DeclarableOpsTests4, Test_FirasSparce_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("FIRAS");
-  //    z->printShapeInfo("OUTSHAPE");
-  //    ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -878,8 +868,6 @@ TEST_F(DeclarableOpsTests4, Test_FlattenTests_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Flatten1");
-  //    z->printShapeInfo("Flatten1 shape");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -896,9 +884,6 @@ TEST_F(DeclarableOpsTests4, Test_FlattenTests_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Flatten2");
-  //    z->printShapeInfo("Flatten2 shape");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -945,8 +930,6 @@ TEST_F(DeclarableOpsTests4, Test_FloorTests_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Flatten1");
-  //    z->printShapeInfo("Flatten1 shape");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -1375,10 +1358,6 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_3) {
   auto begin = NDArrayFactory::create<int>('c', {1}, {axis});
   auto end = NDArrayFactory::create<int>('c', {1}, {axis});
   auto stride = NDArrayFactory::create<int>('c', {1}, {1});
-  // x.linspace(1);
-  // auto exp = NDArrayFactory::create<double>('c', {1,3,4,5});
-  // exp.linspace(1);
-
   sd::ops::strided_slice op;
   auto result = op.evaluate({&x, &begin, &end, &stride}, {}, {1, 0, 0, 0, 0});
 
@@ -1392,10 +1371,7 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_4) {
   auto begin = NDArrayFactory::create<double>('c', {2}, {0, 0});
   auto end = NDArrayFactory::create<double>('c', {2}, {0, 1});
   auto stride = NDArrayFactory::create<double>('c', {2}, {1, 1});
-  //    x.linspace(1);
   auto exp = NDArrayFactory::create<double>('c', {1}, {1});
-  // exp.linspace(1);
-
   sd::ops::strided_slice op;
   auto result = op.evaluate({&x, &begin, &end, &stride}, {}, {1, 0, 1, 0, 2});
 
@@ -1759,8 +1735,6 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_1) {
   auto results = op.evaluate({&targets, &input, &weight});
   auto output = results.at(0);
 
-  // output->printIndexedBuffer();
-
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));
@@ -1886,8 +1860,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_1) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(out));
-  // out->printIndexedBuffer("LRN out");
-  // exp.printIndexedBuffer("LRN exp");
   ASSERT_TRUE(exp.equalsTo(out));
 }
 
@@ -1907,8 +1879,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_2) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(out));
-  // out->printIndexedBuffer("LRN out");
-  // exp.printIndexedBuffer("LRN exp");
   ASSERT_TRUE(exp.equalsTo(out));
 }
 
@@ -1934,8 +1904,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_3) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(out));
-  // out->printIndexedBuffer("LRN out");
-  // exp.printIndexedBuffer("LRN exp");
   ASSERT_TRUE(exp.equalsTo(out));
 }
 
@@ -1961,8 +1929,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_4) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(out));
-  // out->printIndexedBuffer("LRN out");
-  // exp.printIndexedBuffer("LRN exp");
   ASSERT_TRUE(exp.equalsTo(out));
 }
 
@@ -1993,9 +1959,6 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(out));
-  // out->printIndexedBuffer("LRN out");
-  // exp.printIndexedBuffer("LRN exp");
-  //    ASSERT_TRUE(exp.equalsTo(out));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2345,24 +2308,7 @@ TEST_F(DeclarableOpsTests4, triu_bp_test2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-/*TEST_F(DeclarableOpsTests4, triu_bp_test3) {
-  auto input = NDArrayFactory::create<double>('c', {6}, {1, 2, 3, 4, 5, 6});
-  auto gradO = NDArrayFactory::create<double>('c', {6, 6});
-  gradO = 0.5;
 
-  auto expected = NDArrayFactory::create<double>(
-      'c', {6, 6}, {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
-                    0.,  0.5, 0.5, 0.5, 0.5, 0.5, 0.,  0.,  0.5, 0.5, 0.5, 0.5, 0.,  0.,  0.,  0.5, 0.5, 0.5});
-
-  sd::ops::triu_bp op;
-  auto results = op.evaluate({&input, &gradO}, {}, {-2});
-  auto gradI = results.at(0);
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-
-  ASSERT_TRUE(expected.isSameShape(gradI));
-  ASSERT_TRUE(expected.equalsTo(gradI));
-}*/
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_bp_test4) {

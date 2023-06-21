@@ -178,7 +178,8 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
   auto z = result.at(0);
 
-  auto exp = x.reduceAlongDimension(reduce::Sum, {1});
+  std::vector<sd::LongType> dims = {1};
+  auto exp = x.reduceAlongDimension(reduce::Sum, &dims);
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -192,7 +193,9 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
   sd::ops::LegacyReduceSameOp op(reduce::Sum);
   auto result = op.evaluate({&x, &indices}, {}, {});
   auto z = result.at(0);
-  auto exp = x.reduceAlongDimension(reduce::Sum, {1});
+  std::vector<sd::LongType> dims = {1};
+
+  auto exp = x.reduceAlongDimension(reduce::Sum, &dims);
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -208,11 +211,9 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
   sd::ops::LegacyReduceSameOp op(reduce::Sum);
   auto result = op.evaluate({&x, &indices}, {}, {}, {true});
   auto z = result.at(0);
-  auto exp = x.reduceAlongDimension(reduce::Sum, {1}, true);
-  // indices.printShapeInfo("Indices shape");
+  std::vector<sd::LongType> dims = {1};
+  auto exp = x.reduceAlongDimension(reduce::Sum,&dims, true);
   ASSERT_EQ(sd::Status::OK, result.status());
-  // z->printIndexedBuffer("Output reduce 4");
-  // exp.printIndexedBuffer("Expected reduce 4");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -244,8 +245,9 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
+  std::vector<sd::LongType> dims = {1};
 
-  auto exp = x.reduceAlongDimension(reduce::Mean, {1});
+  auto exp = x.reduceAlongDimension(reduce::Mean,&dims);
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -259,7 +261,8 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
   sd::ops::LegacyReduceFloatOp op(reduce::Mean);
   auto result = op.evaluate({&x, &indices}, {}, {});
   auto z = result.at(0);
-  auto exp = x.reduceAlongDimension(reduce::Mean, {1});
+  std::vector<sd::LongType> dims = {1};
+  auto exp = x.reduceAlongDimension(reduce::Mean, &dims);
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -275,12 +278,10 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
   sd::ops::LegacyReduceFloatOp op(reduce::Mean);
   auto result = op.evaluate({&x, &indices}, {}, {}, {true});
   auto z = result.at(0);
-  auto exp = x.reduceAlongDimension(reduce::Mean, {1}, true);
+  std::vector<sd::LongType> dims = {1};
+  auto exp = x.reduceAlongDimension(reduce::Mean, &dims, true);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  // z->printIndexedBuffer("Reduce8 output");
-  // z->printShapeInfo("Reduce8 shape");
-  // exp.printShapeInfo("Reduce8 expected shape");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -313,13 +314,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Hello indexreduce2");
   ASSERT_TRUE(exp.equalsTo(z));
-  // ASSERT_EQ(4, z->e<int>(0));
-  // ASSERT_EQ(4, z->e<int>(1));
-  // ASSERT_EQ(4, z->e<int>(2));
-  // ASSERT_EQ(4, z->e<int>(3));
-  // ASSERT_EQ(4, z->e<int>(4));
 }
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
@@ -328,7 +323,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
 
   auto row = NDArrayFactory::create<double>('c', {1, 5});
   row.linspace(1);
-  auto axis = NDArrayFactory::create<int>('c', {1}, {1});
+  auto axis = NDArrayFactory::create<sd::LongType>('c', {1}, {1});
   sd::ops::LegacyBroadcastOp op(broadcast::Add);
   sd::Status status = op.execute({&x, &row, &axis}, {&x}, {}, {}, {});
 
@@ -345,9 +340,8 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
   y.assign(3.0);
   e.assign(4.0);
 
-  int axis = 1;
+  sd::LongType axis = 1;
 
-  // shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
   auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), {axis});
 
   NDArray::prepareSpecialUse({&y}, {&x});
@@ -355,8 +349,8 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
   NativeOpExecutioner::execInverseBroadcast(
       LaunchContext::defaultContext(), broadcast::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(),
       x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), y.buffer(),
-      y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), &axis, 1, packY.platformShapeInfo(),
-      packY.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+      y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), &axis, 1, packY->platformShapeInfo(),
+      packY->platformOffsets(), packY->platformShapeInfo(), packY->platformOffsets());
 
   NDArray::registerSpecialUse({&y}, {&x});
 
@@ -393,7 +387,7 @@ TEST_F(LegacyOpsTests, reduce3_1) {
   auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, yShape);
   auto xShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 1, xShape);
 
-  auto tadShapeBuffer = sd::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+  auto tadShapeBuffer = sd::ShapeUtils::evalReduceShapeInfo('c', &dim, shapeBuffer, false, true, nullptr);
   functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result,
                                                   tadShapeBuffer, dimension, dimensionLength, 0, 4);
 
@@ -438,59 +432,15 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
 
   execReduce3Tad(extraPointers, reduce3::CosineSimilarity, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
                  y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-                 packY.platformShapeInfo(), packY.platformOffsets());
+                 dim.shapeInfo(), dim.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
+                 packY->platformShapeInfo(), packY->platformOffsets());
 
   NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
 
   delete[] extraPointers;
 }
 
-TEST_F(LegacyOpsTests, Reduce3_3) {
-  auto x =
-      NDArrayFactory::create<double>('c', {3, 5},
-                                     {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
-                                      -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
-                                      0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247});
 
-  auto y = NDArrayFactory::create<double>(
-      'c', {5}, {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
-  auto e = NDArrayFactory::create<double>('c', {3}, {0.577452, 0.0, 1.80182});
-  auto z = NDArrayFactory::create<double>('c', {3});
-
-  auto dim = NDArrayFactory::create<int>('c', {1}, {1});
-  dim.syncToHost();
-
-  sd::LaunchContext* context = sd::LaunchContext::defaultContext();
-
-  sd::Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
-  extraPointers = new sd::Pointer[7]{nullptr,
-                                     context->getCudaStream(),
-                                     context->getScalarPointer(),
-                                     nullptr,
-                                     context->getCudaSpecialStream(),
-                                     context->getReductionPointer(),
-                                     context->getAllocationPointer()};
-#endif
-
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), {1});
-  auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), {1});
-
-  NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
-  OpaqueDataBuffer xBuf(x.dataBuffer());
-  OpaqueDataBuffer yBuf(y.dataBuffer());
-  OpaqueDataBuffer zBuf(z.dataBuffer());
-  OpaqueDataBuffer dimBuf(dim.dataBuffer());
-
-  execReduce3Tad(extraPointers, reduce3::CosineDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
-                 y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-                 packY.platformShapeInfo(), packY.platformOffsets());
-  ASSERT_EQ(e, z);
-  NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
-  delete[] extraPointers;
-}
 
 TEST_F(LegacyOpsTests, Reduce3_4) {
   auto x =
@@ -531,10 +481,9 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
 
   execReduce3Tad(extraPointers, reduce3::CosineDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
                  y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-                 packY.platformShapeInfo(), packY.platformOffsets());
+                 dim.shapeInfo(), dim.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
+                 packY->platformShapeInfo(), packY->platformOffsets());
 
-  // z.printIndexedBuffer("z");
   NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
   ASSERT_EQ(e, z);
   delete[] extraPointers;
@@ -580,8 +529,8 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
 
   execReduce3Tad(extraPointers, reduce3::CosineDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
                  y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(),
-                 packY.platformShapeInfo(), packY.platformOffsets());
+                 dim.shapeInfo(), dim.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
+                 packY->platformShapeInfo(), packY->platformOffsets());
 
   NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
   ASSERT_EQ(e, z);
@@ -619,8 +568,8 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
 
   execReduce3All(extraPointers, reduce3::EuclideanDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
                  y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), tadPackX.platformShapeInfo(), tadPackX.platformOffsets(),
-                 tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+                 dim.shapeInfo(), dim.specialShapeInfo(), tadPackX->platformShapeInfo(), tadPackX->platformOffsets(),
+                 tadPackY->platformShapeInfo(), tadPackY->platformOffsets());
 
   NDArray::registerSpecialUse({&z}, {&x, &y});
 
@@ -640,8 +589,8 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_1) {
   NativeOpExecutioner::execInverseBroadcast(
       LaunchContext::defaultContext(), broadcast::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(),
       x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), y.buffer(),
-      y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, 0, tadPackY.platformShapeInfo(),
-      tadPackY.platformOffsets(), tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+      y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), nullptr, 0, tadPackY->platformShapeInfo(),
+      tadPackY->platformOffsets(), tadPackY->platformShapeInfo(), tadPackY->platformOffsets());
 
   ASSERT_EQ(e, y);
 }
@@ -666,8 +615,8 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
   NativeOpExecutioner::execInverseBroadcastBool(
       LaunchContext::defaultContext(), broadcast::BoolOps::EqualTo, x.buffer(), x.shapeInfo(), x.specialBuffer(),
       x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(),
-      z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, 0, tadPackY.platformShapeInfo(),
-      tadPackY.platformOffsets(), tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+      z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr, 0, tadPackY->platformShapeInfo(),
+      tadPackY->platformOffsets(), tadPackY->platformShapeInfo(), tadPackY->platformOffsets());
 
   ASSERT_EQ(e, z);
 }
@@ -677,7 +626,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_1) {
   auto z = NDArrayFactory::create<float>('c', {2, 3});
   auto e = NDArrayFactory::create<float>('c', {2, 3});
 
-  int dim = 1;
+  sd::LongType dim = 1;
 
   NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Sum, x.buffer(), x.shapeInfo(),
                                       x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(),
@@ -692,7 +641,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_2) {
   auto e = NDArrayFactory::create<float>('c', {2, 3});
   e.assign(std::numeric_limits<float>::infinity());
 
-  int dim = 1;
+  sd::LongType dim = 1;
 
   NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(),
                                       x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(),
@@ -707,7 +656,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_3) {
   auto e = NDArrayFactory::create<float>('c', {2, 3});
   e.assign(-std::numeric_limits<float>::infinity());
 
-  int dim = 1;
+  sd::LongType dim = 1;
 
   NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(),
                                       x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(),

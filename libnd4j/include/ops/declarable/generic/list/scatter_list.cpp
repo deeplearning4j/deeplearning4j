@@ -57,21 +57,27 @@ LIST_OP_IMPL(scatter_list, 1, 1, 0, -2) {
   zero.push_back(0);
   std::vector<LongType> *axis = ShapeUtils::evalDimsToExclude(array->rankOf(),1,zero.data());
   auto tads = array->allTensorsAlongDimension(*axis);
-  for (int e = 0; e < tads.size(); e++) {
-    auto idx = indices->e<int>(e);
+  for (sd::LongType e = 0; e < tads.size(); e++) {
+    auto idx = indices->e<sd::LongType>(e);
     if (idx >= tads.size()) return sd::Status::BAD_ARGUMENTS;
 
     auto arr = new NDArray(tads.at(e)->dup(array->ordering()));
     auto res = list->write(idx, arr);
 
-    delete axis;
 
-    if (res != sd::Status::OK) return res;
+    if (res != sd::Status::OK) {
+      delete axis;
+      return res;
+    }
   }
 
+
+
   if (!hasList)
-    // OVERWRITE_RESULT(list);
     setupResultList(list, block);
+
+  delete axis;
+
 
   return sd::Status::OK;
 }

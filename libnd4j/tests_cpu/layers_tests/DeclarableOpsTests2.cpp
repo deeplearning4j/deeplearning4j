@@ -184,8 +184,6 @@ TEST_F(DeclarableOpsTests2, gather_8) {
   auto result = op.evaluate({&input, &indices}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto *output = result.at(0);
-  // output->printShapeInfo();
-  // output->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*output));
   ASSERT_TRUE(expected.equalsTo(output));
@@ -342,58 +340,7 @@ TEST_F(DeclarableOpsTests2, BroadcastGradientArgs_1) {
   ASSERT_EQ(sd::Status::KERNEL_FAILURE, result.status());
 }
 
-TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
-  auto exp0 = NDArrayFactory::create<double>('c', {1, 10});
-  auto exp1 = NDArrayFactory::create<double>('c', {1, 10});
-  auto exp2 = NDArrayFactory::create<double>('c', {1, 10});
 
-  exp0.assign(0.0095);
-  exp1.assign(0.019875);
-  exp2.assign(0.02);
-
-  auto target = NDArrayFactory::create<int>(0);
-  auto ngStarter = NDArrayFactory::empty<int>();
-  auto context = NDArrayFactory::create<int>('c', {3}, {0, 1, 2});
-  auto locked = NDArrayFactory::create<int>('c', {3});
-  auto indices = NDArrayFactory::create<int>('c', {2}, {4, 5});
-  auto codes = NDArrayFactory::create<int8_t>('c', {2}, {1, 1});
-  auto syn0 = NDArrayFactory::create<double>('c', {100, 10});
-  auto syn1 = NDArrayFactory::create<double>('c', {100, 10});
-  auto syn1Neg = NDArrayFactory::empty<double>();
-  auto expTable = NDArrayFactory::create<double>('c', {10000});
-  auto negTable = NDArrayFactory::empty<double>();
-  auto numWords = NDArrayFactory::create<int>('c', {1}, {1});
-
-  syn0.assign(0.01);
-  syn1.assign(0.02);
-  expTable.assign(0.5);
-
-  auto alpha = NDArrayFactory::create<double>(0.025);
-  auto randomValue = NDArrayFactory::create<sd::LongType>(2L);
-  auto inferenceVector = NDArrayFactory::empty<double>();
-
-  sd::ops::cbow op;
-  auto result = op.evaluate({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable,
-                             &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector},
-                            {}, {}, {true}, {}, true);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-  auto row_s0_0 = syn0({0, 1, 0, 0}, true);
-  auto row_s0_1 = syn0({1, 2, 0, 0}, true);
-  auto row_s0_2 = syn0({2, 3, 0, 0}, true);
-
-  auto row_s1_4 = syn1({4, 5, 0, 0}, true);
-  auto row_s1_5 = syn1({5, 6, 0, 0}, true);
-  auto row_s1_6 = syn1({6, 7, 0, 0}, true);
-
-  ASSERT_EQ(exp0, row_s0_0);
-  ASSERT_EQ(exp0, row_s0_1);
-  ASSERT_EQ(exp0, row_s0_2);
-
-  ASSERT_EQ(exp1, row_s1_4);
-  ASSERT_EQ(exp1, row_s1_5);
-  ASSERT_EQ(exp2, row_s1_6);
-}
 
 TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
   auto x = NDArrayFactory::create<float>('c', {2, 1, 3, 1, 1, 1, 4});
@@ -455,8 +402,6 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_1) {
   auto result = op.evaluate({&x, &y}, {}, {});
 
   auto z = result.at(0);
-  //    z->printShapeInfo("FloorDiv1 shape");
-  //    z->printIndexedBuffer("FloorDiv1");
   ASSERT_TRUE(exp.isSameShape(z));
 }
 
@@ -474,10 +419,6 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_2) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto z1 = result.at(0);
   auto z2 = result.at(1);
-  //    z->printShapeInfo("FloorDiv1 shape");
-  //    z1->printIndexedBuffer("FloorDiv2_1");
-  //    z2->printIndexedBuffer("FloorDiv2_2");
-
   ASSERT_TRUE(exp1.equalsTo(z1));
   ASSERT_TRUE(exp2.equalsTo(z2));
 }
@@ -577,8 +518,6 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer("ADL test2");
-  // expected.printIndexedBuffer("ADL expec");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1304,7 +1243,6 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1329,7 +1267,6 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));

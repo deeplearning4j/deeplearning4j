@@ -61,15 +61,15 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
       padValue = T_ARG(0);
   } else if (INT_ARG(0) == 1) {  // REFLECT mode
     for (int dim = 0; dim < rank; ++dim)
-      REQUIRE_TRUE(paddings->e<sd::LongType>(dim, 0) <= (input->shapeOf()[dim] - 1) &&
-                       paddings->e<sd::LongType>(dim, 1) <= (input->shapeOf()[dim] - 1),
-                   0, "PAD op: wrong content of paddings array for REFLECT mode !");
+    REQUIRE_TRUE(paddings->e<sd::LongType>(dim, 0) <= (input->shapeOf()[dim] - 1) &&
+                 paddings->e<sd::LongType>(dim, 1) <= (input->shapeOf()[dim] - 1),
+                 0, "PAD op: wrong content of paddings array for REFLECT mode !");
   }
   if (INT_ARG(0) == 2) {  // SYMMETRIC mode
     for (int dim = 0; dim < rank; ++dim)
-      REQUIRE_TRUE(paddings->e<sd::LongType>(dim, 0) <= input->shapeOf()[dim] &&
-                       paddings->e<sd::LongType>(dim, 1) <= input->shapeOf()[dim],
-                   0, "PAD op: wrong content of paddings array for SYMMETRIC mode !");
+    REQUIRE_TRUE(paddings->e<sd::LongType>(dim, 0) <= input->shapeOf()[dim] &&
+                 paddings->e<sd::LongType>(dim, 1) <= input->shapeOf()[dim],
+                 0, "PAD op: wrong content of paddings array for SYMMETRIC mode !");
   }
 
   // CONSTANT->0, REFLECT->1, SYMMETRIC->2
@@ -78,10 +78,6 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
       "PAD op: unknown padding mode, there are only three possible legal values -> 0,1,2, but got %i instead !",
       INT_ARG(0));
 
-  // std::vector<int> dimensions(input->rankOf());
-  //    std::iota(dimensions.begin(), dimensions.end(), 0);               // fill with 0, 1, ... rank-1
-
-  // helpers::recursiveLoopForPad(INT_ARG(0), *input, *paddings, *output, dimensions, 0, 0, 0, padValue);
   helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
 
   return sd::Status::OK;

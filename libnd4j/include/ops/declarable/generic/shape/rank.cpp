@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(rank, 1, 1, false, 0, 0) {
 
   return sd::Status::OK;
 }
-DECLARE_SHAPE_FN(rank) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT32)); }
+DECLARE_SHAPE_FN(rank) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
 
 DECLARE_TYPES(rank) {
   getOpDescriptor()

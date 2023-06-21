@@ -23,7 +23,6 @@
 #ifndef LIBND4J_STASH_H
 #define LIBND4J_STASH_H
 
-//#include <graph/Block.h>
 #include <array/NDArray.h>
 
 #include <atomic>

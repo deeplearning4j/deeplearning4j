@@ -190,9 +190,6 @@ TEST_F(IndexingTests, MaskedSlice_0) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -233,9 +230,6 @@ TEST_F(IndexingTests, MaskedSlice_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -312,9 +306,6 @@ TEST_F(IndexingTests, Live_Slice_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo("z shape");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -350,9 +341,6 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("Z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -384,14 +372,9 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
 
   sd::ops::strided_slice op;
   auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
-  //    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1, 0, 1, 1});
-
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("Z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -405,24 +388,4 @@ TEST_F(IndexingTests, Test_Subarray_Strided_1) {
   ASSERT_TRUE(exp.equalsTo(sub));
 }
 
-/*
-TEST_F(IndexingTests, MaskedSlice_5) {
 
-    auto matrix('c', {3, 3, 3},
-{1.f, 1.2f, 1.3f, 2.f, 2.2f, 2.3f, 3.f, 3.2f, 3.3f, 4.f, 4.2f, 4.3f, 5.f,  5.2f, 5.3f, 6.f,   6.2f,  6.3f,  7.f,   7.2f,
-7.3f,  8.f,   8.2f,  8.3f,  9.f,   9.2f,  9.3f}); auto exp('c', {2, 3}, { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f});
-
-    // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    sd::ops::strided_slice<float> op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,2,   1, 0, 0,  3, 3, 3});
-
-    ASSERT_EQ(sd::Status::OK, result.status());
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-
-}
-*/

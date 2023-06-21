@@ -125,7 +125,7 @@ DECLARE_SHAPE_FN(deconv3d) {
   auto weightsShapeInfo = inputShape->at(1);  // [kD, kH, kW, oC, iC], [iC, oC, kD, kH, kW], [iC, kD, kH, kW, oC]
   auto biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;  // [oC]
 
-  const int rank = 5;
+  const sd::LongType rank = 5;
   REQUIRE_TRUE(shape::rank(inputShapeInfo) == rank, 0,
                "CUSTOM DECONV3D OP: rank of input array must be equal to %i, but got %i instead !", rank,
                shape::rank(inputShapeInfo));
@@ -185,8 +185,7 @@ DECLARE_SHAPE_FN(deconv3d) {
 
 
 
- std::initializer_list<sd::LongType> outputShape;
-
+ std::vector<sd::LongType> outputShape;
   if (isNCDHW) {
     outputShape = {bS,oC,oD,oH,oW};
   } else {

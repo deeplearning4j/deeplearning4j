@@ -167,7 +167,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
         const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
-        memcpy(xCoords, zCoords, rank * sizeof(int));
+        memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
         for (int j = rankMinusOne; j >= 0; --j) {
           if (xShape[j] == zShape[j]) continue;
@@ -190,140 +190,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
   }
 }
 
-// //////////////////////////////////////////////////////////////////////////
-// template<typename T>
-// void pad2_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
 
-//     const int rank = output.rankOf();
-//     std::vector<int> dimsToExclude(rank);
-//     std::iota(dimsToExclude.begin(), dimsToExclude.end(), 0);             // fill with 0, 1, ... rank-1
-
-//     sd::LongType numLeft    = paddings.e<sd::LongType>(rank-1,0);
-//     sd::LongType numRight   = paddings.e<sd::LongType>(rank-1,1);
-//     sd::LongType inDimSize  = input.sizeAt(rank-1);
-//     sd::LongType outDimSize = output.sizeAt(rank-1);
-
-//     std::vector<std::vector<sd::LongType>> outIdx = { std::vector<sd::LongType>(2*rank), {numLeft, numLeft +
-//     inDimSize}, {0, numLeft}, {numLeft + inDimSize, outDimSize} };
-
-//     for(int i = 0; i < rank-1; ++i) {
-//         outIdx[0][2*i]     = paddings.e<sd::LongType>(i, 0);
-//         outIdx[0][2*i + 1] = outIdx[0][2*i] + input.sizeAt(i);
-//     }
-//     outIdx[0][2*rank-1] = outIdx[0][2*rank-2] = 0;
-
-//     // ***** populate innermost sub-arrays firstly ***** //
-//     dimsToExclude.pop_back();
-
-//     sd::LongType startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
-//     sd::LongType startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
-
-//     sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.shapeInfo(), dimsToExclude);
-
-//     NDArray outSubArr0 = output(outIdx[0], true);
-
-//     PRAGMA_OMP_PARALLEL_FOR
-//     for(sd::LongType j = 0; j < numOfSubArrs; ++j) {
-
-//         NDArray outSubArr1   = outSubArr0(j, dimsToExclude);
-//         NDArray inSubArr     = input(j, dimsToExclude);
-//         NDArray outSubArrMid = outSubArr1(outIdx[1]);
-
-//         outSubArrMid.assign(inSubArr);      // assign middle
-
-//         if(mode == 0)  { // CONSTANT
-//             if(numLeft != 0) {
-//                 NDArray temp = outSubArr1(outIdx[2]);
-//                 temp.assign(padValue);                        // assign left
-//             }
-//             if(numRight != 0) {
-//                 NDArray temp = outSubArr1(outIdx[3]);
-//                 temp.assign(padValue);                        // assign right
-//             }
-//         }
-//         else {                                                              // REFLECT or SYMMETRIC
-
-//             for(sd::LongType k = numLeft-1, e = startL; k >= 0; --k, ++e)     // fill left side
-//                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-
-//             for(sd::LongType k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e)     // fill right side
-//                 outSubArr1.t<T>(k) = inSubArr.t<T>(e);
-//         }
-//     }
-
-//     // ***** fill rest of outer sub-arrays ***** //
-//     std::vector<sd::LongType> outIdxInner(2, 0);
-//     std::vector<sd::LongType> outIdxOuter(2, 0);
-
-//     for(int i = rankBorder - 1; i >= 0; --i) {
-
-//         dimsToExclude.pop_back();
-
-//         outIdxInner.push_back(0), outIdxInner.push_back(0);
-//         outIdxOuter.push_back(0), outIdxOuter.push_back(0);
-
-//         sd::LongType numLeft  = paddings.e<sd::LongType>(i, 0);
-//         sd::LongType numRight = paddings.e<sd::LongType>(i, 1);
-
-//         if(numLeft == 0 && numRight == 0)
-//             continue;
-
-//         sd::LongType inDimSize  = input.sizeAt(i);
-//         sd::LongType outDimSize = output.sizeAt(i);
-
-//         if(mode == 0) {
-//             outIdxOuter[0] = 0;                   outIdxOuter[1] = numLeft;
-//             outIdxInner[0] = numLeft + inDimSize; outIdxInner[1] = outDimSize;
-//         }
-
-//         startL = mode == 1 ? numLeft + 1 : numLeft;                            // REFLECT or SYMMETRIC
-//         startR = mode == 1 ? numLeft + inDimSize - 2 : numLeft + inDimSize-1;      // REFLECT or SYMMETRIC
-
-//         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.shapeInfo(), dimsToExclude);
-
-//         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(outIdxOuter, outIdxInner))
-//         for(sd::LongType j = 0; j < numOfSubArrs; ++j) {
-
-//             NDArray outSubArr = output(j, dimsToExclude);
-
-//             if(mode == 0)  { // CONSTANT
-
-//                 if(numLeft != 0) {
-//                     NDArray tempO = outSubArr(outIdxOuter);
-//                     tempO.assign(padValue);                              // assign left
-//                 }
-
-//                 if(numRight != 0) {
-//                     NDArray tempI = outSubArr(outIdxInner);
-//                     tempI.assign(padValue);                              // assign right
-//                 }
-//             }
-//             else {                                                              // REFLECT or SYMMETRIC
-
-//                 for(sd::LongType k = numLeft-1, e = startL; k >= 0; --k, ++e) {    // fill left side
-//                     outIdxOuter[0] = k;
-//                     outIdxOuter[1] = k+1;
-//                     outIdxInner[0] = e;
-//                     outIdxInner[1] = e+1;
-//                     NDArray outSubArrInner = outSubArr(outIdxInner);
-//                     NDArray outSubArrOuter = outSubArr(outIdxOuter);
-//                     outSubArrOuter.assign(outSubArrInner);
-//                 }
-
-//                 for(sd::LongType k = numLeft + inDimSize, e = startR; k < outDimSize; ++k, --e) {    // fill right
-//                 side
-//                     outIdxOuter[0] = k;
-//                     outIdxOuter[1] = k+1;
-//                     outIdxInner[0] = e;
-//                     outIdxInner[1] = e+1;
-//                     NDArray outSubArrInner = outSubArr(outIdxInner);
-//                     NDArray outSubArrOuter = outSubArr(outIdxOuter);
-//                     outSubArrOuter.assign(outSubArrInner);
-//                 }
-//             }
-//         }
-//     }
-// }
 
 void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output,
          NDArray const& padValue) {

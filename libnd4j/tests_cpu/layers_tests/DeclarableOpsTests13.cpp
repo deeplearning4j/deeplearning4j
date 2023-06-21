@@ -108,8 +108,6 @@ TEST_F(DeclarableOpsTests13, test_argmax_edge_1) {
   sd::ops::argmax op;
   auto result = op.execute(ctx);
   ASSERT_EQ(sd::Status::OK, result);
-
-  // sd_printf("Done\n","");
   delete ctx;
 }
 
@@ -117,7 +115,7 @@ TEST_F(DeclarableOpsTests13, test_add_1) {
   auto x = NDArrayFactory::create<float>('c', {1, 768});
   auto y = NDArrayFactory::create<float>('c', {768});
   auto e = NDArrayFactory::create<float>('c', {1, 768});
-  ;
+
   y.assign(1.0f);
   e.assign(1.0f);
 
@@ -206,7 +204,6 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_1) {
   sd::ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Gains out");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -218,10 +215,8 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_2) {
   sd::ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Gains out");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 
-  // ASSERT_EQ(e, z);
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
@@ -232,7 +227,6 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
   sd::ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Gains out");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -245,18 +239,11 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
   auto exp1 = NDArrayFactory::create<double>(
       'c', {5, 4},
       {-1.846154, -1.846154, -1.846154, -1.846154, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
-  // auto exp2 = NDArrayFactory::create<double>({-4., -4., -4., -4.
-  // std::vector<NDArray*> exp({&exp1, &exp2});
   data.linspace(1);
-
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {1});
 
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Output");
   ASSERT_TRUE(exp1.equalsTo(result.at(0)));
 }
 
@@ -265,22 +252,14 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
   auto rows = NDArrayFactory::create<int>('c', {3}, {1, 2, 3});
   auto cols = NDArrayFactory::create<int>('c', {5}, {1, 2, 0, 4, 3});
   auto vals = NDArrayFactory::create<double>('c', {5}, {10., 20., 30., 40., 50.});
-  // auto buf = NDArrayFactory::create<double>('c', {4});
   auto exp = NDArrayFactory::create<double>(
       'c', {5, 4}, {-0.622568, -0.622568, -0.622568, -0.622568, 1.846154, 1.846154, 1.846154, 1.846154, 0., 0.,
                     0.,        0.,        0.,        0.,        0.,       0.,       0.,       0.,       0., 0.});
-  // auto exp2 = NDArrayFactory::create<double>({-4., -4., -4., -4.
-  // std::vector<NDArray*> exp({&exp1, &exp2});
   data.linspace(1);
-
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {2});
 
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Output");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -322,7 +301,6 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
        0.0019232929717404616, 0.0016071830043453991, 0.6425809622897437,    0.18474464886441516,
        0.10897036475298316,   0.03466939253836615,   0.013288054277817787,  0.005149178177380355,
        0.0037974063158903518, 0.0037851733015991287, 0.0030148194818042273});
-  // auto buf = NDArrayFactory::create<double>('c', {4});
   auto exp = NDArrayFactory::create<double>(
       'c', {11, 5},
       {-0.080205, -0.085862, 0.024045,  0.133551,  -0.199896, -0.170597, 0.187301,  0.205824,  -0.165268, 0.131228,
@@ -331,40 +309,21 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
        0.086745,  0.002961,  -0.091327, 0.234853,  0.120270,  -0.304006, 0.128305,  -0.084867, -0.017550, -0.130837,
        -0.288569, 0.124679,  0.054078,  -0.034187, -0.192599, 0.033196,  0.228182,  -0.044972, -0.314217, 0.020287,
        0.054427,  -0.078887, -0.078246, -0.104543, 0.169803});
-  // auto exp2 = NDArrayFactory::create<double>({-4., -4., -4., -4.
-  // std::vector<NDArray*> exp({&exp1, &exp2});
-  // data.assign(1.0); //linspace(1);
 
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {11});
 
-  // sd_printf("rows %lld, cols %lld, vals %lld, res full %lld\n", rows.lengthOf(), cols.lengthOf(), vals.lengthOf(),
-  // exp1.lengthOf());
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printBuffer("Output");
-  // exp.printBuffer("Expect");
-  // result.at(0)->printShapeInfo("Shape output");
-  ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
-  //    auto data = NDArrayFactory::create<double>('c', {5,4});
   auto rows = NDArrayFactory::create<int>('c', {2}, {0, 1});
   auto cols = NDArrayFactory::create<int>('c', {4}, {0, 1, 1, 0});
   auto vals = NDArrayFactory::create<double>('c', {4}, {20., 30., 40., 50.});
   auto exp = NDArrayFactory::create<double>('c', {1, 1}, {20.});
-  //    data.linspace(1);
-
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {1});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(2)->printBuffer("Symmetrized1");
   ASSERT_TRUE(exp.equalsTo(result.at(2)));
 }
 
@@ -373,16 +332,10 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
   auto cols = NDArrayFactory::create<int>('c', {8}, {0, 1, 1, 0, 0, 1, 1, 1});
   auto vals = NDArrayFactory::create<double>('c', {8}, {20., 30., 40., 50., 120., 130., 140., 150.});
   auto exp = NDArrayFactory::create<double>('c', {1, 5}, {20., 15., 15., 20., 20.});
-  //    data.linspace(1);
 
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {3});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(2)->printBuffer("Symmetrized2");
-  //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
   ASSERT_TRUE(exp.equalsTo(result.at(2)));
 }
 
@@ -399,18 +352,9 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000,  0.000000,
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000,  0.000000,
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000});
-  //    data.linspace(1);
-
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(2)->printBuffer("Symmetrized3");
-  // exp.printBuffer("EXPect symm3");
-  //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
-  // ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
@@ -428,12 +372,6 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
        0.0593, 0.0466, 0.0329, 0.0299, 0.0134, 0.0106, 0.0023, 0.6892, 0.1398, 0.0544, 0.0544,    0.0287, 0.0210,
        0.0072, 0.0033, 0.0021, 0.6824, 0.1345, 0.0871, 0.0429, 0.0254, 0.0169, 0.0072, 0.0019,    0.0016, 0.6426,
        0.1847, 0.1090, 0.0347, 0.0133, 0.0051, 0.0038, 0.0038, 0.0030});
-  // auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000,
-  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000});
-  //    data.linspace(1);
   auto exp4 = NDArrayFactory::create<double>(
       'c', {1, 108},
       {0.6239,  0.1813,  0.1236,  0.03695, 0.00795, 0.03385, 0.0074,  0.0158,  0.0013,    0.0042,  0.0074,  0.3093,
@@ -445,20 +383,10 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
        0.0171,  0.71495, 0.06515, 0.01835, 0.00775, 0.00115, 0.03695, 0.051,   0.1615,    0.03565, 0.0205,  0.00275,
        0.5098,  0.00775, 0.0055,  0.0026,  0.0013,  0.2085,  0.0183,  0.05085, 0.0173,    0.04775, 0.00135, 0.06515,
        0.0026,  0.35855, 0.1236,  0.00895, 0.0108,  0.65985, 0.2099,  0.03615, 0.0159,    0.01835, 0.0055,  0.35855});
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(2);
-  //  res->printBuffer("Symmetrized4");
-  //  exp4.printBuffer("Expected sym");
-  //  sd_printf("Total res is {1, %lld}\n", res->lengthOf());
-  //  sd_printf("Expected is {1, %lld}\n", exp4.lengthOf());
-
-  // exp.printBuffer("EXPect symm3");
-  //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
   ASSERT_TRUE(exp4.equalsTo(res));
 }
 
@@ -466,24 +394,10 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
   auto corners = NDArrayFactory::create<double>({0.5384, 0.5640, 0.3449, 0.5257, 0.5505});
   auto width = NDArrayFactory::create<double>({0.4306, 0.3960, 0.4639, 0.5040, 0.4904});
   auto point = NDArrayFactory::create<double>({0.3000, 0.2625, 0.2674, 0.8604, 0.4803});
-  // auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000,
-  // 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
-  // 0.000000, 0.000000});
-  //    data.linspace(1);
-
-  //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-  //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-  //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
   sd::ops::cell_contains op;
   auto result = op.evaluate({&corners, &width, &point}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(result.at(0)->e<bool>(0));
-  // result.at(2)->printBuffer("Symmetrized3");
-  // exp.printBuffer("EXPect symm3");
-  //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
-  // ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -498,7 +412,6 @@ TEST_F(DeclarableOpsTests13, adjustHue_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result.printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(result));
   ASSERT_TRUE(exp.equalsTo(result));
@@ -605,9 +518,6 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("Result2");
-  //    exp.printIndexedBuffer("Expect2");
-
   ASSERT_TRUE(exp.isSameShape(result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -641,7 +551,6 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result.printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(result));
   ASSERT_TRUE(exp.equalsTo(result));
@@ -2986,15 +2895,15 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<int> dimensions = {0, 2, 3};
-  int *dims = reinterpret_cast<int *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
-  input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
+  std::vector<sd::LongType> dimensions = {0, 2, 3};
+  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
+  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
-                                        packX.platformShapeInfo(), packX.platformOffsets(), false);
+                                        packX->platformShapeInfo(), packX->platformOffsets(), false);
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 
@@ -3041,15 +2950,16 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<int> dimensions = {0, 1, 2};
-  int *dims = reinterpret_cast<int *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
-  input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
+  std::vector<sd::LongType> dimensions = {0, 1, 2};
+  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
+  const sd::LongType *constDims = const_cast<sd::LongType const *>(dims);
+  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions,false);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
-                                        packX.platformShapeInfo(), packX.platformOffsets(), false);
+                                        packX->platformShapeInfo(), packX->platformOffsets(), false);
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 
@@ -3118,15 +3028,15 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<int> dimensions = {0};
-  int *dims = reinterpret_cast<int *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
-  input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions, true);
+  std::vector<sd::LongType> dimensions = {0};
+  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
+  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions, true);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
-                                        packX.platformShapeInfo(), packX.platformOffsets(), false);
+                                        packX->platformShapeInfo(), packX->platformOffsets(), false);
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 

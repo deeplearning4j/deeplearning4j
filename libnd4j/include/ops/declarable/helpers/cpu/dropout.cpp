@@ -35,11 +35,14 @@ static void dropoutSimple(NDArray const* input, NDArray* output, double probValu
   sd::graph::RandomGenerator nodeRng(3019L, seed);
   int inLen = input->lengthOf();
 
+  auto flattenedInput = input->reshape('c',{inLen},false);
+  auto flattenedOutput = output->reshape('c',{output->lengthOf()},false);
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
-      if (mask != nullptr) mask->p<T>(e, val);
-      if (val < probValue) output->p<T>(e, input->e<T>(e));
+      //dropout mask might not be the same length
+      if (mask != nullptr && e < mask->lengthOf()) mask->p<T>(e, val);
+      if (val < probValue) flattenedOutput.p<T>(e, flattenedInput.e<T>(e));
     }
   };
 

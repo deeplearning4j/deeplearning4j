@@ -188,8 +188,9 @@ TEST_F(NDArrayTest2, Test_AllReduce3_1) {
   auto x = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {2, 3, 4, 2, 3, 4});
   auto exp = NDArrayFactory::create<double>('c', {2, 2}, {1.73205, 1.73205, 1.73205, 1.73205});
+  std::vector<sd::LongType> ones = {1};
 
-  auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
+  auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -201,7 +202,9 @@ TEST_F(NDArrayTest2, Test_AllReduce3_2) {
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 2, 3, 4});
   auto exp = NDArrayFactory::create<double>('c', {2, 2}, {0., 1.73205, 1.73205, 0.});
 
-  auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
+  std::vector<sd::LongType> ones = {1};
+
+  auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -644,9 +647,8 @@ TEST_F(NDArrayTest2, permute_test4) {
   NDArray arr1(arr1Buffer, arr1ShapeInfo, sd::LaunchContext ::defaultContext());
   NDArray arr2(arr2Buffer, arr2ShapeInfo, sd::LaunchContext ::defaultContext());
 
-  const std::vector<int> perm = {0, 4, 5, 1, 2, 3};
+  const std::vector<sd::LongType> perm = {0, 4, 5, 1, 2, 3};
   auto arr1P = arr1.permute(perm);
-  // arr1P->printShapeInfo();
 
   // ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
   ASSERT_TRUE(arr1P.isSameShapeStrict(arr2));
@@ -1094,8 +1096,8 @@ TEST_F(NDArrayTest2, test_not_tiled_2) {
 
 TEST_F(NDArrayTest2, test_long_sum_1) {
   auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2}, {1, 2, 3, 4});
-
-  auto z = x.reduceAlongDimension(reduce::Sum, {0});
+  std::vector<sd::LongType> zero = {0};
+  auto z = x.reduceAlongDimension(reduce::Sum, &zero);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1148,7 +1150,9 @@ TEST_F(NDArrayTest2, reduce_1) {
 
   arr6.linspace(1);
 
-  NDArray arr6s = arr6.reduceAlongDimension(sd::reduce::Sum, {2, 3});
+  std::vector<sd::LongType> dimensions = {2, 3};
+
+  NDArray arr6s = arr6.reduceAlongDimension(sd::reduce::Sum, &dimensions);
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {

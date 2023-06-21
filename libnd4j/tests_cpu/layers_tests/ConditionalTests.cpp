@@ -32,13 +32,9 @@ using namespace sd::graph;
 class ConditionalTests : public testing::Test {
  public:
   ConditionalTests() {
-    // Environment::getInstance().setVerbose(true);
-    // Environment::getInstance().setDebug(true);
   }
 
   ~ConditionalTests() {
-    // Environment::getInstance().setVerbose(false);
-    // Environment::getInstance().setDebug(false);
   }
 };
 

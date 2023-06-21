@@ -515,68 +515,7 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
   }
 }
 
-/*
-    template <int N, bool B2S>
-    struct SpaceToBatchHelper {
-        template <typename T>
-        static void run(T *ptrSpace, const sd::LongType *space_shape, const sd::LongType *space_strides, const
-sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, T *ptrBatch, const
-sd::LongType *batch_shape, const sd::LongType *batch_strides) { for (int batch_pos = 0; batch_pos < batch_shape[0];
-++batch_pos) { const int space_pos = batch_pos * block_shape[0] + block_offsets[0] - pad_start[0]; if (space_pos >= 0 &&
-space_pos < space_shape[0]) { SpaceToBatchHelper<N - 1, B2S>::run(ptrSpace + space_pos * space_strides[0], space_shape +
-1, space_strides + 1, block_shape + 1, pad_start + 1, block_offsets + 1, ptrBatch, batch_shape + 1, batch_strides + 1);
-                } else {
-                    if (!B2S)
-                        for (int i = 0; i < batch_strides[0]; i++)
-                            ptrBatch[i] = (T) 0.f;
-                }
 
-                ptrBatch += batch_strides[0];
-            }
-        }
-    };
-
-    template <bool B2S>
-    struct SpaceToBatchHelper<0, B2S> {
-        template <typename T>
-        static void run(T *ptrSpace, const sd::LongType *space_shape, const sd::LongType *space_strides, const
-sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, T *ptrBatch, const
-sd::LongType *batch_shape, const sd::LongType *batch_strides) { int str = batch_strides[-1]; for (int i = 0; i < str;
-i++) if (B2S) ptrSpace[i] = ptrBatch[i]; else ptrBatch[i] = ptrSpace[i];
-        }
-    };
-
-    template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(sd::LaunchContext * context, void *vptrSpace, const sd::LongType *space_shape, const sd::LongType
-*space_strides, const sd::LongType *block_shape, const sd::LongType *pad_start, const sd::LongType *block_offsets, void
-*vptrBatch, const sd::LongType *batch_shape, const sd::LongType *batch_strides) { auto ptrSpace = reinterpret_cast<T
-*>(vptrSpace); auto ptrBatch = reinterpret_cast<T *>(vptrBatch); SpaceToBatchHelper<NUM_BLOCK_DIMS, B2S>::run(ptrSpace,
-space_shape, space_strides, block_shape, pad_start, block_offsets, ptrBatch, batch_shape, batch_strides);
-    };
-
-    sd::Status _batchToSpace(sd::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output,
-std::vector<sd::LongType> &internal_input_shape, std::vector<sd::LongType> &internal_output_shape, sd::LongType
-*block_shape, sd::LongType *crops) {
-
-        return sd::Status::OK;
-    }
-
-#define STB_DIM (0, 1),\
-                (1, 2),\
-                (2, 3),\
-                (3, 4)
-
-#define STB_BOOL (0, false),\
-                 (1, true)
-
-    BUILD_TRIPLE_TEMPLATE(template void _execute, (sd::LaunchContext * context, void *ptrSpace, const sd::LongType
-*space_shape, const sd::LongType *space_strides, const sd::LongType *block_shape, const sd::LongType *pad_start, const
-sd::LongType *block_offsets, void *ptrBatch, const sd::LongType *batch_shape, const sd::LongType *batch_strides),
-SD_COMMON_TYPES, STB_DIM, STB_BOOL);
-
-#undef STB_BOOL
-#undef STB_DIM
-*/
 
 }  // namespace helpers
 }  // namespace ops

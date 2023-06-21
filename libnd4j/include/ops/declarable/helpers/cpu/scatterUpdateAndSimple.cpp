@@ -29,8 +29,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<LongType>* intArgs) {
-  int opCode = (*intArgs)[0];
-  int dimSize = (*intArgs)[1];
+  sd::LongType opCode = (*intArgs)[0];
+  sd::LongType dimSize = (*intArgs)[1];
   sd::LongType e;
   sd::LongType limg = 2 + dimSize;
   std::vector<sd::LongType> tadDimensions(dimSize);
@@ -47,7 +47,6 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
     for (auto i = start; i < stop; i++) {
       auto inSubArr = input(indices[i], *dimsToExclude, true);
       auto updSubArr = updates(i, *dimsToExclude, true);
-      delete dimsToExclude;
       if (inSubArr.lengthOf() != updSubArr.lengthOf()) continue;
 
       switch (opCode) {
@@ -79,6 +78,9 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
   };
 
   samediff::Threads::parallel_tad(func, 0, indices.size());
+
+
+  delete dimsToExclude;
 }
 
 //////////////////////////////////////////////////////////////////////////

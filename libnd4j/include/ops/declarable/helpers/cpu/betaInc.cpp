@@ -81,12 +81,6 @@ static T continuedFraction(const T a, const T b, const T x) {
 // evaluates incomplete beta function for positive a and b, and x between 0 and 1.
 template <typename T>
 static T betaIncCore(T a, T b, T x) {
-  // if (a <= (T)0. || b <= (T)0.)
-  //     throw("betaInc function: a and b must be > 0 !");
-
-  // if (x < (T)0. || x > (T)1.)
-  //     throw("betaInc function: x must be within (0, 1) interval !");
-
   // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
   if (a == b && x == static_cast<T>(0.5)) return static_cast<T>(0.5);
 

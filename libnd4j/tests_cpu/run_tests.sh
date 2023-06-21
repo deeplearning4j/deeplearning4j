@@ -22,7 +22,7 @@
 
 set -exo pipefail
 
-while [[ $# > 0 ]]
+while [[ $# -gt 0 ]]
 do
     key="$1"
     value="${2:-}"
@@ -37,7 +37,7 @@ do
         ;;
     esac
 
-    if [[ $# > 0 ]]; then
+    if [[ $# -gt 0 ]]; then
         shift # past argument or value
     fi
 done

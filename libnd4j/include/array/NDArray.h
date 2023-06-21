@@ -159,8 +159,11 @@ class SD_LIB_EXPORT NDArray {
 
   /**
    *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides,
-   * element-wise-stride, c-like or fortan-like order
+   * element-wise-stride, c-like or fortran-like order
    */
+
+  ConstantShapeBuffer *_shapeInfoBuffer = nullptr;
+
   const sd::LongType *_shapeInfo = nullptr;
   const sd::LongType *_shapeInfoD = nullptr;
 
@@ -529,7 +532,13 @@ class SD_LIB_EXPORT NDArray {
    *   returns _shapeInfo
    */
   SD_INLINE const sd::LongType *shapeInfo() const;
+  /**
+   *   returns _shapeInfo
+   */
+  SD_INLINE ConstantShapeBuffer *shapeInfoConstBuffer();
 
+
+  SD_INLINE DataBuffer shapeInfoDataBuffer();
   /**
    * Returns True if it's legally empty NDArray, or false otherwise
    * @return
@@ -1626,6 +1635,7 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
     if(buffer == nullptr) {
       THROW_EXCEPTION("Returned buffer from cache was null!");
     }
+    _shapeInfoBuffer = buffer;
     _shapeInfo = buffer->primary();
     _shapeInfoD = buffer->special();
     if(_shapeInfo == nullptr) {
@@ -1653,6 +1663,7 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo, const sd::DataType dtype) {
 
   if (shapeInfo != nullptr) {
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    _shapeInfoBuffer = buffer;
     _shapeInfo = buffer->primary();
     _shapeInfoD = buffer->special();
 
@@ -1980,6 +1991,18 @@ void *NDArray::buffer() {
 
 //////////////////////////////////////////////////////////////////////////
 const sd::LongType *NDArray::shapeInfo() const { return _shapeInfo; }
+
+ ConstantShapeBuffer * NDArray::shapeInfoConstBuffer()   { return _shapeInfoBuffer; }
+
+ DataBuffer NDArray::shapeInfoDataBuffer()   {
+   auto primary = _shapeInfoBuffer->primary();
+   auto voidPointer = const_cast<sd::LongType *>(primary);
+   auto void2 = reinterpret_cast<void *>(voidPointer);
+   DataBuffer ret(void2,sd::DataType::INT64,shape::shapeInfoByteLength(_shapeInfo[0]));
+   return ret;
+
+ }
+
 
 ////////////////////////////////////////////////////////////////////////
 const sd::LongType *NDArray::specialShapeInfo() const {

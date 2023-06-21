@@ -275,6 +275,8 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far
 
+
+  delete excludedAxes;
   return sd::Status::OK;
 }
 

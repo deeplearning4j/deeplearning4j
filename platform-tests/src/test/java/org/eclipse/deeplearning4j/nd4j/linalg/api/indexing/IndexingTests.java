@@ -47,6 +47,15 @@ public class IndexingTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testIntervalSlices(Nd4jBackend backend) {
+        INDArray x = Nd4j.linspace(1,125,125  ).reshape(5,5,5);
+        INDArray interval = x.get(NDArrayIndex.interval(0,1,false));
+        System.out.println(interval.shapeInfoToString());
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testINDArrayIndexingEqualToRank(Nd4jBackend backend) {
         INDArray x = Nd4j.linspace(1,6,6, DataType.DOUBLE).reshape('c',3,2).castTo(DataType.DOUBLE);
         INDArray indexes = Nd4j.create(new double[][]{

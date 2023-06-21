@@ -78,7 +78,7 @@ TEST_F(SortCpuTests, test_tad_sort_by_key_1) {
   auto ev = NDArrayFactory::create<double>('c', {2, 10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5,
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  int axis = 1;
+  sd::LongType axis = 1;
   sortTadByKey(nullptr, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
 
@@ -99,7 +99,7 @@ TEST_F(SortCpuTests, test_tad_sort_by_val_1) {
   auto ev = NDArrayFactory::create<double>('c', {2, 10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5,
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  int axis = 1;
+  sd::LongType axis = 1;
   sortTadByValue(nullptr, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                  v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
 
