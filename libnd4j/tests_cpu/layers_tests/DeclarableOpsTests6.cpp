@@ -877,8 +877,6 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
-  //    auto x0 = NDArrayFactory::create<double>('c', {10, 10});
-  //    auto x1 = NDArrayFactory::create<double>('c', {10, 10});
   auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 4},
                                           {5.5, 0., 0.3, 5.5, 1.5, 0., 1.3, 6.5, 8.6, 0., 0., 0.4, 2.5, 1., 0.3, 4.5,
                                            1.5, 1., 1.3, 1.5, 3.5, 0., 1.3, 2.5, 2.6, 2., 3., 1.4, 4.5, 1., 0.3, 0.5});
@@ -984,7 +982,6 @@ TEST_F(DeclarableOpsTests6, BinCount_5) {
 
   auto res = op.evaluate({&x, &weights, &minV, &maxV});
   ASSERT_EQ(sd::Status::OK, res.status());
-  // res->at(0)->printBuffer("BC out");
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }
 
@@ -1048,7 +1045,6 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_4) {
   auto res = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, res.status());
-  // res->at(0)->printBuffer("Shape SGO 4");
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }
 
@@ -1113,7 +1109,6 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_9) {
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
-  // ASSERT_TRUE(exp.equalsTo(z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1125,7 +1120,6 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
                                             {-0.2771281, 0., 0., 0.36950415, 0., 0., -0.2771281, 0., 0., 0.36950415, 0.,
                                              0., -0.2771281, 0., 0., 0.36950415, 0., 0.});
   //    8.660254
-  //    auto expNorm(8.660254);
 
   sd::ops::clip_by_global_norm op;
   auto result = op.evaluate({&x}, {0.8}, {});
@@ -1134,13 +1128,8 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
 
   auto z = result.at(0);
   auto norm = result.at(1);
-  // z->printIndexedBuffer("Output");
-  // exp.printIndexedBuffer("Expected");
-  // norm->printIndexedBuffer("Norm");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
-  //    ASSERT_TRUE(expNorm.equalsTo(norm));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1188,10 +1177,6 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_3) {
 
   auto z = result.at(0);
   auto y = result.at(1);
-  // z->printIndexedBuffer("Output 1");
-  // y->printIndexedBuffer("Output 2");
-  // result.at(2)->printIndexedBuffer("Global norm is");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.isSameShape(y));
   ASSERT_TRUE(result.at(2)->isScalar());
@@ -1211,9 +1196,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1229,9 +1211,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1247,9 +1226,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1265,9 +1241,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
-  // z->printShapeInfo("Output shape");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1286,9 +1259,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1307,9 +1277,6 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer("Output ");
-  // z->printShapeInfo("Shape");
-  // exp.printIndexedBuffer("Expected ");
   ASSERT_TRUE(z->isScalar());
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1473,52 +1440,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_02) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
-TEST_F(DeclarableOpsTests6, MatrixInverse_2) {
 
-    auto x = NDArrayFactory::create<double>('c', {2, 5, 5}, {
-                    1.,  2., 30.,  4.,  5.,
-                    0.,  1.,  2.,  3.,  4.,
-                    0.,  0.,  1.,  2.,  3.,
-                    0.,  0.,  0.,  1.,  2.,
-                    0.,  0.,  0.,  0.,  1.,
-
-                     4.,   0.,  0.,  0.,  0.,
-                     4.,   2.,  0.,  0.,  0.,
-                    30.,   2.,  1.,  0.,  0.,
-                     8.,   6.,  4.,  2.,  0.,
-                    15.,  12.,  9.,  6.,  3.,
-    });
-
-    auto exp = NDArrayFactory::create<double>('c', {2, 5, 5}, {
-     1.0,  -2.0,  -26.0,  54.0, -27.0,
-     0.0,   1.0,  -2.0,    1.0,   0.0,
-     0.0,   0.0,   1.0,   -2.0,   1.0,
-     0.0,   0.0,   0.0,    1.0,  -2.0,
-     0.0,   0.0,   0.0,    0.0,   1.0,
-
-     0.25,  0.0,    0.0,   0.0,   0.0,
-    -0.50,  0.5,    0.0,   0.0,   0.0,
-    -6.50, -1.0,    1.0,   0.0,   0.0,
-    13.50,  0.5,   -2.0,   0.5,   0.0,
-    -6.75,  0.0,    1.0,  -1.0,   0.33333333
-    });
-
-    sd::ops::matrix_inverse op;
-    auto result = op.evaluate({&x}, {}, {});
-
-    ASSERT_EQ(sd::Status::OK, result.status());
-
-    auto z = result.at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-
-}
-*/
 TEST_F(DeclarableOpsTests6, MatrixInverse_03) {
   auto x = NDArrayFactory::create<float>('c', {5, 5},
                                          {
@@ -1536,9 +1458,6 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_03) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Output ");
-  //    exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1561,9 +1480,6 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    exp.printIndexedBuffer("Expected ");
-  //    z->printIndexedBuffer("Output ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1583,9 +1499,6 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Output ");
-  //    exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1605,9 +1518,6 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_04) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Output ");
-  //    exp.printIndexedBuffer("Expected ");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }

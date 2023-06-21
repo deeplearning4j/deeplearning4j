@@ -2382,10 +2382,6 @@ TEST_F(DeclarableOpsTests5, StopGradient_1) {
 
   auto output = result.at(0);
 
-  // output->printShapeInfo("Output shape> ");
-  // x.printShapeInfo("Expected shape> ");
-  // output->printIndexedBuffer("Output data> ");
-  // x.printIndexedBuffer("Expected res>");
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -2401,11 +2397,6 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto output = result.at(0);
-
-  // output->printShapeInfo("Output shape> ");
-  // x.printShapeInfo("Expected shape> ");
-  // output->printIndexedBuffer("Output data> ");
-  // x.printIndexedBuffer("Expected res>");
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));

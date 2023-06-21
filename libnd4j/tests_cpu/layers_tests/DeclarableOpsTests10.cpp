@@ -1857,9 +1857,6 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test3) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
   NDArray input = NDArrayFactory::create<double>('c', {1, 2, 3, 4});
-  // NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
-  // NDArray<float> expected('c', {2,4,4},
-  // {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
   NDArray expected = NDArrayFactory::create<double>(
       'c', {1, 4, 5, 4}, {1,  2,  3,  4,  1,  2,  3,  4,  5,  6,  7,  8,  5,  6,  7,  8,  9,  10, 11, 12,
 
@@ -1878,17 +1875,12 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
 
   NDArray* result = results.at(0);
 
-  //    result.printIndexedBuffer("Resized to 4x5");
-  //    expected.printIndexedBuffer("Expect for 4x5");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1) {
   NDArray input = NDArrayFactory::create<int>('c', {1, 2, 3, 4});
-  // NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
-  // NDArray<float> expected('c', {2,4,4},
-  // {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
   NDArray expected = NDArrayFactory::create<int>(
       'c', {1, 4, 5, 4}, {1,  2,  3,  4,  1,  2,  3,  4,  5,  6,  7,  8,  5,  6,  7,  8,  9,  10, 11, 12,
 
@@ -1906,18 +1898,12 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-
-  //    result.printIndexedBuffer("Resized to 4x5");
-  //    expected.printIndexedBuffer("Expect for 4x5");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1_1) {
   NDArray input = NDArrayFactory::create<float>('c', {1, 2, 3, 4});
-  // NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
-  // NDArray<float> expected('c', {2,4,4},
-  // {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
   NDArray expected =
       NDArrayFactory::create<float>('c', {1, 4, 5, 4}, {1.f,  2.f,  3.f,  4.f,  1.f,  2.f,  3.f,  4.f,  5.f,  6.f,
                                                         7.f,  8.f,  9.f,  10.f, 11.f, 12.f, 9.f,  10.f, 11.f, 12.f,
@@ -1939,18 +1925,12 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-
-  // result->printIndexedBuffer("Resized to 4x5");
-  // expected.printBuffer("Expect for 4x5");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test01) {
   NDArray input = NDArrayFactory::create<double>('c', {2, 3, 4});
-  // NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
-  // NDArray<float> expected('c', {2,4,4},
-  // {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
   NDArray expected = NDArrayFactory::create<double>(
       'c', {4, 5, 4}, {1,  2,  3,  4,  1,  2,  3,  4,  5,  6,  7,  8,  5,  6,  7,  8,  9,  10, 11, 12,
 
@@ -1968,9 +1948,6 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test01) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-
-  // result.printIndexedBuffer("Resized to 4x5");
-  // expected.printIndexedBuffer("Expect for 4x5");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2004,8 +1981,6 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("REDUCE_LOGSUMEXP");
-  //    expected.printIndexedBuffer("LSE EXPECTED");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2021,8 +1996,6 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("REDUCE_LOGSUMEXP");
-  //    expected.printIndexedBuffer("LSE EXPECTED");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2039,8 +2012,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  // result.printIndexedBuffer("OOOOUUUUTTT");
-
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2058,7 +2029,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput2");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2077,7 +2047,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput3");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2097,7 +2066,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput4");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2116,7 +2084,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput4");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2136,8 +2103,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput6");
-  //    result.printShapeInfo("Ouput6 shape is");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2157,8 +2122,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_06) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput06");
-  //    result.printShapeInfo("Ouput06 shape is");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2177,8 +2140,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppression OUtput7");
-  //    result.printShapeInfo("Ouput6 shape is");
   ASSERT_TRUE(result->isEmpty());
 }
 
@@ -2200,7 +2161,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppressionOverlap1 Output");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2223,7 +2183,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppressionOverlap Output");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2246,7 +2205,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  //    result.printBuffer("NonMaxSuppressionOverlap Output");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2259,7 +2217,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
   NDArray boxI = NDArrayFactory::create<int>('c', {1}, {axis});
   NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected = NDArrayFactory::create<double>('c', {1, 1, 1, 1}, {2.5f});
 
   sd::ops::crop_and_resize op;
@@ -2268,7 +2225,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("Cropped and Resized");
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2282,7 +2238,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
   NDArray boxI = NDArrayFactory::create<int>('c', {1}, {axis});
   NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected = NDArrayFactory::create<float>('c', {1, 1, 1, 1}, {4.f});
 
   sd::ops::crop_and_resize op;
@@ -2303,7 +2258,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
   NDArray boxI('c', {1}, std::vector<double>{0}, sd::DataType::INT64);
   NDArray cropSize = NDArrayFactory::create<sd::LongType>({3, 3});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected('c', {1, 3, 3, 1}, {1.f, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f}, sd::DataType::FLOAT32);
 
   sd::ops::crop_and_resize op;
@@ -2324,7 +2278,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
   NDArray boxI('c', {1}, std::vector<double>({0.}), sd::DataType::INT32);
   NDArray cropSize = NDArrayFactory::create<int>({3, 3});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected('c', {1, 3, 3, 1}, {1.f, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f}, sd::DataType::FLOAT32);
 
   sd::ops::crop_and_resize op;
@@ -2333,7 +2286,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result.printIndexedBuffer("Cropped and Resized");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2345,7 +2297,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
   NDArray boxI('c', {2}, {1, 1}, sd::DataType::INT32);
   NDArray cropSize = NDArrayFactory::create<int>({10, 10});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected('c', {1, 10, 10, 3}, sd::DataType::FLOAT32);
 
   sd::ops::crop_and_resize op;
@@ -2356,7 +2307,6 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
   auto result = results.at(0);
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
-  // ASSERT_TRUE(expected.equalsTo(result));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2367,7 +2317,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
 
   NDArray colors = NDArrayFactory::create<float>('c', {2, 3}, {201.f, 202.f, 203.f, 127.f, 128.f, 129.f});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected = NDArrayFactory::create<float>(
       'c', {2, 4, 5, 3},
       {127.f, 128.f, 129.f, 127.f, 128.f, 129.f, 127.f, 128.f, 129.f, 127.f, 128.f, 129.f, 201.f, 202.f, 203.f,
@@ -2387,8 +2336,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
 
   auto result = results.at(0);
   result->syncToHost();
-  //    result.printBuffer("Bounded boxes");
-  //    expected.printBuffer("Bounded expec");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2399,7 +2346,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
   NDArray boxes = NDArrayFactory::create<float>('c', {1, 1, 4}, {0.2f, 0.2f, 0.7f, 0.7f});
   NDArray colors = NDArrayFactory::create<float>('c', {1, 1}, {0.95f});
 
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
   NDArray expected = NDArrayFactory::create<float>(
       'c', {1, 9, 9, 1},
       {1.1f,  2.1f,  3.1f,  4.1f,  5.1f,  6.1f,  7.1f,  8.1f,  9.1f,  10.1f, 0.95f, 0.95f, 0.95f, 0.95f,
@@ -2415,9 +2361,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.syncToHost();
-  //    result.printBuffer("Bounded boxes 2");
-  //    expected.printBuffer("Bounded expec 2");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2436,15 +2379,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_3) {
                                     {0.7717f, 0.9281f, 0.9846f, 0.4838f, 0.6433f, 0.6041f, 0.6501f, 0.7612f, 0.7605f,
                                      0.3948f, 0.9493f, 0.8600f, 0.7876f, 0.8945f, 0.4638f, 0.7157f});
   NDArray colors = NDArrayFactory::create<float>('c', {1, 2}, {0.9441f, 0.5957f});
-
-  // NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-  //    NDArray expected = NDArrayFactory::create<float>('c', {2,5,5,1}, {
-  //            0.7788f, 0.8012f, 0.7244f, 0.2309f, 0.7271f,
-  //            0.1804f, 0.5056f, 0.8925f, 0.5461f, 0.9234f, 0.0856f, 0.7938f, 0.9441f,
-  //            0.9441f, 0.1596f, 0.3087f, 0.1548f, 0.4695f, 0.9939f, 0.6113f, 0.6765f,
-  //            0.1800f, 0.6750f, 0.2246f, 0.0509f, 0.4601f, 0.8284f, 0.2354f, 0.9752f, 0.8361f,
-  //            0.2585f, 0.4189f,0.7028f,0.7679f,0.5373f,0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,
-  //            0.8428f, 0.9441f,0.9441f,0.9441f,0.3491f,0.5793f,0.5730f,0.1822f,0.6420f,0.9143f  });
   NDArray expected = NDArrayFactory::create<float>(
       'c', {2, 5, 5, 1}, {0.7788f, 0.8012f, 0.7244f, 0.2309f, 0.7271f, 0.1804f, 0.5056f, 0.8925f, 0.5461f,
                           0.9234f, 0.0856f, 0.7938f, 0.9441f, 0.9441f, 0.1596f, 0.3087f, 0.1548f, 0.4695f,
@@ -2458,12 +2392,6 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printBuffer("Boxes3 output");
-  //    expected.printBuffer("Boxes3 expect");
-
-  //    result.syncToHost();
-  //    result.printBuffer("Bounded boxes 2");
-  //    expected.printBuffer("Bounded expec 2");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2481,8 +2409,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printBuffer("Quantized");
-  //    exp.printBuffer("Expected");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2499,7 +2425,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result.printIndexedBuffer("Quantized2");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2517,7 +2442,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result.printIndexedBuffer("Quantized2");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2539,7 +2463,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("Quantized03");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2561,7 +2484,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printIndexedBuffer("Quantized03_1");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2642,10 +2564,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printBuffer("Quantized per channels 4");
-  //    exp.printBuffer("Quantized per channest E");
-  //    auto diff = *result - exp;
-  //    diff.printIndexedBuffer("Difference");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2678,11 +2596,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printBuffer("Quantized per channels 5");
-  //    exp.printBuffer("Quantized per channest E");
-  //    auto diff = *result - exp;
-  //    diff.printIndexedBuffer("Difference");
-
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2691,11 +2604,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_6) {
   NDArray x = NDArrayFactory::create<float>('c', {3, 5},
                                             {0.7788f, 0.8012f, 0.7244f, 0.2309f, 0.7271f, 0.1804f, 0.5056f, 0.8925f,
                                              0.5461f, 0.9234f, 0.0856f, 0.7938f, 0.6591f, 0.5555f, 0.1596f});
-  //    NDArray exp = NDArrayFactory::create<float>('c', {3, 5},{
-  //            0.7801f,    0.5966f,    0.7260f,   0.2320f,    0.5084f,
-  //            0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
-  //            0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f
-  //    });
 
   NDArray exp = NDArrayFactory::create<float>(
       'c', {3, 5},
@@ -2703,18 +2611,12 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_6) {
        0.50982356f, 0.08735529f, 0.596913f, 0.6574f, 0.34995764f, 0.15974471f});
   NDArray min = NDArrayFactory::create<float>('c', {5}, {-0.2283f, -0.0719f, -0.0154f, -0.5162f, -0.3567f});
   NDArray max = NDArrayFactory::create<float>('c', {5}, {0.9441f, 0.5957f, 0.8669f, 0.3502f, 0.5100f});
-  // x.linspace(-60.);
   sd::ops::fake_quant_with_min_max_vars_per_channel op;
   auto results = op.evaluate({&x, &min, &max}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    result.printBuffer("Quantized per channels 5");
-  //    exp.printBuffer("Quantized per channest E");
-  //    auto diff = *result - exp;
-  //    diff.printIndexedBuffer("Difference");
-
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2746,8 +2648,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //     result.printBuffer("Quantized7");
-  //     exp.printBuffer("Expected 7");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2767,9 +2667,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  //    x.printBuffer("SourInput8");
-  //    result.printBuffer("Quantized8");
-  //    exp.printBuffer("Expected 8");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2785,8 +2682,6 @@ TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
 
   arr1.applyTrueBroadcast(sd::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo),
                           arr2, result, true);
-  // result.printIndexedBuffer();
-  // expd.printIndexedBuffer();
 
   ASSERT_TRUE(expd.isSameShape(result));
   ASSERT_TRUE(expd.equalsTo(result));
@@ -2795,21 +2690,6 @@ TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
   NDArray arr('c', {2, 2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}, sd::DataType::INT32);
-  //    NDArray arr2('c', {  2,2}, {0, 1, 0, 4}, sd::DataType::INT32);
-
-  //    NDArray expd('c', {2,2,2}, {0,1,0,0, 0,0,0,1}, sd::DataType::BOOL);
-
-  //    NDArray result('c', {2,2,2}, sd::DataType::BOOL);
-
-  //    arr1.applyTrueBroadcast(sd::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo,
-  //    broadcast::EqualTo), &arr2, &result, true, nullptr);
-  // result.printIndexedBuffer();
-  // expd.printIndexedBuffer();
-
-  //    ASSERT_TRUE(expd.isSameShape(result));
-  //    ASSERT_TRUE(expd.equalsTo(result));
-  // arr.printIndexedBuffer("Test Print"); // output as [1, 2, 3, 4, 5, 6, 7, 8]
-  //
   // we want output as
   //  [[[1 2]
   //    [3 4]]
@@ -2825,13 +2705,7 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
     for (sd::LongType l = 0; l < i; ++l) printf("\n");
     printf("[");
     for (sd::LongType j = 0; j < arr.sizeAt(i); j++) {
-      //    if (!i)
-      //        printf("[");
-      //    else
-      //        printf(" ");
       lastDims.at(k++)->printBuffer();
-      // if (k == arr.sizeAt(i))
-      //    printf("]\n");
     }
     printf("]\n");
   }

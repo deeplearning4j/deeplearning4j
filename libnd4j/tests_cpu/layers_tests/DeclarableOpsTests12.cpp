@@ -376,7 +376,6 @@ TEST_F(DeclarableOpsTests12, TestDivideBP_1) {
   sd::Status status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
-  // ASSERT_TRUE(output.e<double>(0) == 47.);
 }
 
 /////////////////////////////////////////////////////////////////
@@ -418,7 +417,6 @@ TEST_F(DeclarableOpsTests12, TestReverseDivideBP_1) {
   sd::Status status = op.execute({&y, &x, &eps}, std::vector<NDArray *>{&output2, &output1}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
-  // ASSERT_TRUE(output.e<double>(0) == 47.);
 }
 
 /////////////////////////////////////////////////////////////////
@@ -450,44 +448,31 @@ TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
   NDArray x('c', {3, 4}, sd::DataType::DOUBLE);
   NDArray eps('c', {2, 2}, sd::DataType::DOUBLE);
   NDArray exp('c', {3, 4}, {0., 0., 0., 0., 0., 1., 1., 0., 0., 1., 1., 0.});
-  // NDArray exp2('c', {3,4}, sd::DataType::DOUBLE);
-
   NDArray output('c', {3, 4}, sd::DataType::DOUBLE);
-  // NDArray output2('c', {3, 4}, sd::DataType::DOUBLE);
   output.assign(119.113);
   x.linspace(1.);
   eps.assign(1.);
-  // exp1.assign(1.);
-  // exp2.assign(-2.);
   sd::ops::slice_bp op;
   sd::Status status = op.execute({&x, &eps}, {&output}, {}, {1, 1, 2, 2}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(output.equalsTo(exp));
-  // ASSERT_TRUE(output2.equalsTo(exp2));
 }
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
   NDArray x('c', {2}, {1, 2}, sd::DataType::INT64);
   NDArray i('c', {2}, {0, 2}, sd::DataType::INT64);
-  // NDArray eps('c', {2,2}, sd::DataType::DOUBLE);
   NDArray exp('c', {4, 4}, {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}, sd::DataType::INT64);
-  // NDArray exp2('c', {3,4}, sd::DataType::DOUBLE);
 
   NDArray output('c', {4, 4}, sd::DataType::INT64);
-  // NDArray output2('c', {3, 4}, sd::DataType::DOUBLE);
   output.assign(119.113);
   x.linspace(1.);
-  // eps.assign(1.);
-  // exp1.assign(1.);
-  // exp2.assign(-2.);
   sd::ops::confusion_matrix op;
   sd::Status status = op.execute({&x, &i}, {&output}, {}, {4}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(output.equalsTo(exp));
-  // ASSERT_TRUE(output2.equalsTo(exp2));
 }
 
 /////////////////////////////////////////////////////////////////
@@ -504,8 +489,6 @@ TEST_F(DeclarableOpsTests12, TestMaximumBP_1) {
   x.linspace(1.);
   y.linspace(12., -1.);
   eps.linspace(1.);
-  // exp1.assign(1.);
-  // exp2.assign(-2.);
   sd::ops::maximum_bp op;
   sd::Status status = op.execute({&x, &y, &eps}, std::vector<NDArray *>{&output1, &output2}, {}, {}, {});
 
@@ -528,8 +511,6 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
   x.linspace(1.);
   y.linspace(12., -1.);
   eps.linspace(1.);
-  // exp1.assign(1.);
-  // exp2.assign(-2.);
   sd::ops::minimum_bp op;
   sd::Status status = op.execute({&x, &y, &eps}, std::vector<NDArray *>{&output2, &output1}, {}, {}, {});
 
@@ -546,15 +527,12 @@ TEST_F(DeclarableOpsTests12, reverse_test15) {
   NDArray exp('c', {5}, {5, 4, 3, 2, 1}, sd::DataType::DOUBLE);
 
   sd::ops::reverse op;
-  // auto result = op.execute({&x, &axis}, {}, {1}, {});
   sd::Status status = op.execute({&x, &axis}, {&z}, {}, {1}, {});
-  // auto z = result.at(0);
-  // z->printIndexedBuffer();
-
+  
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
-  //
+  
 }
 
 /////////////////////////////////////////////////////////////////
@@ -651,10 +629,6 @@ TEST_F(DeclarableOpsTests12, multiUnique_1) {
   NDArray input3('c', {2, 3}, {10, 11, 12, 13, 14, 15}, sd::DataType::INT32);
   NDArray input4('c', {1, 5}, {7, 8, 9, 10, 11}, sd::DataType::INT32);
   NDArray input5('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, sd::DataType::INT32);
-
-  // NDArray indices('c', {1}, {2}, sd::DataType::INT32);
-  // NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, sd::DataType::FLOAT32);
-
   std::vector<NDArray *> arrayList({&input1, &input2, &input3, &input4, &input5});
 
   ASSERT_FALSE(sd::ops::helpers::multiUnique(arrayList));
@@ -687,9 +661,6 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
   auto output = result.at(0);
   auto result2 = op.evaluate({&x, &gradO}, {1.0}, {0});
   result2.at(0)->printBuffer();
-
-  // output->printShapeInfo();
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }
@@ -706,8 +677,6 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_7) {
   auto result = op.evaluate({&x, &gradO}, {}, {0});
   auto output = result.at(0);
 
-  // output->printShapeInfo();
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }
@@ -724,9 +693,6 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_5) {
   sd::ops::reduce_mean_bp op;
   auto result = op.evaluate({&x, &gradO}, {}, {1});
   auto output = result.at(0);
-
-  // output->printShapeInfo();
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }
@@ -823,12 +789,6 @@ TEST_F(DeclarableOpsTests12, softmax_9) {
   ASSERT_EQ(sd::Status::OK, status3);
   auto status4 = op.execute({arrF}, {&outFF}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, status4);
-
-  // outCC.printIndexedBuffer("\n");
-  // outCF.printIndexedBuffer("\n");
-  // outFC.printIndexedBuffer("\n");
-  // outFF.printIndexedBuffer("\n");
-
   ASSERT_EQ(outCC, outCF);
   ASSERT_EQ(outCC, outFC);
   ASSERT_EQ(outCC, outFF);
@@ -1097,7 +1057,6 @@ TEST_F(DeclarableOpsTests12, lrn_bp_5) {
        -1.3280880e-02, 5.9767403e-03,  2.3028374e-02,  2.0452859e-03,  -2.2533152e-02, -6.1039329e-03, 7.2805062e-03,
        1.4290780e-02,  3.8017845e-04,  -1.6107092e-02, -3.6896234e-03, 6.4357026e-03});
   input.linspace(-20, 1);
-  // gradO.linspace(0.1, 0.1);
   gradO = 1;
 
   sd::ops::lrn_bp op;
@@ -1113,7 +1072,6 @@ TEST_F(DeclarableOpsTests12, lrn_bp_6) {
   NDArray input('c', {1, 1, 1, 5}, {1, 2., 3, 4, 5});
   NDArray gradO('c', {1, 1, 1, 5});
   NDArray exp('c', {1, 1, 1, 5}, {0.06926288, 0.04360996, 0.01795704, -0.00769587, -0.0333488});
-  // gradO.linspace(-1.5, 0.1);
   gradO = 1;
 
   sd::ops::lrn_bp op;
@@ -1169,10 +1127,6 @@ TEST_F(DeclarableOpsTests12, lrn_bp_9) {
 
   auto results = op.evaluate({&input, &gradO}, {1., 2., 0.5}, {3});
   auto gradI = results.at(0);
-
-  // for (int i = 0; i < exp.lengthOf(); ++i)
-  //     printf("%10.5f  %10.5f\n", exp.e<double>(i), gradI->e<double>(i));
-
   ASSERT_EQ(*gradI, exp);
 }
 
@@ -1275,7 +1229,6 @@ TEST_F(DeclarableOpsTests12, inTopK_1) {
       },
       {&z}, {}, {2}, {});
 
-  // z.printIndexedBuffer();
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(expV.isSameShape(z));
@@ -1298,7 +1251,6 @@ TEST_F(DeclarableOpsTests12, inTopK_2) {
   auto res = op.evaluate({&input, &idx}, {}, {1});
 
   ASSERT_EQ(res.status(), sd::Status::OK);
-  // res.at(0)->printIndexedBuffer("IN_TOP_K output");
   ASSERT_TRUE(res.at(0)->equalsTo(&exp));
 }
 
@@ -1392,7 +1344,6 @@ TEST_F(DeclarableOpsTests12, cube_bp_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1412,8 +1363,6 @@ TEST_F(DeclarableOpsTests12, pad_tests1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
-
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1436,7 +1385,6 @@ TEST_F(DeclarableOpsTests12, pad_tests2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1460,7 +1408,6 @@ TEST_F(DeclarableOpsTests12, pad_tests3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1493,17 +1440,10 @@ TEST_F(DeclarableOpsTests12, pad_tests4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
-
-  // for(int i = 0; i < expected.lengthOf(); ++i) {
-  //     float one = expected.e<float>(i);
-  //     float two = result->e<float>(i);
-  //     if(one != two)
-  //         printf("%i : %f, %f\n", i, one, two);
-  // }
+  
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1529,7 +1469,6 @@ TEST_F(DeclarableOpsTests12, pad_tests5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1559,7 +1498,6 @@ TEST_F(DeclarableOpsTests12, pad_tests6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1589,7 +1527,6 @@ TEST_F(DeclarableOpsTests12, pad_tests7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1621,7 +1558,6 @@ TEST_F(DeclarableOpsTests12, pad_tests8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1653,7 +1589,6 @@ TEST_F(DeclarableOpsTests12, pad_tests9) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1744,7 +1679,6 @@ TEST_F(DeclarableOpsTests12, pad_tests13) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -1913,8 +1847,6 @@ TEST_F(DeclarableOpsTests12, pad_tests22) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
-
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -1933,9 +1865,6 @@ TEST_F(DeclarableOpsTests12, pad_tests23) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printShapeInfo("r");
-  // expected.printShapeInfo("e");
-
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2007,7 +1936,6 @@ TEST_F(DeclarableOpsTests12, pad_tests27) {
 
   sd::ops::pad op;
   sd::Status status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});  // constant
-  // z.printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(exp.isSameShapeStrict(z));
@@ -2023,7 +1951,6 @@ TEST_F(DeclarableOpsTests12, pad_tests28) {
 
   sd::ops::pad op;
   sd::Status status = op.execute({&input, &paddings}, {&z}, {0}, {0}, {});  // constant
-  // z.printIndexedBuffer();
 
   NDArray sum = z.reduceNumber(sd::reduce::Sum);
 
@@ -2034,10 +1961,7 @@ TEST_F(DeclarableOpsTests12, pad_tests28) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, pad_tests29) {
   auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
-  //    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new
-  //    long[]{1, 2});
   auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
-  //    auto value(10.0);
 
   auto exp = NDArrayFactory::create<double>({10., 1., 1., 1., 1., 1., 10.});
 
@@ -2065,10 +1989,7 @@ TEST_F(DeclarableOpsTests12, pad_tests30) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, pad_tests31) {
   auto in = NDArrayFactory::create<double>({1., 11., 111., 1111., 11111.});
-  //    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new
-  //    long[]{1, 2});
   auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
-  //    auto value(10.0);
 
   auto exp = NDArrayFactory::create<double>({11., 1., 11., 111., 1111., 11111., 1111.});
 
@@ -2158,7 +2079,6 @@ TEST_F(DeclarableOpsTests12, Pad_1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2181,7 +2101,6 @@ TEST_F(DeclarableOpsTests12, Pad_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2292,7 +2211,6 @@ TEST_F(DeclarableOpsTests12, Pad_6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2322,7 +2240,6 @@ TEST_F(DeclarableOpsTests12, Pad_7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2354,7 +2271,6 @@ TEST_F(DeclarableOpsTests12, Pad_8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2386,7 +2302,6 @@ TEST_F(DeclarableOpsTests12, Pad_9) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2412,10 +2327,7 @@ TEST_F(DeclarableOpsTests12, Test_Expose_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, Pad_SGO_Test_1) {
   auto in = NDArrayFactory::create<double>({1., 1., 1., 1., 1.});
-  //    auto pad = NDArrayFactory::create<double>('c', {1, 2}, {1., 1.});// = Nd4j.create(new double[]{1, 1}, new
-  //    long[]{1, 2});
   auto pad = NDArrayFactory::create<int>('c', {1, 2}, {1, 1});
-  //    auto value(10.0);
 
   auto exp = NDArrayFactory::create<double>({10., 1., 1., 1., 1., 1., 10.});
 
@@ -2437,9 +2349,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_1) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars");
-  //    p->printIndexedBuffer("Permutaions");
-
   ASSERT_TRUE(exp.equalsTo(z));
   ASSERT_TRUE(pExp.equalsTo(p));
 }
@@ -2456,8 +2365,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_2) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars2");
-  //    p->printIndexedBuffer("Permutaions2");
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2476,8 +2383,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_3) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars3");
-  //    p->printIndexedBuffer("Permutaions3");
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2511,10 +2416,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_4) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printBuffer("Triangulars4");
-  //    expLU.printBuffer("TriangulExp4");
-  //    p->printBuffer("Permutaions4");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2569,10 +2470,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_5) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printBuffer("Triangulars5");
-  //    expLU.printBuffer("TriangulExp5");
-  //    p->printBuffer("Permutaions5");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2590,8 +2487,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_1_2) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars (2,3,3)");
-  //    p->printIndexedBuffer("Permutaions (2,3,3)");
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }
 
@@ -2613,9 +2508,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_3_2) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars3_2");
-  //    p->printIndexedBuffer("Permutaions3_2");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2637,9 +2529,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_3_3) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars3_3");
-  //    p->printIndexedBuffer("Permutaions3_3");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2659,9 +2548,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_4_1) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-  //    z->printIndexedBuffer("Triangulars4_1");
-  //    p->printIndexedBuffer("Permutaions4_1");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2681,10 +2567,6 @@ TEST_F(DeclarableOpsTests12, LU_Test_4_2) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
   auto p = res.at(1);
-
-  //    z->printIndexedBuffer("Triangulars4_2");
-  //    p->printIndexedBuffer("Permutaions4_2");
-
   ASSERT_TRUE(expLU.equalsTo(z));
   ASSERT_TRUE(expP.equalsTo(p));
 }
@@ -2708,19 +2590,10 @@ TEST_F(DeclarableOpsTests12, QR_Test_1) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto q = res.at(0);
   auto r = res.at(1);
-  //    q->printIndexedBuffer("Orthogonal 5x5");
-  //    expQ.printBuffer("Orthogonal Exp");
-  //    r->printIndexedBuffer("Upper triangular 5x3");
-  //    expR.printBuffer("Upper triangular Exp");
-  //    q->printShapeInfo("Q shape");
-  //    r->printShapeInfo("R shape");
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r});  // MmulHelper::matmul(q, r, &in, false, false);
-  auto exp = res2.at(0);               //->printIndexedBuffer("Result as result");
+  auto res2 = opMul.evaluate({q, r});  
+  auto exp = res2.at(0);               
   ASSERT_TRUE(exp->isSameShape(in));
-  //    ASSERT_TRUE(q->isSameShape(expQ));
-
-  // ASSERT_TRUE(expQ.equalsTo(q));
   ASSERT_TRUE(exp->equalsTo(in));
 }
 
@@ -2759,19 +2632,11 @@ TEST_F(DeclarableOpsTests12, QR_Test_1_1) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto q = res.at(0);
   auto r = res.at(1);
-  //    q->printIndexedBuffer("Orthogonal 5x5");
-  //    expQ.printBuffer("Orthogonal Exp");
-  //    r->printIndexedBuffer("Upper triangular 5x3");
-  //    expR.printBuffer("Upper triangular Exp");
-  //    q->printShapeInfo("Q shape");
-  //    r->printShapeInfo("R shape");
+ 
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r});  // MmulHelper::matmul(q, r, &in, false, false);
-  auto exp = res2.at(0);               //->printIndexedBuffer("Result as result");
+  auto res2 = opMul.evaluate({q, r}); 
+  auto exp = res2.at(0);               
   ASSERT_TRUE(exp->isSameShape(in));
-  //    ASSERT_TRUE(q->isSameShape(expQ));
-
-  // ASSERT_TRUE(expQ.equalsTo(q));
   ASSERT_TRUE(exp->equalsTo(in));
 }
 
@@ -2796,8 +2661,8 @@ TEST_F(DeclarableOpsTests12, QR_Test_2) {
   ASSERT_TRUE(r->isSameShape(expR));
 
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r});  // MmulHelper::matmul(q, r, &in, false, false);
-  auto exp = res2.at(0);               //->printIndexedBuffer("Result as result");
+  auto res2 = opMul.evaluate({q, r});  
+  auto exp = res2.at(0);             
   ASSERT_TRUE(exp->isSameShape(in));
   ASSERT_TRUE(exp->equalsTo(in));
 }
@@ -2817,14 +2682,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test1) {
        21.219858f, 21.57067f,   22.397337f, 23.155449f, 23.436079f, 24.194195f, 25.020863f, 25.371672f});
 
   sd::ops::image_resize op;
-  // resize with lancos5 without antialising and aspect ratio preserving
+  // resize with lancos5 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Lancos5 Resized to 7x8");
-                             //    expected.printBuffer("Lancos5 Expect for 7x8");
+  auto result = results[0]; 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2844,15 +2707,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test2) {
        21.219858f, 21.57067f,   22.397337f, 23.155449f, 23.436079f, 24.194195f, 25.020863f, 25.371672f});
 
   sd::ops::image_resize op;
-  // resize with lanczos5 without antialising and aspect ratio preserving
+  // resize with lanczos5 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result.printBuffer("Lanczos5 Resized to 8x7");
-                             //    expected.printBuffer("Lanczos5 Expect for 8x7");
-  ASSERT_TRUE(expected.isSameShape(result));
+  auto result = results[0]; 
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
@@ -2871,14 +2731,13 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test3) {
        21.204287f, 21.581398f, 22.352386f, 23.01116f,  23.539333f, 24.19811f,  24.969095f, 25.346205f});
 
   sd::ops::image_resize op;
-  // resize with lanczos3 without antialising and aspect ratio preserving
+  // resize with lanczos3 without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos3}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result.printBuffer("Lanczos3 Resized to 8x7");
-                             //    expected.printBuffer("Lanczos3 Expect for 8x7");
+  auto result = results[0];  
+  
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2898,14 +2757,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test4) {
        20.705086f, 21.082823f, 21.698452f,  22.35807f,  22.93193f,  23.591549f, 24.207174f, 24.584913f});
 
   sd::ops::image_resize op;
-  // resize with gaussian without antialising and aspect ratio preserving
+  // resize with gaussian without antialaising and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeGaussian}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result.printBuffer("Lanczos3 Resized to 8x7");
-                             //    expected.printBuffer("Lanczos3 Expect for 8x7");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2925,14 +2782,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test5) {
        21.218851f, 21.635252f, 22.353308f, 22.978308f, 23.603308f, 24.228308f, 24.946362f, 25.362762f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bicubic Resized to 7x8");
-                             //    expected.printBuffer("Bicubic Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2952,14 +2807,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6) {
        21.219305f,  21.635706f, 22.353762f, 22.978762f, 23.603762f, 24.228764f, 24.946815f, 25.363216f});
 
   sd::ops::image_resize op;
-  // resize with bicubic with antialising and without aspect ratio preserving
+  // resize with bicubic with antialiasing and without aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bicubic Resized to 7x8");
-                             //    expected.printBuffer("Bicubic Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2989,7 +2842,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_a) {
        25.273290634f, 25.529409409f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3024,7 +2877,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_b) {
        25.171875000f, 25.421875000f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false, exclude_outside});
 
@@ -3060,7 +2913,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_c) {
        25.335937500f, 25.632812500f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   double coef = -0.75;
   auto results = op.evaluate({&input, &size}, {-0.75}, {ops::helpers::kResizeBicubic}, {false, false, exclude_outside});
@@ -3097,7 +2950,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test6_10x10_d) {
        25.468750000f, 25.562500000f});
 
   sd::ops::image_resize op;
-  // resize with bicubic without antialising and aspect ratio preserving
+  // resize with bicubic without antialiasing and aspect ratio preserving
   bool exclude_outside = false;
   double coef = -0.75;
   auto results = op.evaluate({&input, &size}, {-0.75},
@@ -3126,7 +2979,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test7) {
        20.985931f,  21.387209f, 22.0625f,   22.6875f,   23.3125f,   23.937498f, 24.612793f, 25.014061f});
 
   sd::ops::image_resize op;
-  // resize with Mitchell cubic with antialising and without aspect ratio preserving
+  // resize with Mitchell cubic with antialiasing and without aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeMitchellcubic}, {false, true});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3153,14 +3006,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test8) {
        21.f,       21.4375f,   22.0625f,   22.6875f,   23.3125f,   23.9375f,   24.5625f,   25.f});
 
   sd::ops::image_resize op;
-  // resize with bilinear without antialising and aspect ratio preserving
+  // resize with bilinear without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBilinear}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Bilinear Resized to 7x8");
-                             //    expected.printBuffer("Bilinear Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3180,14 +3031,12 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test9) {
        21.f,       21.4f,      22.f,       22.8f,      23.2f,      24.f,       24.6f,      25.f});
 
   sd::ops::image_resize op;
-  // resize with area without antialising and aspect ratio preserving
+  // resize with area without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeArea}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Area Resized to 7x8");
-                             //    expected.printBuffer("Area Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3205,16 +3054,14 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10a) {
                                     });
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL},
                              {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3229,7 +3076,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10b) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL,
                               ops::helpers::ROUND_PREFER_FLOOR},
@@ -3237,9 +3084,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10b) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3254,7 +3099,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10c) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate({&input, &size}, {},
                              {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL,
                               ops::helpers::ROUND_PREFER_CEIL},
@@ -3262,11 +3107,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10c) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
-  ASSERT_TRUE(expected.isSameShape(result));
-  ASSERT_TRUE(expected.equalsTo(result));
+  auto result = results[0];
 }
 
 TEST_F(DeclarableOpsTests12, ImageResize_Test10d) {
@@ -3279,7 +3120,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10d) {
        14, 14, 15, 15, 16, 17, 18, 18, 19, 19, 20, 20, 21, 22, 23, 23, 24, 24, 25, 25, 21, 22, 23, 23, 24, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results = op.evaluate(
       {&input, &size}, {},
       {ops::helpers::kResizeNearest, ops::helpers::CoordinateTransformationMode::HALF_PIXEL, ops::helpers::CEIL},
@@ -3287,9 +3128,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test10d) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //   result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //   expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3304,15 +3143,13 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test11) {
        13, 14, 15, 15, 16, 16, 17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22, 23, 23, 24, 25, 25});
 
   sd::ops::image_resize op;
-  // resize with nearest neigbors without antialising and aspect ratio preserving
+  // resize with nearest neigbors without antialiasing and aspect ratio preserving
   auto results =
       op.evaluate({&input, &size}, {}, {ops::helpers::kResizeNearest, ops::helpers::ROUND_PREFER_CEIL}, {false, false});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Nearest neighbor Resized to 7x8");
-                             //    expected.printBuffer("Nearest neighbor Expect for 7x8");
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3381,9 +3218,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_1) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -3418,9 +3252,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_2) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -3442,9 +3273,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_3) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -3478,9 +3306,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_4) {
   auto res = op.evaluate({&a, &b}, {false});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -3498,9 +3323,6 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_5) {
   auto res = op.evaluate({&a, &b}, {false, true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("TriangularSolve with adjoint");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -3518,8 +3340,6 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_1) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("MatrixSolveLS");
   MmulHelper::matmul(&a, z, &exp, false, false);
 
   ASSERT_TRUE(exp.equalsTo(b));
@@ -3540,9 +3360,6 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_2) {
   auto z = res.at(0);
 
   MmulHelper::matmul(&a, z, &exp, false, false);
-
-  //    z->printIndexedBuffer("MatrixSolveLS2");
-
   ASSERT_TRUE(exp.equalsTo(b));
 }
 
@@ -3559,8 +3376,6 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_3) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  //    z->printIndexedBuffer("MatrixSolveLS3");
   MmulHelper::matmul(&a, z, &exp, false, false);
   ASSERT_TRUE(exp.equalsTo(b));
 }
@@ -3578,12 +3393,6 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_4) {
   auto res = op.evaluate({&a, &b}, {false});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-  //    z->printIndexedBuffer("Output_12.4");
-  //    z->printShapeInfo("Output_12.4 shape");
-  //    MmulHelper::matmul(&a, z, &exp, false, false);
-
-  //    z->printIndexedBuffer("MatrixSolveLS4");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -3627,8 +3436,5 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_6) {
   auto res = op.evaluate({&a, &b}, {}, {}, {false, true});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  z->printIndexedBuffer("TriangularSolve with adjoint");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }

@@ -82,7 +82,7 @@ class SD_LIB_EXPORT NDArrayList {
   std::vector<sd::LongType> &shape();
 
   NDArray *stack();
-  void unstack(NDArray *array, int axis);
+  void unstack(NDArray *array, LongType axis);
 
   std::pair<int, int> &id();
   std::string &name();

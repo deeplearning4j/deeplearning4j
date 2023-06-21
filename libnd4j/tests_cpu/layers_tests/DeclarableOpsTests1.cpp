@@ -1567,7 +1567,6 @@ TEST_F(DeclarableOpsTests1, ReverseDivideScalarScalar1) {
 }
 
 TEST_F(DeclarableOpsTests1, Test_Cast_1) {
-  // TODO: right now there's no real cast implementation, but genera idea should be the same: arrays equality to be
   // expected
   auto x = NDArrayFactory::create<float>('c', {5, 5});
   auto yExp = NDArrayFactory::create<float16>('c', {5, 5});
@@ -1694,131 +1693,8 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
   auto res = sd::ops::OpRegistrator::getInstance().getAllCustomOperations();
 }
 
-// //////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
-//     auto x = NDArrayFactory::create_<float>('c', {10, 10});
-//     x->assign(1.0f);
 
-//     auto y = NDArrayFactory::create_<float>('c', {10, 10});
-//     y->assign(2.0f);
 
-//     auto z = NDArrayFactory::create_<float>('c', {10, 10});
-
-//     auto exp = NDArrayFactory::create_<float>('c', {10, 10});
-//     exp->assign(3.0f);
-//     z->assign(120.0f);
-//     std::string opName("add");
-
-//     auto hash = sd::ops::HashHelper::getInstance().getInstance()->getLongHash(opName);
-
-//     auto inputBuffers = new sd::Pointer[2];
-//     auto inputShapes = new sd::Pointer[2];
-
-//     inputBuffers[0] = (sd::Pointer) x->buffer();
-//     inputBuffers[1] = (sd::Pointer) y->buffer();
-
-//     inputShapes[0] = (sd::Pointer) x->shapeInfo();
-//     inputShapes[1] = (sd::Pointer) y->shapeInfo();
-
-//     auto outputBuffers = new sd::Pointer[1];
-//     auto outputShapes = new sd::Pointer[1];
-
-//     outputBuffers[0] = (sd::Pointer) z->buffer();
-//     outputShapes[0] = (sd::Pointer) z->shapeInfo();
-
-//     //auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1,
-//     nullptr, 0, nullptr, 0, false); auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2,
-//     outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false); ASSERT_EQ(sd::Status::OK, status);
-//     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
-//     ASSERT_NEAR(1.0f, x->meanNumber().e<float>(0), 1e-5);
-//     ASSERT_NEAR(3.0f, z->meanNumber().e<float>(0), 1e-5);
-
-//     delete x;
-//     delete y;
-//     delete z;
-//     delete exp;
-//     delete[] inputBuffers;
-//     delete[] inputShapes;
-//     delete[] outputBuffers;
-//     delete[] outputShapes;
-// }
-
-// //////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
-//     auto x = NDArrayFactory::create_<float>('c', {10, 10});
-//     x->assign(1.0f);
-
-//     auto y = NDArrayFactory::create_<float>('c', {10, 10});
-//     y->assign(2.0f);
-
-//     auto z = NDArrayFactory::create_<float>('c', {10, 10});
-
-//     auto exp = NDArrayFactory::create_<float>('c', {10, 10});
-//     exp->assign(3.0);
-
-//     std::string opName("add");
-
-//     auto hash = sd::ops::HashHelper::getInstance().getInstance()->getLongHash(opName);
-
-//     auto inputBuffers = new sd::Pointer[2];
-//     auto inputShapes = new sd::Pointer[2];
-
-//     inputBuffers[0] = (sd::Pointer) x->buffer();
-//     inputBuffers[1] = (sd::Pointer) y->buffer();
-
-//     inputShapes[0] = (sd::Pointer) x->shapeInfo();
-//     inputShapes[1] = (sd::Pointer) y->shapeInfo();
-
-//     auto outputBuffers = new sd::Pointer[1];
-//     auto outputShapes = new sd::Pointer[1];
-
-//     execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0,
-//     nullptr, 0, true);
-
-//     ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
-//     ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);
-
-//     delete x;
-//     delete y;
-//     delete z;
-//     delete exp;
-//     delete[] inputBuffers;
-//     delete[] inputShapes;
-//     delete[] outputBuffers;
-//     delete[] outputShapes;
-// }
-
-#ifndef __CUDABLAS__
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, TestGemv1) {
-  /*
-  auto xBuffer = new float[15]{1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f, 15.f};
-  auto xShape = new sd::LongType[8] {2, 5, 3, 3, 1, 0, 1, 99};
-  ArrayOptions::setDataType(xShape, sd::DataType::FLOAT32);
-  auto x = new NDArray(xBuffer, xShape);
-
-  auto yBuffer = new float[3]{2.f, 4.f, 6.f};
-  auto yShape = new sd::LongType[8] {2, 3, 1, 1, 1, 0, 1, 99};
-  ArrayOptions::setDataType(yShape, sd::DataType::FLOAT32);
-
-  auto y = new NDArray(yBuffer, yShape);
-
-  auto z = NDArrayFactory::create_<float>('f', {5, 1});
-
-  auto expBuffer = new float[5]{28.00f,64.00f,100.00f,136.00f,172.00f};
-  auto exp = new NDArray(expBuffer, z->shapeInfo());
-
-   sd::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1,
-  0.0, z->buffer(), 1);
-
-  ASSERT_TRUE(z->equalsTo(exp));
-
-  delete []xBuffer; delete []xShape; delete x; delete []yBuffer; delete []yShape; delete y; delete z; delete
-  []expBuffer; delete exp;
-   */
-}
-
-#endif
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Transpose1) {
@@ -1955,7 +1831,6 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
   block->fillInputs({-1});
 
   // kernel params
-  // block->getIArguments()->push_back(4);
   block->getIArguments()->push_back(1);
   block->getIArguments()->push_back(2);
   block->getIArguments()->push_back(3);
@@ -2456,7 +2331,6 @@ TEST_F(DeclarableOpsTests1, ArgMax6) {
 TEST_F(DeclarableOpsTests1, ArgMin1) {
   auto x = NDArrayFactory::create<float>('c', {3, 5});
   x.linspace(1);
-  //    auto exp('c', {3, 1});
   auto exp = NDArrayFactory::create<sd::LongType>('c', {3});
   exp.assign(0.0f);
 
@@ -3062,9 +2936,6 @@ TEST_F(DeclarableOpsTests1, Reverse_7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // expected.printIndexedBuffer("E");
-  // result->printIndexedBuffer("R");
-
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3165,8 +3036,6 @@ TEST_F(DeclarableOpsTests1, Reverse_12) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer("Result reverse");
-  // expected.printIndexedBuffer("Expected reverse");
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -3175,8 +3044,6 @@ TEST_F(DeclarableOpsTests1, Reverse_12) {
 TEST_F(DeclarableOpsTests1, Reverse_13) {
   auto input = NDArrayFactory::create<float>({0.f, 1.f, 2.f, 3.f, 4.f});
   auto expected = NDArrayFactory::create<float>({4.f, 3.f, 2.f, 1.f, 0.f});
-
-  // input.linspace(1);
   sd::ops::reverse op;
   auto results = op.evaluate({&input}, {}, {-1});
 
@@ -3193,7 +3060,6 @@ TEST_F(DeclarableOpsTests1, Reverse_14) {
   auto input = NDArrayFactory::create<double>({0.f, 1.f, 2.f, 3.f, 4.f});
   auto expected = NDArrayFactory::create<double>({0.f, 1.f, 2.f, 3.f, 4.f});
 
-  // input.linspace(1);
   sd::ops::reverse op;
   auto results = op.evaluate({&input}, {}, {}, {});
 

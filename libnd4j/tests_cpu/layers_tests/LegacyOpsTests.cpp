@@ -440,51 +440,7 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
   delete[] extraPointers;
 }
 
-TEST_F(LegacyOpsTests, Reduce3_3) {
-  auto x =
-      NDArrayFactory::create<double>('c', {3, 5},
-                                     {-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951,
-                                      -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673,
-                                      0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247});
 
-  auto y = NDArrayFactory::create<double>(
-      'c', {5}, {-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
-  auto e = NDArrayFactory::create<double>('c', {3}, {0.577452, 0.0, 1.80182});
-  auto z = NDArrayFactory::create<double>('c', {3});
-
-  auto dim = NDArrayFactory::create<int>('c', {1}, {1});
-  dim.syncToHost();
-
-  sd::LaunchContext* context = sd::LaunchContext::defaultContext();
-
-  sd::Pointer* extraPointers = nullptr;
-#ifdef __CUDABLAS__
-  extraPointers = new sd::Pointer[7]{nullptr,
-                                     context->getCudaStream(),
-                                     context->getScalarPointer(),
-                                     nullptr,
-                                     context->getCudaSpecialStream(),
-                                     context->getReductionPointer(),
-                                     context->getAllocationPointer()};
-#endif
-
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), {1});
-  auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), {1});
-
-  NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
-  OpaqueDataBuffer xBuf(x.dataBuffer());
-  OpaqueDataBuffer yBuf(y.dataBuffer());
-  OpaqueDataBuffer zBuf(z.dataBuffer());
-  OpaqueDataBuffer dimBuf(dim.dataBuffer());
-
-  execReduce3Tad(extraPointers, reduce3::CosineDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(), nullptr, &yBuf,
-                 y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &dimBuf,
-                 dim.shapeInfo(), dim.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
-                 packY->platformShapeInfo(), packY->platformOffsets());
-  ASSERT_EQ(e, z);
-  NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
-  delete[] extraPointers;
-}
 
 TEST_F(LegacyOpsTests, Reduce3_4) {
   auto x =

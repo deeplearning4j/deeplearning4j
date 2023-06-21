@@ -267,8 +267,6 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
   auto res2 = sumOp.evaluate({&e}, {1.}, {1});
   ASSERT_EQ(res2.status(), sd::Status::OK);
   auto out = res2.at(0);
-  // out->printShapeInfo("ReduceMean empty shape with keep dims");
-  // out->printIndexedBuffer("ReduceMean scalar");
   ASSERT_TRUE(std::isnan(out->e<float>(0)));
 }
 
@@ -317,8 +315,6 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
   auto e = NDArrayFactory::create<sd::LongType>('c',dim);
 
   sd::ops::argmax op;
-  // sd::ops::reduce_max op;
-
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -336,7 +332,7 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
     auto result = op.execute({&x, &y}, {&y}, {}, {}, {});
     ASSERT_TRUE(false);
   } catch (std::exception& e) {
-    //
+    
   }
 }
 
@@ -474,7 +470,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest3) {
   auto x = NDArray('c', {3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray('c', {3, 5, 4},
                    {10.,  11.,  12.,  13.,  20.,  22.,  24.,  26.,  30.,  33.,  36.,  39.,  40.,  44.,  48.,
                     52.,  50.,  55.,  60.,  65.,  84.,  90.,  96.,  102., 98.,  105., 112., 119., 112., 120.,
@@ -494,7 +490,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest4) {
   auto x = NDArray('c', {2, 3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray(
       'c', {2, 3, 5, 4},
       {10.,  11.,  12.,  13.,  20.,  22.,  24.,  26.,  30.,  33.,  36.,  39.,  40.,  44.,  48.,  52.,  50.,  55.,
@@ -517,7 +513,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest5) {
   auto x = NDArray('c', {3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray('c', {3, 5, 4},
                    {0.1,      0.090909, 0.083333, 0.076923, 0.2,      0.181818, 0.166667, 0.153846, 0.3,      0.272727,
                     0.250000, 0.230769, 0.4,      0.363636, 0.333333, 0.307692, 0.5,      0.454545, 0.416667, 0.384615,
@@ -538,7 +534,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest6) {
   auto x = NDArray('c', {2, 3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray(
       'c', {2, 3, 5, 4},
       {0.1,      0.090909, 0.083333, 0.076923, 0.2,      0.181818, 0.166667, 0.153846, 0.3,      0.272727, 0.250000,
@@ -567,7 +563,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest7) {
   auto x = NDArray('c', {3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray(
       'c', {3, 5, 4},
       {-9.,       -10.,      -11.,      -12.,      -8.,       -9.,       -10.,      -11.,      -7.,       -8.,
@@ -589,7 +585,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest8) {
   auto x = NDArray('c', {2, 3, 5, 1}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 3, 1, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray(
       'c', {2, 3, 5, 4},
       {-9.0, -10., -11., -12., -8., -9., -10., -11.0, -7., -8., -9., -10., -6., -7., -8., -9., -5., -6., -7., -8.,
@@ -871,9 +867,6 @@ TEST_F(DeclarableOpsTests14, matmul_test13) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -888,9 +881,6 @@ TEST_F(DeclarableOpsTests14, matmul_test14) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -905,9 +895,6 @@ TEST_F(DeclarableOpsTests14, matmul_test15) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -922,9 +909,6 @@ TEST_F(DeclarableOpsTests14, matmul_test16) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1369,7 +1353,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_3D_1) {
   auto x = NDArray('c', {2, 3, 5}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 5}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray('c', {2, 3, 5},
                    {10.000000,  22.000000,  36.000000,  52.000000,  70.000000,  60.000000,  77.000000,  96.000000,
                     117.000000, 140.000000, 110.000000, 132.000000, 156.000000, 182.000000, 210.000000, 240.000000,
@@ -1383,7 +1367,6 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_3D_1) {
 
   std::vector<sd::LongType> dims = {0, 2};
   x.applyBroadcast(sd::broadcast::Multiply,&dims , y, z);
-  // z.printBuffer();
   ASSERT_EQ(e, z);
 }
 ///////////////////////////////////////////////////////////////////////
@@ -1391,7 +1374,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_3D_2) {
   auto x = NDArray('f', {2, 3, 5}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 5}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray('c', {2, 3, 5}, {0.100000, 0.181818, 0.250000, 0.307692, 0.357143, 0.600000, 0.636364, 0.666667,
                                      0.692308, 0.714286, 1.100000, 1.090909, 1.083333, 1.076923, 1.071429, 1.066667,
                                      1.062500, 1.058824, 1.055556, 1.052632, 1.400000, 1.375000, 1.352941, 1.333333,
@@ -1416,7 +1399,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_4D_1) {
   auto x = NDArray('c', {2, 3, 5, 4}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 5, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e =
       NDArray('c', {2, 3, 5, 4},
               {10.000000,   22.000000,   36.000000,   52.000000,   70.000000,   90.000000,   112.000000,  136.000000,
@@ -1449,7 +1432,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_4D_2) {
   auto x = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 5, 4}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4},
       {0.100000, 0.181818, 0.250000, 0.307692, 0.357143, 0.400000, 0.437500, 0.470588, 0.500000, 0.526316, 0.550000,
@@ -1483,7 +1466,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_4D_3) {
   auto x = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 5}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4},
       {0.100000, 0.200000, 0.300000, 0.400000, 0.454545, 0.545455, 0.636364, 0.727273, 0.750000, 0.833333, 0.916667,
@@ -1519,7 +1502,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_4D_4) {
   auto x = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 1, 5, 1}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4},
       {0.100000, 0.200000, 0.300000, 0.400000, 0.454545, 0.545455, 0.636364, 0.727273, 0.750000, 0.833333, 0.916667,
@@ -1552,7 +1535,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_1) {
   auto x = NDArray('c', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
   auto y = NDArray('c', {2, 1, 5, 4, 3}, sd::DataType::FLOAT32);
   auto z = NDArray('c', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto e = NDArray(
       'c', {2, 3, 5, 4, 3},
       {10.000000,    22.000000,    36.000000,    52.000000,    70.000000,    90.000000,    112.000000,   136.000000,
@@ -1615,7 +1598,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_2) {
   auto x = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 5, 4, 3}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4, 3},
       {0.100000,  0.181818,  0.250000, 0.307692, 0.357143, 0.400000, 0.437500, 0.470588, 0.500000, 0.526316, 0.550000,
@@ -1670,7 +1653,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_3) {
   auto x = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 5}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4, 3},
       {0.100000,  0.200000,  0.300000,  0.400000,  0.500000,  0.600000,  0.700000,  0.800000,  0.900000,  1.000000,
@@ -1729,7 +1712,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_4) {
   auto x = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
   auto y = NDArray('f', {2, 1, 5, 1, 1}, sd::DataType::FLOAT32);
   auto z = NDArray('f', {2, 3, 5, 4, 3}, sd::DataType::FLOAT32);
-  // recieved by main algorithm
+  // received by main algorithm
   auto eC = NDArray(
       'c', {2, 3, 5, 4, 3},
       {0.100000,  0.200000,  0.300000,  0.400000,  0.500000,  0.600000,  0.700000,  0.800000,  0.900000,  1.000000,
@@ -2001,10 +1984,6 @@ TEST_F(DeclarableOpsTests14, Stack_10) {
   sd::ops::stack op;
   auto results = op.evaluate({&input1, &input1, &input1}, {}, {1});
   auto output = results.at(0);
-
-  // expected.printShapeInfo("exp");
-  // output->printShapeInfo("out");
-
   ASSERT_TRUE(expected.isSameShapeStrict(*output));
   ASSERT_TRUE(expected.equalsTo(output));
 }
@@ -2083,9 +2062,6 @@ TEST_F(DeclarableOpsTests14, Stack_14) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo();
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -2133,9 +2109,6 @@ TEST_F(DeclarableOpsTests14, Stack_17) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printShapeInfo("z shape");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }

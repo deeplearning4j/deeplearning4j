@@ -140,13 +140,12 @@ std::vector<sd::LongType>& NDArrayList::shape() { return _shape; }
 
 int NDArrayList::counter() { return _counter++; }
 
-void NDArrayList::unstack(NDArray* array, int axis) {
+void NDArrayList::unstack(NDArray* array, LongType axis) {
   _axis = axis;
   std::vector<sd::LongType> args({axis});
-   sd::LongType *axis2 = reinterpret_cast<sd::LongType *>(&axis);
-  auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(),1, axis2);
+  auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(),1, args.data());
   auto result = array->allTensorsAlongDimension(*newAxis);
-  for (int e = 0; e < result.size(); e++) {
+  for (sd::LongType e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
     write(e, new NDArray(chunk->dup(array->ordering())));
   }

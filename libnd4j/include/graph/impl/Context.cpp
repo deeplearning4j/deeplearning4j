@@ -421,7 +421,6 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
-  sd_print("Resized output array\n");
   auto shapeInfoCast =  reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
   auto primary = shapeInfoCast->primary();
   auto newShapeInfoCast = reinterpret_cast<const sd::LongType *>(primary);

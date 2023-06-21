@@ -554,15 +554,25 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 // constructors for vector of  strings
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string,
                  const sd::DataType dataType, sd::LaunchContext *context) {
-  if (!DataTypeUtils::isS(dataType))
-    THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
-
-  if (shape::prodLong(shape.data(), shape.size()) != string.size())
-    THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
-
+  if (!DataTypeUtils::isS(dataType)) {
+    std::string errorMessage;
+    errorMessage += "NDArray::NDArray: invalid DataType, only string dataTypes have to be used";
+    errorMessage += "Provided data type: " + DataTypeUtils::asString(dataType);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (shape::prodLong(shape.data(), shape.size()) != string.size()) {
+    std::string errorMessage;
+    errorMessage += "NDArray::NDArray: Number of strings should match length of array. ";
+    errorMessage += "Number of strings: " + std::to_string(string.size()) + ", ";
+    errorMessage += "length of array: " + std::to_string(shape::prodLong(shape.data(), shape.size()));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   for (const auto &str : string) {
     if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str))) {
-      THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
+      std::string errorMessage;
+        errorMessage += "NDArray::NDArray: invalid character in input string: ";
+        errorMessage += str;
+        THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 

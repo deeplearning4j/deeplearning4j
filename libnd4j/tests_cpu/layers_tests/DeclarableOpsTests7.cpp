@@ -107,7 +107,6 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR) {
 
   auto z = result.at(0);
   ASSERT_EQ(3, z->lengthOf());
-  // ASSERT_TRUE(exp.isSameShape(z));
 }
 
 TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LEFT) {

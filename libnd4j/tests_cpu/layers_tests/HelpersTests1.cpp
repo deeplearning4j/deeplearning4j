@@ -112,7 +112,6 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
       'c', {4, 4}, {-17.1756, 24.3869, 0, 0, 0, -8.61985, -3.89823, 0, 0, 0, 4.03047, 4.13018, 0, 0, 0, 1.21666});
 
   ops::helpers::BiDiagonalUp object(matrix);
-  // object._HHmatrix.printBuffer();
 
   ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(object._HHmatrix));
   ASSERT_TRUE(hhMatrixExp.equalsTo(&object._HHmatrix));
@@ -151,7 +150,6 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
       'c', {4, 4}, {-17.2916, 7.03123, 0, 0, 0, 16.3413, -20.7828, 0, 0, 0, -18.4892, 4.13261, 0, 0, 0, -21.323});
 
   ops::helpers::BiDiagonalUp object(matrix);
-  // object._HHmatrix.printBuffer();
 
   ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(object._HHmatrix));
   ASSERT_TRUE(hhMatrixExp.equalsTo(&object._HHmatrix));
@@ -631,8 +629,6 @@ TEST_F(HelpersTests1, JacobiSVD_test2) {
 
   double maxElem;
   bool result = jac.isBlock2x2NotDiag(matrix3, 1, 3, maxElem);
-
-  // ASSERT_NEAR(maxElem, 19.69772, 1e-5);
   ASSERT_TRUE(exp3.equalsTo(&matrix3));
   ASSERT_TRUE(exp4.equalsTo(&jac._u));
   ASSERT_TRUE(exp5.equalsTo(&jac._v));
@@ -2434,9 +2430,6 @@ TEST_F(HelpersTests1, softmaxDerivative_3) {
   NDArray input('c', {5}, {-1., 1, -2, 2, 3}, sd::DataType::DOUBLE);
   NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, sd::DataType::DOUBLE);
   NDArray output('c', {5}, sd::DataType::DOUBLE);
-
-  // input.applyTransform(sd::transform::SoftMaxDerivative, &output);
-
   sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
   ASSERT_TRUE(expOutput.isSameShape(output));
   ASSERT_TRUE(expOutput.equalsTo(output));

@@ -32,7 +32,6 @@ class HelpersTests2 : public testing::Test {
   HelpersTests2() { std::cout << std::endl << std::flush; }
 };
 
-// #ifndef __CUDABLAS__
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Hessenberg_1) {
   NDArray x1('c', {1, 4}, {14, 17, 3, 1}, sd::DataType::DOUBLE);
@@ -206,7 +205,6 @@ TEST_F(HelpersTests2, Schur_2) {
                 sd::DataType::DOUBLE);
 
   ops::helpers::Schur<double> schur(x);
-  // schur._U.linspace(-0.3, 0.1);    // doesn't matter
 
   schur.t.linspace(-3, 1);
   double expShift = 0;

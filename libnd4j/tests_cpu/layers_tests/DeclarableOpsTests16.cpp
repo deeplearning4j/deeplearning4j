@@ -394,7 +394,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
        0.725874603f, 0.890151322f, 0.928968489f, 0.684074104f});
 
   // get subarray
-  // get subarray
   NDArray subArrRgbs = rgbs.subarray({NDIndex::all(), NDIndex::point(0)});
   NDArray expected = hsvs.subarray({NDIndex::all(), NDIndex::point(0)});
   subArrRgbs.reshapei({3});
@@ -1010,13 +1009,10 @@ TEST_F(DeclarableOpsTests16, clipbynorm_4) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests16, clipbynorm_5) {
-  // auto x = NDArrayFactory::create<double>('c', {3, 5}, {1,2,3,4,5,  1,2,3,4,5,  1,2,3,4,5});
   auto x = NDArrayFactory::create<double>('c', {3, 5});
   auto exp = NDArrayFactory::create<double>(
       'c', {3, 5},
       {1., 2., 2.89271, 3.50524, 4.00892, 6., 7., 7.71389, 7.88678, 8.01784, 11., 12., 12.53507, 12.26833, 12.02676});
-  // auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1});
-
   x.linspace(1);
 
   sd::ops::clipbynorm op;

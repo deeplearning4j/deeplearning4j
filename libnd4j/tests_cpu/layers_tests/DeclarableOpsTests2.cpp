@@ -402,8 +402,6 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_1) {
   auto result = op.evaluate({&x, &y}, {}, {});
 
   auto z = result.at(0);
-  //    z->printShapeInfo("FloorDiv1 shape");
-  //    z->printIndexedBuffer("FloorDiv1");
   ASSERT_TRUE(exp.isSameShape(z));
 }
 
@@ -421,10 +419,6 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_2) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto z1 = result.at(0);
   auto z2 = result.at(1);
-  //    z->printShapeInfo("FloorDiv1 shape");
-  //    z1->printIndexedBuffer("FloorDiv2_1");
-  //    z2->printIndexedBuffer("FloorDiv2_2");
-
   ASSERT_TRUE(exp1.equalsTo(z1));
   ASSERT_TRUE(exp2.equalsTo(z2));
 }
@@ -1249,7 +1243,6 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));

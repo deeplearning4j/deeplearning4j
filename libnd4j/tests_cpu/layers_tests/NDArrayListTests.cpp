@@ -37,8 +37,6 @@ TEST_F(NDArrayListTests, BasicTests_1) {
   auto y = NDArrayFactory::create<float>('c', {1, 10});
 
   ASSERT_EQ(sd::Status::OK, list.write(1, new NDArray(x.dup())));
-
-  // ASSERT_EQ(sd::Status::DOUBLE_WRITE, list.write(1, &y));
 }
 
 TEST_F(NDArrayListTests, BasicTests_2) {
