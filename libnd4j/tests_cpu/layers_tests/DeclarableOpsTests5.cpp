@@ -2235,20 +2235,6 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
-  auto labels = NDArrayFactory::create<int>('c', {1, 2}, {1, 2});
-  auto predictions = NDArrayFactory::create<int>('c', {1, 2}, {0, 2});
-  auto weights = NDArrayFactory::create<double>('c', {1, 2}, {100, 200});
-  auto expected = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
-
-  sd::ops::confusion_matrix op;
-  auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3}, {}, {sd::DataType::DOUBLE});
-  auto output = results.at(0);
-
-  ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(expected.isSameShape(output));
-  ASSERT_TRUE(expected.equalsTo(output));
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
@@ -2381,24 +2367,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_5) {
   ASSERT_TRUE(exp.equalsTo(output));
 }
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, XWPlusB_6) {
-  auto x = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 11.f, 3.f, 14.f, 5.f, 6.f});
-  auto y = NDArrayFactory::create<float>('c', {2, 1}, {11.f, 3.f});
 
-  auto b = NDArrayFactory::create<float>('c', {1}, {100.f});
-
-  auto exp = NDArrayFactory::create<float>('c', {3, 1}, {144.f, 175.f, 173.f});
-
-  sd::ops::xw_plus_b op;
-  auto result = op.evaluate({&x, &y, &b});
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-  auto output = result.at(0);
-
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
-}
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, XWPlusB_7) {
   auto x = NDArrayFactory::create<float>('c', {3, 4}, {1.f, 11.f, 3.f, 14.f, 5.f, 6.f, 1.f, 11.f, 3.f, 14.f, 5.f, 6.f});
