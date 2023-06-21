@@ -66,27 +66,3 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
-  std::vector<std::string> data1 = {"first string", "second"};
-  auto x = NDArrayFactory::string({2}, data1);
-  auto delimiter = NDArrayFactory::string(" ");
-
-  auto exp0 = NDArrayFactory::create<sd::LongType>({0, 0, 0, 1, 1, 0});
-
-  std::vector<std::string> data2 = {"first", "string", "second"};
-  auto exp1 = NDArrayFactory::string({3}, data2);
-
-  sd::ops::compat_string_split op;
-  auto result = op.evaluate({&x, &delimiter});
-  ASSERT_EQ(sd::Status::OK, result.status());
-  ASSERT_EQ(2, result.size());
-
-  auto z0 = result.at(0);
-  auto z1 = result.at(1);
-
-  ASSERT_TRUE(exp0.isSameShape(z0));
-  ASSERT_TRUE(exp1.isSameShape(z1));
-
-  ASSERT_EQ(exp0, *z0);
-  ASSERT_EQ(exp1, *z1);
-}

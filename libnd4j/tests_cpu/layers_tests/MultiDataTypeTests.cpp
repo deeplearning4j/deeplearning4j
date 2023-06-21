@@ -248,8 +248,6 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test2) {
   std::vector<sd::LongType> empty;
   std::vector<sd::LongType>  dimOne = {1};
   auto scalar1 = x.reduceAlongDimension(sd::reduce::Mean, &empty /*whole range*/);
-  // scalar1->printShapeInfo();
-  // scalar1->printIndexedBuffer();
   ASSERT_EQ(scalar1, exp1);
 
   auto scalar2 = x.reduceAlongDimension(sd::reduce::Mean, &dimOne);
@@ -1018,22 +1016,6 @@ TEST_F(MultiDataTypeTests, ndarray_applyTransformBool_test1) {
   NDArray result1('c', {2, 2}, sd::DataType::BOOL);
   NDArray result2('c', {3, 2}, sd::DataType::BOOL);
 
-  /*
-  x1.applyTransform(sd::transform::IsMax, result1);
-  ASSERT_EQ(result1, exp1);
-
-  x2.applyTransform(sd::transform::IsMax, result1);
-  ASSERT_EQ(result1, exp1);
-
-  x3.applyTransform(sd::transform::IsMax, result1);
-  ASSERT_EQ(result1, exp1);
-
-  x4.applyTransform(sd::transform::IsMax, result1);
-  ASSERT_EQ(result1, exp2);
-
-  x5.applyTransform(sd::transform::IsMax, result2);
-  ASSERT_EQ(result2, exp3);
-  */
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1791,14 +1773,9 @@ TEST_F(MultiDataTypeTests, Test_Cast_1) {
 
   asBool.assign(first);
 
-  // asBool.printIndexedBuffer("asBool");
   asBool.applyScalar(scalar::Not, false, _not);
 
-  // _not.printIndexedBuffer("_not");
-
   asFloat.assign(_not);
-
-  // asFloat.printIndexedBuffer("asFloat");
   ASSERT_EQ(exp, asFloat);
 }
 
@@ -1830,7 +1807,6 @@ TEST_F(MultiDataTypeTests, divide_bool_test1) {
   try {
     NDArray x3 = x1 / x2;
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 
@@ -1863,7 +1839,6 @@ TEST_F(MultiDataTypeTests, divide_bool_test1) {
   try {
     x1.applyTrueBroadcast(BROADCAST(FloorMod), x2, x3);
   } catch (std::exception& message) {
-    // printf("%s\n", message.what());
     ASSERT_TRUE(1);
   }
 }
@@ -1879,7 +1854,6 @@ TEST_F(MultiDataTypeTests, aaa) {
   NativeOpExecutioner::execRandom(LaunchContext::defaultContext(), sd::random::UniformDistribution, &gen, z.buffer(),
                                   z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                   extras.argumentsAsT<double>());
-  // z.printIndexedBuffer();
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1889,7 +1863,6 @@ TEST_F(MultiDataTypeTests, assign_2) {
   NDArray expected('c', {4}, {1, 2, 3, 4}, sd::DataType::INT32);
 
   y.assign(x);
-  // y.printBuffer();
 
   ASSERT_TRUE(expected.equalsTo(&y));
 }

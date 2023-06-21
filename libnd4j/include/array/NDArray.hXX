@@ -570,9 +570,9 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   for (const auto &str : string) {
     if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str))) {
       std::string errorMessage;
-        errorMessage += "NDArray::NDArray: invalid character in input string: ";
-        errorMessage += str;
-        THROW_EXCEPTION(errorMessage.c_str());
+      errorMessage += "NDArray::NDArray: invalid character in input string: ";
+      errorMessage += str;
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 
@@ -4505,8 +4505,13 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
   if (checkTargetShape) {
     auto newShape =
         ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, false, getContext()->getWorkspace());
-    if (!shape::shapeEquals(newShape, target.shapeInfo()))
-      THROW_EXCEPTION("NDArray::reduceAlongDimension SameOps: wrong target shape!");
+    if (!shape::shapeEquals(newShape, target.shapeInfo())) {
+      std::string errorMessage;
+      errorMessage += "NDArray::reduceAlongDimension SameOps: wrong target shape!\n";
+      errorMessage += "Expected: "; errorMessage += ShapeUtils::shapeAsString(target.shapeInfo());
+      errorMessage += " vs "; errorMessage += ShapeUtils::shapeAsString(newShape);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
   NDArray::prepareSpecialUse({&target}, {this});

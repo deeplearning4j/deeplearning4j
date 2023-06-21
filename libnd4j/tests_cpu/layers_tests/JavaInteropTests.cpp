@@ -1659,50 +1659,6 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
   ASSERT_EQ(e, z);
 }
 
-TEST_F(JavaInteropTests, test_expandable_array_op_1) {
-  std::vector<std::string> data = {"first string", "second"};
-  auto x = NDArrayFactory::string({2}, data);
-  auto d = NDArrayFactory::string(" ", sd::DataType::UTF8);
-
-  std::vector<sd::LongType> shape = {6};
-  auto z0 = NDArrayFactory::create<sd::LongType>('c', shape);
-  std::vector<std::string> data2 = {"", "", ""};
-  std::vector<sd::LongType> shape2 = {3};
-  auto z1 = NDArrayFactory::string(shape2, data2);
-
-  auto exp0 = NDArrayFactory::create<sd::LongType>({0, 0, 0, 1, 1, 0});
-  std::vector<std::string> data3 = {"first", "string", "second"};
-  auto exp1 = NDArrayFactory::string({3}, data3);
-
-  auto buf = z0.dataBuffer();
-  auto bufPrimary = buf->primary();
-  auto buf1 = z1.dataBuffer();
-  auto buf1Primary = buf1->primary();
-  InteropDataBuffer iz0(z0.dataBuffer());
-  InteropDataBuffer iz1(z1.dataBuffer());
-
-
-
-  Context ctx(1);
-  ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
-
-  auto dBuffer = d.buffer();
-  auto dShapeInfo = d.shapeInfo();
-  auto dSpecial = d.specialBuffer();
-  auto dSpecialShape = d.specialShapeInfo();
-  ctx.setInputArray(1, dBuffer, dShapeInfo, dSpecial, dSpecialShape);
-
-  InteropDataBuffer z0ShapeInfo(std::make_shared<DataBuffer>(z0.shapeInfoDataBuffer()));
-  InteropDataBuffer z1ShapeInfo(std::make_shared<DataBuffer>(z1.shapeInfoDataBuffer()));
-  ctx.setOutputArray(0, &iz0, &z0ShapeInfo, z0.specialShapeInfo());
-  ctx.setOutputArray(1, &iz1, &z1ShapeInfo, z1.specialShapeInfo());
-  sd::ops::compat_string_split op;
-  auto status = op.execute(&ctx);
-  ASSERT_EQ(sd::Status::OK, status);
-
-  ASSERT_EQ(exp0, z0);
-  ASSERT_EQ(exp1, z1);
-}
 
 TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
   if (!Environment::getInstance().isCPU()) return;

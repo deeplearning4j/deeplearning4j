@@ -895,7 +895,7 @@ TEST_F(NativeOpsTests, CreateTest_1) {
   auto zz = ::createEvent();
   ::destroyEvent(zz);
   if (xx) delete (LaunchContext *)xx;
-  if (yy) printf("Stream should be destoyed before.");
+  if (yy) printf("Stream should be destroyed before.");
 }
 
 TEST_F(NativeOpsTests, MemTest_1) {

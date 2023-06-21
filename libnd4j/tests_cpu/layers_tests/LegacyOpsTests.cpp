@@ -484,7 +484,6 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
                  dim.shapeInfo(), dim.specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
                  packY->platformShapeInfo(), packY->platformOffsets());
 
-  // z.printIndexedBuffer("z");
   NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
   ASSERT_EQ(e, z);
   delete[] extraPointers;
