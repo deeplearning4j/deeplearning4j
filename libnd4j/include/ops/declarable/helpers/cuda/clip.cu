@@ -110,16 +110,25 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
         manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({z}, {z, &actualNorms, &clipNorm});
+
+
     BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, context->getCudaStream(), clipNorm.specialBuffer(),
-                           actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), z->specialBuffer(),
-                           z->specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude.size(), useAverage),
+                          (blocksPerGrid,
+                           threadsPerBlock,
+                           context->getCudaStream(),
+                           clipNorm.specialBuffer(),
+                              actualNorms.specialBuffer(),
+                           actualNorms.specialShapeInfo(),
+                           z->specialBuffer(),
+                              z->specialShapeInfo(),
+                           dimensions,
+                           dimsToExclude->size(),
+                           useAverage),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({z}, {z, &actualNorms, &clipNorm});
 
     manager.synchronize();
-
-    delete dimensions;
+    delete dimsToExclude;
   }
 }
 
@@ -231,7 +240,7 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
                       (sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                       const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
+                          const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -281,7 +290,7 @@ void clipByGlobalNorm(sd::LaunchContext* context, std::vector<NDArray*> const& i
 
 BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
                       (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm,
-                       sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
+                          sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
 
 template <typename T>
@@ -341,8 +350,8 @@ void clipByValue(sd::LaunchContext* context, NDArray& input, double leftBound, d
 }
 
 BUILD_SINGLE_TEMPLATE(template void clipByValue_, (sd::LaunchContext * context, NDArray& input, double leftBound,
-                                                   double rightBound, NDArray& output);
-                      , SD_FLOAT_TYPES);
+    double rightBound, NDArray& output);
+, SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

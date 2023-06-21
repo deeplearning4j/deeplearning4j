@@ -51,10 +51,10 @@ static SD_KERNEL void fillRegularizerKernel(T* ioMatrixData, const sd::LongType*
 
 template <typename T>
 static void fillRegularizer(sd::LaunchContext* context, NDArray& ioMatrix, double const value) {
-  auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix.shapeInfo(), {-2, -1});
+  std::vector<sd::LongType> dims = {-2, -1};
+  auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix.shapeInfo(), &dims);
   auto stream = context->getCudaStream();
   auto rows = ioMatrix.sizeAt(-2);
-  // auto cols = ioMatrix.sizeAt(-1);
   fillRegularizerKernel<T><<<256, 256, 128, *stream>>>(
       ioMatrix.dataBuffer()->specialAsT<T>(), ioMatrix.specialShapeInfo(), lastDimsTads->specialShapeInfo(),
       lastDimsTads->specialOffsets(), lastDimsTads->numberOfTads(), rows, (T)value);

@@ -282,9 +282,9 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   if (calcUV) {
     if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector())
       THROW_EXCEPTION("svdJcb: wrong shape of U array !");
-    else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector())
+    else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector()) {
       THROW_EXCEPTION("svdJcb: wrong shape of U array !");
-
+    }
     if (fullUV && std::vector<sd::LongType>({n, n}) != V->getShapeAsVector())
       THROW_EXCEPTION("svdJcb: wrong shape of V array !");
     else if (!fullUV && std::vector<sd::LongType>({n, minDim}) != V->getShapeAsVector())

@@ -22,8 +22,7 @@
 // @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/lgamma.h>
-//#include <execution/Threads.h>
-//#include <helper_math.h>
+
 
 namespace sd {
 namespace ops {

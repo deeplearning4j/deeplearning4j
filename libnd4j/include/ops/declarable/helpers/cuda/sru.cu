@@ -225,7 +225,8 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
            const NDArray* mask, NDArray* ht, NDArray* ct) {
   //  x = x * mask
-  if (mask) x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);  // apply mask
+  std::vector<sd::LongType> dims = {1,2};
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
@@ -451,7 +452,8 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
              const NDArray* ct, const NDArray* gradCt, const NDArray* gradHt, const NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   //  x = x * mask
-  if (mask) x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);  // apply mask
+  std::vector<sd::LongType> dims = {1, 2};
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]

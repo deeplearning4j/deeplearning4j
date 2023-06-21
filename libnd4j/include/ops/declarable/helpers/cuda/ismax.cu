@@ -49,7 +49,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     /**
      * In case of vector-input for IsMax, it just turns into IndexReduce call + subsequent filler call
      */
-    auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
+    auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
     auto targetIdx = indexMax.e<sd::LongType>(0);
 
     dim3 launchDims(128, 512, 1024);
@@ -70,7 +70,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
 
     // we launch legacy IndexMax op, to get indices of max values along dimension
-    auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
+    auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
 
     dim3 launchDims(256, 256, 16384);
     dimension = (sd::LongType*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType));

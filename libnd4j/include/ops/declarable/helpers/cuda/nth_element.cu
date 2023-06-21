@@ -66,9 +66,9 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
                sizeof(T), cudaMemcpyDeviceToDevice);
   } else {  // rank greater than 1
     std::vector<sd::LongType> lastDims(
-        {input->rankOf() - 1});  // = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
+        {input->rankOf() - 1});
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
 
     auto pTadShape = packX->specialShapeInfo();
     auto pTadShapeH = packX->primaryShapeInfo();

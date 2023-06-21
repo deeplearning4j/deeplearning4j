@@ -20,7 +20,6 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/random.h>
-//#include <NativeOps.h>
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
 #include <graph/Context.h>

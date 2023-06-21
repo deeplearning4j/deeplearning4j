@@ -57,7 +57,6 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
       zIndex = shape::getIndexOffset(segment, outputShape);
       start = starts[segment];
       finish = start + lengths[segment];
-      // val[segment] = ;
       z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
     }
   }
@@ -169,7 +168,8 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
@@ -180,6 +180,7 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -215,7 +216,8 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
   } else {
     output->assign(0);
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
@@ -227,6 +229,7 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -319,12 +322,13 @@ sd::Status segmentSumFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();
     segmentSumBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -339,6 +343,7 @@ sd::Status segmentSumFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
   return sd::Status::OK;
@@ -360,12 +365,13 @@ static sd::Status unsortedSegmentSumFunctorBP_(sd::LaunchContext* context, NDArr
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();
     segmentSumBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -380,6 +386,7 @@ static sd::Status unsortedSegmentSumFunctorBP_(sd::LaunchContext* context, NDArr
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
   return sd::Status::OK;

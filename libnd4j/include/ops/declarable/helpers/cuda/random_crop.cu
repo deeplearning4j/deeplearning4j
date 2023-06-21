@@ -20,7 +20,6 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/random_crop.h>
-//#include <NativeOps.h>
 #include <graph/Context.h>
 
 #include <memory>

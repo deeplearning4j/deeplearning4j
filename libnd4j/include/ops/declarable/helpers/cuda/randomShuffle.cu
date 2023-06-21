@@ -167,10 +167,11 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
 
     rng.rewindH((len + 1) * power);
   } else {
-    auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
+    sd::LongType dim = 0;
+    auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(),1 ,&dim);
 
     if (isInplace) {
-      auto subArrsList = input.allTensorsAlongDimension(dimsToExclude);
+      auto subArrsList = input.allTensorsAlongDimension(*dimsToExclude);
 
       // Fisher-Yates shuffle
       for (int i = firstDim - 1; i > 0; --i) {
@@ -178,8 +179,8 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
         if (i != j) subArrsList.at(i)->swapUnsafe(*subArrsList.at(j));
       }
     } else {
-      auto subArrsListIn = input.allTensorsAlongDimension(dimsToExclude);
-      auto subArrsListOut = output.allTensorsAlongDimension(dimsToExclude);
+      auto subArrsListIn = input.allTensorsAlongDimension(*dimsToExclude);
+      auto subArrsListOut = output.allTensorsAlongDimension(*dimsToExclude);
 
       std::vector<int> indices(firstDim);
       std::iota(indices.begin(), indices.end(), 0);  // 0,1,2,3, ... firstDim-1
@@ -195,6 +196,8 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
     }
 
     rng.rewindH(firstDim - 1);
+
+    delete dimsToExclude;
   }
 }
 

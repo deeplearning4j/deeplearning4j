@@ -91,10 +91,10 @@ static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArra
   if (axis.empty())
     for (int i = 0; i < inputRank; ++i) axis.push_back(i);
   else
-    shape::checkDimensions(inputRank, axis);
+    shape::checkDimensions(inputRank, &axis);
 
   auto tempArray = input.dup();
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray.shapeInfo(), axis);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray.shapeInfo(), &axis);
 
   auto tadLength = shape::length(packX->primaryShapeInfo());
 

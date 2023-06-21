@@ -253,7 +253,8 @@ static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input,
 
   // we get top K values first
   if (k == 1) {
-    input->applyIndexReduce(indexreduce::IndexMax, *indices, {input->rankOf() - 1});
+    std::vector<sd::LongType> dims = {input->rankOf() - 1};
+    input->applyIndexReduce(indexreduce::IndexMax, *indices,&dims);
 
     // copy values on specified indices
     topValuesMover<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(

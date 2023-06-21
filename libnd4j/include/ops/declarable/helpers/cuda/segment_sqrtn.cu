@@ -108,7 +108,8 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
         output->specialShapeInfo());
   } else {
     output->nullify();
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
@@ -120,6 +121,7 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
         input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         indices->dataBuffer()->specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -233,7 +235,8 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -249,6 +252,7 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo(), inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads,
         outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 
