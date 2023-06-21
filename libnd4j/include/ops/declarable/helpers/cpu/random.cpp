@@ -93,19 +93,16 @@ T gammaGreat(graph::RandomGenerator& rng, T const alpha, T const beta) {
     return math::p_cos(T(2.f * 3.141592f) * v2) * math::p_sqrt(T(-2.f) * math::p_log(v1));
   };
 
-  //        const T underAlpha = T(1.f) / alpha;
-  //        const T powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
-
   float normalizedVar;
   for (;;) {
     do {
-      x = normalDistributed(rng, index);  // printf("X = %f\n", x);
+      x = normalDistributed(rng, index);
       normalizedVar = T(1.f) + c * x;
     } while (normalizedVar < T(0.f));
     normalizedVar = normalizedVar * normalizedVar * normalizedVar;  // v * v * v;
 
-    auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));     // printf("UNI = %f\n", u);
-    if (u < T(1.f) - T(.0331f) * (x * x) * (x * x)) break;  // return (d * v / b);
+    auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));
+    if (u < T(1.f) - T(.0331f) * (x * x) * (x * x)) break;
     if (log(u) < 0.5f * x * x + decreasedAlpha * (1. - normalizedVar + math::p_log(normalizedVar))) break;
   }
   return (decreasedAlpha * normalizedVar / beta);
@@ -154,7 +151,6 @@ void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArr
   if (beta != nullptr) {
     delete copyAlpha;
     delete copyBeta;
-    // delete broadcasted;
   }
 }
 

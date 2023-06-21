@@ -83,7 +83,8 @@ TEST_F(FlatUtilsTests, flat_bool_serde_1) {
 }
 
 TEST_F(FlatUtilsTests, flat_string_serde_1) {
-  auto array = NDArrayFactory::string({3}, {"alpha", "beta", "gamma"});
+  std::vector<std::string> strings = {"alpha", "beta", "gamma"};
+  auto array = NDArrayFactory::string({3}, strings);
 
   flatbuffers::FlatBufferBuilder builder(1024);
   auto flatArray = FlatUtils::toFlatArray(builder, array);

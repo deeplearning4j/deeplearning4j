@@ -255,6 +255,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
 NDArray::NDArray(NDArray &&other) noexcept {
   _isView = other._isView;
   _buffer = other._buffer;
+  _shapeInfoBuffer = other._shapeInfoBuffer;
   _shapeInfo = other._shapeInfo;
   _shapeInfoD = other._shapeInfoD;
   _context = other._context;
@@ -271,6 +272,7 @@ NDArray::NDArray(NDArray &&other) noexcept {
 // constructor, create empty array at given workspace
 NDArray::NDArray(sd::LaunchContext *context) {
   _buffer = std::make_shared<DataBuffer>();
+  _shapeInfoBuffer = nullptr;
   _shapeInfo = nullptr;
   _shapeInfoD = nullptr;
   _offset = 0;
@@ -630,10 +632,9 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   }
 
   sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
-
   std::vector<sd::LongType> offsets(string.size() + 1);
   sd::LongType dataLength = 0;
-  for (int e = 0; e < string.size(); e++) {
+  for (sd::LongType e = 0; e < string.size(); e++) {
     offsets[e] = dataLength;
     dataLength += [&] {
       if (dataType == DataType::UTF16) return unicode::offsetUtf8StringInUtf16(string[e].data(), string[e].size());
@@ -643,7 +644,6 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   }
 
   offsets[string.size()] = dataLength;
-
   _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dataType, context->getWorkspace(), true);
 
   _context = context;
@@ -657,9 +657,7 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   setAttached(context->getWorkspace() != nullptr);
 
   memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(sd::LongType));
-
   auto data = reinterpret_cast<int8_t *>(bufferAsT<int8_t>() + headerLength);
-
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       auto cdata = data + offsets[e];
@@ -674,7 +672,6 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   };
 
   samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
-
   tickWriteHost();
   syncToDevice();
 }
@@ -3656,7 +3653,16 @@ template <>
 std::string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::string out of non-string array");
 
-  if (i == lengthOf()) THROW_EXCEPTION("Can't get std::string for index out of range");
+  if (i >= lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Requested index is out of range: [";
+    errorMessage += StringUtils::valueToString<sd::LongType>(i);
+    errorMessage += "] vs ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(lengthOf());
+    errorMessage += " on array with shape ";
+    errorMessage += ShapeUtils::shapeAsString(shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   if (this->dataType() == DataType::UTF16) {
     auto u16 = this->e<std::u16string>(i);
@@ -5266,7 +5272,7 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
     ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
-
+    _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
     _shapeInfoD = shapeBuffer->special();
@@ -5292,7 +5298,7 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo, const sd::DataType dty
         ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, true, getContext()->getWorkspace());
     ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoTemp);
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
-
+    _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
     _shapeInfoD = shapeBuffer->special();
@@ -5318,6 +5324,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
   }
 
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
+  _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer->special();
@@ -5333,6 +5340,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
+  _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
   _shapeInfo = shapeBuffer->primary();
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer->special();

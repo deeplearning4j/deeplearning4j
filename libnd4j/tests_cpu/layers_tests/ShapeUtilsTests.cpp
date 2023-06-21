@@ -33,7 +33,8 @@ class ShapeUtilsTests : public testing::Test {
 
 //////////////////////////////////////////////////////////////////
 TEST_F(ShapeUtilsTests, evalDimsToExclude_1) {
-  std::vector<sd::LongType> *res = ShapeUtils::evalDimsToExclude(3,1, {0});
+  std::vector<sd::LongType> zero = {0};
+  std::vector<sd::LongType> *res = ShapeUtils::evalDimsToExclude(3,1,zero.data());
 
   ASSERT_EQ(2, res->size());
   ASSERT_EQ(1, res->at(0));
@@ -125,7 +126,8 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1) {
 
 TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test6) {
   auto x = NDArrayFactory::create<float>('c', {0,1});
-  auto expected = NDArrayFactory::create<float>('c', {0});
+  std::vector<sd::LongType> zero = {0};
+  auto expected = NDArrayFactory::create<float>('c', zero);
   std::vector<sd::LongType> dimensions = {1};
 
   auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', &dimensions, x.shapeInfo(),false);

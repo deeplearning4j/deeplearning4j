@@ -1660,29 +1660,42 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
 }
 
 TEST_F(JavaInteropTests, test_expandable_array_op_1) {
-  sd_print("Before x array\n");
-  auto x = NDArrayFactory::string({2}, {"first string", "second"});
+  std::vector<std::string> data = {"first string", "second"};
+  auto x = NDArrayFactory::string({2}, data);
   auto d = NDArrayFactory::string(" ", sd::DataType::UTF8);
 
-  sd_print("Before z arrays\n");
   std::vector<sd::LongType> shape = {6};
   auto z0 = NDArrayFactory::create<sd::LongType>('c', shape);
-  auto z1 = NDArrayFactory::string({3}, {"", "", ""});
+  std::vector<std::string> data2 = {"", "", ""};
+  std::vector<sd::LongType> shape2 = {3};
+  auto z1 = NDArrayFactory::string(shape2, data2);
 
   auto exp0 = NDArrayFactory::create<sd::LongType>({0, 0, 0, 1, 1, 0});
-  auto exp1 = NDArrayFactory::string({3}, {"first", "string", "second"});
+  std::vector<std::string> data3 = {"first", "string", "second"};
+  auto exp1 = NDArrayFactory::string({3}, data3);
 
-  sd_print("Before interop buffers\n");
+  auto buf = z0.dataBuffer();
+  auto bufPrimary = buf->primary();
+  auto buf1 = z1.dataBuffer();
+  auto buf1Primary = buf1->primary();
   InteropDataBuffer iz0(z0.dataBuffer());
   InteropDataBuffer iz1(z1.dataBuffer());
-  sd_print("After interop buffers\n");
-  Context ctx(1);
-  sd_print("About to set input arrays\n");
-  ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
-  ctx.setInputArray(1, d.buffer(), d.shapeInfo(), d.specialBuffer(), d.specialShapeInfo());
-  ctx.setOutputArray(0, &iz0, z0.shapeInfo(), z0.specialShapeInfo());
-  ctx.setOutputArray(1, &iz1, z1.shapeInfo(), z1.specialShapeInfo());
 
+
+
+  Context ctx(1);
+  ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+
+  auto dBuffer = d.buffer();
+  auto dShapeInfo = d.shapeInfo();
+  auto dSpecial = d.specialBuffer();
+  auto dSpecialShape = d.specialShapeInfo();
+  ctx.setInputArray(1, dBuffer, dShapeInfo, dSpecial, dSpecialShape);
+
+  InteropDataBuffer z0ShapeInfo(std::make_shared<DataBuffer>(z0.shapeInfoDataBuffer()));
+  InteropDataBuffer z1ShapeInfo(std::make_shared<DataBuffer>(z1.shapeInfoDataBuffer()));
+  ctx.setOutputArray(0, &iz0, &z0ShapeInfo, z0.specialShapeInfo());
+  ctx.setOutputArray(1, &iz1, &z1ShapeInfo, z1.specialShapeInfo());
   sd::ops::compat_string_split op;
   auto status = op.execute(&ctx);
   ASSERT_EQ(sd::Status::OK, status);
@@ -1709,10 +1722,15 @@ TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
   iy.setPrimary(buffer + 64 + x.lengthOf(), y.lengthOf());
   iz.setPrimary(buffer + 64 + x.lengthOf() + y.lengthOf(), z.lengthOf());
 
+
+  InteropDataBuffer z0ShapeInfo(std::make_shared<DataBuffer>(z.shapeInfoDataBuffer()));
+  InteropDataBuffer xShapeInfo(std::make_shared<DataBuffer>(x.shapeInfoDataBuffer()));
+  InteropDataBuffer yShapeInfo(std::make_shared<DataBuffer>(y.shapeInfoDataBuffer()));
+
   Context ctx(1);
-  ctx.setInputArray(0, &ix, x.shapeInfo(), x.specialShapeInfo());
-  ctx.setInputArray(1, &iy, y.shapeInfo(), y.specialShapeInfo());
-  ctx.setOutputArray(0, &iz, z.shapeInfo(), z.specialShapeInfo());
+  ctx.setInputArray(0, &ix, &xShapeInfo, x.specialShapeInfo());
+  ctx.setInputArray(1, &iy, &yShapeInfo, y.specialShapeInfo());
+  ctx.setOutputArray(0, &iz, &z0ShapeInfo, z.specialShapeInfo());
 
   ctx.setIArguments({2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0});
 
@@ -1735,155 +1753,4 @@ TEST_F(JavaInteropTests, test_linspace_shape_1) {
   delete result;
 }
 
-/*
-TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
-    auto pl = sd::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
-    auto ptr = executeFlatGraph(nullptr, pl);
 
-    // at this point we have FlatResults
-    auto flatResult = GetFlatResult(ptr->pointer());
-    auto size = flatResult->variables()->size();
-
-    // we know exact number of outputs in this graph in given mode
-    ASSERT_EQ(184, size);
-
-
-    // now we're rolling through all variables and restore them one by one
-    for (int e = 0; e < size; e++) {
-        auto flatVar = flatResult->variables()->Get(e);
-        auto flatArray = flatVar->ndarray();
-
-        // checking var part first
-        // we just want to ensure we're not experiencing overruns here
-        auto name = flatVar->name()->str();
-
-        // checking array part now
-        auto shape = flatArray->shape();
-        auto rank = shape->Get(0);
-
-        ASSERT_TRUE(shape->size() > 0 && rank >= 0 &&  rank < SD_MAX_RANK);
-
-        // building regular NDArray out of this FlatArray
-        auto ndarray = sd::graph::FlatUtils::fromFlatArray(flatArray);
-
-        // rank should match FlatArray
-        ASSERT_EQ(rank, ndarray->rankOf());
-
-        // array shouldn't have any NaN/Inf values
-        ASSERT_TRUE(ndarray->isFinite());
-
-        // array should be assignable
-        ndarray->assign(123.f);
-
-        // and safely removable after
-        delete ndarray;
-    }
-
-
-    delete[] pl;
-    delete ptr;
-
-    // and we should have 0 leaks reported after this line :)
-}
-*/
-// TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
-//     std::array<float, 60> syn0 = {-0.022756476f, 0.0126427775f, 0.011029151f, -0.013542821f, -0.012327666f,
-//     -0.0032439455f, -0.008405109f, -0.016651405f, 0.0015980572f, -0.007442479f, 0.019937921f, -0.016222188f,
-//     -0.016541665f, 0.013372547f, 0.006625724f, 0.0058958204f, -0.01281835f, -6.2343775E-4f, 0.0019826533f,
-//     0.010253737f, -0.010291531f, 0.0019767822f, 0.018071089f, -0.0117441565f, 0.023176769f, 0.0032820583f,
-//     0.0061427564f, -0.01696018f, 0.0054971874f, 0.0043818625f, 0.019323621f, 0.0036080598f, 0.024376748f,
-//     -0.0024499625f, 0.019496754f, 0.010563821f, -2.0503551E-4f, -0.0146056535f, 0.009949291f, 0.017604528f,
-//     -0.0050302492f, -0.022060446f, 0.016468976f, -0.0034482107f, 0.010270384f, -0.0063356445f, -0.019934833f,
-//     -0.02325993f, 0.016109904f, -0.0031106502f, -0.0020592287f, 0.024031803f, 0.005184144f, -0.024887865f,
-//     0.02100272f, 3.395051E-4f, 0.018432347f, 5.673498E-4f, -0.020073576f, 0.010949242f}; std::array<float, 60> syn1;
-//     std::array<float, 100000> exp;
-
-//     for (int e = 0; e < syn1.size(); e++)
-//         syn1[e] = 0.0f;
-
-//     for (int e = 0; e < exp.size(); e++) {
-//         auto f = static_cast<double>(e);
-//         auto tmp = sd::math::sd_exp<double, double>((f / 100000.0 * 2.0 - 1.0) * 6.0);
-//         exp[e] = static_cast<float>(tmp / (tmp + 1.0));
-//     }
-
-//     auto maxTypes = 5;
-//     auto numAggregates = 1;
-//     auto opNum = 3;
-//     auto maxArgs = 6;
-//     auto maxShapes = 0;
-//     auto maxIntArrays = 2;
-//     auto maxIntArraySize = 40;
-//     auto maxIndexArguments = 10;
-//     auto maxRealArguments = 2;
-
-//     std::array<int, 100000> pointer;
-
-//     auto batchLimit = 512;
-
-//     int indexPos = maxTypes * batchLimit;
-//     int intArraysPos = indexPos + (maxIndexArguments * batchLimit);
-//     int realPos = (intArraysPos + (maxIntArrays * maxIntArraySize * batchLimit));
-//     int argsPos = (realPos + ((maxRealArguments * batchLimit))) / 2;
-//     int shapesPos = argsPos + (maxArgs * batchLimit);
-
-//     std::vector<int> intArray0({0, 0, 0, 0, 0});
-//     std::vector<int> intArray1({1, 0, 0, 0, 0});
-
-//     std::vector<int> indexingArgs0({1, 20, 5, 0, 100000, 3, 0, 0, 0});
-//     std::vector<int> indexingArgs1({0, 20, 5, 0, 100000, 3, 1, 0, 0});
-
-//     std::vector<float> realArgs0({0.024964055335354007f, 3.0768702268737162E18f});
-
-//     int argSize = 6;
-//     int shapesSize = 0;
-//     int indexingSize = 9;
-//     int realArgsSize = 2;
-//     int intArraysSize = 2;
-
-//     int e = 0;
-
-//         auto idx = e * maxTypes;
-
-//         // numbers of arguments
-//         pointer[idx] = 6; // arguments size
-//         pointer[idx+1] = 0; // shapes size
-//         pointer[idx+2] = 9; // indexing arguments size
-//         pointer[idx+3] = 2; // real args size
-//         pointer[idx+4] = 2; // intArray args size
-
-//         // indexing args
-//         auto idxArgs = e == 0 ? indexingArgs0 : indexingArgs1;
-//         for (int f = 0; f < idxArgs.size(); f++) {
-//             idx = indexPos + e * maxIndexArguments;
-//             pointer[idx + f] = idxArgs[f];
-//         }
-
-//         // int array values
-//         int bsize = maxIntArrays * maxIntArraySize;
-//         for (int f = 0; f < intArraysSize; f++) {
-//             int step = (e * bsize) + (f * maxIntArraySize);
-//             auto intArr = f == 0 ? intArray0 : intArray1;
-//             for (int x = 0; x < intArr.size(); x++) {
-//                 idx = intArraysPos + step + x;
-//                 pointer[idx] = intArr[x];
-//             }
-//         }
-
-//         // real args
-//         auto ptr = reinterpret_cast<float *>(pointer.data());
-//         for (int f = 0; f < realArgsSize; f++) {
-//             idx = realPos + (e * maxRealArguments);
-//             ptr[idx + f] = realArgs0[f];
-//         }
-
-//         //
-//         auto ptrptr = reinterpret_cast<void **>(pointer.data());
-//         idx = argsPos + e * maxArgs;
-//         ptrptr[idx] = reinterpret_cast<void*>(syn0.data());
-//         ptrptr[idx+1] = reinterpret_cast<void*>(syn1.data());
-//         ptrptr[idx+2] = reinterpret_cast<void*>(exp.data());
-
-//     execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize,
-//     maxIndexArguments, maxRealArguments, pointer.data());
-// }

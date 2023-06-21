@@ -1591,16 +1591,15 @@ TEST_F(ParityOpsTests, scatterND_update_test6) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ParityOpsTests, scatter_update_1) {
-  NDArray x('c', {2, 2}, {1, 2, 3, 4}, sd::DataType::INT32);
-  NDArray updates('c', {2, 2}, {10, 20, 30, 40}, sd::DataType::INT32);
+  NDArray x('c', {2, 2}, {1, 2, 3, 4}, sd::DataType::INT64);
+  NDArray updates('c', {2, 2}, {10, 20, 30, 40}, sd::DataType::INT64);
 
-  NDArray exp('c', {2, 2}, {30, 40, 10, 20}, sd::DataType::INT32);
+  NDArray exp('c', {2, 2}, {30, 40, 10, 20}, sd::DataType::INT64);
 
   sd::ops::scatter_update op;
   auto results = op.evaluate({&x, &updates}, {}, {6, 1, 1, 2, 1, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  // x.printBuffer();
 
   ASSERT_TRUE(exp.isSameShape(x));
   ASSERT_TRUE(exp.equalsTo(x));

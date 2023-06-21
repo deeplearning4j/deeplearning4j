@@ -1179,10 +1179,12 @@ TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test2) {
   NDArray exp1('c', {2, 3}, {1, 0, 0, 0, 0, 1}, sd::DataType::BOOL);
   NDArray exp2('c', {2, 3}, {1, 1, 1, 0, 0, 1}, sd::DataType::BOOL);
 
-  x1.applyBroadcast(sd::broadcast::EqualTo, {0}, x2, x3);
+  std::vector<sd::LongType> zero = {0};
+
+  x1.applyBroadcast(sd::broadcast::EqualTo, &zero, x2, x3);
   ASSERT_EQ(x3, exp1);
 
-  x4.applyBroadcast(sd::broadcast::EqualTo, {0}, x5, x3);
+  x4.applyBroadcast(sd::broadcast::EqualTo, &zero, x5, x3);
   ASSERT_EQ(x3, exp2);
 }
 
@@ -1583,7 +1585,9 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
   x1.applyIndexReduce(sd::indexreduce::IndexMax, vec1, &dimOne);
   ASSERT_EQ(vec1, exp2);
 
-  x1.applyIndexReduce(sd::indexreduce::IndexMax, vec2, {0});
+  std::vector<sd::LongType> zero = {0};
+
+  x1.applyIndexReduce(sd::indexreduce::IndexMax, vec2, &zero);
   ASSERT_EQ(vec2, exp3);
 }
 
@@ -1649,10 +1653,12 @@ TEST_F(MultiDataTypeTests, applyAllReduce3_test1) {
   NDArray exp1('c', {2, 3}, {2, -2, 2, 2, -2, 2}, sd::DataType::FLOAT32);
   NDArray exp2('c', {2, 3}, {6, 6, 6, 9, 9, 9}, sd::DataType::DOUBLE);
 
-  auto result = x1.applyAllReduce3(reduce3::Dot, x2, {0});
+  std::vector<sd::LongType> zero = {0};
+
+  auto result = x1.applyAllReduce3(reduce3::Dot, x2,&zero);
   ASSERT_EQ(result, exp1);
 
-  result = x4.applyAllReduce3(reduce3::Dot, x3, {0});
+  result = x4.applyAllReduce3(reduce3::Dot, x3, &zero);
   ASSERT_EQ(result, exp2);
 }
 

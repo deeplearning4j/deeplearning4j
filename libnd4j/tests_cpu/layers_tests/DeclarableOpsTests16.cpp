@@ -188,7 +188,6 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
 
   auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0,
                                          nullptr, 0);
-  // shape::printShapeInfoLinear("Result", shapes->at(0));
   ASSERT_TRUE(shape::shapeEquals(z.shapeInfo(), shapes->at(0)));
 
   delete shapes;
@@ -200,7 +199,6 @@ TEST_F(DeclarableOpsTests16, test_reverse_1) {
 
   for (auto r : rows) {
     for (auto c : columns) {
-      // sd_printf("Trying [%i, %i]\n", r, c);
       auto array = NDArrayFactory::create<float>('c', {r, c});
       auto exp = NDArrayFactory::create<float>('c', {r, c});
       auto reversed = NDArrayFactory::create<float>('c', {r, c});
