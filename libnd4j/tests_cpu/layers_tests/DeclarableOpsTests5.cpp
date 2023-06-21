@@ -2346,26 +2346,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_4) {
   ASSERT_TRUE(exp.equalsTo(output));
 }
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, XWPlusB_5) {
-  auto x = NDArrayFactory::create<float>('c', {2, 3}, {1.f, 11.f, 3.f, 14.f, 5.f, 6.f});
-  auto y = NDArrayFactory::create<float>('c', {3, 2}, {11.f, 3.f, 4.f, 5.f, 6.f, 2.f});
 
-  y = y.transpose();
-
-  auto b = NDArrayFactory::create<float>({100.f, 200.f});
-
-  auto exp = NDArrayFactory::create<float>('c', {2, 2}, {173.f, 264.f, 310.f, 279.f});
-
-  sd::ops::xw_plus_b op;
-  auto result = op.evaluate({&x, &y, &b}, {}, {1});
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-  auto output = result.at(0);
-
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
-}
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////

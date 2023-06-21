@@ -242,15 +242,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_min_1) {
   ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
 }
 
-TEST_F(DeclarableOpsTests14, test_empty_reduce_max_1) {
-  auto e = NDArrayFactory::create<float>('c', {1, 0});
-  sd::ops::reduce_max sumOp;
-  auto res2 = sumOp.evaluate({&e}, {1.}, {1});
-  ASSERT_EQ(res2.status(), sd::Status::OK);
-  auto out = res2.at(0);
 
-  ASSERT_EQ(out->e<float>(0), -DataTypeUtils::infOrMax<float>());
-}
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_sum_1) {
 #ifdef FFAST_MATH

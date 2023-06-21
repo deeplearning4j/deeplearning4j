@@ -206,7 +206,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_2) {
   for(int i = 0; i < 2; i++) {
     auto x = NDArrayFactory::create<double>('c', {3, 4});
     auto all = sd::NDIndexUtils::createAll();
-    auto indexInterval = sd::NDIndexUtils::createInterval(0,1,1,inclusive[i]);
+    auto indexInterval = sd::NDIndexUtils::createInterval(0,1,1,(sd::LongType ) inclusive[i]);
     auto expectedRows = inclusive[i] > 0 ? 2 : 1;
     auto expectedShapeInterval = std::vector<int>({expectedRows,4});
     auto resultInterval = op.evaluate({&x,&indexInterval,&all});
@@ -262,7 +262,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_6) {
   sd::ops::create_view op;
   auto linspace = NDArrayFactory::linspace<double>(1,125,125);
   auto reshaped = linspace->reshape('c',{5,5,5});
-  auto slice = sd::NDIndexUtils::createInterval(0,1);
+  auto slice = sd::NDIndexUtils::createInterval(0,1,1,false);
   auto resultSlice = op.evaluate({&reshaped,&slice});
   resultSlice.setNonRemovable();
   auto assertionShape = std::vector<int>({1,5,5});
@@ -276,7 +276,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_7) {
   //intervals, new axis, point, all
   auto fiveByFive = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFive = fiveByFive->reshape('c',{5,5});
-  auto columns = NDIndexUtils::createInterval(0,1,1,0);
+  auto columns = NDIndexUtils::createInterval(0,1,1,false);
   auto newAll4 = NDIndexUtils::createAll();
   auto columnVectorAssertion = std::vector<int>({5,1});
   auto resultFiveByFive = op.evaluate({&reshapedFiveByFive,&newAll4,&columns});
@@ -290,7 +290,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_8) {
   sd::ops::create_view op;
   auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
-  auto columns2 = NDIndexUtils::createInterval(0,1,1,0);
+  auto columns2 = NDIndexUtils::createInterval(0,1,1,false);
   auto newAll3 = NDIndexUtils::createPoint(1);
   auto subColumnsAssertion = std::vector<int>({1});
   auto resultSubColumn = op.evaluate({&reshapedFiveByFiveSubColumns,&columns2,&newAll3});
@@ -304,7 +304,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_9) {
   sd::ops::create_view op;
   auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
-  auto columns2 = NDIndexUtils::createInterval(0,1,1,0);
+  auto columns2 = NDIndexUtils::createInterval(0,1,1,false);
   auto newAll3 = NDIndexUtils::createPoint(1);
   auto subColumnsAssertion = std::vector<int>({1});
   auto resultSubColumn = op.evaluate({&reshapedFiveByFiveSubColumns,&columns2,&newAll3});

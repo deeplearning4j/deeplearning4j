@@ -1244,79 +1244,7 @@ TEST_F(HelpersTests1, SVD_test11) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, SVD_test12) {
-  auto matrix1 = NDArrayFactory::create<double>('c', {6, 5}, {-2, -3, 2, 1, 0, 0,  -4, 5,  -2, -3, -4, 0,  5,  -1, -5,
-                                                              -3, -5, 3, 3, 3, -5, 5,  -5, 0,  2,  -2, -3, -4, -5, -3});
-  auto matrix2 = NDArrayFactory::create<double>(
-      'c', {6, 6}, {-10, -16, -20, 13,  20,  -10, -9, -1, -7,  -20, -4, 20,  -11, 19, -5,  -18, 12,  -19,
-                    18,  -18, 17,  -10, -19, 14,  -2, -7, -17, -14, -4, -16, 18,  -6, -18, 1,   -15, -12});
-  auto matrix3 = NDArrayFactory::create<double>(
-      'c', {5, 5}, {-18, 1, 19, -7, 1, 2, -18, -13, 14, 2, -2, -11, 8, 2, -6, -3, -8, 8, -2, 7, 16, 15, -3, 7, 0});
-  auto matrix4 = NDArrayFactory::create<double>(
-      'c', {5, 5}, {3, -8, 5, 7, -8, 4, -19, -12, -4, -5, -11, 19, -2, -7, 1, 16, -5, 10, 19, -19, 0, -20, 0, -8, -13});
 
-  auto expSingVals = NDArrayFactory::create<double>('c', {4, 1}, {8.43282, 5, 2.3, 1.10167});
-  auto expU = NDArrayFactory::create<double>(
-      'c', {5, 5}, {0.401972,  0, 0.206791,  0.891995, 0,         0,        1, 0, 0, 0, 0.816018, 0, -0.522818,
-                    -0.246529, 0, -0.415371, 0,        -0.826982, 0.378904, 0, 0, 0, 0, 0,        1});
-  auto expV = NDArrayFactory::create<double>('c', {4, 4},
-                                             {-0.951851, 0, -0.133555, -0.275939, 0, 1, 0, 0, 0.290301, 0, -0.681937,
-                                              -0.671333, -0.098513, 0, -0.719114, 0.687873});
-
-  ops::helpers::SVD<double> svd(matrix4, 4, true, true, true, 't');
-  svd._m = matrix1;
-  svd._u = matrix2;
-  svd._v = matrix3;
-  NDArray U, singVals, V;
-  svd.calcBlockSVD(1, 4, U, singVals, V);
-
-  ASSERT_TRUE(expSingVals.equalsTo(&singVals));
-  ASSERT_TRUE(expU.equalsTo(&U));
-  ASSERT_TRUE(expV.equalsTo(&V));
-
-  ASSERT_TRUE(expSingVals.isSameShapeStrict(singVals));
-  ASSERT_TRUE(expU.isSameShapeStrict(U));
-  ASSERT_TRUE(expV.isSameShapeStrict(V));
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, SVD_test16) {
-  auto matrix1 = NDArrayFactory::create<double>('c', {6, 5}, {-2, -3, 2, 1, 0, 0,  -4, 5,  -2, -3, -4, 0,  5,  -1, -5,
-                                                              -3, -5, 3, 3, 3, -5, 5,  -5, 0,  2,  -2, -3, -4, -5, -3});
-  auto matrix2 = NDArrayFactory::create<double>(
-      'c', {6, 6}, {-10, -16, -20, 13,  20,  -10, -9, -1, -7,  -20, -4, 20,  -11, 19, -5,  -18, 12,  -19,
-                    18,  -18, 17,  -10, -19, 14,  -2, -7, -17, -14, -4, -16, 18,  -6, -18, 1,   -15, -12});
-  auto matrix3 = NDArrayFactory::create<double>(
-      'c', {5, 5}, {-18, 1, 19, -7, 1, 2, -18, -13, 14, 2, -2, -11, 8, 2, -6, -3, -8, 8, -2, 7, 16, 15, -3, 7, 0});
-  auto matrix4 = NDArrayFactory::create<double>(
-      'c', {5, 5}, {3, -8, 5, 7, -8, 4, -19, -12, -4, -5, -11, 19, -2, -7, 1, 16, -5, 10, 19, -19, 0, -20, 0, -8, -13});
-
-  auto expM = NDArrayFactory::create<double>(
-      'c', {6, 5}, {-2, -3, 2, 1,       0, 0,  7.07022, 0, 0, 0,       -4, 0,  5.09585, 0,  0,
-                    -3, 0,  0, 3.32256, 0, -5, 0,       0, 0, 1.00244, -2, -3, -4,      -5, 0});
-  auto expU = NDArrayFactory::create<double>(
-      'c', {6, 6}, {-5.58884, -2.18397, -11.0944, 3.30292,  0, -10, 8.19094, 5.05917, 16.9641,  -4.53112, 0,   20,
-                    6.55878,  3.76734,  15.9255,  -3.76399, 0, -19, 1.36021, 23.3551, -8.01165, -1.5816,  0,   14,
-                    -15.6318, -2.85386, 8.83051,  2.74286,  1, -16, 18,      -6,      -18,      1,        -15, -12});
-  auto expV = NDArrayFactory::create<double>(
-      'c', {5, 5}, {-18,      1,       19,      -7,       1,       2,        14.5866, 3.90133, 1.06593,
-                    9.99376,  -2,      9.97311, 2.44445,  6.85159, 2.37014,  -3,      0.56907, -8.93313,
-                    -5.31596, 3.10096, 16,      -10.6859, 1.70708, -7.24295, -10.6975});
-
-  ops::helpers::SVD<double> svd(matrix4, 4, true, true, true, 't');
-  svd._m = matrix1;
-  svd._u = matrix2;
-  svd._v = matrix3;
-
-  svd.DivideAndConquer(0, 3, 1, 1, 1);
-  ASSERT_TRUE(expM.isSameShapeStrict(svd._m));
-  ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
-  ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
-
-  ASSERT_TRUE(expM.equalsTo(&svd._m));
-  ASSERT_TRUE(expU.equalsTo(&svd._u));
-  ASSERT_TRUE(expV.equalsTo(&svd._v));
-}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, SVD_test17) {

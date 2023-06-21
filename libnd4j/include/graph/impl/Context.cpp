@@ -354,9 +354,7 @@ void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *spec
 
 void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void *specialBuffer,
                             void const *specialShapeInfo) {
-  sd_print("Creating new array in setInputArray\n");
   auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
-  sd_print("Created input array in setInputArray\n");
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
