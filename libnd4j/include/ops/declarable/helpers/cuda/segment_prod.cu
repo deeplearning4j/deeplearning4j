@@ -36,7 +36,7 @@ namespace helpers {
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static SD_KERNEL void segmentProdLinearKernel(void* input, sd::LongType const* inputShape, int* starts, int* lengths,
+static SD_KERNEL void segmentProdLinearKernel(void* input, sd::LongType const* inputShape, sd::LongType* starts, sd::LongType* lengths,
                                               sd::LongType numOfClasses, void* output,
                                               sd::LongType const* outputShape) {
   __shared__ sd::LongType xLen, zLen;
@@ -67,7 +67,7 @@ static SD_KERNEL void segmentProdLinearKernel(void* input, sd::LongType const* i
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, sd::LongType const* inputShape, I* indices,
-                                                      sd::LongType const* indicesShape, int* starts, int* lengths,
+                                                      sd::LongType const* indicesShape, sd::LongType* starts, sd::LongType* lengths,
                                                       sd::LongType numOfClasses, T* output,
                                                       sd::LongType const* outputShape) {
   __shared__ sd::LongType xLen, zLen;
@@ -95,7 +95,7 @@ static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, sd::LongType con
 template <typename T, typename I>
 static SD_KERNEL void segmentProdTadKernel(void* inputBuf, sd::LongType const* inputShape,
                                            sd::LongType const* inputTads, sd::LongType const* inputTadOffsets,
-                                           I* indices, int* starts, int* lengths, sd::LongType numOfClasses,
+                                           I* indices, sd::LongType* starts, sd::LongType* lengths, sd::LongType numOfClasses,
                                            void* outputBuf, sd::LongType const* outputShape,
                                            sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
   __shared__ sd::LongType len, total;
@@ -108,7 +108,7 @@ static SD_KERNEL void segmentProdTadKernel(void* inputBuf, sd::LongType const* i
 
   for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
     auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-    auto segment = indices[idx];  // / threadsPerSegment;
+    auto segment = indices[idx];
     auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
     auto start = starts[segment];
     auto finish = start + lengths[segment];
@@ -126,16 +126,16 @@ template <typename T, typename I>
 static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
   output->assign(1);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
 
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     segmentProdLinearKernel<T, I><<<128, 256, 128, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins,
@@ -170,15 +170,14 @@ template <typename T, typename I>
 static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                         sd::LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   output->assign(1);
 
   if (input->isVector()) {
@@ -356,12 +355,12 @@ static sd::Status unsortedSegmentProdFunctorBP_(sd::LaunchContext* context, NDAr
   auto stream = context->getCudaStream();
 
   NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
-                  context);  //->shapeInfo(), context);
+                  context);  
   unsortedSegmentProdFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     sd::LongType loopSize = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();  
     segmentProdBPLinearKernel<T, I><<<gradOut->lengthOf(), loopSize, 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),

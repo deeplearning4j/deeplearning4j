@@ -40,7 +40,7 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, void* pVz,
-                                const sd::LongType* zTadShapeInfo, const int axis) {
+                                const sd::LongType* zTadShapeInfo, const LongType axis) {
   const T* x = reinterpret_cast<const T*>(vx);
 
   __shared__ sd::LongType xLen, totalThreads;
@@ -77,16 +77,16 @@ SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, 
 template <typename T>
 SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
                                       const void* vx, const sd::LongType* xShapeInfo, void* pVz,
-                                      const sd::LongType* zTadShapeInfo, const int axis) {
+                                      const sd::LongType* zTadShapeInfo, const LongType axis) {
   splitCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, pVz, zTadShapeInfo, axis);
 }
 BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx,
-                       const sd::LongType* xShapeInfo, void* pVz, const sd::LongType* zTadShapeInfo, const int axis),
+                       const sd::LongType* xShapeInfo, void* pVz, const sd::LongType* zTadShapeInfo, const sd::LongType axis),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const LongType axis) {
   const int numOfSubArrs = outArrs.size();
   const auto sizeofT = input.sizeOfT();
 

@@ -276,8 +276,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     // C->special(), 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
                                  (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->specialBuffer(),
-                                  A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
-                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
+                                     A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
+                                     C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                  SD_NUMERIC_TYPES)
     NDArray::registerSpecialUse({C}, {A, B});
 
@@ -416,7 +416,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, usualGemv,
         (blocksPerGrid, threadsPerBlock, stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
-         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
+            X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
         SD_NUMERIC_TYPES)
     NDArray::registerSpecialUse({Y}, {A, X});
 
@@ -508,7 +508,7 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
   // SD_FLOAT_TYPES);
   BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot,
                                (blocksPerGrid, threadsPerBlock, stream, length, alpha, X->specialBuffer(), incx,
-                                Y->specialBuffer(), incy, beta, Z->specialBuffer()),
+                                   Y->specialBuffer(), incy, beta, Z->specialBuffer()),
                                SD_NUMERIC_TYPES)
 
   auto cudaResult = cudaStreamSynchronize(*stream);
@@ -623,10 +623,12 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   const sd::LongType  bRank = B->rankOf();
 
   // input ranks validation
-  if (aRank > bRank && bRank != 2)
+  if (aRank > bRank && bRank != 2) {
     THROW_EXCEPTION("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
-  else if (bRank > aRank && aRank != 2)
+  }
+  else if (bRank > aRank && aRank != 2) {
     THROW_EXCEPTION("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
+  }
   else if (aRank == bRank) {
     for (int i = 0; i < aRank - 2; ++i)
       if (A->sizeAt(i) != B->sizeAt(i))
@@ -634,10 +636,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
             "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
   }
 
-  if (A->sizeAt(-1) != B->sizeAt(-2))
-    THROW_EXCEPTION(
-        "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
-
+  if (A->sizeAt(-1) != B->sizeAt(-2)) {
+    THROW_EXCEPTION("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
+  }
   // validation of C array
   std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
   cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
@@ -665,26 +666,39 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
   const sd::LongType  *aBatchDims(nullptr), *bBatchDims(nullptr), *cBatchDims(nullptr);
 
+  std::vector<sd::LongType> aDimsVec = {aMaxis,aKaxis};
+  std::vector<sd::LongType> *aDims = ShapeUtils::evalDimsToExclude(aRank, 2,aDimsVec.data());
+
+  std::vector<sd::LongType> bDimsVec = {bKaxis, bNaxis};
+  std::vector<sd::LongType> *bDims =  ShapeUtils::evalDimsToExclude(bRank,2, bDimsVec.data());
+
+
+  std::vector<sd::LongType> cDimsVec = {cMaxis,2, cNaxis};
+  std::vector<sd::LongType> *cDims = ShapeUtils::evalDimsToExclude(cRank, cDimsVec.size(),cDimsVec.data());
   if (aRank > 2)
     aBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(aRank, {aMaxis, aKaxis}).data(), (aRank - 2) * sizeof(sd::LongType)));
+        aDims->data(), (aRank - 2) * sizeof(sd::LongType)));
   if (bRank > 2)
     bBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(bRank, {bKaxis, bNaxis}).data(), (bRank - 2) * sizeof(sd::LongType)));
+        bDims->data(), (bRank - 2) * sizeof(sd::LongType)));
   if (cRank > 2)
     cBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(cRank, {cMaxis, cNaxis}).data(), (cRank - 2) * sizeof(sd::LongType)));
+        cDims->data(), (cRank - 2) * sizeof(sd::LongType)));
 
   NDArray::prepareSpecialUse({C}, {A, B});
   BUILD_SINGLE_SELECTOR_THRICE(
       A->dataType(), batchedGemm,
       (blocksPerGrid, threadsPerBlock, sharedMem, A->getContext()->getCudaStream(), A->specialBuffer(),
-       A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(), C->specialShapeInfo(),
-       aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
+          A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(), C->specialShapeInfo(),
+          aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
       SD_NUMERIC_TYPES)
   NDArray::registerSpecialUse({C}, {A, B});
 
   manager.synchronize();
+
+  delete aDims;
+  delete bDims;
+  delete cDims;
 
   return C;
 }

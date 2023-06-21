@@ -176,7 +176,7 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   auto stream = context->getCudaStream();
 
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
-    int numOfElemsToReverse = seqLengths->e<int>(0);
+    sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(0);
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
       output->assign(input);
     else
@@ -186,13 +186,14 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+    std::vector<sd::LongType> dim = {batchDim};
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,dim.data());
 
-    auto inSubArrsSet = input->allTensorsAlongDimension(dimensions);
-    auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
+    auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
+    auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
 
     for (int i = 0; i < inSubArrsSet.size(); ++i) {
-      int numOfElemsToReverse = seqLengths->e<int>(i);
+      sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
         outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
@@ -203,6 +204,8 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
           reverseArray<T>(context, inInnerSet.at(j), outInnerSet.at(j), numOfElemsToReverse);
       }
     }
+
+    delete dimensions;
   }
 }
 
@@ -220,8 +223,8 @@ void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDA
 
 //////////////////////////////////////////////////////////////////////////
 void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), *intArgs);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), *intArgs);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
 
   NDArray::prepareSpecialUse({output}, {input});
 

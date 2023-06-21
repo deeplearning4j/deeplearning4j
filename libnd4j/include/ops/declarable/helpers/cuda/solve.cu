@@ -51,7 +51,8 @@ static SD_KERNEL void oneOnDiagonalKernel(T* ioBuf, sd::LongType const* ioShape,
 }
 
 template <typename T>
-static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PShapeInfo, int const* permutationsBuf,
+static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PShapeInfo,
+                                                const LongType* permutationsBuf,
                                                 sd::LongType const* PTadShapeInfo, sd::LongType const* PTadSOffsets,
                                                 sd::LongType const* permutationsTadShapeInfo,
                                                 sd::LongType const* permutationsTadOffsets, sd::LongType batchNum,
@@ -61,7 +62,6 @@ static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PSh
     auto P = PBuf + PTadSOffsets[batch];
 
     for (auto row = threadIdx.x; row < rowNum; row += blockDim.x) {
-      // auto posX[] = {row};
       sd::LongType posZ[] = {row, permutations[row]};
       auto zOffset = shape::getOffset(PTadShapeInfo, posZ);
       P[zOffset] = T(1.f);

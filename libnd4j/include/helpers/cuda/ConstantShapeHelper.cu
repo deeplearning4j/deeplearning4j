@@ -206,18 +206,19 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo, const std::vector<LongType>& dimsWithUnities,
+ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo, const std::vector<LongType> *dimsWithUnities,
                                                                                 sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = nullptr;
-  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()),
+  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities->size()),
            sd::LongType);
 
   sd::LongType temp;
-  if (dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
-    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
-    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
+  if (dimsWithUnities->size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities->at(0)) {
+    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), 1,&temp);
+    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims->data(), dims->size(), newShapeInfo);
+    delete dims;
   } else {
-    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities.data(), dimsWithUnities.size(), newShapeInfo);
+    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities->data(), dimsWithUnities->size(), newShapeInfo);
   }
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
@@ -226,6 +227,7 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;
+
   return ret;
 }
 

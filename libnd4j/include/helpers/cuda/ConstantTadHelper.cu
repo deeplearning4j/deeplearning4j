@@ -46,23 +46,23 @@ ConstantTadHelper &ConstantTadHelper::getInstance() {
 }
 
 TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType dimension,
-                                            const bool keepUnitiesInShape) {
+                                              const bool keepUnitiesInShape) {
   return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
 }
 
-TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> &dimensions,
-                                            const bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, const_cast<sd::LongType  *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
+TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> *dimensions,
+                                              const bool keepUnitiesInShape) {
+  return tadForDimensions(originalShape, const_cast<sd::LongType  *>(dimensions->data()), dimensions->size(), keepUnitiesInShape);
 }
 
 TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
-                                            const bool keepUnitiesInShape) {
+                                              const bool keepUnitiesInShape) {
   TadDescriptor *tadDescriptor = new TadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
 }
 
 TadPack * ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
-                                            const bool keepUnitiesInShape) {
+                                              const bool keepUnitiesInShape) {
   TadDescriptor *tadDescriptor = new TadDescriptor(descriptor, dimensions, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
 }
@@ -74,11 +74,12 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
 
   if (_cache[deviceId].count(descriptor) == 0) {
     const auto shapeInfo = descriptor->originalShape().toShapeInfo();
-    const int rank = shape::rank(shapeInfo);
-    const std::vector<sd::LongType > dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor->axis());
-    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
-    const int subArrRank =
-        (rank == dimsToExclude.size() || descriptor->areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
+    const sd::LongType rank = shape::rank(shapeInfo);
+    auto descAxis = descriptor->axis();
+    const std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(rank,descAxis.size(), descAxis.data());
+    const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, *dimsToExclude);
+    const sd::LongType subArrRank =
+        (rank == dimsToExclude->size() || descriptor->areUnitiesinShape()) ? rank : rank - dimsToExclude->size();
 
     auto sPtr = std::make_shared<PointerWrapper>(new sd::LongType[shape::shapeInfoLength(subArrRank)],
                                                  std::make_shared<PrimaryPointerDeallocator>());
@@ -86,7 +87,7 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
         std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
 
     if (numOfSubArrs > 0)
-      shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(),
+      shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude->size(), dimsToExclude->data(),
                                             sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
                                             descriptor->areUnitiesinShape());
 
@@ -109,7 +110,7 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
     _cache[deviceId][descriptor] = t;
 
     TadPack *r = _cache[deviceId][descriptor];
-
+    delete dimsToExclude;
     delete[] shapeInfo;
 
     return r;

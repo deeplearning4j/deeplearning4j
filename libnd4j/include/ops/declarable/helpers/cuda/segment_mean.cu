@@ -35,7 +35,7 @@ namespace helpers {
 // Segment ops linear kernels
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* inputShape, int* starts, int* lengths,
+static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* inputShape, sd::LongType* starts, sd::LongType* lengths,
                                               sd::LongType numOfClasses, void* output,
                                               sd::LongType const* outputShape) {
   __shared__ T* val;
@@ -70,7 +70,7 @@ static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* i
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentMeanLinearKernel(void* input, sd::LongType const* inputShape, void* indices,
-                                                      sd::LongType const* indicesShape, int* starts, int* lengths,
+                                                      sd::LongType const* indicesShape, sd::LongType* starts, sd::LongType* lengths,
                                                       sd::LongType numOfClasses, void* output,
                                                       sd::LongType const* outputShape) {
   __shared__ T* val;
@@ -116,7 +116,7 @@ static SD_KERNEL void unsortedSegmentMeanLinearKernel(void* input, sd::LongType 
 template <typename T, typename I>
 static SD_KERNEL void segmentMeanTadKernel(void* inputBuf, sd::LongType const* inputShape,
                                            sd::LongType const* inputTads, sd::LongType const* inputTadOffsets,
-                                           I* indices, int* starts, int* lengths, sd::LongType numOfClasses,
+                                           I* indices, sd::LongType* starts, sd::LongType* lengths, sd::LongType numOfClasses,
                                            void* outputBuf, sd::LongType const* outputShape,
                                            sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
   __shared__ T* val;
@@ -165,8 +165,8 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
   classesRangesLens.assign(0);
   NDArray::prepareSpecialUse({output}, {input, indices});
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
 
   if (input->isVector()) {
@@ -204,15 +204,15 @@ static void unsortedSegmentMeanFunctor_(sd::LaunchContext* context, NDArray* inp
                                         sd::LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
 
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
 
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     unsortedSegmentMeanLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
@@ -249,7 +249,7 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
 template <typename T, typename I>
 static SD_KERNEL void segmentMeanBPLinearKernel(void* inputBuf, sd::LongType const* inputShape, void* eps,
                                                 sd::LongType const* epsShape, void* indicesBuf,
-                                                sd::LongType const* indicesShape, int* lengths, void* outputBuf,
+                                                sd::LongType const* indicesShape, sd::LongType* lengths, void* outputBuf,
                                                 sd::LongType const* outputShape) {
   __shared__ T* x;
   __shared__ T* gradIn;
@@ -285,7 +285,7 @@ static SD_KERNEL void segmentMeanBPLinearKernel(void* inputBuf, sd::LongType con
 template <typename T, typename I>
 static SD_KERNEL void segmentMeanBPTadKernel(void* inputBuf, sd::LongType const* inputShape, void* eps,
                                              sd::LongType const* epsShape, void* indicesBuf,
-                                             sd::LongType const* indicesShape, int* lengths, void* outputBuf,
+                                             sd::LongType const* indicesShape, sd::LongType* lengths, void* outputBuf,
                                              sd::LongType const* outputShape, sd::LongType const* inputTad,
                                              sd::LongType const* inputOffsets, sd::LongType const* gradOutTad,
                                              sd::LongType const* gradOutOffsets, sd::LongType const* outTad,
@@ -335,8 +335,8 @@ sd::Status segmentMeanFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
   classesRangesLens.assign(0);
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
@@ -392,8 +392,8 @@ static sd::Status unsortedSegmentMeanFunctorBP_(sd::LaunchContext* context, NDAr
   classesRangesLens.assign(0);
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();

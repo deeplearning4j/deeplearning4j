@@ -85,8 +85,9 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 
     manager.synchronize();
   } else {
+    std::vector<sd::LongType> dims = {dim};
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(),1, dims.data()));
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
@@ -146,7 +147,6 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
                      const int dim) {
   const int numOfSubArrs = outArrs.size();
 
-  // NDArray::prepareSpecialUse(outArrs, {&input});
   input.syncToDevice();
   for (const auto a : outArrs) a->getDataBuffer()->allocateSpecial();
 
@@ -167,8 +167,9 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
 
     manager.synchronize();
   } else {
+    std::vector<sd::LongType> dims = {dim};
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), 1,dims.data()));
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
     for (sd::LongType i = 0; i < numOfSubArrs; ++i) {

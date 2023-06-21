@@ -35,8 +35,8 @@ namespace helpers {
 // Segment ops linear kernels
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongType* inputShape, int* starts,
-                                             int* lengths, sd::LongType numOfClasses, void* output,
+static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongType* inputShape, sd::LongType* starts,
+                                             sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                              const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
@@ -71,8 +71,8 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd::LongType* inputShape,
-                                                     const void* indices, const sd::LongType* indicesShape, int* starts,
-                                                     int* lengths, sd::LongType numOfClasses, void* output,
+                                                     const void* indices, const sd::LongType* indicesShape, sd::LongType* starts,
+                                                     sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                                      const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
@@ -110,7 +110,7 @@ static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd
 template <typename T, typename I>
 static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongType* inputShape,
                                           const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          const I* indices, int* starts, int* lengths, sd::LongType numOfClasses,
+                                          const I* indices, sd::LongType* starts, sd::LongType* lengths, sd::LongType numOfClasses,
                                           void* outputBuf, const sd::LongType* outputShape,
                                           const sd::LongType* outputTads, const sd::LongType* outputTadOffsets) {
   __shared__ T* val;
@@ -152,16 +152,16 @@ template <typename T, typename I>
 static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
 
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
 
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     segmentSumLinearKernel<T, I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(
@@ -197,18 +197,14 @@ template <typename T, typename I>
 static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                        sd::LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-  //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), (numOfClasses + 1) * 64);
-  //        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     unsortedSegmentSumLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(

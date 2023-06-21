@@ -104,7 +104,7 @@ SD_LIB_HIDDEN void tileBP(sd::LaunchContext* context, const NDArray& gradO /*inp
                           const std::vector<sd::LongType> reps);
 
 SD_LIB_HIDDEN void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs,
-                         const int axis);
+                         const LongType axis);
 
 SD_LIB_HIDDEN void compareAndBitpack(graph::Context& block, const NDArray& input, const NDArray& threshold,
                                      NDArray& output);

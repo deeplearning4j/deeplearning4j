@@ -134,10 +134,12 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
       THROW_EXCEPTION("svdQR: wrong shape of U array !");
     }
 
-    if (fullUV && std::vector<sd::LongType>({n, n}) != VT->getShapeAsVector())
+    if (fullUV && std::vector<sd::LongType>({n, n}) != VT->getShapeAsVector()) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
-    else if (!fullUV && std::vector<sd::LongType>({minDim, n}) != VT->getShapeAsVector())
+    }
+    else if (!fullUV && std::vector<sd::LongType>({minDim, n}) != VT->getShapeAsVector()) {
       THROW_EXCEPTION("svdQR: wrong shape of VT array !");
+    }
   }
 
   NDArray* pA = const_cast<NDArray*>(A);
@@ -256,10 +258,6 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
   if (dWork) cudaFree(dWork);
   if (rWork) cudaFree(rWork);
 
-  //    if(handle)
-  //        cusolverDnDestroy(handle);
-
-  // cudaDeviceReset();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -276,178 +274,173 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   int n = A->sizeAt(1);
   const int minDim = m < n ? m : n;
 
-  if (std::vector<sd::LongType>({minDim}) != S->getShapeAsVector())
-    THROW_EXCEPTION("svdJcb: wrong shape of S array !");
+  if (std::vector<sd::LongType>({minDim}) != S->getShapeAsVector()) THROW_EXCEPTION("svdJcb: wrong shape of S array !");
 
   if (calcUV) {
-    if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector())
+    if (fullUV && std::vector<sd::LongType>({m, m}) != U->getShapeAsVector()) {
       THROW_EXCEPTION("svdJcb: wrong shape of U array !");
-    else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector()) {
+    } else if (!fullUV && std::vector<sd::LongType>({m, minDim}) != U->getShapeAsVector()) {
       THROW_EXCEPTION("svdJcb: wrong shape of U array !");
     }
-    if (fullUV && std::vector<sd::LongType>({n, n}) != V->getShapeAsVector())
+    if (fullUV && std::vector<sd::LongType>({n, n}) != V->getShapeAsVector()) {
       THROW_EXCEPTION("svdJcb: wrong shape of V array !");
-    else if (!fullUV && std::vector<sd::LongType>({n, minDim}) != V->getShapeAsVector())
+    } else if (!fullUV && std::vector<sd::LongType>({n, minDim}) != V->getShapeAsVector()) {
       THROW_EXCEPTION("svdJcb: wrong shape of V array !");
-  }
-
-  NDArray* pA = const_cast<NDArray*>(A);
-
-  const bool aForder = m == 1 || A->strideAt(0) == 1;
-  const bool aCorder = n == 1 || A->strideAt(1) == 1;
-
-  const bool transA = !aForder && aCorder;
-  const bool dupA = !aForder && !aCorder;
-
-  std::vector<NDArray*> toDelete;
-
-  if (dupA) {
-    pA = new NDArray(A->dup('f'));
-    toDelete.push_back(pA);
-  }
-
-  NDArray* pS = S;
-
-  if (S->ews() != 1) {
-    pS = new NDArray(S->dup('f'));
-    toDelete.push_back(pS);
-  }
-
-  NDArray *pU(nullptr), *pV(nullptr);
-
-  int lda = transA ? pA->strideAt(0) : pA->strideAt(1);
-  int ldu(transA ? n : m), ldv(transA ? m : n);
-  bool uForder(true), vForder(true);
-
-  if (calcUV) {
-    pU = transA ? V : U;
-    pV = transA ? U : V;
-
-    uForder = pU->sizeAt(0) == 1 || pU->strideAt(0) == 1;
-    vForder = pV->sizeAt(0) == 1 || pV->strideAt(0) == 1;
-
-    if (!uForder) {
-      pU = new NDArray(pU->dup('f'));
-      toDelete.push_back(pU);
     }
 
-    if (!vForder) {
-      pV = new NDArray(pV->dup('f'));
-      toDelete.push_back(pV);
+    NDArray* pA = const_cast<NDArray*>(A);
+
+    const bool aForder = m == 1 || A->strideAt(0) == 1;
+    const bool aCorder = n == 1 || A->strideAt(1) == 1;
+
+    const bool transA = !aForder && aCorder;
+    const bool dupA = !aForder && !aCorder;
+
+    std::vector<NDArray*> toDelete;
+
+    if (dupA) {
+      pA = new NDArray(A->dup('f'));
+      toDelete.push_back(pA);
     }
 
-    ldu = pU->strideAt(1);
-    ldv = pV->strideAt(1);
+    NDArray* pS = S;
+
+    if (S->ews() != 1) {
+      pS = new NDArray(S->dup('f'));
+      toDelete.push_back(pS);
+    }
+
+    NDArray *pU(nullptr), *pV(nullptr);
+
+    int lda = transA ? pA->strideAt(0) : pA->strideAt(1);
+    int ldu(transA ? n : m), ldv(transA ? m : n);
+    bool uForder(true), vForder(true);
+
+    if (calcUV) {
+      pU = transA ? V : U;
+      pV = transA ? U : V;
+
+      uForder = pU->sizeAt(0) == 1 || pU->strideAt(0) == 1;
+      vForder = pV->sizeAt(0) == 1 || pV->strideAt(0) == 1;
+
+      if (!uForder) {
+        pU = new NDArray(pU->dup('f'));
+        toDelete.push_back(pU);
+      }
+
+      if (!vForder) {
+        pV = new NDArray(pV->dup('f'));
+        toDelete.push_back(pV);
+      }
+
+      ldu = pU->strideAt(1);
+      ldv = pV->strideAt(1);
+    }
+
+    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+
+    // create cusolverDn handle
+    cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();
+    if (handle == nullptr) throw cuda_exception::build("svdJcb: cuda failed !", -1);
+
+    // stream
+    auto status = cusolverDnSetStream(*handle, *context->getCudaStream());
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+
+    // set parameters
+    gesvdjInfo_t gesvdjParams = nullptr;
+    status = cusolverDnCreateGesvdjInfo(&gesvdjParams);
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+    status = cusolverDnXgesvdjSetTolerance(gesvdjParams, 1.e-7);  // tolerance
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+    status = cusolverDnXgesvdjSetMaxSweeps(gesvdjParams, 15);  // max_sweeps
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+
+    int* devInfo = nullptr;
+    const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
+    const int econ = !fullUV;
+
+    if (transA) math::sd_swap<int>(m, n);
+
+    // *** avoid bug in cuda API ***
+    void* nullPtr = nullptr;
+    NDArray* arrToAvoidBugInAPI = nullptr;
+    if (!calcUV && m != n) {
+      int maxDim = m > n ? m : n;
+      arrToAvoidBugInAPI = new NDArray('c', {maxDim, maxDim}, pA->dataType(), context);
+      nullPtr = arrToAvoidBugInAPI->specialBuffer();
+    }
+    // ******************
+
+    NDArray::prepareSpecialUse({pS, pU, pV}, {pA});
+
+    // query working space of SVD
+    int lwork = 0;
+    if (A->dataType() == DataType::DOUBLE)
+      status = cusolverDnDgesvdj_bufferSize(
+          *handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->specialBuffer()), lda,
+          reinterpret_cast<double*>(pS->specialBuffer()),
+          calcUV ? reinterpret_cast<double*>(pU->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu,
+          calcUV ? reinterpret_cast<double*>(pV->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv, &lwork,
+          gesvdjParams);
+    else if (A->dataType() == DataType::FLOAT32)
+      status = cusolverDnSgesvdj_bufferSize(
+          *handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->specialBuffer()), lda,
+          reinterpret_cast<float*>(pS->specialBuffer()),
+          calcUV ? reinterpret_cast<float*>(pU->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu,
+          calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv, &lwork,
+          gesvdjParams);
+    else
+      THROW_EXCEPTION("svdJcb: given data type is unsupported !");
+
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+
+    // allocate memory dWork
+    void* dWork = nullptr;
+    auto status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
+    if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
+
+    PointersManager manager(context, "svdJcb");
+
+    // choose appropriate cuda gemm api depending on data types
+    if (A->dataType() == DataType::DOUBLE) {
+      status = cusolverDnDgesvdj(
+          *handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->specialBuffer()), lda,
+          reinterpret_cast<double*>(pS->specialBuffer()),
+          calcUV ? reinterpret_cast<double*>(pU->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu,
+          calcUV ? reinterpret_cast<double*>(pV->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv,
+          reinterpret_cast<double*>(dWork), lwork, devInfo, gesvdjParams);
+    } else if (A->dataType() == DataType::FLOAT32) {
+      status = cusolverDnSgesvdj(
+          *handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->specialBuffer()), lda,
+          reinterpret_cast<float*>(pS->specialBuffer()),
+          calcUV ? reinterpret_cast<float*>(pU->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu,
+          calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv,
+          reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams);
+    } else
+      THROW_EXCEPTION("svdJcb: given data type is unsupported !");
+
+    if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
+
+    manager.synchronize();
+
+    NDArray::registerSpecialUse({pS, pU, pV}, {pA});
+
+    if (S->ews() != 1) S->assign(pS);
+
+    if (calcUV) {
+      if (!uForder) U->assign(transA ? pV : pU);
+      if (!vForder) V->assign(transA ? pU : pV);
+    }
+
+    if (!calcUV && m != n) delete arrToAvoidBugInAPI;
+
+    for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
+
+    if (devInfo) cudaFree(devInfo);
+    if (dWork) cudaFree(dWork);
+    if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
   }
-
-  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
-
-  // create cusolverDn handle
-  cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();
-  // cusolverStatus_t status = cusolverDnCreate(&handle);
-  if (handle == nullptr) throw cuda_exception::build("svdJcb: cuda failed !", -1);
-
-  // stream
-  auto status = cusolverDnSetStream(*handle, *context->getCudaStream());
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-
-  // set parameters
-  gesvdjInfo_t gesvdjParams = nullptr;
-  status = cusolverDnCreateGesvdjInfo(&gesvdjParams);
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-  status = cusolverDnXgesvdjSetTolerance(gesvdjParams, 1.e-7);  // tolerance
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-  status = cusolverDnXgesvdjSetMaxSweeps(gesvdjParams, 15);  // max_sweeps
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-
-  int* devInfo = nullptr;
-  const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
-  const int econ = !fullUV;
-
-  if (transA) math::sd_swap<int>(m, n);
-
-  // *** avoid bug in cuda API ***
-  void* nullPtr = nullptr;
-  NDArray* arrToAvoidBugInAPI = nullptr;
-  if (!calcUV && m != n) {
-    int maxDim = m > n ? m : n;
-    arrToAvoidBugInAPI = new NDArray('c', {maxDim, maxDim}, pA->dataType(), context);
-    nullPtr = arrToAvoidBugInAPI->specialBuffer();
-  }
-  // ******************
-
-  NDArray::prepareSpecialUse({pS, pU, pV}, {pA});
-
-  // query working space of SVD
-  int lwork = 0;
-  if (A->dataType() == DataType::DOUBLE)
-    status = cusolverDnDgesvdj_bufferSize(
-        *handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->specialBuffer()), lda,
-        reinterpret_cast<double*>(pS->specialBuffer()),
-        calcUV ? reinterpret_cast<double*>(pU->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu,
-        calcUV ? reinterpret_cast<double*>(pV->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv, &lwork,
-        gesvdjParams);
-  else if (A->dataType() == DataType::FLOAT32)
-    status = cusolverDnSgesvdj_bufferSize(
-        *handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->specialBuffer()), lda,
-        reinterpret_cast<float*>(pS->specialBuffer()),
-        calcUV ? reinterpret_cast<float*>(pU->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu,
-        calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv, &lwork,
-        gesvdjParams);
-  else
-    THROW_EXCEPTION("svdJcb: given data type is unsupported !");
-
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-
-  // allocate memory dWork
-  void* dWork = nullptr;
-  auto status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
-
-  PointersManager manager(context, "svdJcb");
-
-  // choose appropriate cuda gemm api depending on data types
-  if (A->dataType() == DataType::DOUBLE) {
-    status = cusolverDnDgesvdj(
-        *handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->specialBuffer()), lda,
-        reinterpret_cast<double*>(pS->specialBuffer()),
-        calcUV ? reinterpret_cast<double*>(pU->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu,
-        calcUV ? reinterpret_cast<double*>(pV->specialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv,
-        reinterpret_cast<double*>(dWork), lwork, devInfo, gesvdjParams);
-  } else if (A->dataType() == DataType::FLOAT32) {
-    status = cusolverDnSgesvdj(
-        *handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->specialBuffer()), lda,
-        reinterpret_cast<float*>(pS->specialBuffer()),
-        calcUV ? reinterpret_cast<float*>(pU->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu,
-        calcUV ? reinterpret_cast<float*>(pV->specialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv,
-        reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams);
-  } else
-    THROW_EXCEPTION("svdJcb: given data type is unsupported !");
-
-  if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
-
-  manager.synchronize();
-
-  NDArray::registerSpecialUse({pS, pU, pV}, {pA});
-
-  if (S->ews() != 1) S->assign(pS);
-
-  if (calcUV) {
-    if (!uForder) U->assign(transA ? pV : pU);
-    if (!vForder) V->assign(transA ? pU : pV);
-  }
-
-  if (!calcUV && m != n) delete arrToAvoidBugInAPI;
-
-  for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
-
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
-  //    if(handle)
-  //        cusolverDnDestroy(handle);
-  if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
-
-  // cudaDeviceReset();
 }
 
 //////////////////////////////////////////////////////////////////////////
