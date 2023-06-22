@@ -43,7 +43,7 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
   // in bidirectional 1 layer consist of 2 pseduo layers
   auto input_pseudo_size = 4 * inputSize * hiddenSize * dataTypeSize;
   auto hidden_pseudo_size = 4 * hiddenSize * hiddenSize * dataTypeSize;
-  for (int i = 0; i < pseudo_layer_count; i++) {
+  for (sd::LongType i = 0; i < pseudo_layer_count; i++) {
     if (wptr + input_pseudo_size + hidden_pseudo_size > wEnd) return;
     // copy input weights
     if (inputWeightsData) {
@@ -99,23 +99,20 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
 
   CudnnTensor hxDesc, cxDesc, hyDesc, cyDesc;
 
-  constexpr sd::LongType rankOf = 3;
-  const sd::LongType numDirections = isBidirectional ? 2 : 1;
+  constexpr int rankOf = 3;
+  const int numDirections = isBidirectional ? 2 : 1;
 
-  const sd::LongType dimsX[rankOf] = {batchSize, inputSize, 1};
-  const sd::LongType stridesX[rankOf] = {inputSize, 1, 1};
+  const int dimsX[rankOf] = {static_cast<int>(batchSize), static_cast<int>(inputSize), 1};
+  const int stridesX[rankOf] = {static_cast<int>(inputSize), 1, 1};
 
-  const sd::LongType dimsY[rankOf] = {batchSize, hiddenSize * numDirections, 1};
-  const sd::LongType stridesY[rankOf] = {hiddenSize * numDirections, 1, 1};
+  const int dimsY[rankOf] = {static_cast<int>(batchSize), static_cast<int>(hiddenSize * numDirections), 1};
+  const int stridesY[rankOf] = {static_cast<int>(hiddenSize * numDirections), 1, 1};
 
-  const sd::LongType dimC[rankOf] = {numLayers * numDirections, batchSize, hiddenSize};
-  const sd::LongType strideC[rankOf] = {batchSize * hiddenSize, hiddenSize, 1};
-
+  const int dimC[rankOf] = {static_cast<int>(numLayers * numDirections), static_cast<int>(batchSize), static_cast<int>(hiddenSize)};
+  const int strideC[rankOf] = {static_cast<int>(batchSize * hiddenSize), static_cast<int>(hiddenSize), 1};
   for (int i = 0; i < maxSeqLength; i++) {
     xDescList.set(i, cudnnType, rankOf, dimsX, stridesX);
-    // dxDescList.set(i, cudnnType, rankOf, dimsX, stridesX);
     yDescList.set(i, cudnnType, rankOf, dimsY, stridesY);
-    // dyDescList.set(i, cudnnType, rankOf, dimsY, stridesY);
   }
 
   auto xDesc0 = xDescList.get(0);
@@ -164,7 +161,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
                           cudnnGetRNNParamsSize(handle, rnnDesc, xDesc0, &weightsSize, cudnnType));
 
   FilterDesc wDesc;
-  sd::LongType dimW[] = {(sd::LongType)weightsSize / dataTypeSize, 1, 1};
+  int dimW[] = {static_cast<int>(weightsSize / dataTypeSize), 1, 1};
 
   wDesc.set(cudnnType, CUDNN_TENSOR_NCHW, 3, dimW);
   // allocation

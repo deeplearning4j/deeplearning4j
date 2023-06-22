@@ -82,7 +82,6 @@ extern "C" {
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
   if(instrumentFile == nullptr) {
-    sd_printf("Instrument file is null\n",0)
         return;
   }
   Dl_info info;
@@ -112,7 +111,7 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
                                                                                     void *call_site) {
-  writeLog(true,this_fn, call_site);
+  //writeLog(true,this_fn, call_site);
 }
 
 
@@ -120,7 +119,7 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_en
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
                                                                                    void *call_site) {
-  writeLog(false,this_fn, call_site);
+  //writeLog(false,this_fn, call_site);
 
 }
 

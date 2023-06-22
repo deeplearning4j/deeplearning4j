@@ -43,29 +43,28 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
 
-  const std::vector<sd::LongType> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
 
-  std::vector<sd::LongType> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
+  std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
-    const int iC = mean->lengthOf();
-    const sd::LongType stride0 = mean->strideAt(0);
-    paramsShape = xRank == 4 ? std::vector<sd::LongType>({1, iC, 1, 1}) : std::vector<sd::LongType>({1, iC, 1, 1, 1});
-    paramsStrides = xRank == 4 ? std::vector<sd::LongType>({iC * stride0, stride0, 1, 1})
-                               : std::vector<sd::LongType>({iC * stride0, stride0, 1, 1, 1});
+    const int iC = static_cast<int>(mean->lengthOf());
+    const int stride0 = static_cast<int>(mean->strideAt(0));
+    paramsShape = xRank == 4 ? std::vector<int>({1, iC, 1, 1}) : std::vector<int>({1, iC, 1, 1, 1});
+    paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
+                               : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = mean->getShapeAsVectorInt();
+    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
     paramsStrides = xRank == 4
-                        ? std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
-                                            (sd::LongType)mean->strideAt(3)})
-                        : std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
-                                            (sd::LongType)mean->strideAt(3), (sd::LongType)mean->strideAt(4)});
+                    ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
+                                        static_cast<int>(mean->strideAt(3))})
+                    : std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
+                                        static_cast<int>(mean->strideAt(3)), static_cast<int>(mean->strideAt(4))});
   }
 
-  std::vector<sd::LongType> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
-                               (sd::LongType)input->strideAt(3)};
-  std::vector<sd::LongType> zStrides = {(sd::LongType)output->strideAt(0), (sd::LongType)output->strideAt(1), (sd::LongType)output->strideAt(2),
-                               (sd::LongType)output->strideAt(3)};
-
+  std::vector<int> xStrides = {static_cast<int>(input->strideAt(0)), static_cast<int>(input->strideAt(1)), static_cast<int>(input->strideAt(2)),
+                               static_cast<int>(input->strideAt(3))};
+  std::vector<int> zStrides = {static_cast<int>(output->strideAt(0)), static_cast<int>(output->strideAt(1)), static_cast<int>(output->strideAt(2)),
+                               static_cast<int>(output->strideAt(3))};
   if (xRank > 4) {  // 5D
     xStrides.push_back((sd::LongType)input->strideAt(4));
     zStrides.push_back((sd::LongType)output->strideAt(4));
@@ -75,25 +74,25 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
 
   // input descriptor
   CudnnTensor x;
-  if (input->ews() == 1)
+  if (input->ews() == 1) {
     x.setEx(format, dataType, xRank, xShape.data());
-  else
+  } else {
     x.set(dataType, xRank, xShape.data(), xStrides.data());
-
+  }
   // output descriptor
   CudnnTensor z;
-  if (output->ews() == 1)
+  if (output->ews() == 1) {
     z.setEx(format, dataType, xRank, xShape.data());
-  else
+  } else {
     z.set(dataType, xRank, xShape.data(), zStrides.data());
-
+  }
   // mean, variance, gamma and beta descriptor, the same descriptor for all of them
   CudnnTensor params;
-  if (mean->ews() == 1)
+  if (mean->ews() == 1) {
     params.setEx(format, dataType, xRank, paramsShape.data());
-  else
+  } else {
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
-
+  }
   // provide scaling parameters
   const float alpha32(1), beta32(0);
   const double alpha64(1), beta64(0);
@@ -137,35 +136,34 @@ static void batchnormBpCUDNN(const LaunchContext* context, const NDArray* input,
 
   const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
 
-  std::vector<sd::LongType> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
+  std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
-    const int iC = mean->lengthOf();
-    const int stride0 = mean->strideAt(0);
-    paramsShape = xRank == 4 ? std::vector<sd::LongType>({1, iC, 1, 1}) : std::vector<sd::LongType>({1, iC, 1, 1, 1});
-    paramsStrides = xRank == 4 ? std::vector<sd::LongType>({iC * stride0, stride0, 1, 1})
-                               : std::vector<sd::LongType>({iC * stride0, stride0, 1, 1, 1});
+    const int iC = static_cast<int>(mean->lengthOf());
+    const int stride0 = static_cast<int>(mean->strideAt(0));
+    paramsShape = xRank == 4 ? std::vector<int>({1, iC, 1, 1}) : std::vector<int>({1, iC, 1, 1, 1});
+    paramsStrides = xRank == 4 ? std::vector<int>({iC * stride0, stride0, 1, 1})
+                               : std::vector<int>({iC * stride0, stride0, 1, 1, 1});
   } else {
-    paramsShape = mean->getShapeAsVectorInt();
+    paramsShape = std::vector<int>(mean->getShapeAsVector().begin(), mean->getShapeAsVector().end());
     paramsStrides = xRank == 4
-                        ? std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
-                                            (sd::LongType)mean->strideAt(3)})
-                        : std::vector<sd::LongType>({(sd::LongType)mean->strideAt(0), (sd::LongType)mean->strideAt(1), (sd::LongType)mean->strideAt(2),
-                                            (sd::LongType)mean->strideAt(3), (sd::LongType)mean->strideAt(4)});
+                    ? std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
+                                        static_cast<int>(mean->strideAt(3))})
+                    : std::vector<int>({static_cast<int>(mean->strideAt(0)), static_cast<int>(mean->strideAt(1)), static_cast<int>(mean->strideAt(2)),
+                                        static_cast<int>(mean->strideAt(3)), static_cast<int>(mean->strideAt(4))});
   }
 
-  std::vector<int> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
-                               (sd::LongType)input->strideAt(3)};
-  std::vector<int> dxStrides = {(sd::LongType)gradI->strideAt(0), (sd::LongType)gradI->strideAt(1), (sd::LongType)gradI->strideAt(2),
-                                (sd::LongType)gradI->strideAt(3)};
-  std::vector<int> dzStrides = {(sd::LongType)gradO->strideAt(0), (sd::LongType)gradO->strideAt(1), (sd::LongType)gradO->strideAt(2),
-                                (sd::LongType)gradO->strideAt(3)};
+  std::vector<int> xStrides = {static_cast<int>(input->strideAt(0)), static_cast<int>(input->strideAt(1)), static_cast<int>(input->strideAt(2)),
+                               static_cast<int>(input->strideAt(3))};
+  std::vector<int> dxStrides = {static_cast<int>(gradI->strideAt(0)), static_cast<int>(gradI->strideAt(1)), static_cast<int>(gradI->strideAt(2)),
+                                static_cast<int>(gradI->strideAt(3))};
+  std::vector<int> dzStrides = {static_cast<int>(gradO->strideAt(0)), static_cast<int>(gradO->strideAt(1)), static_cast<int>(gradO->strideAt(2)),
+                                static_cast<int>(gradO->strideAt(3))};
 
   if (xRank > 4) {  // 5D
-    xStrides.push_back((sd::LongType)input->strideAt(4));
-    dxStrides.push_back((sd::LongType)gradI->strideAt(4));
-    dzStrides.push_back((sd::LongType)gradO->strideAt(4));
+    xStrides.push_back(static_cast<int>(input->strideAt(4)));
+    dxStrides.push_back(static_cast<int>(gradI->strideAt(4)));
+    dzStrides.push_back(static_cast<int>(gradO->strideAt(4)));
   }
-
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
   // input descriptor
@@ -191,11 +189,11 @@ static void batchnormBpCUDNN(const LaunchContext* context, const NDArray* input,
 
   // mean, variance, gamma, gradG and gradB descriptor, the same descriptor for all of them
   CudnnTensor params;
-  if (mean->ews() == 1)
+  if (mean->ews() == 1) {
     params.setEx(format, dataType, xRank, paramsShape.data());
-  else
+  } else {
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
-
+  }
   // provide scaling parameters
   const float alpha32(1), beta32(0);
   double alpha64(1), beta64(0);
@@ -274,26 +272,26 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
                "BATCHNORM CUDNN op: wrong shape of variance array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(variance).c_str());
   if (gamma)
-    REQUIRE_TRUE(gamma->isSameShape(expShape), 0,
-                 "BATCHNORM CUDNN op: wrong shape of gamma array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(gamma).c_str());
+  REQUIRE_TRUE(gamma->isSameShape(expShape), 0,
+               "BATCHNORM CUDNN op: wrong shape of gamma array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(gamma).c_str());
   if (beta)
-    REQUIRE_TRUE(beta->isSameShape(expShape), 0,
-                 "BATCHNORM CUDNN op: wrong shape of beta array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
+  REQUIRE_TRUE(beta->isSameShape(expShape), 0,
+               "BATCHNORM CUDNN op: wrong shape of beta array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
   // types of all input arrays should be the same
   for (int i = 1; i < block.width(); ++i)
-    REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
-                 "BATCHNORM CUDNN op: types of all input arrays should be the same !");
+  REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
+               "BATCHNORM CUDNN op: types of all input arrays should be the same !");
 
   // cudnn supports NCHW format only
   const bool needPermut = axes.size() == 1 && mean->lengthOf() == input->sizeAt(-1);
 
   std::unique_ptr<NDArray> tmpGamma = {}, tmpBeta = {}, tmpInput = {}, tmpOutput = {};
   if (needPermut) {  // if NHWC
-    std::vector<int> perm =
-        inRank == 4 ? std::vector<int>({0, 3, 1, 2}) : std::vector<int>({0, 4, 1, 2, 3});  // NHWC -> NCHW
+    std::vector<sd::LongType> perm =
+        inRank == 4 ? std::vector<sd::LongType>({0, 3, 1, 2}) : std::vector<sd::LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
     tmpInput.reset(new NDArray(input->permute(perm)));
     tmpOutput.reset(new NDArray(output->permute(perm)));
     input = tmpInput.get();
@@ -342,15 +340,15 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
 
   Requirements req("CUDNN BATCHNORM OP");
   req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
-      req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
-      req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
-      req.expect(
-          makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
-          [](const decltype(mean)& l, const decltype(variance)& r) {
-            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
-          },
-          EXPECTED_EQ_MSG);
+  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+               {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+  req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
+  req.expect(
+      makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
+      [](const decltype(mean)& l, const decltype(variance)& r) {
+        return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+      },
+      EXPECTED_EQ_MSG);
   if (gamma) {
     req.expect(
         makeShapeInfoVariable(gamma, SHAPE_MSG_INPUT_ "#gamma"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),
@@ -444,13 +442,13 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
                "BATCHNORM_BP CUDNN op: wrong shape of variance array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(variance).c_str());
   if (gamma)
-    REQUIRE_TRUE(gamma->isSameShape(expShape), 0,
-                 "BATCHNORM_BP CUDNN op: wrong shape of gamma array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(gamma).c_str());
+  REQUIRE_TRUE(gamma->isSameShape(expShape), 0,
+               "BATCHNORM_BP CUDNN op: wrong shape of gamma array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(gamma).c_str());
   if (beta)
-    REQUIRE_TRUE(beta->isSameShape(expShape), 0,
-                 "BATCHNORM_BP CUDNN op: wrong shape of beta array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
+  REQUIRE_TRUE(beta->isSameShape(expShape), 0,
+               "BATCHNORM_BP CUDNN op: wrong shape of beta array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
   REQUIRE_TRUE(input->isSameShape(gradO), 0,
                "BATCHNORM_BP CUDNN op: wrong shape of output gradients array, expected is %s, but got %s instead !",
@@ -458,15 +456,15 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
 
   // types of all input arrays should be the same (except gradO)
   for (int i = 1; i < block.width() - 2; ++i)
-    REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
-                 "BATCHNORM_BP CUDNN op: types of arrays (input, mean, variance, gamma, beta) should be the same !");
+  REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
+               "BATCHNORM_BP CUDNN op: types of arrays (input, mean, variance, gamma, beta) should be the same !");
 
   // cudnn supports NCHW format only
   const bool needPermut = axes.size() == 1 && mean->lengthOf() != input->sizeAt(1);
   std::unique_ptr<NDArray> tmpGamma = {}, tmpGradG = {}, tmpGradB = {}, tmpInput = {}, tmpGradI = {}, tmpGradO = {};
   if (needPermut) {  // if NHWC
-    std::vector<int> perm =
-        inRank == 4 ? std::vector<int>({0, 3, 1, 2}) : std::vector<int>({0, 4, 1, 2, 3});  // NHWC -> NCHW
+    std::vector<sd::LongType> perm =
+        inRank == 4 ? std::vector<sd::LongType>({0, 3, 1, 2}) : std::vector<sd::LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
     tmpInput.reset(new NDArray(input->permute(perm)));
     tmpGradO.reset(new NDArray(gradO->permute(perm)));
     tmpGradI.reset(new NDArray(gradI->permute(perm)));
@@ -525,15 +523,15 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
 
   Requirements req("CUDNN BATCHNORM_BP OP");
   req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
-      req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
-      req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
-      req.expect(
-          makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
-          [](const decltype(mean)& l, const decltype(variance)& r) {
-            return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
-          },
-          EXPECTED_EQ_MSG);
+  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+               {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+  req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
+  req.expect(
+      makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
+      [](const decltype(mean)& l, const decltype(variance)& r) {
+        return shape::haveSameShapeAndStrides(l->shapeInfo(), r->shapeInfo());
+      },
+      EXPECTED_EQ_MSG);
   if (gamma) {
     req.expect(
         makeShapeInfoVariable(gamma, SHAPE_MSG_INPUT_ "#gamma"), makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1),

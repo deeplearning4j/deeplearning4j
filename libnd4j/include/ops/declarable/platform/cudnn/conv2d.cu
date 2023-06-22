@@ -310,8 +310,8 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
                     weights->dataType(), weights->getContext()));
     newWeights = tmpWeight.get();
     newWeights->assign(weights->permute(
-        isNCHW ? std::vector<int>({3, 2, 0, 1})
-               : std::vector<int>(
+        isNCHW ? std::vector<sd::LongType>({3, 2, 0, 1})
+               : std::vector<sd::LongType>(
                      {3, 0, 1, 2})));  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
   }
 
@@ -457,8 +457,8 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
 
   if (0 == wFormat) {
     newGradW->permutei(
-        isNCHW ? std::vector<int>({2, 3, 1, 0})
-               : std::vector<int>(
+        isNCHW ? std::vector<sd::LongType>({2, 3, 1, 0})
+               : std::vector<sd::LongType>(
                      {1, 2, 3, 0}));  // (oC, iC, kH, kW --> kH, kW, iC, oC) or (oC, kH, kW, iC --> kH, kW, iC, oC)
     gradW->assign(newGradW);
   }

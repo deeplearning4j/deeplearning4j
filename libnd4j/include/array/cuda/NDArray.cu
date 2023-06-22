@@ -251,7 +251,10 @@ void NDArray::swapUnsafe(NDArray& other) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::synchronize(const char* msg) const {
   auto res = cudaStreamSynchronize(*(getContext()->getCudaStream()));
-  if (res != 0) THROW_EXCEPTION(msg + std::string(": synchronization failed !"));
+  if (res != 0) {
+    std::string message = msg + std::string(": synchronization failed !");
+    THROW_EXCEPTION(message.c_str());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

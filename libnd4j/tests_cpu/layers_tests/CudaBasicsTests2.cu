@@ -59,7 +59,6 @@ TEST_F(CudaBasicsTests2, mmulMxM_1) {
               sd::DataType::FLOAT32);
 
   sd::MmulHelper::mmul(&a, &b, &c, 1., 0.);
-  // c.printIndexedBuffer();
 
   ASSERT_TRUE(c.equalsTo(&exp));
 }

@@ -99,7 +99,7 @@ TEST_F(SortCudaTests, test_tad_sort_by_key_1) {
 
   sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-  int axis = 1;
+  sd::LongType axis = 1;
   sortTadByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
   k.tickWriteDevice();
@@ -122,7 +122,7 @@ TEST_F(SortCudaTests, test_tad_sort_by_val_1) {
 
   sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-  int axis = 1;
+  sd::LongType axis = 1;
   sortTadByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                  v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
   k.tickWriteDevice();

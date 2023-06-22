@@ -312,16 +312,23 @@ if(SD_CUDA)
             message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
         endif()
 
-
-
         string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
         if ("${COMPUTE_CMP}" STREQUAL "all")
-            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Common")
+            if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80")
+            else()
+                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90")
+            endif()
+            set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
+
         elseif("${COMPUTE_CMP}" STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
+            set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
         elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
             #matches USER COMPUTE old way
             set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE} ")
+            set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
+
         else()
             #matches numbers NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
             #NAME: Fermi Kepler Maxwell Kepler+Tegra Kepler+Tesla Maxwell+Tegra Pascal
@@ -330,7 +337,19 @@ if(SD_CUDA)
         endif()
         # list to spaces
         string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
-
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            if(NOT STREQUAL ${CUDA_ARCH_FLAGS} "")
+                set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA architectures" FORCE)
+            else()
+                if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 CACHE STRING "CUDA architectures for CUDA 11.x based compilers" FORCE)
+                    add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
+                else()
+                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
+                    add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
+                endif()
+            endif()
+        endif()
         set(CMAKE_CUDA_FLAGS " -allow-unsupported-compiler ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
         file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)

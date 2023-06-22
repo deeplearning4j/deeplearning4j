@@ -46,9 +46,6 @@ SD_KERNEL void runLambda(double *input, double *output, sd::LongType length, Lam
 }
 
 void launcher(cudaStream_t *stream, double *input, double *output, sd::LongType length) {
-  // auto f = [] SD_HOST_DEVICE (double x) -> double {
-  //        return x + 1.;
-  //};
   auto f = LAMBDA_D(x) { return x + 1.; };
 
   runLambda<<<128, 128, 128, *stream>>>(input, output, length, f);

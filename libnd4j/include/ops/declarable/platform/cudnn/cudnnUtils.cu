@@ -100,9 +100,9 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNP
 void pooling2dCUDNN(const LaunchContext* context, const NDArray* input, NDArray* output, const int kH, const int kW,
                     const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
                     const bool isNCHW, const cudnnPoolingMode_t mode) {
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
@@ -154,9 +154,9 @@ void pooling2dCUDNN(const LaunchContext* context, const NDArray* input, NDArray*
 void pooling2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* gradO, NDArray* gradI,
                       const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
                       const int dW, const bool isNCHW, const cudnnPoolingMode_t mode) {
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
@@ -217,9 +217,9 @@ void pooling3dCUDNN(const LaunchContext* context, const NDArray* input, NDArray*
 
   const int numDims = 5;
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
@@ -227,28 +227,59 @@ void pooling3dCUDNN(const LaunchContext* context, const NDArray* input, NDArray*
   const int sSizes[] = {sD, sH, sW};
   const int kSizes[] = {kD, kH, kW};
 
-  const int xShape[] = {bS, iC, iD, iH, iW};
-  const int zShape[] = {bS, oC, oD, oH, oW};
+  const sd::LongType xShape[] = {bS, iC, iD, iH, iW};
+  const sd::LongType zShape[] = {bS, oC, oD, oH, oW};
 
-  const int xStrides[] = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
-                          (int)input->strideAt(3), (int)input->strideAt(4)};
-  const int zStrides[] = {(int)output->strideAt(0), (int)output->strideAt(1), (int)output->strideAt(2),
-                          (int)output->strideAt(3), (int)output->strideAt(4)};
+  const sd::LongType xStrides[] = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
+                                   (sd::LongType)input->strideAt(3), (sd::LongType)input->strideAt(4)};
+  const sd::LongType zStrides[] = {(sd::LongType)output->strideAt(0), (sd::LongType)output->strideAt(1), (sd::LongType)output->strideAt(2),
+                                   (sd::LongType)output->strideAt(3), (sd::LongType)output->strideAt(4)};
 
   cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
   // input descriptor, output descriptor
   CudnnTensor x, z;
-  if (input->ews() == 1 && input->ordering() == 'c')
-    x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
-  else
-    x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
+  if (input->ews() == 1 && input->ordering() == 'c') {
+    int newShape[5];
+    for(int i = 0; i < 5; i++) {
+      newShape[i] = static_cast<int>(xShape[i]);
+    }
+    x.setEx(format, cudnnDataType(input->dataType()), numDims, newShape);
+  } else {
+    int newShape[5];
+    int newStrides[5];
+    for(int i = 0; i < 5; i++) {
+      newShape[i] = static_cast<int>(xShape[i]);
+    }
+    for(int i = 0; i < 5; i++) {
+      newStrides[i] = static_cast<int>(xStrides[i]);
+    }
 
-  if (output->ews() == 1 && output->ordering() == 'c')
-    z.setEx(format, cudnnDataType(output->dataType()), numDims, zShape);
-  else
-    z.set(cudnnDataType(output->dataType()), numDims, zShape, zStrides);
+    x.set(cudnnDataType(input->dataType()), numDims, newShape, newStrides);
+  }
 
+
+  if (output->ews() == 1 && output->ordering() == 'c') {
+    int newShape[5];
+    int newStrides[5];
+    for(int i = 0; i < 5; i++) {
+      newShape[i] = static_cast<int>(zShape[i]);
+    }
+    for(int i = 0; i < 5; i++) {
+      newStrides[i] = static_cast<int>(zStrides[i]);
+    }
+    z.setEx(format, cudnnDataType(output->dataType()), numDims, newShape);
+  } else {
+    int newShape[5];
+    int newStrides[5];
+    for(int i = 0; i < 5; i++) {
+      newShape[i] = static_cast<int>(zShape[i]);
+    }
+    for(int i = 0; i < 5; i++) {
+      newStrides[i] = static_cast<int>(zStrides[i]);
+    }
+    z.set(cudnnDataType(output->dataType()), numDims, newShape, newStrides);
+  }
   // description of pooling
   PoolingDesc pooling;
   pooling.set(mode, CUDNN_PROPAGATE_NAN, numDims - 2, kSizes, pSizes, sSizes);
@@ -284,9 +315,9 @@ void pooling3dBpCUDNN(const LaunchContext* context, const NDArray* input, const 
 
   const int numDims = 5;
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
@@ -294,23 +325,23 @@ void pooling3dBpCUDNN(const LaunchContext* context, const NDArray* input, const 
   const int sSizes[] = {sD, sH, sW};
   const int kSizes[] = {kD, kH, kW};
 
-  const int xShape[] = {bS, iC, iD, iH, iW};
-  const int dzShape[] = {bS, oC, oD, oH, oW};
+  const int xShape[] = {(int) bS, (int) iC, (int) iD, (int) iH, (int) iW};
+  const int dzShape[] = {(int) bS, (int) oC, (int) oD, (int) oH,(int) oW};
 
-  const int xStrides[] = {(int)input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
-                          (int)input->strideAt(3), (int)input->strideAt(4)};
+  const int xStrides[] = { (int) input->strideAt(0), (int)input->strideAt(1), (int)input->strideAt(2),
+                                   (int)input->strideAt(3), (int)input->strideAt(4)};
   const int dzStrides[] = {(int)gradO->strideAt(0), (int)gradO->strideAt(1), (int)gradO->strideAt(2),
-                           (int)gradO->strideAt(3), (int)gradO->strideAt(4)};
+                                    (int)gradO->strideAt(3), (int)gradO->strideAt(4)};
 
   cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
   // input and gradI descriptor
   CudnnTensor x;
-  if (input->ews() == 1 && input->ordering() == 'c')
+  if (input->ews() == 1 && input->ordering() == 'c') {
     x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
-  else
+  } else {
     x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
-
+  }
   // gradO descriptor
   CudnnTensor dz;
   if (gradO->ews() == 1 && gradO->ordering() == 'c')

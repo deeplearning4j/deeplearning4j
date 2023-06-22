@@ -459,7 +459,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
   x.linspace(1);
   x.syncToDevice();
 
-  std::vector<int> dimensions = {0, 2};
+  std::vector<sd::LongType> dimensions = {0, 2};
 
   // evaluate xTad data
   shape::TAD xTad;
@@ -469,7 +469,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void*, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -490,7 +490,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
   NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Multiply, nullptr, x.shapeInfo(), x.specialBuffer(),
                                      x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(),
                                      y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(),
-                                     z.specialShapeInfo(), (int*)devicePtrs[0], dimensions.size(),
+                                     z.specialShapeInfo(), (sd::LongType*)devicePtrs[0], dimensions.size(),
                                      (sd::LongType*)devicePtrs[1], (sd::LongType*)devicePtrs[2], nullptr, nullptr);
 
   cudaResult = cudaStreamSynchronize(stream);
@@ -522,7 +522,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
   x.linspace(1);
   x.syncToDevice();
 
-  std::vector<int> dimensions = {0, 2};
+  std::vector<sd::LongType> dimensions = {0, 2};
 
   // evaluate xTad data
   shape::TAD xTad;
@@ -532,7 +532,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void*, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -556,7 +556,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
   NativeOpExecutioner::execBroadcast(pLc, sd::broadcast::Multiply, nullptr, x.shapeInfo(), x.specialBuffer(),
                                      x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(),
                                      y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(),
-                                     z.specialShapeInfo(), (int*)devicePtrs[0], dimensions.size(),
+                                     z.specialShapeInfo(), (sd::LongType*)devicePtrs[0], dimensions.size(),
                                      (sd::LongType*)devicePtrs[1], (sd::LongType*)devicePtrs[2], nullptr, nullptr);
 
 
@@ -641,7 +641,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
   x.linspace(0);
   x.syncToDevice();
 
-  std::vector<int> dimensions = {1};
+  std::vector<sd::LongType> dimensions = {1};
 
   // evaluate xTad data
   shape::TAD xTad;
@@ -673,7 +673,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
   NativeOpExecutioner::execBroadcast(pLc, sd::broadcast::Add, nullptr, x.shapeInfo(), x.specialBuffer(),
                                      x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(),
                                      y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(),
-                                     z.specialShapeInfo(), (int*)devicePtrs[0], dimensions.size(),
+                                     z.specialShapeInfo(), (sd::LongType*)devicePtrs[0], dimensions.size(),
                                      (sd::LongType*)devicePtrs[1], (sd::LongType*)devicePtrs[2], nullptr, nullptr);
 
   cudaResult = cudaStreamSynchronize(*stream);
@@ -899,16 +899,23 @@ TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
   NDArray exp3('c', {1, 1}, std::vector<double>{31.5}, sd::DataType::DOUBLE);
   NDArray exp4('c', {3, 3}, {4.5, 10.5, 16.5, 4.5, 10.5, 16.5, 4.5, 10.5, 16.5}, sd::DataType::DOUBLE);
 
-  auto z = x1.applyAllReduce3(reduce3::Dot, x2, {0, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims0 = {0};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims01 = {0,1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+
+  auto z = x1.applyAllReduce3(reduce3::Dot, x2, &dims02);
   ASSERT_TRUE(z.equalsTo(&exp1));
 
-  z = x1.applyAllReduce3(reduce3::Dot, x2, {0});
+  z = x1.applyAllReduce3(reduce3::Dot, x2, &dims0);
   ASSERT_TRUE(z.equalsTo(&exp2));
 
-  z = x3.applyAllReduce3(reduce3::Dot, x4, {0, 1});
+  z = x3.applyAllReduce3(reduce3::Dot, x4, &dims01);
   ASSERT_TRUE(z.equalsTo(&exp3));
 
-  z = x3.applyAllReduce3(reduce3::Dot, x4, {1});
+  z = x3.applyAllReduce3(reduce3::Dot, x4, &dims1);
   ASSERT_TRUE(z.equalsTo(&exp4));
 
   x1.permutei({2, 1, 0});
@@ -916,7 +923,7 @@ TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
   x3.permutei({1, 0});
   x4.permutei({1, 0});
 
-  z = x1.applyAllReduce3(reduce3::Dot, x2, {0, 2});
+  z = x1.applyAllReduce3(reduce3::Dot, x2,&dims02);
   ASSERT_TRUE(z.equalsTo(&exp1));
 
   z = x3.applyAllReduce3(reduce3::Dot, x4, {0});
@@ -939,24 +946,29 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
   NDArray exp5('c', {2}, {1, 1}, sd::DataType::INT64);
   NDArray exp6('c', {3}, {1, 0, 0}, sd::DataType::INT64);
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, scalar, {0, 1});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims0 = {0};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims01 = {0,1};
+
+  x.applyIndexReduce(sd::indexreduce::IndexMax, scalar, &dims01);
   ASSERT_TRUE(scalar.equalsTo(&exp1));
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, vec1, {1});
+  x.applyIndexReduce(sd::indexreduce::IndexMax, vec1, &dims1);
   ASSERT_TRUE(vec1.equalsTo(&exp2));
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, vec2, {0});
+  x.applyIndexReduce(sd::indexreduce::IndexMax, vec2, &dims0);
   ASSERT_TRUE(vec2.equalsTo(&exp3));
 
   x.permutei({1, 0});
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, scalar, {0, 1});
+  x.applyIndexReduce(sd::indexreduce::IndexMax, scalar, &dims01);
   ASSERT_TRUE(scalar.equalsTo(&exp4));
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, vec1, {0});
+  x.applyIndexReduce(sd::indexreduce::IndexMax, vec1, &dims0);
   ASSERT_TRUE(vec1.equalsTo(&exp5));
 
-  x.applyIndexReduce(sd::indexreduce::IndexMax, vec2, {1});
+  x.applyIndexReduce(sd::indexreduce::IndexMax, vec2, &dims1);
   ASSERT_TRUE(vec2.equalsTo(&exp6));
 }
 
@@ -972,24 +984,27 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
   NDArray exp5('c', {2}, {1, 1}, sd::DataType::INT64);
   NDArray exp6('c', {3}, {1, 0, 0}, sd::DataType::INT64);
 
-  auto z = x.applyIndexReduce(sd::indexreduce::IndexMax, {0, 1});
+  std::vector<sd::LongType> dims = {0, 1};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims0 = {0};
+  auto z = x.applyIndexReduce(sd::indexreduce::IndexMax, &dims);
   ASSERT_TRUE(z.equalsTo(&exp1));
 
-  z = x.applyIndexReduce(sd::indexreduce::IndexMax, {1});
+  z = x.applyIndexReduce(sd::indexreduce::IndexMax,&dims1);
   ASSERT_TRUE(z.equalsTo(&exp2));
 
-  z = x.applyIndexReduce(sd::indexreduce::IndexMax, {0});
+  z = x.applyIndexReduce(sd::indexreduce::IndexMax, &dims0);
   ASSERT_TRUE(z.equalsTo(&exp3));
 
   x.permutei({1, 0});
 
-  z = x.applyIndexReduce(sd::indexreduce::IndexMax, {0, 1});
+  z = x.applyIndexReduce(sd::indexreduce::IndexMax, &dims);
   ASSERT_TRUE(z.equalsTo(&exp4));
 
-  z = x.applyIndexReduce(sd::indexreduce::IndexMax, {0});
+  z = x.applyIndexReduce(sd::indexreduce::IndexMax, &dims0);
   ASSERT_TRUE(z.equalsTo(&exp5));
 
-  z = x.applyIndexReduce(sd::indexreduce::IndexMax, {1});
+  z = x.applyIndexReduce(sd::indexreduce::IndexMax, &dims1);
   ASSERT_TRUE(z.equalsTo(&exp6));
 }
 
@@ -1024,24 +1039,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
   NDArray exp4('c', {3, 2}, {4, 5, 1, 1, 1, 1}, sd::DataType::FLOAT32);
   NDArray exp5('c', {2}, {3.5f, 0.833333f}, sd::DataType::FLOAT32);
 
-  x.reduceAlongDimension(sd::reduce::Mean, z1, {0, 1, 2});
+
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+  x.reduceAlongDimension(sd::reduce::Mean, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::Mean, z2, {1});
+  x.reduceAlongDimension(sd::reduce::Mean, z2, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  x.reduceAlongDimension(sd::reduce::Mean, z3, {0, 2});
+  x.reduceAlongDimension(sd::reduce::Mean, z3, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  x.reduceAlongDimension(sd::reduce::Mean, z1, {0, 1, 2});
+  x.reduceAlongDimension(sd::reduce::Mean, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::Mean, z4, {1});
+  x.reduceAlongDimension(sd::reduce::Mean, z4, &dims1);
   ASSERT_TRUE(z4.equalsTo(&exp4));
 
-  x.reduceAlongDimension(sd::reduce::Mean, z5, {0, 2});
+  x.reduceAlongDimension(sd::reduce::Mean, z5, &dims02);
   ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
@@ -1070,24 +1089,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test2) {
   NDArray exp4('c', {3, 2}, {4, 5, 1, 1, 1, 1}, sd::DataType::DOUBLE);
   NDArray exp5('c', {2}, {3.5, 0.833333}, sd::DataType::DOUBLE);
 
-  NDArray z1 = x.reduceAlongDimension(sd::reduce::Mean, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  NDArray z1 = x.reduceAlongDimension(sd::reduce::Mean, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  NDArray z2 = x.reduceAlongDimension(sd::reduce::Mean, {1});
+  NDArray z2 = x.reduceAlongDimension(sd::reduce::Mean, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  NDArray z3 = x.reduceAlongDimension(sd::reduce::Mean, {0, 2});
+  NDArray z3 = x.reduceAlongDimension(sd::reduce::Mean,&dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  NDArray z4 = x.reduceAlongDimension(sd::reduce::Mean, {0, 1, 2});
+  NDArray z4 = x.reduceAlongDimension(sd::reduce::Mean, &dims);
   ASSERT_TRUE(z4.equalsTo(&exp1));
 
-  NDArray z5 = x.reduceAlongDimension(sd::reduce::Mean, {1});
+  NDArray z5 = x.reduceAlongDimension(sd::reduce::Mean,&dims1);
   ASSERT_TRUE(z5.equalsTo(&exp4));
 
-  NDArray z6 = x.reduceAlongDimension(sd::reduce::Mean, {0, 2});
+  NDArray z6 = x.reduceAlongDimension(sd::reduce::Mean, &dims02);
   ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
@@ -1149,24 +1172,29 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
   NDArray exp4('c', {3, 2}, {9.f, 10.f, 2.f, 2.f, 1.5f, 2.f}, sd::DataType::FLOAT32);
   NDArray exp5('c', {2}, {21.5f, 5.f}, sd::DataType::FLOAT32);
 
-  x.reduceAlongDimension(sd::reduce::Sum, z1, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+
+  x.reduceAlongDimension(sd::reduce::Sum, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::Sum, z2, {1});
+  x.reduceAlongDimension(sd::reduce::Sum, z2, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  x.reduceAlongDimension(sd::reduce::Sum, z3, {0, 2});
+  x.reduceAlongDimension(sd::reduce::Sum, z3, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  x.reduceAlongDimension(sd::reduce::Sum, z1, {0, 1, 2});
+  x.reduceAlongDimension(sd::reduce::Sum, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::Sum, z4, {1});
+  x.reduceAlongDimension(sd::reduce::Sum, z4, &dims1);
   ASSERT_TRUE(z4.equalsTo(&exp4));
 
-  x.reduceAlongDimension(sd::reduce::Sum, z5, {0, 2});
+  x.reduceAlongDimension(sd::reduce::Sum, z5, &dims02);
   ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
@@ -1195,24 +1223,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test2) {
   NDArray exp4('c', {3, 2}, {8, 10, 2, 2, 2, 2}, sd::DataType::INT64);
   NDArray exp5('c', {2}, {21, 5}, sd::DataType::INT64);
 
-  NDArray z1 = x.reduceAlongDimension(sd::reduce::Sum, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  NDArray z1 = x.reduceAlongDimension(sd::reduce::Sum, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  NDArray z2 = x.reduceAlongDimension(sd::reduce::Sum, {1});
+  NDArray z2 = x.reduceAlongDimension(sd::reduce::Sum, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  NDArray z3 = x.reduceAlongDimension(sd::reduce::Sum, {0, 2});
+  NDArray z3 = x.reduceAlongDimension(sd::reduce::Sum, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  NDArray z4 = x.reduceAlongDimension(sd::reduce::Sum, {0, 1, 2});
+  NDArray z4 = x.reduceAlongDimension(sd::reduce::Sum, &dims);
   ASSERT_TRUE(z4.equalsTo(&exp1));
 
-  NDArray z5 = x.reduceAlongDimension(sd::reduce::Sum, {1});
+  NDArray z5 = x.reduceAlongDimension(sd::reduce::Sum, &dims1);
   ASSERT_TRUE(z5.equalsTo(&exp4));
 
-  NDArray z6 = x.reduceAlongDimension(sd::reduce::Sum, {0, 2});
+  NDArray z6 = x.reduceAlongDimension(sd::reduce::Sum,&dims02);
   ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
@@ -1232,24 +1264,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
   NDArray exp4('c', {3, 2}, {true, true, true, false, true, true}, sd::DataType::BOOL);
   NDArray exp5('c', {2}, {true, true}, sd::DataType::BOOL);
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z1, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  x.reduceAlongDimension(sd::reduce::IsPositive, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z2, {1});
+  x.reduceAlongDimension(sd::reduce::IsPositive, z2, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z3, {0, 2});
+  x.reduceAlongDimension(sd::reduce::IsPositive, z3, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z1, {0, 1, 2});
+  x.reduceAlongDimension(sd::reduce::IsPositive, z1, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z4, {1});
+  x.reduceAlongDimension(sd::reduce::IsPositive, z4, &dims1);
   ASSERT_TRUE(z4.equalsTo(&exp4));
 
-  x.reduceAlongDimension(sd::reduce::IsPositive, z5, {0, 2});
+  x.reduceAlongDimension(sd::reduce::IsPositive, z5,&dims02);
   ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
@@ -1263,24 +1299,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test2) {
   NDArray exp4('c', {3, 2}, {0, 1, 1, 0, 1, 1}, sd::DataType::BOOL);
   NDArray exp5('c', {2}, {1, 1}, sd::DataType::BOOL);
 
-  NDArray z1 = x.reduceAlongDimension(sd::reduce::IsPositive, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  NDArray z1 = x.reduceAlongDimension(sd::reduce::IsPositive, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  NDArray z2 = x.reduceAlongDimension(sd::reduce::IsPositive, {1});
+  NDArray z2 = x.reduceAlongDimension(sd::reduce::IsPositive, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  NDArray z3 = x.reduceAlongDimension(sd::reduce::IsPositive, {0, 2});
+  NDArray z3 = x.reduceAlongDimension(sd::reduce::IsPositive, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  NDArray z4 = x.reduceAlongDimension(sd::reduce::IsPositive, {0, 1, 2});
+  NDArray z4 = x.reduceAlongDimension(sd::reduce::IsPositive,&dims);
   ASSERT_TRUE(z4.equalsTo(&exp1));
 
-  NDArray z5 = x.reduceAlongDimension(sd::reduce::IsPositive, {1});
+  NDArray z5 = x.reduceAlongDimension(sd::reduce::IsPositive, &dims1);
   ASSERT_TRUE(z5.equalsTo(&exp4));
 
-  NDArray z6 = x.reduceAlongDimension(sd::reduce::IsPositive, {0, 2});
+  NDArray z6 = x.reduceAlongDimension(sd::reduce::IsPositive, &dims02);
   ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
@@ -1301,24 +1341,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
   NDArray exp4('c', {3, 2}, {0, 1, 0, 1, 0, 0}, sd::DataType::INT64);
   NDArray exp5('c', {2}, {1, 1}, sd::DataType::INT64);
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z1, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  x.reduceAlongDimension(sd::reduce::CountZero, z1,&dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z2, {1});
+  x.reduceAlongDimension(sd::reduce::CountZero, z2,&dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z3, {0, 2});
+  x.reduceAlongDimension(sd::reduce::CountZero, z3, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z1, {0, 1, 2});
+  x.reduceAlongDimension(sd::reduce::CountZero, z1,&dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z4, {1});
+  x.reduceAlongDimension(sd::reduce::CountZero, z4, &dims1);
   ASSERT_TRUE(z4.equalsTo(&exp4));
 
-  x.reduceAlongDimension(sd::reduce::CountZero, z5, {0, 2});
+  x.reduceAlongDimension(sd::reduce::CountZero, z5,&dims02);
   ASSERT_TRUE(z5.equalsTo(&exp5));
 }
 
@@ -1332,24 +1376,28 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
   NDArray exp4('c', {3, 2}, {1, 1, 0, 2, 0, 0}, sd::DataType::INT64);
   NDArray exp5('c', {2}, {2, 2}, sd::DataType::INT64);
 
-  NDArray z1 = x.reduceAlongDimension(sd::reduce::CountZero, {0, 1, 2});
+  std::vector<sd::LongType> dims = {0, 1, 2};
+  std::vector<sd::LongType> dims1 = {1};
+  std::vector<sd::LongType> dims02 = {0,2};
+
+  NDArray z1 = x.reduceAlongDimension(sd::reduce::CountZero, &dims);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
-  NDArray z2 = x.reduceAlongDimension(sd::reduce::CountZero, {1});
+  NDArray z2 = x.reduceAlongDimension(sd::reduce::CountZero, &dims1);
   ASSERT_TRUE(z2.equalsTo(&exp2));
 
-  NDArray z3 = x.reduceAlongDimension(sd::reduce::CountZero, {0, 2});
+  NDArray z3 = x.reduceAlongDimension(sd::reduce::CountZero, &dims02);
   ASSERT_TRUE(z3.equalsTo(&exp3));
 
   x.permutei({1, 0, 2});  // 3x2x2
 
-  NDArray z4 = x.reduceAlongDimension(sd::reduce::CountZero, {0, 1, 2});
+  NDArray z4 = x.reduceAlongDimension(sd::reduce::CountZero, &dims);
   ASSERT_TRUE(z4.equalsTo(&exp1));
 
-  NDArray z5 = x.reduceAlongDimension(sd::reduce::CountZero, {1});
+  NDArray z5 = x.reduceAlongDimension(sd::reduce::CountZero, &dims1);
   ASSERT_TRUE(z5.equalsTo(&exp4));
 
-  NDArray z6 = x.reduceAlongDimension(sd::reduce::CountZero, {0, 2});
+  NDArray z6 = x.reduceAlongDimension(sd::reduce::CountZero, &dims02);
   ASSERT_TRUE(z6.equalsTo(&exp5));
 }
 
@@ -1368,18 +1416,18 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
 
   ASSERT_TRUE(row->equalsTo(&expRow));
 
-  x.applyBroadcast(broadcast::Add, {1}, *row, z);
+  std::vector<sd::LongType> dims1 = {1};
+
+  x.applyBroadcast(broadcast::Add, &dims1, *row, z);
   x += *row;
 
   ASSERT_TRUE(x.equalsTo(z));
-  // ASSERT_TRUE(z.equalsTo(&exp));
 
   delete row;
 }
 
 TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
   auto x = NDArrayFactory::create<float>('c', {5, 5});
-  // auto z = NDArrayFactory::create<float>('c', {5, 5});
   auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
   NDArray expRow('c',
                  {
@@ -1390,8 +1438,10 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
   NDArray exp('c', {5, 5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5},
               sd::DataType::FLOAT32);
 
+  std::vector<sd::LongType> dims1 = {1};
+
   ASSERT_TRUE(row->equalsTo(&expRow));
-  x.applyBroadcast(broadcast::Add, {1}, *row, x);
+  x.applyBroadcast(broadcast::Add, &dims1, *row, x);
   ASSERT_TRUE(x.equalsTo(&exp));
 }
 
@@ -1403,9 +1453,9 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
 
   auto input = NDArrayFactory::create<double>('c', {2, 3, 2, 2});
   auto bias = NDArrayFactory::create<double>('c', {1, 3});
-
+  std::vector<sd::LongType> dims1 = {1};
   bias.linspace(1);
-  input.applyBroadcast(broadcast::Add, {1}, bias, input);
+  input.applyBroadcast(broadcast::Add,&dims1, bias, input);
   ASSERT_TRUE(exp.equalsTo(&input));
 }
 

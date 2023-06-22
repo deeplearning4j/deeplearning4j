@@ -105,11 +105,11 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
 
 //////////////////////////////////////////////////////////////////////
 void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
-            const std::vector<int>& intArgs) {
+            const std::vector<LongType>& intArgs) {
   const int inputRank = input->rankOf();
   const int numOfIntArgs = intArgs.size();
 
-  int axis = numOfIntArgs > 0 ? intArgs[0] : 0;
+  sd::LongType axis = numOfIntArgs > 0 ? intArgs[0] : 0;
   if (axis < 0) axis += inputRank;
 
   if (indices == nullptr && numOfIntArgs == 2) {  // scalar case

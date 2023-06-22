@@ -56,7 +56,7 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CUDA) {
 
   sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
