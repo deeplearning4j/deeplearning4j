@@ -487,7 +487,7 @@
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>backend.artifactId</name>
-                    <value>nd4j-cuda-11.8</value>
+                    <value>nd4j-cuda-12.1</value>
                 </property>
             </activation>
             <properties>

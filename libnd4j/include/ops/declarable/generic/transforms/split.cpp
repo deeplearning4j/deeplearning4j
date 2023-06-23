@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
   int num_splits = INT_ARG(0);
 
   // axis is 0 by default
-  int axis = 0;
+  sd::LongType axis = 0;
 
   if (block.width() == 1) {
     input = INPUT_VARIABLE(0);

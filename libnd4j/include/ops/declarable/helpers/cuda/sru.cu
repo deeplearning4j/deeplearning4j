@@ -487,8 +487,10 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
 
   manager.synchronize();
 
+
+  std::vector<sd::LongType> dims2 = {0};
   // gradB
-  gradBias.reduceAlongDimension(reduce::Sum, *gradB, {0});  // [4*K]
+  gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims2);  // [4*K]
 
   // gradW
   x->permutei({0, 2, 1});                       // [time, bS, 2*K] -> [time, 2*K,  bS]

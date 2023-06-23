@@ -88,6 +88,8 @@ if (SD_CUDA AND NOT SD_AURORA)
 
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -allow-unsupported-compiler")
     enable_language(CUDA)
+    # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
     find_package(CUDA REQUIRED)
     # Add a platform agnostic way of showing we are compiling for cuda
     # The normal way of using __NVCC__ and __CUDACC__ does not show up

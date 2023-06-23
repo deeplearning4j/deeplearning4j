@@ -408,7 +408,7 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
   z.syncToHost();
 
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   std::vector<void *> devicePtrs(hostData.size(), nullptr);
 
   cudaError_t cudaResult;
@@ -454,7 +454,7 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   std::vector<void *> devicePtrs(hostData.size(), nullptr);
 
   // create cuda stream and LaunchContext
@@ -580,7 +580,7 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -647,7 +647,7 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -714,7 +714,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -790,7 +790,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -851,7 +851,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -917,7 +917,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
   // prepare input arrays for prepareDataForCuda function
 
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -981,7 +981,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1107,7 +1107,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1206,7 +1206,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1272,7 +1272,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1338,7 +1338,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1404,7 +1404,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1467,7 +1467,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -1951,7 +1951,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
   // delete cuda stream
   cudaResult = cudaStreamDestroy(stream);
   ASSERT_EQ(0, cudaResult);
-  
+
   delete dims;
 }
 
@@ -2533,7 +2533,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -2590,7 +2590,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -2647,7 +2647,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets
@@ -2739,7 +2739,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 
   // prepare input arrays for prepareDataForCuda function
   std::vector<std::pair<void *, size_t>> hostData;
-  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(sd::LongType));  // 0 -- dimensions
+  hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));  // 0 -- dimensions
   hostData.emplace_back(xTad.tadOnlyShapeInfo,
                         shape::shapeInfoByteLength(xTad.tadOnlyShapeInfo));     // 1 -- xTadShapeInfo
   hostData.emplace_back(xTad.tadOffsets, xTad.numTads * sizeof(sd::LongType));  // 2 -- xTadOffsets

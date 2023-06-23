@@ -27,7 +27,8 @@ if (SD_CUDA)
     else()
         set(CUDA_DEFAULT_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
     endif()
-
+    # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
     find_package(CUDA)
     message("Tests CUDA include directory: ${CUDA_INCLUDE_DIRS}")
     include_directories(${CUDA_INCLUDE_DIRS})

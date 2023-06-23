@@ -1416,6 +1416,7 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
 
   ASSERT_TRUE(row->equalsTo(&expRow));
 
+  std::vector<sd::LongType> dims = {0, 1, 2};
   std::vector<sd::LongType> dims1 = {1};
 
   x.applyBroadcast(broadcast::Add, &dims1, *row, z);

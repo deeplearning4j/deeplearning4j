@@ -748,24 +748,24 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_Bias_1) {
 
   NDArray expBGrad(_expBGradB, _expBGradS);
 
-  auto input = NDArrayFactory::create<TypeParam>('c', {2, 1, 4, 4});
-  auto weights = NDArrayFactory::create<TypeParam>('c', {2, 1, 3, 3});
-  auto bias = NDArrayFactory::create<TypeParam>('c', {2, 1});
-  auto epsilonNext = NDArrayFactory::create<TypeParam>('c', {2, 2, 4, 4});
+  auto input = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 1, 4, 4}));
+  auto weights = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 1, 3, 3}));
+  auto bias = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 1}));
+  auto epsilonNext = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 2, 4, 4}));
 
   TypeParam _expEpsB[] = {952.0,  1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0,
                           2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0,
                           8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-  NDArray expEps(_expEpsB, input.shapeInfo());
+  NDArray expEps(_expEpsB, input->shapeInfo());
 
-  input.linspace(1);
-  weights.linspace(1);
-  epsilonNext.linspace(1);
-  weights.permutei({2, 3, 1, 0});
+  input->linspace(1);
+  weights->linspace(1);
+  epsilonNext->linspace(1);
+  weights->permutei({2, 3, 1, 0});
 
   sd::ops::conv2d_bp op;
 
-  auto results = op.evaluate({&input, &weights, &bias, &epsilonNext}, {}, {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
+  auto results = op.evaluate({input, weights, bias, epsilonNext}, {}, {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
   ASSERT_TRUE(results.size() == 3);
 
@@ -775,14 +775,11 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_Bias_1) {
 
   ASSERT_TRUE(expWGrad.isSameShape(gradW));
 
-  // expWGrad.printBuffer("Expctd buffer");
-  //  gradW->printBuffer("Result buffer");
+
   ASSERT_TRUE(expWGrad.equalsTo(gradW));
 
-  ASSERT_TRUE(input.isSameShape(epsilon));
+  ASSERT_TRUE(input->isSameShape(epsilon));
 
-  //  expEps.printBuffer("Expctd buffer");
-  // epsilon->printBuffer("Result buffer");
   ASSERT_TRUE(expEps.equalsTo(epsilon));
 
   ASSERT_TRUE(expBGrad.isSameShape(gradB));
@@ -797,23 +794,23 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_NoBias_1) {
   NDArray expWGrad(_expWGradB, _expWGradS);
   expWGrad.permutei({2, 3, 1, 0});
 
-  auto input = NDArrayFactory::create<TypeParam>('c', {2, 1, 4, 4});
-  auto weights = NDArrayFactory::create<TypeParam>('c', {2, 1, 3, 3});
-  auto epsilonNext = NDArrayFactory::create<TypeParam>('c', {2, 2, 4, 4});
+  auto input = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 1, 4, 4}));
+  auto weights = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 1, 3, 3}));
+  auto epsilonNext = new NDArray(NDArrayFactory::create<TypeParam>('c', {2, 2, 4, 4}));
 
   TypeParam _expEpsB[] = {952.0,  1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0,
                           2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0,
                           8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-  NDArray expEps(_expEpsB, input.shapeInfo());
+  NDArray expEps(_expEpsB, input->shapeInfo());
 
-  input.linspace(1);
-  weights.linspace(1);
-  epsilonNext.linspace(1);
-  weights.permutei({2, 3, 1, 0});
+  input->linspace(1);
+  weights->linspace(1);
+  epsilonNext->linspace(1);
+  weights->permutei({2, 3, 1, 0});
 
   sd::ops::conv2d_bp op;
 
-  auto results = op.evaluate({&input, &weights, &epsilonNext}, {}, {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
+  auto results = op.evaluate({input, weights, epsilonNext}, {}, {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
   ASSERT_TRUE(results.size() == 2);
 
@@ -822,14 +819,12 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_NoBias_1) {
 
   ASSERT_TRUE(expWGrad.isSameShape(gradW));
 
-  // expWGrad.printBuffer("Expctd buffer");
-  //  gradW->printBuffer("Result buffer");
+
   ASSERT_TRUE(expWGrad.equalsTo(gradW));
 
-  ASSERT_TRUE(input.isSameShape(epsilon));
+  ASSERT_TRUE(input->isSameShape(epsilon));
 
-  //  expEps.printBuffer("Expctd buffer");
-  // epsilon->printBuffer("Result buffer");
+
   ASSERT_TRUE(expEps.equalsTo(epsilon));
 }
 

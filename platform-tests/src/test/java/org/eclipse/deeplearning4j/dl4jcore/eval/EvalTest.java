@@ -63,6 +63,7 @@ import org.nd4j.common.resources.Resources;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.DisplayName;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 @DisplayName("Eval Test")
 @NativeTag
@@ -75,6 +76,12 @@ class EvalTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Iris")
     void testIris() {
+
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                .checkForINF(true)
+                .checkForNAN(true)
+                .build());
+
         // Network config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(42).updater(new Sgd(1e-6)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).build();
         // Instantiate model
@@ -114,10 +121,6 @@ class EvalTest extends BaseDL4JTest {
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
         org.nd4j.evaluation.classification.Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator<>(Collections.singletonList(test)));
         checkEvaluationEquality(eval, evalViaMethod);
-        // System.out.println(eval.getConfusionMatrix().toString());
-        // System.out.println(eval.getConfusionMatrix().toCSV());
-        // System.out.println(eval.getConfusionMatrix().toHTML());
-        // System.out.println(eval.confusionToString());
         eval.getConfusionMatrix().toString();
         eval.getConfusionMatrix().toCSV();
         eval.getConfusionMatrix().toHTML();
@@ -194,7 +197,7 @@ class EvalTest extends BaseDL4JTest {
         int count = 0;
         for (org.nd4j.evaluation.meta.Prediction t : errors) {
             String s = t + "\t\tRaw Data: " + // *** New - load subset of data from MetaData object (usually batched for efficiency) ***
-            csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count);
+                    csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: " + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count);
             // System.out.println(s);
             count++;
         }

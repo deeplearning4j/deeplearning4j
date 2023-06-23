@@ -3036,8 +3036,6 @@ void deleteVariablesSet(sd::graph::VariablesSet *pointer) { delete pointer; }
 
 void deleteShapeList(sd::Pointer shapeList) {
   sd::ShapeList *list = reinterpret_cast<sd::ShapeList *>(shapeList);
-
-  // list->destroy();
   delete list;
 }
 
@@ -3495,7 +3493,7 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
   }
 }
 
-void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { delete ptr; }
+void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
 
 void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) { delete ptr; }
 

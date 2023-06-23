@@ -1764,7 +1764,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         cnt = 0;
-        if(opContext != null){
+        if(opContext != null) {
             for (val b: opContext.getDArguments())
                 dArgs.put(cnt++, b.toInt());
         } else {
@@ -1772,7 +1772,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 dArgs.put(cnt++, b.toInt());
         }
 
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes3(null,
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null,
                 hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
                 iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 

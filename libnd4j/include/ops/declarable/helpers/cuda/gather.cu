@@ -47,11 +47,10 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const sd::LongType*
     zLen = shape::length(zShapeInfo);
   }
   __syncthreads();
-  // const sd::LongType zLen = shape::length(zShapeInfo);
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
-  for (int j = start; j < zLen; j += step) {
+  for (sd::LongType j = start; j < zLen; j += step) {
     auto zIndex = shape::getIndexOffset(j, zShapeInfo);
     auto yIndex = shape::getIndexOffset(j, yShapeInfo);
     auto xIndex = shape::getIndexOffset(y[yIndex], xShapeInfo);
@@ -69,15 +68,14 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const s
   __shared__ X* z;
 
   const sd::LongType len = shape::length(xShapeInfo);
-  // const sd::LongType zLen = shape::length(zShapeInfo);
-  for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
+  for (sd::LongType i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
     if (threadIdx.x == 0) {
       x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo)]];
       z = reinterpret_cast<X*>(vz) + zOffsets[i];
     }
     __syncthreads();
 
-    for (int j = threadIdx.x; j < len; j += blockDim.x) {
+    for (sd::LongType j = threadIdx.x; j < len; j += blockDim.x) {
       auto zIndex = shape::getIndexOffset(j, zShapeInfo);
       auto xIndex = shape::getIndexOffset(j, xShapeInfo);
       z[zIndex] = x[xIndex];
@@ -106,8 +104,8 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
 //////////////////////////////////////////////////////////////////////
 void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
             const std::vector<LongType>& intArgs) {
-  const int inputRank = input->rankOf();
-  const int numOfIntArgs = intArgs.size();
+  const sd::LongType inputRank = input->rankOf();
+  const sd::LongType numOfIntArgs = intArgs.size();
 
   sd::LongType axis = numOfIntArgs > 0 ? intArgs[0] : 0;
   if (axis < 0) axis += inputRank;

@@ -67,8 +67,6 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
-  if (primary == nullptr && special == nullptr && lenInBytes > 0)
-    THROW_EXCEPTION("DataBuffer constructor: can't be initialized with both nullptr buffers !");
 
   _primaryBuffer = primary;
   _specialBuffer = special;
@@ -227,7 +225,7 @@ void DataBuffer::allocatePrimary() {
                                                 sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                                 getLenInBytes());
       } else {
-        // in heterogenous mode we validate against device group
+        // in heterogenuous mode we validate against device group
         if (!sd::memory::MemoryCounter::getInstance().validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
           throw sd::allocation_exception::build(
               "Requested amount exceeds HOST group limits",
