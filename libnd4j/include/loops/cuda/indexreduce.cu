@@ -256,7 +256,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
         __syncthreads();
         if (threadIdx.x == 0) {
-          z[i] = (Z)sPartials[threadIdx.x].index;  
+          z[i] = (Z)sPartials[threadIdx.x].index;
         }
         __syncthreads();
       }
@@ -286,7 +286,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
     if (gridDim.x > 1) {
       __shared__ bool amLast;
-      unsigned int *tc = (unsigned int *)reductionBuffer;
+      sd::LongType *tc =  reinterpret_cast<sd::LongType *>(reductionBuffer);
       tid = threadIdx.x;
       if (threadIdx.x == 0) {
         auto pBuffer = reinterpret_cast<IndexValue<X> *>(reductionBuffer);
@@ -296,7 +296,8 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
       __syncthreads();
 
       if (tid == 0) {
-        unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+        unsigned int data = static_cast<unsigned int>(tc[16384]);
+        unsigned int ticket = atomicInc(&data, gridDim.x);
         amLast = (ticket == gridDim.x - 1);
       }
 
