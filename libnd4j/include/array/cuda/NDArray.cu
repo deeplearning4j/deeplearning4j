@@ -595,11 +595,7 @@ template void NDArray::printCurrentBuffer<int>(const bool host, const char* msg,
 template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
 template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
 
-#if defined(__CUDACC__) && !defined(BUILD_TESTS)
 
-//#include <cpu/NDArrayLambda.hpp>
-
-#endif
 
 }  // end namespace sd
 #endif

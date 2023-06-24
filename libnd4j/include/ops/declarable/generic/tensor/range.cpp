@@ -101,6 +101,7 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
   }
 
   helpers::range(block.launchContext(), *s, *d, *output);
+  output->printIndexedBuffer("Range output");
 
   if (localS) delete s;
 
@@ -112,7 +113,6 @@ DECLARE_SHAPE_FN(range) {
   const int numInArrs = block.width();
   const int numTArgs = block.getTArguments()->size();
   const int numIArgs = block.getIArguments()->size();
-
   sd::LongType steps = 0;
   sd::DataType dataType = block.numD() ? D_ARG(0) : sd::DataType::INHERIT;
 
@@ -166,14 +166,15 @@ DECLARE_SHAPE_FN(range) {
       sd::LongType start(0), limit, delta(1);
 
       if (numInArrs == 1)
-        limit = INPUT_VARIABLE(0)->e<sd::LongType>(0);
+        limit = INPUT_VARIABLE(0)->cast(sd::DataType::INT64).e<sd::LongType>(0);
       else if (numInArrs == 2) {
-        start = INPUT_VARIABLE(0)->e<sd::LongType>(0);
-        limit = INPUT_VARIABLE(1)->e<sd::LongType>(0);
+        start = INPUT_VARIABLE(0)->cast(sd::DataType::INT64).e<sd::LongType>(0);
+        limit = INPUT_VARIABLE(1)->cast(sd::DataType::INT64).e<sd::LongType>(0);
       } else {
-        start = INPUT_VARIABLE(0)->e<sd::LongType>(0);
-        limit = INPUT_VARIABLE(1)->e<sd::LongType>(0);
-        delta = INPUT_VARIABLE(2)->e<sd::LongType>(0);
+        start = INPUT_VARIABLE(0)->cast(sd::DataType::INT64).e<sd::LongType>(0);
+        limit = INPUT_VARIABLE(1)->cast(sd::DataType::INT64).e<sd::LongType>(0);
+        delta = INPUT_VARIABLE(2)->cast(sd::DataType::INT64).e<sd::LongType>(0);
+
       }
 
       if (limit == start) {
@@ -307,7 +308,6 @@ DECLARE_SHAPE_FN(range) {
 
 
   REQUIRE_TRUE(steps > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
-
   return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(steps, dataType));
 }
 

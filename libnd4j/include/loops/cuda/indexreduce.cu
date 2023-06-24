@@ -168,7 +168,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
   auto extraParams = static_cast<X *>(vextraParams);
   auto reductionBuffer = static_cast<X *>(vreductionBuffer);
   auto order = shape::order(xShapeInfo);
-  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+  sd::LongType tid = static_cast<sd::LongType>(blockIdx.x * blockDim.x + threadIdx.x);
   __shared__ volatile bool resultScalar;
 
   // shared memory space for storing intermediate results
@@ -202,7 +202,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
 
-    for (sd::Unsigned i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
+    for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
       z[i] = (Z)reduction.index;
 
     return;
@@ -210,8 +210,8 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
   if (!resultScalar) {
     __shared__ sd::LongType tadLength;
-    __shared__ int tadEWS;
-    __shared__ int numTads;
+    __shared__ sd::LongType tadEWS;
+    __shared__ sd::LongType numTads;
 
     if (threadIdx.x == 0) {
       tadLength = shape::length(tadOnlyShapeInfo);
@@ -221,7 +221,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     __syncthreads();
 
     if (dimensionLength > 1 || tadEWS < 1) {
-      for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+      for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
         auto tadOffsetForBlock = tadOffsets[r];
         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
@@ -232,7 +232,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
 
         __syncthreads();
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLength), extraParams);
+        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(blockDim.x, tadLength), extraParams);
 
         __syncthreads();
         if (threadIdx.x == 0) {
@@ -241,7 +241,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         __syncthreads();
       }
     } else {
-      for (int i = blockIdx.x; i < numTads; i += gridDim.x) {
+      for (sd::LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
         sd::LongType tadOffsetForBlock = tadOffsets[i];
 
         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
@@ -256,7 +256,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
         __syncthreads();
         if (threadIdx.x == 0) {
-          z[i] = (Z)sPartials[threadIdx.x].index;  // postProcess(sPartials[0],tadLength ,extraParams);
+          z[i] = (Z)sPartials[threadIdx.x].index;  
         }
         __syncthreads();
       }
@@ -281,7 +281,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     sPartials[threadIdx.x] = reduction;
     __syncthreads();
 
-    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, (int)n), extraParams);
+    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(static_cast<sd::LongType>(blockDim.x),n), extraParams);
     __syncthreads();
 
     if (gridDim.x > 1) {
@@ -313,7 +313,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
 
         __syncthreads();
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(gridDim.x, blockDim.x), extraParams);
+        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(gridDim.x, blockDim.x), extraParams);
 
         __syncthreads();
         if (tid == 0) {

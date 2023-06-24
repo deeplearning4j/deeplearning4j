@@ -510,7 +510,6 @@ public class JCublasNDArray extends BaseNDArray {
         AllocationPoint dstPoint = allocator.getAllocationPoint(ret);
 
         int route = 0;
-//        long time1 = System.currentTimeMillis();
         MemcpyDirection direction = MemcpyDirection.HOST_TO_HOST;
         val prof = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -697,53 +696,5 @@ public class JCublasNDArray extends BaseNDArray {
         return ((CudaUtf8Buffer) data).getString(index);
     }
 
-/*
-    @Override
-    public INDArray convertToHalfs() {
-        if (data.dataType() == DataType.HALF)
-            return this;
 
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.HALF);
-
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()),
-                DataTypeEx.FLOAT16, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
-
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
-
-    @Override
-    public INDArray convertToFloats() {
-        if (data.dataType() == DataType.FLOAT)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.FLOAT);
-
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.FLOAT, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
-
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
-    @Override
-    public INDArray convertToDoubles() {
-        if (data.dataType() == DataType.DOUBLE)
-            return this;
-
-        val factory = Nd4j.getNDArrayFactory();
-        val buffer = Nd4j.createBuffer(new long[]{this.length()}, DataType.DOUBLE);
-
-        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getPointer(this.data()), DataTypeEx.DOUBLE, AtomicAllocator.getInstance().getPointer(buffer), buffer.length());
-
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
-
-        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
-    }
-
-*/
 }

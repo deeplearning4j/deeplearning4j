@@ -510,6 +510,19 @@ public class TestMiscOpValidation extends BaseOpValidation {
     public void testGatherGradient(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
+        /**
+         * CPU:
+         * Inputs for listdiff:
+         * [0,1]
+         * [0]
+         *
+         * Outputs:
+         * [1]
+         * [1]
+         */
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+
         List<String> failed = new ArrayList<>();
 
         for (int rank = 2; rank <= 3; rank++) {

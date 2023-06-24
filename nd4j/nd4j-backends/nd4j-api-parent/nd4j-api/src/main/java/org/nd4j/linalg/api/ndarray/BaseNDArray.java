@@ -24,7 +24,6 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
-import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -5553,7 +5552,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!closeable())
             throw new ND4JIllegalStateException("Can't release this INDArray");
 
-      //  data.close();
+        data.close();
 
         released = true;
     }

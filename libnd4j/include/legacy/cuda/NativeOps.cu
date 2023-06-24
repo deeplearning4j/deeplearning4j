@@ -2798,77 +2798,77 @@ sd::LongType getShapeListSize(sd::ShapeList *list) { return list->size(); }
 sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) { return list->at(i); }
 
 static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::LongType hash,
-sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
-    sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
-double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
-int numBArgs, bool isInplace) {
-if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
+                                     sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
+                                     sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
+                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
+                                     int numBArgs, bool isInplace) {
+  if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
 // we're using the same fake nodeId everywhere here
 
-std::vector<sd::NDArray *> inputs(numInputs);
-std::vector<sd::NDArray *> outputs(numOutputs);
-std::vector<double> ttArgs(numTArgs);
-std::vector<bool> bbArgs(numBArgs);
-std::vector<sd::LongType> iiArgs(numIArgs);
+  std::vector<sd::NDArray *> inputs(numInputs);
+  std::vector<sd::NDArray *> outputs(numOutputs);
+  std::vector<double> ttArgs(numTArgs);
+  std::vector<bool> bbArgs(numBArgs);
+  std::vector<sd::LongType> iiArgs(numIArgs);
 
 // filling block now with inputs
-for (int e = 0; e < numInputs; e++) {
-auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
+  for (int e = 0; e < numInputs; e++) {
+    auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
+    void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
 
-inputs[e] = new sd::NDArray(buffer, bufferD, shape);
-}
+    inputs[e] = new sd::NDArray(buffer, bufferD, shape);
+  }
 
 // if not inplace - transferring output arrays
 
-if (!isInplace)
-for (int e = 0; e < numOutputs; e++) {
+  if (!isInplace)
+    for (int e = 0; e < numOutputs; e++) {
 // we want to keep original output shape intact
-auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
-void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
+      auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
+      void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
+      void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
 
 // FIXME: revisit this.
-bool canNullify = true;
-for (int i = 0; i < numInputs; i++) {
-void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
-if (ibuffer == buffer) {
-canNullify = false;
-break;
-}
-}
+      bool canNullify = true;
+      for (int i = 0; i < numInputs; i++) {
+        void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
+        if (ibuffer == buffer) {
+          canNullify = false;
+          break;
+        }
+      }
 
-if (canNullify && buffer != nullptr)
-memset((uint8_t *)buffer, '\0',
-shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
+      if (canNullify && buffer != nullptr)
+        memset((uint8_t *)buffer, '\0',
+               shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
-auto array = new sd::NDArray(buffer, bufferD, shape);
-outputs[e] = array;
-}
+      auto array = new sd::NDArray(buffer, bufferD, shape);
+      outputs[e] = array;
+    }
 
-for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
+  for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
 
-for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
+  for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
 
-for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
+  for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
 
 // hypothetically at this point we have everything filled
-auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
+  auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
 // auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
-if (!isInplace)
-for (int e = 0; e < numOutputs; e++) {
-if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
-outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
-}
+  if (!isInplace)
+    for (int e = 0; e < numOutputs; e++) {
+      if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
+        outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
+    }
 
-for (auto v : inputs) delete v;
+  for (auto v : inputs) delete v;
 
-for (auto v : outputs) delete v;
+  for (auto v : outputs) delete v;
 
-return Status::OK;
+  return Status::OK;
 }
 
 Status execCustomOp(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
@@ -3495,9 +3495,12 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
 
-void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) { delete ptr; }
+void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {
+  //delete ptr;
+}
 
-void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
+void deleteTadPack(sd::TadPack *ptr) { //delete ptr;
+}
 
 bool isBlasVersionMatches(int major, int minor, int build) {
   auto result = major == Environment::getInstance()._blasMajorVersion &&
@@ -3590,7 +3593,9 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
-void deleteGraphContext(sd::graph::Context *ptr) { delete ptr; }
+void deleteGraphContext(sd::graph::Context *ptr) {
+  //delete ptr;
+}
 
 sd::graph::RandomGenerator *createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
   try {
@@ -3763,7 +3768,9 @@ sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->p
 
 sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->special(); }
 
-void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) { delete dataBuffer; }
+void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
+  delete dataBuffer;
+}
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {
   dataBuffer->setPrimary(primaryBuffer, numBytes);
