@@ -92,8 +92,6 @@ TEST_F(ThreadsTests, th_test_5) {
 
   for (auto e = 0; e < 6; e++) {
     auto span = Span3::build(1, e, 6, 0, 32, 1, 0, 112, 1, 0, 112, 1);
-
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
 }
 
@@ -116,14 +114,9 @@ TEST_F(ThreadsTests, th_test_4) {
   for (auto e = 0; e < 6; e++) {
     auto span = Span2::build(1, e, 6, 0, 19, 1, 0, 17, 1);
 
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
-
-  sd_printf("-----------------------\n", "");
   for (auto e = 0; e < 6; e++) {
     auto span = Span2::build(1, e, 6, 0, 32, 1, 0, 3, 1);
-
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
 }
 

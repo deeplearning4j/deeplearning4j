@@ -88,20 +88,20 @@ template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTy
 SD_LIB_EXPORT NDArray operator/(const T &scalar, NDArray &&arr);
 
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator+(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator-(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator*(T1 &&arr1, T2 &&arr2);
 template <typename T1, typename T2,
-          typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
-                                             std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
+    typename = typename std::enable_if<std::is_same<NDArray, typename std::decay<T1>::type>::value &&
+                                       std::is_same<NDArray, typename std::decay<T2>::type>::value>::type>
 SD_LIB_EXPORT NDArray operator/(T1 &&arr1, T2 &&arr2);
 
 SD_LIB_EXPORT NDArray mmul(const NDArray &, const NDArray &);
@@ -1830,7 +1830,7 @@ bool NDArray::isEmpty() const {
   if (this->_shapeInfo == nullptr) return false;
   if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0)
     THROW_EXCEPTION("NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated.");
-  return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY || this->lengthOf() < 1;
+  return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1980,11 +1980,13 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
 #endif
 
 ////////////////////////////////////////////////////////////////////////
+//note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 const void *NDArray::buffer() const {
   return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
+//note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 void *NDArray::buffer() {
   return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
@@ -1992,16 +1994,16 @@ void *NDArray::buffer() {
 //////////////////////////////////////////////////////////////////////////
 const sd::LongType *NDArray::shapeInfo() const { return _shapeInfo; }
 
- ConstantShapeBuffer * NDArray::shapeInfoConstBuffer()   { return _shapeInfoBuffer; }
+ConstantShapeBuffer * NDArray::shapeInfoConstBuffer()   { return _shapeInfoBuffer; }
 
- DataBuffer NDArray::shapeInfoDataBuffer()   {
-   auto primary = _shapeInfoBuffer->primary();
-   auto voidPointer = const_cast<sd::LongType *>(primary);
-   auto void2 = reinterpret_cast<void *>(voidPointer);
-   DataBuffer ret(void2,sd::DataType::INT64,shape::shapeInfoByteLength(_shapeInfo[0]));
-   return ret;
+DataBuffer NDArray::shapeInfoDataBuffer()   {
+  auto primary = _shapeInfoBuffer->primary();
+  auto voidPointer = const_cast<sd::LongType *>(primary);
+  auto void2 = reinterpret_cast<void *>(voidPointer);
+  DataBuffer ret(void2,sd::DataType::INT64,shape::shapeInfoByteLength(_shapeInfo[0]));
+  return ret;
 
- }
+}
 
 
 ////////////////////////////////////////////////////////////////////////

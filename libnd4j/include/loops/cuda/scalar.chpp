@@ -140,8 +140,8 @@ void SD_HOST ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaSt
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void SD_HOST ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void const* x, sd::LongType const* xShapeInfo, void *z, sd::LongType const* zShapeInfo, void const* scalars, void *extraParams, long long int* dimension,
-                                                                long long int dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
+void SD_HOST ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void const* x, sd::LongType const* xShapeInfo, void *z, sd::LongType const* zShapeInfo, void const* scalars, void *extraParams, sd::LongType* dimension,
+                                                                sd::LongType dimensionLength, sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   scalarAlongDimension<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
   sd::DebugHelper::checkErrorCode(stream, "scalarAlongDimA(...) failed");
 }

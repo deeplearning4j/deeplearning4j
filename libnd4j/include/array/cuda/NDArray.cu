@@ -553,10 +553,52 @@ void const* NDArray::specialBuffer() const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
-  if (_length == 0) {
+  if (!isScalar() && _length == 0) {
     printf("NDArray::printActualBuffer: array length is zero !\n");
     return;
   }
+
+  if(isScalar()) {
+    if(host) {
+
+      if (msg) printf("%s", msg);
+
+      if (buffer() == nullptr ) {
+        printf("NDArray::printActualBuffer: host buffer is nullptr !\n");
+        return;
+      }
+
+      const T* buff = bufferAsT<T>();
+      if (msg) printf("%s", msg);
+      printf("%.*f\n", precision, (double)buff[getOffset(0)]);
+      return;
+    } else {
+      if (msg) printf("%s", msg);
+
+      if (specialBuffer() == nullptr) {
+        printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n");
+        return;
+      }
+
+
+
+      const auto sizeOfBuffer = sizeOfT();
+
+      void* pHost = operator new(sizeOfBuffer);
+
+      cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
+
+      cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
+      auto cast = reinterpret_cast<T*>(pHost);
+      if (cudaResult != 0) THROW_EXCEPTION("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
+      printf("%.*f\n", precision, (double)cast[0]);
+
+      return;
+    }
+
+  }
+
+
 
   if (msg) printf("%s", msg);
 
@@ -570,7 +612,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
     for (sd::LongType i = 0; i < _length; i++) printf("%.*f, ", precision, (double)buff[getOffset(i)]);
     printf("\n");
   } else {
-    if (specialBuffer() == nullptr || _length == 0) {
+    if (specialBuffer() == nullptr) {
       printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n");
       return;
     }

@@ -138,7 +138,9 @@ static void SD_KERNEL cmpBitpackEws(const void* vx, void* vz, int len, const sd:
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDArray& input,
+
                                            const NDArray& thresholdScalar, NDArray& output) {
+  sd_print("IN cmpBitpackCudaLauncher\n");
   T threshold = thresholdScalar.e<T>(0);
 
   auto inStrides = input.stridesOf();
@@ -152,10 +154,12 @@ static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDAr
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
   if (input.ews() > 0 && output.ews() > 0 && input.ordering() == 'c' && output.ordering() == 'c') {
+    sd_print("cmpBitpackEws\n");
     cmpBitpackEws<T><<<blocksPerGrid, threadsPerBlock>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);
   } else {
+    sd_print("cmpBitpack\n");
     // if output shape is {n1, n2, n3} then input shape is { n1. n2, n3 * 8}
     // therefore we can split input shape  {n1, n2, n3 , 8} and correct its stride
     // as we do not need last shape info. lets just extend and correct its stride

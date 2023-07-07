@@ -66,6 +66,8 @@
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
+        <libnd4j.test.filter>none</libnd4j.test.filter>
+        <libnd4j.log>none</libnd4j.log>
     </properties>
 
     <build>
@@ -298,6 +300,8 @@
                                         <argument>${libnd4j.lto}</argument>
                                         <argument>--callstack</argument>
                                         <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -422,6 +426,8 @@
                                         <argument>${libnd4j.lto}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -440,6 +446,8 @@
                                         <argument>run_tests.sh</argument>
                                         <argument>--chip</argument>
                                         <argument>${libnd4j.chip}</argument>
+                                        <argument>--test-filter</argument>
+                                        <argument>${libnd4j.test.filter}</argument>
                                     </buildCommand>
                                 </configuration>
                             </execution>

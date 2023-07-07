@@ -142,7 +142,8 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
         "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         input->rankOf(), input->rankOf(), item);
 
-  const sd::LongType N = input->lengthOf() / gradO->lengthOf();
+  auto gradOLen = gradO->lengthOf() < 1 ? 1 : gradO->lengthOf();
+  const sd::LongType N = input->lengthOf() / gradOLen;
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
 
   auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);

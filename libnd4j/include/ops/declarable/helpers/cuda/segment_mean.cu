@@ -35,14 +35,14 @@ namespace helpers {
 // Segment ops linear kernels
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* inputShape, sd::LongType* starts, sd::LongType* lengths,
+static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* inputShape,
+                                              sd::LongType* starts, sd::LongType* lengths,
                                               sd::LongType numOfClasses, void* output,
                                               sd::LongType const* outputShape) {
-  __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
   __shared__ T* x;
   __shared__ T* z;
-  __shared__ int threadsPerSegment, start, finish;
+  __shared__ sd::LongType threadsPerSegment, start, finish;
 
   if (threadIdx.x == 0) {
     threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
@@ -51,20 +51,32 @@ static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* i
     z = reinterpret_cast<T*>(output);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
-
-    //[zIndex] =
+    printf("xLen %lld zLen %lld\n",xLen,zLen);
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
       start = starts[segment];
       finish = start + lengths[segment];
-      z[zIndex] = T(x[shape::getIndexOffset(start, inputShape)] / lengths[segment]);
+      auto zSet = z[zIndex];
+      auto xOffset = shape::getIndexOffset(start, inputShape);
+      if(xOffset < xLen && segment < numOfClasses) {
+        auto xSet = x[xOffset];
+        auto lengthsSegment = lengths[segment];
+        if(zIndex < zLen)
+          z[zIndex] = T(xSet / lengthsSegment);
+      }
+
     }
   }
   __syncthreads();
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
-    if (lengths[segment]) sd::math::atomics::sd_atomicAdd(&z[zIndex], T(x[xIndex] / lengths[segment]));
+    if(xIndex < xLen && segment < numOfClasses) {
+      auto xSet = x[xIndex];
+      auto lengthsSegment = lengths[segment];
+      if(zIndex < zLen)
+        sd::math::atomics::sd_atomicAdd(&z[zIndex], T(xSet / lengthsSegment));
+    }
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -73,33 +85,23 @@ static SD_KERNEL void unsortedSegmentMeanLinearKernel(void* input, sd::LongType 
                                                       sd::LongType const* indicesShape, sd::LongType* starts, sd::LongType* lengths,
                                                       sd::LongType numOfClasses, void* output,
                                                       sd::LongType const* outputShape) {
-  __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, zIndex;
   __shared__ T* x;
   __shared__ T* z;
-  __shared__ I* y;            // int threadsPerSegment, start, finish;
-  auto segment = blockIdx.x;  // /
+  __shared__ I* y;
+  auto segment = blockIdx.x;
   if (threadIdx.x == 0) {
-    //            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-    //            threadsPerSegment;
     x = reinterpret_cast<T*>(input);
     z = reinterpret_cast<T*>(output);
     y = reinterpret_cast<I*>(indices);
-    //            extern __shared__ unsigned char shmem[];
-    //            val = reinterpret_cast<T*>(shmem);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 
-    //            if (segment < numOfClasses) {
     zIndex = shape::getIndexOffset(segment, outputShape);
-    // start = starts[segment];
-    // finish = start + lengths[segment];
     if (lengths[segment] > 0)
       z[zIndex] = T(x[shape::getIndexOffset(starts[segment], inputShape)] / T(lengths[segment]));
     else
-      z[zIndex] = 0;  // DataTypeUtils::max<T>();
-    //                val[segment] = z[zIndex];
-    //            }
+      z[zIndex] = 0;
   }
   __syncthreads();
   if (lengths[segment] > 0)
@@ -153,13 +155,13 @@ static SD_KERNEL void segmentMeanTadKernel(void* inputBuf, sd::LongType const* i
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
-// segmen mean
+// segment mean
 template <typename T, typename I>
 static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
 
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);

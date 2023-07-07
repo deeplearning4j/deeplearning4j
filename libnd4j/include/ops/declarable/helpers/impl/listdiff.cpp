@@ -32,19 +32,15 @@ namespace ops {
 namespace helpers {
 template <typename T>
 static sd::LongType listDiffCount_(NDArray* values, NDArray* keep) {
-  values->printIndexedBuffer("Values for listdiff count:");
-  keep->printIndexedBuffer("Keep for listdiff count:");
   sd::LongType saved = 0L;
   for (sd::LongType e = 0; e < values->lengthOf(); e++) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
     auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
     auto index = idx.e<sd::LongType>(0);
-    sd_printf("idx: %lld\n",index);
     if (index < 0) saved++;
   }
 
-  sd_printf("ListDiff: saved %lld elements\n", saved);
 
   return saved;
 }
@@ -65,14 +61,11 @@ template <typename T>
 static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
   std::vector<T> saved;
   std::vector<sd::LongType> indices;
-   values->printIndexedBuffer("Listdiff values");
-   keep->printIndexedBuffer("Listdiff keep");
   for (sd::LongType e = 0; e < values->lengthOf(); e++) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
     NDArray idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
     sd::LongType idx = idxScalar.e<sd::LongType>(0);
-    sd_printf("ListDiff: index %lld, value %f\n", idxScalar.e<sd::LongType>(0), v);
     if (idx < 0) {
       saved.emplace_back(v);
       indices.emplace_back(e);
@@ -95,13 +88,10 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
       sd_printf("ListDiff: output/actual indices size mismatch", "");
       THROW_EXCEPTION("Op validation failed");
     }
-
-    z0->printIndexedBuffer("Listdiff: z0");
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
     for (sd::LongType e = 0; e < indices.size(); e++) {
       z1->p(e, indices[e]);
     }
-    z1->printIndexedBuffer("Listdiff: z1");
 
   }
   return sd::Status::OK;

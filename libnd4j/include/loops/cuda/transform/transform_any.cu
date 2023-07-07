@@ -25,7 +25,7 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-
+#include <execution/cuda/DeviceValidator.h>
 using namespace simdOps;
 
 template <typename X, typename Z, typename OpType>
@@ -48,6 +48,8 @@ SD_HOST void TransformAny<X, Y>::executeTransformShaped(dim3 launchDims, cudaStr
                                                         sd::LongType zRank, sd::LongType *allocationPointer, void *reductionPointer,
                                                         const sd::LongType *tadShapeInfo,
                                                         const sd::LongType *tadOffsets) {
+
+
   DISPATCH_BY_OPNUM_TT(intermediateShaped,
                        PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer,
                               reductionPointer, tadShapeInfo, tadOffsets),
@@ -63,6 +65,7 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
                                                  sd::LongType *allocationPointer,
                                                  void *vreductionPointer, const sd::LongType *tadShapeInfo,
                                                  const sd::LongType *tadOffsets) {
+  //TODO HERE
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto params = reinterpret_cast<X *>(vparams);
@@ -112,6 +115,13 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_
                                                     sd::LongType *allocationPointer,
                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                     const sd::LongType *tadOffsets) {
+
+  DeviceValidator deviceValidator;
+
+  auto myKernelFuncPtr = deviceValidator.getKernelFuncPtr<const void*, const sd::LongType*, sd::LongType, void*, void*, const sd::LongType*, sd::LongType, sd::LongType*, void*, const sd::LongType*, const sd::LongType*>(transformAnySimple<X,Z,OpType>);
+  deviceValidator.setKernelNumRegs("transformAnySimple",(void *) myKernelFuncPtr,1);
+
+
   transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 

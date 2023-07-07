@@ -29,15 +29,12 @@ template <typename T>
 static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, sd::LongType const* inputShape, void* weightsBuffer,
                                            sd::LongType const* weightsShape, void* outputBuffer,
                                            sd::LongType inputLength, sd::LongType outputLength, int val) {
-  //    typedef sd::LongType T;
   auto tid = threadIdx.x;
-  // int threadCount = gridDim.x * blockDim.x;
   __shared__ T* outputPart;
   __shared__ sd::LongType offset;
-  // for (int e = 0; e < inputLength; e++) {
   for (sd::LongType e = tid; e < inputLength; e += blockDim.x) {
     sd::LongType xOffset = shape::getIndexOffset(e, inputShape);
-    int current = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
+    sd::LongType current = *(reinterpret_cast<sd::LongType*>(inputBuffer) + xOffset);
     if (current == val) {
       if (weightsBuffer != nullptr) {
         sd::LongType yOffset = shape::getIndexOffset(e, weightsShape);

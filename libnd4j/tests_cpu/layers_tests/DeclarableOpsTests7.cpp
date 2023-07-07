@@ -884,8 +884,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_1) {
 
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printBuffer("MaX1");
-  //    exp.printBuffer("ExP1");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -899,8 +897,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_01) {
 
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printBuffer("MaX01");
-  //    exp.printBuffer("ExP01");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -913,7 +909,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_1) {
   eps.linspace(1);
   auto result = op.evaluate({&x, &idx, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printIndexedBuffer("OutputMaxBP");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -931,9 +926,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_2) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 1);
   auto out = result.at(0);
-  //    out->printIndexedBuffer("Output2Max");
-  //    exp.printIndexedBuffer("Expect2Max");
-  //    exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -954,9 +946,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMaxBP_2) {
   auto result = op.evaluate({&x, &idx, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 2);
-  // exp.printIndexedBuffer("BP Max Expect");
-  // result.at(0)->printIndexedBuffer("BP Max Output");
-  //    exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -982,10 +971,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_3) {
 
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printIndexedBuffer("Output3Max");
-  //    result.at(0)->printShapeInfo("Out Shape 3 Max");
-  //    exp.printIndexedBuffer("Expect3Max");
-  //    exp.printShapeInfo("Exp Shape 3 Max");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1012,10 +997,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMax_4) {
 
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output");
-  // result.at(0)->printShapeInfo("Out Shape");
-  // exp.printIndexedBuffer("Expect");
-  // exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.isSameShape(result.at(0)));
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
@@ -1056,8 +1037,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMaxBP_2) {
   eps.linspace(1);
   auto result = op.evaluate({&x, &idx, &eps}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output");
-  // exp.printIndexedBuffer("Expect");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1071,7 +1050,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_2) {
 
   auto result = op.evaluate({&x, &idx}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printIndexedBuffer("OutputUnsortedMax");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1089,8 +1067,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_3) {
   auto result = op.evaluate({&x, &idx}, {}, {3});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 1);
-  // exp.printIndexedBuffer("Expect");
-  // result.at(0)->printIndexedBuffer("Output");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1110,8 +1086,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMax_4) {
   auto result = op.evaluate({&x, &idx}, {}, {3});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 1);
-  // exp.printIndexedBuffer("Expect");
-  // result.at(0)->printIndexedBuffer("Output");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -1186,9 +1160,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_1) {
 
   auto result = op.evaluate({&x, &idx, &eps}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output1");
-  // exp.printIndexedBuffer("Expecte");
-
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1203,9 +1174,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMinBP_2) {
 
   auto result = op.evaluate({&x, &idx, &eps}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output1");
-  // exp.printIndexedBuffer("Expecte");
-
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1223,8 +1191,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_2) {
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 1);
-  //    exp.printIndexedBuffer("Expect");
-  //    exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1244,8 +1210,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMinBP_2) {
   auto result = op.evaluate({&x, &idx, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 2);
-  //    exp.printIndexedBuffer("Expect");
-  //    result.at(0)->printIndexedBuffer("Output");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1269,10 +1233,6 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_3) {
 
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  //    result.at(0)->printIndexedBuffer("Output");
-  //    result.at(0)->printShapeInfo("Out Shape");
-  //    exp.printIndexedBuffer("Expect");
-  //    exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
@@ -1416,10 +1376,6 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMin_4) {
 
   auto result = op.evaluate({&x, &idx}, {}, {8});
   ASSERT_EQ(result.status(), sd::Status::OK);
-  // result.at(0)->printIndexedBuffer("Output");
-  // result.at(0)->printShapeInfo("Out Shape");
-  // exp.printIndexedBuffer("Expect");
-  // exp.printShapeInfo("Exp Shape");
   ASSERT_TRUE(exp.isSameShape(result.at(0)));
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
@@ -1427,7 +1383,7 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentMin_4) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMean_1) {
   auto x = NDArrayFactory::create<double>({1.8, 2.5, 4., 9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1, 3., 4.2, 2.2, 1.});
-  auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
+  auto idx = NDArrayFactory::create<sd::LongType>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
   auto exp = NDArrayFactory::create<double>({2.15, 4.375, 3., 4.4, 1.8666667});
 
   sd::ops::segment_mean op;

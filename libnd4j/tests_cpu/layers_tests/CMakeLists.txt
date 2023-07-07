@@ -79,7 +79,7 @@ if (SD_CUDA)
             endif()
         endif()
     endif()
-    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+    set(CMAKE_CUDA_FLAGS " --ptxas-options=-v  ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
 endif()
 
@@ -202,8 +202,9 @@ elseif(SD_CUDA)
     if (HAVE_CUDNN)
         message("CUDNN library: ${CUDNN}")
     endif()
-
-    target_link_libraries(runtests samediff_obj  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
+    # note cuda and cudart are for the driver api access needed for using the driver api for setting things like attributes
+    # with the DeviceValidator
+    target_link_libraries(runtests samediff_obj  cuda cudart ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
 endif()
 
 

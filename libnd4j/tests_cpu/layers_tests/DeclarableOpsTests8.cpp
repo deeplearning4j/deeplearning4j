@@ -355,13 +355,11 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test1) {
   x.linspace(1);
 
   sd::ops::reduce_variance_bp op;
-
   auto result = op.evaluate({&x, &gradO2}, {0, 1}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
   ASSERT_TRUE(exp12.isSameShape(output));
   ASSERT_TRUE(exp12.equalsTo(output));
-
   result = op.evaluate({&x, &gradO1}, {1, 1}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
@@ -379,6 +377,27 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test1) {
   output = result.at(0);
   ASSERT_TRUE(exp34.isSameShape(output));
   ASSERT_TRUE(exp34.equalsTo(output));
+
+}
+
+
+TEST_F(DeclarableOpsTests8, reduceVarianceBP_test29) {
+  auto x = NDArrayFactory::create<double>('c', {3, 4});
+  auto gradO1 = NDArrayFactory::create<double>('c', {1, 1}, {0.5f});
+  auto gradO2 = NDArrayFactory::create<double>(0.5f);
+  gradO2.printCurrentBuffer<double>("gradO2");
+  auto exp12 =
+      NDArrayFactory::create<double>('c', {3, 4},
+                                     {-0.5f, -0.4090909f, -0.3181818f, -0.22727273f, -0.13636364f, -0.045454547f,
+                                      0.045454547f, 0.13636364f, 0.22727273f, 0.3181818f, 0.4090909f, 0.5f});
+  auto exp34 =
+      NDArrayFactory::create<double>('c', {3, 4},
+                                     {-0.45833334f, -0.375f, -0.29166666f, -0.20833333f, -0.125f, -0.041666668f,
+                                      0.041666668f, 0.125f, 0.20833333f, 0.29166666f, 0.375f, 0.45833334f});
+
+  x.linspace(1);
+
+  gradO2 *= gradO2;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -433,8 +452,8 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test02) {
   auto exp34 = NDArrayFactory::create<double>('c', {3, 4},
                                               {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f,
                                                0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
-  auto axes = NDArrayFactory::create<int>({
-      (int)0,
+  auto axes = NDArrayFactory::create<sd::LongType>({
+      0,
   });
   x.linspace(1);
 
@@ -527,7 +546,6 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test1) {
   auto result = op.evaluate({&x, &gradO2}, {0, 1}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp12.isSameShape(output));
   ASSERT_TRUE(exp12.equalsTo(output));
 
@@ -601,7 +619,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test02) {
                                                0.4082483f, 0.8164966f, 1.2247449f, 1.6329932f});
   auto exp34 = NDArrayFactory::create<double>(
       'c', {3, 4}, {-0.5f, -1.0f, -1.5f, -2.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f, 1.5f, 2.0f});
-  auto axis = NDArrayFactory::create<int>('c', {1}, {ax});
+  auto axis = NDArrayFactory::create<sd::LongType>('c', {1}, {ax});
   x.linspace(1);
 
   sd::ops::reduce_stdev_bp op;

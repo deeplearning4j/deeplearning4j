@@ -103,7 +103,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   if (stream == nullptr)
     THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr !");
 
-  dim3 launchDims(256, 1024, 8192);
+  dim3 launchDims(256, 256, 256);
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
@@ -672,9 +672,23 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
-                           dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer,
-                           reductionPointer, tadShapeInfo, tadOffsets),
+      ::executeIndexReduce(launchDims,
+                           stream,
+                           opNum,
+                           dX,
+                           dXShapeInfo,
+                           shape::rank(hXShapeInfo),
+                           extraParams,
+                           dz,
+                           dZShapeInfo,
+                           shape::rank(hZShapeInfo),
+                           dimension,
+                           dimensionLength,
+                           1,
+                           allocationPointer,
+                           reductionPointer,
+                           tadShapeInfo,
+                           tadOffsets),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
 }
@@ -687,12 +701,16 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
  * @param extraParams
  */
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum, void const* hX,
-                                                sd::LongType const* hXShapeInfo, void const* dX,
-                                                sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                                sd::LongType const* hZShapeInfo, void* dZ,
+void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc,
+                                                int opNum,
+                                                void const* hX,
+                                                sd::LongType const* hXShapeInfo,
+                                                void const* dX,
+                                                sd::LongType const* dXShapeInfo,
+                                                void* extraParams, void* hZ,
+                                                sd::LongType const* hZShapeInfo,
+                                                void* dZ,
                                                 sd::LongType const* dZShapeInfo) {
-  if (sd::Environment::getInstance().isDebug()) printf("F1 opType:[%i]\n", opNum);
 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -703,7 +721,6 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
   auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
   dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
 
-  if (sd::Environment::getInstance().isDebugAndVerbose() && launchDims.x == 1) printf("AF1 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -717,7 +734,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, (sd::LongType ) shape::rank(hXShapeInfo), extraParams, dz,
+      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
                                  dZShapeInfo, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 }
@@ -907,9 +924,13 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum, voi
 
   if (shape::isEmpty(hXShapeInfo)) return;
 
+  //TODO: cuda function symbol here
+  //   '_Z18transformAnySimpleIffN7simdOps6AssignIffEEEvPKvPKxxPvS7_S6_xPxS7_S6_S6_' for 'sm_86'
+  // ptxas info    : Function properties for _Z18transformAnySimpleIffN7simdOps6AssignIffEEEvPKvPKxxPvS7_S6_xPxS7_S6_S6_
   if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
+    sd_print("Executing cuda memcpy async\n");
     cudaMemcpyAsync(dZ, dX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType),
                     cudaMemcpyDeviceToDevice, *stream);
   } else {
@@ -973,7 +994,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext* lc, int opNum, v
     throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type",
                                     zType);
 
-  dim3 launchDims(512, 512, 2048);
+  dim3 launchDims(256, 256, 1024);
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -1279,7 +1300,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
                                      sd::LongType const* dScalarShapeInfo, void* extraParams, bool allowParallelism) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims(128, 256, 2048);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);

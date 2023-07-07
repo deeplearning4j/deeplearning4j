@@ -81,8 +81,7 @@ ContextBuffers& ContextBuffers::operator=(ContextBuffers&& other) {
 }
 
 void ContextBuffers::release() {
-  if (_allocated) {
-    // sd_printf("Releasing ContextBuffers on device [%i]\n", _deviceId);
+  /*if (_allocated) {
 
     if (_allocationPointer != nullptr) cudaFree(_allocationPointer);
 
@@ -113,7 +112,7 @@ void ContextBuffers::release() {
     this->_scalarPointer = nullptr;
   }
 
-  _initialized = false;
+  _initialized = false;*/
 }
 
 ContextBuffers::~ContextBuffers() { release(); }

@@ -44,7 +44,7 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
   __shared__ sd::LongType xLen, zLen, zIndex;
   __shared__ T* x;
   __shared__ T* z;
-  __shared__ int threadsPerSegment, start, finish;
+  __shared__ sd::LongType threadsPerSegment, start, finish;
 
   auto segment = blockIdx.x;
   if (threadIdx.x == 0) {
@@ -78,11 +78,10 @@ static SD_KERNEL void unsortedSegmentMaxLinearKernel(void* input, sd::LongType c
                                                      LongType* lengths,
                                                      sd::LongType numOfClasses, void* output,
                                                      sd::LongType const* outputShape) {
-  __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, zIndex;
   __shared__ T* x;
   __shared__ T* z;
-  __shared__ I* y;  // int threadsPerSegment, start, finish;
+  __shared__ I* y;
   auto segment = blockIdx.x;
 
   if (threadIdx.x == 0) {

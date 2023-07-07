@@ -268,12 +268,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
   if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (C->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * 6 + 128;  // 6 = aRank + bRank + cRank
+    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 6 + 128;  // 6 = aRank + bRank + cRank
 
     NDArray::prepareSpecialUse({C}, {A, B});
-    // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, stream,
-    // A->specialBuffer(), A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
-    // C->special(), 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
                                  (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->specialBuffer(),
                                      A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),

@@ -2856,7 +2856,6 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
 
 // hypothetically at this point we have everything filled
   auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
-// auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
   if (!isInplace)
     for (int e = 0; e < numOutputs; e++) {

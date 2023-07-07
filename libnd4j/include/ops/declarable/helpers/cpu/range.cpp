@@ -36,11 +36,9 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
   auto buff = reinterpret_cast<T*>(outVector.buffer());
   auto s = start.e<T>(0);
   auto d = delta.e<T>(0);
- sd_printf("start: %f delta %f\n",static_cast<float>(s),static_cast<float>(d));
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       buff[i] = s + i * d;
-      sd_printf("range processing index: %d value %f\n",i,static_cast<float>(buff[i]));
     }
   };
   samediff::Threads::parallel_for(func, 0, len);

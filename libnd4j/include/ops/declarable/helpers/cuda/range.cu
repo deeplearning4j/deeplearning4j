@@ -31,12 +31,8 @@ static SD_KERNEL void global_range(void* output, sd::LongType length, T start, T
   auto buff = reinterpret_cast<T*>(output);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
-  if(threadIdx.x == 0) {
-        printf("start: %f step %f delta %f\n",static_cast<float>(start),static_cast<float>(step),static_cast<float>(delta));
-  }
   for (sd::LongType i = tid; i < length; i += step) {
     buff[i] = static_cast<T>(start) + static_cast<T>(i) * static_cast<T>(delta);
-    printf("Range processing index: %d value %f\n",i,static_cast<float>(buff[i]));
   }
 }
 

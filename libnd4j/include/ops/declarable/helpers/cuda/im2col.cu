@@ -66,8 +66,10 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
+
   if (static_cast<sd::LongType>(coords[2]) >= static_cast<sd::LongType>(iH) ||
-      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW))
+      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW) ||
+      coords[2] < 0 || coords[3] < 0)
     col[colOffset] = zeroPadVal;
   else
     col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
@@ -80,8 +82,8 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const sd::LongType *colShapeInfo, LongType sH, LongType sW, LongType pH, LongType pW, LongType dH, LongType dW,
                                double zeroPadVal) {
   im2colCuda<T>
-      <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
-         *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+  <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
+  *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,7 +99,7 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
       (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(),
-       image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
+          image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&columns}, {&image});
 

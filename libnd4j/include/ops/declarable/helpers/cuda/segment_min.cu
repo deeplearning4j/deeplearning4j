@@ -36,19 +36,17 @@ namespace helpers {
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongType* inputShape, int* starts,
-                                             int* lengths, sd::LongType numOfClasses, void* output,
+static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongType* inputShape, sd::LongType* starts,
+                                             sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                              const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, zIndex;
   __shared__ const T* x;
   __shared__ T* z;
-  __shared__ int threadsPerSegment, start, finish;
+  __shared__ sd::LongType threadsPerSegment, start, finish;
 
   auto segment = blockIdx.x;
   if (threadIdx.x == 0) {
-    //            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-    //            segment = blockIdx.x / threadsPerSegment;
     x = reinterpret_cast<const T*>(input);
     z = reinterpret_cast<T*>(output);
     extern __shared__ unsigned char shmem[];
@@ -75,8 +73,8 @@ static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongTy
 
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const sd::LongType* inputShape,
-                                                     const void* indices, const sd::LongType* indicesShape, int* starts,
-                                                     int* lengths, sd::LongType numOfClasses, void* output,
+                                                     const void* indices, const sd::LongType* indicesShape, sd::LongType* starts,
+                                                     sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                                      const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
@@ -114,7 +112,7 @@ static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const sd
 template <typename T, typename I>
 static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongType* inputShape,
                                           const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          I* indices, int* starts, int* lengths, sd::LongType numOfClasses,
+                                          I* indices, sd::LongType* starts,  sd::LongType * lengths, sd::LongType numOfClasses,
                                           void* outputBuf, const sd::LongType* outputShape,
                                           const sd::LongType* outputTads, const sd::LongType* outputTadOffsets) {
   __shared__ T* val;
@@ -157,16 +155,16 @@ template <typename T, typename I>
 static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  auto classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-  auto classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+  auto classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  auto classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
 
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   if (input->isVector()) {
     segmentMinLinearKernel<T, I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
@@ -203,18 +201,15 @@ template <typename T, typename I>
 static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                        sd::LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-  //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   NDArray::prepareSpecialUse({output}, {input, indices});
   if (input->isVector()) {
     unsortedSegmentMinLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(

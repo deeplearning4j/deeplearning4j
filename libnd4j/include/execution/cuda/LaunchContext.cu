@@ -38,11 +38,7 @@ SD_MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer,
                              void* scalarPointer, int* allocationPointer) {
-  //_cudaStream        = cudaStream;
-  //_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
-  //_reductionPointer  = reductionPointer;
-  //_scalarPointer     = scalarPointer;
-  //_allocationPointer = allocationPointer;
+
   _workspace = nullptr;
   _isAllocated = false;
 }
@@ -69,11 +65,7 @@ LaunchContext::LaunchContext() {
 LaunchContext::LaunchContext(sd::Pointer cudaStream, sd::Pointer reductionPointer, sd::Pointer scalarPointer,
                              sd::Pointer allocationPointer) {
   _isAllocated = false;
-  //_cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
-  // _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
-  //_reductionPointer = reductionPointer;
-  //_scalarPointer = scalarPointer;
-  //_allocationPointer = reinterpret_cast<int *>(allocationPointer);
+
 }
 
 LaunchContext* LaunchContext::defaultContext() {
@@ -140,11 +132,9 @@ void LaunchContext::setAllocationPointer(int* allocationPointer) {
 };
 
 void LaunchContext::setCudaStream(cudaStream_t* cudaStream){
-    //_cudaStream = cudaStream;
 };
 
 void LaunchContext::setCudaSpecialStream(cudaStream_t* cudaStream){
-    //_cudaSpecialStream = cudaStream;
 };
 
 void LaunchContext::setCublasHandle(void* handle) { _cublasHandle = handle; };
@@ -152,7 +142,6 @@ void LaunchContext::setCublasHandle(void* handle) { _cublasHandle = handle; };
 void LaunchContext::swapContextBuffers(ContextBuffers& buffers) { contextBuffers = buffers; };
 
 void LaunchContext::releaseBuffers() {
-  // sd_printf("LaunchContext::releaseBuffers() was invoked\n", "");
   contextBuffers.release();
 }
 

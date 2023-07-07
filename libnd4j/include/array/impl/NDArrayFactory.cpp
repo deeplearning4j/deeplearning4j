@@ -127,8 +127,15 @@ NDArray NDArrayFactory::create(const char order, const std::vector<sd::LongType>
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
   }
 
+
+  T *hostData = nullptr;
+  ALLOCATE(hostData, context->getWorkspace(), data.size(), T);
+  std::copy(data.begin(), data.end(), hostData);
+
+
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
   //to create a correct length data buffer
+  auto dtypeString = DataTypeUtils::asString(descriptor->dataType());
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
       data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 

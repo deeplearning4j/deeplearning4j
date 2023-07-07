@@ -79,8 +79,12 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 
   setCountersToZero();
 
-  if (primary != nullptr) readPrimary();
-  if (special != nullptr) readSpecial();
+  if (primary != nullptr) {
+    readPrimary();
+  }
+  if (special != nullptr) {
+    readSpecial();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -209,8 +213,15 @@ void* DataBuffer::special() { return _specialBuffer; }
 DataType DataBuffer::getDataType() { return _dataType; }
 
 ////////////////////////////////////////////////////////////////////////
-size_t DataBuffer::getLenInBytes() const { return _lenInBytes; }
-size_t DataBuffer::getNumElements()   { return _lenInBytes / DataTypeUtils::sizeOfElement(getDataType()); }
+size_t DataBuffer::getLenInBytes() const {
+  //we need minimum 1 for scalars
+  if(_lenInBytes == 0)
+    return DataTypeUtils::sizeOfElement(_dataType);
+  return _lenInBytes;
+}
+size_t DataBuffer::getNumElements()   {
+  return _lenInBytes / DataTypeUtils::sizeOfElement(getDataType());
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {

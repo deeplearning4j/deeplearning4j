@@ -31,7 +31,7 @@ using namespace simdOps;
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void scalarAlongDimension(void const* x, sd::LongType const* xShapeInfo, void* extraParams, void* z,
-                                    sd::LongType const* zShapeInfo, void const* scalars, long long int* dimension,
+                                    sd::LongType const* zShapeInfo, void const* scalars, sd::LongType* dimension,
                                     sd::LongType dimensionLength, sd::LongType const* tadShapeInfo,
                                     sd::LongType const* tadOffsets, sd::LongType const* tadShapeInfoZ,
                                     sd::LongType const* tadOffsetsZ) {

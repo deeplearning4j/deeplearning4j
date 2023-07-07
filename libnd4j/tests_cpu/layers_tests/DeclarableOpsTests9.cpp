@@ -1669,18 +1669,22 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test7) {
   constexpr int pp = 32 * 32 * 16;
   constexpr int s1 = 3;
   constexpr int t1 = 8;
+  sd_printf("pp=%d, s1=%d, t1=%d\n", pp, s1, t1);
   std::vector<sd::LongType> shape1 = {pp};
   std::vector<sd::LongType> strides1 = {s1};
   std::vector<sd::LongType> shape2 = {pp / 8};
   std::vector<sd::LongType> strides2 = {t1};
   ShapeDescriptor desc1(DataType::BOOL, 'c', shape1, strides1, s1);
   ShapeDescriptor desc2(DataType::UINT8, 'c', shape2, strides2, t1);
+  sd_print("desc1 and desc2\n");
   auto x = NDArrayFactory::create(&desc1);
   auto output = NDArrayFactory::create(&desc2);
   auto exp = NDArrayFactory::create(&desc2);
   auto threshold = NDArrayFactory::create<bool>(true);
   auto buff = x.bufferAsT<bool>();
   uint8_t* expBuff = exp.bufferAsT<uint8_t>();
+  sd_print("inputs\n");
+
   // generate test
   for (int l = 0; l < pp; l += 8) {
     uint8_t test = rand() % 255;
@@ -1695,11 +1699,15 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test7) {
     buffP[6 * s1] = test & (1 << 1);
     buffP[7 * s1] = test & 1;
   }
+
+  sd_print("assertion\n");
+
   // explicit sync to device
   x.tickWriteHost();
   exp.tickWriteHost();
   x.syncToDevice();
   exp.syncToDevice();
+  sd_print("after sync begin op\n");
 
   sd::ops::compare_and_bitpack op;
   auto result = op.execute({&x, &threshold}, {&output}, {}, {});

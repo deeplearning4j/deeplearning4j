@@ -117,11 +117,15 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
   auto x = reinterpret_cast<X const*>(vx);
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
-
+  __shared__ sd::LongType xLen,yLen,zLen;
   __shared__ Z extraZ[3];
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
   if (threadIdx.x == 0) {
+    xLen = shape::length(xShapeInfo);
+    yLen = shape::length(yShapeInfo);
+    zLen = shape::length(zShapeInfo);
+
     extraZ[0] = (Z) 0.0f;
     extraZ[1] = (Z) 0.0f;
 
@@ -134,11 +138,14 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
   sd::LongType length = shape::length(xShapeInfo);
-  int xEws = shape::elementWiseStride(xShapeInfo);
-  int yEws = shape::elementWiseStride(yShapeInfo);
+  sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
+  sd::LongType yEws = shape::elementWiseStride(yShapeInfo);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   char xOrder = shape::order(xShapeInfo);
   char yOrder = shape::order(yShapeInfo);
+
+  if(threadIdx.x > xLen || threadIdx.x > yLen || threadIdx.x > zLen)
+    return;
 
   if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
@@ -221,7 +228,6 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
       auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
       tc[16384] = 0;
       z[0] = OpType::postProcess(sPartials[0], length, extraZ);
-      //printf("Z: [%f]\n", (float) z[0]);
     }
   }
 }
@@ -332,9 +338,9 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
                                        void const* vy, sd::LongType const* yShapeInfo,
                                        void *extraParams,
                                        void *vz, sd::LongType const* zShapeInfo,  sd::LongType* dimension,
-                                        sd::LongType dimensionLength,
+                                       sd::LongType dimensionLength,
                                        int postProcessOrNot,
-                                        sd::LongType* allocationPointer,
+                                       sd::LongType* allocationPointer,
                                        sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                        sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
@@ -444,9 +450,9 @@ SD_DEVICE void Reduce3<X,Y>::execCuda(int opNum,
                                       void const* vy, sd::LongType const* yShapeInfo,
                                       void *extraParams,
                                       void *vz, sd::LongType const* zShapeInfo, long long int* dimension,
-                                       sd::LongType dimensionLength,
+                                      sd::LongType dimensionLength,
                                       int postProcessOrNot,
-                                       sd::LongType* allocationPointer,
+                                      sd::LongType* allocationPointer,
                                       sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                       sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
@@ -491,8 +497,8 @@ SD_HOST void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
                                 void const* vx, sd::LongType const* xShapeInfo,
                                 void const* vy, sd::LongType const* yShapeInfo,
                                 void *extraParams,
-                                void *vz, sd::LongType const* zShapeInfo, long long int* dimension,
-                                 sd::LongType dimensionLength,
+                                void *vz, sd::LongType const* zShapeInfo, sd::LongType* dimension,
+                                sd::LongType dimensionLength,
                                 int postProcessOrNot, long long int* allocationPointer,
                                 sd::LongType const* tadOnlyShapeInfo,  sd::LongType const* tadOffsets,
                                 sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {

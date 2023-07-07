@@ -326,6 +326,8 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor
   _offset = offset;
   setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor));
   _buffer = buffer;
+  _dataType = descriptor->dataType();
+  _length = descriptor->arrLength();
   if(buffer != nullptr)
     _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
   else {
@@ -369,20 +371,24 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor cuda: can't be initialized without shapeinfo");
 
-  sd::LongType  rank = (sd::LongType)shapeInfo[0];
-  if (rank > SD_MAX_RANK || rank < 0)  THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
+  sd::LongType rank = shapeInfo[0];
+  if (rank > SD_MAX_RANK || rank < 0) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
-
+  _length = shape::length(shapeInfo);
+  _dataType = ArrayOptions::dataType(shapeInfo);
   auto descriptor = new ShapeDescriptor(shapeInfo);
   setShapeInfo(descriptor);
   delete descriptor;
-  if (!isEmpty() && buffer != nullptr)
-    _buffer = std::make_shared<DataBuffer>(buffer != nullptr ? buffer : buffer, bufferD, lengthOf() * sizeOfT(),
-                                           dataType(), isBuffAlloc, isBuffDAlloc, getContext()->getWorkspace());
-}
+  //note we used to check for the primary host side buffer here as well. we don't anymore because
+  //device side backends may only use the device side buffer and not allocate the host side immediately to save memory
+  DataBuffer dataBuffer1(buffer,bufferD, lengthOf() * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
+                         getContext()->getWorkspace());
+  _buffer = std::make_shared<DataBuffer>(dataBuffer1);
 
+
+}
 //////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                  sd::LaunchContext *context) {
@@ -3629,8 +3635,9 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
     return true;
   } else {
+    //NOTE leave max precision here. Crashes can occur otherwise for arrays where data type is of higher
     // regular numeric types
-    NDArray tmp(sd::DataType::FLOAT32, getContext());  // scalar = 0
+    NDArray tmp(sd::DataType::DOUBLE, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
 #if defined(__CUDABLAS__)
@@ -3639,7 +3646,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
     NDArray::preparePrimaryUse({&tmp}, {this, other});
 #endif
     NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
-                                           specialShapeInfo(), extras.argumentsAsT(DataType::FLOAT32), other->buffer(),
+                                           specialShapeInfo(), extras.argumentsAsT(DataType::DOUBLE), other->buffer(),
                                            other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
                                            tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
 #if defined(__CUDABLAS__)
@@ -4126,7 +4133,7 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray &target, ExtraArguments *extraParams) {
   if (isS()) THROW_EXCEPTION("NDArray::applyScalarArr: you can't use this method on String array!");
-  if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
+  if (!scalar.isScalar()) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
 
   if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()) &&
       !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))

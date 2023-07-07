@@ -61,7 +61,7 @@ static SD_KERNEL void unsortedSegmentIndexValidateKernel(const I* indices, const
   __syncthreads();
   auto start = threadIdx.x + blockIdx.x * blockDim.x;
   auto step = gridDim.x * blockDim.x;
-  for (int e = start; e < len && onlyTrue; e += step) {
+  for (sd::LongType e = start; e < len && onlyTrue; e += step) {
     sd::math::atomics::sd_atomicMax(found, indices[e]);
     if (expected < *found) onlyTrue = false;
   }
@@ -96,11 +96,11 @@ bool unsortedSegmentIndicesValidate(sd::LaunchContext* context, NDArray* indices
 // -------------------------------------------------------------------------------------------------------------- //
 // fill up segments starts and ends - splitted ordered case
 template <typename I>
-static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongType* indexShape, int numClasses,
-                                           int* classesRangesStart, int* classesRangesLenghts) {
+static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongType* indexShape, sd::LongType numClasses,
+                                           sd::LongType* classesRangesStart, sd::LongType* classesRangesLenghts) {
   __shared__ const I* idxBuf;
   __shared__ sd::LongType idxLen;
-  __shared__ int* result;
+  __shared__ sd::LongType* result;
   if (threadIdx.x == 0) {
     idxBuf = reinterpret_cast<const I*>(indices);
     idxLen = shape::length(indexShape);
@@ -112,8 +112,8 @@ static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongTy
 
   for (auto j = tid; j < idxLen; j += step) {
     auto pos = idxBuf[j];
-    sd::math::atomics::sd_atomicMin<int>(&classesRangesStart[pos], (int)j);
-    sd::math::atomics::sd_atomicAdd<int>(&classesRangesLenghts[pos], 1);
+    sd::math::atomics::sd_atomicMin<sd::LongType>(&classesRangesStart[pos], (sd::LongType)j);
+    sd::math::atomics::sd_atomicAdd<sd::LongType>(&classesRangesLenghts[pos], 1);
   }
 }
 
@@ -123,8 +123,8 @@ template <typename I>
 static void fillUpSegments_(NDArray* indices, sd::LongType numClasses, NDArray& classesRangesBegs,
                             NDArray& classesRangesLens) {
   dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType * begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   auto stream = classesRangesBegs.getContext()->getCudaStream();
   fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream>>>(indices->specialBuffer(), indices->specialShapeInfo(),
                                                                numClasses, begins, lengths);

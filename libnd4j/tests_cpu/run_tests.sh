@@ -21,7 +21,7 @@
 #
 
 set -exo pipefail
-
+TEST_FILTER="none"
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -32,6 +32,10 @@ do
         CHIP="${value}"
         shift # past argument
         ;;
+        -test|--test-filter)
+              TEST_FILTER="${value}"
+              shift # past argument
+              ;;
         *)
         # unknown option
         ;;
@@ -58,7 +62,11 @@ fi
 
 unameOut="$(uname)"
 echo "$OSTYPE"
+if [[ "$TEST_FILTER" != "none" ]]; then
+    ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
 
-../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+else
+   ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/

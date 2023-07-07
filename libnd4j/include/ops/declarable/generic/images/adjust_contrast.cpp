@@ -54,12 +54,13 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   // fill up axes vector first
   std::vector<LongType> axes(input->rankOf() - 1);
   for (auto i = 0; i < axes.size(); ++i) axes[i] = i;
-
   // mean as reduction for last dimension set
   auto mean = input->reduceAlongDimension(reduce::Mean, &axes);
-
+  auto part1 = (*input - mean);
+  auto part2 = part1 * *factor;
+  auto part3 = part2 + mean;
   // this is contrast calculation
-  output->assign((*input - mean) * (*factor) + mean);
+  output->assign(part3);
 
   if (block.width() == 1) delete factor;
 
