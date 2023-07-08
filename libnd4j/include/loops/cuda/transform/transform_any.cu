@@ -28,6 +28,8 @@
 #include <execution/cuda/DeviceValidator.h>
 using namespace simdOps;
 
+
+
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void transformAnySimple(const void *x, const sd::LongType *xShapeInfo,sd::LongType xRank, void *params, void *z,
                                   const sd::LongType *zShapeInfo, sd::LongType zRank,
@@ -116,12 +118,18 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_
                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                     const sd::LongType *tadOffsets) {
 
-  DeviceValidator deviceValidator;
 
-  auto myKernelFuncPtr = deviceValidator.getKernelFuncPtr<const void*, const sd::LongType*, sd::LongType, void*, void*, const sd::LongType*, sd::LongType, sd::LongType*, void*, const sd::LongType*, const sd::LongType*>(transformAnySimple<X,Z,OpType>);
-  deviceValidator.setKernelNumRegs("transformAnySimple",(void *) myKernelFuncPtr,1);
+  //TODO here
 
 
+
+  //auto myKernelFuncPtr = deviceValidator.getKernelFuncPtr<const void*, const sd::LongType*, sd::LongType, void*, void*, const sd::LongType*, sd::LongType, sd::LongType*, void*, const sd::LongType*, const sd::LongType*>(transformAnySimple<X,Z,OpType>);
+ // deviceValidator.setKernelNumRegs("transformAnySimple",(void *) myKernelFuncPtr,1);
+
+  auto instance = DeviceValidator::getInstance("/home/agibsonccc/Documents/GitHub/deeplearning4j/libnd4j/blasbuild/cuda/blas",0);
+  instance->printProblematicFunctions();
+  instance->setAllKernelsNumRegs(1);
+  instance->setAllKernelsMaxRegisters(1);
   transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 

@@ -1,13 +1,15 @@
-//
-// Created by agibsonccc on 7/7/23.
-//
-
-#ifndef LIBND4J_DEVICEVALIDATOR_H
-#define LIBND4J_DEVICEVALIDATOR_H
-#include <cuda_runtime.h>
-#include <driver_types.h>
-#include <vector_types.h>
 #include <cuda.h>
+
+#include <algorithm>
+#include <filesystem>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <unordered_map>
+#include <fstream>
+#include <regex>
+#include <string>
+#include <vector>
 
 class ValidationResult {
  public:
@@ -25,73 +27,74 @@ class ValidationResult {
   bool isLocalMemoryUsageWithinLimit;
   bool isConcurrentKernelsSupported;
   bool isL2CacheSizeSufficient;
+  bool isValid();
 
-  ValidationResult()
-      : isComputeCapabilitySufficient(true),
-        isECCMemorySupported(true),
-        isManagedMemorySupported(true),
-        isComputePreemptionSupported(true),
-        isThreadsPerBlockWithinLimit(true),
-        isBlocksWithinGridSizeLimit(true),
-        isSharedMemoryUsageWithinLimit(true),
-        isRegisterUsageWithinLimit(true),
-        isTotalThreadsWithinLimit(true),
-        isGlobalMemoryUsageWithinLimit(true),
-        isMemoryUsageWithinLimit(true),
-        isLocalMemoryUsageWithinLimit(true),
-        isConcurrentKernelsSupported(true),
-        isL2CacheSizeSufficient(true) {}
+  ValidationResult();
 };
-
-// Define a function pointer type for your kernel
-template <typename... Args>
-using KernelFuncPtr = void (*)(Args...);
-
 
 class DeviceValidator {
  private:
   cudaDeviceProp prop;
+  static std::mutex mtx;
+  std::unordered_map<std::string, CUmodule> moduleMap;
+  std::unordered_map<std::string, CUfunction> functionMap;
+  std::string directoryPath;
+  static DeviceValidator* instance;
+
+  void init();
 
  public:
+  DeviceValidator(const std::string& directoryPath, int device = 0);
+  ~DeviceValidator();
+  static DeviceValidator* getInstance(const std::string& directory, int device = 0);
+
+  // Set kernel attribute
+  void setKernelAttribute(const std::string& functionName, CUfunction_attribute attribute, int value);
+
+  void setKernelMaxDynamicSharedSizeBytes(const std::string& functionName, int value);
+
+  void setKernelPreferredSharedMemoryCarveout(const std::string& functionName, int value);
+
+  void setKernelMaxRegisters(const std::string& functionName, int value);
+
+  void setKernelMaxThreadsPerBlock(const std::string& functionName, int value);
+
+  void setKernelNumRegs(const std::string& functionName, int value);
+
+  void setKernelSharedSizeBytes(const std::string& functionName, int value);
+
+  void setKernelBinaryVersion(const std::string& functionName, int value);
+
+  void setKernelCacheModeCA(const std::string& functionName, int value);
+
+  void setKernelMaxThreadsPerBlockOptIn(const std::string& functionName, int value);
+
+  void setKernelReservedSharedSizeBytes(const std::string& functionName, int value);
+
+  void setAllKernelsAttribute(CUfunction_attribute attribute, int value);
 
 
-  // Function to get a void* from a kernel function
-  template <typename... Args>
-  using KernelFuncPtr = void (*)(Args...);
+  void setAllKernelsMaxDynamicSharedSizeBytes(int value);
+  void setAllKernelsPreferredSharedMemoryCarveout(int value);
+  void setAllKernelsMaxRegisters(int value);
+  void setAllKernelsMaxThreadsPerBlock(int value);
+  void setAllKernelsNumRegs(int value);
+  void setAllKernelsSharedSizeBytes(int value);
+  void setAllKernelsBinaryVersion(int value);
+  void setAllKernelsCacheModeCA(int value);
+  void setAllKernelsMaxThreadsPerBlockOptIn(int value);
+  void setAllKernelsReservedSharedSizeBytes(int value);
 
-  template <typename... Args>
-  KernelFuncPtr<Args...> getKernelFuncPtr(void (*kernelFunc)(Args...));
+  void printKernelAttribute(const char* name, CUfunction_attribute attribute);
+  void printMaxKernelAttributes();
+  void printKernelAttributes(const char* name);
+  std::map<std::string, ValidationResult> collectResourceProblems();
+  void printValidationResult(const char* name, ValidationResult& result);
+  ValidationResult validateKernelLaunch(const char* name, dim3 threadsPerBlock, dim3 numBlocks, size_t globalMemoryUsage, int minComputeCapability);
 
+  void printProblematicFunctions();
 
-  DeviceValidator(int device = 0);
-
-  ValidationResult validateKernelLaunch(const char* name, void* funcHandle,
-                                        dim3 threadsPerBlock, dim3 numBlocks,
-                                        size_t globalMemoryUsage,
-                                        int minComputeCapability);
-
-  void setKernelAttribute(const char* name, void* funcHandle, CUfunction_attribute attribute, int value);
-
-
-  void setKernelMaxDynamicSharedSizeBytes(const char* name, void* funcHandle, int value);
-
-  void setKernelPreferredSharedMemoryCarveout(const char* name, void* funcHandle, int value);
-
-  void setKernelMaxRegisters(const char* name, void* funcHandle, int value);
-
-  void setKernelMaxThreadsPerBlock(const char* name, void* funcHandle, int value);
-
-  void setKernelNumRegs(const char* name, void* funcHandle, int value);
-
-  void setKernelSharedSizeBytes(const char* name, void* funcHandle, int value);
-
-  void setKernelBinaryVersion(const char* name, void* funcHandle, int value);
-
-  void setKernelCacheModeCA(const char* name, void* funcHandle, int value);
-
-  void setKernelMaxThreadsPerBlockOptIn(const char* name, void* funcHandle, int value);
-
-  void setKernelReservedSharedSizeBytes(const char* name, void* funcHandle, int value);
+  std::vector<std::string> parseCUBINFile(const std::string& filePath);
+  std::vector<std::string> parsePTXFile(const std::string& filePath);
 };
 
-#endif  // LIBND4J_DEVICEVALIDATOR_H

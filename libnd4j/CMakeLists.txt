@@ -86,11 +86,12 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -allow-unsupported-compiler --ptxas-options=-v")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep -allow-unsupported-compiler --ptxas-options=-v")
     enable_language(CUDA)
     # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
     find_package(CUDA REQUIRED)
+    # cuda driver library for device validator
     find_library(CUDA_DRIVER_LIBRARY
             NAMES cuda
             PATHS ${CUDA_TOOLKIT_ROOT_DIR}
