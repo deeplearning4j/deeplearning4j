@@ -27,7 +27,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class GraphHolderTests : public testing::Test {
+class GraphHolderTests : public NDArrayTests {
  public:
 };
 

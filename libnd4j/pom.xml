@@ -68,6 +68,7 @@
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
         <libnd4j.test.filter>none</libnd4j.test.filter>
         <libnd4j.log>none</libnd4j.log>
+        <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
     </properties>
 
     <build>
@@ -428,6 +429,8 @@
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
                                         <argument>${libnd4j.log}</argument>
+                                        <argument>--keep-nvcc-output</argument>
+                                        <argument>${libnd4j.keepnvcc}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

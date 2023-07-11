@@ -25,6 +25,8 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/confusion.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -115,7 +117,7 @@ predictions->syncToDevice();
 
 
  auto bufferLength = labels->lengthOf();
- dim3 launchDims(32, 32, 1024);
+ dim3 launchDims = getLaunchDims("confusionMatrix");
  confusionFunctorKernel<Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
      labelsLongBuffer, predictionLongBuffer, bufferLength, weights != nullptr ? weights->specialBuffer() : nullptr,
      output->specialBuffer(), pack->specialShapeInfo(), pack->specialOffsets());

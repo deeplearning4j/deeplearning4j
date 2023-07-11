@@ -26,7 +26,7 @@
 #include "testlayers.h"
 using namespace sd;
 
-class LoopCoordsHelper : public testing::Test {
+class LoopCoordsHelper : public NDArrayTests {
  public:
 };
 

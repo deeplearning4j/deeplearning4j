@@ -33,7 +33,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class ThreadsTests : public testing::Test {
+class ThreadsTests : public NDArrayTests {
  public:
   ThreadsTests() { sd_printf("\n", ""); }
 };

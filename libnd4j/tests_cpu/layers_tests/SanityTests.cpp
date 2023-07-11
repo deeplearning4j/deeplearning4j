@@ -28,7 +28,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class SanityTests : public testing::Test {
+class SanityTests : public NDArrayTests {
  public:
 };
 

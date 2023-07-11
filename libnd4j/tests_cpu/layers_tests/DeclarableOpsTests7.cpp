@@ -31,7 +31,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests7 : public testing::Test {
+class DeclarableOpsTests7 : public NDArrayTests {
  public:
   DeclarableOpsTests7() {
     printf("\n");
@@ -40,7 +40,7 @@ class DeclarableOpsTests7 : public testing::Test {
 };
 
 template <typename T>
-class TypedDeclarableOpsTests7 : public testing::Test {
+class TypedDeclarableOpsTests7 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests7() {
     printf("\n");

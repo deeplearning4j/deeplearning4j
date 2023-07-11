@@ -39,7 +39,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests1 : public testing::Test {
+class DeclarableOpsTests1 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)
@@ -63,7 +63,7 @@ class DeclarableOpsTests1 : public testing::Test {
 };
 
 template <typename T>
-class TypedDeclarableOpsTests1 : public testing::Test {
+class TypedDeclarableOpsTests1 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)

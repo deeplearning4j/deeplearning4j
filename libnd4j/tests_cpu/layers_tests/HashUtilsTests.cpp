@@ -23,7 +23,7 @@
 
 #include "testlayers.h"
 
-class HashUtilsTests : public testing::Test {};
+class HashUtilsTests : public NDArrayTests {};
 
 TEST_F(HashUtilsTests, TestEquality1) {
   std::string str("Conv2D");

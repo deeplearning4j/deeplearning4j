@@ -43,7 +43,7 @@
 using namespace sd;
 #include <loops/special_kernels.h>
 #include <ops/declarable/OpRegistrator.h>
-
+#include <execution/cuda/LaunchDims.h>
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
@@ -64,8 +64,9 @@ bool experimentalSupport = false;
 #include <dlfcn.h>   // needed for dladdr
 
 #include "exceptions/backward.hpp"
+#include "execution/cuda/LaunchDims.h"
 
-//note this is a c++ 17 feature
+// note this is a c++ 17 feature
 #ifndef INSTRUMENT_FILE_DEF
 #pragma once
 #define INSTRUMENT_FILE_DEF 1
@@ -777,10 +778,9 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     if (zType != sd::DataType::INT64)
       throw datatype_exception::build("execReduceLong wrong Z data type", sd::DataType::INT64, zType);
 
+    //TODO hello
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 256;
-    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-    dim3 launchDims(numBlocks, blockWidth, 32768);
+    dim3 launchDims = getReduceDims(xLength);
 
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::reduce::ReduceLongFunction,
@@ -861,9 +861,7 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     if (zType != sd::DataType::BOOL) THROW_EXCEPTION("execReduceBool requires Z operand to have BOOL type");
 
     auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 256;
-    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-    dim3 launchDims(numBlocks, blockWidth, 32768);
+    dim3 launchDims = getReduceDims(xLength);
 
 
     BUILD_DOUBLE_SELECTOR(
@@ -1662,7 +1660,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType co
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    dim3 launchDims(64, 256, 1024);
+    dim3 launchDims = getLaunchDims("pullRows");
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
                           (launchDims, stream, dbX != nullptr ? dbX->special() : nullptr, dbZ != nullptr ? dbZ->special() : nullptr, n, indexes, tadShapeInfo, tadOffsets,
@@ -1692,7 +1690,7 @@ void average(sd::Pointer *extras, sd::Pointer *x, sd::LongType const *xShapeInfo
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     // launching on gpu
     if (mode == 0) {
-      dim3 launchDims(256, 256, 4096);
+      dim3 launchDims = getLaunchDims("average");
       BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate),
                             SD_COMMON_TYPES);
       sd::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
@@ -1721,7 +1719,7 @@ void accumulate(sd::Pointer *extras, sd::Pointer *x, sd::LongType const *xShapeI
 
     // launching on gpu
     if (mode == 0) {
-      dim3 launchDims(n, 256, 16384);
+      dim3 launchDims = getAccumDims(n);
       BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n, length), SD_COMMON_TYPES);
       sd::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
     } else {
@@ -1749,7 +1747,7 @@ void shuffle(sd::Pointer *extras, sd::Pointer *x, sd::Pointer *xShapeInfo, sd::P
     auto tadOffset = reinterpret_cast<sd::LongType **>(tadOffsets);
 
     auto xType = sd::ArrayOptions::dataType(xShape[0]);
-    dim3 launchDims(256, 512, 8192);
+    dim3 launchDims = getLaunchDims("shuffle");
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric,
                           (launchDims, stream, dX, dxShape, dZ, N, shuffleMap, tadOnlyShapeInfo, tadOffset),
                           SD_COMMON_TYPES);
@@ -2022,7 +2020,7 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     if (yType != xType && yType != sd::DataType::BOOL && !isExperimentalEnabled())
       throw sd::datatype_exception::build("execScalar both operands must have same data type", xType, yType);
 
-    dim3 launchDims(256, 256, 16384);
+    dim3 launchDims = getLaunchDims("scalarTad");
 
 #ifdef SD_EXPERIMENTAL_ENABLED
     BUILD_PAIRWISE_SELECTOR(
@@ -2217,7 +2215,7 @@ void tear(sd::Pointer *extras, OpaqueDataBuffer *dbX, sd::LongType const *xShape
     InteropDataBuffer::prepareSpecialUse({}, {dbX});
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    dim3 launchDims(512, 512, 512);
+    dim3 launchDims = getLaunchDims("tear");
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(
         xType, tearKernelGeneric,
@@ -2356,11 +2354,7 @@ void sort(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, v
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-      int numThreads = sd::math::sd_min<int>(512, xLength);
-      int numBlocks = xLength / numThreads;
-      if (xLength % numThreads > 0 || numBlocks == 0) numBlocks++;
-
-      dim3 launchDims(numBlocks, numThreads, 32768);
+      dim3 launchDims = getSortFullDims(xLength);
 
       for (int k = 2; k <= xLength; k = 2 * k) {
         for (int j = k >> 1; j > 0; j = j >> 1) {
@@ -2369,12 +2363,7 @@ void sort(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, v
         }
       }
     } else {
-      int numThreads = sd::math::sd_min<int>(512, xLength);
-      int numBlocks = xLength / numThreads;
-      if (xLength % numThreads > 0 || numBlocks == 0) numBlocks++;
-
-      numBlocks = sd::math::sd_min<int>(512, numBlocks);
-      dim3 launchDims(numBlocks, numThreads, 32768);
+      dim3 launchDims = getSortFullDims(xLength);
 
       int max = 2, dg = 0;
       while (max < xLength) {
@@ -2421,11 +2410,7 @@ void sortByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeIn
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-      int numThreads = sd::math::sd_min<int>(512, xLength);
-      int numBlocks = xLength / numThreads;
-      if (xLength % numThreads > 0 || numBlocks == 0) numBlocks++;
-
-      dim3 launchDims(numBlocks, numThreads, 32768);
+      dim3 launchDims = getSortFullDims(xLength);
 
       for (int k = 2; k <= xLength; k = 2 * k) {
         for (int j = k >> 1; j > 0; j = j >> 1) {
@@ -2487,11 +2472,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-      int numThreads = sd::math::sd_min<int>(512, xLength);
-      int numBlocks = xLength / numThreads;
-      if (xLength % numThreads > 0 || numBlocks == 0) numBlocks++;
-
-      dim3 launchDims(numBlocks, numThreads, 32768);
+      dim3 launchDims = getSortFullDims(xLength);
 
       for (int k = 2; k <= xLength; k = 2 * k) {
         for (int j = k >> 1; j > 0; j = j >> 1) {
@@ -2501,12 +2482,7 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
         }
       }
     } else {
-      int numThreads = sd::math::sd_min<int>(512, xLength);
-      int numBlocks = xLength / numThreads;
-      if (xLength % numThreads > 0 || numBlocks == 0) numBlocks++;
-
-      numBlocks = sd::math::sd_min<int>(512, numBlocks);
-      dim3 launchDims(numBlocks, numThreads, 32768);
+      dim3 launchDims = getSortFullDims(xLength);
 
       int max = 2, dg = 0;
       while (max < xLength) {
@@ -2542,7 +2518,7 @@ void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShap
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack->numberOfTads(), 256, 2048);
+    dim3 launchDims = getSortTadDims(tadPack->numberOfTads());
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     auto yType = sd::ArrayOptions::dataType(yShapeInfo);
 
@@ -2566,7 +2542,7 @@ void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xSh
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack->numberOfTads(), 256, 2048);
+    dim3 launchDims = getSortTadDims(tadPack->numberOfTads());
     auto xType = sd::ArrayOptions::dataType(yShapeInfo);
     auto yType = sd::ArrayOptions::dataType(xShapeInfo);
 
@@ -2591,7 +2567,7 @@ void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int)tadPack->numberOfTads(), 512, 33768);
+    dim3 launchDims = getSortTadLarge(tadPack->numberOfTads());
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,

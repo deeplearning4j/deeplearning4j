@@ -30,7 +30,7 @@
 using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
-class NDArrayTest2 : public testing::Test {
+class NDArrayTest2 : public NDArrayTests {
  public:
 };
 

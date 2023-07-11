@@ -27,7 +27,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class BooleanOpsTests : public testing::Test {
+class BooleanOpsTests : public NDArrayTests {
  public:
 };
 

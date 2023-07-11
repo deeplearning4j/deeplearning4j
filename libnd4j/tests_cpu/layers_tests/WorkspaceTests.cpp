@@ -32,7 +32,7 @@
 using namespace sd;
 using namespace sd::memory;
 
-class WorkspaceTests : public testing::Test {};
+class WorkspaceTests : public NDArrayTests {};
 
 TEST_F(WorkspaceTests, BasicInitialization1) {
   Workspace workspace(1024);

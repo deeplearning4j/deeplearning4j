@@ -32,7 +32,7 @@
 
 using namespace sd;
 
-class TadTests : public testing::Test {
+class TadTests : public NDArrayTests {
  public:
   int numLoops = 100000000;
 

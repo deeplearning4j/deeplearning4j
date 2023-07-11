@@ -30,7 +30,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class StashTests : public testing::Test {
+class StashTests : public NDArrayTests {
  public:
 };
 

@@ -28,7 +28,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ScopeTests : public testing::Test {
+class ScopeTests : public NDArrayTests {
  public:
 };
 

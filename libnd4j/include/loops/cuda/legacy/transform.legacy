@@ -33,12 +33,12 @@
 template <typename T>
 __device__ void transformGeneric(
 		int opNum,
-		sd::LongType n,
+		LongType n,
 		T *dy,
-		sd::LongType incy,
+		LongType incy,
 		T *params,
 		T *result,
-		sd::LongType resultStride, int *allocationPointer, T *reductionPointer) {
+		LongType resultStride, int *allocationPointer, T *reductionPointer) {
 
 	functions::transform::Transform<T>::transformCuda(
 		opNum,
@@ -55,12 +55,12 @@ __device__ void transformGeneric(
 
 template <typename T, typename OpClass>
 __device__ void transformSimpleGeneric(
-		sd::LongType n,
+		LongType n,
 		T *dy,
-		sd::LongType incy,
+		LongType incy,
 		T *params,
 		T *result,
-		sd::LongType resultStride, int *allocationPointer, T *reductionPointer) {
+		LongType resultStride, int *allocationPointer, T *reductionPointer) {
 
 	functions::transform::Transform<T>::template transformCuda<OpClass>(
 		n,
@@ -80,9 +80,9 @@ template <typename T>
 __device__ void transformGeneric(
 		int opNum,
 		T *dy,
-		sd::LongType *xShapeInfo, int xRank,
+		LongType *xShapeInfo, int xRank,
 		T *params,
-		T *result,sd::LongType *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
+		T *result,LongType *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer) {
 
 	functions::transform::Transform<T>::transformCuda(
 	    opNum,
@@ -101,9 +101,9 @@ __device__ void transformGeneric(
 template <typename T, typename OpClass>
 __device__ void transformSimpleGeneric(
 		T *dy,
-		sd::LongType *xShapeInfo, int xRank,
+		LongType *xShapeInfo, int xRank,
 		T *params,
-		T *result, sd::LongType *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+		T *result, LongType *resultShapeInfo, int zRank, int *allocationPointer, T *reductionPointer, LongType *tadShapeInfo, LongType *tadOffsets) {
 
 	__shared__ UnifiedSharedMemory *manager;
 
@@ -126,14 +126,14 @@ __device__ void transformSimpleGeneric(
 }
 
 // transform strided
-DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float, INPUT(sd::LongType n, float *x, sd::LongType xStride, float *extraParams, float *z, sd::LongType zStride, int *allocationPointer, float *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, double, INPUT(sd::LongType n, double *x, sd::LongType xStride, double *extraParams, double *z, sd::LongType zStride, int *allocationPointer, double *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float16, INPUT(sd::LongType n, float16 *x, sd::LongType xStride, float16 *extraParams, float16 *z, sd::LongType zStride, int *allocationPointer, float16 *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float, INPUT(LongType n, float *x, LongType xStride, float *extraParams, float *z, LongType zStride, int *allocationPointer, float *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, double, INPUT(LongType n, double *x, LongType xStride, double *extraParams, double *z, LongType zStride, int *allocationPointer, double *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformStrided_, transformSimpleGeneric, float16, INPUT(LongType n, float16 *x, LongType xStride, float16 *extraParams, float16 *z, LongType zStride, int *allocationPointer, float16 *reductionPointer), PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
 // transform shaped
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, sd::LongType *xShape, int xRank, float *extraParams, float *z, sd::LongType *zShape, int zRank, int *allocationPointer, float *reductionPointer,  sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, sd::LongType *xShape, int xRank, double *extraParams, double *z, sd::LongType *zShape, int zRank, int *allocationPointer, double *reductionPointer, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, sd::LongType *xShape, int xRank, float16 *extraParams, float16 *z, sd::LongType *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  sd::LongType *tadShapeInfo, sd::LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float, INPUT(float *x, LongType *xShape, int xRank, float *extraParams, float *z, LongType *zShape, int zRank, int *allocationPointer, float *reductionPointer,  LongType *tadShapeInfo, LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, double, INPUT(double *x, LongType *xShape, int xRank, double *extraParams, double *z, LongType *zShape, int zRank, int *allocationPointer, double *reductionPointer, LongType *tadShapeInfo, LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
+DISPATCH_KERNEL_SIMPLE(transformShaped_, transformSimpleGeneric, float16, INPUT(float16 *x, LongType *xShape, int xRank, float16 *extraParams, float16 *z, LongType *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  LongType *tadShapeInfo, LongType *tadOffsets), PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
 
 
@@ -141,28 +141,28 @@ namespace functions {
     namespace transform {
 
         template <>
-        SD_HOST void Transform<float>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, sd::LongType n, float *x, sd::LongType xStride, float *extraParams, float *z, sd::LongType zStride, int *allocationPointer, float *reductionPointer) {
+        SD_HOST void Transform<float>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, LongType n, float *x, LongType xStride, float *extraParams, float *z, LongType zStride, int *allocationPointer, float *reductionPointer) {
             DISPATCH_SIMPLE(transformStrided, float, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         };
 
         template <>
-        SD_HOST void Transform<double>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, sd::LongType n, double *x, sd::LongType xStride, double *extraParams, double *z, sd::LongType zStride, int *allocationPointer, double *reductionPointer) {
+        SD_HOST void Transform<double>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, LongType n, double *x, LongType xStride, double *extraParams, double *z, LongType zStride, int *allocationPointer, double *reductionPointer) {
             DISPATCH_SIMPLE(transformStrided, double, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         };
 
         template <>
-        SD_HOST void Transform<float16>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, sd::LongType n, float16 *x, sd::LongType xStride, float16 *extraParams, float16 *z, sd::LongType zStride, int *allocationPointer, float16 *reductionPointer) {
+        SD_HOST void Transform<float16>::executeTransformStrided(dim3 launchDims, cudaStream_t *stream, int opNum, LongType n, float16 *x, LongType xStride, float16 *extraParams, float16 *z, LongType zStride, int *allocationPointer, float16 *reductionPointer) {
             DISPATCH_SIMPLE(transformStrided, float16, PARAMS(n, x, xStride, extraParams, z, zStride, allocationPointer, reductionPointer), OPS_A(TRANSFORM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         };
 
         template <>
-        SD_HOST void Transform<float>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, sd::LongType *xShape, int xRank, float *extraParams, float *z, sd::LongType *zShape, int zRank, int *allocationPointer, float *reductionPointer,  sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+        SD_HOST void Transform<float>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, LongType *xShape, int xRank, float *extraParams, float *z, LongType *zShape, int zRank, int *allocationPointer, float *reductionPointer,  LongType *tadShapeInfo, LongType *tadOffsets) {
 
             DISPATCH_SIMPLE(transformShaped, float, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
@@ -171,7 +171,7 @@ namespace functions {
         }
 
         template <>
-        SD_HOST void Transform<float16>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, sd::LongType *xShape, int xRank, float16 *extraParams, float16 *z, sd::LongType *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+        SD_HOST void Transform<float16>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, LongType *xShape, int xRank, float16 *extraParams, float16 *z, LongType *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  LongType *tadShapeInfo, LongType *tadOffsets) {
 
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
@@ -180,7 +180,7 @@ namespace functions {
         }
 
         template <>
-        SD_HOST void Transform<double>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, sd::LongType *xShape, int xRank, double *extraParams, double *z, sd::LongType *zShape, int zRank, int *allocationPointer, double *reductionPointer,  sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+        SD_HOST void Transform<double>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, LongType *xShape, int xRank, double *extraParams, double *z, LongType *zShape, int zRank, int *allocationPointer, double *reductionPointer,  LongType *tadShapeInfo, LongType *tadOffsets) {
 
             DISPATCH_SIMPLE(transformShaped, double, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
@@ -191,11 +191,11 @@ namespace functions {
         template <typename OpType>
         __device__ void Transform<T>::transformCuda(
 			T *dy,
-			sd::LongType *shapeInfo,
+			LongType *shapeInfo,
 			T *params,
 			T *result,
-			sd::LongType *resultShapeInfo,
-			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+			LongType *resultShapeInfo,
+			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager, LongType *tadShapeInfo, LongType *tadOffsets) {
 
 		    if(OpType::requiresSpecial) {
 			    OpType::execSpecialCuda(dy,shapeInfo,result,resultShapeInfo,params, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets);
@@ -212,7 +212,7 @@ namespace functions {
     		    auto resultElementWiseStride = shape::elementWiseStride(resultShapeInfo);
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-                __shared__ sd::LongType length;
+                __shared__ LongType length;
 		        if(threadIdx.x == 0)
 			        length = shape::length(shapeInfo);
 		        __syncthreads();
@@ -227,9 +227,9 @@ namespace functions {
 				    	resultElementWiseStride, allocationPointer, reductionPointer, manager);
 		        }
 		        else {
-			        sd::LongType xCoord[MAX_RANK];
+			        LongType xCoord[MAX_RANK];
 
-		    	    for (sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x) {
+		    	    for (LongType i = tid; i < length; i+= gridDim.x * blockDim.x) {
 						shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
 
 				        auto xOffset2 = shape::getOffset(shapeInfo, xCoord);
@@ -244,16 +244,16 @@ namespace functions {
         template <typename T>
         template <typename OpType>
 	    __device__ void Transform<T>::transformCuda(
-			sd::LongType n,
+			LongType n,
 			T *dy,
-			sd::LongType incy,
+			LongType incy,
 			T *params,
 			T *result,
-			sd::LongType resultStride,
+			LongType resultStride,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
 
             int totalThreads = gridDim.x * blockDim.x;
-		    sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x;
+		    LongType i = blockIdx.x * blockDim.x + threadIdx.x;
 
     		if(incy == 1 && resultStride == 1) {
 	    		/* equal, positive, non-unit increments. */
@@ -273,25 +273,25 @@ namespace functions {
         __device__ void Transform<T>::transformCuda(
 			const int opNum,
 			T *dy,
-			sd::LongType *shapeInfo,
+			LongType *shapeInfo,
 			T *params,
 			T *result,
-			sd::LongType *resultShapeInfo,
+			LongType *resultShapeInfo,
 			int *allocationPointer,
 			T *reductionPointer,
-			UnifiedSharedMemory *manager, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets) {
+			UnifiedSharedMemory *manager, LongType *tadShapeInfo, LongType *tadOffsets) {
                 DISPATCH_BY_OPNUM(transformCuda, PARAMS(dy, shapeInfo, params, result, resultShapeInfo, allocationPointer, reductionPointer, manager, tadShapeInfo, tadOffsets), TRANSFORM_OPS);
 	    }
 
         template <typename T>
         __device__ void Transform<T>::transformCuda(
 			const int opNum,
-			sd::LongType n,
+			LongType n,
 			T *dy,
-			sd::LongType incy,
+			LongType incy,
 			T *params,
 			T *result,
-			sd::LongType resultStride,
+			LongType resultStride,
 			int *allocationPointer,
 			T *reductionPointer,
 			UnifiedSharedMemory *manager) {
@@ -303,8 +303,8 @@ namespace functions {
         //template class ND4J_LOCAL Transform<float16>;
         //template class ND4J_LOCAL Transform<double>;
 
-        BUILD_CALL_1(template __device__ void Transform<float>::transformCuda, float, (float*, sd::LongType*, float*, float*,sd::LongType*, int*,float*, UnifiedSharedMemory*, sd::LongType*, sd::LongType*), TRANSFORM_OPS)
-        BUILD_CALL_1(template __device__ void Transform<float16>::transformCuda, float16, (float16*, sd::LongType*, float16*, float16*,sd::LongType*, int*, float16*, UnifiedSharedMemory*, sd::LongType*, sd::LongType*), TRANSFORM_OPS)
-        BUILD_CALL_1(template __device__ void Transform<double>::transformCuda, double, (double*, sd::LongType*, double*, double*,sd::LongType*, int*, double*, UnifiedSharedMemory*, sd::LongType*, sd::LongType*), TRANSFORM_OPS)
+        BUILD_CALL_1(template __device__ void Transform<float>::transformCuda, float, (float*, LongType*, float*, float*,LongType*, int*,float*, UnifiedSharedMemory*, LongType*, LongType*), TRANSFORM_OPS)
+        BUILD_CALL_1(template __device__ void Transform<float16>::transformCuda, float16, (float16*, LongType*, float16*, float16*,LongType*, int*, float16*, UnifiedSharedMemory*, LongType*, LongType*), TRANSFORM_OPS)
+        BUILD_CALL_1(template __device__ void Transform<double>::transformCuda, double, (double*, LongType*, double*, double*,LongType*, int*, double*, UnifiedSharedMemory*, LongType*, LongType*), TRANSFORM_OPS)
     }
 }

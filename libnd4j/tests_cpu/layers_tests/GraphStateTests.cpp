@@ -30,7 +30,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class GraphStateTests : public testing::Test {
+class GraphStateTests : public NDArrayTests {
  public:
   GraphStateTests() {
     Environment::getInstance().setDebug(false);

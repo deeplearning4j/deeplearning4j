@@ -27,6 +27,12 @@ class ValidationResult {
   bool isLocalMemoryUsageWithinLimit;
   bool isConcurrentKernelsSupported;
   bool isL2CacheSizeSufficient;
+  int sharedSizeBytes, numRegs, maxThreadsPerBlock;
+  size_t freeMemory, totalMemory;
+  int numBlocks;
+  int globalMemory;
+  int numThreads;
+  int memoryUsage;
   bool isValid();
 
   ValidationResult();
@@ -90,9 +96,10 @@ class DeviceValidator {
   void printKernelAttributes(const char* name);
   std::map<std::string, ValidationResult> collectResourceProblems();
   void printValidationResult(const char* name, ValidationResult& result);
-  ValidationResult validateKernelLaunch(const char* name, dim3 threadsPerBlock, dim3 numBlocks, size_t globalMemoryUsage, int minComputeCapability);
+  ValidationResult validateKernelLaunch(const char* name, dim3 threadsPerBlock, dim3 numBlocks,
+                                        size_t globalMemoryUsage);
 
-  void printProblematicFunctions();
+  void printProblematicFunctions(dim3 threadsPerBlock, dim3 numBlocks, size_t globalMemory);
 
   std::vector<std::string> parseCUBINFile(const std::string& filePath);
   std::vector<std::string> parsePTXFile(const std::string& filePath);

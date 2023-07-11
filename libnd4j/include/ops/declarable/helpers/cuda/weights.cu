@@ -20,7 +20,7 @@
 //  @author sgazeos@gmail.com
 //
 #include <ops/declarable/helpers/weights.h>
-
+#include <execution/cuda/LaunchDims.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -72,7 +72,7 @@ static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const*
 template <typename T>
 static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                            int maxLength) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("adjustWeights");
   auto stream = context->getCudaStream();
   adjustWeightsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), weights ? weights->specialBuffer() : nullptr,

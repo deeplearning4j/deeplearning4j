@@ -26,7 +26,7 @@
 
 using namespace sd;
 
-class ArrayOptionsTests : public testing::Test {
+class ArrayOptionsTests : public NDArrayTests {
  public:
   sd::LongType shape[8] = {2, 5, 5, 5, 1, 0, 1, 99};
 };

@@ -33,7 +33,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class GraphExecutionerTests : public testing::Test {
+class GraphExecutionerTests : public NDArrayTests {
  public:
 };
 

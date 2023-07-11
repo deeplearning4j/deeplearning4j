@@ -35,7 +35,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class CudaBasicsTests2 : public testing::Test {
+class CudaBasicsTests2 : public NDArrayTests {
  public:
 };
 

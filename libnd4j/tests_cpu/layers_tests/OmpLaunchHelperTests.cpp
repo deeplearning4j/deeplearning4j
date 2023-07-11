@@ -27,7 +27,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class OmpLaunchHelperTests : public testing::Test {
+class OmpLaunchHelperTests : public NDArrayTests {
  private:
   int ewt = 0;
 

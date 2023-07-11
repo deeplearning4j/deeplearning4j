@@ -26,7 +26,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class VariableProxyTests : public testing::Test {
+class VariableProxyTests : public NDArrayTests {
  public:
 };
 

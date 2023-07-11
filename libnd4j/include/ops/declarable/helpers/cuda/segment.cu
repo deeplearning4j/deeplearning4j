@@ -27,7 +27,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-
+#include <execution/cuda/LaunchDims.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -122,7 +122,7 @@ static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongTy
 template <typename I>
 static void fillUpSegments_(NDArray* indices, sd::LongType numClasses, NDArray& classesRangesBegs,
                             NDArray& classesRangesLens) {
-  dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
+  dim3 dims = getFillUpSegmentsDims(numClasses, indices->lengthOf());
   sd::LongType * begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   auto stream = classesRangesBegs.getContext()->getCudaStream();

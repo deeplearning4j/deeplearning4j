@@ -25,11 +25,11 @@
 
 #include "testinclude.h"
 
-class FileTest : public testing::Test {};
+class FileTest : public NDArrayTests {};
 
-class LoadFromStringTest : public testing::Test {};
+class LoadFromStringTest : public NDArrayTests {};
 
-class HeaderTest : public testing::Test {};
+class HeaderTest : public NDArrayTests {};
 
 TEST_F(HeaderTest, test_dataTypes_1) {
   std::string header("0NUMPY6789{'descr': '>f4");

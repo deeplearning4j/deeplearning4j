@@ -18,7 +18,7 @@
 
 #ifndef NDARRAY_H
 #define NDARRAY_H
-
+#pragma  once
 #include <array/ArrayOptions.h>
 #include <array/ArrayType.h>
 #include <array/ConstantShapeBuffer.h>
@@ -49,7 +49,12 @@
 #include <legacy/NativeOpExecutioner.h>
 #include <types/float16.h>
 #include <types/bfloat16.h>
+#include <iostream>
 namespace sd {
+
+
+//used in google test for printing
+SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  const NDArray& arr);
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator+(const NDArray &arr, const T &scalar);
@@ -105,6 +110,9 @@ template <typename T1, typename T2,
 SD_LIB_EXPORT NDArray operator/(T1 &&arr1, T2 &&arr2);
 
 SD_LIB_EXPORT NDArray mmul(const NDArray &, const NDArray &);
+
+
+
 
 class SD_LIB_EXPORT NDArray {
  private:
@@ -335,6 +343,8 @@ class SD_LIB_EXPORT NDArray {
   NDArray(void *buffer, char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
           sd::LaunchContext *context = sd::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
+
+
   /**
    * This method returns new array with the same shape & data type
    * @return
@@ -421,6 +431,7 @@ class SD_LIB_EXPORT NDArray {
    *  move assignment operator
    */
   NDArray &operator=(NDArray &&other) noexcept;
+
 
   /**
    *  assignment operator, assigns the same scalar to all array elements
@@ -1135,6 +1146,9 @@ class SD_LIB_EXPORT NDArray {
    */
   bool isUnitary();
 
+  //used in google test for printing
+  //See gtest-printers.h for more information.
+  void PrintTo(const NDArray&, std::ostream*);
   /**
    *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
    *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,
@@ -1835,7 +1849,9 @@ bool NDArray::isEmpty() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::operator==(const NDArray &other) const {
-  if (!this->isSameShape(&other)) return false;
+  if (!this->isSameShape(&other)) {
+    return false;
+  }
 
   return this->equalsTo(&other);
 }
@@ -1853,6 +1869,7 @@ bool NDArray::operator!=(const NDArray &other) const {
 DataType NDArray::dataType() const {
   return _dataType;
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

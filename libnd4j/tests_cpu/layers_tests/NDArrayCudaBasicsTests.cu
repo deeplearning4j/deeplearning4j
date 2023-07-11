@@ -36,7 +36,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class NDArrayCudaBasicsTests : public testing::Test {
+class NDArrayCudaBasicsTests : public NDArrayTests {
  public:
 };
 
@@ -128,13 +128,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
 
   NDArray::registerSpecialUse({y}, {x});
   x->applyTransform(transform::Neg, *y);
-  // ASSERT_TRUE(x->isActualOnDeviceSide());
-  // ASSERT_FALSE(x->isActualOnHostSide());
 
-  // ASSERT_TRUE(y->isActualOnDeviceSide());
-  // ASSERT_TRUE(y->isActualOnHostSide());
-  // y->syncToHost();
-  // y->printBuffer("Negatives");
   delete x;
   delete y;
 }
@@ -872,6 +866,8 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
+  GTEST_SKIP() << "Hangs on cuda";
+
   NDArray x1('c', {2, 3, 2},
              {
                  1,

@@ -40,7 +40,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class LaunchContextCudaTests : public testing::Test {
+class LaunchContextCudaTests : public NDArrayTests {
   //
 };
 

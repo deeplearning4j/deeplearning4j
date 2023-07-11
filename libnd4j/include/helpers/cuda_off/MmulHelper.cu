@@ -31,6 +31,7 @@
 #include <numeric>
 
 #include "../MmulHelper.h"
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 
@@ -211,10 +212,10 @@ static SD_KERNEL void usualCudaDot(const sd::LongType length, const double alpha
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T1, typename T2, typename T3>
-SD_HOST static void usualDot(const dim3& blocksPerGrid, const dim3& threadsPerBlock, cudaStream_t* stream,
+SD_HOST static void usualDot(const dim3& launchDims, cudaStream_t* stream,
                              const sd::LongType length, const double alpha, const void* vX, const sd::LongType incx,
                              const void* vY, const sd::LongType incy, const double beta, void* vZ) {
-  usualCudaDot<T1, T2, T3><<<blocksPerGrid, threadsPerBlock, length * sizeof(T3) + 128, *stream>>>(
+  usualCudaDot<T1, T2, T3><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
       length, alpha, vX, incx, vY, incy, beta, vZ);
 }
 
@@ -494,17 +495,13 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
   cudaStream_t* stream = X->getContext()->getCudaStream();
 
-  dim3 threadsPerBlock(512);
-  dim3 blocksPerGrid(1);
-  if (length > 512) threadsPerBlock.x = math::sd_ceil<double, int>(static_cast<double>(length) / 512);
+  dim3 dims = getMMulDims(length,DataTypeUtils::sizeOf(zType));
 
   NDArray::prepareSpecialUse({Z}, {X, Y});
 
-  // BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (blocksPerGrid, threadsPerBlock, stream, length, alpha,
-  // X->specialBuffer(), incx, Y->specialBuffer(), incy, beta, Z->specialBuffer()), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES,
-  // SD_FLOAT_TYPES);
+
   BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot,
-                               (blocksPerGrid, threadsPerBlock, stream, length, alpha, X->specialBuffer(), incx,
+                               (dims, stream, length, alpha, X->specialBuffer(), incx,
                                    Y->specialBuffer(), incy, beta, Z->specialBuffer()),
                                SD_NUMERIC_TYPES)
 

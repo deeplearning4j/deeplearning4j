@@ -32,10 +32,10 @@
 * @param n
 */
 template<typename OpType>
-static inline __device__ void transform(sd::LongType n, T scalar,T *dy,T *params, T *result, int *indexes, int *allocationBuffer, UnifiedSharedMemory *manager) {
+static inline __device__ void transform(LongType n, T scalar,T *dy,T *params, T *result, int *indexes, int *allocationBuffer, UnifiedSharedMemory *manager) {
     int totalThreads = gridDim.x * blockDim.x;
     int tid = threadIdx.x;
-    sd::LongType i = blockIdx.x * blockDim.x + tid;
+    LongType i = blockIdx.x * blockDim.x + tid;
 
     /* equal, positive, non-unit increments. */
     for (; i < n; i+= totalThreads) {
@@ -88,7 +88,7 @@ static inline __device__ void transformCuda(T scalar, T *dy, int *shapeInfo, T *
     else {
         int xIdx[MAX_RANK];
 
-        for (sd::LongType i = tid; i < length; i+= totalThreads) {
+        for (LongType i = tid; i < length; i+= totalThreads) {
             shape::ind2sub(xRank, xShape, i, length, xIdx);
             int xOffset2 = shape::getOffset(shapeInfo, xIdx);
             int resultOffset = shape::getOffset(0resultShapeInfo, xIdx);
@@ -101,7 +101,7 @@ static inline __device__ void transformCuda(T scalar, T *dy, int *shapeInfo, T *
   * ScalarOp along dimension
 **/
 template<typename OpType>
-static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType *tadShapeInfo, sd::LongType *tadOffsets, sd::LongType *tadShapeInfoZ, sd::LongType *tadOffsetsZ) {
+static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParams, T *z, int *zShapeInfo, T *scalars, LongType *dimension, LongType dimensionLength, LongType *tadShapeInfo, LongType *tadOffsets, LongType *tadShapeInfoZ, LongType *tadOffsetsZ) {
 
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;
@@ -117,8 +117,8 @@ static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParam
 
     // main loop, rolling over tads
     for (int r = blockIdx.x; r < numTads; r+=gridDim.x) {
-        sd::LongType offset = tadOffsets[r];
-        sd::LongType offsetZ = tadOffsetsZ[r];
+        LongType offset = tadOffsets[r];
+        LongType offsetZ = tadOffsetsZ[r];
         T scalar = scalars[r];
 
         if (tadEWS >= 1 && zEWS >= 1) {
@@ -147,7 +147,7 @@ static inline void __device__ transformCuda(T *x, int *xShapeInfo, T *extraParam
  */
 template<typename OpType>
 static inline __device__ void transformCuda(
-        sd::LongType n,
+        LongType n,
         T dx,
         T *dy,
         int incy,
@@ -160,7 +160,7 @@ static inline __device__ void transformCuda(
     int totalThreads = gridDim.x * blockDim.x;
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    sd::LongType i = tid;
+    LongType i = tid;
     if(incy == 1 && resultStride == 1) {
         for (; i < n; i += totalThreads) {
             result[i] = OpType::op(dy[i],dx, params);

@@ -27,7 +27,7 @@
 
 using namespace sd;
 
-class EmptyTests : public testing::Test {
+class EmptyTests : public NDArrayTests {
  public:
   EmptyTests() {
     printf("\n");

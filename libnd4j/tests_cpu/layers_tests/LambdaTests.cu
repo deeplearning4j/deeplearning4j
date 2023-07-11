@@ -29,7 +29,7 @@
 
 using namespace sd;
 
-class LambdaTests : public testing::Test {
+class LambdaTests : public NDArrayTests {
  public:
   LambdaTests() {
     printf("\n");

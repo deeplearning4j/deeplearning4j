@@ -27,7 +27,7 @@
 
 using namespace sd;
 
-class HelpersTests2 : public testing::Test {
+class HelpersTests2 : public NDArrayTests {
  public:
   HelpersTests2() { std::cout << std::endl << std::flush; }
 };

@@ -29,6 +29,8 @@
 #include <loops/special_kernels.h>
 #include <ops/declarable/helpers/ismax.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -52,7 +54,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
     auto targetIdx = indexMax.e<sd::LongType>(0);
 
-    dim3 launchDims(128, 512, 1024);
+    dim3 launchDims = getLaunchDims("ismaxFill");
     BUILD_SINGLE_SELECTOR(
         zType, fillIsMaxGeneric,
         (launchDims, stream, output->specialBuffer(), output->specialShapeInfo(), output->lengthOf(), targetIdx),
@@ -72,7 +74,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     // we launch legacy IndexMax op, to get indices of max values along dimension
     auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
 
-    dim3 launchDims(256, 256, 16384);
+    dim3 launchDims = getLaunchDims("ismax");
     dimension = (sd::LongType*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType));
 
     // at this point, all IMax indexes are gathered, and we execute filler

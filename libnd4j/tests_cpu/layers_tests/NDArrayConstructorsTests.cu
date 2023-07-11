@@ -35,7 +35,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class NDArrayConstructorsTests : public testing::Test {
+class NDArrayConstructorsTests : public NDArrayTests {
  public:
 };
 

@@ -24,9 +24,9 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/top_k.h>
-//#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
+#include <execution/cuda/LaunchDims.h>
 
 namespace sd {
 namespace ops {
@@ -53,7 +53,6 @@ static SD_KERNEL void invertKernelLow(void *invertedBuf, const sd::LongType *inv
     auto zIndex = shape::getOffset(invertedShape, pos);
     // invert lower triangular matrix
     inverted[zIndex] = -input[xIndex] / (input[dxIndex] * input[dyIndex]);
-    //            math::atomics::sd_atomicAdd(&inverted[zIndex], - input[xIndex] * inverted[iIndex] / input[dIndex]);
   }
 }
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -101,7 +100,6 @@ static SD_KERNEL void upvertKernelUp(void *invertedBuf, const sd::LongType *inve
     auto zIndex = shape::getOffset(invertedShape, pos);
     // invert upper matrix
     math::atomics::sd_atomicAdd(&inverted[zIndex], -input[xIndex] * inverted[iIndex]);  // / input[yIndex]);
-    // inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) / inputMatrix->t<T>(i, i)
   }
 }
 
@@ -139,7 +137,6 @@ template <typename T>
 static SD_KERNEL void invertUpKernel(void *invertedBuf, const sd::LongType *invertedShape, const void *inputBuf,
                                      const sd::LongType *inputShape, sd::LongType n) {
   auto inverted = reinterpret_cast<T *>(invertedBuf);
-  ;
   auto input = reinterpret_cast<const T *>(inputBuf);
 
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -337,10 +334,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
 
   cusolverDnHandle_t *cusolverH = (cusolverDnHandle_t *)context->getCusolverHandle();  // nullptr;
   // create solver handle
-  cusolverStatus_t status;  // cusolverDnCreate(&cusolverH);
-  //        if (CUSOLVER_STATUS_SUCCESS != status) {
-  //            throw cuda_exception::build("Cannot create cuSolver handle", status);
-  //        }
+  cusolverStatus_t status;
+
   // set solver stream
   status = cusolverDnSetStream(*cusolverH, *stream);
   if (CUSOLVER_STATUS_SUCCESS != status) {
@@ -443,8 +438,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
   if (err) {
     throw cuda_exception::build("helpers::lup_: Cannot deallocate memory for solver info buffer", err);
   }
-  //        cusolverDnDestroy(cusolverH);
-  //        NDArray::registerSpecialUse({input}, {input});
+
   input->tickWriteDevice();
 }
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -581,7 +575,7 @@ static sd::Status determinant_(sd::LaunchContext *context, NDArray *input, NDArr
   auto det = NDArrayFactory::create<T>(1, context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("logAbsDeterminant");
   output->assign(1.f);
   for (int e = 0; e < output->lengthOf(); e++) {
     sd::LongType pos = e * n2;
@@ -620,7 +614,7 @@ sd::Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *o
   auto det = NDArrayFactory::create<T>(1, context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("logAbsDeterminant");
   output->assign(0.f);
   for (int e = 0; e < output->lengthOf(); e++) {
     sd::LongType pos = e * n2;

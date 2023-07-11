@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class SingleDimTests : public testing::Test {
+class SingleDimTests : public NDArrayTests {
  public:
 };
 

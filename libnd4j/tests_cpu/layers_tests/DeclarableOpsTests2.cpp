@@ -26,7 +26,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests2 : public testing::Test {
+class DeclarableOpsTests2 : public NDArrayTests {
  public:
   DeclarableOpsTests2() { printf("\n"); }
 };

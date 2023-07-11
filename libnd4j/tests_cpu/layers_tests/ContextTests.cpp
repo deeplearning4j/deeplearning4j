@@ -27,7 +27,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class ContextTests : public testing::Test {
+class ContextTests : public NDArrayTests {
  public:
 };
 

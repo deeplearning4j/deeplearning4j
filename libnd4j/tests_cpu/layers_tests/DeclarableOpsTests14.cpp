@@ -28,7 +28,7 @@
 
 using namespace sd;
 
-class DeclarableOpsTests14 : public testing::Test {
+class DeclarableOpsTests14 : public NDArrayTests {
  public:
   DeclarableOpsTests14() {
     printf("\n");

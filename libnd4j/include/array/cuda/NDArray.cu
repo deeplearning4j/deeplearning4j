@@ -50,6 +50,9 @@
 
 namespace sd {
 
+
+
+
 void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 

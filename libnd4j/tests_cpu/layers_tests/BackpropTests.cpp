@@ -27,7 +27,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class BackpropTests : public testing::Test {
+class BackpropTests : public NDArrayTests {
  public:
 };
 

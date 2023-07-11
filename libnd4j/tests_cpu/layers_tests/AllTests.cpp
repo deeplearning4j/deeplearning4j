@@ -21,21 +21,6 @@
 //
 //
 #include "testlayers.h"
-/*
-#include "ConvolutionTests.cpp"
-#include "DeclarableOpsTests.cpp"
-#include "DenseLayerTests.cpp"
-#include "FlatBuffersTests.cpp"
-#include "GraphTests.cpp"
-#include "HashUtilsTests.cpp"
-#include "NDArrayTests.cpp"
-#include "SessionLocalTests.cpp"
-#include "StashTests.cpp"
-#include "TadTests.cpp"
-#include "VariableSpaceTests.cpp"
-#include "VariableTests.cpp"
-#include "WorkspaceTests.cpp"
- */
 ///////
 
 

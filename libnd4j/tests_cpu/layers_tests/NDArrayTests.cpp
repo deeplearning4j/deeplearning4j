@@ -29,7 +29,7 @@
 using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
-class NDArrayTest : public testing::Test {
+class NDArrayTest : public NDArrayTests {
  public:
   int alpha = 0;
 

@@ -30,7 +30,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class MmapTests : public testing::Test {
+class MmapTests : public NDArrayTests {
  public:
 };
 

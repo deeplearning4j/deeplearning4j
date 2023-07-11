@@ -29,7 +29,7 @@
 
 using namespace sd;
 
-class DeclarableOpsTests8 : public testing::Test {
+class DeclarableOpsTests8 : public NDArrayTests {
  public:
   DeclarableOpsTests8() {
     printf("\n");
@@ -38,7 +38,7 @@ class DeclarableOpsTests8 : public testing::Test {
 };
 
 template <typename T>
-class TypedDeclarableOpsTests8 : public testing::Test {
+class TypedDeclarableOpsTests8 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests8() {
     printf("\n");

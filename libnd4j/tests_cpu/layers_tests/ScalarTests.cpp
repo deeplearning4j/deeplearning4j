@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ScalarTests : public testing::Test {
+class ScalarTests : public NDArrayTests {
  public:
 };
 

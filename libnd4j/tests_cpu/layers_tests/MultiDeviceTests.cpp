@@ -34,7 +34,7 @@
 
 using namespace sd;
 
-class MultiDeviceTests : public testing::Test {
+class MultiDeviceTests : public NDArrayTests {
  public:
 };
 

@@ -26,18 +26,24 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// put diagonals from input batched matricies to output batched vectors
+// put diagonals from input batched matrices to output batched vectors
 template <typename T>
 static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, sd::LongType numTads,
                                            sd::LongType inputLength, const sd::LongType* tadOnlyInputShapeInfo,
                                            const sd::LongType* tadInputOffsets,
                                            const sd::LongType* tadOnlyOutputShapeInfo,
                                            const sd::LongType* tadOutputOffsets) {
+
+  auto outputBuffer2 = reinterpret_cast<T*>(outputBuffer);
+  auto inputBuffer2 = reinterpret_cast<T const*>(inputBuffer);
+
   int totalThreads = blockDim.x;
   for (sd::LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
     auto yOffset = tadInputOffsets[i];
@@ -45,8 +51,19 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
     for (sd::LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
       sd::LongType coords[2] = {j, j};
       sd::LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
-      *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
-          *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
+      if(xOffset + tadOffset >= inputLength)
+        return;
+      auto outputBufferPlus = outputBuffer2 + shape::getIndexOffset(j, tadOnlyOutputShapeInfo);
+      printf("outputBufferPlus: %lld\n", outputBufferPlus);
+      if(yOffset + tadOffset >= inputLength)
+        return;
+      auto inputBufferPlus = inputBuffer2 + yOffset;
+      printf("inputBufferPlus: %lld\n", inputBufferPlus);
+      auto lastAdd =  inputBufferPlus + tadOffset;
+
+      printf("lastAdd: %lld\n", lastAdd);
+   /*   *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
+          *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);*/
     }
   }
 }
@@ -80,7 +97,7 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
 
   if (!input->isActualOnDeviceSide()) input->syncToDevice();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("matrixDiag");
   matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       input->specialBuffer(), output->specialBuffer(), numTads, lastDimension, packX->specialShapeInfo(),
       packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());

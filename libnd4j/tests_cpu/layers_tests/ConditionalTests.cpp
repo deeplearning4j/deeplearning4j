@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ConditionalTests : public testing::Test {
+class ConditionalTests : public NDArrayTests {
  public:
   ConditionalTests() {
   }

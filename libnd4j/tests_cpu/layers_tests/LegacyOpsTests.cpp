@@ -37,7 +37,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class LegacyOpsTests : public testing::Test {};
+class LegacyOpsTests : public NDArrayTests {};
 
 TEST_F(LegacyOpsTests, TransformTests_1) {
   auto x = NDArrayFactory::create<float>('c', {5, 5});

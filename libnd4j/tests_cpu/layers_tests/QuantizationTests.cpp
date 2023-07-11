@@ -27,7 +27,7 @@
 
 using namespace sd;
 
-class QuantizationTests : public testing::Test {};
+class QuantizationTests : public NDArrayTests {};
 
 TEST_F(QuantizationTests, Basic_Test_1) {
 #ifndef __CUDABLAS__

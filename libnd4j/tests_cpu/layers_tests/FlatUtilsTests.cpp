@@ -30,7 +30,7 @@
 
 using namespace sd;
 
-class FlatUtilsTests : public testing::Test {
+class FlatUtilsTests : public NDArrayTests {
  public:
 };
 

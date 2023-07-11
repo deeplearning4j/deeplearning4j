@@ -31,15 +31,15 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class ConstantShapeHelperTests : public testing::Test {
+class ConstantShapeHelperTests : public NDArrayTests {
  public:
 };
 
-class ConstantHelperTests : public testing::Test {
+class ConstantHelperTests : public NDArrayTests {
  public:
 };
 
-class ConstantTadHelperTests : public testing::Test {
+class ConstantTadHelperTests : public NDArrayTests {
  public:
 };
 

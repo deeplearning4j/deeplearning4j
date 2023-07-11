@@ -35,7 +35,7 @@
 
 template <typename T>
 __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                        sd::LongType N, void *vdx, sd::LongType *xShapeInfo, void *vdy, sd::LongType *yShapeInfo, void *vdz, sd::LongType *zShapeInfo, 
+                                                        LongType N, void *vdx, LongType *xShapeInfo, void *vdy, LongType *yShapeInfo, void *vdz, LongType *zShapeInfo,
                                                         void *vextraA, void *vextraB, double scalarA, double scalarB) {
 
     auto dx = static_cast<T*>(vdx);
@@ -70,8 +70,8 @@ __device__ inline static void metaPredicateShapeGeneric(const int opTypeA, const
 }
 
 template<typename T, typename OpClass>
-__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, sd::LongType N, void *vdx, 
-                                                               sd::LongType *xShapeInfo, void *vdy, sd::LongType *yShapeInfo, void *vdz, sd::LongType *zShapeInfo, 
+__device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opTypeB, LongType N, void *vdx,
+                                                               LongType *xShapeInfo, void *vdy, LongType *yShapeInfo, void *vdz, LongType *zShapeInfo,
                                                                void *vextraA, void *vextraB, double scalarA, double scalarB) {
 
     auto dx = static_cast<T*>(vdx);
@@ -102,8 +102,8 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
 
 template<typename T, typename OpClass>
 __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, 
-                                                                sd::LongType N, void *vdx, sd::LongType *xShapeInfo, void *vdy, sd::LongType *yShapeInfo, void *vdz, 
-                                                                sd::LongType *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
+                                                                LongType N, void *vdx, LongType *xShapeInfo, void *vdy, LongType *yShapeInfo, void *vdz,
+                                                                LongType *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
 
     auto dx = static_cast<T*>(vdx);
     auto dy = static_cast<T*>(vdy);
@@ -133,8 +133,8 @@ __device__ static inline void invertedMetaPairwiseShapedGeneric(const int opType
 
 template<typename T>
 __device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, 
-                                                                        sd::LongType N, void *vdx, sd::LongType *xShapeInfo, void *vdy, sd::LongType *yShapeInfo, void *vdz,
-                                                                        sd::LongType *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
+                                                                        LongType N, void *vdx, LongType *xShapeInfo, void *vdy, LongType *yShapeInfo, void *vdz,
+                                                                        LongType *zShapeInfo, void *vextraA, void *vextraB, double scalarA, double scalarB) {
 
     auto dx = static_cast<T*>(vdx);
     auto dy = static_cast<T*>(vdy);
@@ -164,15 +164,15 @@ __device__ static inline void invertedMetaPairwiseShapedNumericGeneric(const int
 };
 
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, void *dx, sd::LongType *xShapeInfo, void *dy, sd::LongType *yShapeInfo, void *dz, sd::LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, void *dx, LongType *xShapeInfo, void *dy, LongType *yShapeInfo, void *dz, LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, void *dx, sd::LongType *xShapeInfo, void *dy, sd::LongType *yShapeInfo, void *dz, sd::LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, void *dx, LongType *xShapeInfo, void *dy, LongType *yShapeInfo, void *dz, LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, void *dx, sd::LongType *xShapeInfo, void *dy, sd::LongType *yShapeInfo, void *dz, sd::LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
+extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, void *dx, LongType *xShapeInfo, void *dy, LongType *yShapeInfo, void *dz, LongType *zShapeInfo, void *extraA, void *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseShapedNumericGeneric<float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 }
 
@@ -180,9 +180,6 @@ extern "C" __global__ void invertedMetaPairwiseShapedNumericHalf(const int opTyp
 
 #ifndef __CLION_IDE__
 // kernels set for pairwise + scalar based on shape
-//DISPATCH_KERNEL_META(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, float *dx, int *xShapeInfo, float *dy, int *yShapeInfo, float *dz, int *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
-//DISPATCH_KERNEL_META(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, double, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, double *dx, int *xShapeInfo, double *dy, int *yShapeInfo, double *dz, int *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB), PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
-//DISPATCH_KERNEL_META(invertedMetaPairwiseShaped_Pairwise_Scalar_, invertedMetaPairwiseShapedGeneric, float16, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, float16 *dx, int *xShapeInfo, float16 *dy, int *yShapeInfo, float16 *dz, int *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB), PARAMS(opTypeA, opTypeB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
 #endif
 
 namespace functions {
@@ -197,27 +194,27 @@ namespace functions {
         __device__ __noinline__ T execute_1OE(const int opType, const int opNum, T x, T *extras);
 
 
-        __device__ __noinline__ void _ind2subC(int rank, sd::LongType *shape, sd::LongType idx, sd::LongType length, sd::LongType *coords) {
+        __device__ __noinline__ void _ind2subC(int rank, LongType *shape, LongType idx, LongType length, LongType *coords) {
             shape::ind2subC(rank, shape, idx, length, coords);
         }
 
-        __device__ __noinline__ void _ind2subC(int rank, sd::LongType *shape, sd::LongType idx, sd::LongType *coords) {
+        __device__ __noinline__ void _ind2subC(int rank, LongType *shape, LongType idx, LongType *coords) {
             shape::ind2subC(rank, shape, idx, coords);
         }
 
-        __device__ __noinline__ sd::LongType _getOffset(sd::LongType offset,  sd::LongType *shape, sd::LongType *stride, sd::LongType *coords, int rank) {
+        __device__ __noinline__ LongType _getOffset(LongType offset,  LongType *shape, LongType *stride, LongType *coords, int rank) {
             return shape::getOffset(offset, shape, stride, coords, rank);
         }
 
-        __device__ __noinline__ sd::LongType* _shapeOf(sd::LongType *shape) {
+        __device__ __noinline__ LongType* _shapeOf(LongType *shape) {
             return shape::shapeOf(shape);
         }
 
-        __device__ __noinline__ sd::LongType* _stride(sd::LongType *shape) {
+        __device__ __noinline__ LongType* _stride(LongType *shape) {
             return shape::stride(shape);
         }
 
-        __device__ __noinline__ int _rank(sd::LongType* shape) {
+        __device__ __noinline__ int _rank(LongType* shape) {
             return shape::rank(shape);
         }
 
@@ -288,21 +285,21 @@ namespace functions {
         }
 
         template<typename T>
-        __device__ void GRIDShaped<T>::transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  T *dx, sd::LongType *xShapeBuffer, T *y, sd::LongType *yShapeBuffer, T *result, sd::LongType *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo) {
+        __device__ void GRIDShaped<T>::transformCuda(int opTypeA, int opNumA, int opTypeB, int opNumB,  T *dx, LongType *xShapeBuffer, T *y, LongType *yShapeBuffer, T *result, LongType *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, LongType *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             __shared__ int xRank;
             __shared__ int yRank;
             __shared__ int resultRank;
-            __shared__ sd::LongType n;
+            __shared__ LongType n;
 
-            __shared__ sd::LongType *xShape;
-            __shared__ sd::LongType *yShape;
-            __shared__ sd::LongType *zShape;
+            __shared__ LongType *xShape;
+            __shared__ LongType *yShape;
+            __shared__ LongType *zShape;
 
-            __shared__ sd::LongType *xStride;
-            __shared__ sd::LongType *yStride;
-            __shared__ sd::LongType *zStride;
+            __shared__ LongType *xStride;
+            __shared__ LongType *yStride;
+            __shared__ LongType *zStride;
 
             if (threadIdx.x == 0) {
                 xRank = _rank(xShapeBuffer);
@@ -324,10 +321,10 @@ namespace functions {
             __syncthreads();
 
             if (dx == result) {
-                sd::LongType xCoord[MAX_RANK];
-                sd::LongType yCoord[MAX_RANK];
+                LongType xCoord[MAX_RANK];
+                LongType yCoord[MAX_RANK];
 
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
                     _ind2subC(yRank, yShape, i, n, yCoord);
 
@@ -337,11 +334,11 @@ namespace functions {
                 }
 
             } else {
-                sd::LongType xCoord[MAX_RANK];
-                sd::LongType yCoord[MAX_RANK];
-                sd::LongType resultCoord[MAX_RANK];
+                LongType xCoord[MAX_RANK];
+                LongType yCoord[MAX_RANK];
+                LongType resultCoord[MAX_RANK];
 
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
                     _ind2subC(yRank, yShape, i, n, yCoord);
                     _ind2subC(resultRank, zShape, i, n, resultCoord);
@@ -356,21 +353,21 @@ namespace functions {
 
         template<typename T>
         template<typename OpType>
-        __device__ void GRIDShaped<T>::transformCuda(T *dx, sd::LongType *xShapeBuffer, T *y, sd::LongType *yShapeBuffer, T *result, sd::LongType *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, sd::LongType *tadOnlyShapeInfo) {
+        __device__ void GRIDShaped<T>::transformCuda(T *dx, LongType *xShapeBuffer, T *y, LongType *yShapeBuffer, T *result, LongType *resultShapeBuffer, T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, LongType *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             __shared__ int xRank;
             __shared__ int yRank;
             __shared__ int resultRank;
-            __shared__ sd::LongType n;
+            __shared__ LongType n;
 
-            __shared__ sd::LongType *xShape;
-            __shared__ sd::LongType *yShape;
-            __shared__ sd::LongType *zShape;
+            __shared__ LongType *xShape;
+            __shared__ LongType *yShape;
+            __shared__ LongType *zShape;
 
-            __shared__ sd::LongType *xStride;
-            __shared__ sd::LongType *yStride;
-            __shared__ sd::LongType *zStride;
+            __shared__ LongType *xStride;
+            __shared__ LongType *yStride;
+            __shared__ LongType *zStride;
 
             if (threadIdx.x == 0) {
                 xRank = _rank(xShapeBuffer);
@@ -392,10 +389,10 @@ namespace functions {
             __syncthreads();
 
             if (dx == result) {
-                sd::LongType xCoord[MAX_RANK];
-                sd::LongType yCoord[MAX_RANK];
+                LongType xCoord[MAX_RANK];
+                LongType yCoord[MAX_RANK];
 
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
                     _ind2subC(yRank, yShape, i, n, yCoord);
 
@@ -404,11 +401,11 @@ namespace functions {
                     result[xOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
                 }
             } else {
-                sd::LongType xCoord[MAX_RANK];
-                sd::LongType yCoord[MAX_RANK];
-                sd::LongType resultCoord[MAX_RANK];
+                LongType xCoord[MAX_RANK];
+                LongType yCoord[MAX_RANK];
+                LongType resultCoord[MAX_RANK];
 
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     _ind2subC(xRank, xShape, i, n, xCoord);
                     _ind2subC(yRank, yShape, i, n, yCoord);
                     _ind2subC(resultRank, zShape, i, n, resultCoord);
@@ -423,19 +420,19 @@ namespace functions {
 
 
         template <>
-        void GRIDShaped<float>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float *dx, sd::LongType *xShapeInfo, float *dy, sd::LongType *yShapeInfo, float *dz, sd::LongType *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
+        void GRIDShaped<float>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float *dx, LongType *xShapeInfo, float *dy, LongType *yShapeInfo, float *dz, LongType *zShapeInfo, float *extraA, float *extraB, float scalarA, float scalarB) {
             invertedMetaPairwiseShapedNumericFloat<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
         }
 
         template <>
-        void GRIDShaped<float16>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float16 *dx, sd::LongType *xShapeInfo, float16 *dy, sd::LongType *yShapeInfo, float16 *dz, sd::LongType *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
+        void GRIDShaped<float16>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float16 *dx, LongType *xShapeInfo, float16 *dy, LongType *yShapeInfo, float16 *dz, LongType *zShapeInfo, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
             invertedMetaPairwiseShapedNumericHalf<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
         }
 
         template <>
-        void GRIDShaped<double>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, double *dx, sd::LongType *xShapeInfo, double *dy, sd::LongType *yShapeInfo, double *dz, sd::LongType *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
+        void GRIDShaped<double>::execMetaPredicateShaped(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, double *dx, LongType *xShapeInfo, double *dy, LongType *yShapeInfo, double *dz, LongType *zShapeInfo, double *extraA, double *extraB, double scalarA, double scalarB) {
             invertedMetaPairwiseShapedNumericDouble<<<128, 1024, 2048, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xShapeInfo, dy, yShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
 
         }

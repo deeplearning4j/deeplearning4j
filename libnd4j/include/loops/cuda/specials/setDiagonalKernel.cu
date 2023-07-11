@@ -21,6 +21,8 @@
 //
 #include <array/NDArray.h>
 #include <loops/special_kernels.h>
+
+#include <execution/cuda/LaunchDims.h>
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +121,7 @@ template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shap
 template <typename T>
 static void setDiagonalValueUpper(void* buffer, sd::LongType* shape, NDArray const& value, int diagonal,
                                   sd::LongType rows, sd::LongType cols, cudaStream_t& stream) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("diag");
   setDiagValueUpperKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
 }
@@ -128,7 +130,7 @@ static void setDiagonalValueUpper(void* buffer, sd::LongType* shape, NDArray con
 template <typename T>
 static void setDiagonalValueLower(void* buffer, sd::LongType* shape, NDArray const& value, int diagonal,
                                   sd::LongType rows, sd::LongType cols, cudaStream_t& stream) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("diag");
   setDiagValueLowerKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
 }

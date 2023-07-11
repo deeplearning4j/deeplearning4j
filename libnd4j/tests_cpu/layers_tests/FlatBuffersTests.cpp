@@ -33,7 +33,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class FlatBuffersTest : public testing::Test {
+class FlatBuffersTest : public NDArrayTests {
  public:
   int alpha = 0;
 

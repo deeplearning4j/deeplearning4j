@@ -34,7 +34,7 @@
 
 using namespace sd;
 
-class StringTests : public testing::Test {
+class StringTests : public NDArrayTests {
  public:
 };
 /////////////////////////////////////////////////////////////////////////

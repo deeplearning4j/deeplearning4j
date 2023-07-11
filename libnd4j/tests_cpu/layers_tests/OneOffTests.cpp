@@ -34,7 +34,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class OneOffTests : public testing::Test {
+class OneOffTests : public NDArrayTests {
  public:
 };
 

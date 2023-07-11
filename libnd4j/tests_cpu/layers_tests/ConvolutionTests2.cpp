@@ -39,7 +39,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ConvolutionTests2 : public testing::Test {
+class ConvolutionTests2 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)
@@ -90,7 +90,7 @@ TEST_F(ConvolutionTests2, im2col_1) {
 }
 
 template <typename T>
-class TypedConvolutionTests2 : public testing::Test {
+class TypedConvolutionTests2 : public NDArrayTests {
  public:
 };
 

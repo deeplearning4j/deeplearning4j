@@ -23,7 +23,7 @@
 
 #include "testinclude.h"
 
-class BroadcastMultiDimTest : public testing::Test {
+class BroadcastMultiDimTest : public NDArrayTests {
  public:
   sd::LongType dimensions[2] = {0, 2};
   sd::LongType inputShapeBuffer[10] = {3, 2, 3, 5, 15, 5, 1, 8192, 1, 99};

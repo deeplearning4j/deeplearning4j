@@ -42,12 +42,12 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ConvolutionTests1 : public testing::Test {
+class ConvolutionTests1 : public NDArrayTests {
  public:
 };
 
 template <typename T>
-class TypedConvolutionTests1 : public testing::Test {
+class TypedConvolutionTests1 : public NDArrayTests {
  public:
 };
 

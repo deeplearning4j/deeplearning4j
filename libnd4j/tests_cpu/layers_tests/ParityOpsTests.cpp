@@ -27,7 +27,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class ParityOpsTests : public testing::Test {
+class ParityOpsTests : public NDArrayTests {
  public:
 };
 

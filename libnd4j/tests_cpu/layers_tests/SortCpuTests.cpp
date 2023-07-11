@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class SortCpuTests : public testing::Test {
+class SortCpuTests : public NDArrayTests {
  public:
 };
 

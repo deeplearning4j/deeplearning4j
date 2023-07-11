@@ -30,7 +30,7 @@
 
 using namespace sd;
 
-class DeclarableOpsTests15 : public testing::Test {
+class DeclarableOpsTests15 : public NDArrayTests {
  public:
   DeclarableOpsTests15() {
     printf("\n");

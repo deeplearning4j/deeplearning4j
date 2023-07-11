@@ -27,7 +27,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class OpTupleTests : public testing::Test {
+class OpTupleTests : public NDArrayTests {
  public:
 };
 

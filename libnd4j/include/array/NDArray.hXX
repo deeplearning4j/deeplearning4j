@@ -51,6 +51,7 @@ SD_LIB_EXPORT std::u16string NDArray::e(const sd::LongType i) const;
 template <>
 SD_LIB_EXPORT std::u32string NDArray::e(const sd::LongType i) const;
 
+
 SD_INLINE void prepareUse(const std::vector<const NDArray *> &writeList, const std::vector<const NDArray *> &readList,
                           bool synchronizeWritables = false) {
 #if defined(HAVE_VEDA)
@@ -941,6 +942,126 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   syncToDevice();
 }
 
+
+
+//google test print statement
+static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
+  // adapted printFormatted function
+  if (arr.rankOf() == 1) {
+    os << "[ ";
+    for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
+      if (arr.isR())
+        os << arr.e<float>(i) << ", ";
+      else if (arr.isZ())
+        os << arr.e<sd::LongType>(i) << ", ";
+      else if (arr.isB())
+        os << (arr.e<bool>(i) ? "true" : "false") << ", ";
+      else if (arr.isS()) {
+        os << "\"" << arr.e<std::string>(i) << "\", ";
+      }
+    }
+    os << "]\n";
+  } else if (arr.rankOf() == 2) {
+    sd::LongType rows = arr.rows();
+    sd::LongType cols = limit < 0 ? arr.columns() : sd::math::sd_min<sd::LongType>(limit, cols);
+    char *padding = new char[depth + 1];
+    memset(padding, ' ', depth);
+    padding[depth] = 0;
+    os << "[";
+    for (sd::LongType row = 0; row < rows; ++row) {
+      if (row && depth > 0) os << padding;
+      os << "[";
+      for (sd::LongType col = 0; col < cols; col++) {
+        if (col > 0) os << ", ";
+        if (arr.isR()) {
+          os << arr.e<float>(row, col);
+        } else if (arr.isZ()) {
+          os << arr.e<sd::LongType>(row, col);
+        } else if (arr.isB()) {
+          os << (arr.e<bool>(row, col) ? "true" : "false");
+        } else if (arr.isS()) {
+          os << "\"" << arr.e<std::string>(row * cols + col) << "\"";
+        }
+      }
+      if (row < rows - 1)
+        os << "]\n";
+      else
+        os << "]";
+    }
+    os << "]";
+    delete[] padding;
+  } else {
+    // assuming ShapeUtils and other required objects/methods are defined and available
+    sd::LongType restCount = 2;
+    os << "[";
+    restCount = ShapeUtils::getNumOfSubArrs(arr.shapeInfo(), {0});
+    for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
+      NDArray subArr = arr(arrIndex, {0});
+      printFormatted(os, subArr, depth + 1, limit);
+      if (arrIndex < restCount - 1) {
+        for (sd::LongType i = 1; i < arr.rankOf(); ++i) os << "\n";
+        for (sd::LongType i = 0; i < depth - 2; ++i) os << " ";
+      }
+    }
+    os << "]";
+  }
+}
+
+
+inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
+  arr.syncToHost();
+
+  sd::LongType rank = arr.rankOf();
+
+  bool rowFlag = (rank < 2) || (rank == 2 && arr.sizeAt(0) == 1);
+
+  if (arr.isEmpty()) {
+    os << "Empty\n";
+  } else if (arr.rankOf() == 0) {
+    if (arr.isZ()) {
+      os << arr.e<sd::LongType>(0) << "\n";
+    } else if (arr.isR()) {
+      os << arr.e<float>(0) << "\n";
+    } else if (arr.isB()) {
+      os << (arr.e<bool>(0) ? "true" : "false") << "\n";
+    } else if (arr.isS()) {
+      os << "\"" << arr.e<std::string>(0) << "\"\n";
+    }
+  } else if (rowFlag && arr.ews() == 1) {
+    os << "[ ";
+    for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
+      if (arr.isR())
+        os << arr.e<float>(i) << ", ";
+      else if (arr.isZ())
+        os << arr.e<sd::LongType>(i) << ", ";
+      else if (arr.isB())
+        os << (arr.e<bool>(i) ? "true" : "false") << ", ";
+      else if (arr.isS()) {
+        os << "\"" << arr.e<std::string>(i) << "\", ";
+      }
+    }
+    os << "]\n";
+  } else {
+    if(arr.isEmpty())
+      throw std::runtime_error("NULL buffer found but shape is not empty.");
+    printFormatted(os, arr, 1,arr.lengthOf());
+  }
+  return os;
+}
+
+
+
+inline std::ostream& operator<<(std::ostream os,  NDArray& arr) {
+  const auto arr2 = arr;
+  return os << arr2;
+}
+
+//used in gtest printing
+void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
+  *os << arr;
+}
+
+//end google test print statement
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 NDArray &NDArray::operator=(const NDArray &other) {
@@ -1835,31 +1956,14 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
 
   if (msg) printf("%s: ", msg);
-
-  if (this->isEmpty()) {
-    sd_printf("Empty\n",0);
-  } else if (this->rankOf() == 0) {
-    if (this->isZ()) {
-      sd_printf("%lld\n", this->e<sd::LongType>(0));
-    } else if (this->isR()) {
-      sd_printf("%.8f\n", this->e<float>(0));
-    } else if (this->isB()) {
-      sd_printf("%s\n", this->e<bool>(0) ? "true" : "false");
-    } else if (this->isS()) {
-      sd_printf("\"%s\"\n", this->e<std::string>(0).c_str());
-    }
-  } else if (rowFlag && ews() == 1) {
-    printBuffer(nullptr, limit);
-  }
-  else {
-    if(_buffer == nullptr)
-      THROW_EXCEPTION("NULL buffer found but shape is not empty.");
-    if (msg) sd_printf("\n",0);
-    printFormatted(this, 1, limit);
-    sd_printf("\n",0);
-  }
-  fflush(stdout);
+  //uses the << operator instead which is used in gtest as well
+  std::cout << this;
 }
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -3598,14 +3702,21 @@ NDArray NDArray::dup(const char newOrder) const {
 ////////////////////////////////////////////////////////////////////////
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
 bool NDArray::equalsTo(const NDArray *other, double eps) const {
-  if (dataType() != other->dataType() || lengthOf() != other->lengthOf()) return false;
+  if (dataType() != other->dataType() || lengthOf() != other->lengthOf() && !isScalar()) {
+    return false;
+  }
+
+  if(isScalar()) {
+    auto thisVal = e<double>(0);
+    auto otherVal = other->e<double>(0);
+    return sd::math::sd_abs<double>(thisVal - otherVal) <= eps;
+  }
 
   // we need to be able to compare [1, len] to [len]
-  if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
-    // FIXME: do something here?
-  } else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo()))
+else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo())) {
     return false;
-
+  }
+  //TODO wtf (base) mvn -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.compute=86   -Dlibnd4j.build=debug   test -Dlibnd4j.test.filter=BroadcastableOpsTests.Test_Subtract_6
   if (isS()) {
     // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same
     // length
@@ -3637,26 +3748,31 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
   } else {
     //NOTE leave max precision here. Crashes can occur otherwise for arrays where data type is of higher
     // regular numeric types
+    sd_print("Running regular equals\n");
     NDArray tmp(sd::DataType::DOUBLE, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
     prepareUse({&tmp}, {this, other});
 #else
     NDArray::preparePrimaryUse({&tmp}, {this, other});
 #endif
+    sd_print("Running execReduce3Scalar\n");
     NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
                                            specialShapeInfo(), extras.argumentsAsT(DataType::DOUBLE), other->buffer(),
                                            other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
                                            tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
     NDArray::registerSpecialUse({&tmp}, {this, other});
 #else
     NDArray::registerPrimaryUse({&tmp}, {this, other});
 #endif
     synchronize("NDArray::equalsTo");
 
-    if (tmp.e<sd::LongType>(0) != 0) return false;
+    if (tmp.e<sd::LongType>(0) != 0) {
+      sd_print("Returning failure\n");
+      return false;
+    }
 
     return true;
   }

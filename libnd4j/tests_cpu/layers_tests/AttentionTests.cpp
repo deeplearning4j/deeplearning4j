@@ -31,7 +31,7 @@
 
 using namespace sd;
 
-class AttentionTests : public testing::Test {
+class AttentionTests : public NDArrayTests {
  public:
   AttentionTests() {
     printf("\n");

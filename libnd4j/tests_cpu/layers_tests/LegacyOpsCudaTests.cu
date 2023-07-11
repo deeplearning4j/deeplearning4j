@@ -37,7 +37,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class LegacyOpsCudaTests : public testing::Test {};
+class LegacyOpsCudaTests : public NDArrayTests {};
 
 TEST_F(LegacyOpsCudaTests, test_sortTad_1) {
   auto x = NDArrayFactory::create<float>(

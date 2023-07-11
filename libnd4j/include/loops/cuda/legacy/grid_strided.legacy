@@ -34,7 +34,7 @@
 
 template <typename T>
 __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB,
-                                                          sd::LongType N, T *dx, sd::LongType xStride, T *dy, sd::LongType yStride, T *dz, sd::LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB
+                                                          LongType N, T *dx, LongType xStride, T *dy, LongType yStride, T *dz, LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB
 ) {
     __shared__ sd::Pointer params[2];
     __shared__ T *paramsPtr;
@@ -94,7 +94,7 @@ __device__ inline static void metaPredicateStridedGeneric(const int opTypeA, con
 }
 
 template<typename T, typename OpClass>
-__device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTypeA, const int opTypeB, sd::LongType N, T *dx, sd::LongType xStride, T *dy, sd::LongType yStride, T *dz, sd::LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTypeA, const int opTypeB, LongType N, T *dx, LongType xStride, T *dy, LongType yStride, T *dz, LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
     __shared__ sd::Pointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -117,7 +117,7 @@ __device__ static inline void invertedMetaPairwiseStridedGeneric(const int opTyp
 
 
 template<typename T>
-__device__ static inline void invertedMetaPairwiseStridedNumericGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, T *dx, sd::LongType xStride, T *dy, sd::LongType yStride, T *dz, sd::LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
+__device__ static inline void invertedMetaPairwiseStridedNumericGeneric(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, T *dx, LongType xStride, T *dy, LongType yStride, T *dz, LongType zStride, T *extraA, T *extraB, T scalarA, T scalarB) {
     __shared__ sd::Pointer params[2];
     __shared__ T *paramsPtr;
     if (threadIdx.x == 0) {
@@ -138,23 +138,23 @@ __device__ static inline void invertedMetaPairwiseStridedNumericGeneric(const in
     functions::grid::GRIDStrided<T>::transformCuda(opTypeA, opNumA, opTypeB, opNumB, N, dx, dy, xStride, yStride, paramsPtr, dz, zStride, nullptr, nullptr, nullptr);
 };
 
-extern "C" __global__ void invertedMetaPairwiseStridedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float *dx, sd::LongType xStride, float *dy, sd::LongType yStride, float *dz, sd::LongType zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
+extern "C" __global__ void invertedMetaPairwiseStridedNumericFloat(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float *dx, LongType xStride, float *dy, LongType yStride, float *dz, LongType zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
     invertedMetaPairwiseStridedNumericGeneric<float>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseStridedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, double *dx, sd::LongType xStride, double *dy, sd::LongType yStride, double *dz, sd::LongType zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
+extern "C" __global__ void invertedMetaPairwiseStridedNumericDouble(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, double *dx, LongType xStride, double *dy, LongType yStride, double *dz, LongType zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
     invertedMetaPairwiseStridedNumericGeneric<double>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 }
 
-extern "C" __global__ void invertedMetaPairwiseStridedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float16 *dx, sd::LongType xStride, float16 *dy, sd::LongType yStride, float16 *dz, sd::LongType zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
+extern "C" __global__ void invertedMetaPairwiseStridedNumericHalf(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float16 *dx, LongType xStride, float16 *dy, LongType yStride, float16 *dz, LongType zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
     invertedMetaPairwiseStridedNumericGeneric<float16>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
 }
 
 #ifndef __CLION_IDE__
-// kernels set for pairwise + scalar based on stride                                                                                         const int opTypeA, const int opTypeB, sd::LongType N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
-//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, float, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, float *dx, int xStride, float *dy, int yStride, float *dz, int zStride, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
-//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, double, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, double *dx, int xStride, double *dy, int yStride, double *dz, int zStride, double *extraA, double *extraB, double scalarA, double scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
-//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, float16, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, sd::LongType N, float16 *dx, int xStride, float16 *dy, int yStride, float16 *dz, int zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
+// kernels set for pairwise + scalar based on stride                                                                                         const int opTypeA, const int opTypeB, LongType N, T *dx, int xStride, T *dy, int yStride, T *dz, int zStride, T *extraA, T *extraB, T scalarA, T scalarB
+//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, float, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, LongType N, float *dx, int xStride, float *dy, int yStride, float *dz, int zStride, float *extraA, float *extraB, float scalarA, float scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
+//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, double, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, LongType N, double *dx, int xStride, double *dy, int yStride, double *dz, int zStride, double *extraA, double *extraB, double scalarA, double scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
+//DISPATCH_KERNEL_META(invertedMetaPairwiseStrided_Pairwise_Scalar_, invertedMetaPairwiseStridedGeneric, float16, metaOps::InvertedMetaOp, INPUT(const int opTypeA, const int opTypeB, LongType N, float16 *dx, int xStride, float16 *dy, int yStride, float16 *dz, int zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB), PARAMS(opTypeA, opTypeB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB),  OPS_A(PAIRWISE_TRANSFORM_OPS), OPS_B(SCALAR_OPS))
 #endif
 
 
@@ -234,15 +234,15 @@ namespace functions {
 
         template<typename T>
         template<typename OpType>
-        __device__ void GRIDStrided<T>::transformCuda(sd::LongType n, T *dx, T *dy, sd::LongType incx, sd::LongType incy, T *params, T *result, sd::LongType incz,int *allocationPointer, UnifiedSharedMemory *manager,sd::LongType *tadOnlyShapeInfo) {
+        __device__ void GRIDStrided<T>::transformCuda(LongType n, T *dx, T *dy, LongType incx, LongType incy, T *params, T *result, LongType incz,int *allocationPointer, UnifiedSharedMemory *manager,LongType *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             if (incx == incy && incy == incz && incx == 1) {
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     result[i] = OpType::op(dx[i], dy[i], params);
                 }
             } else {
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     result[i * incz] = OpType::op(dx[i * incx], dy[i * incy], params);
                 }
             }
@@ -250,15 +250,15 @@ namespace functions {
 
 
         template<typename T>
-        __device__ void GRIDStrided<T>::transformCuda(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType n, T *dx, T *dy, sd::LongType incx, sd::LongType incy, T *params, T *result, sd::LongType incz,int *allocationPointer, UnifiedSharedMemory *manager,sd::LongType *tadOnlyShapeInfo) {
+        __device__ void GRIDStrided<T>::transformCuda(const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType n, T *dx, T *dy, LongType incx, LongType incy, T *params, T *result, LongType incz,int *allocationPointer, UnifiedSharedMemory *manager,LongType *tadOnlyShapeInfo) {
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
             if (incx == incy && incy == incz && incx == 1) {
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     result[i] = functions::grid::invertedOpExecutorB<T>(opTypeA, opNumA, opTypeB, opNumB, dx[i], dy[i], params);
                 }
             } else {
-                for (sd::LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
+                for (LongType i = tid; i < n; i += gridDim.x * blockDim.x) {
                     result[i * incz] = functions::grid::invertedOpExecutorB<T>(opTypeA, opNumA, opTypeB, opNumB, dx[i * incx], dy[i * incy], params);
                 }
             }
@@ -266,17 +266,17 @@ namespace functions {
 
 
         template <>
-        void GRIDStrided<float>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float *dx, sd::LongType xStride, float *dy, sd::LongType yStride, float *dz, sd::LongType zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
+        void GRIDStrided<float>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float *dx, LongType xStride, float *dy, LongType yStride, float *dz, LongType zStride, float *extraA, float *extraB, float scalarA, float scalarB) {
             invertedMetaPairwiseStridedNumericFloat<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
         }
 
         template <>
-        void GRIDStrided<float16>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, float16 *dx, sd::LongType xStride, float16 *dy, sd::LongType yStride, float16 *dz, sd::LongType zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
+        void GRIDStrided<float16>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, float16 *dx, LongType xStride, float16 *dy, LongType yStride, float16 *dz, LongType zStride, float16 *extraA, float16 *extraB, float16 scalarA, float16 scalarB) {
             invertedMetaPairwiseStridedNumericHalf<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
         }
 
         template <>
-        void GRIDStrided<double>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, sd::LongType N, double *dx, sd::LongType xStride, double *dy, sd::LongType yStride, double *dz, sd::LongType zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
+        void GRIDStrided<double>::execMetaPredicateStrided(cudaStream_t * stream, sd::Pointer *extras, const int opTypeA, const int opNumA, const int opTypeB, const int opNumB, LongType N, double *dx, LongType xStride, double *dy, LongType yStride, double *dz, LongType zStride, double *extraA, double *extraB, double scalarA, double scalarB) {
             invertedMetaPairwiseStridedNumericDouble<<<128, 1024, 1024, *stream>>>(opTypeA, opNumA, opTypeB, opNumB, N, dx, xStride, dy, yStride, dz, zStride, extraA, extraB, scalarA, scalarB);
         }
 

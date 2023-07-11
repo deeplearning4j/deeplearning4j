@@ -26,7 +26,7 @@
 
 using namespace sd;
 
-class NDArrayListTests : public testing::Test {
+class NDArrayListTests : public NDArrayTests {
  public:
 };
 

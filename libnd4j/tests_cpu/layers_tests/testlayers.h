@@ -19,8 +19,8 @@
 //
 // @author raver119@gmail.com
 //
-
-#ifndef LIBND4J_TESTLAYERS_H
+#pragma  once
+#if !defined(LIBND4J_TESTLAYERS_H)
 #define LIBND4J_TESTLAYERS_H
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
@@ -38,5 +38,44 @@
 #include <system/common.h>
 
 #include <array>
+class NDArrayTests : public testing::Test {
+  inline static std::map<std::string, std::vector<sd::NDArray*>> arrays;
 
+ protected:
+  sd::NDArray* registerArr(sd::NDArray arr) {
+    auto ret = new sd::NDArray(arr);
+    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    NDArrayTests::arrays[std::string(test_info->name())].push_back(ret);
+    return ret;
+  }
+  void SetUp() override {
+    Test::SetUp();
+    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    arrays[std::string(test_info->name())] = std::vector<sd::NDArray*>();
+  }
+
+  void TearDown() override {
+    Test::TearDown();
+    sd_print("Tear down called\n");
+    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    // delete any existing memory not found in the current test
+    // this is to avoid deleting any memory that may or may not be asynchronously used
+    // by cuda and prevents issues when running only 1 test
+    std::vector<std::string> keysToDelete;
+    for (auto it = arrays.begin(); it != arrays.end(); it++) {
+      if (std::string(test_info->name()) != std::string(it->first)) {
+        sd_printf("Deleting for test name %s\n", test_info->name());
+        for (auto arr : it->second) {
+          delete arr;
+        }
+
+        keysToDelete.push_back(it->first);
+      }
+    }
+
+    for (auto key : keysToDelete) {
+      arrays.erase(key);
+    }
+  }
+};
 #endif  // LIBND4J_TESTLAYERS_H

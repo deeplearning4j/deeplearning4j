@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class BitwiseUtilsTests : public testing::Test {
+class BitwiseUtilsTests : public NDArrayTests {
  public:
 };
 

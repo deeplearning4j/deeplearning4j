@@ -2,7 +2,6 @@
 
 ValidationResult::ValidationResult()
     : isComputeCapabilitySufficient(true),
-      isECCMemorySupported(true),
       isManagedMemorySupported(true),
       isComputePreemptionSupported(true),
       isThreadsPerBlockWithinLimit(true),
@@ -224,8 +223,8 @@ void DeviceValidator::printKernelAttribute(const char* name, CUfunction_attribut
   std::cout << "Attribute " << attribute << " for function " << name << " is " << value << std::endl;
 }
 
-
-ValidationResult DeviceValidator::validateKernelLaunch(const char* name, dim3 threadsPerBlock, dim3 numBlocks, size_t globalMemoryUsage, int minComputeCapability) {
+ValidationResult DeviceValidator::validateKernelLaunch(const char* name, dim3 threadsPerBlock, dim3 numBlocks,
+                                                       size_t globalMemoryUsage) {
   ValidationResult result;
   CUfunction kernel;
 
@@ -243,7 +242,11 @@ ValidationResult DeviceValidator::validateKernelLaunch(const char* name, dim3 th
   cuFuncGetAttribute(&numRegs, CU_FUNC_ATTRIBUTE_NUM_REGS, kernel);
   cuFuncGetAttribute(&maxThreadsPerBlock, CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK, kernel);
 
-  result.isComputeCapabilitySufficient = prop.major * 10 + prop.minor >= minComputeCapability;
+  result.sharedSizeBytes = sharedSizeBytes;
+  result.numRegs = numRegs;
+  result.maxThreadsPerBlock = maxThreadsPerBlock;
+
+  result.isComputeCapabilitySufficient = true;
   result.isECCMemorySupported = prop.ECCEnabled;
   result.isManagedMemorySupported = prop.managedMemory;
   result.isComputePreemptionSupported = prop.computePreemptionSupported;
@@ -251,26 +254,33 @@ ValidationResult DeviceValidator::validateKernelLaunch(const char* name, dim3 th
   result.isL2CacheSizeSufficient = prop.l2CacheSize;
   result.isThreadsPerBlockWithinLimit = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z <= prop.maxThreadsPerBlock;
   result.isThreadsPerBlockWithinLimit &= threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z <= maxThreadsPerBlock;
+  result.numBlocks = numBlocks.x;
   result.isBlocksWithinGridSizeLimit = numBlocks.x <= prop.maxGridSize[0] && numBlocks.y <= prop.maxGridSize[1] && numBlocks.z <= prop.maxGridSize[2];
   result.isSharedMemoryUsageWithinLimit = sharedSizeBytes <= prop.sharedMemPerBlock;
   result.isRegisterUsageWithinLimit = numRegs * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z <= prop.regsPerBlock;
-  result.isTotalThreadsWithinLimit = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z * numBlocks.x * numBlocks.y * numBlocks.z <= prop.maxThreadsPerMultiProcessor;
+  result.numThreads = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z * numBlocks.x * numBlocks.y * numBlocks.z;
+  result.isTotalThreadsWithinLimit = threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z * numBlocks.x * numBlocks.y * numBlocks.z <= prop.maxThreadsPerMultiProcessor * prop.multiProcessorCount;
   result.isGlobalMemoryUsageWithinLimit = globalMemoryUsage <= prop.totalGlobalMem;
-
+  result.globalMemory = globalMemoryUsage;
   size_t freeMemory, totalMemory;
   cudaMemGetInfo(&freeMemory, &totalMemory);
   size_t usedMemory = totalMemory - freeMemory;
-  result.isMemoryUsageWithinLimit = usedMemory + globalMemoryUsage <= totalMemory;
+  result.memoryUsage = usedMemory + globalMemoryUsage;
+  result.isMemoryUsageWithinLimit = result.memoryUsage <= totalMemory;
   result.isLocalMemoryUsageWithinLimit = usedMemory + globalMemoryUsage <= prop.localL1CacheSupported ? totalMemory : prop.localL1CacheSupported;
+  result.freeMemory = freeMemory;
+  result.totalMemory = totalMemory;
+
   return result;
 }
 
-void DeviceValidator::printProblematicFunctions() {
+void DeviceValidator::printProblematicFunctions(dim3 threadsPerBlock, dim3 numBlocks, size_t globalMemory) {
+  printf("Attempting to print functions with size of map %d\n",functionMap.size());
   for (const auto& pair : functionMap) {
     const std::string functionName = pair.first;
     CUfunction function = pair.second;
 
-    ValidationResult validationResult = validateKernelLaunch(functionName.c_str(), dim3(), dim3(), 0, 0);
+    ValidationResult validationResult = validateKernelLaunch(functionName.c_str(),threadsPerBlock, numBlocks, globalMemory);
 
     if (!validationResult.isValid()) {
       std::cout << "Function " << functionName << " has the following problems:\n";
@@ -282,7 +292,6 @@ void DeviceValidator::printProblematicFunctions() {
 
 bool ValidationResult::isValid()  {
   return isComputeCapabilitySufficient &&
-         isECCMemorySupported &&
          isManagedMemorySupported &&
          isComputePreemptionSupported &&
          isThreadsPerBlockWithinLimit &&
@@ -298,14 +307,13 @@ bool ValidationResult::isValid()  {
 }
 
 void DeviceValidator::printValidationResult(const char* name, ValidationResult& result) {
+  printf("Validating: %s\n",name);
   if (!result.isValid()) {
     std::cout << "Function " << name << " has an issue:\n";
     if (!result.isComputeCapabilitySufficient) {
       std::cout << " - Compute capability is not sufficient. Required: " << result.isComputeCapabilitySufficient << ", Actual: " << prop.major * 10 + prop.minor << "\n";
     }
-    if (!result.isECCMemorySupported) {
-      std::cout << " - ECC memory is not supported.\n";
-    }
+
     if (!result.isManagedMemorySupported) {
       std::cout << " - Managed memory is not supported.\n";
     }
@@ -314,24 +322,32 @@ void DeviceValidator::printValidationResult(const char* name, ValidationResult& 
     }
     if (!result.isThreadsPerBlockWithinLimit) {
       std::cout << " - Threads per block is not within limit. Max: " << prop.maxThreadsPerBlock << "\n";
+      std::cout << " - Value is: " <<  result.maxThreadsPerBlock << "\n";
+
     }
     if (!result.isBlocksWithinGridSizeLimit) {
+      //  result.isRegisterUsageWithinLimit = numRegs * threadsPerBlock.x * threadsPerBlock.y * threadsPerBlock.z <= prop.regsPerBlock;
       std::cout << " - Blocks within grid size is not within limit. Max: (" << prop.maxGridSize[0] << ", " << prop.maxGridSize[1] << ", " << prop.maxGridSize[2] << ")\n";
+      std::cout << " - Value is: (" << result.numBlocks << ", " << result.numBlocks << ", " << result.numBlocks << ")\n";
     }
     if (!result.isSharedMemoryUsageWithinLimit) {
       std::cout << " - Shared memory usage is not within limit. Max: " << prop.sharedMemPerBlock << "\n";
     }
     if (!result.isRegisterUsageWithinLimit) {
       std::cout << " - Register usage is not within limit. Max: " << prop.regsPerBlock << "\n";
+      std::cout << " - Value is: (" << result.numRegs << ", " << result.numBlocks << "\n";
     }
     if (!result.isTotalThreadsWithinLimit) {
-      std::cout << " - Total threads is not within limit. Max: " << prop.maxThreadsPerMultiProcessor << "\n";
+      std::cout << " - Total threads is not within limit. Max: " << prop.maxThreadsPerMultiProcessor *  prop.multiProcessorCount << "\n";
+      std::cout << " - Value is: " << result.numThreads << "\n";
     }
     if (!result.isGlobalMemoryUsageWithinLimit) {
       std::cout << " - Global memory usage is not within limit. Max: " << prop.totalGlobalMem << "\n";
+      std::cout << " - Value is: " << result.globalMemory << "\n";
     }
     if (!result.isMemoryUsageWithinLimit) {
       std::cout << " - Memory usage is not within limit.\n";
+      std::cout << " - Value is: " << result.memoryUsage << "\n";
     }
     if (!result.isLocalMemoryUsageWithinLimit) {
       std::cout << " - Local memory usage is not within limit. Max: " << (prop.localL1CacheSupported ? prop.localL1CacheSupported : prop.totalGlobalMem) << "\n";
@@ -435,7 +451,7 @@ std::map<std::string, ValidationResult> DeviceValidator::collectResourceProblems
   std::map<std::string, ValidationResult> problematicFunctions;
   for (const auto& pair : functionMap) {
     const char* name = pair.first.c_str();
-    ValidationResult result = validateKernelLaunch(name, dim3(1, 1, 1), dim3(1, 1, 1), 0, 0);
+    ValidationResult result = validateKernelLaunch(name, dim3(1, 1, 1), dim3(1, 1, 1), 0);
     if (!result.isComputeCapabilitySufficient ||
         !result.isECCMemorySupported ||
         !result.isManagedMemorySupported ||
