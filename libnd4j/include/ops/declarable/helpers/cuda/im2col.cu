@@ -22,6 +22,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/im2col.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -92,13 +94,11 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
             const NDArray &arrZeroPadVal) {
   PointersManager manager(&context, "im2col");
 
-  const int threadsPerBlock = 512;
-  const int blocksPerGrid = (columns.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 im2colDevs = getim2ColLaunchParams(columns);
   NDArray::prepareSpecialUse({&columns}, {&image});
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(),
+      (im2colDevs.x, im2colDevs.y, context, image.specialBuffer(), columns.specialBuffer(),
           image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&columns}, {&image});

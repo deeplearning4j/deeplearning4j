@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -103,7 +105,7 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType
         if (xShape[j] == zShape[j]) continue;
         xzCoord[j] =
             xzCoord[j] - y[shape::getIndexOffset(
-                             yStride0 * j, yShapeInfo)];  // are ready to fill middle (within input dimension range)
+                yStride0 * j, yShapeInfo)];  // are ready to fill middle (within input dimension range)
         if (xzCoord[j] < 0)
           xzCoord[j] = -xzCoord[j] - shift1;  // means fill from left
         else if (xzCoord[j] >= xShape[j])
@@ -133,18 +135,15 @@ void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const
 
   NDArray::prepareSpecialUse({&output}, {&input, &paddings, &padValue});
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = 8 * threadsPerBlock * output.rankOf() + 128;
-
+  dim3 padLaunch = padDims(output.lengthOf(),output.rankOf());
   const auto xType = input.dataType();
   const auto yType = paddings.dataType();
 
   BUILD_DOUBLE_SELECTOR(
       xType, yType, padCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), mode, input.specialBuffer(),
-       input.specialShapeInfo(), paddings.specialBuffer(), paddings.specialShapeInfo(), output.specialBuffer(),
-       output.specialShapeInfo(), padValue.specialBuffer()),
+      (padLaunch.y, padLaunch.x, padLaunch.z, context->getCudaStream(), mode, input.specialBuffer(),
+          input.specialShapeInfo(), paddings.specialBuffer(), paddings.specialShapeInfo(), output.specialBuffer(),
+          output.specialShapeInfo(), padValue.specialBuffer()),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
   NDArray::registerSpecialUse({&output}, {&input, &paddings, &padValue});

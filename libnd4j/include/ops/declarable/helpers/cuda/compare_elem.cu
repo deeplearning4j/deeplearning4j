@@ -17,6 +17,8 @@
  ******************************************************************************/
 #include <ops/declarable/helpers/compare_elem.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -105,10 +107,8 @@ template <typename T>
 static void _compare_elem(sd::LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {
   auto z = NDArrayFactory::create<bool>(false, context);
 
-  const int numThreads = 256;
-  const int numBlocks = sd::math::sd_min<int>(128, sd::math::sd_max<int>(1, input->lengthOf() / numThreads));
-
-  comparator<T><<<numBlocks, numThreads, numThreads * 4 + 1024, *context->getCudaStream()>>>(
+  dim3 compareElemDims = getCompareElem(input->lengthOf());
+  comparator<T><<<compareElemDims.x,compareElemDims.y,compareElemDims.z, *context->getCudaStream()>>>(
       input->specialBuffer(), input->specialShapeInfo(), input->lengthOf(), isStrictlyIncreasing,
       context->getReductionPointer(), reinterpret_cast<bool *>(z.specialBuffer()));
 
@@ -127,7 +127,7 @@ void compare_elem(sd::LaunchContext *context, NDArray *input, bool isStrictlyInc
 
 BUILD_SINGLE_TEMPLATE(template void _compare_elem,
                       (sd::LaunchContext * context, NDArray *A, bool isStrictlyIncreasing, bool &output);
-                      , SD_COMMON_TYPES);
+, SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

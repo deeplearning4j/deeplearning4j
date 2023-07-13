@@ -267,13 +267,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
   if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (C->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 6 + 128;  // 6 = aRank + bRank + cRank
-
+    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
     NDArray::prepareSpecialUse({C}, {A, B});
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                 (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->specialBuffer(),
+                                 (dims.x, dims.y, dims.z, stream, A->specialBuffer(),
                                      A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
                                      C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                  SD_NUMERIC_TYPES)
@@ -404,16 +401,14 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
   if (!typeDouble && !typeFloat) {
-    const int threadsPerBlock = SD_MAX_NUM_THREADS;
-    const int blocksPerGrid = (M + threadsPerBlock - 1) / threadsPerBlock;
-
+    dim3 dims = getGemVDims(M);
     NDArray::prepareSpecialUse({Y}, {A, X});
-    // BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (blocksPerGrid, threadsPerBlock, stream,
-    // A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(), X->specialShapeInfo(), Y->specialBuffer(),
-    // Y->special(), incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
+
+    const int blocksPerGrid = dims.x;
+    const int threadsPerBlock = dims.y;
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, usualGemv,
-        (blocksPerGrid, threadsPerBlock, stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
+        (blocksPerGrid,threadsPerBlock,stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
             X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
         SD_NUMERIC_TYPES)
     NDArray::registerSpecialUse({Y}, {A, X});

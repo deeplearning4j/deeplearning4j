@@ -21,6 +21,8 @@
 //
 #include <ops/declarable/helpers/hashcode.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -82,12 +84,13 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
   auto tempBufferA = reinterpret_cast<sd::LongType*>(tempA.specialBuffer());  // bufferAsT<sd::LongType>();
   auto tempBufferB = reinterpret_cast<sd::LongType*>(tempB.specialBuffer());  // bufferAsT<sd::LongType>();
 
+  dim3 launchDims = getHashCodeSplit(length,numBlocks);
   // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
   auto tempBuffer = tempBufferA;
   auto tempResult = tempBufferB;
 
   // we divide array into 32 element chunks, and store intermediate results once
-  splitBufferToChuncks<T><<<numBlocks, 1, 1024, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
+  splitBufferToChuncks<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
 
   // we replace pointer with intermediate one, and repeat only one chunk left
   int iterationCount = 0;
@@ -95,8 +98,9 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
     int lastLength = numBlocks;
     numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
 
+    dim3 internalLaunchDims = getHashCodeInternal(numBlocks);
     internalHash<sd::LongType>
-        <<<numBlocks, 1, 1024, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
+        <<<internalLaunchDims.y,internalLaunchDims.x, internalLaunchDims.z, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
 
     iterationCount++;
     // swapping buffers
@@ -109,11 +113,9 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
     }
   }
 
-  lastStep<<<1, 1, 128, *stream>>>(reinterpret_cast<sd::LongType*>(result.specialBuffer()), tempBufferA, tempResult,
+  dim3 lastDims = getLaunchDims("hashcode_last");
+  lastStep<<<lastDims.x, lastDims.y, lastDims.z, *stream>>>(reinterpret_cast<sd::LongType*>(result.specialBuffer()), tempBufferA, tempResult,
                                    length, blockSize);
-  //                tempA.syncToHost();
-  //                tempB.syncToHost();
-  //                result.assign((length <= blockSize?tempA.e(0) : tempB.e(0)));
 
   NDArray::registerSpecialUse({&result}, {&array});
 }

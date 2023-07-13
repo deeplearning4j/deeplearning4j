@@ -22,6 +22,10 @@
 
 set -exo pipefail
 TEST_FILTER="none"
+
+
+
+
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -63,10 +67,40 @@ fi
 unameOut="$(uname)"
 echo "$OSTYPE"
 if [[ "$TEST_FILTER" != "none" ]]; then
-    ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
+   export BLOCK_SIZE_SCALAR_SCAN=1
+   export GRID_SIZE_SCALAR_SCAN=1
+   export GRID_SIZE_TRANSFORM_SCAN=1
+   export BLOCK_SIZE_TRANSFORM_SCAN=1
+   export SHARED_MEM_SIZE_TRANSFORM_SCAN=256
+   export GRID_SIZE_COL2IM=256
+   export BLOCK_SIZE_COL2IM=256
+   export SHARED_MEM_SIZE_COL2IM=8192
+    export GRID_SIZE_IM2COL=256
+    export BLOCK_SIZE_IM2COL=256
+    export SHARED_MEM_SIZE_IM2COL=8192
+       export BLOCK_SIZE_RANDOM=128
+        export GRID_SIZE_RANDOM=128
+   echo "Running with filter"
+   env
+   /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
 
 else
-   ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+  export GRID_SIZE_TRANSFORM_SCAN=1
+  export BLOCK_SIZE_TRANSFORM_SCAN=1
+  export BLOCK_SIZE_SCALAR_SCAN=1
+  export GRID_SIZE_SCALAR_SCAN=1
+  export SHARED_MEM_SIZE_TRANSFORM_SCAN=1024
+   export GRID_SIZE_COL2IM=128
+     export BLOCK_SIZE_COL2IM=128
+     export SHARED_MEM_SIZE_COL2IM=8192
+  export GRID_SIZE_IM2COL=128
+    export BLOCK_SIZE_IM2COL=128
+    export SHARED_MEM_SIZE_IM2COL=8192
+    export BLOCK_SIZE_RANDOM=128
+    export GRID_SIZE_RANDOM=128
+  echo "Running without filter"
+  env
+  /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/

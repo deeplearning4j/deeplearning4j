@@ -23,6 +23,8 @@
 #include <ops/declarable/helpers/gammaMathFunc.h>
 #include <ops/declarable/helpers/zeta.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -72,9 +74,10 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const sd::LongType *nShapeIn
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
-                                  const void *vn, const sd::LongType *nShapeInfo, const void *vx,
-                                  const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
+static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                  const cudaStream_t *stream, const void *vn, const sd::LongType *nShapeInfo,
+                                  const void *vx, const sd::LongType *xShapeInfo, void *vz,
+                                  const sd::LongType *zShapeInfo) {
   polyGammaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vn, nShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
 }
 
@@ -82,12 +85,10 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 void polyGamma(sd::LaunchContext *context, const NDArray &n, const NDArray &x, NDArray &z) {
   NDArray::prepareSpecialUse({&z}, {&n, &x});
 
-  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = polygammaDims(z.lengthOf());
   BUILD_SINGLE_SELECTOR(
       n.dataType(), polyGammaCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.specialBuffer(), n.specialShapeInfo(),
+      (launchDims.y,launchDims.x,launchDims.z, context->getCudaStream(), n.specialBuffer(), n.specialShapeInfo(),
        x.specialBuffer(), x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
       SD_FLOAT_TYPES);
 

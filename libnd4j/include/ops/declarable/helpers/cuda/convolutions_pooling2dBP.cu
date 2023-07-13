@@ -25,6 +25,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 
@@ -146,7 +148,8 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const sd::LongType* xShape
                            sd::math::sd_sgn<T, T>(x[xOffset]));
         }
       }
-    } break;
+    }
+    break;
   }
 }
 
@@ -172,14 +175,13 @@ void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& inp
 
   PointersManager manager(block.launchContext(), "pooling2dBP");
 
-  const int threadsPerBlock = 256;
-  const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = gradO.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
   auto inputBuff = input.specialBuffer();
+  dim3 poolingDims = getPoolingDims(gradO.lengthOf(),gradO.rankOf());
+
   NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
   BUILD_SINGLE_SELECTOR(
       input.dataType(), pooling2dBPCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.specialBuffer(),
+      (poolingDims.x, poolingDims.y, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),
           input.specialShapeInfo(), gradO.specialBuffer(), gradO.specialShapeInfo(), gradI.specialBuffer(),
           gradI.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0),
       SD_NUMERIC_TYPES);

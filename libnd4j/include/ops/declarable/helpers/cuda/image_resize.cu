@@ -39,6 +39,8 @@ limitations under the License.
 #include <exceptions/cuda_exception.h>
 #include <ops/declarable/helpers/image_resize.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -60,9 +62,6 @@ static SD_KERNEL void computeInterpolationWeights(sd::LongType outSize, sd::Long
   Scaler scaler;
   for (sd::LongType i = outSize - tid; i >= 0; i -= step) {
     double in = scaler(i, scale);
-    //            interpolationData[i].bottomIndex = static_cast<sd::LongType>(in);
-    //            interpolationData[i].topIndex = sd::math::sd_min(interpolationData[i].bottomIndex + 1, inSize - 1);
-    //            interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
     double const in_f = sd::math::p_floor<double>(in);
     double const in_c = sd::math::p_ceil<double>(in);
     interpolationData[i].bottomIndex =
@@ -132,9 +131,11 @@ static void resizeImage_(sd::LaunchContext* context, NDArray const* images, sd::
   sd::LongType outRowSize = outWidth * channels;
   auto stream = context->getCudaStream();
   T const* pInput = images->getDataBuffer()->specialAsT<T>();
+  dim3 launchDims = getLaunchDims("image_resize");
+
                                                                // // this works only with 'c' direction
   F* pOutput = output->dataBuffer()->specialAsT<F>();
-  resizeImageKernel<T, F><<<256, 256, 256, *stream>>>(pInput, images->specialShapeInfo(), pOutput,
+  resizeImageKernel<T, F><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(pInput, images->specialShapeInfo(), pOutput,
                                                       output->specialShapeInfo(), batchSize, outWidth, outHeight,
                                                       channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
 
@@ -178,15 +179,17 @@ static sd::Status resizeBilinearFunctor_(sd::LaunchContext* context, NDArray con
   if (err != 0) {
     throw cuda_exception::build("helpers::resize_image: Cannot allocate memory for horizontal parts rectangulars", err);
   }
+  dim3 launchDims = getLaunchDims("image_resize_interp_weights");
+
   auto stream = context->getCudaStream();
   // Compute the cached interpolation weights on the x and y dimensions.
   if (halfPixelCenter) {
-    computeInterpolationWeights<HalfPixelScaler><<<256, 512, 512, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
+    computeInterpolationWeights<HalfPixelScaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
     computeInterpolationWeights<HalfPixelScaler>
-        <<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
+        <<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
   } else {
-    computeInterpolationWeights<LegacyScaler><<<256, 512, 512, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
-    computeInterpolationWeights<LegacyScaler><<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
+    computeInterpolationWeights<LegacyScaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
+    computeInterpolationWeights<LegacyScaler><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
   }
 
   NDArray::prepareSpecialUse({output}, {images});
@@ -298,8 +301,8 @@ sd::Status resizeNeighborFunctor_(sd::LaunchContext* context, NDArray const* ima
   float heightScale = ImageResizerState::calculateResizeScale(inHeight, outHeight, alignCorner);
   float widthScale = ImageResizerState::calculateResizeScale(inWidth, outWidth, alignCorner);
 
-  auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();  // reinterpret_cast<T const*>(images->specialBuffer());
-  auto outputBuffer = output->dataBuffer()->specialAsT<T>();     // reinterpret_cast<T*>(output->specialBuffer());
+  auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();
+  auto outputBuffer = output->dataBuffer()->specialAsT<T>();
   auto stream = context->getCudaStream();
 
   NDArray::prepareSpecialUse({output}, {images});
@@ -394,10 +397,11 @@ float* initCoeffsTable(const double a, cudaStream_t* stream) {
                                 err);
   }
 
-  initCoefTableKernel<<<128, 128, 128, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
+  dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
+  initCoefTableKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
-    throw cuda_exception::build("helpers::initCoeffsTable: Cannot syncronize kernel", err);
+    throw cuda_exception::build("helpers::initCoeffsTable: Cannot synchronize kernel", err);
   }
 
   return coeffs_table;
@@ -453,8 +457,9 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
     cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator",
                           err);
   }
+  dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
 
-  advanceWeightsAndIndicesKernel<Scaler><<<128, 128, 128, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth,
+  advanceWeightsAndIndicesKernel<Scaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth,
                                                                      resizerState.widthScale, outWidth,
                                                                      resizerState.channels, exclude_outside);
   err = cudaFree(pCalcD);
@@ -467,8 +472,9 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
     cuda_exception::build(
         "helpers::computeXWeightsAndIndices: Cannot synchronize stream after advance weights and indicers", err);
   }
+  dim3 launchDims2 = getLaunchDims("image_resize_coeffs_accum");
   // Scale the values so they can be used as offsets into buffers.
-  accumulateChannelsKernel<<<128, 128, 512, *stream>>>(pXWais, outWidth, resizerState.wStride);
+  accumulateChannelsKernel<<<launchDims2.x,launchDims.y,launchDims.z, *stream>>>(pXWais, outWidth, resizerState.wStride);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot synchronize stream after accumulate channels",
@@ -480,7 +486,6 @@ template <typename T, typename Scaler>
 static SD_KERNEL void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr,
                                                           ImageResizerState* pResizerState, WeightsAndIndices* xWais,
                                                           bool exclude_outside, float* outputPtr) {
-  //        auto numChannels = pResizerState->channels;
   const auto batchStride = pResizerState->bStride;
   const auto hStride = pResizerState->hStride;
   const auto cStride = pResizerState->cStride;
@@ -667,8 +672,9 @@ static void bicubicInterpolateWithCaching(NDArray const* image, const ImageResiz
 
   const T* pInput = image->getDataBuffer()->specialAsT<T>();
   float* pOutput = output->dataBuffer()->specialAsT<float>();  //_data.data();
+  dim3 bicubDims = getLaunchDims("image_resize_bicubic");
   bicubicInterpolateWithCachingKernel<T, Scaler>
-      <<<128, 1, 512, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
+      <<<bicubDims.y, bicubDims.x, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);
@@ -835,6 +841,7 @@ sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, 
       throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot allocate memory for cached interpolations", err);
     }
     NDArray::prepareSpecialUse({output}, {image});
+    dim3 launchDims = getLaunchDims("image_resize_fill_interp");
     fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
     resizeArea<T>(stream, st, xCached, image, output);
     err = cudaStreamSynchronize(*stream);
@@ -974,7 +981,6 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, sd::LongType const* i
               sd::LongType zPos[] = {b, y, x, d};
               auto zIndex = shape::getOffset(outputShape, zPos);
               output[zIndex] = (Z)extrapolationVal;
-              //                                crops->p(b, y, x, d, extrapolationVal);
             }
             continue;
           }
@@ -990,13 +996,13 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, sd::LongType const* i
             sd::LongType bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
             sd::LongType bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
             const T topLeft(
-                images[shape::getOffset(imagesShape, topLeftPos)]);  //->e<float>(bIn, topYIndex, left_x_index, d));
+                images[shape::getOffset(imagesShape, topLeftPos)]);
             const T topRight(
-                images[shape::getOffset(imagesShape, topRightPos)]);  //->e<float>(bIn, topYIndex, right_x_index, d));
+                images[shape::getOffset(imagesShape, topRightPos)]);
             const T bottomLeft(images[shape::getOffset(
-                imagesShape, bottomLeftPos)]);  //->e<float>(bIn, bottomYIndex, left_x_index, d));
+                imagesShape, bottomLeftPos)]);
             const T bottomRight(images[shape::getOffset(
-                imagesShape, bottomRightPos)]);  //->e<float>(bIn, bottomYIndex, right_x_index, d));
+                imagesShape, bottomRightPos)]);
             const T top = topLeft + (topRight - topLeft) * x_lerp;
             const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
             sd::LongType zPos[] = {b, y, x, d};
@@ -1067,9 +1073,9 @@ void cropAndResizeFunctor_(sd::LaunchContext* context, NDArray const* images, ND
 
   int threadsPerBlock = math::sd_max(imageHeight * imageWidth, cropHeight * cropWidth);
   if (threadsPerBlock > SD_MAX_NUM_THREADS / 4) threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-
+  dim3 cropAndResizeDims = cropAndResize(batchSize,imageHeight,imageWidth,cropHeight,cropWidth);
   NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
-  cropAndResizeKernel<T, Z, I><<<batchSize, threadsPerBlock, 256, *stream>>>(
+  cropAndResizeKernel<T, Z, I><<<cropAndResizeDims.y, cropAndResizeDims.x, cropAndResizeDims.z, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), indexBuf, indices->specialShapeInfo(),
       cropSizes, cropSize->specialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes,
       cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
@@ -1083,7 +1089,7 @@ void cropAndResizeFunctor(sd::LaunchContext* context, NDArray const* images, NDA
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
-  //
+
 }
 BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
                       (sd::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices,

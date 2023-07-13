@@ -171,15 +171,17 @@ static void invertLowerMatrix_(LaunchContext *context, NDArray *inputMatrix, NDA
 
   auto stream = context->getCudaStream();
 
+  dim3 lupLaunch = lupDims(n);
+  dim3 lupLaunchLow = lupDimsLow(n);
   // invert lower matrix
   // invert main diagonal
-  upvertKernel<T><<<1, n, 512, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
+  upvertKernel<T><<<lupLaunch.y,lupLaunch.x, lupLaunch.z, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
                                           inputMatrix->specialBuffer(), inputMatrix->specialShapeInfo(), n);
   // invert the second diagonal
-  invertKernelLow<T><<<1, n, 512, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
+  invertKernelLow<T><<<lupLaunch.y, lupLaunch.x, lupLaunch.z, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
                                              inputMatrix->specialBuffer(), inputMatrix->specialShapeInfo(), n);
   // invert non-diagonal elements
-  invertLowKernel<T><<<n, n, 512, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
+  invertLowKernel<T><<<lupLaunchLow.y, lupLaunchLow.x, lupLaunchLow.z, *stream>>>(invertedMatrix->specialBuffer(), invertedMatrix->specialShapeInfo(),
                                              inputMatrix->specialBuffer(), inputMatrix->specialShapeInfo(), n);
 }
 

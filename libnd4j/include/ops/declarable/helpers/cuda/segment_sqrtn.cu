@@ -245,8 +245,9 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
     auto outputTadOffsets = packZ->specialOffsets();
     auto gradOutTads = packGradOut->specialShapeInfo();
     auto gradOutTadOffsets = packGradOut->specialOffsets();
+    dim3 segmentBpTad2 = segmentBpTad(indices->lengthOf(),input->lengthOf());
 
-    segmentSqrtNBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    segmentSqrtNBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo(), inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads,

@@ -360,7 +360,7 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNu
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
   dim3 launchDims = getLaunchDims("broadcast");
-                                                         // shared memory
+  // shared memory
 
   BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                         ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo),
@@ -465,7 +465,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   dim3 launchDims = getLaunchDims("broadcast");
-                                                         // shared memory
+  // shared memory
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
@@ -659,7 +659,7 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
   auto numBlocks = shape::length(hZShapeInfo);
   auto tadLength = shape::length(hXShapeInfo) / numBlocks;
   dim3 launchDims = getReduceDims(numBlocks);
-
+  sd_printf("Launch dims: %i, %i, %i\n", launchDims.x, launchDims.y, launchDims.z);
   if (zType != sd::DataType::INT64 && zType != sd::DataType::INT32)
     throw datatype_exception::build("NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type",
                                     zType);
@@ -1291,7 +1291,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::executeCudaShaped(launchDims, stream, opType, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo,
                                               hZShapeInfo, dScalar, extraParams),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);

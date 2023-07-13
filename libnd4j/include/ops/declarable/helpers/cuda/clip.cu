@@ -27,6 +27,8 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -263,7 +265,7 @@ void clipByGlobalNorm_(sd::LaunchContext* context, std::vector<NDArray*> const& 
     globalNorm += l2norm * l2norm;
   }
 
-  globalNorm.applyTransform(transform::Sqrt, globalNorm);  // = sd::math::sd_sqrt(globalNorm);
+  globalNorm.applyTransform(transform::Sqrt, globalNorm);
   outputs[inputs.size()]->p(0, globalNorm);
   globalNorm.syncToHost();
   const T factor = static_cast<T>(clipNorm) / globalNorm.e<T>(0);
@@ -338,7 +340,8 @@ static void clipByValue_(sd::LaunchContext* context, NDArray& input, double left
   auto stream = context->getCudaStream();
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   NDArray::prepareSpecialUse({&output}, {&input});
-  clipByValueKernel<T><<<256, 512, 8192, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("clip");
+  clipByValueKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                     output.specialBuffer(), output.specialShapeInfo(), leftBound,
                                                     rightBound);
   NDArray::registerSpecialUse({&output}, {&input});

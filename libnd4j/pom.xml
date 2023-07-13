@@ -121,7 +121,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.6.0</version>
                 <configuration>
                     <descriptors>
                         <descriptor>assembly.xml</descriptor>
@@ -452,7 +452,9 @@
                                         <argument>--test-filter</argument>
                                         <argument>${libnd4j.test.filter}</argument>
                                     </buildCommand>
+
                                 </configuration>
+
                             </execution>
                         </executions>
                     </plugin>

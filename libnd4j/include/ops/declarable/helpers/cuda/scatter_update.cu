@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -97,7 +99,8 @@ SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const 
                                               void* vx, const sd::LongType* xShapeInfo, const sd::LongType* xOffsets,
                                               void* vy, const sd::LongType* yShapeInfo, const sd::LongType* yOffsets,
                                               const LongType* indexes) {
-  scatterUpdateCuda<T><<<512, 256, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
+  dim3 launchDims = getLaunchDims("scatter_update");
+  scatterUpdateCuda<T><<<launchDims.y, launchDims.x, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
                                                                   yShapeInfo, yOffsets, indexes);
 }
 

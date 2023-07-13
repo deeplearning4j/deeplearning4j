@@ -173,7 +173,8 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
 
   if (input->isVector()) {
-    segmentMaxLinearKernel<T, I><<<numOfClasses, input->lengthOf(), numOfClasses * 32 + 32, *stream>>>(
+    dim3 launchDims = segmentDims(numOfClasses,input->lengthOf());
+    segmentMaxLinearKernel<T, I><<<launchDims.y,launchDims.x,launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
@@ -185,7 +186,8 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    segmentMaxTadKernel<T, I><<<packX->numberOfTads(), 512, 2048, *stream>>>(
+    dim3 launchDims = segmentTad(packX->numberOfTads());
+    segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
@@ -351,7 +353,9 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
-    segmentMaxBPLinearKernel<T, I><<<1 + gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    dim3 segmentBpDims2 = segmentBpDims(1 + gradOut->lengthOf(),input->lengthOf());
+
+    segmentMaxBPLinearKernel<T, I><<<segmentBpDims2.y,segmentBpDims2.x, segmentBpDims2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
@@ -370,8 +374,8 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     sd::LongType const* gradInTadOffsets = packGradIn->specialOffsets();
     sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
-
-    segmentMaxBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
+   dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
+    segmentMaxBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,

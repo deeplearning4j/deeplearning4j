@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/prefix.h>
 #include <ops/ops.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -65,12 +67,7 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
     }
 
     if (leftArrInd < tadLen) shared[sharedInd] = xLeft = xTad[shape::getIndexOffset(leftArrInd, xTadShapeInfo)];
-    // else
-    //     shared[sharedInd] = (op == scalar::Add) ? 0 : 1;
-
     if (rightArrInd < tadLen) shared[sharedInd + 1] = xRight = xTad[shape::getIndexOffset(rightArrInd, xTadShapeInfo)];
-    // else
-    //     shared[sharedInd + 1] = (op == scalar::Add) ? 0 : 1;
 
     step = 1;
 
@@ -141,17 +138,15 @@ void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArra
   const sd::LongType numTads = packX->numberOfTads();
   const sd::LongType tadLen = x->lengthOf() / numTads;
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = numTads;
-  const int sharedMem = 2 * threadsPerBlock * x->sizeOfT() + 128;
 
+  dim3 launchDims = prefixDims(numTads,x->sizeOfT());
   PointersManager manager(context, "prefix");
 
   NDArray::prepareSpecialUse({z}, {x});
   BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, x->specialBuffer(),
-                         packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
-                         packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
+                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), op, x->specialBuffer(),
+                            packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
+                            packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
                         SD_NUMERIC_TYPES);
   NDArray::registerSpecialUse({z}, {x});
 

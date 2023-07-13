@@ -31,6 +31,7 @@
 #include "../lup.h"
 #include "../solve.h"
 #include "../triangular_solve.h"
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 namespace ops {
@@ -84,14 +85,15 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   std::vector<sd::LongType> dims = {-2, -1};
   auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), &dims);
   auto stream = context->getCudaStream();
-  oneOnDiagonalKernel<T><<<128, 256, 256, *stream>>>(
+  dim3 solveDims = getLaunchDims("solve");
+  oneOnDiagonalKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
       leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad->specialShapeInfo(),
       leftLowerTad->specialOffsets(), leftLowerTad->numberOfTads(), leftLower.sizeAt(-1));
   auto P = leftOutput.ulike();
   P.nullify();
   auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), &dims);
   auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
-  restorePermutationsKernel<T><<<128, 256, 256, *stream>>>(
+  restorePermutationsKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
       P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<sd::LongType>(),
       PTad->specialShapeInfo(), PTad->specialOffsets(), permutationsTad->specialShapeInfo(),
       permutationsTad->specialOffsets(), permutationsTad->numberOfTads(), permutations.sizeAt(-1));

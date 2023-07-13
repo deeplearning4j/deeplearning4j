@@ -44,14 +44,7 @@ SD_KERNEL static void copyBuffers(sd::LongType* destination, void const* source,
 }
 
 
-SD_KERNEL static void printBuffers(sd::LongType* buffer, sd::LongType bufferLength) {
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  const auto step = gridDim.x * blockDim.x;
-  for (int t = tid; t < bufferLength; t += step) {
-  }
 
-
-}
 
 template <typename T>
 SD_KERNEL static void confusionFunctorKernel(sd::LongType* labelsBuffer, sd::LongType* predictionBuffer,
@@ -97,11 +90,12 @@ predictions->syncToDevice();
 
 
 
+ dim3 conf = getLaunchDims("confusion_matrix");
  if (labelsLongBuffer == nullptr) {
    auto err = cudaMalloc(&labelsLongBuffer, labels->lengthOf() * sizeof(sd::LongType));
    if (err != 0) throw sd::cuda_exception::build("Cannot allocate memory for labels long buffer", err);
    // copy with type conversion
-   copyBuffers<X><<<256, 512, 1024, *stream>>>(labelsLongBuffer, labels->specialBuffer(), labels->lengthOf());
+   copyBuffers<X><<<conf.x, conf.y, conf.z, *stream>>>(labelsLongBuffer, labels->specialBuffer(), labels->lengthOf());
  }
 
  if (predictionLongBuffer == nullptr) {

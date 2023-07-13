@@ -26,6 +26,8 @@
 
 #include <queue>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -111,7 +113,7 @@ static SD_DEVICE T similirityV3(T* boxes, sd::LongType const* boxesShape, int pr
   T maxYNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
   T maxXNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
 
-  // compute areas for comparation
+  // compute areas for comparator
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
   T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
@@ -204,9 +206,10 @@ static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDA
 
   NDArray scores(*scales);
   sd::Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices->dataBuffer()->specialAsT<I>();  /// reinterpret_cast<I*>(indices->specialBuffer());
+  auto indexBuf = indices->dataBuffer()->specialAsT<I>();
   auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
-  suppressScores<T, I><<<128, 128, 128, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
+  dim3 launchDims = getLaunchDims("image_suppress_scores");
+  suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
   indices->tickWriteDevice();
   sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
               scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
@@ -232,7 +235,8 @@ static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDA
         throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to device", err);
       }
 
-      shouldSelectKernel<T, I><<<128, 256, 1024, *stream>>>(
+      dim3 selectDims = getLaunchDims("image_suppress_select");
+      shouldSelectKernel<T, I><<<selectDims.y,selectDims.x,selectDims.z, *stream>>>(
           boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
       err = cudaMemcpy(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost);
       if (err) {
@@ -363,9 +367,9 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
   NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context);
   NDArray selectedScores(*scores);
   sd::Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices.dataBuffer()->specialAsT<I>();  /// reinterpret_cast<I*>(indices->specialBuffer());
-
-  suppressScores<<<128, 128, 128, *stream>>>(selectedScores.dataBuffer()->specialAsT<T>(), indexBuf,
+  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
+  dim3 selectDims = getLaunchDims("image_suppress_select");
+  suppressScores<<<selectDims.x, selectDims.y, selectDims.z, *stream>>>(selectedScores.dataBuffer()->specialAsT<T>(), indexBuf,
                                              selectedScores.lengthOf(), T(scoreThreshold));
 
   sortByValue(extras, indices.buffer(), indices.shapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(),
@@ -379,15 +383,16 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
   auto startIndices = startPositions.dataBuffer()->specialAsT<I>();
   I selectedSize = 0;
   sd::LongType res = 0;
+  dim3 nonMaxDims = getLaunchDims("image_suppress_nonmax_overlap");
   if (output) {  // this part used when output shape already calculated to fill up values on output
     DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
-    suppressNonMaxOverlapKernel<<<1, 1, 1024, *stream>>>(
+    suppressNonMaxOverlapKernel<<<nonMaxDims.x,nonMaxDims.y,nonMaxDims.z, *stream>>>(
         boxes->dataBuffer()->specialAsT<T>(), boxes->specialShapeInfo(), scoresData, indexBuf, startIndices,
         scores->lengthOf(), (I)outputSize, T(overlapThreshold), T(scoreThreshold),
         output->dataBuffer()->specialAsT<I>(), output->specialShapeInfo(), selectedSizeBuf.specialAsT<I>(), simple);
   } else {  // this case used on calculation of output shape. Output and output shape shoulde be nullptr.
     DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
-    suppressNonMaxOverlapKernel<<<1, 1, 1024, *stream>>>(
+    suppressNonMaxOverlapKernel<<<nonMaxDims.x, nonMaxDims.y, nonMaxDims.z, *stream>>>(
         boxes->dataBuffer()->specialAsT<T>(), boxes->specialShapeInfo(), scoresData, indexBuf, startIndices,
         scores->lengthOf(), (I)outputSize, T(overlapThreshold), T(scoreThreshold), (I*)nullptr, (sd::LongType*)nullptr,
         selectedSizeBuf.specialAsT<I>(), simple);

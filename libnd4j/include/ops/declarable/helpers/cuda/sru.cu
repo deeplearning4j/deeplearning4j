@@ -26,6 +26,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/sru.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -233,18 +235,14 @@ void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArr
 
   PointersManager manager(context, "sru_bi");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
-                            threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * x->rankOf() + 128;
-
+  dim3 sruBiDims2 = sruBiDims(x->sizeAt(1) * x->sizeAt(2),x->rankOf());
   NDArray::prepareSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBICudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
-       wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
-       c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
-       ht->specialBuffer(), ht->specialShapeInfo(), ct->specialBuffer(), ct->specialShapeInfo()),
+      (sruBiDims2.y,sruBiDims2.x, sruBiDims2.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+          wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
+          c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
+          ht->specialBuffer(), ht->specialShapeInfo(), ct->specialBuffer(), ct->specialShapeInfo()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
 
@@ -323,7 +321,6 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
   const auto gradC0Offset = shape::getOffset(gradC0ShapeInfo, coords + 1);
   const auto bFOffset = shape::getOffset(bShapeInfo, coords + 2);
   const auto bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
-  // const auto gradBFOffset = shape::getOffset(gradBShapeInfo, coords + 1);
   const auto gradBFOffset = coords[1] * gradBShapeInfo[3] / 2 + coords[2] * gradBShapeInfo[4];
   const auto gradBROffset = gradBFOffset + gradBShapeInfo[3];
 
@@ -437,14 +434,14 @@ static void sruBIBPCudaLauncher(
 }
 BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                       const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vwi,
-                       const sd::LongType* wiShapeInfo, const void* vb, const sd::LongType* bShapeInfo, const void* vc0,
-                       const sd::LongType* c0ShapeInfo, const void* vmask, const sd::LongType* maskShapeInfo,
-                       const void* vct, const sd::LongType* ctShapeInfo, const void* vgradHt,
-                       const sd::LongType* gradHtShapeInfo, const void* vgradCt, const sd::LongType* gradCtShapeInfo,
-                       void* vgradI, const sd::LongType* gradIShapeInfo, void* vgradWi,
-                       const sd::LongType* gradWiShapeInfo, void* vgradB, const sd::LongType* gradBShapeInfo,
-                       void* vgradC0, const sd::LongType* gradC0ShapeInfo),
+                          const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, const void* vwi,
+                          const sd::LongType* wiShapeInfo, const void* vb, const sd::LongType* bShapeInfo, const void* vc0,
+                          const sd::LongType* c0ShapeInfo, const void* vmask, const sd::LongType* maskShapeInfo,
+                          const void* vct, const sd::LongType* ctShapeInfo, const void* vgradHt,
+                          const sd::LongType* gradHtShapeInfo, const void* vgradCt, const sd::LongType* gradCtShapeInfo,
+                          void* vgradI, const sd::LongType* gradIShapeInfo, void* vgradWi,
+                          const sd::LongType* gradWiShapeInfo, void* vgradB, const sd::LongType* gradBShapeInfo,
+                          void* vgradC0, const sd::LongType* gradC0ShapeInfo),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -471,17 +468,17 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
   const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
                             threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
   const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * x->rankOf() + 128;
-
+  dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) + x->sizeAt(2),x->rankOf());
   NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), sruBIBPCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
-       wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
-       c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
-       ct->specialBuffer(), ct->specialShapeInfo(), gradHt->specialBuffer(), gradHt->specialShapeInfo(),
-       gradCt->specialBuffer(), gradCt->specialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(),
-       gradWi.specialBuffer(), gradWi.specialShapeInfo(), gradBias.specialBuffer(), gradBias.specialShapeInfo(),
-       gradC0->specialBuffer(), gradC0->specialShapeInfo()),
+      (sruBiBpDims.y, sruBiBpDims.x,sruBiBpDims.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+          wi.specialBuffer(), wi.specialShapeInfo(), b->specialBuffer(), b->specialShapeInfo(), c0->specialBuffer(),
+          c0->specialShapeInfo(), mask ? mask->specialBuffer() : nullptr, mask ? mask->specialShapeInfo() : nullptr,
+          ct->specialBuffer(), ct->specialShapeInfo(), gradHt->specialBuffer(), gradHt->specialShapeInfo(),
+          gradCt->specialBuffer(), gradCt->specialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(),
+          gradWi.specialBuffer(), gradWi.specialShapeInfo(), gradBias.specialBuffer(), gradBias.specialShapeInfo(),
+          gradC0->specialBuffer(), gradC0->specialShapeInfo()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
 

@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -79,10 +81,8 @@ static void mergeMaxIndex_(sd::LaunchContext* context, const std::vector<const N
   auto pInShapes = reinterpret_cast<void**>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void*)));
   auto length = output.lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
-
-  mergeMaxIndexCudaLauncher<T, Z><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  dim3 mergeLaunchDims = mergeDims(length);
+  mergeMaxIndexCudaLauncher<T, Z><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
   manager.synchronize();
@@ -139,10 +139,8 @@ static void mergeMax_(sd::LaunchContext* context, const std::vector<const NDArra
   auto pInShapes = reinterpret_cast<void**>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void*)));
   auto length = output.lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
-
-  mergeMaxCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  dim3 mergeLaunchDims = mergeDims(length);
+  mergeMaxCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, nArrsSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
   manager.synchronize();
@@ -230,10 +228,9 @@ static void mergeMaxBp_(sd::LaunchContext* context, const std::vector<const NDAr
 
   auto length = inArrs[nArrSize]->lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeMaxBpCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  mergeMaxBpCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, inArrs[nArrSize]->specialBuffer(), inArrs[nArrSize]->specialShapeInfo(), nArrSize,
       pOutBuffers, pOutShapes, length, bSameOrderAndEws1);
 
@@ -304,10 +301,9 @@ static void mergeAvg_(sd::LaunchContext* context, const std::vector<const NDArra
   auto pInShapes = reinterpret_cast<void**>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void*)));
   auto length = output.lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeAvgCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  mergeAvgCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, (int)inArrs.size(), output.specialBuffer(), output.specialShapeInfo(), length);
 
   manager.synchronize();
@@ -373,10 +369,9 @@ static void mergeAvgBp_(sd::LaunchContext* context, const NDArray& gradient, std
 
   auto length = gradient.lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeAvgBpCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  mergeAvgBpCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x,mergeLaunchDims.z, *context->getCudaStream()>>>(
       gradient.specialBuffer(), gradient.specialShapeInfo(), pOutBuffers, pOutShapes, nArrSize, length,
       bSameOrderAndEws1);
 
@@ -442,10 +437,9 @@ static void mergeAdd_(sd::LaunchContext* context, const std::vector<const NDArra
   auto pInShapes = reinterpret_cast<void**>(manager.replicatePointer(inShapes.data(), inShapes.size() * sizeof(void*)));
   auto length = output.lengthOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeAddCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+  mergeAddCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
   manager.synchronize();

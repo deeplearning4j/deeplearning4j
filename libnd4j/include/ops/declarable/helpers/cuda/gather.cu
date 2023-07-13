@@ -26,6 +26,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -88,7 +90,9 @@ template <typename X, typename Y>
 SD_HOST static void gatherCudaLinear(const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                      const void* vy, const sd::LongType* yShapeInfo, void* vz,
                                      const sd::LongType* zShapeInfo) {
-  gatherCudaLinearKernel<X, Y><<<128, 256, 1024, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+ //note gather linear and gather are different kernels
+   dim3 gatherLinear = getLaunchDims("gather_linear");
+  gatherCudaLinearKernel<X, Y><<<gatherLinear.x, gatherLinear.y, gatherLinear.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -97,7 +101,8 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
                                        const sd::LongType* xShapeInfo, const sd::LongType* xOffsets, const void* vy,
                                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                        const sd::LongType* zOffsets) {
-  gatherCuda<X, Y><<<numOfSubArrs, SD_MAX_NUM_THREADS, 1024, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy,
+  dim3 gatherLinear = getGatherLinear(numOfSubArrs);
+  gatherCuda<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy,
                                                                         yShapeInfo, vz, zShapeInfo, zOffsets);
 }
 

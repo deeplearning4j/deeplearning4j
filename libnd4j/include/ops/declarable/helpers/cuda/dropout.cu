@@ -26,6 +26,8 @@
 #include <memory>
 #include <vector>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -113,8 +115,7 @@ sd::Status _dropOutFunctor(graph::Context& context, NDArray* input, NDArray* out
     *dropOutMultiplier += *chunk;
 
     // FIXME: we could do this in one step, aren't we?
-    output->assign(*input * *dropOutMultiplier);  // input->applyPairwiseTransform(pairwise::Multiply,
-                                                  // dropOutMultiplier.get(), output, nullptr);
+    output->assign(*input * *dropOutMultiplier);
   }
 
   return sd::Status::OK;
@@ -208,7 +209,8 @@ static void alphaDropoutSimple(sd::LaunchContext* context, NDArray const* input,
     throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
   }
 
-  alphaDropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("dropout");
+  alphaDropoutSimpleKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                            output->specialBuffer(), output->specialShapeInfo(),
                                                            probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
 

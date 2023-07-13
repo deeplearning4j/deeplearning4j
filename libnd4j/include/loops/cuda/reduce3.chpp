@@ -33,25 +33,25 @@ namespace reduce3   {
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 SD_KERNEL void execScalarGeneric(const int opNum,
-                                 void const* vx, LongType const* xShapeInfo,
-                                 void const* vy, LongType const* yShapeInfo,
+                                 void const* vx, sd::LongType const* xShapeInfo,
+                                 void const* vy, sd::LongType const* yShapeInfo,
                                  void *extraParams,
-                                 void *vz, LongType const* zShapeInfo, long long int* allocationPointer,
+                                 void *vz, sd::LongType const* zShapeInfo, long long int* allocationPointer,
                                  void *reductionBuffer,
-                                 LongType const* tadOnlyShapeInfo) {
+                                 sd::LongType const* tadOnlyShapeInfo) {
 
   Reduce3<X,Z>::execScalarCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
 }
 
 template <typename X, typename Z>
 SD_KERNEL void execAllGeneric(const int opNum,
-                              void const* vx, LongType const* xShapeInfo,
-                              void const* vy, LongType const* yShapeInfo,
+                              void const* vx, sd::LongType const* xShapeInfo,
+                              void const* vy, sd::LongType const* yShapeInfo,
                               void *extraParams,
-                              void *vz, LongType const* zShapeInfo, long long int* dimension, long long int dimensionLength,
+                              void *vz, sd::LongType const* zShapeInfo, long long int* dimension, long long int dimensionLength,
                               int postProcessOrNot, long long int* allocationPointer,
-                              LongType const* tadOnlyShapeInfo, LongType const* tadOffsets,
-                              LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                              sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                              sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   Reduce3<X,Z>::execAllCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
@@ -60,15 +60,15 @@ SD_KERNEL void execAllGeneric(const int opNum,
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 SD_KERNEL void execGeneric(const int opNum,
-                           void const* vx, LongType const* xShapeInfo,
-                           void const* vy, LongType const* yShapeInfo,
+                           void const* vx, sd::LongType const* xShapeInfo,
+                           void const* vy, sd::LongType const* yShapeInfo,
                            void *extraParams,
-                           void *vz, LongType const* zShapeInfo,
-                           LongType * dimension, LongType dimensionLength,
+                           void *vz, sd::LongType const* zShapeInfo,
+                           sd::LongType * dimension, sd::LongType dimensionLength,
                            int postProcessOrNot,
-                           LongType* allocationPointer,
-                           LongType const* tadOnlyShapeInfo, LongType const* tadOffsets,
-                           LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                           sd::LongType* allocationPointer,
+                           sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                           sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
@@ -77,7 +77,7 @@ SD_KERNEL void execGeneric(const int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void Reduce3<X,Z>::aggregatePartials(void* vsPartials, LongType tid, LongType numItems, void *vextraParams) {
+SD_DEVICE void Reduce3<X,Z>::aggregatePartials(void* vsPartials, sd::LongType tid, sd::LongType numItems, void *vextraParams) {
 
   // start the shared memory loop on the next power of 2 less
   // than the block size.  If block size is not a power of 2,
@@ -85,7 +85,7 @@ SD_DEVICE void Reduce3<X,Z>::aggregatePartials(void* vsPartials, LongType tid, L
 
   auto sPartials = reinterpret_cast<Z*>(vsPartials);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
-  LongType floorPow2 = numItems;
+  sd::LongType floorPow2 = numItems;
 
   if (floorPow2 & (floorPow2 - 1)) {
 
@@ -98,7 +98,7 @@ SD_DEVICE void Reduce3<X,Z>::aggregatePartials(void* vsPartials, LongType tid, L
     __syncthreads();
   }
 
-  for (LongType activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+  for (sd::LongType activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
     if (tid < activeThreads)
       sPartials[tid] = OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
 
@@ -109,15 +109,15 @@ SD_DEVICE void Reduce3<X,Z>::aggregatePartials(void* vsPartials, LongType tid, L
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, LongType const* xShapeInfo,
-                                             void const* vy, LongType const* yShapeInfo,
+SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const* xShapeInfo,
+                                             void const* vy, sd::LongType const* yShapeInfo,
                                              void *extraParams,
-                                             void* vz, LongType const* zShapeInfo, long long int* allocationPointer, void *reductionBuffer, LongType const* tadOnlyShapeInfo) {
+                                             void* vz, sd::LongType const* zShapeInfo, long long int* allocationPointer, void *reductionBuffer, sd::LongType const* tadOnlyShapeInfo) {
 
   auto x = reinterpret_cast<X const*>(vx);
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
-  __shared__ LongType xLen,yLen,zLen;
+  __shared__ sd::LongType xLen,yLen,zLen;
   __shared__ Z extraZ[3];
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
 
@@ -137,9 +137,9 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, LongType const* xSh
   __syncthreads();
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
-  LongType length = shape::length(xShapeInfo);
-  LongType xEws = shape::elementWiseStride(xShapeInfo);
-  LongType yEws = shape::elementWiseStride(yShapeInfo);
+  sd::LongType length = shape::length(xShapeInfo);
+  sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
+  sd::LongType yEws = shape::elementWiseStride(yShapeInfo);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   char xOrder = shape::order(xShapeInfo);
   char yOrder = shape::order(yShapeInfo);
@@ -150,18 +150,18 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, LongType const* xSh
   if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
     if (xEws == 1 && yEws == 1) {
-      for(LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
+      for(sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
     }
     else {
-      for(LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
+      for(sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
     }
   }
   else {
     sPartials[threadIdx.x] = OpType::startingValue(x);
     auto threadCount = gridDim.x * blockDim.x;
-    for(LongType i = tid; i < length; i += threadCount) {
+    for(sd::LongType i = tid; i < length; i += threadCount) {
       auto xOffset = shape::getIndexOffset(i, xShapeInfo);
       auto yOffset = shape::getIndexOffset(i, yShapeInfo);
       sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
@@ -211,7 +211,7 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, LongType const* xSh
         }
       }
 
-      for (LongType i = threadIdx.x; i < gridDim.x; i += blockDim.x)
+      for (sd::LongType i = threadIdx.x; i < gridDim.x; i += blockDim.x)
         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], static_cast<Z*>(reductionBuffer)[i], extraZ);
 
       __syncthreads();
@@ -235,15 +235,15 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, LongType const* xSh
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, LongType const* xShapeInfo,
-                                           void const* vy, LongType const* yShapeInfo,
+SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* xShapeInfo,
+                                           void const* vy, sd::LongType const* yShapeInfo,
                                            void *extraParams,
-                                           void *vz, LongType const* zShapeInfo, long long int* dimension,
-                                           LongType dimensionLength,
+                                           void *vz, sd::LongType const* zShapeInfo, long long int* dimension,
+                                           sd::LongType dimensionLength,
                                            int postProcessOrNot,
-                                           LongType* allocationPointer,
-                                           LongType const* xTadShapeInfo, LongType const* xOffsets,
-                                           LongType const* yTadShapeInfo, LongType const* yOffsets) {
+                                           sd::LongType* allocationPointer,
+                                           sd::LongType const* xTadShapeInfo, sd::LongType const* xOffsets,
+                                           sd::LongType const* yTadShapeInfo, sd::LongType const* yOffsets) {
 
   auto dx = reinterpret_cast<X const*>(vx);
   auto dy = reinterpret_cast<X const*>(vy);
@@ -258,7 +258,7 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, LongType const* xShap
 
   const int maxBlock = blockDim.x;
 
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<LongType>(1) ];
+  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<sd::LongType>(1) ];
 
   __shared__ int xTadLength;
   __shared__ int yTadLength;
@@ -334,15 +334,15 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, LongType const* xShap
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInfo,
-                                       void const* vy, LongType const* yShapeInfo,
+SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShapeInfo,
+                                       void const* vy, sd::LongType const* yShapeInfo,
                                        void *extraParams,
-                                       void *vz, LongType const* zShapeInfo,  LongType* dimension,
-                                       LongType dimensionLength,
+                                       void *vz, sd::LongType const* zShapeInfo,  sd::LongType* dimension,
+                                       sd::LongType dimensionLength,
                                        int postProcessOrNot,
-                                       LongType* allocationPointer,
-                                       LongType const* tadOnlyShapeInfo, LongType const* tadOffsets,
-                                       LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                                       sd::LongType* allocationPointer,
+                                       sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                                       sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   // FIXME
   if(shape::isScalar(zShapeInfo))
@@ -358,14 +358,14 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 
   Z startingVal = OpType::startingValue(x);
 
-  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<LongType>(1) ];
+  __shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen  : static_cast<sd::LongType>(1) ];
 
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ int tadLen;
-  __shared__ LongType zLen;
-  __shared__ LongType xTadEws;
-  __shared__ LongType yTadEws;
-  __shared__ LongType yTadNum;
+  __shared__ sd::LongType zLen;
+  __shared__ sd::LongType xTadEws;
+  __shared__ sd::LongType yTadEws;
+  __shared__ sd::LongType yTadNum;
   __shared__ char xTadOrder;
   __shared__ char yTadOrder;
 
@@ -386,8 +386,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 
     for(int i = blockIdx.x; i < zLen; i+= gridDim.x) {
 
-      LongType xOffset = tadOffsets[i];
-      LongType yOffset = yTadNum == 1 ? static_cast<LongType>(0)  : yTadOffsets[i];
+      sd::LongType xOffset = tadOffsets[i];
+      sd::LongType yOffset = yTadNum == 1 ? static_cast<sd::LongType>(0)  : yTadOffsets[i];
 
       if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen)
         extraZ[threadIdx.x] = startingVal;
@@ -396,8 +396,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 
       for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
 
-        LongType xOffset2 =  xOffset + j*xTadEws;
-        LongType yOffset2 =  yOffset + j*yTadEws;
+        sd::LongType xOffset2 =  xOffset + j*xTadEws;
+        sd::LongType yOffset2 =  yOffset + j*yTadEws;
         sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
       }
 
@@ -415,8 +415,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 
     for(int i = blockIdx.x; i < zLen; i += gridDim.x) {
 
-      LongType xOffset = tadOffsets[i];
-      LongType yOffset = yTadNum == 1 ? static_cast<LongType>(0)  : yTadOffsets[i];
+      sd::LongType xOffset = tadOffsets[i];
+      sd::LongType yOffset = yTadNum == 1 ? static_cast<sd::LongType>(0)  : yTadOffsets[i];
 
       if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen)
         extraZ[threadIdx.x] = startingVal;
@@ -425,8 +425,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 
       for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
 
-        LongType xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo);
-        LongType yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo);
+        sd::LongType xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo);
+        sd::LongType yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo);
         sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
 
       }
@@ -446,15 +446,15 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, LongType const* xShapeInf
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_DEVICE void Reduce3<X,Y>::execCuda(int opNum,
-                                      void const* vx, LongType const* xShapeInfo,
-                                      void const* vy, LongType const* yShapeInfo,
+                                      void const* vx, sd::LongType const* xShapeInfo,
+                                      void const* vy, sd::LongType const* yShapeInfo,
                                       void *extraParams,
-                                      void *vz, LongType const* zShapeInfo, long long int* dimension,
-                                      LongType dimensionLength,
+                                      void *vz, sd::LongType const* zShapeInfo, long long int* dimension,
+                                      sd::LongType dimensionLength,
                                       int postProcessOrNot,
-                                      LongType* allocationPointer,
-                                      LongType const* tadOnlyShapeInfo, LongType const* tadOffsets,
-                                      LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                                      sd::LongType* allocationPointer,
+                                      sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                                      sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
@@ -463,15 +463,15 @@ SD_DEVICE void Reduce3<X,Y>::execCuda(int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_DEVICE void Reduce3<X,Y>::execAllCuda( int opNum,
-                                          void const* vx, LongType const* xShapeInfo,
-                                          void const* vy, LongType const* yShapeInfo,
+                                          void const* vx, sd::LongType const* xShapeInfo,
+                                          void const* vy, sd::LongType const* yShapeInfo,
                                           void *extraParams,
-                                          void *vz, LongType const* zShapeInfo, long long int* dimension,
-                                          LongType dimensionLength,
+                                          void *vz, sd::LongType const* zShapeInfo, long long int* dimension,
+                                          sd::LongType dimensionLength,
                                           int postProcessOrNot,
-                                          LongType* allocationPointer,
-                                          LongType const* tadOnlyShapeInfo, LongType const* tadOffsets,
-                                          LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                                          sd::LongType* allocationPointer,
+                                          sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                                          sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   DISPATCH_BY_OPNUM_TT(transformAll, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
@@ -480,11 +480,11 @@ SD_DEVICE void Reduce3<X,Y>::execAllCuda( int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_DEVICE void Reduce3<X,Y>::execScalarCuda(int opNum,
-                                            void const* vx, LongType const* xShapeInfo,
-                                            void const* vy, LongType const* yShapeInfo,
+                                            void const* vx, sd::LongType const* xShapeInfo,
+                                            void const* vy, sd::LongType const* yShapeInfo,
                                             void *extraParams,
-                                            void *vz, LongType const* zShapeInfo, long long int* allocationPointer, void *reductionBuffer,
-                                            LongType const* tadOnlyShapeInfo) {
+                                            void *vz, sd::LongType const* zShapeInfo, long long int* allocationPointer, void *reductionBuffer,
+                                            sd::LongType const* tadOnlyShapeInfo) {
 
   DISPATCH_BY_OPNUM_TT(execScalarCuda, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo), REDUCE3_OPS);
 }
@@ -494,14 +494,14 @@ SD_DEVICE void Reduce3<X,Y>::execScalarCuda(int opNum,
 template <typename X, typename Z>
 SD_HOST void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
                                 int opNum,
-                                void const* vx, LongType const* xShapeInfo,
-                                void const* vy, LongType const* yShapeInfo,
+                                void const* vx, sd::LongType const* xShapeInfo,
+                                void const* vy, sd::LongType const* yShapeInfo,
                                 void *extraParams,
-                                void *vz, LongType const* zShapeInfo, LongType* dimension,
-                                LongType dimensionLength,
+                                void *vz, sd::LongType const* zShapeInfo, sd::LongType* dimension,
+                                sd::LongType dimensionLength,
                                 int postProcessOrNot, long long int* allocationPointer,
-                                LongType const* tadOnlyShapeInfo,  LongType const* tadOffsets,
-                                LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                                sd::LongType const* tadOnlyShapeInfo,  sd::LongType const* tadOffsets,
+                                sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
   sd::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
@@ -511,15 +511,15 @@ SD_HOST void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 template <typename X, typename Z>
 SD_HOST void Reduce3<X,Z>::execAll(dim3 launchDims, cudaStream_t *stream,
                                    int opNum,
-                                   void const* vx, LongType const* xShapeInfo,
-                                   void const* vy, LongType const* yShapeInfo,
+                                   void const* vx, sd::LongType const* xShapeInfo,
+                                   void const* vy, sd::LongType const* yShapeInfo,
                                    void *extraParams,
-                                   void *vz, LongType const* zShapeInfo,
+                                   void *vz, sd::LongType const* zShapeInfo,
                                    long long int* dimension, long long int dimensionLength,
                                    int postProcessOrNot,
                                    long long int* allocationPointer,
-                                   LongType const* tadOnlyShapeInfo,  LongType const* tadOffsets,
-                                   LongType const* yTadOnlyShapeInfo, LongType const* yTadOffsets) {
+                                   sd::LongType const* tadOnlyShapeInfo,  sd::LongType const* tadOffsets,
+                                   sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   execAllGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
   sd::DebugHelper::checkErrorCode(stream, "execAllGeneric(...) failed");
@@ -529,12 +529,12 @@ SD_HOST void Reduce3<X,Z>::execAll(dim3 launchDims, cudaStream_t *stream,
 template <typename X, typename Z>
 SD_HOST void Reduce3<X,Z>::execScalar(dim3 launchDims, cudaStream_t *stream,
                                       int opNum,
-                                      void const* vx, LongType const* xShapeInfo,
-                                      void const* vy, LongType const* yShapeInfo,
+                                      void const* vx, sd::LongType const* xShapeInfo,
+                                      void const* vy, sd::LongType const* yShapeInfo,
                                       void *extraParams,
-                                      void *vz, LongType const* zShapeInfo, long long int* allocationPointer,
+                                      void *vz, sd::LongType const* zShapeInfo, long long int* allocationPointer,
                                       void *reductionBuffer,
-                                      LongType const* tadOnlyShapeInfo) {
+                                      sd::LongType const* tadOnlyShapeInfo) {
 
   execScalarGeneric<X,Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
   sd::DebugHelper::checkErrorCode(stream, "execScalarGeneric(...) failed");

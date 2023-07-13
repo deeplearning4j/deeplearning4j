@@ -29,6 +29,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -90,10 +92,7 @@ static SD_KERNEL void mergeShuffleCuda(sd::graph::RandomGenerator* rng, void* vx
     ind = iterNum * len + blockOffset;
     beg = 0;  // beginning
 
-    // printf("m %lld, blockIdx.x %lld, factor %lld, blockOffset %lld, mid %lld, totLen %lld \n",
-    // m,k,factor,blockOffset,mid,totLen);
-
-    while (true) {
+      while (true) {
       if (rng->relativeLong(ind++) % 2) {
         if (mid == totLen) break;
         math::sd_swap<T>(x[(blockOffset + beg) * ews], x[(blockOffset + mid++) * ews]);
@@ -147,8 +146,9 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
     int power = 0;
     while ((len >> power) > threadsPerBlock) ++power;
 
-    const int blocksPerGrid = 1 << power;
-    const int sharedMem = threadsPerBlock * input.sizeOfT() + 256;
+    dim3 fisherDims = randomShuffleFisherDims(power,input.sizeOfT());
+    const int blocksPerGrid = fisherDims.y;
+    const int sharedMem = fisherDims.z;
 
     PointersManager manager(context, "NDArray::randomShuffle cuda");
 
@@ -156,7 +156,8 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
         manager.replicatePointer(&rng, sizeof(sd::graph::RandomGenerator)));
 
     NDArray::prepareSpecialUse({arr}, {arr});
-    fisherYatesCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *context->getCudaStream()>>>(
+
+    fisherYatesCuda<T><<<fisherDims.y, fisherDims.x, fisherDims.z, *context->getCudaStream()>>>(
         pRng, arr->specialBuffer(), arr->ews(), len, power);
     for (sd::LongType j = 1, i = 1; j < blocksPerGrid; j += j, ++i)
       mergeShuffleCuda<T><<<blocksPerGrid / (2 * j), threadsPerBlock, 256, *context->getCudaStream()>>>(
@@ -206,10 +207,6 @@ void randomShuffle(sd::LaunchContext* context, NDArray& input, NDArray& output, 
                    const bool isInplace) {
   BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (context, input, output, rng, isInplace), SD_COMMON_TYPES);
 }
-
-// BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (sd::LaunchContext* context, NDArray& input, NDArray& output,
-// sd::graph::RandomGenerator& rng, const bool isInplace), SD_COMMON_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

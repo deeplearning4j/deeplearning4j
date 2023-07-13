@@ -77,7 +77,9 @@ static bool unsortedSegmentIndicesValidate_(sd::LaunchContext* context, NDArray*
   I* devFound;
   cudaMalloc(&devFound, sizeof(I));
   cudaMemcpy(devFound, &found, sizeof(I), cudaMemcpyHostToDevice);
-  unsortedSegmentIndexValidateKernel<I><<<1, indices->lengthOf(), 128, *stream>>>(
+
+  dim3 launchDims = segmentValidateIndices(indices->lengthOf());
+  unsortedSegmentIndexValidateKernel<I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
       reinterpret_cast<I*>(indices->specialBuffer()), indices->specialShapeInfo(), exp, devFound);
   cudaMemcpy(&found, devFound, sizeof(I), cudaMemcpyDeviceToHost);
   cudaFree(devFound);

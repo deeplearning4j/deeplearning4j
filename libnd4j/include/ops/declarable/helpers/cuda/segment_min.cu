@@ -167,7 +167,8 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   if (input->isVector()) {
-    segmentMinLinearKernel<T, I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(
+    dim3 launchDims = segmentDims(numClasses,input->lengthOf());
+    segmentMinLinearKernel<T, I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
@@ -179,7 +180,8 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    segmentMinTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
+    dim3 launchDims = segmentTad(input->sizeAt(0));
+    segmentMinTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);

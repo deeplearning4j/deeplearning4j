@@ -139,7 +139,7 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
                              nullptr, 0, nullptr, 0, nullptr, 0, false);
   ASSERT_EQ(sd::Status::OK, status);
 
-  ASSERT_EQ(e, z);
+  ASSERT_EQ(*e, *z);
 }
 
 TEST_F(JavaInteropTests, Test_RDiv_1) {

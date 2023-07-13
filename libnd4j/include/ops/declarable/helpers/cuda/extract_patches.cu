@@ -27,6 +27,8 @@
 
 #include <array>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -100,7 +102,7 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
                             int strideRow, int strideCol, int rateRow, int rateCol, bool theSame) {
   NDArray::prepareSpecialUse({output}, {images});
   std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
-  // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
+  // 3D matrices - 2D matrices of vectors (if last dim is greater than 1)
   // int e = 0;
   const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
   const int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
@@ -128,8 +130,8 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
   auto stream = context->getCudaStream();
   auto imagesBuffer = reinterpret_cast<T*>(images->specialBuffer());
   auto outputBuffer = reinterpret_cast<T*>(output->specialBuffer());
-
-  globalExtractPatchesKernel<T><<<128, 128, 1024, *stream>>>(
+  dim3 launchDims = getLaunchDims("extract_patches");
+  globalExtractPatchesKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       theSame, batchCount, sizeRow, sizeCol, rowDim, colDim, outRowDim, outColDim, strideRow, strideCol, rateRow,
       rateCol, rowCast, colCast, lastDim, imagesBuffer, packX->specialShapeInfo(), packX->specialOffsets(), outputBuffer,
       packZ->specialShapeInfo(), packZ->specialOffsets());

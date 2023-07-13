@@ -27,6 +27,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -127,7 +129,8 @@ static void meshgrid_(sd::LaunchContext *context, const std::vector<NDArray *> &
   auto dNumTads =
       reinterpret_cast<sd::LongType *>(pm.replicatePointer(hNumTads.data(), hNumTads.size() * sizeof(sd::LongType)));
 
-  meshgridKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(rank, dOutBuffers, dOutTadShapes, dOutTadOffsets,
+  dim3 launchDims = getLaunchDims("meshgrid");
+  meshgridKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(rank, dOutBuffers, dOutTadShapes, dOutTadOffsets,
                                                                    dNumTads, dInBuffers, dInShapes);
 
   pm.synchronize();

@@ -26,6 +26,8 @@
 #include <helpers/DebugHelper.h>
 #include <ops/declarable/helpers/percentile.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -114,7 +116,8 @@ static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArra
   }
   position = tadLength - position - 1;
 
-  percentileKernel<T><<<256, 512, 1024, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("percentile");
+  percentileKernel<T><<<launchDims.y,launchDims.x,launchDims.z, *context->getCudaStream()>>>(
       tempArray.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
       output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 

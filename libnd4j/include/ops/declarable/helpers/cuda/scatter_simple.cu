@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -61,7 +63,8 @@ void scatterSimple_(sd::LaunchContext* context, const int opId, NDArray& input, 
   auto iLength = indices.lengthOf();
   auto uLength = updates.lengthOf();
 
-  scatterSimpleKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("scatter_simple");
+  scatterSimpleKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
       input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, packX->numberOfTads(),
       indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(),
       uLength);

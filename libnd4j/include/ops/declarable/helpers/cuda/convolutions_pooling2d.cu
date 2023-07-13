@@ -26,6 +26,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 
@@ -324,7 +326,10 @@ static void maxPooling2dCudaLauncher(sd::LaunchContext &block, const void *vx, c
                                      void *vz, const sd::LongType *vzShapeInfo, const LongType kH, const LongType kW,
                                      const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                                      const int extraParam0) {
-  maxPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
+  sd::LongType len = shape::length(vzShapeInfo);
+  sd::LongType rank = shape::rank(vzShapeInfo);
+  dim3 poolingDims = getPoolingDims(rank, len);
+  maxPooling2dCuda<X, Z><<<poolingDims.x, poolingDims.y, poolingDims.z, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
                                                                      pH, pW, dH, dW, extraParam0);
 }
 

@@ -31,6 +31,8 @@
 #include <ops/declarable/helpers/triangular_solve.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -55,7 +57,8 @@ static void fillRegularizer(sd::LaunchContext* context, NDArray& ioMatrix, doubl
   auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix.shapeInfo(), &dims);
   auto stream = context->getCudaStream();
   auto rows = ioMatrix.sizeAt(-2);
-  fillRegularizerKernel<T><<<256, 256, 128, *stream>>>(
+  dim3 launchDims = getLaunchDims("lstsq_reg");
+  fillRegularizerKernel<T><<<launchDims.y,launchDims.x,launchDims.z, *stream>>>(
       ioMatrix.dataBuffer()->specialAsT<T>(), ioMatrix.specialShapeInfo(), lastDimsTads->specialShapeInfo(),
       lastDimsTads->specialOffsets(), lastDimsTads->numberOfTads(), rows, (T)value);
 }

@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -94,11 +96,12 @@ void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArr
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * input.rankOf() + 128;
 
+  dim3 launchDims = matrixSetDiagDims(input.lengthOf(),input.rankOf());
   PointersManager manager(context, "matrixSetDiag");
 
   NDArray::prepareSpecialUse({&output}, {&input, &diagonal});
   BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiagCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), input.specialBuffer(),
                          input.specialShapeInfo(), diagonal.specialBuffer(), diagonal.specialShapeInfo(),
                          output.specialBuffer(), output.specialShapeInfo(), zeroPad),
                         SD_COMMON_TYPES);

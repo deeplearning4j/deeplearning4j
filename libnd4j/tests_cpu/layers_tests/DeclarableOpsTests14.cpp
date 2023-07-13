@@ -1258,22 +1258,23 @@ TEST_F(DeclarableOpsTests14, matmul_test36) {
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test37) {
-  NDArray a('c', {32, 12, 128, 64}, sd::DataType::FLOAT32);
-  NDArray b('c', {32, 12, 128, 64}, sd::DataType::FLOAT32);
-  NDArray c('c', {32, 12, 128, 128}, sd::DataType::FLOAT32);
-  NDArray cExp('c', {32, 12, 128, 128}, sd::DataType::FLOAT32);
 
-  a = 1;
-  b = 1;
-  cExp = 64;  // Each entry in output c is sum of 64 (1.0 x 1.0) multiplications
+  auto a = registerArr(NDArray('c', {32, 12, 128, 64}, sd::DataType::FLOAT32));
+  auto b = registerArr(NDArray('c', {32, 12, 128, 64}, sd::DataType::FLOAT32));
+  auto c = registerArr(NDArray('c', {32, 12, 128, 128}, sd::DataType::FLOAT32));
+  auto  cExp = registerArr(NDArray('c', {32, 12, 128, 128}, sd::DataType::FLOAT32));
+
+  *a = 1;
+  *b = 1;
+  *cExp = 64;  // Each entry in output c is sum of 64 (1.0 x 1.0) multiplications
 
   sd::ops::matmul op;
-  auto status = op.execute({&a, &b}, {&c}, {}, {0, 1});
+  auto status = op.execute({a, b}, {c}, {}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  ASSERT_TRUE(cExp.isSameShape(c));
-  ASSERT_TRUE(cExp.equalsTo(c));
+  ASSERT_TRUE(cExp->isSameShape(*c));
+  ASSERT_TRUE(cExp->equalsTo(*c));
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test38) {

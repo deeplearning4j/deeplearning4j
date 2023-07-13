@@ -28,6 +28,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -82,9 +84,7 @@ void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const
 void prelu(sd::LaunchContext *context, const NDArray &input, const NDArray &alpha, NDArray &output) {
   PointersManager manager(context, "prelu");
 
-  const int threadsPerBlock = 256;
-  const int blocksPerGrid = 512;
-  const int sharedMem = 512;
+  dim3 launchDims = getLaunchDims("prelu");
 
   const auto xType = input.dataType();
   const auto yType = alpha.dataType();
@@ -92,7 +92,7 @@ void prelu(sd::LaunchContext *context, const NDArray &input, const NDArray &alph
   NDArray::prepareSpecialUse({&output}, {&input, &alpha});
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
        input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), output.specialBuffer()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&input, &alpha});
@@ -170,9 +170,7 @@ void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &al
 
   PointersManager manager(context, "preluBP");
 
-  const int threadsPerBlock = 256;
-  const int blocksPerGrid = 512;
-  const int sharedMem = 512;
+  dim3 launchDims = getLaunchDims("prelu");
 
   const auto xType = input.dataType();
   const auto zType = alpha.dataType();
@@ -180,7 +178,7 @@ void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &al
   NDArray::prepareSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluBPCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
        input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), dLdO.specialBuffer(),
        dLdO.specialShapeInfo(), dLdI.specialBuffer(), dLdI.specialShapeInfo(), dLdA.specialBuffer(),
        dLdA.specialShapeInfo()),

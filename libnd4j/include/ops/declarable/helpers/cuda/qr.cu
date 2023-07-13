@@ -23,6 +23,8 @@
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/qr.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -74,7 +76,8 @@ NDArray vmul(LaunchContext* context, NDArray const& v, int n) {
   NDArray res('c', {n, n}, v.dataType(), context);  // x = matrix_new(n, n);
 
   auto stream = context->getCudaStream();
-  vmulKernel<T><<<128, 128, 128, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("qr");
+  vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
                                             reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
   return res;
 }
@@ -89,11 +92,11 @@ static bool diagonalIsPositive(NDArray* matrix, sd::LongType k) {
 }
 
 template <typename T>
-void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
+void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
   sd::LongType M = matrix->sizeAt(0);
   sd::LongType N = matrix->sizeAt(1);
-  auto resQ = fullMatricies ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
-  auto resR = fullMatricies ? R->ulike() : matrix->ulike();
+  auto resQ = fullMatrices ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
+  auto resR = fullMatrices ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
   NDArray z = *matrix;
   NDArray e('c', {M}, DataTypeUtils::fromT<T>(), context);  // two internal buffers and scalar for squared norm
@@ -128,7 +131,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
   // resR *= -1.f;
   resQ.transposei();
 
-  if (fullMatricies) {
+  if (fullMatrices) {
     Q->assign(resQ);
     R->assign(resR);
   } else {

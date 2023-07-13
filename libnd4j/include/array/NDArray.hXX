@@ -3702,6 +3702,9 @@ NDArray NDArray::dup(const char newOrder) const {
 ////////////////////////////////////////////////////////////////////////
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
 bool NDArray::equalsTo(const NDArray *other, double eps) const {
+   if(isEmpty() && other->isEmpty())
+     return true;
+
   if (dataType() != other->dataType() || lengthOf() != other->lengthOf() && !isScalar()) {
     return false;
   }
@@ -3712,11 +3715,11 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
     return sd::math::sd_abs<double>(thisVal - otherVal) <= eps;
   }
 
-  // we need to be able to compare [1, len] to [len]
-else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo())) {
+
+    // we need to be able to compare [1, len] to [len]
+  else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo())) {
     return false;
   }
-  //TODO wtf (base) mvn -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.compute=86   -Dlibnd4j.build=debug   test -Dlibnd4j.test.filter=BroadcastableOpsTests.Test_Subtract_6
   if (isS()) {
     // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same
     // length
@@ -5210,6 +5213,8 @@ ResultSet NDArray::allExamples() const {
 
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
+  if(this->isEmpty() && i == 0)
+    return 0;
   if (i >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::getOffset: input index is out of array length: [";

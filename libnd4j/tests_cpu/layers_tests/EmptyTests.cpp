@@ -23,7 +23,6 @@
 #include <ops/declarable/CustomOperations.h>
 
 #include "testlayers.h"
-// #include <array/NDArrayList.h>
 
 using namespace sd;
 

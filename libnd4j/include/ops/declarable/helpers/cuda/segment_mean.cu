@@ -173,7 +173,8 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
 
   if (input->isVector()) {
-    segmentMeanLinearKernel<T, I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(
+    dim3 launchDims = segmentDims(numClasses,input->lengthOf());
+    segmentMeanLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
@@ -185,7 +186,8 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    segmentMeanTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
+    dim3 launchDims = segmentTad(input->sizeAt(0));
+    segmentMeanTadKernel<T, I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
@@ -343,7 +345,8 @@ sd::Status segmentMeanFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
-    segmentMeanBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
+   dim3 segmentBpDims2 = segmentBpDims(gradOut->lengthOf(),input->lengthOf());
+    segmentMeanBPLinearKernel<T, I><<<segmentBpDims2.y, segmentBpDims2.x, segmentBpDims2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo());
@@ -359,8 +362,9 @@ sd::Status segmentMeanFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
     sd::LongType const* outputTadOffsets = packZ->specialOffsets();
     sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
+    dim3 segmentBpTad2 = segmentBpTad(indices->lengthOf(),input->lengthOf());
 
-    segmentMeanBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    segmentMeanBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo(), inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads,
@@ -399,7 +403,8 @@ static sd::Status unsortedSegmentMeanFunctorBP_(sd::LaunchContext* context, NDAr
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
-    segmentMeanBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    dim3 segmentBpDims2 = segmentBpDims(gradOut->lengthOf(),input->lengthOf());
+    segmentMeanBPLinearKernel<T, I><<<segmentBpDims2.y,segmentBpDims2.x,segmentBpDims2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo());
@@ -416,8 +421,9 @@ static sd::Status unsortedSegmentMeanFunctorBP_(sd::LaunchContext* context, NDAr
     sd::LongType const* outputTadOffsets = packZ->specialOffsets();
     sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
+    dim3 segmentBpTad2 = segmentBpTad(indices->lengthOf(),input->lengthOf());
 
-    segmentMeanBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    segmentMeanBPTadKernel<T, I><<<segmentBpTad2.y,segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo(), inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads,

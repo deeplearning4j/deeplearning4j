@@ -28,6 +28,8 @@
 #include <ops/declarable/helpers/imagesHelpers.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <system/op_boilerplate.h>
+
+#include "execution/cuda/LaunchDims.h"
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -151,15 +153,14 @@ static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDAr
   // grid size
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   auto stream = block.launchContext()->getCudaStream();
+  dim3 compareAndBitpackDims = getCompareAndBitpackDims(output.lengthOf());
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
   if (input.ews() > 0 && output.ews() > 0 && input.ordering() == 'c' && output.ordering() == 'c') {
-    sd_print("cmpBitpackEws\n");
-    cmpBitpackEws<T><<<blocksPerGrid, threadsPerBlock>>>(input.specialBuffer(), output.specialBuffer(),
+    cmpBitpackEws<T><<<compareAndBitpackDims.x, compareAndBitpackDims.y>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);
   } else {
-    sd_print("cmpBitpack\n");
     // if output shape is {n1, n2, n3} then input shape is { n1. n2, n3 * 8}
     // therefore we can split input shape  {n1, n2, n3 , 8} and correct its stride
     // as we do not need last shape info. lets just extend and correct its stride

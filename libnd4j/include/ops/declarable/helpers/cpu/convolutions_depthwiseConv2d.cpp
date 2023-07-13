@@ -96,7 +96,6 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
                         modifOutput);  // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
   if (bias)
-    // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
   if (!isNCHW) delete input;

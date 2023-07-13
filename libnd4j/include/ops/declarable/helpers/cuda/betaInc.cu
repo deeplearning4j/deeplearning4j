@@ -27,6 +27,8 @@
 
 #include <cmath>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -159,9 +161,7 @@ static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threa
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
 void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
-  const int threadsPerBlock = maxIter;
-  const int blocksPerGrid = output.lengthOf();
-  const int sharedMem = 2 * output.sizeOfT() * threadsPerBlock + 128;
+  dim3 launchDims = getBetaInc(maxIter,output.lengthOf(),output.sizeOfT());
 
   const auto xType = x.dataType();
 
@@ -169,7 +169,7 @@ void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, con
 
   NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
   BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), a.specialBuffer(),
+                        (launchDims.y, launchDims.x, sharedMem, context->getCudaStream(), a.specialBuffer(),
                          a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(),
                          x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_FLOAT_TYPES);

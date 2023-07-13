@@ -29,6 +29,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -85,7 +87,7 @@ sd::LongType checkIndices(sd::LaunchContext *context, const NDArray &indices, co
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * indices.rankOf() + 256;
-
+  dim3 scatterDimsIndices = scatterDimsCheckIndices(indices.lengthOf(),indices.rankOf());
   const auto xType = indices.dataType();
 
   PointersManager manager(context, "scatterNDcheckIndices");
@@ -95,7 +97,7 @@ sd::LongType checkIndices(sd::LaunchContext *context, const NDArray &indices, co
 
   NDArray::prepareSpecialUse({&numOfBadIndx}, {&indices});
   BUILD_SINGLE_SELECTOR(xType, checkIndicesCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
+                        (scatterDimsIndices.y,scatterDimsIndices.x, scatterDimsIndices.z, context->getCudaStream(), indices.specialBuffer(),
                             indices.specialShapeInfo(), reinterpret_cast<sd::LongType *>(numOfBadIndx.specialBuffer()),
                             output.specialShapeInfo(), axis),
                         SD_INDEXING_TYPES);
@@ -322,15 +324,12 @@ void scatter(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indice
   const auto xType = indices.dataType();
   const auto yType = updates.dataType();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = ((lock ? output.lengthOf() : updates.lengthOf()) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = sizeof(sd::LongType) * threadsPerBlock * (updates.rankOf() + output.rankOf()) + 256;
-
+  dim3 launchDims = scatterDims(lock ? output.lengthOf() : updates.lengthOf(),updates.rankOf() + output.rankOf());
   PointersManager manager(context, "scatter");
 
   NDArray::prepareSpecialUse({&output}, {&updates, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op,
+                        (launchDims.y,launchDims.x, launchDims.z, context->getCudaStream(), op,
                             indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
                             updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
@@ -568,10 +567,7 @@ void scatterND(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indi
   const int yRank = updates.rankOf();
   const int zRank = output.rankOf();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = ((lock ? output.lengthOf() : updates.lengthOf()) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * ((yRank > xRank ? yRank : xRank) + zRank) + 512;
-
+  dim3 launchDims = scatterNdDims(lock ? output.lengthOf() : updates.lengthOf(),((yRank > xRank ? yRank : xRank) + zRank));
   const auto xType = indices.dataType();
   const auto yType = updates.dataType();
 
@@ -579,7 +575,7 @@ void scatterND(sd::LaunchContext *context, pairwise::Ops op, const NDArray &indi
 
   NDArray::prepareSpecialUse({&output}, {&updates, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op,
+                        (launchDims.y,launchDims.x, launchDims.z, context->getCudaStream(), op,
                             indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(),
                             updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock),
                         SD_INDEXING_TYPES, SD_GENERIC_NUMERIC_TYPES);
@@ -647,22 +643,19 @@ void scatterForLoss(sd::LaunchContext *context, const NDArray &indices, NDArray 
 
   PointersManager manager(context, "scatterForLoss");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = updates.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
-
+  dim3 launchDIms = scatterDims(indices.lengthOf(),updates.rankOf());
   if (calcGrad) {
     NDArray::prepareSpecialUse({&updates}, {&indices});
     BUILD_DOUBLE_SELECTOR(
         indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
-        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
+        (launchDIms.y, launchDIms.x, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
             indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr),
         SD_INDEXING_TYPES, SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&updates}, {&indices});
   } else {
     NDArray::prepareSpecialUse({&output}, {&indices, &updates});
     BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(),
+                          (launchDIms.y, launchDIms.x, launchDIms.z, context->getCudaStream(), indices.specialBuffer(),
                               indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(),
                               output.specialBuffer(), output.specialShapeInfo()),
                           SD_INDEXING_TYPES, SD_FLOAT_TYPES);

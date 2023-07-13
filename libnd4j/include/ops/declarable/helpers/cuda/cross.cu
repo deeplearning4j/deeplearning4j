@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/cross.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -102,16 +104,13 @@ BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
                       SD_NUMERIC_TYPES);
 
 void crossBatched(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* z) {
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = sizeof(sd::LongType) * threadsPerBlock * x->rankOf() + 128;
-
+  dim3 launchDims = getCross(x->lengthOf(),x->rankOf(),x->sizeAt(-1));
   PointersManager manager(context, "cross");
 
   NDArray::prepareSpecialUse({z}, {x, y});
   BUILD_SINGLE_SELECTOR(
       x->dataType(), crossCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
+      (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(),
        y->specialBuffer(), y->specialShapeInfo(), z->specialBuffer(), z->specialShapeInfo()),
       SD_NUMERIC_TYPES);
   NDArray::registerSpecialUse({z}, {x, y});

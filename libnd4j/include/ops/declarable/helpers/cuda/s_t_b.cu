@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/s_t_b.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -240,16 +242,14 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
     NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
+    dim3 launchDims = batchToSpaceNdLaunch(output.lengthOf(),output.rankOf());
 
     PointersManager manager(context, "batchToSpaceND");
 
     NDArray::prepareSpecialUse({&output}, {&inputRearranged1, &crop});
     BUILD_DOUBLE_SELECTOR(
         input.dataType(), crop.dataType(), batchToSpaceNDCudaLauncher,
-        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.specialBuffer(),
+        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), inputRearranged1.specialBuffer(),
          inputRearranged1.specialShapeInfo(), crop.specialBuffer(), crop.specialShapeInfo(), output.specialBuffer(),
          output.specialShapeInfo(), numOfSpatialDims),
         SD_COMMON_TYPES, SD_INTEGER_TYPES);
@@ -346,15 +346,14 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
         output.ordering(),
         {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)}, false);
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
+
+    dim3 launchDims = spaceToBatchLaunch(output.lengthOf(),output.rankOf());
 
     PointersManager manager(context, "spaceToBatch");
 
     NDArray::prepareSpecialUse({&outputRearranged1}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+                          (launchDims.y,launchDims.x,launchDims.z, context->getCudaStream(), input.specialBuffer(),
                            input.specialShapeInfo(), outputRearranged1.specialBuffer(),
                            outputRearranged1.specialShapeInfo(), padBottom, padTop, padLeft, padRight),
                           SD_COMMON_TYPES);
@@ -495,15 +494,12 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
     NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp, false);
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * output.rankOf() + 128;
-
+    dim3 launchDims = spaceToBatchNdLaunch(output.lengthOf(),output.rankOf());
     PointersManager manager(context, "spaceToBatchND");
 
     NDArray::prepareSpecialUse({&outputRearranged1}, {&input, &padding});
     BUILD_DOUBLE_SELECTOR(input.dataType(), padding.dataType(), spaceToBatchNDCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+                          (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), input.specialBuffer(),
                            input.specialShapeInfo(), padding.specialBuffer(), padding.specialShapeInfo(),
                            outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), numOfSpatialDims),
                           SD_COMMON_TYPES, SD_INTEGER_TYPES);

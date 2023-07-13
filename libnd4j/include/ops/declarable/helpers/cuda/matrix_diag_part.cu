@@ -62,8 +62,6 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
       auto lastAdd =  inputBufferPlus + tadOffset;
 
       printf("lastAdd: %lld\n", lastAdd);
-   /*   *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
-          *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);*/
     }
   }
 }
