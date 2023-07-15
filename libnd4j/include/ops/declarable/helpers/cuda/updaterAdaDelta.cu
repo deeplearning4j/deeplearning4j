@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -96,9 +98,9 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInf
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                 const void* vx, const sd::LongType* xShapeInfo, const void* vinMsg,
-                                 const sd::LongType* inMsgShapeInfo, const void* vinMsdx,
+void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                 const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                                 const void* vinMsg, const sd::LongType* inMsgShapeInfo, const void* vinMsdx,
                                  const sd::LongType* inMsdxShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                  void* vstMsg, const sd::LongType* stMsgShapeInfo, void* vstMsdx,
                                  const sd::LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon) {
@@ -108,7 +110,7 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);
   }
-  adaDeltaUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
+  adaDeltaUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vinMsg, inMsgShapeInfo, vinMsdx, inMsdxShapeInfo, vz, zShapeInfo, vstMsg, stMsgShapeInfo, vstMsdx,
       stMsdxShapeInfo, rho, epsilon);
 }
@@ -118,17 +120,15 @@ void updaterAdaDelta(sd::LaunchContext* context, const NDArray& gradient, const 
                      const NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
                      const double dRho, const double dEpsilon) {
   PointersManager manager(context, "adaDeltaUpdater");
-
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 updater2Dims = updaterDims(gradient.lengthOf());
 
   NDArray::prepareSpecialUse({&update, &stateMsg, &stateMsdx}, {&gradient, &initStateMsg, &initStateMsdx});
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), adaDeltaUpdaterCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
-       initStateMsg.specialBuffer(), initStateMsg.specialShapeInfo(), initStateMsdx.specialBuffer(),
-       initStateMsdx.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(), stateMsg.specialBuffer(),
-       stateMsg.specialShapeInfo(), stateMsdx.specialBuffer(), stateMsdx.specialShapeInfo(), dRho, dEpsilon),
+      (updater2Dims.y, updater2Dims.x,updater2Dims.z, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+          initStateMsg.specialBuffer(), initStateMsg.specialShapeInfo(), initStateMsdx.specialBuffer(),
+          initStateMsdx.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(), stateMsg.specialBuffer(),
+          stateMsg.specialShapeInfo(), stateMsdx.specialBuffer(), stateMsdx.specialShapeInfo(), dRho, dEpsilon),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&update, &stateMsg, &stateMsdx}, {&gradient, &initStateMsg, &initStateMsdx});
 

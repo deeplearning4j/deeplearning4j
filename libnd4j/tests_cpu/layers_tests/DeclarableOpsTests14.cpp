@@ -309,18 +309,16 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
-  auto x = NDArrayFactory::create<float>('c', {1, 0});
-  auto y = NDArrayFactory::create<int>(0);
+  auto x = registerArr(NDArrayFactory::create<float>('c', {1, 0}));
+  auto y = registerArr(NDArrayFactory::create<int>(0));
   std::vector<sd::LongType> dim = {0};
-  auto e = NDArrayFactory::create<sd::LongType>('c',dim);
-
+  auto e = registerArr(NDArrayFactory::create<sd::LongType>('c',dim));
   sd::ops::argmax op;
-  auto result = op.evaluate({&x, &y}, {}, {});
+  auto result = op.evaluate({x, y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  ASSERT_EQ(e, *z);
+  ASSERT_EQ(*e, *z);
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
@@ -332,7 +330,7 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
     auto result = op.execute({&x, &y}, {&y}, {}, {}, {});
     ASSERT_TRUE(false);
   } catch (std::exception& e) {
-    
+
   }
 }
 

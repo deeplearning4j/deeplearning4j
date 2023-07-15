@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/top_k.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -84,19 +86,16 @@ sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* predictions,
 
   const auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(predictions->shapeInfo(), {1});
 
-  const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
-  const int blocksPerGrid = static_cast<int>(packX->numberOfTads());
-  const int sharedMem = 1024;
-
+  dim3 topkDims2 = topkDims(packX->numberOfTads());
   const auto xType = predictions->dataType();
   const auto yType = targets->dataType();
 
   NDArray::prepareSpecialUse({output}, {predictions, targets});
   BUILD_DOUBLE_SELECTOR(
       xType, yType, inTopKCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->specialBuffer(),
-       predictions->specialShapeInfo(), targets->specialBuffer(), targets->specialShapeInfo(), output->specialBuffer(),
-       output->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(), k),
+      (topkDims2.y,topkDims2.x, topkDims2.z, context->getCudaStream(), predictions->specialBuffer(),
+          predictions->specialShapeInfo(), targets->specialBuffer(), targets->specialShapeInfo(), output->specialBuffer(),
+          output->specialShapeInfo(), packX->specialShapeInfo(), packX->specialOffsets(), k),
       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({output}, {predictions, targets});
 
@@ -256,17 +255,16 @@ static sd::Status topKFunctor_(sd::LaunchContext* context, const NDArray* input,
     std::vector<sd::LongType> dims = {input->rankOf() - 1};
     input->applyIndexReduce(indexreduce::IndexMax, *indices,&dims);
 
+    dim3 launchDims = getLaunchDims("top_k_mover");
     // copy values on specified indices
-    topValuesMover<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+    topValuesMover<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
         packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
         packZ->platformOffsets(), tadLength, packX->numberOfTads(), k);
   } else {
     int scanWidth = 1;
-    int numTreads = 256;
-    int shMemSize = (numTreads * sizeof(X) * scanWidth) + (numTreads * sizeof(Y) * scanWidth) + 512;
-
-    indicesAlongDimension<X, Y><<<256, numTreads, shMemSize, *context->getCudaStream()>>>(
+    dim3 topKIndices2 = topKIndices(scanWidth,sizeof(X),sizeof(Y));
+    indicesAlongDimension<X, Y><<<topKIndices2.y, topKIndices2.x, topKIndices2.z, *context->getCudaStream()>>>(
         input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), indices->specialBuffer(),
         packI->platformShapeInfo(), packI->platformOffsets(), values->specialBuffer(), packZ->platformShapeInfo(),
         packZ->platformOffsets(), tadLength, packX->numberOfTads(), k, scanWidth, needSort);

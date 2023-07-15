@@ -55,6 +55,8 @@ static SD_KERNEL void segmentProdLinearKernel(void* input, sd::LongType const* i
 
   for (auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
     auto zIndex = shape::getIndexOffset(segment, outputShape);
+    if(zIndex >= zLen)
+      continue;
     auto start = starts[segment];
     auto finish = start + lengths[segment];
     if (lengths[segment] == 0) {
@@ -62,6 +64,8 @@ static SD_KERNEL void segmentProdLinearKernel(void* input, sd::LongType const* i
     }
     for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
       auto xIndex = shape::getIndexOffset(e, inputShape);
+      if(xIndex >= xLen)
+        return;
       sd::math::atomics::sd_atomicMul(&z[segment], x[xIndex]);
     }
   }

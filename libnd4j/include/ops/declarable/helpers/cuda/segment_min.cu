@@ -47,6 +47,8 @@ static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongTy
   __shared__ sd::LongType threadsPerSegment, start, finish;
 
   auto segment = blockIdx.x;
+  if(blockIdx.x >= numOfClasses)
+    return;
   if (threadIdx.x == 0) {
     x = reinterpret_cast<const T*>(input);
     z = reinterpret_cast<T*>(output);
@@ -57,6 +59,8 @@ static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongTy
 
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
+      if(zIndex >= zLen)
+        return;
       start = starts[segment];
       finish = start + lengths[segment];
       z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
@@ -67,6 +71,8 @@ static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongTy
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
+    if(xIndex >= xLen)
+      return;
     sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
   }
 }
@@ -144,7 +150,6 @@ static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongTy
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        //                    if (lengths[indices[idx]])
         sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
       }
     }

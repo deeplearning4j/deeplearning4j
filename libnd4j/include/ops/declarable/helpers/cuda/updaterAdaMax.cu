@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -98,12 +100,13 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo,
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                               const void* vx, const sd::LongType* xShapeInfo, const void* vinv,
-                               const sd::LongType* invShapeInfo, const void* vinm, const sd::LongType* inmShapeInfo,
-                               void* vz, const sd::LongType* zShapeInfo, void* vstV, const sd::LongType* stvShapeInfo,
-                               void* vstM, const sd::LongType* stmShapeInfo, const double dLr, const double dBeta1,
-                               const double dBeta2, const double dEpsilon, const int nIteration) {
+void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                               const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                               const void* vinv, const sd::LongType* invShapeInfo, const void* vinm,
+                               const sd::LongType* inmShapeInfo, void* vz, const sd::LongType* zShapeInfo, void* vstV,
+                               const sd::LongType* stvShapeInfo, void* vstM, const sd::LongType* stmShapeInfo,
+                               const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon,
+                               const int nIteration) {
   const T lr = static_cast<T>(dLr);
   const T beta1 = static_cast<T>(dBeta1);
   const T beta2 = static_cast<T>(dBeta2);
@@ -114,7 +117,7 @@ void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
   }
   const T iteration = static_cast<T>(nIteration);
 
-  adaMaxUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
+  adaMaxUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vz, zShapeInfo, vstV, stvShapeInfo, vstM, stmShapeInfo,
       lr, beta1, beta2, epsilon, iteration);
 }
@@ -125,16 +128,14 @@ void updaterAdaMax(sd::LaunchContext* context, const NDArray& gradient, const ND
                    const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "adaMaxUpdater");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = updaterDims(gradient.lengthOf());
   NDArray::prepareSpecialUse({&update, &stateU, &stateM}, {&gradient, &initStateU, &initStateM});
   BUILD_SINGLE_SELECTOR(gradient.dataType(), adaMaxUpdaterCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(),
-                         gradient.specialShapeInfo(), initStateU.specialBuffer(), initStateU.specialShapeInfo(),
-                         initStateM.specialBuffer(), initStateM.specialShapeInfo(), update.specialBuffer(),
-                         update.specialShapeInfo(), stateU.specialBuffer(), stateU.specialShapeInfo(),
-                         stateM.specialBuffer(), stateM.specialShapeInfo(), dLr, dBeta1, dBeta2, dEpsilon, nIteration),
+                        (launchDims.y, launchDims.x, launchDims.z,context->getCudaStream(), gradient.specialBuffer(),
+                            gradient.specialShapeInfo(), initStateU.specialBuffer(), initStateU.specialShapeInfo(),
+                            initStateM.specialBuffer(), initStateM.specialShapeInfo(), update.specialBuffer(),
+                            update.specialShapeInfo(), stateU.specialBuffer(), stateU.specialShapeInfo(),
+                            stateM.specialBuffer(), stateM.specialShapeInfo(), dLr, dBeta1, dBeta2, dEpsilon, nIteration),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&update, &stateU, &stateM}, {&gradient, &initStateU, &initStateM});
 

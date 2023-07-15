@@ -53,7 +53,6 @@ static SD_KERNEL void segmentMeanLinearKernel(void* input, sd::LongType const* i
     z = reinterpret_cast<T*>(output);
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
-    printf("xLen %lld zLen %lld\n",xLen,zLen);
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
       start = starts[segment];
@@ -127,6 +126,8 @@ static SD_KERNEL void segmentMeanTadKernel(void* inputBuf, sd::LongType const* i
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
   __shared__ int threadsPerSegment, start, finish;
+  if(blockIdx.x >= numOfClasses)
+    return;
   auto segment = indices[blockIdx.x];  // / threadsPerSegment;
 
   if (threadIdx.x == 0) {

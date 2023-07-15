@@ -79,12 +79,12 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext &context,
-                               const void *image, void *columns, const sd::LongType *imShapeInfo,
-                               const sd::LongType *colShapeInfo, LongType sH, LongType sW, LongType pH, LongType pW, LongType dH, LongType dW,
-                               double zeroPadVal) {
+static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                               sd::LaunchContext &context, const void *image, void *columns,
+                               const sd::LongType *imShapeInfo, const sd::LongType *colShapeInfo, LongType sH,
+                               LongType sW, LongType pH, LongType pW, LongType dH, LongType dW, double zeroPadVal) {
   im2colCuda<T>
-  <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
+  <<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */,
   *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
@@ -98,7 +98,7 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
   NDArray::prepareSpecialUse({&columns}, {&image});
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
-      (im2colDevs.x, im2colDevs.y, context, image.specialBuffer(), columns.specialBuffer(),
+      (im2colDevs.y, im2colDevs.x,im2colDevs.z, context, image.specialBuffer(), columns.specialBuffer(),
           image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&columns}, {&image});

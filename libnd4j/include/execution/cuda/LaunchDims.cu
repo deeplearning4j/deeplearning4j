@@ -81,7 +81,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"depth_to_space", {dim3(GRID_SIZE_DEPTH_TO_SPACE, BLOCK_SIZE_DEPTH_TO_SPACE, SHARED_MEM_SIZE_DEPTH_TO_SPACE)}},
     {"dilation", {dim3(GRID_SIZE_DILATION, BLOCK_SIZE_DILATION, SHARED_MEM_SIZE_DILATION)}},
     {"dropout", {dim3(GRID_SIZE_DROPOUT, BLOCK_SIZE_DROPOUT, SHARED_MEM_SIZE_DROPOUT)}},
-    {"extract_patches", {dim3(GRID_SIZE_EXTRACT_PATCHES, BLOCK_SIZE_EXTRACT_PATCHES, BLOCK_SIZE_EXTRACT_PATCHES)}},
+    {"extract_patches", {dim3(GRID_SIZE_EXTRACT_PATCHES, BLOCK_SIZE_EXTRACT_PATCHES, SHARED_MEM_SIZE_EXTRACT_PATCHES)}},
     {"fake_quantization", {dim3(GRID_SIZE_FAKE_QUANTIZATION, BLOCK_SIZE_FAKE_QUANTIZATION, SHARED_MEM_SIZE_FAKE_QUANTIZATION)}},
     {"flatten", {dim3(GRID_SIZE_FLATTEN, BLOCK_SIZE_FLATTEN, SHARED_MEM_SIZE_FLATTEN)}},
     {"gather", {dim3(GRID_SIZE_GATHER, BLOCK_SIZE_GATHER, SHARED_MEM_SIZE_GATHER)}},
@@ -143,6 +143,26 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"unsorted_segment_prod_2", {dim3(GRID_SIZE_UNSORTEDSEGMENT_PROD_2, BLOCK_SIZE_UNSORTEDSEGMENT_PROD_2, SHARED_MEM_SIZE_UNSORTEDSEGMENT_PROD_2)}},
     {"solve", {dim3(GRID_SIZE_SOLVE, BLOCK_SIZE_SOLVE, SHARED_MEM_SIZE_SOLVE)}},
     {"sru_bi", {dim3(GRID_SIZE_SRU_BI, BLOCK_SIZE_SRU_BI, SHARED_MEM_SIZE_SRU_BI)}},
+    {"stack", {dim3(GRID_SIZE_STACK, BLOCK_SIZE_STACK, SHARED_MEM_SIZE_STACK)}},
+    {"top_k_mover", {dim3(GRID_SIZE_TOP_K_MOVER, BLOCK_SIZE_TOP_K_MOVER, SHARED_MEM_SIZE_TOP_K_MOVER)}},
+    {"top_k_indices", {dim3(GRID_SIZE_TOP_K_INDICES, BLOCK_SIZE_TOP_K_INDICES, SHARED_MEM_SIZE_TOP_K_INDICES)}},
+    {"invert_permute", {dim3(GRID_SIZE_INVERT_PERMUTE, BLOCK_SIZE_INVERT_PERMUTE, SHARED_MEM_SIZE_INVERT_PERMUTE)}},
+    {"trace", {dim3(GRID_SIZE_TRACE, BLOCK_SIZE_TRACE, SHARED_MEM_SIZE_TRACE)}},
+    {"triu", {dim3(GRID_SIZE_TRIU, BLOCK_SIZE_TRIU, SHARED_MEM_SIZE_TRIU)}},
+    {"tile", {dim3(GRID_SIZE_TILE, BLOCK_SIZE_TILE, SHARED_MEM_SIZE_TILE)}},
+    {"segment_bp", {dim3(GRID_SIZE_SEGMENT_BP, BLOCK_SIZE_SEGMENT_BP, SHARED_MEM_SIZE_SEGMENT_BP)}},
+    {"segment_bp_tad", {dim3(GRID_SIZE_SEGMENT_BP_TAD, BLOCK_SIZE_SEGMENT_BP_TAD, SHARED_MEM_SIZE_SEGMENT_BP_TAD)}},
+    {"segment_prod_2_linear", {dim3(GRID_SIZE_SEGMENT_PROD_2_LINEAR, BLOCK_SIZE_SEGMENT_PROD_2_LINEAR, SHARED_MEM_SIZE_SEGMENT_PROD_2_LINEAR)}},
+    {"segment_prod_2_tad", {dim3(GRID_SIZE_SEGMENT_PROD_2_TAD, BLOCK_SIZE_SEGMENT_PROD_2_TAD, SHARED_MEM_SIZE_SEGMENT_PROD_2_TAD)}},
+    {"triangular_solve", {dim3(GRID_SIZE_TRIANGULAR_SOLVE, BLOCK_SIZE_TRIANGULAR_SOLVE, SHARED_MEM_SIZE_TRIANGULAR_SOLVE)}},
+    {"updater", {dim3(GRID_SIZE_UPDATER, BLOCK_SIZE_UPDATER, SHARED_MEM_SIZE_UPDATER)}},
+    {"zeta", {dim3(GRID_SIZE_ZETA, BLOCK_SIZE_ZETA, SHARED_MEM_SIZE_ZETA)}},
+    {"batch_norm", {dim3(GRID_SIZE_BATCHNORM, BLOCK_SIZE_BATCHNORM, SHARED_MEM_SIZE_BATCHNORM)}},
+    {"avg_pooling", {dim3(GRID_SIZE_AVG_POOLING, BLOCK_SIZE_AVG_POOLING, SHARED_MEM_SIZE_POOLING)}},
+    {"mmul", {dim3(GRID_SIZE_MMUL, BLOCK_SIZE_MMUL, SHARED_MEM_SIZE_MMUL)}},
+    {"lambda", {dim3(GRID_SIZE_LAMBDA, BLOCK_SIZE_LAMBDA, SHARED_MEM_SIZE_LAMBDA)}},
+    {"image_resize_neighbor", {dim3(GRID_SIZE_IMAGE_RESIZE_NEIGHBOR, BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR, SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR)}},
+    {"swap_unsafe", {dim3(GRID_SIZE_SWAP_UNSAFE, BLOCK_SIZE_SWAP_UNSAFE, SHARED_MEM_SIZE_SWAP_UNSAFE)}},
 
 
 };
@@ -174,6 +194,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"diag", {"GRID_SIZE_DIAG", "BLOCK_SIZE_DIAG", "SHARED_MEM_SIZE_DIAG"}},
     {"confusionMatrix", {"GRID_SIZE_CONFUSION_MATRIX", "BLOCK_SIZE_CONFUSION_MATRIX", "SHARED_MEM_SIZE_CONFUSION_MATRIX"}},
     {"tile", {"GRID_SIZE_TILE", "BLOCK_SIZE_TILE", "SHARED_MEM_SIZE_TILE"}},
+    {"extract_patches", {"GRID_SIZE_EXTRACT_PATCHES", "BLOCK_SIZE_EXTRACT_PATCHES", "SHARED_MEM_SIZE_EXTRACT_PATCHES"}},
     {"diagonal", {"GRID_SIZE_DIAGONAL", "BLOCK_SIZE_DIAGONAL", "SHARED_MEM_SIZE_DIAGONAL"}},
     {"tear", {"GRID_SIZE_TEAR", "BLOCK_SIZE_TEAR", "SHARED_MEM_SIZE_TEAR"}},
     {"sortTensorByDimKey", {"GRID_SIZE_SORT_TENSOR_BY_DIM_KEY", "BLOCK_SIZE_SORT_TENSOR_BY_DIM_KEY", "SHARED_MEM_SIZE_SORT_TENSOR_BY_DIM_KEY"}},
@@ -283,6 +304,25 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"unsorted_segment_prod_2", {"GRID_SIZE_UNSORTEDSEGMENT_PROD_2", "BLOCK_SIZE_UNSORTEDSEGMENT_PROD_2", "SHARED_MEM_SIZE_UNSORTEDSEGMENT_PROD_2"}},
     {"solve", {"GRID_SIZE_SOLVE", "BLOCK_SIZE_SOLVE", "SHARED_MEM_SIZE_SOLVE"}},
     {"sru_bi", {"GRID_SIZE_SRU_BI", "BLOCK_SIZE_SRU_BI", "SHARED_MEM_SIZE_SRU_BI"}},
+    {"stack", {"GRID_SIZE_STACK", "BLOCK_SIZE_STACK", "SHARED_MEM_SIZE_STACK"}},
+    {"top_k_mover", {"GRID_SIZE_TOP_K_MOVER", "BLOCK_SIZE_TOP_K_MOVER", "SHARED_MEM_SIZE_TOP_K_MOVER"}},
+    {"top_k_indices", {"GRID_SIZE_TOP_K_INDICES", "BLOCK_SIZE_TOP_K_INDICES", "SHARED_MEM_SIZE_TOP_K_INDICES"}},
+    {"invert_permute", {"GRID_SIZE_INVERT_PERMUTE", "BLOCK_SIZE_INVERT_PERMUTE", "SHARED_MEM_SIZE_INVERT_PERMUTE"}},
+    {"trace", {"GRID_SIZE_TRACE", "BLOCK_SIZE_TRACE", "SHARED_MEM_SIZE_TRACE"}},
+    {"triu", {"GRID_SIZE_TRIU", "BLOCK_SIZE_TRIU", "SHARED_MEM_SIZE_TRIU"}},
+    {"tile", {"GRID_SIZE_TILE", "BLOCK_SIZE_TILE", "SHARED_MEM_SIZE_TILE"}},
+    {"segment_bp", {"GRID_SIZE_SEGMENT_BP", "BLOCK_SIZE_SEGMENT_BP", "SHARED_MEM_SIZE_SEGMENT_BP"}},
+    {"segment_bp_tad", {"GRID_SIZE_SEGMENT_BP_TAD", "BLOCK_SIZE_SEGMENT_BP_TAD", "SHARED_MEM_SIZE_SEGMENT_BP_TAD"}},
+    {"segment_prod_2_linear", {"GRID_SIZE_SEGMENT_PROD_2_LINEAR", "BLOCK_SIZE_SEGMENT_PROD_2_LINEAR", "SHARED_MEM_SIZE_SEGMENT_PROD_2_LINEAR"}},
+    {"segment_prod_2_tad", {"GRID_SIZE_SEGMENT_PROD_2_TAD", "BLOCK_SIZE_SEGMENT_PROD_2_TAD", "SHARED_MEM_SIZE_SEGMENT_PROD_2_TAD"}},
+    {"triangular_solve", {"GRID_SIZE_TRIANGULAR_SOLVE", "BLOCK_SIZE_TRIANGULAR_SOLVE", "SHARED_MEM_SIZE_TRIANGULAR_SOLVE"}},
+    {"updater", {"GRID_SIZE_UPDATER", "BLOCK_SIZE_UPDATER", "SHARED_MEM_SIZE_UPDATER"}},
+    {"zeta", {"GRID_SIZE_ZETA", "BLOCK_SIZE_ZETA", "SHARED_MEM_SIZE_ZETA"}},
+    {"mmul", {"GRID_SIZE_MMUL", "BLOCK_SIZE_MMUL", "SHARED_MEM_SIZE_MMUL"}},
+    {"avg_pooling", {"GRID_SIZE_AVG_POOLING", "BLOCK_SIZE_AVG_POOLING", "SHARED_MEM_SIZE_POOLING"}},
+    {"lambda", {"GRID_SIZE_LAMBDA", "BLOCK_SIZE_LAMBDA", "SHARED_MEM_SIZE_LAMBDA"}},
+    {"image_resize_neighbor", {"GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", "BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", "SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR"}},
+    {"swap_unsafe", {"GRID_SIZE_SWAP_UNSAFE", "BLOCK_SIZE_SWAP_UNSAFE", "SHARED_MEM_SIZE_SWAP_UNSAFE"}},
 
 };
 
@@ -303,6 +343,23 @@ dim3 getLaunchDims(const std::string& key) {
   // Look for the key in the cache
   // Key not found in the cache
   // Check if there is an environment variable with this key
+  if(!algoDimMapString.count(key.c_str())) {
+    std::string errorMessage;
+    errorMessage += "Key ";
+    errorMessage += key;
+    errorMessage += " not found in the launch dimensions environment variable map.";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(!algoDimMap.count(key.c_str())) {
+    std::string errorMessage;
+    errorMessage += "Key ";
+    errorMessage += key;
+    errorMessage += " not found in the launch dimensions map.";
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+
   auto algoValue = algoDimMapString[key.c_str()];
   dim3 returnValue;
   dim3 defaultValue = algoDimMap[key.c_str()];
@@ -317,26 +374,20 @@ dim3 getLaunchDims(const std::string& key) {
   //dynamically overriding whatever was compiled
   //with the environment variables if found
   if(envValueX) {
-    sd_printf("Overriding %s with %s\n", xKey, envValueX);
     returnValue.x = std::atoi(envValueX);
   } else {
-    sd_printf("Using default value x %d with key lookup %s\n", defaultValue.x, xKey);
     returnValue.x = defaultValue.x;
   }
 
   if(envValueY) {
-    sd_printf("Overriding %s with %s\n", yKey, envValueY);
     returnValue.y = std::atoi(envValueY);
   } else {
-    sd_printf("Using default value y %d with key lookup %s\n", defaultValue.y, yKey);
     returnValue.y = defaultValue.y;
   }
 
   if(envValueZ) {
-    sd_printf("Overriding %s with %s\n", xKey, envValueX);
     returnValue.z = std::atoi(envValueZ);
   } else {
-    sd_printf("Using default value z %d with key lookup %s\n", defaultValue.z, zKey);
     returnValue.z = defaultValue.z;
   }
 
@@ -347,10 +398,13 @@ dim3 getLaunchDims(const std::string& key) {
 
 
 dim3 getMMulDims(int length,int sizeofDataType) {
-  dim3 threadsPerBlock(512);
-  dim3 blocksPerGrid(1);
-  if (length > 512) threadsPerBlock.x = sd::math::sd_ceil<double, int>(static_cast<double>(length) / 512);
-  return  dim3(512, threadsPerBlock.x,  length * sizeofDataType + 128);
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = ( length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 6 + 128;  // 6 = aRank + bRank + cRank
+  threadsPerBlock = getEnvVariable("GRID_SIZE_MMUL",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_MMUL",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_MMUL",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getAccumDims(int xLength) {
@@ -363,7 +417,7 @@ dim3 getReduceDims(int xLength) {
   auto blockWidth = 256;
   auto numBlocks = sd::CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
   dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 8192);
-  return launchDims;;
+  return launchDims;
 }
 
 dim3 getSortFullDims(int xLength) {
@@ -417,7 +471,6 @@ dim3 getim2ColLaunchParams(sd::NDArray col) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_IM2COL", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_IM2COL", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_IM2COL", sharedMem);
-  sd_printf("IM2COL: threadsPerBlock: %i, blocksPerGrid: %i, sharedMem: %i\n", threadsPerBlock, blocksPerGrid, sharedMem);
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
@@ -886,4 +939,123 @@ dim3 sruBiDims(int len,int rank) {
   return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 
 }
+
+
+dim3 stackDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = 256;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_STACK", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_STACK", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_STACK", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
+dim3 topkDims(int numTads) {
+  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
+  int blocksPerGrid = static_cast<int>(numTads);
+  int sharedMem = 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_TOP_K", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_TOP_K", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_TOP_K", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+
+}
+
+dim3 topKIndices(int scanWidth,int xDTypeSize,int yDTypeSize) {
+  int numTreads = 256;
+  int shMemSize = (numTreads * xDTypeSize * scanWidth) + (numTreads * yDTypeSize * scanWidth) + 512;
+  int blockSize = 256;
+
+  numTreads = getEnvVariable("GRID_SIZE_TOP_K_INDICES", numTreads);
+  blockSize = getEnvVariable("BLOCK_SIZE_TOP_K_INDICES", blockSize);
+  shMemSize = getEnvVariable("SHARED_MEM_SIZE_TOP_K_INDICES", shMemSize);
+  return dim3(numTreads,blockSize,shMemSize);
+
+}
+
+dim3 invertPermutationDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_INVERT_PERMUTATION", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_INVERT_PERMUTATION", blocksPerGrid);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_INVERT_PERMUTATION", sharedMemory);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+
+}
+
+dim3 traceDims(int length) {
+  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_TRACE", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_TRACE", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_TRACE", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+
+}
+
+dim3 triuDims(int length,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(sd::LongType) * rank + 128;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_TRIU", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_TRIU", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_TRIU", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+
+}
+
+dim3 tileDims(int length,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 2 * rank + 128;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_TILE", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_TILE", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_TILE", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+
+}
+
+dim3 updaterDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 256;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_UPDATER", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_UPDATER", blocksPerGrid);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_UPDATER", sharedMemory);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+}
+
+dim3 zetaDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_ZETA", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_ZETA", blocksPerGrid);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_ZETA", sharedMemory);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+}
+
+dim3 resizeNeighborDims(int batchSize,int height,int width) {
+  int blocksPerGrid = batchSize;
+  int numThreads = height * width;
+  int sharedMem = 512;
+  numThreads = getEnvVariable("GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", numThreads);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR", sharedMem);
+  return dim3(numThreads,blocksPerGrid,sharedMem);
+}
+
+dim3 clipDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = 512;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_CLIP", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_CLIP", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_CLIP", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
 #endif //LIBND4J_LAUNCHCONTEXT_H

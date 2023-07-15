@@ -224,7 +224,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
   weightsD->linspace(1);
   weightsD->permutei({2, 3, 1, 0});
 
-  auto expOutput = NDArrayFactory::create<float>('c', {3, 3, 8, 8});
+  auto expOutput = registerArr(NDArrayFactory::create<float>('c', {3, 3, 8, 8}));
 
   sd::ops::sconv2d op;
 

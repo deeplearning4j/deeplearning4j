@@ -54,7 +54,8 @@ static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, sd::LongType co
     auto zIndex = shape::getIndexOffset(segment, outputShape);
     if (lengths[segment] == 0) continue;
     auto xIndex = shape::getIndexOffset(idx, inputShape);
-
+    if(xIndex >= xLen)
+      continue;
     sd::math::atomics::sd_atomicAdd(&output[zIndex], input[xIndex] / sd::math::sd_sqrt<sd::LongType, T>(lengths[segment]));
   }
 }

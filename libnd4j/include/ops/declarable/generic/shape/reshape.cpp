@@ -39,6 +39,8 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
     return sd::Status::OK;  // No op
   }
 
+  //scalars can either be 0 or 1
+  if(!x->isScalar())
   REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
                "Reshape: lengths before and after reshape should match, but "
                "got %i vs %i",

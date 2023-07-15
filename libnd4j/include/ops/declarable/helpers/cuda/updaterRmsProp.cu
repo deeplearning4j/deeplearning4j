@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -78,11 +80,11 @@ SD_KERNEL void rmsPropUpdaterCuda(const void *vx, const sd::LongType *xShapeInfo
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
-                                const void *vx, const sd::LongType *xShapeInfo, const void *vin,
-                                const sd::LongType *inShapeInfo, void *vz, const sd::LongType *zShapeInfo, void *vst,
-                                const sd::LongType *stShapeInfo, const double dLr, const double dRmsDecay,
-                                const double dEpsilon) {
+void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo,
+                                const void *vin, const sd::LongType *inShapeInfo, void *vz,
+                                const sd::LongType *zShapeInfo, void *vst, const sd::LongType *stShapeInfo,
+                                const double dLr, const double dRmsDecay, const double dEpsilon) {
   const T lr = static_cast<T>(dLr);
   const T rmsDecay = static_cast<T>(dRmsDecay);
   T epsilon = static_cast<T>(dEpsilon);
@@ -90,7 +92,7 @@ void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);
   }
-  rmsPropUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
+  rmsPropUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vin, inShapeInfo, vz, zShapeInfo, vst, stShapeInfo, lr, rmsDecay, epsilon);
 }
 
@@ -99,14 +101,12 @@ void updaterRmsProp(sd::LaunchContext *context, const NDArray &gradient, const N
                     NDArray &stateG, const double dLr, const double dRmsDecay, const double dEpsilon) {
   PointersManager manager(context, "rmsPropUpdater");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = updaterDims(gradient.lengthOf());
   NDArray::prepareSpecialUse({&update, &stateG}, {&gradient, &initState});
 
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), rmsPropUpdaterCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+      (launchDims.y, launchDims.x,launchDims.z, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
        initState.specialBuffer(), initState.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(),
        stateG.specialBuffer(), stateG.specialShapeInfo(), dLr, dRmsDecay, dEpsilon),
       SD_FLOAT_TYPES);

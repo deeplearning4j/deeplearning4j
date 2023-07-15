@@ -270,7 +270,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
     NDArray::prepareSpecialUse({C}, {A, B});
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                 (dims.x, dims.y, dims.z, stream, A->specialBuffer(),
+                                 (dims.y, dims.x, dims.z, stream, A->specialBuffer(),
                                      A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
                                      C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                  SD_NUMERIC_TYPES)

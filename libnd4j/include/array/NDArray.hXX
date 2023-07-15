@@ -3356,10 +3356,21 @@ void NDArray::operator delete(void *p) {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 std::vector<T> NDArray::asVectorT() {
-  std::vector<T> result(this->lengthOf());
+  if(isScalar()) {
+    std::vector<T> result(1);
+    result[0] = this->e<T>(0);
+    return result;
+  }
 
+  if(lengthOf() < 1 || isEmpty()) {
+    return std::vector<T>();
+  }
+
+  std::vector<T> result(this->lengthOf());
   PRAGMA_OMP_SIMD
-  for (int e = 0; e < this->lengthOf(); e++) result[e] = this->e<T>(e);
+  for (int e = 0; e < this->lengthOf(); e++) {
+    result[e] = this->e<T>(e);
+  }
 
   return result;
 }
@@ -3702,8 +3713,8 @@ NDArray NDArray::dup(const char newOrder) const {
 ////////////////////////////////////////////////////////////////////////
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
 bool NDArray::equalsTo(const NDArray *other, double eps) const {
-   if(isEmpty() && other->isEmpty())
-     return true;
+  if(isEmpty() && other->isEmpty())
+    return true;
 
   if (dataType() != other->dataType() || lengthOf() != other->lengthOf() && !isScalar()) {
     return false;
@@ -3751,7 +3762,6 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
   } else {
     //NOTE leave max precision here. Crashes can occur otherwise for arrays where data type is of higher
     // regular numeric types
-    sd_print("Running regular equals\n");
     NDArray tmp(sd::DataType::DOUBLE, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
@@ -3760,7 +3770,6 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 #else
     NDArray::preparePrimaryUse({&tmp}, {this, other});
 #endif
-    sd_print("Running execReduce3Scalar\n");
     NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
                                            specialShapeInfo(), extras.argumentsAsT(DataType::DOUBLE), other->buffer(),
                                            other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
@@ -4051,14 +4060,6 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::e(const sd::LongType i) const {
   const auto offset = getOffset(i);
-  if (offset >= this->getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::e: index is out of array length !";
-    errorMessage += " index = " + std::to_string(i);
-    errorMessage += " offset = " + std::to_string(offset);
-    errorMessage += " lengthOf = " + std::to_string(this->getDataBuffer()->getNumElements());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   NDArray scalar(dataType(), getContext());
 
   scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, bufferOffset() + offset);
@@ -5213,7 +5214,7 @@ ResultSet NDArray::allExamples() const {
 
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
-  if(this->isEmpty() && i == 0)
+  if(this->isEmpty() || isScalar() && i == 0)
     return 0;
   if (i >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;

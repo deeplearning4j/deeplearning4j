@@ -116,16 +116,16 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
 
     BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
                           (blocksPerGrid,
-                           threadsPerBlock,
-                           context->getCudaStream(),
-                           clipNorm.specialBuffer(),
+                              threadsPerBlock,
+                              context->getCudaStream(),
+                              clipNorm.specialBuffer(),
                               actualNorms.specialBuffer(),
-                           actualNorms.specialShapeInfo(),
-                           z->specialBuffer(),
+                              actualNorms.specialShapeInfo(),
+                              z->specialBuffer(),
                               z->specialShapeInfo(),
-                           dimensions,
-                           dimsToExclude->size(),
-                           useAverage),
+                              dimensions,
+                              dimsToExclude->size(),
+                              useAverage),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({z}, {z, &actualNorms, &clipNorm});
 
@@ -220,16 +220,15 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
 
     std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims.size(),dims.data());
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
+    dim3 launchDims = clipDims(gradI.lengthOf());
     PointersManager manager(context, "clipByNormBp");
 
     const sd::LongType* dimensions = reinterpret_cast<const sd::LongType*>(
         manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({&gradI}, {&actualNorms, &sums, &clipNorm, &input, &gradO});
-    clipByNormBpCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+    clipByNormBpCuda<T><<<launchDims.y, launchDims.x,launchDims.z, *context->getCudaStream()>>>(
         clipNorm.specialBuffer(), input.specialBuffer(), input.specialShapeInfo(), gradO.specialBuffer(),
         gradO.specialShapeInfo(), actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), sums.specialBuffer(),
         sums.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude->size(),
@@ -342,8 +341,8 @@ static void clipByValue_(sd::LaunchContext* context, NDArray& input, double left
   NDArray::prepareSpecialUse({&output}, {&input});
   dim3 launchDims = getLaunchDims("clip");
   clipByValueKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
-                                                    output.specialBuffer(), output.specialShapeInfo(), leftBound,
-                                                    rightBound);
+                                                                              output.specialBuffer(), output.specialShapeInfo(), leftBound,
+                                                                              rightBound);
   NDArray::registerSpecialUse({&output}, {&input});
 }
 

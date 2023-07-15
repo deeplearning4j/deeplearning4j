@@ -62,8 +62,8 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount, i
   auto step = blockDim.x * gridDim.x;
   // batch  input by 3 last dims and extrapole input onto output with outColDim/outRowDim
   for (sd::LongType batch = start; batch < batchCount; batch += step) {
-    auto patch = input + inputOffsets[batch];        // listOfMatricies->at(batch);
-    auto outMatrix = output + outputOffsets[batch];  // listOfOutputs->at(batch);
+    auto patch = input + inputOffsets[batch];
+    auto outMatrix = output + outputOffsets[batch];
 
     for (sd::LongType i = 0; i < outRowDim; i++) {
       for (sd::LongType j = 0; j < outColDim; j++) {
@@ -130,7 +130,9 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
   auto stream = context->getCudaStream();
   auto imagesBuffer = reinterpret_cast<T*>(images->specialBuffer());
   auto outputBuffer = reinterpret_cast<T*>(output->specialBuffer());
+  sd_print("About to launch kernel\n");
   dim3 launchDims = getLaunchDims("extract_patches");
+  sd_print("After launch dims\n");
   globalExtractPatchesKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       theSame, batchCount, sizeRow, sizeCol, rowDim, colDim, outRowDim, outColDim, strideRow, strideCol, rateRow,
       rateCol, rowCast, colCast, lastDim, imagesBuffer, packX->specialShapeInfo(), packX->specialOffsets(), outputBuffer,

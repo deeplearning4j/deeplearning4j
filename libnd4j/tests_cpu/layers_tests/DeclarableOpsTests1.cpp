@@ -1884,11 +1884,9 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
 TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});

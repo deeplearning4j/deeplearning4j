@@ -238,9 +238,9 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_RANDOM  getEnvVariable("BLOCK_SIZE_RANDOM ", 512)
 #define SHARED_MEM_SIZE_RANDOM  getEnvVariable("SHARED_MEM_SIZE_RANDOM ", 32768)
 
-#define GRID_SIZE_LAMBDA getEnvVariable("GRID_SIZE_ADJUST_WEIGHTS", 256)
-#define BLOCK_SIZE_LAMBDA getEnvVariable("BLOCK_SIZE_ADJUST_WEIGHTS", 512)
-#define SHARED_MEM_SIZE_LAMBDA getEnvVariable("SHARED_MEM_SIZE_ADJUST_WEIGHTS", 8192)
+#define GRID_SIZE_LAMBDA getEnvVariable("GRID_SIZE_LAMBDA", 256)
+#define BLOCK_SIZE_LAMBDA getEnvVariable("BLOCK_SIZE_LAMBDA", 512)
+#define SHARED_MEM_SIZE_LAMBDA getEnvVariable("SHARED_MEM_SIZE_LAMBDA", 8192)
 
 #define GRID_SIZE_IM2COL getEnvVariable("GRID_SIZE_IM2COL", 256)
 #define BLOCK_SIZE_IM2COL getEnvVariable("BLOCK_SIZE_IM2COL", 512)
@@ -305,7 +305,7 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define SHARED_MEM_SIZE_CLIP getEnvVariable("SHARED_MEM_SIZE_CLIP", 8192)
 
 #define GRID_SIZE_CROSS getEnvVariable("GRID_SIZE_CROSS", 256)
-#define BLOCK_SIZE_CROSS getEnvVariable("BLOCK_SIZE_CLIP", 512)
+#define BLOCK_SIZE_CROSS getEnvVariable("BLOCK_SIZE_CROSS", 512)
 #define SHARED_MEM_SIZE_CROSS getEnvVariable("SHARED_MEM_SIZE_CROSS", 8192)
 
 
@@ -347,7 +347,7 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 
 #define GRID_SIZE_EXTRACT_PATCHES getEnvVariable("GRID_SIZE_EXTRACT_PATCHES", 128)
 #define BLOCK_SIZE_EXTRACT_PATCHES getEnvVariable("BLOCK_SIZE_EXTRACT_PATCHES", 128)
-#define BLOCK_SIZE_EXTRACT_PATCHES getEnvVariable("BLOCK_SIZE_EXTRACT_PATCHES", 1024)
+#define SHARED_MEM_SIZE_EXTRACT_PATCHES getEnvVariable("SHARED_MEM_SIZE_EXTRACT_PATCHES", 1024)
 
 
 #define GRID_SIZE_FAKE_QUANTIZATION getEnvVariable("GRID_SIZE_FAKE_QUANTIZATION", 128)
@@ -627,6 +627,70 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_SRU_BI getEnvVariable("BLOCK_SIZE_SRU_BI",256)
 #define SHARED_MEM_SIZE_SRU_BI getEnvVariable("SHARED_MEM_SIZE_SRU_BI", 256)
 
+#define GRID_SIZE_STACK getEnvVariable("GRID_SIZE_STACK", 128)
+#define BLOCK_SIZE_STACK getEnvVariable("BLOCK_SIZE_STACK",256)
+#define SHARED_MEM_SIZE_STACK getEnvVariable("SHARED_MEM_SIZE_STACK", 256)
+
+
+
+#define GRID_SIZE_TOP_K_MOVER getEnvVariable("GRID_SIZE_TOP_K_MOVER", 256)
+#define BLOCK_SIZE_TOP_K_MOVER getEnvVariable("BLOCK_SIZE_TOP_K_MOVER",256)
+#define SHARED_MEM_SIZE_TOP_K_MOVER getEnvVariable("SHARED_MEM_SIZE_TOP_K_MOVER", 1024)
+
+
+#define GRID_SIZE_TOP_K_INDICES getEnvVariable("GRID_SIZE_TOP_K_INDICES", 256)
+#define BLOCK_SIZE_TOP_K_INDICES getEnvVariable("BLOCK_SIZE_TOP_K_INDICES",256)
+#define SHARED_MEM_SIZE_TOP_K_INDICES getEnvVariable("SHARED_MEM_SIZE_TOP_K_INDICES", 1024)
+
+
+#define GRID_SIZE_INVERT_PERMUTE getEnvVariable("GRID_SIZE_INVERT_PERMUTE", 256)
+#define BLOCK_SIZE_INVERT_PERMUTE getEnvVariable("BLOCK_SIZE_INVERT_PERMUTE",256)
+#define SHARED_MEM_SIZE_INVERT_PERMUTE getEnvVariable("SHARED_MEM_SIZE_INVERT_PERMUTE", 1024)
+
+#define GRID_SIZE_TRACE getEnvVariable("GRID_SIZE_TRACE", 256)
+#define BLOCK_SIZE_TRACE getEnvVariable("BLOCK_SIZE_TRACE",256)
+#define SHARED_MEM_SIZE_TRACE getEnvVariable("SHARED_MEM_SIZE_TRACE", 1024)
+
+#define GRID_SIZE_TRIU getEnvVariable("GRID_SIZE_TRIU", 256)
+#define BLOCK_SIZE_TRIU getEnvVariable("BLOCK_SIZE_TRIU",256)
+#define SHARED_MEM_SIZE_TRIU getEnvVariable("SHARED_MEM_SIZE_TRIU", 1024)
+
+#define GRID_SIZE_TILE getEnvVariable("GRID_SIZE_TILE", 256)
+#define BLOCK_SIZE_TILE getEnvVariable("BLOCK_SIZE_TILE",256)
+#define SHARED_MEM_SIZE_TILE getEnvVariable("SHARED_MEM_SIZE_TILE", 1024)
+
+#define GRID_SIZE_TRIANGULAR_SOLVE getEnvVariable("GRID_SIZE_TRIANGULAR_SOLVE", 128)
+#define BLOCK_SIZE_TRIANGULAR_SOLVE getEnvVariable("BLOCK_SIZE_TRIANGULAR_SOLVE",256)
+#define SHARED_MEM_SIZE_TRIANGULAR_SOLVE getEnvVariable("SHARED_MEM_SIZE_TRIANGULAR_SOLVE", 256)
+
+#define GRID_SIZE_UPDATER getEnvVariable("GRID_SIZE_UPDATER", 128)
+#define BLOCK_SIZE_UPDATER getEnvVariable("BLOCK_SIZE_UPDATER",256)
+#define SHARED_MEM_SIZE_UPDATER getEnvVariable("SHARED_MEM_SIZE_UPDATER", 256)
+
+
+#define GRID_SIZE_ZETA getEnvVariable("GRID_SIZE_ZETA", 128)
+#define BLOCK_SIZE_ZETA getEnvVariable("BLOCK_SIZE_ZETA",256)
+#define SHARED_MEM_SIZE_ZETA getEnvVariable("SHARED_MEM_SIZE_ZETA", 1024)
+
+#define GRID_SIZE_AVG_POOLING getEnvVariable("GRID_SIZE_AVG_POOLING", 512)
+#define BLOCK_SIZE_AVG_POOLING getEnvVariable("BLOCK_SIZE_AVG_POOLING",512)
+#define SHARED_MEM_SIZE_POOLING getEnvVariable("SHARED_MEM_SIZE_POOLING", 4192)
+
+// Grid, block, and shared memory size definitions using environment variables
+#define GRID_SIZE_MMUL getEnvVariable("GRID_SIZE_MMUL", 256)
+#define BLOCK_SIZE_MMUL getEnvVariable("BLOCK_SIZE_MMUL", 512)
+#define SHARED_MEM_SIZE_MMUL getEnvVariable("SHARED_MEM_SIZE_MMUL", 8192)
+
+
+#define GRID_SIZE_IMAGE_RESIZE_NEIGHBOR getEnvVariable("GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", 256)
+#define BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR getEnvVariable("BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", 512)
+#define SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR getEnvVariable("SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR", 8192)
+
+#define GRID_SIZE_SWAP_UNSAFE getEnvVariable("GRID_SIZE_SWAP_UNSAFE", 256)
+#define BLOCK_SIZE_SWAP_UNSAFE getEnvVariable("BLOCK_SIZE_SWAP_UNSAFE", 512)
+#define SHARED_MEM_SIZE_SWAP_UNSAFE getEnvVariable("SHARED_MEM_SIZE_SWAP_UNSAFE", 8192)
+
+
 dim3 getGemVDims(int m);
 dim3 getAddBiasDims(int len,int rank) ;
 
@@ -715,4 +779,22 @@ dim3 segmentTad(int size);
 dim3 segmentBpDims(int gradOutLen,int inputLen);
 dim3 segmentBpTad(int indicesLen,int inputLen);
 dim3 sruBiDims(int len,int rank);
+
+dim3 stackDims(int length);
+
+dim3 topkDims(int numTads);
+
+dim3 topKIndices(int scanWidth,int xDTypeSize,int yDTypeSize);
+
+dim3 invertPermutationDims(int length);
+dim3 traceDims(int length);
+dim3 triuDims(int length,int rank);
+dim3 tileDims(int length,int rank);
+
+dim3 updaterDims(int length);
+dim3 zetaDims(int length);
+
+dim3 resizeNeighborDims(int batchSize,int height,int width);
+
+dim3 clipDims(int length);
 #endif //LIBND4J_LAUNCHCONTEXT_H

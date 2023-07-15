@@ -169,7 +169,7 @@ void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, con
 
   NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
   BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher,
-                        (launchDims.y, launchDims.x, sharedMem, context->getCudaStream(), a.specialBuffer(),
+                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), a.specialBuffer(),
                          a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(),
                          x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_FLOAT_TYPES);

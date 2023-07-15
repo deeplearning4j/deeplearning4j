@@ -57,9 +57,14 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
 
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
+      if(zIndex >= zLen)
+        return;
       start = starts[segment];
       finish = start + lengths[segment];
-      z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
+      auto xOffset = shape::getIndexOffset(start, inputShape);
+      if(xOffset >= xLen)
+        return;
+      z[zIndex] = x[xOffset];
       val[segment] = z[zIndex];
     }
   }
@@ -67,6 +72,8 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
+    if(xIndex >= xLen)
+      break;
     sd::math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
   }
 }
@@ -120,6 +127,9 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
   __shared__ T* z;
   __shared__ int start, finish;
   __shared__ I segment;
+
+  if(blockIdx.x >= numOfClasses)
+    return;
 
   if (threadIdx.x == 0) {
     segment = indices[blockIdx.x];  // / threadsPerSegment;
@@ -374,7 +384,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     sd::LongType const* gradInTadOffsets = packGradIn->specialOffsets();
     sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
-   dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
+    dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
     segmentMaxBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),

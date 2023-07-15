@@ -64,6 +64,9 @@ if [ -n "$BUILD_PATH" ]; then
     export PATH="$PATH:$BUILD_PATH"
 fi
 
+# DeclarableOpsTests14.Reshape20
+# DeclarableOpsTests14.Reshape17
+# DeclarableOpsTests14.Reshape9
 unameOut="$(uname)"
 echo "$OSTYPE"
 if [[ "$TEST_FILTER" != "none" ]]; then
@@ -74,12 +77,40 @@ if [[ "$TEST_FILTER" != "none" ]]; then
    export SHARED_MEM_SIZE_TRANSFORM_SCAN=256
    export GRID_SIZE_COL2IM=256
    export BLOCK_SIZE_COL2IM=256
-   export SHARED_MEM_SIZE_COL2IM=8192
+   export SHARED_MEM_SIZE_COL2IM=16000
     export GRID_SIZE_IM2COL=256
     export BLOCK_SIZE_IM2COL=256
-    export SHARED_MEM_SIZE_IM2COL=8192
+    export SHARED_MEM_SIZE_IM2COL=16000
        export BLOCK_SIZE_RANDOM=128
         export GRID_SIZE_RANDOM=128
+  export GRID_SIZE_POOLING=256
+  export BLOCK_SIZE_POOLING=256
+    export GRID_SIZE_MERGE=256
+      export   BLOCK_SIZE_MERGE=256
+       export  SHARED_MEM_SIZE_MERGE=256
+       #    {"diagPart", dim3(GRID_SIZE_DIAG_PART, BLOCK_SIZE_DIAG_PART, SHARED_MEM_SIZE_DIAG_PART)},
+       export GRID_SIZE_DIAG_PART=128
+       export BLOCK_SIZE_DIAG_PART=128
+       export GRID_SIZE_SEGMENT_MEAN=128
+       export BLOCK_SIZE_SEGMENT_MEAN=128
+     export GRID_SIZE_CLIP=128
+             export BLOCK_SIZE_CLIP=128
+            export GRID_SIZE_SWAP_UNSAFE=128
+            export  BLOCK_SIZE_SWAP_UNSAFE=256
+            export GRID_SIZE_SEGMENT=128
+                    export BLOCK_SIZE_SEGMENT=128
+                    export GRID_SIZE_SEGMENT_MEAN=128
+                            export BLOCK_SIZE_SEGMENT_MEAN=128
+                            export GRID_SIZE_GATHER=128
+                            export BLOCK_SIZE_GATHER=128
+                             export GRID_SIZE_PREFIX=128
+                                                                export BLOCK_SIZE_PREFIX=128
+                                                                export GRID_SIZE_ADJUST=128
+                                                                export BLOCK_SIZE_ADJUST=128
+                                                                export GRID_SIZE_SEGMENT_TAD=128
+                                                                                                                                                                    export BLOCK_SIZE_SEGMENT_TAD=128
+
+
    echo "Running with filter"
    env
    /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
@@ -92,12 +123,36 @@ else
   export SHARED_MEM_SIZE_TRANSFORM_SCAN=1024
    export GRID_SIZE_COL2IM=128
      export BLOCK_SIZE_COL2IM=128
-     export SHARED_MEM_SIZE_COL2IM=8192
+     export SHARED_MEM_SIZE_COL2IM=16000
   export GRID_SIZE_IM2COL=128
     export BLOCK_SIZE_IM2COL=128
-    export SHARED_MEM_SIZE_IM2COL=8192
+    export SHARED_MEM_SIZE_IM2COL=16000
     export BLOCK_SIZE_RANDOM=128
     export GRID_SIZE_RANDOM=128
+    export GRID_SIZE_POOLING=256
+      export BLOCK_SIZE_POOLING=256
+     export GRID_SIZE_MERGE=256
+     export BLOCK_SIZE_MERGE=256
+      export SHARED_MEM_SIZE_MERGE=256
+          export GRID_SIZE_DIAG_PART=128
+             export BLOCK_SIZE_DIAG_PART=128
+             export GRID_SIZE_CLIP=128
+             export BLOCK_SIZE_CLIP=128
+               export GRID_SIZE_SWAP_UNSAFE=128
+                         export  BLOCK_SIZE_SWAP_UNSAFE=256
+       export GRID_SIZE_SEGMENT_MEAN=128
+       export BLOCK_SIZE_SEGMENT_MEAN=128
+       export GRID_SIZE_SEGMENT=128
+        export BLOCK_SIZE_SEGMENT=128
+            export GRID_SIZE_GATHER=128
+                                    export BLOCK_SIZE_GATHER=128
+                                    export GRID_SIZE_PREFIX=128
+                                    export BLOCK_SIZE_PREFIX=128
+                                     export GRID_SIZE_ADJUST=128
+                                                                                                    export BLOCK_SIZE_ADJUST=128
+                                                                                                    export GRID_SIZE_SEGMENT_TAD=128
+                                                                                                    export BLOCK_SIZE_SEGMENT_TAD=128
+
   echo "Running without filter"
   env
   /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests

@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -80,13 +82,14 @@ SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const sd::LongType* xShapeIn
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                  const void* vx, const sd::LongType* xShapeInfo, const void* vin,
-                                  const sd::LongType* inShapeInfo, void* vz, const sd::LongType* zShapeInfo, void* vst,
-                                  const sd::LongType* stShapeInfo, const double dLr, const double dMomentum) {
+void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                  const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                                  const void* vin, const sd::LongType* inShapeInfo, void* vz,
+                                  const sd::LongType* zShapeInfo, void* vst, const sd::LongType* stShapeInfo,
+                                  const double dLr, const double dMomentum) {
   const T lr = static_cast<T>(dLr);
   const T momentum = static_cast<T>(dMomentum);
-  nesterovsUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
+  nesterovsUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
                                                                             zShapeInfo, vst, stShapeInfo, lr, momentum);
 }
 
@@ -95,13 +98,11 @@ void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const
                       NDArray& stateV, const double dLr, const double dMomentum) {
   PointersManager manager(context, "nesterovsUpdater");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = updaterDims(gradient.lengthOf());
   NDArray::prepareSpecialUse({&update, &stateV}, {&gradient, &initState});
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), nesterovsUpdaterCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+      (launchDims.y, launchDims.x,launchDims.z, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
        initState.specialBuffer(), initState.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(),
        stateV.specialBuffer(), stateV.specialShapeInfo(), dLr, dMomentum),
       SD_FLOAT_TYPES);

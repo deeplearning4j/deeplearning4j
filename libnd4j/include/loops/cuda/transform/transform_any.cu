@@ -72,6 +72,8 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
   auto params = reinterpret_cast<X *>(vparams);
   auto reductionPointer = reinterpret_cast<Z *>(vreductionPointer);
 
+  if(x == nullptr || z == nullptr)
+    return;
   __shared__ sd::LongType xEws;
   __shared__ sd::LongType zEws;
   __shared__ char xOrder;

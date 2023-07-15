@@ -305,25 +305,26 @@ sd::Status resizeNeighborFunctor_(sd::LaunchContext* context, NDArray const* ima
   auto outputBuffer = output->dataBuffer()->specialAsT<T>();
   auto stream = context->getCudaStream();
 
+  dim3 neightborDims = resizeNeighborDims(batchSize, outHeight, outWidth);
   NDArray::prepareSpecialUse({output}, {images});
   switch (coorMode) {
     case ASYMMETRIC:
-      resizeNeighborKernel<T, LegacyScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(
+      resizeNeighborKernel<T, LegacyScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
           imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
           inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     case HALF_PIXEL:
-      resizeNeighborKernel<T, HalfPixelScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(
+      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
           imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
           inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     case HALF_PIXEL_NN:
-      resizeNeighborKernel<T, HalfPixelScalerNN><<<batchSize, outHeight * outWidth, 512, *stream>>>(
+      resizeNeighborKernel<T, HalfPixelScalerNN><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
           imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
           inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
       break;
     default:
-      resizeNeighborKernel<T, HalfPixelScaler><<<batchSize, outHeight * outWidth, 512, *stream>>>(
+      resizeNeighborKernel<T, HalfPixelScaler><<<neightborDims.x, neightborDims.y,neightborDims.z, *stream>>>(
           imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(), batchSize, inWidth,
           inHeight, outWidth, outHeight, channels, widthScale, heightScale, nearestMode);
       break;
@@ -671,10 +672,11 @@ static void bicubicInterpolateWithCaching(NDArray const* image, const ImageResiz
   }
 
   const T* pInput = image->getDataBuffer()->specialAsT<T>();
-  float* pOutput = output->dataBuffer()->specialAsT<float>();  //_data.data();
+  float* pOutput = output->dataBuffer()->specialAsT<float>();
   dim3 bicubDims = getLaunchDims("image_resize_bicubic");
+  //128,1,512
   bicubicInterpolateWithCachingKernel<T, Scaler>
-      <<<bicubDims.y, bicubDims.x, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
+      <<<bicubDims.x, bicubDims.y, bicubDims.z, *stream>>>(coeffsTable, pInput, resizerStateD, xWais, exclude_outside, pOutput);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);

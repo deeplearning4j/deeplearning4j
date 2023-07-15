@@ -57,6 +57,8 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
+      if(zIndex >= zLen)
+        return;
       start = starts[segment];
       finish = start + lengths[segment];
       z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
@@ -66,6 +68,8 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
+    if(xIndex >= xLen)
+      return;
     sd::math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
   }
 }

@@ -96,7 +96,7 @@ void polyGamma(sd::LaunchContext *context, const NDArray &n, const NDArray &x, N
 }
 
 BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn,
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,const cudaStream_t *stream, const void *vn,
                        const sd::LongType *nShapeInfo, const void *vx, const sd::LongType *xShapeInfo, void *vz,
                        const sd::LongType *zShapeInfo),
                       SD_FLOAT_TYPES);

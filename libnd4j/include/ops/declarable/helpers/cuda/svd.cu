@@ -90,17 +90,6 @@ SD_KERNEL static void inverseColumnSignCuda(void* vu, const sd::LongType* uShape
 }
 
 //////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void inverseColumnSignCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                          const cudaStream_t* stream, void* vu, const sd::LongType* uShapeInfo,
-                                          void* vv, const sd::LongType* vShapeInfo) {
-  inverseColumnSignCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vu, uShapeInfo, vv, vShapeInfo);
-}
-BUILD_SINGLE_TEMPLATE(template void inverseColumnSignCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                       const cudaStream_t* stream, void* vu, const sd::LongType* uShapeInfo, void* vv,
-                       const sd::LongType* vShapeInfo),
-                      SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV,
@@ -175,7 +164,6 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
 
   // create cusolverDn handle
   cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();  // nullptr;
-  // cusolverStatus_t status = cusolverDnCreate(&handle);
   if (handle == nullptr) throw cuda_exception::build("svdQR: cuda failed !", -1);
 
   // stream
@@ -602,7 +590,6 @@ static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S,
   if (handle) cusolverDnDestroy(handle);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 
-  // cudaDeviceReset();
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -610,17 +597,13 @@ void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray
          const bool calcUV, const int switchNum) {
   NDArray* S = outArrs[0];
   NDArray* U = outArrs[1];
-  // NDArray VT = outArrs[2]->transpose();
   NDArray* V = outArrs[2];
 
   NDArray::prepareSpecialUse({S, U, V}, {x});
 
   if (x->rankOf() == 2) {
-    // svdQR(context, x, S, U, VT, fullUV, calcUV);
     svdJcb(context, x, S, U, V, fullUV, calcUV);
   } else {
-    // svdBatched(context, *x, *S, *U, *V, fullUV, calcUV);
-
     ResultSet *tadsU(nullptr), *tadsV(nullptr);
 
     auto tadsX = x->allTensorsAlongDimension({x->rankOf() - 2, x->rankOf() - 1});

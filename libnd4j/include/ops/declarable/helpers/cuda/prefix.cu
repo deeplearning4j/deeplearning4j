@@ -40,6 +40,8 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
   __shared__ T *shared, lastElemInChunk;
   __shared__ sd::LongType numTadChunks, blockDim2;
 
+  // DeclarableOpsTests6.cumSum_12
+  //DeclarableOpsTests6.cumSum_17
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     shared = reinterpret_cast<T*>(shmem);
@@ -47,7 +49,8 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
     numTadChunks = (tadLen + blockDim2 - 1) / blockDim2;  // ceil
   }
   __syncthreads();
-
+  if(blockIdx.x >= numTads)
+    return;
   const auto xTad = reinterpret_cast<const T*>(vx) + xTadOffsets[blockIdx.x];
   auto zTad = reinterpret_cast<T*>(vz) + zTadOffsets[blockIdx.x];
 
