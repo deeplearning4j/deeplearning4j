@@ -61,12 +61,7 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
     expectedAlphaShape[sharedAxes[i] - 1] = 1;
   }
 
-  sd::LongType product = 1;
-  for (const auto& item : expectedAlphaShape) product *= item;
 
-  REQUIRE_TRUE(product == alphaLen, 0, "PRELU OP: wrong shape of alpha array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedAlphaShape).c_str(), ShapeUtils::shapeAsString(alphaShape).c_str());
-  // ***** end of validation ***** //
 
   helpers::prelu(block.launchContext(), *input,
                  alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : *alpha,

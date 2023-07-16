@@ -116,13 +116,17 @@ static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd
 template <typename T, typename I>
 static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongType* inputShape,
                                           const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          const I* indices, sd::LongType* starts, sd::LongType* lengths, sd::LongType numOfClasses,
-                                          void* outputBuf, const sd::LongType* outputShape,
-                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets) {
+                                          const I* indices, sd::LongType* starts, sd::LongType* lengths,
+                                          sd::LongType numOfClasses, void* outputBuf, const sd::LongType* outputShape,
+                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets,
+                                          sd::LongType numIndices) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
   __shared__ int start, finish;
+
+  if(blockIdx.x >= numIndices)
+    return;
 
   if (threadIdx.x == 0) {
     auto segment = indices[blockIdx.x];  // / threadsPerSegment;
@@ -184,7 +188,7 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
     segmentSumTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }
@@ -229,7 +233,7 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentSumTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }

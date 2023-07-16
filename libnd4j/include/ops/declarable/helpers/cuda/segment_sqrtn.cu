@@ -63,10 +63,14 @@ static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, sd::LongType co
 // SegmentSqrtN kernel
 template <typename T, typename I>
 static SD_KERNEL void segmentSqrtNTadKernel(T* inputBuf, sd::LongType const* inputShape, sd::LongType const* inputTads,
-                                            sd::LongType const* inputTadOffsets, I* indices, sd::LongType* starts, sd::LongType* lengths,
-                                            sd::LongType numOfClasses, void* outputBuf, sd::LongType const* outputShape,
-                                            sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
+                                            sd::LongType const* inputTadOffsets, I* indices, sd::LongType* starts,
+                                            sd::LongType* lengths, sd::LongType numOfClasses, void* outputBuf,
+                                            sd::LongType const* outputShape, sd::LongType const* outputTads,
+                                            sd::LongType const* outputTadOffsets, sd::LongType numIndices) {
   __shared__ sd::LongType len, total;
+
+  if(blockIdx.x >= numIndices)
+    return;
 
   if (threadIdx.x == 0) {
     total = shape::sizeAt(inputShape, 0);
@@ -121,7 +125,7 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
     segmentSqrtNTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         indices->dataBuffer()->specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }

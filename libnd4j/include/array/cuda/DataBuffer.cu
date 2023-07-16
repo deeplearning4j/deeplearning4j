@@ -143,7 +143,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
-  if (_isOwnerSpecial && _specialBuffer != nullptr) {
+  if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
     RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;
@@ -246,6 +246,8 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setToZeroBuffers(const bool both) {
+  if(getLenInBytes() < 1 || special() == nullptr)
+    return;
   cudaMemsetAsync(special(), 0, getLenInBytes(), *LaunchContext::defaultContext()->getCudaStream());
   auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
   if (res != 0) throw cuda_exception::build("DataBuffer::setToZeroBuffers: streamSync failed!", res);

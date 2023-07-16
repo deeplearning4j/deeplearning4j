@@ -125,6 +125,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"random_poisson", {dim3(GRID_SIZE_RANDOM_POISSON, BLOCK_SIZE_RANDOM_POISSON, SHARED_MEM_SIZE_RANDOM_POISSON)}},
     {"random_uniform", {dim3(GRID_SIZE_RANDOM_UNIFORM, BLOCK_SIZE_RANDOM_UNIFORM, SHARED_MEM_SIZE_RANDOM_UNIFORM)}},
     {"random_shuffle_fisher", {dim3(GRID_SIZE_RANDOM_SHUFFLE_FISHER, BLOCK_SIZE_RANDOM_SHUFFLE_FISHER, SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER)}},
+    {"random_shuffle_merge", {dim3(GRID_SIZE_RANDOM_SHUFFLE_MERGE, BLOCK_SIZE_RANDOM_SHUFFLE_MERGE, SHARED_MEM_SIZE_RANDOM_SHUFFLE_MERGE)}},
     {"range", {dim3(GRID_SIZE_RANGE, BLOCK_SIZE_RANGE, SHARED_MEM_SIZE_RANGE)}},
     {"reverse", {dim3(GRID_SIZE_REVERSE, BLOCK_SIZE_REVERSE, SHARED_MEM_SIZE_REVERSE)}},
     {"roll", {dim3(GRID_SIZE_ROLL, BLOCK_SIZE_ROLL, SHARED_MEM_SIZE_ROLL)}},
@@ -284,6 +285,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"random_poisson", {"GRID_SIZE_RANDOM_POISSON", "BLOCK_SIZE_RANDOM_POISSON", "SHARED_MEM_SIZE_RANDOM_POISSON"}},
     {"random_uniform", {"GRID_SIZE_RANDOM_UNIFORM", "BLOCK_SIZE_RANDOM_UNIFORM", "SHARED_MEM_SIZE_RANDOM_UNIFORM"}},
     {"random_shuffle_fisher", {"GRID_SIZE_RANDOM_SHUFFLE_FISHER", "BLOCK_SIZE_RANDOM_SHUFFLE_FISHER", "SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER"}},
+    {"random_shuffle_merge", {"GRID_SIZE_RANDOM_SHUFFLE_MERGE", "BLOCK_SIZE_RANDOM_SHUFFLE_FISHER", "SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER"}},
     {"range", {"GRID_SIZE_RANGE", "BLOCK_SIZE_RANGE", "SHARED_MEM_SIZE_RANGE"}},
     {"reverse", {"GRID_SIZE_REVERSE", "BLOCK_SIZE_REVERSE", "SHARED_MEM_SIZE_REVERSE"}},
     {"roll", {"GRID_SIZE_ROLL", "BLOCK_SIZE_ROLL", "SHARED_MEM_SIZE_ROLL"}},
@@ -460,7 +462,6 @@ dim3 getCol2imLaunchParams(sd::NDArray im,sd::NDArray col) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_COL2IM", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_COL2IM", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_COL2IM", sharedMem);
-  sd_printf("Col2IM: threadsPerBlock: %i, blocksPerGrid: %i, sharedMem: %i\n", threadsPerBlock, blocksPerGrid, sharedMem);
   return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
@@ -549,18 +550,23 @@ dim3 getHistogramDims(int length,int numBins) {
 dim3 getAdjustDims(int numTads) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (numTads + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 512;
   threadsPerBlock = getEnvVariable("GRID_SIZE_ADJUST", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_ADJUST", blocksPerGrid);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_ADJUST", sharedMemory);
+
   //shared memory isn't used
-  return dim3(blocksPerGrid, threadsPerBlock, 0);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 }
 
 dim3 getBatchNormDims(int length) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 1024;
   threadsPerBlock = getEnvVariable("GRID_SIZE_BATCHNORM", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_BATCHNORM", blocksPerGrid);
-  return dim3(threadsPerBlock,blocksPerGrid,0);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_BATCHNORM", sharedMemory);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
 
 
 }
@@ -568,9 +574,16 @@ dim3 getBatchNormDims(int length) {
 dim3 getCompareAndBitpackDims(int length) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMemory = 512;
   threadsPerBlock = getEnvVariable("GRID_SIZE_COMPARE_AND_BITPACK", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_COMPARE_AND_BITPACK", blocksPerGrid);
-  return dim3(threadsPerBlock,blocksPerGrid,0);
+  sharedMemory = getEnvVariable("SHARED_MEM_SIZE_COMPARE_AND_BITPACK", sharedMemory);
+
+  if(threadsPerBlock < 1)
+    threadsPerBlock = 256;
+  if(blocksPerGrid < 1)
+    blocksPerGrid = 128;
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
 
 
 }
@@ -806,6 +819,20 @@ dim3 randomShuffleFisherDims(int power,int inputDataTypeSize) {
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER", sharedMem);
   return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 }
+
+dim3 randomShuffleMergeDims(int j,int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int newBlocksPerGrid = blocksPerGrid / (2 * j);
+  if(newBlocksPerGrid < 1)
+    newBlocksPerGrid = blocksPerGrid;
+  int sharedMem =  256;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_RANDOM_SHUFFLE_MERGE", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_RANDOM_SHUFFLE_MERGE", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_MERGE", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
 
 dim3 batchToSpaceNdLaunch(int length,int rank) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
@@ -1055,6 +1082,26 @@ dim3 clipDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_CLIP", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CLIP", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CLIP", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
+dim3 mirrorPadLinearDims(int length) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = 512;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_MIRROR_PAD_LINEAR", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_LINEAR", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_LINEAR", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
+dim3 mirrorPadTad(int length,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(sd::LongType) * rank + 256;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_MIRROR_PAD_TAD", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_TAD", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_TAD", sharedMem);
   return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 }
 

@@ -142,22 +142,19 @@ template <typename T>
 static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDArray& input,
 
                                            const NDArray& thresholdScalar, NDArray& output) {
-  sd_print("IN cmpBitpackCudaLauncher\n");
   T threshold = thresholdScalar.e<T>(0);
 
   auto inStrides = input.stridesOf();
   auto rank = output.rankOf();
 
   // threadblock size
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   // grid size
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   auto stream = block.launchContext()->getCudaStream();
   dim3 compareAndBitpackDims = getCompareAndBitpackDims(output.lengthOf());
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
   if (input.ews() > 0 && output.ews() > 0 && input.ordering() == 'c' && output.ordering() == 'c') {
-    cmpBitpackEws<T><<<compareAndBitpackDims.x, compareAndBitpackDims.y>>>(input.specialBuffer(), output.specialBuffer(),
+    cmpBitpackEws<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);
   } else {
@@ -175,7 +172,7 @@ static SD_HOST void cmpBitpackCudaLauncher(sd::graph::Context& block, const NDAr
     auto strideSize = (rank + 1) * sizeof(sd::LongType);
     sd::LongType* extendedStridesDevPtr =
         reinterpret_cast<sd::LongType*>(manager.replicatePointer(extendedStrides, strideSize));
-    cmpBitpack<T><<<blocksPerGrid, threadsPerBlock>>>(input.specialBuffer(), output.specialBuffer(), rank,
+    cmpBitpack<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z>>>(input.specialBuffer(), output.specialBuffer(), rank,
                                                       output.lengthOf(), extendedStridesDevPtr,
                                                       output.specialShapeInfo(), threshold);
   }

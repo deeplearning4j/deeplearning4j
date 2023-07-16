@@ -98,17 +98,28 @@ if [[ "$TEST_FILTER" != "none" ]]; then
             export GRID_SIZE_SWAP_UNSAFE=128
             export  BLOCK_SIZE_SWAP_UNSAFE=256
             export GRID_SIZE_SEGMENT=128
-                    export BLOCK_SIZE_SEGMENT=128
-                    export GRID_SIZE_SEGMENT_MEAN=128
-                            export BLOCK_SIZE_SEGMENT_MEAN=128
-                            export GRID_SIZE_GATHER=128
-                            export BLOCK_SIZE_GATHER=128
-                             export GRID_SIZE_PREFIX=128
-                                                                export BLOCK_SIZE_PREFIX=128
-                                                                export GRID_SIZE_ADJUST=128
-                                                                export BLOCK_SIZE_ADJUST=128
-                                                                export GRID_SIZE_SEGMENT_TAD=128
-                                                                                                                                                                    export BLOCK_SIZE_SEGMENT_TAD=128
+            export BLOCK_SIZE_SEGMENT=128
+            export GRID_SIZE_SEGMENT_MEAN=128
+        export BLOCK_SIZE_SEGMENT_MEAN=128
+        export GRID_SIZE_GATHER=128
+        export BLOCK_SIZE_GATHER=128
+         export GRID_SIZE_PREFIX=128
+            export BLOCK_SIZE_PREFIX=128
+            export GRID_SIZE_ADJUST=128
+            export BLOCK_SIZE_ADJUST=128
+            export GRID_SIZE_SEGMENT_TAD=128
+            export BLOCK_SIZE_SEGMENT_TAD=128
+                export GRID_SIZE_MATRIX_DIAG=128
+        export BLOCK_SIZE_MATRIX_DIAG=128
+         export GRID_SIZE_SEGMENT_PROD_2_TAD=128
+        export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
+        export GRID_SIZE_ZETA=64
+        export BLOCK_SIZE_ZETA=64
+           export GRID_SIZE_SCATTER_SIMPLE=256
+   export BLOCK_SIZE_SCATTER_SIMPLE=128
+   export GRID_SIZE_MIRROR_PAD_LINEAR=128
+   export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
+
 
 
    echo "Running with filter"
@@ -144,14 +155,24 @@ else
        export BLOCK_SIZE_SEGMENT_MEAN=128
        export GRID_SIZE_SEGMENT=128
         export BLOCK_SIZE_SEGMENT=128
-            export GRID_SIZE_GATHER=128
-                                    export BLOCK_SIZE_GATHER=128
-                                    export GRID_SIZE_PREFIX=128
-                                    export BLOCK_SIZE_PREFIX=128
-                                     export GRID_SIZE_ADJUST=128
-                                                                                                    export BLOCK_SIZE_ADJUST=128
-                                                                                                    export GRID_SIZE_SEGMENT_TAD=128
-                                                                                                    export BLOCK_SIZE_SEGMENT_TAD=128
+      export GRID_SIZE_GATHER=128
+      export BLOCK_SIZE_GATHER=128
+      export GRID_SIZE_PREFIX=128
+      export BLOCK_SIZE_PREFIX=128
+       export GRID_SIZE_ADJUST=128
+        export BLOCK_SIZE_ADJUST=128
+        export GRID_SIZE_SEGMENT_TAD=128
+        export BLOCK_SIZE_SEGMENT_TAD=128
+        export GRID_SIZE_MATRIX_DIAG=128
+        export BLOCK_SIZE_MATRIX_DIAG=128
+        export GRID_SIZE_SEGMENT_PROD_2_TAD=128
+        export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
+        export GRID_SIZE_ZETA=64
+        export BLOCK_SIZE_ZETA=64
+        export GRID_SIZE_SCATTER_SIMPLE=256
+        export BLOCK_SIZE_SCATTER_SIMPLE=128
+        export GRID_SIZE_MIRROR_PAD_LINEAR=128
+        export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
 
   echo "Running without filter"
   env

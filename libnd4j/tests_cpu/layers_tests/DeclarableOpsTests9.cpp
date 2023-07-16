@@ -55,7 +55,6 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test3) {
   auto result = op.evaluate({&x, &gradO2}, {0, 0}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 
@@ -82,7 +81,6 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test03) {
   auto result = op.evaluate({&x, &gradO2, &axis}, {}, {}, {false, false});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  // output->printIndexedBuffer();
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 
@@ -92,134 +90,7 @@ TEST_F(DeclarableOpsTests9, reduceStDevBP_test03) {
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }
-/*
 
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
-
-    const int N = 50000;
-    const double lambda = 2.;
-    const double mean   = 1. / lambda;
-    const double std    = mean;
-
-    auto x = NDArrayFactory::create<double>('c', {N});
-    double extraParams[] = {lambda};
-
-    sd::LongType *buffer = new sd::LongType[N];
-    auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
-    if (rng == nullptr)
-        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
-
-    functions::random::RandomFunction<double>::template
-execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.shapeInfo(), extraParams); const
-double actualMean = x.meanNumber().e<double>(0); const double actualStd  =
-x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
-    ASSERT_NEAR(mean, actualMean, 0.01);
-    ASSERT_NEAR(std,  actualStd, 0.01);
-
-    destroyRandom((sd::Pointer) rng);
-    delete[] buffer;
-
-}
-
-//////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
-
-    const int N = 50000;
-    const double lambda = 2.;
-    const double mean   = 1. / lambda;
-    const double std    = mean;
-    double extraParams[] = {lambda};
-
-    auto x = NDArrayFactory::create<double>('c', {N});
-    auto y = NDArrayFactory::create<double>('c', {N});
-    y.linspace(0., 1./N);  // [0, 1)
-
-
-    sd::LongType *buffer = new sd::LongType[N];
-    auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
-    if (rng == nullptr)
-        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
-
-    functions::random::RandomFunction<double>::template
-execTransform<randomOps::ExponentialDistributionInv<double>>(rng, y.getBuffer(), y.shapeInfo(), x.getBuffer(),
-x.shapeInfo(), extraParams);
-
-    const double actualMean = x.meanNumber().e<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
-    ASSERT_NEAR(mean, actualMean, 0.01);
-    ASSERT_NEAR(std,  actualStd, 0.01);
-
-    destroyRandom((sd::Pointer) rng);
-    delete[] buffer;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
-
-    const int N = 50000;
-    const double lambda = 2.;
-    const double mean   = 1. / lambda;
-    const double std    = mean;
-
-    auto x = NDArrayFactory::create<double>('c', {N});
-    double extraParams[] = {lambda};
-
-    sd::LongType *buffer = new sd::LongType[N];
-    auto rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
-    if (rng == nullptr)
-        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
-
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng,
-x.getBuffer(), x.shapeInfo(), extraParams); const double actualMean = x.meanNumber().e<double>(0); const double
-actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
-    ASSERT_NEAR(mean, actualMean, 0.01);
-    ASSERT_NEAR(std,  actualStd, 0.01);
-
-    destroyRandom((sd::Pointer) rng);
-    delete[] buffer;
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
-
-    const int N = 50000;
-    const double lambda = 2.;
-    const double mean   = 1. / lambda;
-    const double std    = mean;
-    double extraParams[] = {lambda};
-
-    auto x = NDArrayFactory::create<double>('c', {N});
-    auto y = NDArrayFactory::create<double>('c', {N});
-    y.linspace(-N/2.);  // [-25000, 25000)
-
-
-    sd::LongType *buffer = new sd::LongType[N];
-   // sd::Pointer extra[2];
-#ifndef __CUDABLAS__
-    sd::random::RandomBuffer* rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, N, (sd::Pointer) buffer);
-    if (rng == nullptr)
-        THROW_EXCEPTION("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
-
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng,
-y.getBuffer(), y.shapeInfo(), x.getBuffer(), x.shapeInfo(), extraParams);
-
-    destroyRandom((sd::Pointer) rng);
-#endif
-    const double actualMean = x.meanNumber().e<double>(0);
-    const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-    ASSERT_NEAR(mean, actualMean, 0.01);
-    ASSERT_NEAR(std,  actualStd, 0.01);
-
-
-    delete[] buffer;
-}
-*/
 
 TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
   auto x = NDArrayFactory::create<double>('f', {2, 2}, {1.0, 3.0, 2.0, 4.0});
@@ -250,7 +121,6 @@ TEST_F(DeclarableOpsTests9, concat_test1) {
   auto result = op.evaluate({&x0, &x1, &x2}, {}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  // output->printCurrentBuffer<float>(false);
 
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
@@ -558,9 +428,6 @@ TEST_F(DeclarableOpsTests9, concat_test17) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printShapeInfo();
-  // z->printIndexedBuffer();
-
   sd::LongType numOfTads = ShapeUtils::getNumOfSubArrs(z->shapeInfo(), {0});
   ASSERT_TRUE(2 == numOfTads);
 
@@ -746,7 +613,6 @@ TEST_F(DeclarableOpsTests9, concat_test26) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  // output->printLinearBuffer();
 
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
@@ -1648,7 +1514,6 @@ TEST_F(DeclarableOpsTests9, compare_and_bitpack_test3) {
   auto output = result.at(0);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  output->printShapeInfo("output");
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }
@@ -1934,7 +1799,6 @@ TEST_F(DeclarableOpsTests9, multiply_test2) {
                                             {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f,  1.1f, 1.2f,
                                              1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.f,  2.1f, 2.2f, 2.3f, 2.4f});
   x.linspace(1.f);
-  // y.linspace(0.1f, 0.1f);
 
   sd::ops::multiply op;
   auto result = op.evaluate({&y, &x}, {}, {});
@@ -2138,7 +2002,7 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
   auto y = NDArrayFactory::create<double>('c', {10, 10});
   auto x = NDArrayFactory::create<double>('c', {10, 10});
   auto dLdz = NDArrayFactory::create<double>('c', {10, 10});
-  x.linspace(4);  // 2., 2.0);
+  x.linspace(4);
   y.linspace(3);
   dLdz.linspace(1);
   sd::ops::floormod_bp opBP;
@@ -2220,7 +2084,6 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
-  //    res->printIndexedBuffer("Output for Cholesky 2");
   ASSERT_TRUE(exp.equalsTo(res));
 }
 
@@ -2237,7 +2100,6 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
-  // res->printIndexedBuffer("Output for Cholesky 3");
   ASSERT_TRUE(exp.equalsTo(res, 1e-4));
 }
 

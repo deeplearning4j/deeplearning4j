@@ -101,9 +101,10 @@ static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, sd::LongType con
 template <typename T, typename I>
 static SD_KERNEL void segmentProdTadKernel(void* inputBuf, sd::LongType const* inputShape,
                                            sd::LongType const* inputTads, sd::LongType const* inputTadOffsets,
-                                           I* indices, sd::LongType* starts, sd::LongType* lengths, sd::LongType numOfClasses,
-                                           void* outputBuf, sd::LongType const* outputShape,
-                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
+                                           I* indices, sd::LongType* starts, sd::LongType* lengths,
+                                           sd::LongType numOfClasses, void* outputBuf, sd::LongType const* outputShape,
+                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets,
+                                           sd::LongType numIndices) {
   __shared__ sd::LongType len, total;
 
   if (threadIdx.x == 0) {
@@ -111,7 +112,8 @@ static SD_KERNEL void segmentProdTadKernel(void* inputBuf, sd::LongType const* i
     len = shape::length(inputTads);
   }
   __syncthreads();
-
+  if(blockIdx.x >= numIndices)
+    return;
   for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
     auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
     auto segment = indices[idx];
@@ -157,10 +159,10 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
     dim3 launchDims = getLaunchDims("segment_prod_2_tad");
-    segmentProdTadKernel<T, I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
+    segmentProdTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }
@@ -203,10 +205,10 @@ static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* inp
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
-    segmentProdTadKernel<T, I>
-    <<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
-                                                            reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses,
-                                                            output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+    segmentProdTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
+        input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
+        reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }

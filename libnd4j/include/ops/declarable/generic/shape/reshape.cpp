@@ -160,6 +160,7 @@ DECLARE_SHAPE_FN(reshape) {
   }
 
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
+  if(!x->isScalar())
   REQUIRE_TRUE(x->lengthOf() == len, 0,
                "Reshape: lengths before and after reshape should match, but "
                "got %i vs %i",

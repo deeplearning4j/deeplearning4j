@@ -496,6 +496,14 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_PAD getEnvVariable("BLOCK_SIZE_PAD",64)
 #define SHARED_MEM_SIZE_PAD getEnvVariable("SHARED_MEM_SIZE_PAD", 1024)
 
+#define GRID_SIZE_MIRROR_PAD_LINEAR getEnvVariable("GRID_SIZE_MIRROR_PAD_LINEAR", 256)
+#define BLOCK_SIZE_MIRROR_PAD_LINEAR getEnvVariable("BLOCK_SIZE_MIRROR_PAD_LINEAR",512)
+#define SHARED_MEM_SIZE_MIRROR_PAD_LINEAR getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_LINEAR", 256)
+
+#define GRID_SIZE_MIRROR_PAD_TAD getEnvVariable("GRID_SIZE_MIRROR_PAD_TAD", 256)
+#define BLOCK_SIZE_MIRROR_PAD_TAD getEnvVariable("BLOCK_SIZE_MIRROR_PAD_TAD",512)
+#define SHARED_MEM_SIZE_MIRROR_PAD_TAD getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_TAD", 256)
+
 #define GRID_SIZE_PERCENTILE getEnvVariable("GRID_SIZE_PERCENTILE", 256)
 #define BLOCK_SIZE_PERCENTILE getEnvVariable("BLOCK_SIZE_PERCENTILE",512)
 #define SHARED_MEM_SIZE_PERCENTILE getEnvVariable("SHARED_MEM_SIZE_PERCENTILE", 1024)
@@ -533,6 +541,11 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define GRID_SIZE_RANDOM_SHUFFLE_FISHER getEnvVariable("GRID_SIZE_RANDOM_SHUFFLE_FISHER", 128)
 #define BLOCK_SIZE_RANDOM_SHUFFLE_FISHER getEnvVariable("BLOCK_SIZE_RANDOM_SHUFFLE_FISHER",128)
 #define SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER", 128)
+
+
+#define GRID_SIZE_RANDOM_SHUFFLE_MERGE getEnvVariable("GRID_SIZE_RANDOM_SHUFFLE_MERGE", 128)
+#define BLOCK_SIZE_RANDOM_SHUFFLE_MERGE getEnvVariable("BLOCK_SIZE_RANDOM_SHUFFLE_MERGE",128)
+#define SHARED_MEM_SIZE_RANDOM_SHUFFLE_MERGE getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_MERGE", 128)
 
 #define GRID_SIZE_RANGE getEnvVariable("GRID_SIZE_RANGE", 512)
 #define BLOCK_SIZE_RANGE getEnvVariable("BLOCK_SIZE_RANGE",512)
@@ -762,7 +775,7 @@ dim3 polygammaDims(int length);
 dim3 prefixDims(int numTads,int sizeOfDataType);
 
 dim3 randomShuffleFisherDims(int power,int inputDataTypeSize);
-dim3 randomShuffleFisherDims(int power,int inputDataTypeSize);
+dim3 randomShuffleMergeDims(int j,int length);
 
 dim3 batchToSpaceNdLaunch(int length,int rank);
 dim3 spaceToBatchLaunch(int length,int rank);
@@ -797,4 +810,8 @@ dim3 zetaDims(int length);
 dim3 resizeNeighborDims(int batchSize,int height,int width);
 
 dim3 clipDims(int length);
+
+dim3 mirrorPadLinearDims(int length);
+dim3 mirrorPadTad(int length,int rank);
+
 #endif //LIBND4J_LAUNCHCONTEXT_H

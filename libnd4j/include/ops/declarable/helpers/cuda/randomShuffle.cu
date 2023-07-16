@@ -92,9 +92,14 @@ static SD_KERNEL void mergeShuffleCuda(sd::graph::RandomGenerator* rng, void* vx
     ind = iterNum * len + blockOffset;
     beg = 0;  // beginning
 
-      while (true) {
+    while (true) {
       if (rng->relativeLong(ind++) % 2) {
         if (mid == totLen) break;
+        int first = (blockOffset + beg) * ews;
+        int second = blockOffset + mid * ews;
+        if(first >= len || second >= len) {
+          break;
+        }
         math::sd_swap<T>(x[(blockOffset + beg) * ews], x[(blockOffset + mid++) * ews]);
       } else {
         if (beg == mid) break;
@@ -105,6 +110,11 @@ static SD_KERNEL void mergeShuffleCuda(sd::graph::RandomGenerator* rng, void* vx
     // Fisher-Yates
     while (beg < totLen) {
       const sd::LongType e = rng->relativeLong(ind++) % (beg + 1);
+      int first = (blockOffset + beg) * ews;
+      int second = blockOffset + e * ews;
+      if(first >= len || second >= len) {
+        break;
+      }
       if (beg != e) math::sd_swap<T>(x[(blockOffset + beg) * ews], x[(blockOffset + e) * ews]);
       ++beg;
     }
@@ -159,14 +169,16 @@ static void randomShuffle_(sd::LaunchContext* context, NDArray& input, NDArray& 
 
     fisherYatesCuda<T><<<fisherDims.y, fisherDims.x, fisherDims.z, *context->getCudaStream()>>>(
         pRng, arr->specialBuffer(), arr->ews(), len, power);
-    for (sd::LongType j = 1, i = 1; j < blocksPerGrid; j += j, ++i)
-      mergeShuffleCuda<T><<<blocksPerGrid / (2 * j), threadsPerBlock, 256, *context->getCudaStream()>>>(
+    for (sd::LongType j = 1, i = 1; j < blocksPerGrid; j += j, ++i) {
+      dim3 mergeShuffleDims = randomShuffleMergeDims(j, power);
+      mergeShuffleCuda<T><<<mergeShuffleDims.x, mergeShuffleDims.y, mergeShuffleDims.z, *context->getCudaStream()>>>(
           pRng, arr->specialBuffer(), arr->ews(), len, power, i);
-    NDArray::registerSpecialUse({arr}, {arr});
+      NDArray::registerSpecialUse({arr}, {arr});
 
-    manager.synchronize();
+      manager.synchronize();
 
-    rng.rewindH((len + 1) * power);
+      rng.rewindH((len + 1) * power);
+    }
   } else {
     sd::LongType dim = 0;
     auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(),1 ,&dim);

@@ -43,7 +43,7 @@ SD_KERNEL static void zetaCuda(const void *vx, const sd::LongType *xShapeInfo, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
-  for (int i = tid; i < len; i += totalThreads) {
+  for (sd::LongType i = tid; i < len; i += totalThreads) {
     const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
     const auto qOffset = shape::getIndexOffset(i, qShapeInfo);
     const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
@@ -67,7 +67,7 @@ void zeta(sd::LaunchContext *context, const NDArray &x, const NDArray &q, NDArra
   dim3 launchDims = zetaDims(x.lengthOf());
   BUILD_SINGLE_SELECTOR(
       x.dataType(), zetaCudaLauncher,
-      (launchDims.y, launchDims.x,launchDims.z, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(),
+      (launchDims.x, launchDims.z,launchDims.y, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(),
        q.specialBuffer(), q.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
       SD_FLOAT_TYPES);
 

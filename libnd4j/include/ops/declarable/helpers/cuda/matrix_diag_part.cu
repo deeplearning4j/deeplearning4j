@@ -41,6 +41,8 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
                                            const sd::LongType* tadOnlyOutputShapeInfo,
                                            const sd::LongType* tadOutputOffsets) {
 
+  if(blockIdx.x >= numTads)
+    return;
   auto outputBuffer2 = reinterpret_cast<T*>(outputBuffer);
   auto inputBuffer2 = reinterpret_cast<T const*>(inputBuffer);
 
@@ -51,17 +53,8 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
     for (sd::LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
       sd::LongType coords[2] = {j, j};
       sd::LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
-      if(xOffset + tadOffset >= inputLength)
-        return;
-      auto outputBufferPlus = outputBuffer2 + shape::getIndexOffset(j, tadOnlyOutputShapeInfo);
-      printf("outputBufferPlus: %lld\n", outputBufferPlus);
-      if(yOffset + tadOffset >= inputLength)
-        return;
-      auto inputBufferPlus = inputBuffer2 + yOffset;
-      printf("inputBufferPlus: %lld\n", inputBufferPlus);
-      auto lastAdd =  inputBufferPlus + tadOffset;
-
-      printf("lastAdd: %lld\n", lastAdd);
+      *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
+          *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
     }
   }
 }
@@ -83,7 +76,8 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
   }
   sd::LongType lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
 
-  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), {output->rankOf() - 1},&lastDimension);
+  sd::LongType dims = output->rankOf() - 1;
+  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), 1,&dims);
   const sd::LongType numTads =
       ShapeUtils::getNumOfSubArrs(input->shapeInfo(),*dimsToExclude);
   std::vector<sd::LongType> outputDims({output->rankOf() - 1});
@@ -97,7 +91,7 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
 
   dim3 launchDims = getLaunchDims("matrixDiag");
   matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      input->specialBuffer(), output->specialBuffer(), numTads, lastDimension, packX->specialShapeInfo(),
+      input->specialBuffer(), output->specialBuffer(),numTads, lastDimension, packX->specialShapeInfo(),
       packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());
 
 

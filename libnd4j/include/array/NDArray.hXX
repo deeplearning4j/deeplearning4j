@@ -3399,6 +3399,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     THROW_EXCEPTION(errorMessage.c_str());
 
   }
+
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
@@ -3457,7 +3458,8 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   sd::LongType arrLength = 1;
   for (const auto &item : shape) arrLength *= item;
 
-  if (platformBuffer() == nullptr || arrLength != this->lengthOf()) {
+  //don't validate scalar case reshape 0 -> 1,1 should be valid
+  if (platformBuffer() == nullptr || arrLength != this->lengthOf() && !isScalar()) {
     std::string errorMessage;
     errorMessage += "NDArray::reshapei: bad length of new shape !\n";
     errorMessage += "Shape: ";

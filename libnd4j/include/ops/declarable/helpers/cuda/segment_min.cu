@@ -119,15 +119,18 @@ static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const sd
 template <typename T, typename I>
 static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongType* inputShape,
                                           const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          I* indices, sd::LongType* starts,  sd::LongType * lengths, sd::LongType numOfClasses,
-                                          void* outputBuf, const sd::LongType* outputShape,
-                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets) {
+                                          I* indices, sd::LongType* starts, sd::LongType* lengths,
+                                          sd::LongType numOfClasses, void* outputBuf, const sd::LongType* outputShape,
+                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets,
+                                          sd::LongType numIndices) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
   __shared__ int threadsPerSegment, start, finish;
-
+  if(blockIdx.x >= numIndices)
+    return;
   auto segment = indices[blockIdx.x];  // / threadsPerSegment;
+
   if (threadIdx.x == 0) {
     z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
     len = shape::length(inputTads);
@@ -189,7 +192,7 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     segmentMinTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
@@ -237,7 +240,7 @@ static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentMinTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices});
