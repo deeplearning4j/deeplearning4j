@@ -70,7 +70,6 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_1) {
   for (int e = 0; e < weights->lengthOf(); e++) weights->p(e, e + 1);
   weights->permutei({2, 3, 1, 0});
 
-  // weights->printShapeInfo("weights");
 
   ArrayOptions::setDataType(_expS, input->dataType());
   auto exp = new NDArray(_expB, _expS);
@@ -231,7 +230,6 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_5) {
   auto results = op.evaluate({&input, &weights, &bias}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
 
-  // output->printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -501,12 +499,8 @@ TEST_F(ConvolutionTests1, sconv2d_1) {
   ASSERT_EQ(sd::Status::OK, status);
   auto output = variableSpace->getVariable(1)->getNDArray();
 
-  // exp.printShapeInfo("Expected shape");
-  // output->printShapeInfo("Result shape");
   ASSERT_TRUE(exp.isSameShape(output));
 
-  // exp.printBuffer("Expctd buffer");
-  // output->printBuffer("Result buffer");
   ASSERT_TRUE(exp.equalsTo(output));
 
   delete block;
@@ -643,12 +637,8 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_2) {
   auto resultFF = op.evaluate({&input, &weightsD, &weightsP}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
   auto z = resultFF.at(0);
-  // z->printShapeInfo("FF shape");
 
   ASSERT_TRUE(z->isSameShape(&expFF));
-
-  // expFF.printBuffer("e");
-  // z->printBuffer("z");
   ASSERT_TRUE(z->equalsTo(&expFF, 1e-3));
 }
 
@@ -1014,11 +1004,9 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_conv2d_1) {
   ASSERT_TRUE(z->equalsTo(&expFF, 1));
 
   sd::ops::conv2d op2d;
-  // weightsP.printShapeInfo();
   auto result2D = op2d.evaluate({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
 
   auto z2d = result2D.at(0);
-  // z2d->printBuffer();
 
   ASSERT_TRUE(z2d->isSameShape(&exp2FF));
   ASSERT_TRUE(z2d->equalsTo(&exp2FF));
@@ -2524,7 +2512,6 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test6) {
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
 
-  // output->printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
@@ -2612,7 +2599,6 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test9) {
   auto s = shapes->at(0);
 
   auto z = result.at(0);
-  // z->printShapeInfo("z shape");
 
   ASSERT_TRUE(exp.isSameShape(z));
 
@@ -3452,8 +3438,6 @@ TEST_F(ConvolutionTests1, deconv2d_test4) {
   auto result = op.evaluate({&input, &weights}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
   auto z = result.at(0);
-  // z->printShapeInfo();
-  // z->printBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));

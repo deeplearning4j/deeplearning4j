@@ -1114,7 +1114,6 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
 
   float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().e<float>(0);
 
-  // sd_printf("OpResult: %f\n", m);
 
   ASSERT_NEAR(-11.0, m, 1e-5);
 }

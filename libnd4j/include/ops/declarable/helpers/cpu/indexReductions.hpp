@@ -140,11 +140,9 @@ static SD_INLINE void indexInnerReduction(const LongType& rank, const X* buffer,
     const X* inner_buffer = &(buffer[offset]);
     // typename std::make_signed<Z>::type iArgMax = -1;
     for (Z j = 0; j < innerLoopCount; j++) {
-      // sd_printf("%f\n", inner_buffer[j]);
       ReductionOp::update(current, argCurrent, inner_buffer[j], j + startIndex);
     }
     offset = inc_coords<true>(bases, strides, ptr_coords, offset, rank, 1);
-    // if (iArgMax >= 0) argCurrent = startIndex + iArgMax;
     startIndex += innerLoopCount;
   }
 }
@@ -574,7 +572,6 @@ static void argReductionInnerCases(Movement& movement, sd::LongType loopTotal, c
 
       } else {
         LOG_CALLS(3)
-        // sd_printf("-----%d \n", loopTotal);
         for (sd::LongType i = 0; i < loopTotal; i++) {
           X current;
           const X* buffer0 = &(bufferX[movement.First()]);
@@ -682,7 +679,6 @@ static void argReductionInnerCases(Movement& movement, sd::LongType loopTotal, c
 
       } else {
         LOG_CALLS(13)
-        // sd_printf("-------%d inner loop %d inner_last %d\n", loopTotal, inner_loop,inner_last);
         for (sd::LongType i = 0; i < loopTotal; i++) {
           X current;
           const X* buffer0 = &(bufferX[movement.First()]);

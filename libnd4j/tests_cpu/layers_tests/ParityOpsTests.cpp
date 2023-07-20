@@ -537,7 +537,6 @@ TEST_F(ParityOpsTests, Test_Where_3) {
 
   auto z = result.at(0);
 
-  // z->printShapeInfo("z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1136,7 +1135,6 @@ TEST_F(ParityOpsTests, scatterND_add_test2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1296,8 +1294,6 @@ TEST_F(ParityOpsTests, scatterND_sub_test2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // exp.printIndexedBuffer("e");
-  // z->printIndexedBuffer("z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1454,7 +1450,6 @@ TEST_F(ParityOpsTests, scatterND_update_test2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));

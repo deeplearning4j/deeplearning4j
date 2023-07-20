@@ -110,7 +110,6 @@ TEST_F(ConstantShapeHelperTests, stress_test_1) {
     delete[] ptr;
   }
   ShapeDescriptor aShape(sd::DataType::FLOAT32, 'c', {(sd::LongType)5, (sd::LongType)382, (sd::LongType)373});
-  //    sd_printf("%d\n", ConstantShapeHelper::getInstance().cachedEntriesForDevice(0));
 
   auto timeStart = std::chrono::system_clock::now();
   ASSERT_TRUE(ConstantShapeHelper::getInstance().checkBufferExistenceForShapeInfo(&aShape));

@@ -15,8 +15,18 @@ A significant feature of this code is the flexibility it offers, allowing users 
 ```cpp
 // Fetching Launch Dimensions
 dim3 launchDims = getLaunchDims("matrixMultiply");
+//invoke your cuda function
+yourKernel<<<launchDims.y,launchDims.x,launchDims.z>>>
+//This returns the blocks, threads and shared memory used for the kernel.
+```
 
-// This returns a dim3 struct containing the dimensions for launching the CUDA kernel for the "matrixMultiply" algorithm.
 
-// Using Environment Variables for Customization
-// The preset configurations can be overridden using environment variables. For instance, to set custom launch dimensions for the "matrixMultiply"
+The launch configuration can be found in
+```bash
+../include/execution/cuda/LaunchDims.h
+../include/execution/cuda/LaunchDims.cu
+```
+
+Every kernel has environment variables that work at build time and runtime.
+Build time is used to modify defaults. Runtime is used to override buildtime and defaults.
+

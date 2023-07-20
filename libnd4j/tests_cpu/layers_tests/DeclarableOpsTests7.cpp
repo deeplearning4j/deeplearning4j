@@ -571,7 +571,6 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
 
   auto timeEnd = std::chrono::system_clock::now();
   auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-  // sd_printf("dynamic_stitch: Process with %i iterations was load: %lld us.\n", numOfCases, outerTime / numOfCases);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -771,8 +770,6 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printBuffer("Output");
-  //    z->printShapeInfo("Shape");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -794,8 +791,6 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printBuffer("Output");
-  //    z->printShapeInfo("Shape");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -827,8 +822,6 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_5) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printBuffer("Output");
-  //    z->printShapeInfo("Shape");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }

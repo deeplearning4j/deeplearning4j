@@ -38,11 +38,6 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
   auto tadShapes = reinterpret_cast<sd::LongType **>(tadPointers);
   auto tadOffsets = reinterpret_cast<sd::LongType **>(offsetPointers);
 
-  // if (threadIdx.x == 0 && blockIdx.x == 0) {
-  //    shape::printShapeInfoLinear("zTadShape", zTadShape);
-  //}
-
-  //__shared__ int tDim[1];
   __shared__ int baseIdx;
 
   __shared__ int yLength;
@@ -111,16 +106,11 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
         arrOffset += shape::length(tadShapes[f]);
       }
 
-      // if (threadIdx.x == 0 && blockIdx.x == 0) {
-      //    shape::printShapeInfoLinear("currentTad", currentTad);
-      //}
+
     }
     __syncthreads();
 
     if (yLength == 1 && _vec) {
-      // if (threadIdx.x == 0 && blockIdx.x == 0)
-      //    printf("Branch 0\n");
-
       // edge case, each thread will handle it's own tad then
       for (sd::LongType j = tid; j < numTads; j += blockDim.x * gridDim.x) {
         sd::LongType inputOffset = currentOffsets[j];

@@ -195,7 +195,6 @@ TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
 
   auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
 
-  // sd_printf("GRU time 1 time %lld us\n", outerTime);
 
   delete graph;
 }
@@ -451,8 +450,6 @@ TEST_F(FlatBuffersTest, nhwc_conv_0) {
 
     auto z = graph->getVariableSpace()->getVariable(11)->getNDArray();
 
-    //z->printShapeInfo("z buffr");
-    //z->printIndexedBuffer("z shape");
 
 //    [[2.96,  0.60],
 //    [7.57,  1.50],

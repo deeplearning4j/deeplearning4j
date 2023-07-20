@@ -335,8 +335,6 @@ TEST_F(SixDTest, SixDWithOnes) {
   tad->init(inputShapeBuffer, dimension, dimensionLength);
   tad->createTadOnlyShapeInfo();
   tad->createOffsets();
-  // shape::printShapeInfoLinear(inputShapeBuffer);
-  // shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
   //[2,1,1,1,1,0,1,97]
   ASSERT_TRUE(arrsEquals(8, assertionShapeBuffer, tad->tadOnlyShapeInfo));
   delete tad;
@@ -367,16 +365,7 @@ class ScalarTest : public NDArrayTests {
   sd::LongType dimension[1] = {1};
   sd::LongType assertionShapeBuffer[8] = {2, 1, 1, 1, 1, 16384, 1, 99};
 };
-/*
-TEST_F(ScalarTest,ScalarTest2) {
-    shape::TAD *tad = new shape::TAD(inputShapeBuffer,dimension,dimensionLength);
-    tad->createTadOnlyShapeInfo();
-    tad ->createOffsets();
-    //[2,1,1,1,1,0,1,97]
-    shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
-    ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
-}
-*/
+
 
 class ThreeTest : public NDArrayTests {
  public:
@@ -401,7 +390,6 @@ TEST_F(BeginOneTadTest, TadTest) {
   tad->init(inputShapeBuffer, dimension, dimensionLength);
   tad->createTadOnlyShapeInfo();
   auto tadShapeBuffer = tad->tadOnlyShapeInfo;
-  // shape::printShapeInfoLinear(tadShapeBuffer);
   //[2,1,1,1,1,0,1,97]
   ASSERT_TRUE(arrsEquals(8, assertionShapeBuffer, tadShapeBuffer));
 

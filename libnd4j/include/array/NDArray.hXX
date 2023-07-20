@@ -1524,7 +1524,6 @@ void NDArray::templatedSet(void *buffer, const sd::LongType *indices, const void
   const auto y = *(reinterpret_cast<const Y *>(value));
 
   auto xOffset = shape::getOffset(shapeInfo(), indices);
-  sd_printf("Setting value %f to offset %lld\n", y, xOffset);
   t[xOffset] = y;
   NDArray::registerPrimaryUse({this}, {this});
 }
@@ -2435,8 +2434,6 @@ NDArray NDArray::asS() const {
   sd::LongType start = 0, stop = 0;
   sd::LongType dataLength = 0;
 
-  sd_printf("This data type %s and casting data type is %s\n", DataTypeUtils::asString(dataType()).c_str(),
-            DataTypeUtils::asString(dtype).c_str());
   auto data = bufferAsT<int8_t>() + offsetsLength;
   for (sd::LongType e = 0; e < lengthOf(); e++) {
     offsets[e] = dataLength;

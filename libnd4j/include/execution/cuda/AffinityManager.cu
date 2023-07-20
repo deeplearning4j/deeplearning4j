@@ -102,7 +102,6 @@ void AffinityManager::setCurrentDevice(int deviceId) {
 
     if (deviceId != previousDeviceId) {
       // discard existing stuff
-      // sd_printf("AffinityManager::setCurrentDevice() was invoked, releasing buffers\n", "");
       LaunchContext::releaseBuffers();
     }
   }

@@ -81,11 +81,8 @@ DECLARE_SHAPE_FN(broadcast_to) {
     outShape.reserve(1);
     auto firstVal = shape->cast(sd::DataType::INT64).e<sd::LongType>(0);
     outShape[0] = firstVal;
-    sd_printf("Printing shape info for broadcast_to %lld\n",firstVal);
     auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
                                                                            shape::order(inputShapeInfo), outShape);
-    sd_print("Printing shape info");
-    shape::printShapeInfo(outShapeInfo);
     return SHAPELIST(outShapeInfo);
 
   }
@@ -98,7 +95,6 @@ DECLARE_SHAPE_FN(broadcast_to) {
                  0, "BROADCAST_TO op: shape of input array %s can't be broadcasted to the shape %s !",
                  ShapeUtils::shapeAsString(inputShapeInfo).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
 
-  sd_print("Printing shape info for broadcast_to\n");
   auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
                                                                          shape::order(inputShapeInfo), outShape);
   shape::printShapeInfo(outShapeInfo);

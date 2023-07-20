@@ -84,8 +84,6 @@ TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
   sd::LongType numTads = 16;
   sd::LongType tadLength = 16;
 
-  //    sd_printf("TT: [%i]; ET: [%i];\n", Environment::getInstance().tadThreshold(),
-  //    Environment::getInstance().elementwiseThreshold());
   ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }
 

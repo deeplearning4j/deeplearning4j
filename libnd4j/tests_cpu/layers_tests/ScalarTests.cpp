@@ -135,7 +135,6 @@ TEST_F(ScalarTests, Test_Concat_3) {
 
   auto z = result.at(0);
 
-  // z->printShapeInfo("z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));

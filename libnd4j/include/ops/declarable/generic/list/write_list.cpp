@@ -30,7 +30,6 @@ namespace ops {
 LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
   auto list = INPUT_LIST(0);
   auto output = OUTPUT_VARIABLE(0);
-  // output->printShapeInfo("Write_list default output shape");
   // nd4j mode
   if (block.width() >= 3) {
     auto input = INPUT_VARIABLE(block.width() - 2);
@@ -54,8 +53,6 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
     sd::Status result = list->write(idx, new NDArray(input->dup()));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
-    // res->printShapeInfo("Write_list 1 output shape");
-    // OVERWRITE_RESULT(res);
     setupResult(res, block);
     return result;
   } else

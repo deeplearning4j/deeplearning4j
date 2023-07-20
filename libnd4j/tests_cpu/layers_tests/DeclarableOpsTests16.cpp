@@ -398,10 +398,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
   NDArray expected = hsvs.subarray({NDIndex::all(), NDIndex::point(0)});
   subArrRgbs.reshapei({3});
   expected.reshapei({3});
-#if 0
-    //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
-    subArrRgbs.printShapeInfo("subArrRgbs");
-#endif
+
   auto actual = NDArrayFactory::create<float>('c', {3});
 
   Context ctx(1);
@@ -749,10 +746,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_6) {
   NDArray expected = yiqs.subarray({NDIndex::all(), NDIndex::point(0)});
   subArrRgbs.reshapei({3});
   expected.reshapei({3});
-#if 0
-    //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
-    subArrRgbs.printShapeInfo("subArrRgbs");
-#endif
+
   auto actual = NDArrayFactory::create<float>('c', {3});
 
   Context ctx(1);
@@ -915,10 +909,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
   NDArray expected = rgbs.subarray({NDIndex::all(), NDIndex::point(0)});
   subArrYiqs.reshapei({3});
   expected.reshapei({3});
-#if 0
-    //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
-    subArrYiqs.printShapeInfo("subArrYiqs");
-#endif
+
   auto actual = NDArrayFactory::create<float>('c', {3});
 
   Context ctx(1);

@@ -2047,7 +2047,6 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
 
-  // output->printShapeInfo("o");
 
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));

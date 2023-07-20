@@ -132,8 +132,6 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 //sets the file to be written to.
 SD_LIB_EXPORT void setInstrumentOut(char *instrumentOutPath) {
-  // sd_printf("Setting signal handler and instrument path %s\n",instrumentOutPath);
-  //backward::SignalHandling sh;
   if (instrumentOutPath != nullptr) {
     if(instrumentFile != nullptr)
       fclose(instrumentFile);

@@ -3114,8 +3114,3 @@ TEST_F(DeclarableOpsTests1, Test_Expose_2) {
 
   ASSERT_TRUE(list == list1);
 }
-
-TEST_F(DeclarableOpsTests1, Test_Release) {
-  auto x = NDArrayFactory::create<float>('c', {8, 8});
-  // x.printShapeInfo("x shape");
-}

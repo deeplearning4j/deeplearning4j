@@ -2468,7 +2468,6 @@ TEST_F(ConvolutionTests2, maxpool2d_2) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2507,7 +2506,6 @@ TEST_F(ConvolutionTests2, maxpool2d_3) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2586,7 +2584,6 @@ TEST_F(ConvolutionTests2, maxpool2d_5) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2605,10 +2602,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-#if 0    
-    exp.printIndexedBuffer("Expected");
-    z->printIndexedBuffer("Z");
-#endif
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -2647,10 +2640,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-#if 0    
-    exp.printIndexedBuffer("Expected");
-    z->printIndexedBuffer("Z");
-#endif
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }

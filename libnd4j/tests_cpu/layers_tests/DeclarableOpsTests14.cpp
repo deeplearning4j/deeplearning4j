@@ -70,7 +70,6 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
 
 TEST_F(DeclarableOpsTests14, Multiply_test) {
   for (int k = 2; k < 10; k++) {
-    // sd_printf("k=%d\n", k);
     NDArray x = NDArrayFactory::create<double>('c', {k, 1});
     NDArray y = NDArrayFactory::create<double>('c', {k});
     NDArray e = NDArrayFactory::create<double>('c', {k, k});
@@ -124,7 +123,6 @@ TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_0) {
   sd::ops::reduce_min op;
   op.execute({&x}, {&z}, {}, {0}, {});
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_EQ(e, z);
 }
@@ -139,7 +137,6 @@ TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_1) {
   sd::ops::reduce_min op;
   op.execute({&x}, {&z}, {}, {1}, {});
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_EQ(e, z);
 }

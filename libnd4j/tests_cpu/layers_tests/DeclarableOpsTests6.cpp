@@ -91,9 +91,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printShapeInfo("SS OS shape");
   ASSERT_TRUE(z->isEmpty());
-  // ASSERT_EQ(exp, *z);
 }
 
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_4) {
