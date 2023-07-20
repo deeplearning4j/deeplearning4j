@@ -704,6 +704,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define SHARED_MEM_SIZE_SWAP_UNSAFE getEnvVariable("SHARED_MEM_SIZE_SWAP_UNSAFE", 8192)
 
 
+#define GRID_SIZE_DIGAMMA getEnvVariable("GRID_SIZE_DIGAMMA", 256)
+#define BLOCK_SIZE_DIGAMMA getEnvVariable("BLOCK_SIZE_DIGAMMA", 512)
+#define SHARED_MEM_SIZE_DIGAMMA getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", 1024)
+
 dim3 getGemVDims(int m);
 dim3 getAddBiasDims(int len,int rank) ;
 
@@ -813,5 +817,8 @@ dim3 clipDims(int length);
 
 dim3 mirrorPadLinearDims(int length);
 dim3 mirrorPadTad(int length,int rank);
+
+
+dim3 digammaDims(int length);
 
 #endif //LIBND4J_LAUNCHCONTEXT_H

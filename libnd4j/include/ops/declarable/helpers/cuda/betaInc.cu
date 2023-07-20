@@ -89,19 +89,29 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
                                    void* vz, const sd::LongType* zShapeInfo) {
   extern __shared__ unsigned char shmem[];
   T* sharedMem = reinterpret_cast<T*>(shmem);
-
+  T *z = reinterpret_cast<T *>(vz);
+  __shared__ sd::LongType aLen,bLen,xLen,zLen,aOffset,bOffset,xOffset,zOffset;
   const sd::LongType j = blockIdx.x;  // one block per each element
 
-  T& z = *(reinterpret_cast<T*>(vz) + shape::getIndexOffset(j, zShapeInfo));
-
   __shared__ T a, b, x;
+
   __shared__ bool symmCond;
 
   if (threadIdx.x == 0) {
-    a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo));
-    b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo));
-    x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo));
+    aLen = shape::length(aShapeInfo);
+    bLen = shape::length(bShapeInfo);
+    xLen = shape::length(xShapeInfo);
+    zLen = shape::length(zShapeInfo);
 
+    aOffset = shape::getIndexOffset(j, aShapeInfo);
+    bOffset = shape::getIndexOffset(j, bShapeInfo);
+    xOffset = shape::getIndexOffset(j, xShapeInfo);
+    zOffset = shape::getIndexOffset(j, zShapeInfo);
+
+
+    a = *(reinterpret_cast<const T*>(va) + aOffset);
+    b = *(reinterpret_cast<const T*>(vb) + bOffset);
+    x = *(reinterpret_cast<const T*>(vx) + xOffset);
     symmCond = x > (a + static_cast<T>(1)) / (a + b + static_cast<T>(2));
 
     if (symmCond) {  // swap a and b, x = 1 - x
@@ -115,12 +125,12 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
 
   // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
   if (a == b && x == static_cast<T>(0.5)) {
-    z = static_cast<T>(0.5);
+    z[zOffset] = static_cast<T>(0.5);
     return;
   }
 
   if (x == static_cast<T>(0) || x == static_cast<T>(1)) {
-    z = symmCond ? static_cast<T>(1) - x : x;
+    z[zOffset] = symmCond ? static_cast<T>(1) - x : x;
     return;
   }
 
@@ -141,10 +151,12 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
     sharedMem[0] = static_cast<T>(1) - (a + b) * x / (a + static_cast<T>(1));
     sharedMem[1] = static_cast<T>(1);
 
-    z = front * continuedFractionCuda(a, b, x) / a;
+    z[zOffset] = front * continuedFractionCuda(a, b, x) / a;
 
-    if (symmCond)  // symmetry relation
-      z = static_cast<T>(1) - z;
+
+    if (symmCond) {  // symmetry relation
+      z[zOffset] = static_cast<T>(1) - z[zOffset];
+    }
   }
 }
 
@@ -170,8 +182,8 @@ void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, con
   NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
   BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher,
                         (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), a.specialBuffer(),
-                         a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(),
-                         x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
+                            a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(),
+                            x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&a, &b, &x});
 

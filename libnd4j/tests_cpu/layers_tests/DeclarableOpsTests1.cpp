@@ -2314,7 +2314,6 @@ TEST_F(DeclarableOpsTests1, ArgMax6) {
   auto x = NDArrayFactory::create<float>('c', {3, 4, 5});
   auto dim = NDArrayFactory::create<float>(-1.f);
   x.linspace(1);
-
   sd::ops::argmax op;
 
   auto expected = op.evaluate({&x}, {}, {2});
@@ -2325,7 +2324,6 @@ TEST_F(DeclarableOpsTests1, ArgMax6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
   ASSERT_EQ(*exp, *z);
 }
 

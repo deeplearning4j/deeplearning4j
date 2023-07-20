@@ -255,26 +255,25 @@ void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArra
 template <typename T>
 void clipByGlobalNorm_(sd::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
                        sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-  NDArray globalNorm =
-      NDArrayFactory::create<T>(0, inputs[0]->getContext());  // sqrt(sum([l2norm(t)**2 for t in t_list]))
+  T globalNorm = static_cast<T>(0.f);
 
   for (auto i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
     auto l2norm = input->reduceNumber(reduce::Norm2);
-    globalNorm += l2norm * l2norm;
+    globalNorm += l2norm.e<T>(0) * l2norm.e<T>(0);
   }
 
-  globalNorm.applyTransform(transform::Sqrt, globalNorm);
+  sd_printf("Outputs size is %d Inputs size is %d\n", outputs.size(), inputs.size());
+  globalNorm = sd::math::sd_sqrt<T,T>(globalNorm);
   outputs[inputs.size()]->p(0, globalNorm);
-  globalNorm.syncToHost();
-  const T factor = static_cast<T>(clipNorm) / globalNorm.e<T>(0);
+  const T factor = static_cast<T>(clipNorm) / globalNorm;
 
   for (size_t e = 0; e < inputs.size(); e++) {
     // all-reduce
     auto input = inputs[e];
     auto output = outputs[e];
 
-    if (globalNorm.e<double>(0) <= clipNorm) {
+    if (static_cast<double>(globalNorm) <= clipNorm) {
       output->assign(input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };

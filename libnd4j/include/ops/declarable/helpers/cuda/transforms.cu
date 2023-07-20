@@ -81,7 +81,7 @@ void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray
 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), invertPermutationCudaLauncher,
-                        (invertPermuteDims.y, invertPermuteDims.x, invertPermuteDims.z,context->getCudaStream(), input.specialBuffer(),
+                        (invertPermuteDims.x, invertPermuteDims.y, invertPermuteDims.z,context->getCudaStream(), input.specialBuffer(),
                             input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});

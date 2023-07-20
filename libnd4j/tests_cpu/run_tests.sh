@@ -88,7 +88,6 @@ if [[ "$TEST_FILTER" != "none" ]]; then
     export GRID_SIZE_MERGE=256
       export   BLOCK_SIZE_MERGE=256
        export  SHARED_MEM_SIZE_MERGE=256
-       #    {"diagPart", dim3(GRID_SIZE_DIAG_PART, BLOCK_SIZE_DIAG_PART, SHARED_MEM_SIZE_DIAG_PART)},
        export GRID_SIZE_DIAG_PART=128
        export BLOCK_SIZE_DIAG_PART=128
        export GRID_SIZE_SEGMENT_MEAN=128
@@ -111,20 +110,27 @@ if [[ "$TEST_FILTER" != "none" ]]; then
             export BLOCK_SIZE_SEGMENT_TAD=128
                 export GRID_SIZE_MATRIX_DIAG=128
         export BLOCK_SIZE_MATRIX_DIAG=128
-         export GRID_SIZE_SEGMENT_PROD_2_TAD=128
-        export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
+       #  export GRID_SIZE_SEGMENT_PROD_2_TAD=128
+       # export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
         export GRID_SIZE_ZETA=64
         export BLOCK_SIZE_ZETA=64
            export GRID_SIZE_SCATTER_SIMPLE=256
    export BLOCK_SIZE_SCATTER_SIMPLE=128
    export GRID_SIZE_MIRROR_PAD_LINEAR=128
    export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
-
+   export GRID_SIZE_POLYGAMMA=64
+    export BLOCK_SIZE_POLYGAMMA=64
+    export GRID_SIZE_DIGAMMA=128
+    export BLOCK_SIZE_DIGAMMA=128
+     export GRID_SIZE_BETA_INC=128
+       export BLOCK_SIZE_BETA_INC=128
+    export GRID_SIZE_INVERT_PERMUTATION=128
+    export BLOCK_SIZE_INVERT_PERMUTATION=128
 
 
    echo "Running with filter"
    env
-   /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
+  /usr/local/cuda-12.1/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
 
 else
   export GRID_SIZE_TRANSFORM_SCAN=1
@@ -165,18 +171,27 @@ else
         export BLOCK_SIZE_SEGMENT_TAD=128
         export GRID_SIZE_MATRIX_DIAG=128
         export BLOCK_SIZE_MATRIX_DIAG=128
-        export GRID_SIZE_SEGMENT_PROD_2_TAD=128
-        export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
+        #export GRID_SIZE_SEGMENT_PROD_2_TAD=128
+       # export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
         export GRID_SIZE_ZETA=64
         export BLOCK_SIZE_ZETA=64
         export GRID_SIZE_SCATTER_SIMPLE=256
         export BLOCK_SIZE_SCATTER_SIMPLE=128
         export GRID_SIZE_MIRROR_PAD_LINEAR=128
         export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
-
+   export GRID_SIZE_DIGAMMA=128
+    export BLOCK_SIZE_DIGAMMA=128
+       export GRID_SIZE_POLYGAMMA=64
+        export BLOCK_SIZE_POLYGAMMA=64
+    export GRID_SIZE_ADJUST_WEIGHTS=128
+    export BLOCK_SIZE_ADJUST_WEIGHTS=128
+    export GRID_SIZE_BETA_INC=128
+    export BLOCK_SIZE_BETA_INC=128
+        export GRID_SIZE_INVERT_PERMUTATION=128
+        export BLOCK_SIZE_INVERT_PERMUTATION=128
   echo "Running without filter"
   env
-  /usr/local/cuda/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+  valgrind ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/

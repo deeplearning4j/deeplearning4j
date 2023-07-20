@@ -24,6 +24,8 @@
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/gammaMathFunc.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -54,28 +56,26 @@ SD_KERNEL static void diGammaCuda(const void *vx, const sd::LongType *xShapeInfo
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
-                                const void *vx, const sd::LongType *xShapeInfo, void *vz,
+static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
                                 const sd::LongType *zShapeInfo) {
-  diGammaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+  diGammaCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
 void diGamma(sd::LaunchContext *context, const NDArray &x, NDArray &z) {
-  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 digammaDims2 = digammaDims(z.lengthOf());
   NDArray::prepareSpecialUse({&z}, {&x});
   BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.specialBuffer(),
-                         x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
+                        (digammaDims2.y, digammaDims2.x,digammaDims2.z, context->getCudaStream(), x.specialBuffer(),
+                            x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&z}, {&x});
 }
 
 BUILD_SINGLE_TEMPLATE(template void diGammaCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx,
-                       const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo),
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,const cudaStream_t *stream, const void *vx,
+                          const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

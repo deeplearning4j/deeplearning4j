@@ -87,6 +87,34 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, sd::LongType const* 
   return intersectionValue > threshold;
 }
 
+
+template <typename T>
+static  inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+  const T zero = static_cast<T>(0.f);
+  const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
+  const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
+  const T ymaxI = math::sd_max(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
+  const T xmaxI = math::sd_max(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
+  const T yminJ = math::sd_min(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
+  const T xminJ = math::sd_min(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+  const T ymaxJ = math::sd_max(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
+  const T xmaxJ = math::sd_max(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+  const T areaI = (ymaxI - yminI) * (xmaxI - xminI);
+  const T areaJ = (ymaxJ - yminJ) * (xmaxJ - xminJ);
+  if (areaI <= zero || areaJ <= zero) {
+    return zero;
+  }
+  const T intersectionYmin = math::sd_max(yminI, yminJ);
+  const T intersectionXmin = math::sd_max(xminI, xminJ);
+  const T intersectionYmax = math::sd_min(ymaxI, ymaxJ);
+  const T intersectionXmax = math::sd_min(xmaxI, xmaxJ);
+  const T intersectionY = intersectionYmax - intersectionYmin;
+  const T intersectionX = intersectionXmax - intersectionXmin;
+  const T intersectionArea = math::sd_max(intersectionY, zero) * math::sd_max(intersectionX, zero);
+  return intersectionArea / (areaI + areaJ - intersectionArea);
+}
+
+
 template <typename T>
 static SD_DEVICE T similirityV3(T* boxes, sd::LongType const* boxesShape, int previousIndex, int nextIndex) {
   sd::LongType previous0[] = {previousIndex, 0};
@@ -311,7 +339,7 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* 
   auto step = blockDim.x * gridDim.x;
 
   for (I nextCandidateIndex = start + threadIdx.x; selectedSize < maxOutputLen && nextCandidateIndex < (I)length;) {
-    auto originalScore = scoresData[nextCandidateIndex];  // nextCandidate._score;
+    auto originalScore = scoresData[nextCandidateIndex];
     I nextCandidateBoxIndex = indices[nextCandidateIndex];
     auto selectedSizeMark = selectedSize;
 
@@ -330,12 +358,17 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* 
     if (!shouldHardSuppress) {
       if (nextCandidateScore == originalScore) {
         // Suppression has not occurred, so select nextCandidate
-        if (output) output[selectedSize] = nextCandidateBoxIndex;
-        tempOutput[selectedSize] = nextCandidateBoxIndex;
-        math::atomics::sd_atomicAdd(&selectedSize, (I)1);
+        I currSize = math::atomics::sd_atomicAdd(&selectedSize, (I)1);
+        if (output) {
+          printf("Setting output currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
+          output[currSize] = nextCandidateBoxIndex;
+        }
+        tempOutput[currSize] = nextCandidateBoxIndex;
+        printf(" tempOutput: currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
+
       }
 
-      if (nextCandidateScore > scoreThreshold) {
+      if ((float) nextCandidateScore > (float) scoreThreshold) {
         // Soft suppression has occurred and current score is still greater than
         // scoreThreshold; add nextCandidate back onto priority queue.
         continue;  // in some cases, this index not 0
@@ -344,66 +377,133 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* 
     nextCandidateIndex += step;
   }
 
+  __syncthreads();
+
+
   if (threadIdx.x == 0) {
+    printf("selectedSize: %i\n", selectedSize);
     if (outputLength) *outputLength = selectedSize;
   }
 }
 
+
+typedef NDArray (*SimilarityFunc)(NDArray const& boxes, sd::LongType i, sd::LongType j);
+template <typename T>
+static inline T similarityOverlaps_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+  return boxes.t<T>(i, j);
+}
+
+static NDArray similiratyOverlaps(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+  NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
+  BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
+  return res;
+}
+
+static NDArray similarityV3(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+  NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
+  BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
+  return res;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename I>
 static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArray* boxes, NDArray* scores,
-                                              int outputSize, double overlapThreshold, double scoreThreshold,
-                                              NDArray* output, bool simple) {
+                                              int outputSize, float overlapThreshold, float scoreThreshold,
+                                              NDArray* output, SimilarityFunc f) {
   auto stream = context->getCudaStream();
   if (output)
-    NDArray::prepareSpecialUse({output}, {boxes, scores});
+    NDArray::preparePrimaryUse({output}, {boxes, scores});
   else {
-    if (!boxes->isActualOnDeviceSide()) boxes->syncToDevice();
-    if (!scores->isActualOnDeviceSide()) scores->syncToDevice();
+    if (!boxes->isActualOnHostSide()) boxes->syncToHost();
+    if (!scores->isActualOnHostSide()) scores->syncToHost();
   }
 
-  NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()},
-                                              context);  // - 1, scales->lengthOf()); //, scales->getContext());
-  NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context);
-  NDArray selectedScores(*scores);
-  sd::Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
-  dim3 selectDims = getLaunchDims("image_suppress_select");
-  suppressScores<<<selectDims.x, selectDims.y, selectDims.z, *stream>>>(selectedScores.dataBuffer()->specialAsT<T>(), indexBuf,
-                                             selectedScores.lengthOf(), T(scoreThreshold));
+  auto numBoxes = boxes->sizeAt(0);
+  T* scoresData = scores->dataBuffer()->primaryAsT<T>();
 
-  sortByValue(extras, indices.buffer(), indices.shapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(),
-              selectedScores.buffer(), selectedScores.shapeInfo(), selectedScores.specialBuffer(),
-              selectedScores.specialShapeInfo(), true);
-  indices.tickWriteDevice();
-  selectedScores.tickWriteDevice();
+  // Data structure for a selection candidate in NMS.
+  struct Candidate {
+    int _boxIndex;
+    T _score;
+    int _suppressBeginIndex;
+  };
 
-  auto scoresData = selectedScores.dataBuffer()->specialAsT<T>();  //, numBoxes, scoresData.begin());
+  auto cmp = [](const Candidate& bsI, const Candidate& bsJ) -> bool {
+    return ((bsI._score == bsJ._score) && (bsI._boxIndex > bsJ._boxIndex)) || (bsI._score < bsJ._score);
+  };
 
-  auto startIndices = startPositions.dataBuffer()->specialAsT<I>();
-  I selectedSize = 0;
-  sd::LongType res = 0;
-  dim3 nonMaxDims = getLaunchDims("image_suppress_nonmax_overlap");
-  if (output) {  // this part used when output shape already calculated to fill up values on output
-    DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
-    suppressNonMaxOverlapKernel<<<nonMaxDims.x,nonMaxDims.y,nonMaxDims.z, *stream>>>(
-        boxes->dataBuffer()->specialAsT<T>(), boxes->specialShapeInfo(), scoresData, indexBuf, startIndices,
-        scores->lengthOf(), (I)outputSize, T(overlapThreshold), T(scoreThreshold),
-        output->dataBuffer()->specialAsT<I>(), output->specialShapeInfo(), selectedSizeBuf.specialAsT<I>(), simple);
-  } else {  // this case used on calculation of output shape. Output and output shape shoulde be nullptr.
-    DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
-    suppressNonMaxOverlapKernel<<<nonMaxDims.x, nonMaxDims.y, nonMaxDims.z, *stream>>>(
-        boxes->dataBuffer()->specialAsT<T>(), boxes->specialShapeInfo(), scoresData, indexBuf, startIndices,
-        scores->lengthOf(), (I)outputSize, T(overlapThreshold), T(scoreThreshold), (I*)nullptr, (sd::LongType*)nullptr,
-        selectedSizeBuf.specialAsT<I>(), simple);
-    selectedSizeBuf.syncToPrimary(context, true);
-    res = *selectedSizeBuf.primaryAsT<I>();
+  std::priority_queue<Candidate, std::deque<Candidate>, decltype(cmp)> candidatePriorityQueue(cmp);
+  for (auto i = 0; i < scores->lengthOf(); ++i) {
+    if ((float)scoresData[i] > (float)scoreThreshold) {
+      candidatePriorityQueue.emplace(Candidate({i, scoresData[i], 0}));
+    }
   }
 
-  if (output) NDArray::registerSpecialUse({output}, {boxes, scores});
+  std::vector<I> selected;
+  T similarity, originalScore;
+  Candidate nextCandidate;
 
-  return res;
+  while (selected.size() < outputSize && !candidatePriorityQueue.empty()) {
+    nextCandidate = candidatePriorityQueue.top();
+    originalScore = nextCandidate._score;
+    candidatePriorityQueue.pop();
+
+    // Overlapping boxes are likely to have similar scores, therefore we
+    // iterate through the previously selected boxes backwards in order to
+    // see if `nextCandidate` should be suppressed. We also enforce a property
+    // that a candidate can be suppressed by another candidate no more than
+    // once via `suppress_begin_index` which tracks which previously selected
+    // boxes have already been compared against next_candidate prior to a given
+    // iteration.  These previous selected boxes are then skipped over in the
+    // following loop.
+    bool shouldHardSuppress = false;
+    for (int j = static_cast<int>(selected.size()) - 1; j >= nextCandidate._suppressBeginIndex; --j) {
+      auto similarityA =
+          f(*boxes, nextCandidate._boxIndex, selected[j]);  // boxes->t<T>(nextCandidate._boxIndex, selected[j]);
+      similarity = similarityA.template t<T>(0);
+      nextCandidate._score *= T(similarity <= overlapThreshold ? 1.0 : 0.);  // suppressWeightFunc(similarity);
+
+      // First decide whether to perform hard suppression
+      if ((float)similarity >= static_cast<float>(overlapThreshold)) {
+        shouldHardSuppress = true;
+        break;
+      }
+
+      // If next_candidate survives hard suppression, apply soft suppression
+      if ((float)nextCandidate._score <= (float)scoreThreshold) break;
+    }
+    // If `nextCandidate._score` has not dropped below `scoreThreshold`
+    // by this point, then we know that we went through all of the previous
+    // selections and can safely update `suppress_begin_index` to
+    // `selected.size()`. If on the other hand `next_candidate.score`
+    // *has* dropped below the score threshold, then since `suppressWeight`
+    // always returns values in [0, 1], further suppression by items that were
+    // not covered in the above for loop would not have caused the algorithm
+    // to select this item. We thus do the same update to
+    // `suppressBeginIndex`, but really, this element will not be added back
+    // into the priority queue in the following.
+    nextCandidate._suppressBeginIndex = selected.size();
+
+    if (!shouldHardSuppress) {
+      if (nextCandidate._score == originalScore) {
+        // Suppression has not occurred, so select next_candidate
+        selected.push_back(nextCandidate._boxIndex);
+      }
+      if ((float)nextCandidate._score > (float)scoreThreshold) {
+        // Soft suppression has occurred and current score is still greater than
+        // score_threshold; add next_candidate back onto priority queue.
+        candidatePriorityQueue.push(nextCandidate);
+      }
+    }
+  }
+
+  if (output) {
+    DataBuffer buf(selected.data(), selected.size() * sizeof(I), DataTypeUtils::fromT<I>());
+    output->dataBuffer()->copyBufferFrom(buf, buf.getLenInBytes());
+  }
+
+  return (sd::LongType)selected.size();
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void nonMaxSuppression(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold,
                        double scoreThreshold, NDArray* output) {
@@ -417,7 +517,7 @@ sd::LongType nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes
                                       double threshold, double scoreThreshold, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(
       boxes->dataType(), output ? output->dataType() : DataType::INT32, return nonMaxSuppressionGeneric_,
-      (context, boxes, scales, maxSize, threshold, scoreThreshold, output, true), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+      (context, boxes, scales, maxSize, threshold, scoreThreshold, output, similiratyOverlaps), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   return boxes->sizeAt(0);
 }
 
@@ -425,7 +525,7 @@ sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDA
                                  double overlapThreshold, double scoreThreshold, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType() : DataType::INT32,
                         return nonMaxSuppressionGeneric_,
-                        (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, false),
+                        (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similarityV3),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   return boxes->sizeAt(0);
 }

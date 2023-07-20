@@ -32,10 +32,12 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   auto shapeArray = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  output->printShapeInfo("fill output shape");
   auto w = block.width();
   auto i = block.numI();
   auto t = block.numT();
 
+  sd_printf("w %lld %i %lld t %f\n",w,i,t);
   REQUIRE_TRUE(w > 1 || t > 0 || i > 0, 0,
                "Fill: either additional variable should exist, or scalar value should be present");
 

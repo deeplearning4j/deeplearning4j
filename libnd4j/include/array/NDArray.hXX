@@ -78,8 +78,7 @@ NDArray::NDArray(const NDArray &other) {
   setShapeInfo(other.shapeInfo());
 
   if (!isEmpty() && other.lengthOf() > 0) {
-    _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(),
-                                           other.getContext()->getWorkspace());
+    _buffer = other._buffer;
     this->assign(&other);
   } else {
     _buffer = std::make_shared<DataBuffer>();
@@ -114,7 +113,7 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
                  sd::DataType dtype, sd::LaunchContext *context) {
-  if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
+  if (shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
@@ -963,12 +962,13 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
     os << "]\n";
   } else if (arr.rankOf() == 2) {
     sd::LongType rows = arr.rows();
-    sd::LongType cols = limit < 0 ? arr.columns() : sd::math::sd_min<sd::LongType>(limit, cols);
+    sd::LongType cols = limit < 0  || limit >= arr.columns() ? arr.columns() : sd::math::sd_min<sd::LongType>(limit, cols);
+
     char *padding = new char[depth + 1];
     memset(padding, ' ', depth);
     padding[depth] = 0;
     os << "[";
-    for (sd::LongType row = 0; row < rows; ++row) {
+    for (sd::LongType row = 0; row < rows; row++) {
       if (row && depth > 0) os << padding;
       os << "[";
       for (sd::LongType col = 0; col < cols; col++) {
@@ -1334,7 +1334,9 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray &other, size_t sizeToCop
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
-  if (this == &other) return;
+  if (this == &other) {
+    return;
+  }
 
   if (other.isEmpty()) {
     if (!isEmpty()) {
@@ -1348,8 +1350,9 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
     return;
   }
 
-  if (other.lengthOf() == 1) {
-    if (lengthOf() == 1) {
+  //scalar case
+  if (other.lengthOf() <= 1) {
+    if (lengthOf() <= 1) {
       NDArray::preparePrimaryUse({this}, {&other});
       BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.buffer(), 0),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1516,11 +1519,14 @@ bool NDArray::isFinite() {
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename Y>
 void NDArray::templatedSet(void *buffer, const sd::LongType *indices, const void *value) {
+  NDArray::preparePrimaryUse({this}, {this});
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
   auto xOffset = shape::getOffset(shapeInfo(), indices);
+  sd_printf("Setting value %f to offset %lld\n", y, xOffset);
   t[xOffset] = y;
+  NDArray::registerPrimaryUse({this}, {this});
 }
 BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                       (void *buffer, const sd::LongType *indices, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1528,10 +1534,15 @@ BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename Y>
 void NDArray::templatedSet(void *buffer, const sd::LongType offset, const void *value) {
+  NDArray::preparePrimaryUse({this}, {this});
+
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
   t[offset] = y;
+  tickWriteHost();
+  NDArray::registerPrimaryUse({this}, {this});
+
 }
 BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                       (void *buffer, const sd::LongType offset, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1957,7 +1968,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
 
   if (msg) printf("%s: ", msg);
   //uses the << operator instead which is used in gtest as well
-  std::cout << this;
+  std::cout << *this;
 }
 
 
@@ -2424,6 +2435,8 @@ NDArray NDArray::asS() const {
   sd::LongType start = 0, stop = 0;
   sd::LongType dataLength = 0;
 
+  sd_printf("This data type %s and casting data type is %s\n", DataTypeUtils::asString(dataType()).c_str(),
+            DataTypeUtils::asString(dtype).c_str());
   auto data = bufferAsT<int8_t>() + offsetsLength;
   for (sd::LongType e = 0; e < lengthOf(); e++) {
     offsets[e] = dataLength;
@@ -2436,7 +2449,7 @@ NDArray NDArray::asS() const {
       dataLength += (dtype == DataType::UTF32)
                     ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
                     : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
-    } else {
+    } else if(dataType() == DataType::UTF32) {
       dataLength += (dtype == DataType::UTF16)
                     ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
                     : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
@@ -2466,19 +2479,19 @@ NDArray NDArray::asS() const {
       if (dtype == DataType::UTF16) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to16(idata, outData, end);
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
         }
       } else if (dtype == DataType::UTF32) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to32(idata, cdata, end);
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
         }
       } else {
         if (dataType() == DataType::UTF16) {
           unicode::utf16to8(idata, outData, (end / sizeof(char16_t)));
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf32to8(idata, outData, (end / sizeof(char32_t)));
         }
       }
@@ -3797,7 +3810,7 @@ template <>
 std::string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::string out of non-string array");
 
-  if (i >= lengthOf()) {
+  if (!isScalar() && i >= lengthOf()) {
     std::string errorMessage;
     errorMessage += "Requested index is out of range: [";
     errorMessage += StringUtils::valueToString<sd::LongType>(i);
@@ -4911,7 +4924,7 @@ template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType 
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const NDArray &scalar) {
-  if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
+  if (scalar.lengthOf() > 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
   if (i >= _length) {
     std::string errorMessage;
     errorMessage += "NDArray::p(i, NDArray_scalar): input index is out of array length !";
@@ -4942,12 +4955,10 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  //        void *p = reinterpret_cast<void *>(scalar.buffer());
   sd::LongType coords[4] = {i, j, k, l};
   auto xOffset = shape::getOffset(shapeInfo(), coords);
 
   NDArray::preparePrimaryUse({this}, {&scalar}, true);
-  //        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
   BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (this->buffer(), xOffset, scalar.dataType(), scalar.buffer()),
                         SD_COMMON_TYPES);
   NDArray::registerPrimaryUse({this}, {&scalar});

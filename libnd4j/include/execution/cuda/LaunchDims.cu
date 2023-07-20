@@ -164,6 +164,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"lambda", {dim3(GRID_SIZE_LAMBDA, BLOCK_SIZE_LAMBDA, SHARED_MEM_SIZE_LAMBDA)}},
     {"image_resize_neighbor", {dim3(GRID_SIZE_IMAGE_RESIZE_NEIGHBOR, BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR, SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR)}},
     {"swap_unsafe", {dim3(GRID_SIZE_SWAP_UNSAFE, BLOCK_SIZE_SWAP_UNSAFE, SHARED_MEM_SIZE_SWAP_UNSAFE)}},
+    {"digamma", {dim3(GRID_SIZE_DIGAMMA, BLOCK_SIZE_DIGAMMA, SHARED_MEM_SIZE_DIGAMMA)}},
 
 
 };
@@ -325,6 +326,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"lambda", {"GRID_SIZE_LAMBDA", "BLOCK_SIZE_LAMBDA", "SHARED_MEM_SIZE_LAMBDA"}},
     {"image_resize_neighbor", {"GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", "BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", "SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR"}},
     {"swap_unsafe", {"GRID_SIZE_SWAP_UNSAFE", "BLOCK_SIZE_SWAP_UNSAFE", "SHARED_MEM_SIZE_SWAP_UNSAFE"}},
+    {"digamma", {"GRID_SIZE_DIGAMMA", "BLOCK_SIZE_DIGAMMA", "SHARED_MEM_SIZE_DIGAMMA"}},
 
 };
 
@@ -616,10 +618,11 @@ dim3 getBetaInc(int maxIter,int length,int dataTypeSize) {
   int blocksPerGrid = length;
   int sharedMem = 2 * dataTypeSize * threadsPerBlock + 128;
 
+  sd_printf("threadsPerBlock: %i, blocksPerGrid: %i, sharedMem: %i\n",threadsPerBlock,blocksPerGrid,sharedMem);
 
-  threadsPerBlock = getEnvVariable("GRID_SIZE_CONCAT", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_CONCAT", blocksPerGrid);
-  sharedMem = getEnvVariable("SHARED_MEM_SIZE_CONCAT", sharedMem);
+  threadsPerBlock = getEnvVariable("GRID_SIZE_BETA_INC", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_BETA_INC", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_BETA_INC", sharedMem);
   return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 }
 
@@ -1104,5 +1107,18 @@ dim3 mirrorPadTad(int length,int rank) {
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_TAD", sharedMem);
   return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 }
+
+dim3 digammaDims(int length) {
+        int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+        int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+        int sharedMem = 512;
+        threadsPerBlock = getEnvVariable("GRID_SIZE_DIGAMMA", threadsPerBlock);
+        blocksPerGrid = getEnvVariable("BLOCK_SIZE_DIGAMMA", blocksPerGrid);
+        sharedMem = getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", sharedMem);
+        return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+}
+
+
+//DeclarableOpsTests3.invertPermutation_test1
 
 #endif //LIBND4J_LAUNCHCONTEXT_H

@@ -107,7 +107,6 @@ extern "C" {
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
   if(instrumentFile == nullptr) {
-    sd_printf("Instrument file is null\n",0)
     return;
   }
   Dl_info info;

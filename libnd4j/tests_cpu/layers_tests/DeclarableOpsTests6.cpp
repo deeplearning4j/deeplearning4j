@@ -900,22 +900,25 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_1) {
-  auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
   // ------------------------------------
 
-  NDArray exp('c', {3}, {1, 3, 4}, sd::DataType::INT32);
+  NDArray exp('c', {3}, {1, 3, 4}, sd::DataType::INT64);
 
+  exp.printShapeInfo("Expected shape info");
+  exp.printIndexedBuffer("Expected");
   sd::ops::bincount op;
 
   auto res = op.evaluate({&x});
-
+  res.at(0)->printShapeInfo("Output shape info");
+  res.at(0)->printIndexedBuffer("Output");
   ASSERT_EQ(sd::Status::OK, res.status());
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_2) {
-  auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
 
   auto weights = NDArrayFactory::create<double>('c', {2, 2, 2}, {2, 1, 3, 1, 5, 1, 1, 6});
 
@@ -933,7 +936,7 @@ TEST_F(DeclarableOpsTests6, BinCount_2) {
 
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_3) {
-  auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
 
   auto weights = NDArrayFactory::create<double>('c', {2, 2, 2}, {2, 1, 3, 1, 5, 1, 1, 6});
 
@@ -951,7 +954,7 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_4) {
-  auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
 
   auto weights = NDArrayFactory::create<double>('c', {2, 2, 2}, {2, 1, 3, 1, 5, 1, 1, 6});
 
@@ -969,7 +972,7 @@ TEST_F(DeclarableOpsTests6, BinCount_4) {
 
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BinCount_5) {
-  auto x = NDArrayFactory::create<int>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
+  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2, 2}, {1, 2, 0, 1, 2, 2, 1, 2});
 
   auto weights = NDArrayFactory::create<double>('c', {2, 2, 2}, {2, 1, 3, 1, 5, 1, 1, 6});
   auto minV = NDArrayFactory::create(4);

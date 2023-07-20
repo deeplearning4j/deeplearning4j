@@ -630,15 +630,14 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
   auto vec = NDArrayFactory::create<float>('c', {4}, {1, 2, 3, 4});
   NDArray idc('c', {1, 4}, {0., 1, 2, 3}, sd::DataType::INT64);
   auto updates = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 1, 1});
-  auto exp = NDArrayFactory::create<float>('c', {1, 4}, {2, 3, 4, 5});
+  auto exp = NDArrayFactory::create<float>('c', { 4}, {2, 3, 4, 5});
 
   sd::ops::scatter_add op;
   auto result = op.evaluate({&vec, &idc, &updates}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp, *z);
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
@@ -653,7 +652,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
@@ -773,7 +772,7 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
   auto vec = NDArrayFactory::create<float>('c', {4}, {1, 2, 3, 4});
   NDArray idc('c', {1, 4}, {0, 1, 2, 3}, sd::DataType::INT64);
   auto updates = NDArrayFactory::create<float>('c', {1, 4}, {10, 1, 30, 1});
-  auto exp = NDArrayFactory::create<float>('c', {1, 4}, {10, 2, 30, 4});
+  auto exp = NDArrayFactory::create<float>('c', { 4}, {10, 2, 30, 4});
 
   sd::ops::scatter_max op;
   auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});
@@ -864,7 +863,7 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
   auto vec = NDArrayFactory::create<float>('c', {4}, {1, 2, 3, 4});
   NDArray idc('c', {1, 4}, {0, 1, 2, 3}, sd::DataType::INT32);
   auto updates = NDArrayFactory::create<float>('c', {1, 4}, {10, 1, 30, 1});
-  auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 3, 1});
+  auto exp = NDArrayFactory::create<float>('c', { 4}, {1, 1, 3, 1});
 
   sd::ops::scatter_min op;
   auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});

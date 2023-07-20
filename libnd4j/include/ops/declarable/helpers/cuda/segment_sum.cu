@@ -84,7 +84,7 @@ static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
   __shared__ const T* x;
   __shared__ T* z;
-  __shared__ const I* y;  // int threadsPerSegment, start, finish;
+  __shared__ const I* y;
 
   if (threadIdx.x == 0) {
     segment = blockIdx.x;
@@ -185,7 +185,8 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    segmentSumTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
+    dim3 segmentTadDims = segmentTad(input->sizeAt(0));
+    segmentSumTadKernel<T, I><<<segmentTadDims.y,segmentTadDims.x,segmentTadDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets, 0);

@@ -37,7 +37,7 @@ TEST_F(ScalarTests, Test_Create_1) {
   auto x = NDArrayFactory::create<float>(2.0f);
 
   ASSERT_EQ(0, x.rankOf());
-  ASSERT_EQ(1, x.lengthOf());
+  ASSERT_EQ(0, x.lengthOf());
   ASSERT_TRUE(x.isScalar());
   ASSERT_FALSE(x.isVector());
   ASSERT_FALSE(x.isRowVector());

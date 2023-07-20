@@ -62,13 +62,12 @@ SD_KERNEL static void pairwiseSimpleShaped(void const*  vx, sd::LongType const* 
 
 
   if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == yOrder && xOrder == zOrder) {
-    for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
+    for (sd::LongType i = static_cast<sd::LongType>(tid); i < len; i += gridDim.x * blockDim.x) {
       auto zOffset = i * zEws;
       auto xOffset = i * xEws;
       auto yOffset = i * yEws;
       auto xVal = x[xOffset];
       auto yVal = y[yOffset];
-      auto zVal = z[zOffset];
       z[zOffset] = OpType::op(xVal,yVal, extraParams);
     }
   }

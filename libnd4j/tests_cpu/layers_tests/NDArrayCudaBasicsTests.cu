@@ -847,10 +847,10 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
   NDArray exp2('c', {}, std::vector<double>{31.5}, sd::DataType::DOUBLE);
 
   auto z = x1.applyReduce3(reduce3::Dot, x2);
-  ASSERT_TRUE(z.equalsTo(&exp1));
+  ASSERT_EQ(z,exp1);
 
   z = x3.applyReduce3(reduce3::Dot, x4);
-  ASSERT_TRUE(z.equalsTo(&exp2));
+  ASSERT_EQ(z,exp2);
 
   x1.permutei({2, 1, 0});
   x2.permutei({2, 1, 0});
@@ -858,10 +858,10 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
   x4.permutei({1, 0});
 
   z = x1.applyReduce3(reduce3::Dot, x2);
-  ASSERT_TRUE(z.equalsTo(&exp1));
+  ASSERT_EQ(z,exp1);
 
   z = x3.applyReduce3(reduce3::Dot, x4);
-  ASSERT_TRUE(z.equalsTo(&exp2));
+  ASSERT_EQ(z,exp2);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1713,7 +1713,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
   double eps(1.e-5);
   NDArray tmp(sd::DataType::FLOAT32, x.getContext());  // scalar = 0
 
-  ExtraArguments extras({eps});
+  ExtraArguments extras({eps,eps,eps});
   NativeOpExecutioner::execReduce3Scalar(diag.getContext(), reduce3::EqualsWithEps, diag.buffer(), diag.shapeInfo(),
                                          diag.specialBuffer(), diag.specialShapeInfo(),
                                          extras.argumentsAsT(sd::DataType::FLOAT32), exp.buffer(), exp.shapeInfo(),

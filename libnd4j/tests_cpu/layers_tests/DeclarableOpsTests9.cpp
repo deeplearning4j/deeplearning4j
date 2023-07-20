@@ -2004,12 +2004,13 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
   auto dLdz = NDArrayFactory::create<double>('c', {10, 10});
   x.linspace(4);
   y.linspace(3);
-  dLdz.linspace(1);
+  dLdz.assign(1);
   sd::ops::floormod_bp opBP;
   auto resBP = opBP.evaluate({&x, &y, &dLdz}, {}, {});
   ASSERT_TRUE(resBP.status() == sd::Status::OK);
-  ASSERT_TRUE(dLdz.equalsTo(resBP.at(0)));
-  ASSERT_TRUE(dLdz.equalsTo(resBP.at(1)));
+  ASSERT_EQ(dLdz, *resBP.at(0));
+  ASSERT_EQ(dLdz, *resBP.at(1));
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -272,27 +272,32 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
   } else {
     auto n = shape::length(xShapeInfo);
     auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-
     if (xElementWiseStride >= 1 && order == 'c') {
+    //  printf("xEleStride > 1 && order == c\n");
       for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
         IndexValue<X> comp{dx[i * xElementWiseStride], i};
         reduction = OpType::update(reduction, comp, extraParams);
       }
+
+      //printf("After xEleStride > 1 && order == c\n");
+
     } else {
-      //ignore this code block
+      printf("xEleStride < 1 && order == c\n");
       for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
         auto xOffset = shape::getIndexOffset(i, xShapeInfo);
         IndexValue<X> comp{dx[xOffset], i};
         reduction = OpType::update(reduction, comp, extraParams);
       }
+
+    //  printf("xEleStride < 1 && order == c\n");
+
     }
     sPartials[threadIdxX] = reduction;
     __syncthreads();
-    //ignore this code block
     aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType>(blockDim.x, n), extraParams);
-
-    //ignore this code block
+    //printf("After aggregate partials\n");
     if (gridDimX > 1) {
+     // printf("grimdDimX > 1\n");
       __shared__ bool amLast;
       unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;
       tid = threadIdx.x;
@@ -324,9 +329,13 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
       }
     } else {
+     // printf("grimdDimX < 1\n" );
       if (threadIdx.x == 0) {
         z[0] = static_cast<Z>(sPartials[threadIdx.x].index);
+       // printf("z[0] %f\n", z[0]);
       }
+
+      //printf("After imdDimX < 1\n" );
     }
   }
 }

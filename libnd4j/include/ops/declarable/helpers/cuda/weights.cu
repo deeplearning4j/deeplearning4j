@@ -29,16 +29,15 @@ template <typename T>
 static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, sd::LongType const* inputShape, void* weightsBuffer,
                                            sd::LongType const* weightsShape, void* outputBuffer,
                                            sd::LongType inputLength, sd::LongType outputLength, int val) {
+  if(inputBuffer == nullptr || outputBuffer == nullptr) return;
   auto tid = threadIdx.x;
-  __shared__ T* outputPart;
-  __shared__ sd::LongType offset;
   for (sd::LongType e = tid; e < inputLength; e += blockDim.x) {
     sd::LongType xOffset = shape::getIndexOffset(e, inputShape);
+    if(xOffset >= inputLength) return;
     sd::LongType current = *(reinterpret_cast<sd::LongType*>(inputBuffer) + xOffset);
     if (current == val) {
       if (weightsBuffer != nullptr) {
         sd::LongType yOffset = shape::getIndexOffset(e, weightsShape);
-        // atomicAdd();
         sd::math::atomics::sd_atomicAdd(
             reinterpret_cast<T*>(outputBuffer),
             reinterpret_cast<T*>(weightsBuffer)[yOffset]);
@@ -74,7 +73,7 @@ static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* 
                            int maxLength) {
   dim3 launchDims = getLaunchDims("adjustWeights");
   auto stream = context->getCudaStream();
-  adjustWeightsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+  adjustWeightsKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), weights ? weights->specialBuffer() : nullptr,
       weights ? weights->specialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), minLength,
       maxLength);
@@ -88,7 +87,7 @@ void adjustWeights(sd::LaunchContext* context, NDArray* input, NDArray* weights,
 
 BUILD_SINGLE_TEMPLATE(template void adjustWeights_,
                       (sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
-                       int maxLength),
+                          int maxLength),
                       SD_GENERIC_NUMERIC_TYPES);
 }  // namespace helpers
 }  // namespace ops

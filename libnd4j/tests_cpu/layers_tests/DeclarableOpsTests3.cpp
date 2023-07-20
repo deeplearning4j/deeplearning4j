@@ -1053,9 +1053,8 @@ TEST_F(DeclarableOpsTests3, betainc_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto output = result.at(0);
+  ASSERT_TRUE(expected.equalsTo(*output,1e-2));
 
-  ASSERT_TRUE(expected.isSameShape(output));
-  ASSERT_TRUE(expected.equalsTo(output, 1e-2));
 }
 
 ///////////////////////////////////////////////////////////////////

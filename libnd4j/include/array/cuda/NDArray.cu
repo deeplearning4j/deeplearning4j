@@ -639,6 +639,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
 template void NDArray::printCurrentBuffer<int>(const bool host, const char* msg, const int precision) const;
 template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
 template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
+template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const char* msg, const int precision) const;
 
 
 

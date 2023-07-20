@@ -96,7 +96,6 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != zType && yType != zType)
     THROW_EXCEPTION(
@@ -1125,10 +1124,8 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext* lc, int opNum, vo
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+
+  dim3 launchDims = getReduceDims(shape::length(hXShapeInfo));
 
   if (xType != yType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execReduce3Scalar requires Y operand to have X type",

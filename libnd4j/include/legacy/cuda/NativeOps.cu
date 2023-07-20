@@ -2839,9 +2839,9 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
 
-  for (auto v : inputs) delete v;
+ // for (auto v : inputs) delete v;
 
-  for (auto v : outputs) delete v;
+ // for (auto v : outputs) delete v;
 
   return Status::OK;
 }

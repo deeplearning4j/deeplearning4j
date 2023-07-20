@@ -120,7 +120,7 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
                                           sd::LongType const* inputTadOffsets, I* indices, LongType* starts,
                                           LongType* lengths, sd::LongType numOfClasses, void* outputBuf,
                                           sd::LongType const* outputShape, sd::LongType const* outputTads,
-                                          sd::LongType const* outputTadOffsets, T filler = 0, sd::LongType numIndices = 0) {
+                                          sd::LongType const* outputTadOffsets, T filler = 0) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
@@ -130,10 +130,7 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
   if(blockIdx.x >= numOfClasses)
     return;
 
-  if(blockIdx.x >= numIndices)
-    return;
   if (threadIdx.x == 0) {
-    //TODO: problem here
     segment = indices[blockIdx.x];  // / threadsPerSegment;
     z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
     len = shape::length(inputTads);
@@ -201,7 +198,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0,indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
@@ -250,7 +247,7 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0,indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
     delete dimensions;
   }
 }

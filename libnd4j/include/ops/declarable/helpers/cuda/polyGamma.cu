@@ -78,7 +78,7 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
                                   const cudaStream_t *stream, const void *vn, const sd::LongType *nShapeInfo,
                                   const void *vx, const sd::LongType *xShapeInfo, void *vz,
                                   const sd::LongType *zShapeInfo) {
-  polyGammaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vn, nShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
+  polyGammaCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vn, nShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////

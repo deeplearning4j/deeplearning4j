@@ -144,8 +144,6 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
   char xOrder = shape::order(xShapeInfo);
   char yOrder = shape::order(yShapeInfo);
 
-  if(threadIdx.x > xLen || threadIdx.x > yLen || threadIdx.x > zLen)
-    return;
 
   if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 
@@ -532,7 +530,7 @@ SD_HOST void Reduce3<X,Z>::execScalar(dim3 launchDims, cudaStream_t *stream,
                                       void const* vx, sd::LongType const* xShapeInfo,
                                       void const* vy, sd::LongType const* yShapeInfo,
                                       void *extraParams,
-                                      void *vz, sd::LongType const* zShapeInfo, long long int* allocationPointer,
+                                      void *vz, sd::LongType const* zShapeInfo, sd::LongType * allocationPointer,
                                       void *reductionBuffer,
                                       sd::LongType const* tadOnlyShapeInfo) {
 

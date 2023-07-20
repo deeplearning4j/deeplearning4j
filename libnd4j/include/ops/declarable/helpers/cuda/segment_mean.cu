@@ -121,8 +121,7 @@ static SD_KERNEL void segmentMeanTadKernel(void* inputBuf, sd::LongType const* i
                                            sd::LongType const* inputTads, sd::LongType const* inputTadOffsets,
                                            I* indices, sd::LongType* starts, sd::LongType* lengths,
                                            sd::LongType numOfClasses, void* outputBuf, sd::LongType const* outputShape,
-                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets,
-                                           sd::LongType numIndices) {
+                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
@@ -130,8 +129,7 @@ static SD_KERNEL void segmentMeanTadKernel(void* inputBuf, sd::LongType const* i
   if(blockIdx.x >= numOfClasses)
     return;
 
-  if(blockIdx.x >= numIndices)
-    return;
+
 
   auto segment = indices[blockIdx.x];  // / threadsPerSegment;
 
@@ -196,7 +194,7 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
     segmentMeanTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets);
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices});
@@ -243,7 +241,7 @@ static void unsortedSegmentMeanFunctor_(sd::LaunchContext* context, NDArray* inp
     segmentMeanTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
+        output->specialShapeInfo(), outputTads, outputTadOffsets);
     delete dimensions;
   }
 }

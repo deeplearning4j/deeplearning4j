@@ -99,7 +99,7 @@ bool unsortedSegmentIndicesValidate(sd::LaunchContext* context, NDArray* indices
 // fill up segments starts and ends - splitted ordered case
 template <typename I>
 static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongType* indexShape, sd::LongType numClasses,
-                                           sd::LongType* classesRangesStart, sd::LongType* classesRangesLenghts) {
+                                           sd::LongType* classesRangesStart, sd::LongType* classesRangesLengths) {
   __shared__ const I* idxBuf;
   __shared__ sd::LongType idxLen;
   __shared__ sd::LongType* result;
@@ -115,7 +115,7 @@ static SD_KERNEL void fillUpSegmentsKernel(const void* indices, const sd::LongTy
   for (auto j = tid; j < idxLen; j += step) {
     auto pos = idxBuf[j];
     sd::math::atomics::sd_atomicMin<sd::LongType>(&classesRangesStart[pos], (sd::LongType)j);
-    sd::math::atomics::sd_atomicAdd<sd::LongType>(&classesRangesLenghts[pos], 1);
+    sd::math::atomics::sd_atomicAdd<sd::LongType>(&classesRangesLengths[pos], 1);
   }
 }
 
