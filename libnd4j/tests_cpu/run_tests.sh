@@ -130,7 +130,7 @@ if [[ "$TEST_FILTER" != "none" ]]; then
 
    echo "Running with filter"
    env
-  /usr/local/cuda-12.1/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
+   ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
 
 else
   export GRID_SIZE_TRANSFORM_SCAN=1
@@ -171,8 +171,8 @@ else
         export BLOCK_SIZE_SEGMENT_TAD=128
         export GRID_SIZE_MATRIX_DIAG=128
         export BLOCK_SIZE_MATRIX_DIAG=128
-        #export GRID_SIZE_SEGMENT_PROD_2_TAD=128
-       # export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
+        export GRID_SIZE_SEGMENT_PROD_2_TAD=128
+        export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
         export GRID_SIZE_ZETA=64
         export BLOCK_SIZE_ZETA=64
         export GRID_SIZE_SCATTER_SIMPLE=256
@@ -191,7 +191,7 @@ else
         export BLOCK_SIZE_INVERT_PERMUTATION=128
   echo "Running without filter"
   env
-  valgrind ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+   ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/
