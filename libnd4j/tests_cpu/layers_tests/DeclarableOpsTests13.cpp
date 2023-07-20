@@ -2208,9 +2208,6 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_ScalarCheck) {
       op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh_scalar, &dLdhL_scalar, &dLdcL_scalar}, tArgs, iArgs, bArgs);
 
   for (int j = 0; j < results.size(); j++) {
-    // sd_printf("%d_________________________\n",j);
-    // results.at(j)->printIndexedBuffer("__");
-    // results_act.at(j)->printIndexedBuffer("scalar __");
     auto expected = results.at(j);
     auto actual = results_act.at(j);
     ASSERT_TRUE(expected->equalsTo(actual));

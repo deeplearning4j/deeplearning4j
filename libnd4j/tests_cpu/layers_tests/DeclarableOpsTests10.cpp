@@ -2369,7 +2369,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_2) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  result->printIndexedBuffer("Quantized03_2");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }
@@ -2391,7 +2390,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  result->printIndexedBuffer("Quantized03_3");
   ASSERT_TRUE(exp.isSameShapeStrict(*result));
   ASSERT_TRUE(exp.equalsTo(result));
 }

@@ -4015,16 +4015,12 @@ TEST_F(DeclarableOpsTests2, ctc_loss_test1) {
 #endif
   sd::ops::ctc_loss op;
 
-  // logits.printIndexedBuffer("logits");
-  // labels.printIndexedBuffer("labels");
-
   auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *loss = results.at(0);
 
-  // loss->printIndexedBuffer("loss");
 
   ASSERT_TRUE(expected.isSameShape(loss));
   ASSERT_TRUE(expected.equalsTo(loss));

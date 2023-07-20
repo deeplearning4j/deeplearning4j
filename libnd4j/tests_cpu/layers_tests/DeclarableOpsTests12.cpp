@@ -1827,7 +1827,6 @@ TEST_F(DeclarableOpsTests12, pad_tests21) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2123,7 +2122,6 @@ TEST_F(DeclarableOpsTests12, Pad_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2152,7 +2150,6 @@ TEST_F(DeclarableOpsTests12, Pad_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2181,7 +2178,6 @@ TEST_F(DeclarableOpsTests12, Pad_5) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));

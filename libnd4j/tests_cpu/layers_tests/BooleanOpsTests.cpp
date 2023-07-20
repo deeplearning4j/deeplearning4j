@@ -134,8 +134,5 @@ TEST_F(BooleanOpsTests, test_where_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer("z");
-
   ASSERT_EQ(e, *z);
 }

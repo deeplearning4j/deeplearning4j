@@ -101,7 +101,6 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
   }
 
   helpers::range(block.launchContext(), *s, *d, *output);
-  output->printIndexedBuffer("Range output");
 
   if (localS) delete s;
 

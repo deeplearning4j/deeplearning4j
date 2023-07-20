@@ -459,10 +459,6 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
 
   for (int e = 0; e < 3; e++) {
     auto z = result.at(e);
-
-    //        exp->printIndexedBuffer("e");
-    //        z->printIndexedBuffer("z");
-
     ASSERT_TRUE(exp->isSameShape(z));
     ASSERT_TRUE(exp->equalsTo(z));
   }

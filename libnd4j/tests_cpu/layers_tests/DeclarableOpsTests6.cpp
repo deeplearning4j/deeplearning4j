@@ -328,7 +328,6 @@ TEST_F(DeclarableOpsTests6, cumSum_2) {
 
   auto z = result.at(0);
 
-  // z->printIndexedBuffer("CumSum1");
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -905,13 +904,9 @@ TEST_F(DeclarableOpsTests6, BinCount_1) {
 
   NDArray exp('c', {3}, {1, 3, 4}, sd::DataType::INT64);
 
-  exp.printShapeInfo("Expected shape info");
-  exp.printIndexedBuffer("Expected");
   sd::ops::bincount op;
 
   auto res = op.evaluate({&x});
-  res.at(0)->printShapeInfo("Output shape info");
-  res.at(0)->printIndexedBuffer("Output");
   ASSERT_EQ(sd::Status::OK, res.status());
   ASSERT_TRUE(exp.equalsTo(res.at(0)));
 }

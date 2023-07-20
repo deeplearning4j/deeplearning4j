@@ -507,8 +507,6 @@ TEST_F(ParityOpsTests, Test_Where_1) {
 
   auto z = result.at(0);
 
-  // z->printIndexedBuffer("result");
-
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }

@@ -58,15 +58,6 @@ TEST_F(HelpersTests2, Hessenberg_2) {
   ops::helpers::Hessenberg<double> hess(x);
 
 
-
-  x.printIndexedBuffer("expected x");
-  hess._H.printIndexedBuffer("output h");
-
-
-  expQ.printIndexedBuffer("expected q");
-  hess._Q.printIndexedBuffer("output q");
-
-
   ASSERT_TRUE(hess._H.isSameShape(&x));
   ASSERT_TRUE(hess._H.equalsTo(&x));
 

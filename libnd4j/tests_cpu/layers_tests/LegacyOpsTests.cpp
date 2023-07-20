@@ -49,7 +49,6 @@ TEST_F(LegacyOpsTests, TransformTests_1) {
   sd::ops::LegacyTransformSameOp op(transform::Neg);  // Neg
   auto status = op.execute({&x}, {&z}, {}, {}, {});
   ASSERT_EQ(status, sd::Status::OK);
-  // z.printIndexedBuffer("Output NEG");
   ASSERT_TRUE(z.equalsTo(&exp));
 }
 

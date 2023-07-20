@@ -119,9 +119,6 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_1) {
   // basically the same as above
   ASSERT_TRUE(res->isSameShape(exp));
   // just for visual validation
-  // exp->printIndexedBuffer("Expected");
-  // res->printIndexedBuffer("Actual  ");
-  // res->printShapeInfo("Result shape");
   // final check
   ASSERT_TRUE(res->equalsTo(exp));
 
@@ -2467,7 +2464,6 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test4) {
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
 
-  // output->printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
@@ -2497,7 +2493,6 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test5) {
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
 
-  // output->printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));

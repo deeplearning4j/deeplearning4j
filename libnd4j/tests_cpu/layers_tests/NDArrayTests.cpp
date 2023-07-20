@@ -292,17 +292,14 @@ TEST_F(NDArrayTest, TestRepeat2) {
   auto exp = new NDArray(eBuffer, eShape);
   for (int e = 0; e < array->lengthOf(); e++) array->p(e, e + 1);
 
-  // array->printBuffer();
 
   auto rep = new NDArray(exp->dup());
   rep->assign(0.);
   array->repeat(0, {2}, *rep);
-  // rep->printIndexedBuffer("Repeated");
 
   ASSERT_EQ(4, rep->sizeAt(0));
   ASSERT_EQ(2, rep->sizeAt(1));
 
-  // rep->printBuffer();
 
   ASSERT_TRUE(exp->equalsTo(rep));
 
@@ -1964,11 +1961,6 @@ TEST_F(NDArrayTest, Operator_Plus_Test_1) {
   auto y = NDArrayFactory::create<double>('c', {2, 1});
   auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
 
-  // x.printShapeInfo("x shape");
-  // y.printShapeInfo("y shape");
-  // expected.printShapeInfo("e shape");
-  // expected.printIndexedBuffer("e");
-
   x.linspace(1);
   y.linspace(1);
 
@@ -1992,7 +1984,6 @@ TEST_F(NDArrayTest, Operator_Plus_Test_2) {
   y.linspace(1);
 
   auto result = x + y;
-  // result.printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShape(&result));
   ASSERT_TRUE(expected.equalsTo(&result));
@@ -2010,7 +2001,6 @@ TEST_F(NDArrayTest, Operator_Plus_Test_3) {
   y.linspace(1);
 
   auto result = x + y;
-  // result.printIndexedBuffer();
   ASSERT_TRUE(expected.isSameShape(&result));
   ASSERT_TRUE(expected.equalsTo(&result));
 }

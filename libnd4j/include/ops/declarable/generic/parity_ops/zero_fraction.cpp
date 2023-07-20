@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
 
 
   auto countZero = input->reduceNumber(reduce::CountZero);
-  output->p<double>(0, countZero.e<sd::LongType>(0) / double(input->lengthOf()));  // printIndexedBuffer("Zero count");
+  output->p<double>(0, countZero.e<sd::LongType>(0) / double(input->lengthOf()));
 
   return sd::Status::OK;
 }
