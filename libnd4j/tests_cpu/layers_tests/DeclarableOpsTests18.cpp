@@ -1382,7 +1382,6 @@ TEST_F(DeclarableOpsTests18, TestUpdaterAdaDelta1) {
 
   sd::ops::ada_delta_updater op;
 
-  sd_print("About to execute op\n");
   sd::Status status = op.execute({&grad, &initMsg, &initMsdx}, {&update, &initMsg, &initMsdx}, {0.95f, 1.0e-6}, {});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -1402,7 +1401,6 @@ TEST_F(DeclarableOpsTests18, TestUpdaterAdaDelta1) {
   ASSERT_TRUE(initMsg.equalsTo(stateMsg0));
   ASSERT_TRUE(initMsdx.equalsTo(stateMsdx0));
 
-  sd_print("About to execute 2\n");
   status = op.execute({&grad, &initMsg, &initMsdx}, {&update, &initMsg, &initMsdx}, {0.95f, 1.0e-6}, {});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -1423,7 +1421,6 @@ TEST_F(DeclarableOpsTests18, TestUpdaterAdaDelta1) {
   ASSERT_TRUE(initMsg.equalsTo(stateMsg1));
   ASSERT_TRUE(initMsdx.equalsTo(stateMsdx1));
 
-  sd_print("About to execute 3\n");
   status = op.execute({&grad, &initMsg, &initMsdx}, {&update, &initMsg, &initMsdx}, {0.95f, 1.0e-6}, {});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -1439,7 +1436,6 @@ TEST_F(DeclarableOpsTests18, TestUpdaterAdaDelta1) {
       {0.0000029199694397, 0.00000292001372254, 0.00000292002192321, 0.00000292002479346, 0.00000292002612198},
       DataType::FLOAT32);
 
-  sd_print("Final assertions\n");
   ASSERT_TRUE(update.equalsTo(updateExp2));
   ASSERT_TRUE(initMsg.equalsTo(stateMsg2));
   ASSERT_TRUE(initMsdx.equalsTo(stateMsdx2));

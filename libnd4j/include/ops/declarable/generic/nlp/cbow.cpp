@@ -218,7 +218,6 @@ CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
 
-  sd_print("About to call helper cbow\n");
   //print all pointers being null or not
   sd_printf("syn0 == nullptr %d syn1 == nullptr %d expTable == nullptr %d target == nullptr %d ngStarter == nullptr %d context == nullptr %d lockedWords == nullptr %d indices == nullptr %d codes =="
       " nullptr %d alpha == nullptr %d randomValue == nullptr %d numLabels == nullptr %d inferenceVector == nullptr %d\n",

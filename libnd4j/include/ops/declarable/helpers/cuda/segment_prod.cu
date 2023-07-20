@@ -143,13 +143,11 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
-    sd_print("Input is vector segment prod\n");
     dim3 launchDims = getLaunchDims("segment_prod_2");
     segmentProdLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins,
                                                                                          lengths, numClasses, output->specialBuffer(),
                                                                                          output->specialShapeInfo());
   } else {
-    sd_print("Other case segment prod\n");
     sd::LongType zero = 0;
     std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);

@@ -2410,23 +2410,18 @@ TEST_F(ConvolutionTests2, maxpool2d_1) {
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
 
-  sd_print("Created arrays\n");
   std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
   variableSpace->putVariable(-1, x);
 
-  sd_print("Setting up block\n");
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  sd_print("Filled inputs in\n");
   std::vector<sd::LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd_print("Executing op\n");
   sd::ops::maxpool2d pooling;
   sd::Status status = pooling.execute(block.get());
-  sd_print("Executed op\n");
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();

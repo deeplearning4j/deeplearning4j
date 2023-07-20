@@ -147,9 +147,7 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   if (!keepDims) {
     auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     auto grad0Shape =   ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
-    sd_print("About to create reshaped\n");
     auto reshaped = !gradO->isScalar() ? new NDArray(gradO->reshape(gradO->ordering(),grad0Shape)) : gradO;  // for example could be something like [a,b] -> [1,a,1,b];
-    sd_print("Done creating reshaped\n");
     *gradI *= *reshaped;  // for example could be something like [a,b] -> [1,a,1,b]
     //reshape can vary and may have the same buffer as the original
     if(reshaped != gradO && reshaped->buffer() != gradO->buffer() && reshaped->specialBuffer() != gradI->specialBuffer())

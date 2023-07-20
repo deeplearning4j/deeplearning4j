@@ -304,7 +304,6 @@ TEST_F(ContextTests, test_short_context_1) {
 
   ASSERT_TRUE(input1->specialBuffer() == array1->specialBuffer());
   ASSERT_TRUE(input1->specialShapeInfo() == array1->specialShapeInfo());
-  sd_print("After test execution\n");
 }
 
 TEST_F(ContextTests, test_short_context_2) {

@@ -56,7 +56,6 @@ class NDArrayTests : public testing::Test {
 
   void TearDown() override {
     Test::TearDown();
-    sd_print("Tear down called\n");
     auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
     // delete any existing memory not found in the current test
     // this is to avoid deleting any memory that may or may not be asynchronously used
