@@ -25,6 +25,8 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/matrix_band.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -89,14 +91,14 @@ static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const sd::LongTy
 template <typename T>
 void matrixBandPart_(sd::LaunchContext* context, NDArray* input, NDArray* output, sd::LongType lowerBand,
                      sd::LongType upperBand) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("matrixBand");
   auto stream = context->getCudaStream();
 
   std::vector<sd::LongType> lastDims({input->rankOf() - 2, input->rankOf() - 1});
-  std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
+  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims.size(),lastDims.data());
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), lastDims);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), lastDims);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &lastDims);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDims);
 
   const sd::LongType numTads = packX->numberOfTads();
 
@@ -106,6 +108,8 @@ void matrixBandPart_(sd::LaunchContext* context, NDArray* input, NDArray* output
       upperBand, packX->specialShapeInfo(), packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets(),
       numTads, input->lengthOf());
   NDArray::registerSpecialUse({output}, {input});
+
+  delete dimsToExclude;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

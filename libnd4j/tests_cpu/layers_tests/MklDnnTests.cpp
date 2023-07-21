@@ -32,7 +32,7 @@
 
 using namespace sd;
 
-class MklDnnTests : public testing::Test {
+class MklDnnTests : public NDArrayTests {
  public:
 };
 

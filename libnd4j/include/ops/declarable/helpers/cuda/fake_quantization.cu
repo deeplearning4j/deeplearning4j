@@ -22,6 +22,8 @@
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/fake_quantization.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -116,7 +118,8 @@ void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, 
   T* outputBuf = output->dataBuffer()->specialAsT<T>();
   T* minBuf = min->dataBuffer()->specialAsT<T>();
   T* maxBuf = max->dataBuffer()->specialAsT<T>();
-  fakeQuantWithMinMaxKernel<<<128, 256, 256, *stream>>>(inputBuf, input->specialShapeInfo(), minBuf, maxBuf,
+  dim3 launchDims = getLaunchDims("fake_quantization");
+  fakeQuantWithMinMaxKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, input->specialShapeInfo(), minBuf, maxBuf,
                                                         lowIntBound, upperIntBound, channels, outputBuf,
                                                         output->specialShapeInfo(), length);
   NDArray::registerSpecialUse({output}, {min, max, input});

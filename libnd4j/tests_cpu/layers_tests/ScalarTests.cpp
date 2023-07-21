@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ScalarTests : public testing::Test {
+class ScalarTests : public NDArrayTests {
  public:
 };
 
@@ -37,7 +37,7 @@ TEST_F(ScalarTests, Test_Create_1) {
   auto x = NDArrayFactory::create<float>(2.0f);
 
   ASSERT_EQ(0, x.rankOf());
-  ASSERT_EQ(1, x.lengthOf());
+  ASSERT_EQ(0, x.lengthOf());
   ASSERT_TRUE(x.isScalar());
   ASSERT_FALSE(x.isVector());
   ASSERT_FALSE(x.isRowVector());
@@ -117,7 +117,6 @@ TEST_F(ScalarTests, Test_Concat_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -136,7 +135,6 @@ TEST_F(ScalarTests, Test_Concat_3) {
 
   auto z = result.at(0);
 
-  // z->printShapeInfo("z");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));

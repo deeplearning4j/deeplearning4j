@@ -22,6 +22,8 @@
 #include <array/ResultSet.h>
 #include <ops/declarable/helpers/diag.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -97,7 +99,7 @@ template <typename T>
 static void _diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
   auto inputLength = input->lengthOf();
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("diagPart");
   if (!input->isActualOnDeviceSide()) input->syncToDevice();
   diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       output->specialBuffer(), output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
@@ -123,7 +125,7 @@ void _diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray*
   const int inLen = input->lengthOf();
   auto stream = context->getCudaStream();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("diagPart");
   if (!input->isActualOnDeviceSide()) input->syncToDevice();
 
   diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

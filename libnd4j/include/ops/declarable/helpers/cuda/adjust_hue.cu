@@ -24,6 +24,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/adjust_hue.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -88,11 +90,12 @@ void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
 
+  dim3 adjustDims = getAdjustDims(numOfTads);
   PointersManager manager(context, "adjustHue");
 
   NDArray::prepareSpecialUse({output}, {input, deltaScalarArr});
   BUILD_SINGLE_SELECTOR(input->dataType(), adjustHueCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
+                        (adjustDims.x, adjustDims.y, context->getCudaStream(), input->specialBuffer(),
                          input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
                          output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, deltaScalarArr, dimC),
                         SD_FLOAT_TYPES);

@@ -25,6 +25,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 
@@ -125,10 +127,12 @@ void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, ND
   const int blocksPerGrid = (vol.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
+  dim3 col2VolDims = getCol2VolDims(vol.lengthOf(), col.rankOf());
+
   NDArray::prepareSpecialUse({&vol}, {&col});
   BUILD_SINGLE_SELECTOR(
       vol.dataType(), col2volCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), col.specialBuffer(),
+      (col2VolDims.x, col2VolDims.y, col2VolDims.z, block.launchContext()->getCudaStream(), col.specialBuffer(),
        col.specialShapeInfo(), vol.specialBuffer(), vol.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&vol}, {&col});

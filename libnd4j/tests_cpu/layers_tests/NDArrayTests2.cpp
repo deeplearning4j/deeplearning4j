@@ -30,7 +30,7 @@
 using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
-class NDArrayTest2 : public testing::Test {
+class NDArrayTest2 : public NDArrayTests {
  public:
 };
 
@@ -443,9 +443,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_1) {
   x.permutei({0, 2, 1});
   x.streamline();
 
-  //    x.printShapeInfo("{0, 2, 1} shape");
-  //    x.printBuffer("{0, 2, 1} data");
-
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -462,9 +459,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_0) {
 
   x.permutei({0, 1, 2});
   x.streamline();
-
-  //    x.printShapeInfo("{0, 1, 2} shape");
-  //    x.printBuffer("{0, 1, 2} data");
 
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
@@ -503,9 +497,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_3) {
   x.permutei({1, 2, 0});
   x.streamline();
 
-  //    x.printShapeInfo("{1, 2, 0} shape");
-  //    x.printBuffer("{1, 2, 0} data");
-
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -523,9 +514,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_4) {
   x.permutei({2, 0, 1});
   x.streamline();
 
-  //    x.printShapeInfo("{2, 0, 1} shape");
-  //    x.printBuffer("{2, 0, 1} data");
-
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -542,10 +530,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_5) {
 
   x.permutei({2, 1, 0});
   x.streamline();
-
-  //    x.printShapeInfo("{2, 0, 1} shape");
-  //    x.printBuffer("{2, 0, 1} data");
-
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }

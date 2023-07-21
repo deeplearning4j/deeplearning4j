@@ -23,6 +23,8 @@
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/qr.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -30,16 +32,7 @@ namespace helpers {
 template <typename T>
 static SD_KERNEL void matrixMinorKernel(T* outBuffer, sd::LongType* outShape, T* inBuffer, sd::LongType* inShape,
                                         sd::LongType column, sd::LongType rows, sd::LongType columns) {
-  //        auto tid = threadIdx.x + blockDim.x * blockIdx.x;
-  //        auto step = blockDim.x * gridDim.x;
-  //        if (threadIdx.x == 0) {
-  //            for (auto i = tid; i < column; i += step) {
-  //                sd::LongType diagPos[] = {i, i};
-  //                auto zIndex = shape::getOffset(outShape, diagPos);
-  //                outBuffer[zIndex] = T(1.f);
-  //            }
-  //        }
-  //        __syncthreads();
+
 
   for (auto i = blockIdx.x; i < rows; i += gridDim.x)
     for (auto j = threadIdx.x; j < columns; j += blockDim.x) {
@@ -83,7 +76,8 @@ NDArray vmul(LaunchContext* context, NDArray const& v, int n) {
   NDArray res('c', {n, n}, v.dataType(), context);  // x = matrix_new(n, n);
 
   auto stream = context->getCudaStream();
-  vmulKernel<T><<<128, 128, 128, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("qr");
+  vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
                                             reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
   return res;
 }
@@ -98,11 +92,11 @@ static bool diagonalIsPositive(NDArray* matrix, sd::LongType k) {
 }
 
 template <typename T>
-void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
+void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
   sd::LongType M = matrix->sizeAt(0);
   sd::LongType N = matrix->sizeAt(1);
-  auto resQ = fullMatricies ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
-  auto resR = fullMatricies ? R->ulike() : matrix->ulike();
+  auto resQ = fullMatrices ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
+  auto resR = fullMatrices ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
   NDArray z = *matrix;
   NDArray e('c', {M}, DataTypeUtils::fromT<T>(), context);  // two internal buffers and scalar for squared norm
@@ -112,13 +106,14 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
                        k);  // minor computing for current column with given matrix z (initally is a input matrix)
 
     auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, {0});
+    std::vector<sd::LongType> zero = {0};
+    auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, &zero);
     if (diagonalIsPositive<T>(matrix, k))  // matrix->t<T>(k,k) > T(0.f)) // negate on positive matrix diagonal element
       norm.applyTransform(transform::Neg, norm);  // *= -1.f;//-norm.t<T>(0);
 
     e.p(k, norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
     e += currentColumn;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
-    auto normE = e.reduceAlongDimension(reduce::Norm2, {0});
+    auto normE = e.reduceAlongDimension(reduce::Norm2, &zero);
     e /= normE;
     q[k] = vmul<T>(context, e, M);
     auto qQ = z.ulike();
@@ -136,7 +131,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
   // resR *= -1.f;
   resQ.transposei();
 
-  if (fullMatricies) {
+  if (fullMatrices) {
     Q->assign(resQ);
     R->assign(resR);
   } else {

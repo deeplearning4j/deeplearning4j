@@ -22,6 +22,13 @@ if(WIN32)
 endif()
 
 if (SD_CUDA)
+    if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+        set(CUDA_DEFAULT_ARCHITECTURES 60 61 62 70 72 75 80 CACHE STRING "CUDA architectures for CUDA 11.x based compilers" FORCE)
+    else()
+        set(CUDA_DEFAULT_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
+    endif()
+    # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
     find_package(CUDA)
     message("Tests CUDA include directory: ${CUDA_INCLUDE_DIRS}")
     include_directories(${CUDA_INCLUDE_DIRS})
@@ -36,12 +43,21 @@ if (SD_CUDA)
 
     string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
     if ("${COMPUTE_CMP}" STREQUAL "all")
-        CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Common")
+        if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80")
+        else()
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90")
+        endif()
+        set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
+
     elseif("${COMPUTE_CMP}" STREQUAL "auto")
         CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
+        set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
     elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
-        #matches USER COMPUTE old way 
+        #matches USER COMPUTE old way
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE} ")
+        set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
+
     else()
         #matches numbers NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
         #NAME: Fermi Kepler Maxwell Kepler+Tegra Kepler+Tesla Maxwell+Tegra Pascal
@@ -50,8 +66,20 @@ if (SD_CUDA)
     endif()
     # list to spaces
     string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
-
-    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        if(NOT STREQUAL ${CUDA_ARCH_FLAGS} "")
+            set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA architectures" FORCE)
+        else()
+            if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+                set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 CACHE STRING "CUDA architectures for CUDA 11.x based compilers" FORCE)
+                add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
+            else()
+                set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
+                add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
+            endif()
+        endif()
+    endif()
+    set(CMAKE_CUDA_FLAGS " --ptxas-options=-v  ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
 endif()
 
@@ -174,8 +202,9 @@ elseif(SD_CUDA)
     if (HAVE_CUDNN)
         message("CUDNN library: ${CUDNN}")
     endif()
-
-    target_link_libraries(runtests samediff_obj  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
+    # note cuda and cudart are for the driver api access needed for using the driver api for setting things like attributes
+    # with the DeviceValidator
+    target_link_libraries(runtests samediff_obj  cuda cudart ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
 endif()
 
 

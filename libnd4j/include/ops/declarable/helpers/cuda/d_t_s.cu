@@ -21,6 +21,8 @@
 //
 #include <ops/declarable/helpers/d_t_s.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -92,7 +94,8 @@ static SD_KERNEL void depthToSpaceKernel(const void *vx, const sd::LongType *xSh
 template <typename T>
 static void __depthToSpace(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
                            bool isNHWC) {
-  depthToSpaceKernel<T><<<512, 512, 1024, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("depth_to_space");
+  depthToSpaceKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                                        output->specialBuffer(),
                                                                        output->specialShapeInfo(), block_size, isNHWC);
 }

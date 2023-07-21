@@ -164,7 +164,7 @@ void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
   output->applyTransform(transform::Log, *output);
 }
 
@@ -180,7 +180,7 @@ void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
   output->applyTransform(transform::Log, *output);
 }
 

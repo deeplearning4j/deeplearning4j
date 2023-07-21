@@ -51,6 +51,7 @@ SD_LIB_EXPORT std::u16string NDArray::e(const sd::LongType i) const;
 template <>
 SD_LIB_EXPORT std::u32string NDArray::e(const sd::LongType i) const;
 
+
 SD_INLINE void prepareUse(const std::vector<const NDArray *> &writeList, const std::vector<const NDArray *> &readList,
                           bool synchronizeWritables = false) {
 #if defined(HAVE_VEDA)
@@ -77,8 +78,7 @@ NDArray::NDArray(const NDArray &other) {
   setShapeInfo(other.shapeInfo());
 
   if (!isEmpty() && other.lengthOf() > 0) {
-    _buffer = std::make_shared<DataBuffer>(other.lengthOf() * other.sizeOfT(), other.dataType(),
-                                           other.getContext()->getWorkspace());
+    _buffer = other._buffer;
     this->assign(&other);
   } else {
     _buffer = std::make_shared<DataBuffer>();
@@ -113,7 +113,7 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
                  sd::DataType dtype, sd::LaunchContext *context) {
-  if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
+  if (shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
@@ -326,6 +326,8 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor
   _offset = offset;
   setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor));
   _buffer = buffer;
+  _dataType = descriptor->dataType();
+  _length = descriptor->arrLength();
   if(buffer != nullptr)
     _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
   else {
@@ -342,9 +344,6 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
-  if (buffer == nullptr && ArrayOptions::arrayType(shapeInfo) != ArrayType::EMPTY)
-    THROW_EXCEPTION("NDArray constructor: can't be initialized with nullptr buffer !");
-
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor: can't be initialized without shapeinfo !");
 
   if ((int)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32 !");
@@ -372,20 +371,24 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor cuda: can't be initialized without shapeinfo");
 
-  sd::LongType  rank = (sd::LongType)shapeInfo[0];
-  if (rank > SD_MAX_RANK || rank < 0)  THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
+  sd::LongType rank = shapeInfo[0];
+  if (rank > SD_MAX_RANK || rank < 0) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
   _context = context;
   _offset = 0;
-
+  _length = shape::length(shapeInfo);
+  _dataType = ArrayOptions::dataType(shapeInfo);
   auto descriptor = new ShapeDescriptor(shapeInfo);
   setShapeInfo(descriptor);
   delete descriptor;
-  if (!isEmpty() && buffer != nullptr)
-    _buffer = std::make_shared<DataBuffer>(buffer != nullptr ? buffer : buffer, bufferD, lengthOf() * sizeOfT(),
-                                           dataType(), isBuffAlloc, isBuffDAlloc, getContext()->getWorkspace());
-}
+  //note we used to check for the primary host side buffer here as well. we don't anymore because
+  //device side backends may only use the device side buffer and not allocate the host side immediately to save memory
+  DataBuffer dataBuffer1(buffer,bufferD, lengthOf() * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
+                         getContext()->getWorkspace());
+  _buffer = std::make_shared<DataBuffer>(dataBuffer1);
 
+
+}
 //////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                  sd::LaunchContext *context) {
@@ -938,6 +941,127 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   syncToDevice();
 }
 
+
+
+//google test print statement
+static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
+  // adapted printFormatted function
+  if (arr.rankOf() == 1) {
+    os << "[ ";
+    for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
+      if (arr.isR())
+        os << arr.e<float>(i) << ", ";
+      else if (arr.isZ())
+        os << arr.e<sd::LongType>(i) << ", ";
+      else if (arr.isB())
+        os << (arr.e<bool>(i) ? "true" : "false") << ", ";
+      else if (arr.isS()) {
+        os << "\"" << arr.e<std::string>(i) << "\", ";
+      }
+    }
+    os << "]\n";
+  } else if (arr.rankOf() == 2) {
+    sd::LongType rows = arr.rows();
+    sd::LongType cols = limit < 0  || limit >= arr.columns() ? arr.columns() : sd::math::sd_min<sd::LongType>(limit, cols);
+
+    char *padding = new char[depth + 1];
+    memset(padding, ' ', depth);
+    padding[depth] = 0;
+    os << "[";
+    for (sd::LongType row = 0; row < rows; row++) {
+      if (row && depth > 0) os << padding;
+      os << "[";
+      for (sd::LongType col = 0; col < cols; col++) {
+        if (col > 0) os << ", ";
+        if (arr.isR()) {
+          os << arr.e<float>(row, col);
+        } else if (arr.isZ()) {
+          os << arr.e<sd::LongType>(row, col);
+        } else if (arr.isB()) {
+          os << (arr.e<bool>(row, col) ? "true" : "false");
+        } else if (arr.isS()) {
+          os << "\"" << arr.e<std::string>(row * cols + col) << "\"";
+        }
+      }
+      if (row < rows - 1)
+        os << "]\n";
+      else
+        os << "]";
+    }
+    os << "]";
+    delete[] padding;
+  } else {
+    // assuming ShapeUtils and other required objects/methods are defined and available
+    sd::LongType restCount = 2;
+    os << "[";
+    restCount = ShapeUtils::getNumOfSubArrs(arr.shapeInfo(), {0});
+    for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
+      NDArray subArr = arr(arrIndex, {0});
+      printFormatted(os, subArr, depth + 1, limit);
+      if (arrIndex < restCount - 1) {
+        for (sd::LongType i = 1; i < arr.rankOf(); ++i) os << "\n";
+        for (sd::LongType i = 0; i < depth - 2; ++i) os << " ";
+      }
+    }
+    os << "]";
+  }
+}
+
+
+inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
+  arr.syncToHost();
+
+  sd::LongType rank = arr.rankOf();
+
+  bool rowFlag = (rank < 2) || (rank == 2 && arr.sizeAt(0) == 1);
+
+  if (arr.isEmpty()) {
+    os << "Empty\n";
+  } else if (arr.rankOf() == 0) {
+    if (arr.isZ()) {
+      os << arr.e<sd::LongType>(0) << "\n";
+    } else if (arr.isR()) {
+      os << arr.e<float>(0) << "\n";
+    } else if (arr.isB()) {
+      os << (arr.e<bool>(0) ? "true" : "false") << "\n";
+    } else if (arr.isS()) {
+      os << "\"" << arr.e<std::string>(0) << "\"\n";
+    }
+  } else if (rowFlag && arr.ews() == 1) {
+    os << "[ ";
+    for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
+      if (arr.isR())
+        os << arr.e<float>(i) << ", ";
+      else if (arr.isZ())
+        os << arr.e<sd::LongType>(i) << ", ";
+      else if (arr.isB())
+        os << (arr.e<bool>(i) ? "true" : "false") << ", ";
+      else if (arr.isS()) {
+        os << "\"" << arr.e<std::string>(i) << "\", ";
+      }
+    }
+    os << "]\n";
+  } else {
+    if(arr.isEmpty())
+      throw std::runtime_error("NULL buffer found but shape is not empty.");
+    printFormatted(os, arr, 1,arr.lengthOf());
+  }
+  return os;
+}
+
+
+
+inline std::ostream& operator<<(std::ostream os,  NDArray& arr) {
+  const auto arr2 = arr;
+  return os << arr2;
+}
+
+//used in gtest printing
+void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
+  *os << arr;
+}
+
+//end google test print statement
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 NDArray &NDArray::operator=(const NDArray &other) {
@@ -1210,7 +1334,9 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray &other, size_t sizeToCop
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
-  if (this == &other) return;
+  if (this == &other) {
+    return;
+  }
 
   if (other.isEmpty()) {
     if (!isEmpty()) {
@@ -1224,8 +1350,9 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
     return;
   }
 
-  if (other.lengthOf() == 1) {
-    if (lengthOf() == 1) {
+  //scalar case
+  if (other.lengthOf() <= 1) {
+    if (lengthOf() <= 1) {
       NDArray::preparePrimaryUse({this}, {&other});
       BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.buffer(), 0),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1392,11 +1519,13 @@ bool NDArray::isFinite() {
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename Y>
 void NDArray::templatedSet(void *buffer, const sd::LongType *indices, const void *value) {
+  NDArray::preparePrimaryUse({this}, {this});
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
   auto xOffset = shape::getOffset(shapeInfo(), indices);
   t[xOffset] = y;
+  NDArray::registerPrimaryUse({this}, {this});
 }
 BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                       (void *buffer, const sd::LongType *indices, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1404,10 +1533,15 @@ BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename Y>
 void NDArray::templatedSet(void *buffer, const sd::LongType offset, const void *value) {
+  NDArray::preparePrimaryUse({this}, {this});
+
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
   t[offset] = y;
+  tickWriteHost();
+  NDArray::registerPrimaryUse({this}, {this});
+
 }
 BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
                       (void *buffer, const sd::LongType offset, const void *value), SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1832,31 +1966,14 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
 
   if (msg) printf("%s: ", msg);
-
-  if (this->isEmpty()) {
-    sd_printf("Empty\n",0);
-  } else if (this->rankOf() == 0) {
-    if (this->isZ()) {
-      sd_printf("%lld\n", this->e<sd::LongType>(0));
-    } else if (this->isR()) {
-      sd_printf("%.8f\n", this->e<float>(0));
-    } else if (this->isB()) {
-      sd_printf("%s\n", this->e<bool>(0) ? "true" : "false");
-    } else if (this->isS()) {
-      sd_printf("\"%s\"\n", this->e<std::string>(0).c_str());
-    }
-  } else if (rowFlag && ews() == 1) {
-    printBuffer(nullptr, limit);
-  }
-  else {
-    if(_buffer == nullptr)
-      THROW_EXCEPTION("NULL buffer found but shape is not empty.");
-    if (msg) sd_printf("\n",0);
-    printFormatted(this, 1, limit);
-    sd_printf("\n",0);
-  }
-  fflush(stdout);
+  //uses the << operator instead which is used in gtest as well
+  std::cout << *this;
 }
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -2329,7 +2446,7 @@ NDArray NDArray::asS() const {
       dataLength += (dtype == DataType::UTF32)
                     ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
                     : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
-    } else {
+    } else if(dataType() == DataType::UTF32) {
       dataLength += (dtype == DataType::UTF16)
                     ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
                     : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
@@ -2359,19 +2476,19 @@ NDArray NDArray::asS() const {
       if (dtype == DataType::UTF16) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to16(idata, outData, end);
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
         }
       } else if (dtype == DataType::UTF32) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to32(idata, cdata, end);
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
         }
       } else {
         if (dataType() == DataType::UTF16) {
           unicode::utf16to8(idata, outData, (end / sizeof(char16_t)));
-        } else {
+        } else if(dataType() == DataType::UTF32) {
           unicode::utf32to8(idata, outData, (end / sizeof(char32_t)));
         }
       }
@@ -3249,10 +3366,21 @@ void NDArray::operator delete(void *p) {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 std::vector<T> NDArray::asVectorT() {
-  std::vector<T> result(this->lengthOf());
+  if(isScalar()) {
+    std::vector<T> result(1);
+    result[0] = this->e<T>(0);
+    return result;
+  }
 
+  if(lengthOf() < 1 || isEmpty()) {
+    return std::vector<T>();
+  }
+
+  std::vector<T> result(this->lengthOf());
   PRAGMA_OMP_SIMD
-  for (int e = 0; e < this->lengthOf(); e++) result[e] = this->e<T>(e);
+  for (int e = 0; e < this->lengthOf(); e++) {
+    result[e] = this->e<T>(e);
+  }
 
   return result;
 }
@@ -3281,6 +3409,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     THROW_EXCEPTION(errorMessage.c_str());
 
   }
+
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
@@ -3339,7 +3468,8 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   sd::LongType arrLength = 1;
   for (const auto &item : shape) arrLength *= item;
 
-  if (platformBuffer() == nullptr || arrLength != this->lengthOf()) {
+  //don't validate scalar case reshape 0 -> 1,1 should be valid
+  if (platformBuffer() == nullptr || arrLength != this->lengthOf() && !isScalar()) {
     std::string errorMessage;
     errorMessage += "NDArray::reshapei: bad length of new shape !\n";
     errorMessage += "Shape: ";
@@ -3595,14 +3725,24 @@ NDArray NDArray::dup(const char newOrder) const {
 ////////////////////////////////////////////////////////////////////////
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
 bool NDArray::equalsTo(const NDArray *other, double eps) const {
-  if (dataType() != other->dataType() || lengthOf() != other->lengthOf()) return false;
+  if(isEmpty() && other->isEmpty())
+    return true;
 
-  // we need to be able to compare [1, len] to [len]
-  if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
-    // FIXME: do something here?
-  } else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo()))
+  if (dataType() != other->dataType() || lengthOf() != other->lengthOf() && !isScalar()) {
     return false;
+  }
 
+  if(isScalar()) {
+    auto thisVal = e<double>(0);
+    auto otherVal = other->e<double>(0);
+    return sd::math::sd_abs<double>(thisVal - otherVal) <= eps;
+  }
+
+
+    // we need to be able to compare [1, len] to [len]
+  else if (!shape::equalsSoft(shapeInfo(), other->shapeInfo())) {
+    return false;
+  }
   if (isS()) {
     // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same
     // length
@@ -3632,27 +3772,31 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
     return true;
   } else {
+    //NOTE leave max precision here. Crashes can occur otherwise for arrays where data type is of higher
     // regular numeric types
-    NDArray tmp(sd::DataType::FLOAT32, getContext());  // scalar = 0
+    NDArray tmp(sd::DataType::DOUBLE, getContext());  // scalar = 0
 
     ExtraArguments extras({0.0, 0.0, eps});
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
     prepareUse({&tmp}, {this, other});
 #else
     NDArray::preparePrimaryUse({&tmp}, {this, other});
 #endif
     NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, buffer(), shapeInfo(), specialBuffer(),
-                                           specialShapeInfo(), extras.argumentsAsT(DataType::FLOAT32), other->buffer(),
+                                           specialShapeInfo(), extras.argumentsAsT(DataType::DOUBLE), other->buffer(),
                                            other->shapeInfo(), other->specialBuffer(), other->specialShapeInfo(),
                                            tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
     NDArray::registerSpecialUse({&tmp}, {this, other});
 #else
     NDArray::registerPrimaryUse({&tmp}, {this, other});
 #endif
     synchronize("NDArray::equalsTo");
 
-    if (tmp.e<sd::LongType>(0) != 0) return false;
+    if (tmp.e<sd::LongType>(0) != 0) {
+      sd_print("Returning failure\n");
+      return false;
+    }
 
     return true;
   }
@@ -3663,7 +3807,7 @@ template <>
 std::string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::string out of non-string array");
 
-  if (i >= lengthOf()) {
+  if (!isScalar() && i >= lengthOf()) {
     std::string errorMessage;
     errorMessage += "Requested index is out of range: [";
     errorMessage += StringUtils::valueToString<sd::LongType>(i);
@@ -3928,14 +4072,6 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::e(const sd::LongType i) const {
   const auto offset = getOffset(i);
-  if (offset >= this->getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::e: index is out of array length !";
-    errorMessage += " index = " + std::to_string(i);
-    errorMessage += " offset = " + std::to_string(offset);
-    errorMessage += " lengthOf = " + std::to_string(this->getDataBuffer()->getNumElements());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   NDArray scalar(dataType(), getContext());
 
   scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, bufferOffset() + offset);
@@ -4129,7 +4265,7 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray &target, ExtraArguments *extraParams) {
   if (isS()) THROW_EXCEPTION("NDArray::applyScalarArr: you can't use this method on String array!");
-  if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
+  if (!scalar.isScalar()) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
 
   if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()) &&
       !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))
@@ -4785,7 +4921,7 @@ template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType 
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const NDArray &scalar) {
-  if (scalar.lengthOf() != 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
+  if (scalar.lengthOf() > 1) THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
   if (i >= _length) {
     std::string errorMessage;
     errorMessage += "NDArray::p(i, NDArray_scalar): input index is out of array length !";
@@ -4816,12 +4952,10 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  //        void *p = reinterpret_cast<void *>(scalar.buffer());
   sd::LongType coords[4] = {i, j, k, l};
   auto xOffset = shape::getOffset(shapeInfo(), coords);
 
   NDArray::preparePrimaryUse({this}, {&scalar}, true);
-  //        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES);
   BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (this->buffer(), xOffset, scalar.dataType(), scalar.buffer()),
                         SD_COMMON_TYPES);
   NDArray::registerPrimaryUse({this}, {&scalar});
@@ -5090,6 +5224,8 @@ ResultSet NDArray::allExamples() const {
 
 ////////////////////////////////////////////////////////////////////////
 sd::LongType NDArray::getOffset(const sd::LongType i) const {
+  if(this->isEmpty() || isScalar() && i == 0)
+    return 0;
   if (i >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::getOffset: input index is out of array length: [";

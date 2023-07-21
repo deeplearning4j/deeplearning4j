@@ -23,7 +23,7 @@
 
 #include "testinclude.h"
 
-class EqualsTest : public testing::Test {
+class EqualsTest : public NDArrayTests {
  public:
   const sd::LongType firstShapeBuffer[8] = {2, 1, 2, 1, 1, 0, 1, 102};
   float data[2] = {1.0f, 7.0f};

@@ -33,7 +33,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class ThreadsTests : public testing::Test {
+class ThreadsTests : public NDArrayTests {
  public:
   ThreadsTests() { sd_printf("\n", ""); }
 };
@@ -92,8 +92,6 @@ TEST_F(ThreadsTests, th_test_5) {
 
   for (auto e = 0; e < 6; e++) {
     auto span = Span3::build(1, e, 6, 0, 32, 1, 0, 112, 1, 0, 112, 1);
-
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
 }
 
@@ -116,14 +114,9 @@ TEST_F(ThreadsTests, th_test_4) {
   for (auto e = 0; e < 6; e++) {
     auto span = Span2::build(1, e, 6, 0, 19, 1, 0, 17, 1);
 
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
-
-  sd_printf("-----------------------\n", "");
   for (auto e = 0; e < 6; e++) {
     auto span = Span2::build(1, e, 6, 0, 32, 1, 0, 3, 1);
-
-    sd_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
   }
 }
 
@@ -223,41 +216,4 @@ TEST_F(ThreadsTests, crash_test_1) {
   }
 }
 
-/*
-TEST_F(ThreadsTests, basic_test_1) {
-    if (!Environment::getInstance().isCPU())
-        return;
 
-    auto instance = samediff::ThreadPool::getInstance();
-
-    auto array = NDArrayFactory::create<float>('c', {512, 768});
-    auto like = array.like();
-    auto buffer = array.bufferAsT<float>();
-    auto lbuffer = like.bufferAsT<float>();
-
-    auto func = PRAGMA_THREADS_FOR {
-        PRAGMA_OMP_SIMD
-        for (uint64_t e = start; e < stop; e += increment) {
-            buffer[e] += 1.0f;
-        }
-    };
-
-    auto timeStartThreads = std::chrono::system_clock::now();
-    samediff::Threads::parallel_for(func, 0, array.lengthOf());
-    auto timeEndThreads = std::chrono::system_clock::now();
-    auto outerTimeThreads = std::chrono::duration_cast<std::chrono::microseconds> (timeEndThreads -
-timeStartThreads).count();
-
-    auto timeStartOmp = std::chrono::system_clock::now();
-    PRAGMA_OMP_PARALLEL_FOR_SIMD
-    for (uint64_t e = 0; e < array.lengthOf(); e ++) {
-        lbuffer[e] += 1.0f;
-    }
-    auto timeEndOmp = std::chrono::system_clock::now();
-    auto outerTimeOmp = std::chrono::duration_cast<std::chrono::microseconds> (timeEndOmp - timeStartOmp).count();
-
-    ASSERT_NEAR((float) array.lengthOf(), array.sumNumber().e<float>(0), 1e-5f);
-
-    sd_printf("Threads time: %lld us; OMP time: %lld us; %p\n", outerTimeThreads, outerTimeOmp, instance)
-}
- */

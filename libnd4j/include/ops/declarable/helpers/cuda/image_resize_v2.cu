@@ -3,6 +3,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/image_resize.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -45,8 +47,7 @@ static SD_KERNEL void computeSpansKernel(TKernelFunc* kernel, int* startsVec, fl
     spanEnd = boundsAmp(0LL, inSize - 1, spanEnd) + 1;
     int const spanSize = spanEnd - spanStart;
     if (spanSize > spanSize) {
-      return;  // throw "Exception"; ////return Logger::logStatusMsg(Status::BAD_INPUT, "Span is too large: "); // +
-               // spanSize + " vs " + spans._spanSize);//, spanSize, spans._spanSize));
+      return;
     }
     float totalWeightSum = 0.f;
     auto tempWeights = &tempWeightsBuf[x];
@@ -94,13 +95,7 @@ static sd::Status computeSpans(LaunchContext* context, TKernelFunc& kernel, sd::
   spans._weights.nullify();
 
   const float invKernelScale = 1.f / kernelScale;
-  //    NDArray tempWeights = NDArrayFactory::create<float>('c', {outSize, spans._spanSize});
-  //    auto tempWeightsBuf = reinterpret_cast<float*>(tempWeights.specialBuffer());
-  //    PointersManager mg(context, "ops::helpers::computeSpans");
-  //    auto specialKernel = reinterpret_cast<TKernelFunc*>(mg.replicatePointer(&kernel, sizeof(TKernelFunc)));
   auto stream = context->getCudaStream();
-  // computeSpansKernel<TKernelFunc><<<1, 1, 128, *stream>>>(specialKernel, startsVec, weightsVector, outSize, inSize,
-  // kernelScale, spans._spanSize, invScale, invTranslate, invKernelScale, tempWeightsBuf);
   auto maxSpanSize = 0;
   std::vector<float> tempWeights;
   for (auto x = 0; x < outSize; x++) {
@@ -138,7 +133,6 @@ static sd::Status computeSpans(LaunchContext* context, TKernelFunc& kernel, sd::
       auto outIndex = spans._spanSize * x;
       for (auto weightIndex = 0; weightIndex < tempWeights.size(); ++weightIndex) {
         weightsVector[outIndex++] = tempWeights[weightIndex] * totalWeightSumInverted;
-        //                ++outIndex;
       }
     }
     startsVec[x] = spanStart;
@@ -147,12 +141,9 @@ static sd::Status computeSpans(LaunchContext* context, TKernelFunc& kernel, sd::
   spans._weights.tickWriteHost();
   spans._starts.syncToDevice();
   spans._weights.syncToDevice();
-  //    cudaStreamSynchronize(*stream);
   return sd::Status::OK;
 }
 
-// template int computeSpans(LaunchContext* context, TriangleKernelFunc& kernel, sd::LongType const outSize,
-// sd::LongType const inSize, float const scale, float const translate, bool const antialias, Spans& spans);
 
 template <typename X, typename Z>
 static SD_KERNEL void batchedGatherSpan(sd::LongType outputWidth, sd::LongType outputHeight, int rowSpanSize,
@@ -202,7 +193,8 @@ static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray c
   auto rowWeightBuf = reinterpret_cast<Z const*>(rowWeights.specialBuffer());
   auto columnStartsBuf = reinterpret_cast<int const*>(columnStarts.specialBuffer());
   auto columnWeightBuf = reinterpret_cast<Z const*>(columnWeights.specialBuffer());
-  batchedGatherSpan<X, Z><<<128, 128, 256, *stream>>>(
+  dim3 launchDims = getLaunchDims("image_resize_v2_gather");
+  batchedGatherSpan<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       outputWidth, outputHeight, rowSpanSize, rowStartsBuf, rowWeightBuf, colSpanSize, columnStartsBuf, columnWeightBuf,
       imagePtr, imageSpecialShapeInfo, intermediatePtr, outputPtr, outputPixPerBatch);
 }
@@ -292,7 +284,6 @@ static sd::Status resizeKernel(LaunchContext* context, ImageResizeMethods method
 
 static sd::Status resizeTriangle(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
-  //    std::unique_ptr<IKernelFunc> kernel(new TriangleKernelFunc);
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeBilinear, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES_FLOAT32);
@@ -302,7 +293,6 @@ static sd::Status resizeTriangle(sd::LaunchContext* context, NDArray const* imag
 
 static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
-  //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(3.f));
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeLanczos3, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES_FLOAT32);
@@ -312,7 +302,6 @@ static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray const* imag
 
 static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
-  //    std::unique_ptr<IKernelFunc> kernel(new LanczosKernelFunc(5.f));
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeLanczos5, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
                         SD_FLOAT_TYPES_FLOAT32);

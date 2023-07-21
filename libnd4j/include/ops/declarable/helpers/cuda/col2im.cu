@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/col2im.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -92,89 +94,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
 }
 
 ////////////////////////////////////////////////////////////////////////
-// columns [bS, iC, kH, kW, oH, oW] to be de-convoluted to image [bS, iC, iH, iW]
-template <typename T>
-SD_KERNEL static void col2imCuda2(const void* columns, void* image, const sd::LongType* colShapeInfo,
-                                  const sd::LongType* imShapeInfo, const int sH, const int sW, const int pH,
-                                  const int pW, const int dH, const int dW) {
-  const auto col = reinterpret_cast<const T*>(columns);
-  auto im = reinterpret_cast<T*>(image);
 
-  auto colShape = shape::shapeOf(const_cast<sd::LongType*>(colShapeInfo));
-  auto colStride = shape::stride(const_cast<sd::LongType*>(colShapeInfo));
-
-  int colStride0 = colStride[0];
-  int colStride1 = colStride[1];
-  int colStride2 = colStride[2];
-  int colStride3 = colStride[3];
-  int colStride4 = colStride[4];
-  int colStride5 = colStride[5];
-
-  int kH = colShape[2];
-  int kW = colShape[3];
-
-  auto imShape = shape::shapeOf(const_cast<sd::LongType*>(imShapeInfo));
-  auto imOrder = shape::order(const_cast<sd::LongType*>(imShapeInfo));
-  auto imStride = shape::stride(const_cast<sd::LongType*>(imShapeInfo));
-
-  LongType bS = imShape[0];
-  LongType iC = imShape[1];
-  LongType iH = imShape[2];
-  LongType iW = imShape[3];
-
-  LongType oH = colShape[4];  //(iH + 2 * pH - kH) / sW + 1;
-  LongType oW = colShape[5];  //(iW + 2 * pW - kW) / sH + 1;
-
-  int n = bS * iC * iH * iW;
-
-  // Effective kernel size, accounting for dilation
-  LongType kHeff = kH + (kH - 1) * (dH - 1);
-  LongType kWeff = kW + (kW - 1) * (dW - 1);
-
-  for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
-    T val = 0;
-
-    LongType w_im = i % iW + pW;
-    LongType h_im = (i / iW) % iH + pH;
-    LongType c_im = i / (iW * iH);
-    LongType b = c_im / iC;
-    LongType c = c_im % iC;
-
-    // compute the start and end of the output
-    // These are the indexes for dimensions ??? in the 6d col matrix
-    LongType w_col_start = (w_im < kWeff) ? 0 : (w_im - kWeff) / sW + 1;
-    LongType w_col_end = sd::math::sd_min<LongType>(w_im / sW + 1, oW);
-
-    LongType h_col_start = (h_im < kHeff) ? 0 : (h_im - kHeff) / sH + 1;
-    LongType h_col_end = sd::math::sd_min<LongType>(h_im / sH + 1, oH);
-
-    // Iterate over col entries in the 6d array... these are added up
-    for (int colH = h_col_start; colH < h_col_end; colH += 1) {
-      for (int colW = w_col_start; colW < w_col_end; colW += 1) {
-        LongType kRow = (h_im - colH * sH);
-        LongType kCol = (w_im - colW * sW);
-
-        if (kRow % dH == 0 && kCol % dW == 0) {
-          kRow /= dH;
-          kCol /= dW;
-
-          int data_col_index = b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
-                               colH * colStride4 + colW * colStride5;
-          val += col[data_col_index];
-        }
-      }
-    }
-
-    LongType i_f = 0;
-    LongType i_c = i;
-    for (int dim = 3; dim >= 0; dim--) {
-      i_f += (i_c % imShape[dim]) * imStride[dim];
-      i_c = i_c / imShape[dim];
-    }
-
-    im[i_f] = val;
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -182,7 +102,6 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const cudaStream_t* stream, const void* columns, const sd::LongType* colShapeInfo,
                                void* image, const sd::LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                const LongType pW, const LongType dH, const LongType dW) {
-  // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
   col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH,
                                                                         sW, pH, pW, dH, dW);
 }
@@ -191,14 +110,11 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   PointersManager manager(&context, "col2im");
-
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (im.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
+  dim3 dims = getCol2imLaunchParams(im,col);
 
   NDArray::prepareSpecialUse({&im}, {&col});
   BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.specialBuffer(),
+                        (dims.x, dims.y, dims.z, context.getCudaStream(), col.specialBuffer(),
                          col.specialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&im}, {&col});

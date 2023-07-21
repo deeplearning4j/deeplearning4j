@@ -592,7 +592,6 @@ SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<sd::Long
 
     first_end = ind;
     first_begin = 0;
-    // sd_printf("rffrr ss & %d ind-- %d %d\n", first_rank, first_begin, first_end);
     // squash output rank
     if (first_squash && first_rank > 1) {
       if (order == 'c') {
@@ -628,7 +627,6 @@ SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<sd::Long
       ind = first_end;
     }
 
-    // sd_printf("rffrr ss & %d ind-- %d %d\n", first_rank, first_begin, first_end);
     // move process indices
     for (int i = 0; i < rank; i++) {
       if (indices[i]) {

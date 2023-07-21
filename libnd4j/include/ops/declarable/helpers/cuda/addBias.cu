@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -84,7 +86,7 @@ static void addBiasCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
                                 const void* vy, const sd::LongType* yShapeInfo, void* vz,
                                 const sd::LongType* zShapeInfo, const bool isNCHW) {
   addBiasCuda<X, Y>
-      <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, isNCHW);
+  <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, isNCHW);
 }
 
 template <typename X, typename Y>
@@ -116,18 +118,15 @@ void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bia
       input.ews() == 1 && bias.ews() == 1 && input.sizeAt(1) == bias.sizeAt(0)) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias2DCudaLauncher,
                           (block.launchContext()->getCudaStream(), input.specialBuffer(), bias.specialBuffer(),
-                           output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),
+                              output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),
                           SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   } else {
     // default case
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = input.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
-
+    dim3 dims = getAddBiasDims(input.rankOf(), input.rankOf());
     BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBiasCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(),
-                           input.specialBuffer(), input.specialShapeInfo(), bias.specialBuffer(),
-                           bias.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), isNCHW),
+                          (dims.x, dims.y, dims.z, block.launchContext()->getCudaStream(),
+                              input.specialBuffer(), input.specialShapeInfo(), bias.specialBuffer(),
+                              bias.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), isNCHW),
                           SD_FLOAT_TYPES, SD_FLOAT_TYPES);
   }
   NDArray::registerSpecialUse({&output}, {&input, &bias});

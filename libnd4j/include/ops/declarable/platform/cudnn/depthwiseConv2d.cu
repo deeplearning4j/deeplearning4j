@@ -416,7 +416,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
 
-  int trueoH, trueoW;  // correct output height, width
+  sd::LongType trueoH, trueoW;  // correct output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);

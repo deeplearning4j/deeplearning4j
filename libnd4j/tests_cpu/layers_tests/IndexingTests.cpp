@@ -28,7 +28,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class IndexingTests : public testing::Test {
+class IndexingTests : public NDArrayTests {
  public:
 };
 

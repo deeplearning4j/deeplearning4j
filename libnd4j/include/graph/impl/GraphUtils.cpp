@@ -195,7 +195,6 @@ int GraphUtils::runPreprocessor(char const* input, char const* output) {
     }
     status = err;
     sd_printf("Header file %s was generated.\n", output);
-    //    sd_printf("Running build script\n%s\n", cmdline.c_str());
   } else {
     // parent
     char buffer[1024];

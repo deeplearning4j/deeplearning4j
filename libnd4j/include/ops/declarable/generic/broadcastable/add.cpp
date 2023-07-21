@@ -32,8 +32,9 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
   BROADCAST_CHECK_EMPTY(x, y, z);
+
+
 
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)

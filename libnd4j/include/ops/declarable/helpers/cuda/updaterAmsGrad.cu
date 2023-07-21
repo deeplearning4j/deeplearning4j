@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -90,7 +92,7 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
 
   for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     sd::LongType  xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
-         stHOffset = i;
+        stHOffset = i;
 
     if (!bEWS || !bOrdering) {
       shape::index2coords(i, xShapeInfo, coords);
@@ -114,11 +116,11 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                const void* vx, const sd::LongType* xShapeInfo, const void* vinv,
-                                const sd::LongType* invShapeInfo, const void* vinm, const sd::LongType* inmShapeInfo,
-                                const void* vinh, const sd::LongType* inhShapeInfo, void* vz,
-                                const sd::LongType* zShapeInfo, void* vstV, const sd::LongType* stvShapeInfo,
+void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                                const void* vinv, const sd::LongType* invShapeInfo, const void* vinm,
+                                const sd::LongType* inmShapeInfo, const void* vinh, const sd::LongType* inhShapeInfo,
+                                void* vz, const sd::LongType* zShapeInfo, void* vstV, const sd::LongType* stvShapeInfo,
                                 void* vstM, const sd::LongType* stmShapeInfo, void* vstH,
                                 const sd::LongType* sthShapeInfo, const double dLr, const double dBeta1,
                                 const double dBeta2, const double dEpsilon, const int nIteration) {
@@ -132,7 +134,7 @@ void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
   }
   const T iteration = static_cast<T>(nIteration);
 
-  amsGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
+  amsGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vinh, inhShapeInfo, vz, zShapeInfo, vstV, stvShapeInfo,
       vstM, stmShapeInfo, vstH, sthShapeInfo, lr, beta1, beta2, epsilon, iteration);
 }
@@ -143,19 +145,16 @@ void updaterAmsGrad(sd::LaunchContext* context, const NDArray& gradient, const N
                     NDArray& stateM, NDArray& stateH, const double dLr, const double dBeta1, const double dBeta2,
                     const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "amsGradUpdater");
-
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = updaterDims(gradient.lengthOf());
   NDArray::prepareSpecialUse({&update, &stateV, &stateM, &stateH}, {&gradient, &initStateV, &initStateM, &initStateH});
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), amsGradUpdaterCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
-       initStateV.specialBuffer(), initStateV.specialShapeInfo(), initStateM.specialBuffer(),
-       initStateM.specialShapeInfo(), initStateH.specialBuffer(), initStateH.specialShapeInfo(), update.specialBuffer(),
-       update.specialShapeInfo(), stateV.specialBuffer(), stateV.specialShapeInfo(), stateM.specialBuffer(),
-       stateM.specialShapeInfo(), stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dBeta1, dBeta2, dEpsilon,
-       nIteration),
+      (launchDims.y, launchDims.x,launchDims.z, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+          initStateV.specialBuffer(), initStateV.specialShapeInfo(), initStateM.specialBuffer(),
+          initStateM.specialShapeInfo(), initStateH.specialBuffer(), initStateH.specialShapeInfo(), update.specialBuffer(),
+          update.specialShapeInfo(), stateV.specialBuffer(), stateV.specialShapeInfo(), stateM.specialBuffer(),
+          stateM.specialShapeInfo(), stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dBeta1, dBeta2, dEpsilon,
+          nIteration),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&update, &stateV, &stateM, &stateH}, {&gradient, &initStateV, &initStateM, &initStateH});
 

@@ -73,7 +73,6 @@ static void destroyHandle_(void* handle) {
 }
 
 CublasHelper::CublasHelper() {
-  // sd_printf("Initializing cuBLAS\n","");
   auto numDevices = AffinityManager::numberOfDevices();
   auto currentDevice = AffinityManager::currentDeviceId();
   _cache.resize(numDevices);

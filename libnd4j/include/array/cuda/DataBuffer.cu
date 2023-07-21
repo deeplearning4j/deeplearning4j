@@ -66,33 +66,25 @@ void DataBuffer::expand(const uint64_t size) {
 }
 
 void DataBuffer::showBufferLimited() {
-#if defined(DEBUG_VEDA_LOGS)
-  float* x = (float*)_primaryBuffer;
-  size_t size = getLenInBytes();
-  size = size > 80 ? 80 : 0;
-  sd_debug("cpu: %p\n", (void*)x);
-  for (int i = 0; i < size / sizeof(float); i++) sd_debug("%f, ", x[i]);
-  sd_debug("%s", "\n");
-#endif
+
 }
 
 void DataBuffer::showCounters(const char* msg1, const char* msg2) {
-#if defined(HAVE_VEDA) && defined(DEBUG_VEDA_LOGS)
   sd_debug("%s %s || primary %p special %p :: wP: %d wS: %d rP: %d rS: %d\n", msg1, msg2, _primaryBuffer,
            _specialBuffer, (int)_writePrimary.load(), (int)_writeSpecial.load(), (int)_readPrimary.load(),
            (int)_readSpecial.load());
-#endif
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
   if (_specialBuffer == nullptr && getLenInBytes() > 0) {
     auto deviceId = sd::AffinityManager::currentDeviceId();
 
-    if (_workspace == nullptr)
+    if (_workspace == nullptr) {
       if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
         throw sd::allocation_exception::build("Requested amount exceeds device limits",
                                               sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                               getLenInBytes());
+    }
 
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
@@ -100,7 +92,18 @@ void DataBuffer::allocateSpecial() {
     if (_workspace == nullptr) {
       sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
+
     }
+  } else if(getLenInBytes() == 0) {
+    std::string errorMessage;
+    errorMessage += "DataBuffer::allocateSpecial: ";
+    errorMessage += "Special buffer is already allocated";
+    errorMessage += " or length is 0";
+    errorMessage += "Length is: ";
+    errorMessage += std::to_string(getLenInBytes());
+    errorMessage += "Special buffer is nullptr : ";
+    errorMessage += std::to_string(_specialBuffer == nullptr);
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 }
 
@@ -176,10 +179,16 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
                                 const sd::LongType offsetOther) {  // copies only to special buffer
 
-  if (other._primaryBuffer == nullptr && other._specialBuffer == nullptr) return;
+  if (other._primaryBuffer == nullptr && other._specialBuffer == nullptr) {
+    return;
+  }
 
-  if (sizeToCopyinBytes == 0) sizeToCopyinBytes = other.getLenInBytes();
-  if (sizeToCopyinBytes == 0) return;
+  if (sizeToCopyinBytes == 0) {
+    sizeToCopyinBytes = other.getLenInBytes();
+  }
+  if (sizeToCopyinBytes == 0) {
+    return;
+  }
 
   if (other.isPrimaryActual()) {
     auto res = cudaMemcpy(
@@ -237,6 +246,8 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setToZeroBuffers(const bool both) {
+  if(getLenInBytes() < 1 || special() == nullptr)
+    return;
   cudaMemsetAsync(special(), 0, getLenInBytes(), *LaunchContext::defaultContext()->getCudaStream());
   auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
   if (res != 0) throw cuda_exception::build("DataBuffer::setToZeroBuffers: streamSync failed!", res);

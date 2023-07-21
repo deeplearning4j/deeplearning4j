@@ -31,6 +31,7 @@
 #include <numeric>
 
 #include "../MmulHelper.h"
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 
@@ -211,10 +212,10 @@ static SD_KERNEL void usualCudaDot(const sd::LongType length, const double alpha
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T1, typename T2, typename T3>
-SD_HOST static void usualDot(const dim3& blocksPerGrid, const dim3& threadsPerBlock, cudaStream_t* stream,
+SD_HOST static void usualDot(const dim3& launchDims, cudaStream_t* stream,
                              const sd::LongType length, const double alpha, const void* vX, const sd::LongType incx,
                              const void* vY, const sd::LongType incy, const double beta, void* vZ) {
-  usualCudaDot<T1, T2, T3><<<blocksPerGrid, threadsPerBlock, length * sizeof(T3) + 128, *stream>>>(
+  usualCudaDot<T1, T2, T3><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
       length, alpha, vX, incx, vY, incy, beta, vZ);
 }
 
@@ -266,18 +267,12 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
   if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (C->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(int) * 6 + 128;  // 6 = aRank + bRank + cRank
-
+    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
     NDArray::prepareSpecialUse({C}, {A, B});
-    // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, stream,
-    // A->specialBuffer(), A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
-    // C->special(), 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                 (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->specialBuffer(),
-                                  A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
-                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
+                                 (dims.y, dims.x, dims.z, stream, A->specialBuffer(),
+                                     A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
+                                     C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                  SD_NUMERIC_TYPES)
     NDArray::registerSpecialUse({C}, {A, B});
 
@@ -406,17 +401,15 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
   if (!typeDouble && !typeFloat) {
-    const int threadsPerBlock = SD_MAX_NUM_THREADS;
-    const int blocksPerGrid = (M + threadsPerBlock - 1) / threadsPerBlock;
-
+    dim3 dims = getGemVDims(M);
     NDArray::prepareSpecialUse({Y}, {A, X});
-    // BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (blocksPerGrid, threadsPerBlock, stream,
-    // A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(), X->specialShapeInfo(), Y->specialBuffer(),
-    // Y->special(), incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
+
+    const int blocksPerGrid = dims.x;
+    const int threadsPerBlock = dims.y;
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, usualGemv,
-        (blocksPerGrid, threadsPerBlock, stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
-         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
+        (blocksPerGrid,threadsPerBlock,stream, A->specialBuffer(), A->specialShapeInfo(), X->specialBuffer(),
+            X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
         SD_NUMERIC_TYPES)
     NDArray::registerSpecialUse({Y}, {A, X});
 
@@ -497,18 +490,14 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
   cudaStream_t* stream = X->getContext()->getCudaStream();
 
-  dim3 threadsPerBlock(512);
-  dim3 blocksPerGrid(1);
-  if (length > 512) threadsPerBlock.x = math::sd_ceil<double, int>(static_cast<double>(length) / 512);
+  dim3 dims = getMMulDims(length,DataTypeUtils::sizeOf(zType));
 
   NDArray::prepareSpecialUse({Z}, {X, Y});
 
-  // BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (blocksPerGrid, threadsPerBlock, stream, length, alpha,
-  // X->specialBuffer(), incx, Y->specialBuffer(), incy, beta, Z->specialBuffer()), SD_NUMERIC_TYPES, SD_NUMERIC_TYPES,
-  // SD_FLOAT_TYPES);
+
   BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot,
-                               (blocksPerGrid, threadsPerBlock, stream, length, alpha, X->specialBuffer(), incx,
-                                Y->specialBuffer(), incy, beta, Z->specialBuffer()),
+                               (dims, stream, length, alpha, X->specialBuffer(), incx,
+                                   Y->specialBuffer(), incy, beta, Z->specialBuffer()),
                                SD_NUMERIC_TYPES)
 
   auto cudaResult = cudaStreamSynchronize(*stream);
@@ -623,10 +612,12 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   const sd::LongType  bRank = B->rankOf();
 
   // input ranks validation
-  if (aRank > bRank && bRank != 2)
+  if (aRank > bRank && bRank != 2) {
     THROW_EXCEPTION("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
-  else if (bRank > aRank && aRank != 2)
+  }
+  else if (bRank > aRank && aRank != 2) {
     THROW_EXCEPTION("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
+  }
   else if (aRank == bRank) {
     for (int i = 0; i < aRank - 2; ++i)
       if (A->sizeAt(i) != B->sizeAt(i))
@@ -634,10 +625,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
             "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
   }
 
-  if (A->sizeAt(-1) != B->sizeAt(-2))
-    THROW_EXCEPTION(
-        "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
-
+  if (A->sizeAt(-1) != B->sizeAt(-2)) {
+    THROW_EXCEPTION("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
+  }
   // validation of C array
   std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
   cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
@@ -665,26 +655,39 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
   const sd::LongType  *aBatchDims(nullptr), *bBatchDims(nullptr), *cBatchDims(nullptr);
 
+  std::vector<sd::LongType> aDimsVec = {aMaxis,aKaxis};
+  std::vector<sd::LongType> *aDims = ShapeUtils::evalDimsToExclude(aRank, 2,aDimsVec.data());
+
+  std::vector<sd::LongType> bDimsVec = {bKaxis, bNaxis};
+  std::vector<sd::LongType> *bDims =  ShapeUtils::evalDimsToExclude(bRank,2, bDimsVec.data());
+
+
+  std::vector<sd::LongType> cDimsVec = {cMaxis,2, cNaxis};
+  std::vector<sd::LongType> *cDims = ShapeUtils::evalDimsToExclude(cRank, cDimsVec.size(),cDimsVec.data());
   if (aRank > 2)
     aBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(aRank, {aMaxis, aKaxis}).data(), (aRank - 2) * sizeof(sd::LongType)));
+        aDims->data(), (aRank - 2) * sizeof(sd::LongType)));
   if (bRank > 2)
     bBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(bRank, {bKaxis, bNaxis}).data(), (bRank - 2) * sizeof(sd::LongType)));
+        bDims->data(), (bRank - 2) * sizeof(sd::LongType)));
   if (cRank > 2)
     cBatchDims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(
-        ShapeUtils::evalDimsToExclude(cRank, {cMaxis, cNaxis}).data(), (cRank - 2) * sizeof(sd::LongType)));
+        cDims->data(), (cRank - 2) * sizeof(sd::LongType)));
 
   NDArray::prepareSpecialUse({C}, {A, B});
   BUILD_SINGLE_SELECTOR_THRICE(
       A->dataType(), batchedGemm,
       (blocksPerGrid, threadsPerBlock, sharedMem, A->getContext()->getCudaStream(), A->specialBuffer(),
-       A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(), C->specialShapeInfo(),
-       aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
+          A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(), C->specialShapeInfo(),
+          aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
       SD_NUMERIC_TYPES)
   NDArray::registerSpecialUse({C}, {A, B});
 
   manager.synchronize();
+
+  delete aDims;
+  delete bDims;
+  delete cDims;
 
   return C;
 }

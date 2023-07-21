@@ -19,8 +19,6 @@
 //
 //  @author sgazeos@gmail.com
 //
-#include <ops/declarable/helpers/random.h>
-//#include <NativeOps.h>
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
 #include <graph/Context.h>
@@ -28,9 +26,12 @@
 #include <helpers/PointersManager.h>
 #include <helpers/RandomLauncher.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/random.h>
 
 #include <memory>
 #include <vector>
+
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 namespace ops {
@@ -57,7 +58,6 @@ T SD_DEVICE gammaLess(T const* U, sd::LongType index, sd::LongType maxLength, T 
   for (;;) {
     auto u = (indexV < maxLength) ? U[indexV++] : U[0];
     if (indexV >= maxLength) indexV = 0LL;
-    //            math::atomics::sd_atomicAdd(index, 1LL);
     if (u <= a / c)
       rawX = -T(2.f) * math::p_log(T(1.f) - T(0.5f) * math::p_pow(c * u, underAlpha));
     else
@@ -92,17 +92,13 @@ template <typename T>
 T SD_DEVICE gammaGreat(T const* U, sd::LongType index, sd::LongType maxLength, T const alpha, T const beta) {
   auto decreasedAlpha = alpha - T(1.f / 3.f);
   auto c = T(1.) / math::p_sqrt(T(9.f) * decreasedAlpha);
-  //        static auto index = 0LL;
   auto indexV = index;
   T x;
   auto normalDistributed = [U, maxLength](sd::LongType& index) {
     auto v1 = index < maxLength ? U[index++] : U[0];
     if (index >= maxLength) index = 0LL;
-    //            math::atomics::sd_atomicAdd(index, 1LL);
     auto v2 = index < maxLength ? U[index++] : U[0];
     if (index >= maxLength) index = 0LL;
-    //            math::atomics::sd_atomicAdd(index, 1LL);
-
     return math::p_cos(T(2.f * 3.141592f) * v2) * math::p_sqrt(T(-2.f) * math::p_log(v1));
   };
 
@@ -116,8 +112,6 @@ T SD_DEVICE gammaGreat(T const* U, sd::LongType index, sd::LongType maxLength, T
 
     auto u = U[indexV++];
     if (indexV >= maxLength) indexV = 0LL;
-    //            math::atomics::sd_atomicAdd(index, 1LL);
-
     if (u < T(1.f) - T(.0331f) * (x * x) * (x * x)) break;  // return (d * v / b);
     if (log(u) < 0.5f * x * x + decreasedAlpha * (1. - normalizedVar + math::p_log(normalizedVar))) break;
   }
@@ -148,8 +142,6 @@ static SD_KERNEL void fillGammaKernel(T const* uList, sd::LongType uLength, T co
 
   for (auto k = blockIdx.x; k < (int)outLength; k += gridDim.x) {
     auto pos = k * aLength;
-    //            auto u = uList[k]; // this is a vector
-    // sd::LongType index = k;
     for (auto e = threadIdx.x; e < (int)aLength; e += blockDim.x) {
       auto aIndex = shape::getIndexOffset(e, alphaShape);
       auto bIndex = betaShape ? shape::getIndexOffset(e, betaShape) : -1LL;
@@ -182,8 +174,6 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
 
     copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
     copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
-    //            if (!copyAlpha->isActualOnDevice()) copyAlpha->syncToDevice();
-    //            if (!copyBeta->isActualOnDevice()) copyBeta->syncToDevice();
   }
 
   auto stream = context->getCudaStream();
@@ -192,7 +182,8 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
   // fill up uniform with given length
   RandomLauncher::fillUniform(context, rng, &uniform, 0.0000000001, 0.9999999999);
   uniform.syncToDevice();
-  fillGammaKernel<T><<<128, 128, 256, *stream>>>(
+  dim3 launchDims = getLaunchDims("random_gamma");
+  fillGammaKernel<T><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
       uniform.dataBuffer()->specialAsT<T>(), shift, copyAlpha->dataBuffer()->specialAsT<T>(),
       copyAlpha->specialShapeInfo(), beta ? copyBeta->dataBuffer()->specialAsT<T>() : (T const*)nullptr,
       beta ? copyBeta->specialShapeInfo() : (sd::LongType const*)nullptr, output->dataBuffer()->specialAsT<T>(),
@@ -269,7 +260,8 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
   auto stream = context->getCudaStream();
   // fill up uniform with given length
   RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
-  fillPoissonKernel<T><<<128, 256, 128, *stream>>>(uniform.dataBuffer()->specialAsT<T>(), uniform.lengthOf(),
+  dim3 launchDims = getLaunchDims("random_poisson");
+  fillPoissonKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(uniform.dataBuffer()->specialAsT<T>(), uniform.lengthOf(),
                                                    lambda->dataBuffer()->specialAsT<T>(), lambda->specialShapeInfo(),
                                                    output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
 }
@@ -327,7 +319,8 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     }
     auto outputBuf = output->dataBuffer()->specialAsT<T>();
     auto outputShape = output->specialShapeInfo();
-    fillUniformKernel<T><<<128, 128, 128, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);
+    dim3 launchDims = getLaunchDims("random_uniform");
+    fillUniformKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);
 
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {

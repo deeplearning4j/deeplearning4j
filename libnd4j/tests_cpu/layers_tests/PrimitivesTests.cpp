@@ -51,7 +51,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class PrimitivesTests : public testing::Test {
+class PrimitivesTests : public NDArrayTests {
  public:
   PrimitivesTests() {}
 };

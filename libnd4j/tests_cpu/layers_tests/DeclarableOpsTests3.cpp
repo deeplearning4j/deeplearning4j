@@ -27,7 +27,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests3 : public testing::Test {
+class DeclarableOpsTests3 : public NDArrayTests {
  public:
   DeclarableOpsTests3() {
     //
@@ -459,10 +459,6 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
 
   for (int e = 0; e < 3; e++) {
     auto z = result.at(e);
-
-    //        exp->printIndexedBuffer("e");
-    //        z->printIndexedBuffer("z");
-
     ASSERT_TRUE(exp->isSameShape(z));
     ASSERT_TRUE(exp->equalsTo(z));
   }
@@ -1053,9 +1049,8 @@ TEST_F(DeclarableOpsTests3, betainc_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto output = result.at(0);
+  ASSERT_TRUE(expected.equalsTo(*output,1e-2));
 
-  ASSERT_TRUE(expected.isSameShape(output));
-  ASSERT_TRUE(expected.equalsTo(output, 1e-2));
 }
 
 ///////////////////////////////////////////////////////////////////

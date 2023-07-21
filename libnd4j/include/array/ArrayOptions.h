@@ -184,8 +184,7 @@ SD_INLINE SD_HOST_DEVICE sd::DataType ArrayOptions::dataType(const sd::LongType 
     else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF32))
       return sd::DataType ::UTF32;
     else {
-      // shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape",
-      // const_cast<sd::LongType*>(shapeInfo));
+
 #ifndef __CUDA_ARCH__
       THROW_EXCEPTION("Bad datatype A");
 #endif

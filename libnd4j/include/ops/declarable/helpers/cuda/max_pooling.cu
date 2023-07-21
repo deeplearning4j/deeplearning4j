@@ -30,7 +30,7 @@ template <typename Z>
 static SD_KERNEL void indicesFiller(void* vz, sd::LongType const* zShapeInfo, sd::LongType part, sd::LongType bSize) {
   auto z = reinterpret_cast<Z*>(vz);
 
-  for (int b = blockIdx.x; b < bSize; b += gridDim.x) {
+  for (sd::LongType b = blockIdx.x; b < bSize; b += gridDim.x) {
     for (sd::LongType e = threadIdx.x; e < part; e += blockDim.x) {
       z[shape::getIndexOffset(e + b * part, zShapeInfo)] = static_cast<Z>(e);
     }
@@ -55,10 +55,10 @@ static void maxPoolingFunctor_(sd::graph::Context& block, NDArray* input, NDArra
   LongType oY = 0;
   LongType oX = 0;
 
-  const int bSize = input->sizeAt(0);
-  const int inD = input->sizeAt(1);
-  const int inY = input->sizeAt(2);
-  const int inX = input->sizeAt(3);
+  const sd::LongType bSize = input->sizeAt(0);
+  const sd::LongType inD = input->sizeAt(1);
+  const sd::LongType inY = input->sizeAt(2);
+  const sd::LongType inX = input->sizeAt(3);
 
   const bool isSameMode = params[8] != 0;
 

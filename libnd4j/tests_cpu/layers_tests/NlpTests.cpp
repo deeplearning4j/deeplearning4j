@@ -29,7 +29,7 @@
 
 using namespace sd;
 
-class NlpTests : public testing::Test {
+class NlpTests : public NDArrayTests {
  public:
   NlpTests() {
     printf("\n");

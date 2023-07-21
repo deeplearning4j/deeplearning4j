@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -101,7 +103,6 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
     const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
 
     z[zOffset] = x[xOffset];
-    // printf("z[%lld] = x[%lld] = %f\n", zOffset, xOffset, (float) z[zOffset]);
   }
 }
 
@@ -119,10 +120,8 @@ static void gatherNDCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 void gatherND(sd::LaunchContext *context, NDArray &input, NDArray &indices, NDArray &output) {
   const int maxRank = sd::math::sd_max<int>(indices.rankOf(), sd::math::sd_max<int>(input.rankOf(), output.rankOf()));
 
-  const int threadsPerBlock = 256;
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = 8 * threadsPerBlock * maxRank + 128;
 
+  dim3 gatherNdDims = getGatherNd(output.lengthOf(),maxRank);
   const auto xType = input.dataType();
   const auto yType = indices.dataType();
 
@@ -130,7 +129,7 @@ void gatherND(sd::LaunchContext *context, NDArray &input, NDArray &indices, NDAr
 
   NDArray::prepareSpecialUse({&output}, {&input, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, gatherNDCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
+                        (gatherNdDims.y, gatherNdDims.x, gatherNdDims.z, context->getCudaStream(), input.specialBuffer(),
                          input.specialShapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(),
                          output.specialBuffer(), output.specialShapeInfo()),
                         SD_COMMON_TYPES, SD_INDEXING_TYPES);

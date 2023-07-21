@@ -22,6 +22,8 @@
 #include <array/NDArrayFactory.h>
 #include <ops/declarable/helpers/histogram.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -114,12 +116,11 @@ template <typename X, typename Z>
 static void histogram_(sd::LaunchContext *context, void *xBuffer, const sd::LongType *xShapeInfo,
                        const sd::LongType *dxShapeInfo, void *zBuffer, const sd::LongType *zShapeInfo,
                        sd::LongType numBins, void *min_val, void *max_val) {
-  int numThreads = 256;
-  int numBlocks = sd::math::sd_max<int>(256, sd::math::sd_min<int>(1, shape::length(xShapeInfo) / numThreads));
-  int workspaceSize = numBlocks * numBins;
+  dim3 histogramDims = getHistogramDims(shape::length(xShapeInfo),numBins);
+  int workspaceSize = histogramDims.x * numBins;
   auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
 
-  histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(
+  histogramKernel<X, Z><<<histogramDims.x, histogramDims.y, histogramDims.z, *context->getCudaStream()>>>(
       xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.specialBuffer(), context->getReductionPointer(), numBins,
       reinterpret_cast<X *>(min_val), reinterpret_cast<X *>(max_val));
 

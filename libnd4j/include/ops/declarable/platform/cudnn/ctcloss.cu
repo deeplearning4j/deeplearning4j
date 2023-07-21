@@ -123,7 +123,7 @@ PLATFORM_IMPL(ctc_loss, ENGINE_CUDA) {
 
 template <typename T>
 bool checkLabelLength(const NDArray &labelLengthArr) {
-  // check label lengthes
+  // check label lengths
   auto lenBatch = labelLengthArr.lengthOf();
   for (int i = 0; i < lenBatch; i++) {
     // The labelLengths is greater than 256.

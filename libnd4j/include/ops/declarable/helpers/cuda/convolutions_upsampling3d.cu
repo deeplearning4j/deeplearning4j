@@ -24,6 +24,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 
@@ -86,14 +88,13 @@ void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& in
                                     const LongType factorH, const LongType factorW, const bool isNCDHW) {
   PointersManager manager(block.launchContext(), "upsampling3d");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = output.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
+
+  dim3 getUpSampling = getUpsamplingDims(output.lengthOf(),output.rankOf());
 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(
       input.dataType(), upsampling3dCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.specialBuffer(),
+      (getUpSampling.x, getUpSampling.y, getUpSampling.z, block.launchContext()->getCudaStream(), input.specialBuffer(),
        input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorD, factorH, factorW, isNCDHW),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});

@@ -27,7 +27,7 @@
 
 using namespace sd;
 
-class ExtraArgumentsTests : public testing::Test {
+class ExtraArgumentsTests : public NDArrayTests {
  public:
   ExtraArgumentsTests() {
     printf("\n");

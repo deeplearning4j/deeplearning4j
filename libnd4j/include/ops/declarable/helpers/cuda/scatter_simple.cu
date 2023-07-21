@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -54,14 +56,15 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const sd::LongType* xTadShap
 template <typename X, typename Y>
 void scatterSimple_(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
                     const NDArray& indices, const std::vector<sd::LongType>& dimensions) {
-  auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions);
+  auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(),dimensions.size(),dimensions.data());
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
 
   auto xLength = shape::length(packX->primaryShapeInfo());
   auto iLength = indices.lengthOf();
   auto uLength = updates.lengthOf();
 
-  scatterSimpleKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("scatter_simple");
+  scatterSimpleKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
       input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, packX->numberOfTads(),
       indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(),
       uLength);

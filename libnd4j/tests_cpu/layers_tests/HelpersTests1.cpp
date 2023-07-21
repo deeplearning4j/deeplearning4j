@@ -38,7 +38,7 @@
 
 using namespace sd;
 
-class HelpersTests1 : public testing::Test {
+class HelpersTests1 : public NDArrayTests {
  public:
   HelpersTests1() { std::cout << std::endl << std::flush; }
 };

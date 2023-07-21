@@ -103,8 +103,8 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
-    gradO->reduceAlongDimension(reduce::Sum, *gradBR, gradOaxesForDot, false);  // sum over bS, oH, oW
+    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}));
+    gradO->reduceAlongDimension(reduce::Sum, *gradBR, &gradOaxesForDot, false);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;
   }
 

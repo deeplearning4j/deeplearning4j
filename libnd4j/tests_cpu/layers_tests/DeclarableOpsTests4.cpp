@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests4 : public testing::Test {
+class DeclarableOpsTests4 : public NDArrayTests {
  public:
   DeclarableOpsTests4() {
     printf("\n");
@@ -41,7 +41,7 @@ class DeclarableOpsTests4 : public testing::Test {
 };
 
 template <typename T>
-class TypedDeclarableOpsTests4 : public testing::Test {
+class TypedDeclarableOpsTests4 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests4() {
     printf("\n");
@@ -1521,8 +1521,6 @@ TEST_F(DeclarableOpsTests4, meshgrid_test1) {
   auto out1 = results.at(1);
   auto out2 = results.at(2);
 
-  // out0->printIndexedBuffer();
-
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp0.isSameShape(out0));
   ASSERT_TRUE(exp0.equalsTo(out0));
@@ -1968,12 +1966,10 @@ TEST_F(DeclarableOpsTests4, tri_test1) {
 
   auto expected = NDArrayFactory::create<float>(
       'c', {rows, cols}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 0.f, 0.f});
-  expected.printIndexedBuffer("expected");
   sd::ops::tri op;
   auto results = op.evaluate({}, {}, {rows, cols});
   auto output = results.at(0);
 
-  output->printIndexedBuffer("output");
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -1989,7 +1985,6 @@ TEST_F(DeclarableOpsTests4, tri_test2) {
 
   auto expected = NDArrayFactory::create<float>(
       'c', {rows, cols}, {1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f, 1.f, 0.f, 1.f, 1.f, 1.f, 1.f, 1.f});
-  expected.printIndexedBuffer("expected");
   sd::ops::tri op;
   auto results = op.evaluate({}, {}, {rows, cols, diag});
   auto output = results.at(0);
@@ -2098,11 +2093,9 @@ TEST_F(DeclarableOpsTests4, tri_test7) {
 TEST_F(DeclarableOpsTests4, triu_test1) {
   auto input = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
   auto expected = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 0, 5, 6, 0, 0, 9, 0, 0, 0});
-  expected.printIndexedBuffer("expected");
   sd::ops::triu op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
-  output->printIndexedBuffer("output");
 
   ASSERT_EQ(sd::Status::OK, results.status());
 

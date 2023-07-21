@@ -65,8 +65,8 @@ DECLARE_SHAPE_FN(broadcast_to) {
   auto inputShapeInfo = inputShape->at(0);
   auto shape = INPUT_VARIABLE(1);
 
-  const int inputRank = inputShapeInfo[0];
-  const int shapeRank = shape->rankOf();
+  const sd::LongType inputRank = inputShapeInfo[0];
+  const sd::LongType shapeRank = shape->rankOf();
   const sd::LongType shapeLen = shape->lengthOf();
 
   REQUIRE_TRUE(shapeRank <= 1, 0, "BROADCAST_TO op: rank of input shape array should be <= 1, bit got %i instead !",
@@ -75,6 +75,17 @@ DECLARE_SHAPE_FN(broadcast_to) {
                "BROADCAST_TO op: rank of input shape array should be <= length of shape array, bot got %i and %i "
                "correspondingly !",
                inputRank, shapeLen);
+
+  if(shape->isScalar()) {
+    std::vector<sd::LongType> outShape;
+    outShape.reserve(1);
+    auto firstVal = shape->cast(sd::DataType::INT64).e<sd::LongType>(0);
+    outShape[0] = firstVal;
+    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
+                                                                           shape::order(inputShapeInfo), outShape);
+    return SHAPELIST(outShapeInfo);
+
+  }
 
   std::vector<sd::LongType> shapeBuff = shape->getBufferAsVector<sd::LongType>();
   std::vector<sd::LongType> outShape(shapeBuff.begin(), shapeBuff.end());
@@ -86,6 +97,7 @@ DECLARE_SHAPE_FN(broadcast_to) {
 
   auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
                                                                          shape::order(inputShapeInfo), outShape);
+  shape::printShapeInfo(outShapeInfo);
   return SHAPELIST(outShapeInfo);
 }
 

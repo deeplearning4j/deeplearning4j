@@ -28,7 +28,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class ListOperationsTests : public testing::Test {};
+class ListOperationsTests : public NDArrayTests {};
 
 TEST_F(ListOperationsTests, BasicTest_Write_1) {
   NDArrayList list(5);

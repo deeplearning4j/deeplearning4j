@@ -27,6 +27,7 @@
 #include <system/op_boilerplate.h>
 
 #include "../triangular_solve.h"
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 namespace ops {
@@ -148,15 +149,18 @@ template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool unitsOnDiag, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
-  auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), {-2, -1});
-  auto rightTads = ConstantTadHelper::getInstance().tadForDimensions(rightInput->shapeInfo(), {-2, -1});
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
+
+  std::vector<sd::LongType> dims = {-2, -1};
+  auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), &dims);
+  auto rightTads = ConstantTadHelper::getInstance().tadForDimensions(rightInput->shapeInfo(), &dims);
+  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dims);
 
   auto stream = context->getCudaStream();
   T const* leftBuf = reinterpret_cast<T const*>(leftInput->specialBuffer());
   T const* rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
   T* outputBuf = reinterpret_cast<T*>(output->specialBuffer());
-  triangularSolveKernel<T><<<128, 128, 256, *stream>>>(
+  dim3 triangularSolveDims = getLaunchDims("triangular_solve");
+  triangularSolveKernel<T><<<triangularSolveDims.y, triangularSolveDims.x, triangularSolveDims.z, *stream>>>(
       leftBuf, leftInput->specialShapeInfo(), rightBuf, rightInput->specialShapeInfo(), lower, unitsOnDiag, outputBuf,
       output->specialShapeInfo(), leftTads->specialShapeInfo(), leftTads->specialOffsets(), rightTads->specialShapeInfo(),
       rightTads->specialOffsets(), outputTads->specialShapeInfo(), outputTads->specialOffsets(), leftTads->numberOfTads());
@@ -185,7 +189,7 @@ void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, con
 }
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
                       (sd::LaunchContext * context, NDArray const& leftInput, NDArray const& rightInput,
-                       bool const lower, bool const unitsOnDiag, NDArray& output),
+                          bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
 
 sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower,
@@ -237,20 +241,21 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, sd::LongType
 template <typename T>
 static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
                                      NDArray* output) {
-  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {-2, -1});
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
+  std::vector<sd::LongType> dims = {-2, -1};
+  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims);
+  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
   auto stream = context->getCudaStream();
   auto inputBuf = reinterpret_cast<T const*>(input->specialBuffer());
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
-
+  dim3 launchDims = getLaunchDims("triangular_solve");
   if (lower) {
-    lowerAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+    lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
                                                       inputTads->specialShapeInfo(), inputTads->specialOffsets(),
                                                       outputTads->specialShapeInfo(), outputTads->specialOffsets());
   } else {
-    upperAdjointKernel<T><<<128, 256, 256, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
+    upperAdjointKernel<T><<<launchDims.y, launchDims.x,launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
                                                       inputTads->specialShapeInfo(), inputTads->specialOffsets(),
                                                       outputTads->specialShapeInfo(), outputTads->specialOffsets());
   }

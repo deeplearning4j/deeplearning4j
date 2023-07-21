@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/roll.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -267,6 +269,7 @@ template <typename T>
 static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool inplace) {
   if (!inplace) output->assign(input);
 
+  dim3 launchDims = getLaunchDims("roll");
   auto fullLen = input->lengthOf();
   int actualShift = shift;  // % fullLen; // shift already non-negative then
   if (actualShift < 0) {
@@ -279,19 +282,19 @@ static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool 
     int remainShift = fullLen % actualShift;
 
     // stage 1) swap last actualShift elements with first ones.
-    rollKernelLinearStage1<T><<<1, 1, 1024, *(output->getContext()->getCudaStream())>>>(
+    rollKernelLinearStage1<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
         output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         fullLen, actualShift);
 
     // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
-    rollKernelLinearStage2<T><<<1, 1, 1024, *(output->getContext()->getCudaStream())>>>(
+    rollKernelLinearStage2<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
         output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         fullLen, actualShift, shiftCount);
 
     // FIXME: no parallelism here :(
     // stage 3) swap remainer of items.
     if (remainShift && shiftCount)
-      rollKernelLinearStage3<T><<<1, 1, 1024, *(output->getContext()->getCudaStream())>>>(
+      rollKernelLinearStage3<T><<<launchDims.y,launchDims.x,launchDims.z, *(output->getContext()->getCudaStream())>>>(
           output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
           fullLen, actualShift, remainShift);
   }

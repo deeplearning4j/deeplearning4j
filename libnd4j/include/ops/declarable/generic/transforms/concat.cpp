@@ -154,7 +154,6 @@ DECLARE_SHAPE_FN(concat) {
       if (shape::isEmpty(inputShape->at(i))) {
         arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
       } else {
-        shape::printShapeInfo(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
         arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
       }
     } else {
@@ -207,7 +206,6 @@ DECLARE_SHAPE_FN(concat) {
 
   sd::LongType* outShapeInfo(nullptr);
   COPY_SHAPE(arrShapes.at(0), outShapeInfo);
-  shape::printShapeInfo(outShapeInfo);
   // case when we have only one input array
   if (numOfNonEmptyArrs == 1) {
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));

@@ -490,10 +490,6 @@ sd::Status Graph::buildGraph() {
       int tK = it->first;
       int tF = _unmappedMap.at(cntf++);
 
-      // sd_printf("tK: %i; tF: %i\n", tK, tF);
-      // for (int f = 0; f < sz; f++) {
-      //    auto node = _unmapped.at(_unmappedMap.at(f));
-
       // single-input node
       if (node->input()->size() == 1) {
         if (node->getName() == nullptr) {
@@ -1079,7 +1075,6 @@ sd::Status Graph::validateNode(Node *node) {
 
 std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
   buildGraph();
-  // sd_printf("\nRetrieving ops from the Graph and collect them...\n", "");
   std::vector<sd::ops::OpDescriptor> res;
 
   int opCnt = 0;
@@ -1123,14 +1118,11 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
     }
   }
 
-  // sd_printf("\nCollecting out Scopes...\n","");
   for (int s = 0; s < _scopes.size(); s++) {
     Scope *scope = _scopes.at(s);
-    // sd_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
     for (int n = 0; n < scope->nodes()->size(); n++) {
       Node *node = scope->nodes()->at(n);
-      // printOutNode(node);
       if (node->name() == nullptr) continue;
       std::string opNameStr;  // node->name();
       sd::ops::OpDescriptor *pOpDescriptor = nullptr;

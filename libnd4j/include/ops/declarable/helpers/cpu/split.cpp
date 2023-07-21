@@ -120,7 +120,7 @@ static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, c
   samediff::Threads::parallel_for(func, 0, input.lengthOf());
 }
 
-void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const sd::LongType axis) {
   BUILD_SINGLE_SELECTOR(input.dataType(), split_, (input, outArrs, axis), SD_COMMON_TYPES);
 }
 }  // namespace helpers

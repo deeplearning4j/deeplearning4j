@@ -1710,12 +1710,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val loc = Nd4j.getAffinityManager().getActiveLocation(in);
             if (loc != AffinityManager.Location.DEVICE && loc != AffinityManager.Location.EVERYWHERE) {
                 Nd4j.getAffinityManager().ensureLocation(in, AffinityManager.Location.DEVICE);
-                AtomicAllocator.getInstance().tickDeviceWrite(in);
             }
 
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
-                inputBuffers.put(cnt, in.data().opaqueBuffer());
+                inputBuffers.put(cnt, in.data().addressPointer());
                 inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
             }
 
@@ -1764,7 +1763,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         }
 
         cnt = 0;
-        if(opContext != null){
+        if(opContext != null) {
             for (val b: opContext.getDArguments())
                 dArgs.put(cnt++, b.toInt());
         } else {
@@ -1772,7 +1771,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 dArgs.put(cnt++, b.toInt());
         }
 
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes3(null,
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null,
                 hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
                 iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
@@ -2041,7 +2040,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return context.getOutputArrays().toArray(new INDArray[0]);
         }
 
-        val ctx = AtomicAllocator.getInstance().getDeviceContext();
 
 
         val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());

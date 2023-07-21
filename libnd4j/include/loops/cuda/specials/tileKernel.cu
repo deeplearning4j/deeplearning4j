@@ -21,6 +21,8 @@
 //
 #include <loops/special_kernels.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 static sd::LongType SD_DEVICE __noinline__ getIndexOffset_(sd::LongType index, sd::LongType const* shapeInfo) {
   return shape::getIndexOffset(index, shapeInfo);
@@ -66,7 +68,7 @@ BUILD_SINGLE_TEMPLATE(template SD_KERNEL void tileKernel,
 template <typename T>
 void tileKernelH(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
                  sd::LongType const* outputShape, sd::LongType resultLength, cudaStream_t* stream) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("tile");
   tileKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
                                                                        outputShape, resultLength);
 }
@@ -114,7 +116,7 @@ BUILD_SINGLE_TEMPLATE_TWICE(template SD_KERNEL void tileKernelDouble,
 template <typename X, typename Y>
 void tileKernelHH(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
                   sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews, cudaStream_t* stream) {
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("tile");
   tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
                                                                                 outputShape, resultLength, ews);
 }

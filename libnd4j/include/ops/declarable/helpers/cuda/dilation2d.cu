@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/dilation2d.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -110,15 +112,12 @@ static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPer
 void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,
                 const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   PointersManager manager(context, "dilation2d");
-
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(sd::LongType) * threadsPerBlock + 128;
+  dim3 dilation = getDilation(output->lengthOf(),weights->rankOf(),output->rankOf());
 
   NDArray::prepareSpecialUse({output}, {input, weights});
   BUILD_SINGLE_SELECTOR_TWICE(
       input->dataType(), dilation2dCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->specialBuffer(),
+      (dilation.y, dilation.x, dilation.z, context->getCudaStream(), input->specialBuffer(),
        input->specialShapeInfo(), weights->specialBuffer(), weights->specialShapeInfo(), output->specialBuffer(),
        output->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
       SD_FLOAT_TYPES);

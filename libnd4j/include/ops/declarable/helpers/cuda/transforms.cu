@@ -33,6 +33,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -66,23 +68,21 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const sd::LongType* 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void invertPermutationCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
-                                                  const cudaStream_t* stream, const void* vx,
+                                                  const int sharedMemory, const cudaStream_t* stream, const void* vx,
                                                   const sd::LongType* xShapeInfo, void* vz,
                                                   const sd::LongType* zShapeInfo) {
-  invertPermutationCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+  invertPermutationCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
-  const int threadsPerBlock = SD_MAX_NUM_THREADS;
-  const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 invertPermuteDims = invertPermutationDims(input.lengthOf());
   PointersManager manager(context, "invertPermutation");
 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), invertPermutationCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(),
-                         input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
+                        (invertPermuteDims.x, invertPermuteDims.y, invertPermuteDims.z,context->getCudaStream(), input.specialBuffer(),
+                            input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});
 
@@ -154,10 +154,11 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = 1024;
 
+  dim3 traceDims2 = traceDims(output.lengthOf());
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(),
-                         input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen),
+                        (traceDims2.y, traceDims2.x, traceDims2.z, context->getCudaStream(), input.specialBuffer(),
+                            input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});
 
@@ -214,13 +215,13 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * gradO.rankOf() + 128;
-
+  dim3 triuDims2 = triuDims(gradO.lengthOf(),gradO.rankOf());
   PointersManager manager(context, "triuBP");
 
   NDArray::prepareSpecialUse({&gradI}, {&gradO});
   BUILD_SINGLE_SELECTOR(gradI.dataType(), triuBPCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.specialBuffer(),
-                         gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal),
+                        (triuDims2.y, triuDims2.x, triuDims2.z, context->getCudaStream(), gradO.specialBuffer(),
+                            gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal),
                         SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&gradI}, {&gradO});
 
@@ -279,17 +280,14 @@ void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray&
       'c', gradO.getShapeAsVector(), sd::DataType::INT64,
       context);  // empty auxiliary array for storing device memory which will be used in kernel calculations
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * 2 * gradO.rankOf() + 128;
-
+  dim3 tileDims2 = tileDims(gradI.lengthOf(),gradI.rankOf());
   PointersManager manager(context, "tileBP");
 
   NDArray::prepareSpecialUse({&gradI}, {&gradO, &memBuff});
   BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBPCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.specialBuffer(),
-                         gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(),
-                         reinterpret_cast<sd::LongType*>(memBuff.specialBuffer())),
+                        (tileDims2.y, tileDims2.x, tileDims2.z, context->getCudaStream(), gradO.specialBuffer(),
+                            gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(),
+                            reinterpret_cast<sd::LongType*>(memBuff.specialBuffer())),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&gradI}, {&gradO, &memBuff});
 

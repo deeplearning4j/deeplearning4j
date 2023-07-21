@@ -32,7 +32,7 @@
 
 using namespace sd;
 
-class RNGTests : public testing::Test {
+class RNGTests : public NDArrayTests {
  private:
  public:
   long _seed = 119L;

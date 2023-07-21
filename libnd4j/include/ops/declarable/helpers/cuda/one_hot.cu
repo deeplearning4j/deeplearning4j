@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -90,16 +92,13 @@ void onehot(const sd::LaunchContext *context, const NDArray *indices, NDArray *o
   const auto xType = indices->dataType();
   const auto zType = output->dataType();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(decltype(*output->shapeInfo())) * output->rankOf() + 128;
-
+  dim3 oneHotLaunch = oneHotDims(output->lengthOf(),output->rankOf(), sizeof(decltype(*output->shapeInfo())));
   PointersManager manager(context, "onehot");
 
   NDArray::prepareSpecialUse({output}, {indices});
   BUILD_DOUBLE_SELECTOR(
       xType, zType, onehotCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices->specialBuffer(),
+      (oneHotLaunch.y, oneHotLaunch.x, oneHotLaunch.z, context->getCudaStream(), indices->specialBuffer(),
        indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), axis, depth, on, off),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
   NDArray::registerSpecialUse({output}, {indices});

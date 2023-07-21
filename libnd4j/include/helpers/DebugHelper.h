@@ -51,7 +51,7 @@ class SD_LIB_EXPORT DebugHelper {
         op += StringUtils::valueToString<int>(opType);
         op += "]";
 
-        THROW_EXCEPTION(op);
+        THROW_EXCEPTION(op.c_str());
       }
     }
   }
@@ -61,11 +61,11 @@ class SD_LIB_EXPORT DebugHelper {
     if (res != 0) {
       if (failMessage == nullptr) {
         std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res) + std::string("]");
-        THROW_EXCEPTION(op);
+        THROW_EXCEPTION(op.c_str());
       } else {
         std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) +
                          std::string("]");
-        THROW_EXCEPTION(op);
+        THROW_EXCEPTION(op.c_str());
       }
     }
   }

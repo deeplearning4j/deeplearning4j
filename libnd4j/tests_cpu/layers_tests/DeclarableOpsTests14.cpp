@@ -28,7 +28,7 @@
 
 using namespace sd;
 
-class DeclarableOpsTests14 : public testing::Test {
+class DeclarableOpsTests14 : public NDArrayTests {
  public:
   DeclarableOpsTests14() {
     printf("\n");
@@ -70,7 +70,6 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
 
 TEST_F(DeclarableOpsTests14, Multiply_test) {
   for (int k = 2; k < 10; k++) {
-    // sd_printf("k=%d\n", k);
     NDArray x = NDArrayFactory::create<double>('c', {k, 1});
     NDArray y = NDArrayFactory::create<double>('c', {k});
     NDArray e = NDArrayFactory::create<double>('c', {k, k});
@@ -124,7 +123,6 @@ TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_0) {
   sd::ops::reduce_min op;
   op.execute({&x}, {&z}, {}, {0}, {});
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_EQ(e, z);
 }
@@ -139,7 +137,6 @@ TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_1) {
   sd::ops::reduce_min op;
   op.execute({&x}, {&z}, {}, {1}, {});
 
-  // z.printIndexedBuffer("Z");
 
   ASSERT_EQ(e, z);
 }
@@ -309,18 +306,16 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
-  auto x = NDArrayFactory::create<float>('c', {1, 0});
-  auto y = NDArrayFactory::create<int>(0);
+  auto x = registerArr(NDArrayFactory::create<float>('c', {1, 0}));
+  auto y = registerArr(NDArrayFactory::create<int>(0));
   std::vector<sd::LongType> dim = {0};
-  auto e = NDArrayFactory::create<sd::LongType>('c',dim);
-
+  auto e = registerArr(NDArrayFactory::create<sd::LongType>('c',dim));
   sd::ops::argmax op;
-  auto result = op.evaluate({&x, &y}, {}, {});
+  auto result = op.evaluate({x, y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  ASSERT_EQ(e, *z);
+  ASSERT_EQ(*e, *z);
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
@@ -332,7 +327,7 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
     auto result = op.execute({&x, &y}, {&y}, {}, {}, {});
     ASSERT_TRUE(false);
   } catch (std::exception& e) {
-    
+
   }
 }
 
@@ -1258,22 +1253,23 @@ TEST_F(DeclarableOpsTests14, matmul_test36) {
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test37) {
-  NDArray a('c', {32, 12, 128, 64}, sd::DataType::FLOAT32);
-  NDArray b('c', {32, 12, 128, 64}, sd::DataType::FLOAT32);
-  NDArray c('c', {32, 12, 128, 128}, sd::DataType::FLOAT32);
-  NDArray cExp('c', {32, 12, 128, 128}, sd::DataType::FLOAT32);
 
-  a = 1;
-  b = 1;
-  cExp = 64;  // Each entry in output c is sum of 64 (1.0 x 1.0) multiplications
+  auto a = registerArr(NDArray('c', {32, 12, 128, 64}, sd::DataType::FLOAT32));
+  auto b = registerArr(NDArray('c', {32, 12, 128, 64}, sd::DataType::FLOAT32));
+  auto c = registerArr(NDArray('c', {32, 12, 128, 128}, sd::DataType::FLOAT32));
+  auto  cExp = registerArr(NDArray('c', {32, 12, 128, 128}, sd::DataType::FLOAT32));
+
+  *a = 1;
+  *b = 1;
+  *cExp = 64;  // Each entry in output c is sum of 64 (1.0 x 1.0) multiplications
 
   sd::ops::matmul op;
-  auto status = op.execute({&a, &b}, {&c}, {}, {0, 1});
+  auto status = op.execute({a, b}, {c}, {}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  ASSERT_TRUE(cExp.isSameShape(c));
-  ASSERT_TRUE(cExp.equalsTo(c));
+  ASSERT_TRUE(cExp->isSameShape(*c));
+  ASSERT_TRUE(cExp->equalsTo(*c));
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test38) {

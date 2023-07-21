@@ -31,6 +31,7 @@
 #include "../lup.h"
 #include "../solve.h"
 #include "../triangular_solve.h"
+#include "execution/cuda/LaunchDims.h"
 
 namespace sd {
 namespace ops {
@@ -51,7 +52,8 @@ static SD_KERNEL void oneOnDiagonalKernel(T* ioBuf, sd::LongType const* ioShape,
 }
 
 template <typename T>
-static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PShapeInfo, int const* permutationsBuf,
+static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PShapeInfo,
+                                                const LongType* permutationsBuf,
                                                 sd::LongType const* PTadShapeInfo, sd::LongType const* PTadSOffsets,
                                                 sd::LongType const* permutationsTadShapeInfo,
                                                 sd::LongType const* permutationsTadOffsets, sd::LongType batchNum,
@@ -61,7 +63,6 @@ static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PSh
     auto P = PBuf + PTadSOffsets[batch];
 
     for (auto row = threadIdx.x; row < rowNum; row += blockDim.x) {
-      // auto posX[] = {row};
       sd::LongType posZ[] = {row, permutations[row]};
       auto zOffset = shape::getOffset(PTadShapeInfo, posZ);
       P[zOffset] = T(1.f);
@@ -77,21 +78,23 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto leftOutput = leftInput->ulike();
   auto permuShape = rightInput->getShapeAsVector();
   permuShape.pop_back();
-  auto permutations = NDArrayFactory::create<int>('c', permuShape, context);
+  auto permutations = NDArrayFactory::create<sd::LongType>('c', permuShape, context);
   helpers::lu(context, leftInput, &leftOutput, &permutations);
   auto leftLower = leftOutput.dup();
   auto rightOutput = rightInput->ulike();
-  auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), {-2, -1});
+  std::vector<sd::LongType> dims = {-2, -1};
+  auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), &dims);
   auto stream = context->getCudaStream();
-  oneOnDiagonalKernel<T><<<128, 256, 256, *stream>>>(
+  dim3 solveDims = getLaunchDims("solve");
+  oneOnDiagonalKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
       leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad->specialShapeInfo(),
       leftLowerTad->specialOffsets(), leftLowerTad->numberOfTads(), leftLower.sizeAt(-1));
   auto P = leftOutput.ulike();
   P.nullify();
-  auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), {-2, -1});
+  auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), &dims);
   auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
-  restorePermutationsKernel<T><<<128, 256, 256, *stream>>>(
-      P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<int>(),
+  restorePermutationsKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
+      P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<sd::LongType>(),
       PTad->specialShapeInfo(), PTad->specialOffsets(), permutationsTad->specialShapeInfo(),
       permutationsTad->specialOffsets(), permutationsTad->numberOfTads(), permutations.sizeAt(-1));
   P.tickWriteDevice();
@@ -133,8 +136,9 @@ static SD_KERNEL void adjointKernel(T* output, sd::LongType batchSize, sd::LongT
 template <typename T>
 static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input});
-  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {-2, -1});
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
+  std::vector<sd::LongType> dims = {-2, -1};
+  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),&dims);
+  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
   auto stream = context->getCudaStream();
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);

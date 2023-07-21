@@ -38,29 +38,28 @@ static void conv3dCUDNN(const LaunchContext* context, const NDArray* input, cons
 
   const int numDims = 5;
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
 
-  const std::vector<sd::LongType> pads = {pD, pH, pW};
-  const std::vector<sd::LongType> filtStrides = {sD, sH, sW};
-  const std::vector<sd::LongType> dilations = {dD, dH, dW};
+  const std::vector<int> pads = {static_cast<int>(pD), static_cast<int>(pH), static_cast<int>(pW)};
+  const std::vector<int> filtStrides = {static_cast<int>(sD), static_cast<int>(sH), static_cast<int>(sW)};
+  const std::vector<int> dilations = {static_cast<int>(dD), static_cast<int>(dH), static_cast<int>(dW)};
 
-  const std::vector<sd::LongType> xShape = {bS, iC, iD, iH, iW};
-  const std::vector<sd::LongType> zShape = {bS, oC, oD, oH, oW};
-  const std::vector<sd::LongType> wShape = {oC, iC, kD, kH, kW};
-  const std::vector<sd::LongType> bShape = {1, oC, 1, 1, 1};  // {1, (isNCDHW ? oC : 1), 1, 1, (isNCDHW ? 1 : oC)};
+  const std::vector<int> xShape = {static_cast<int>(bS), static_cast<int>(iC), static_cast<int>(iD), static_cast<int>(iH), static_cast<int>(iW)};
+  const std::vector<int> zShape = {static_cast<int>(bS), static_cast<int>(oC), static_cast<int>(oD), static_cast<int>(oH), static_cast<int>(oW)};
+  const std::vector<int> wShape = {static_cast<int>(oC), static_cast<int>(iC), static_cast<int>(kD), static_cast<int>(kH), static_cast<int>(kW)};
+  const std::vector<int> bShape = {1, static_cast<int>(oC), 1, 1, 1};
 
-  const std::vector<sd::LongType> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
-                                     (sd::LongType)input->strideAt(3), (sd::LongType)input->strideAt(4)};
-  const std::vector<sd::LongType> zStrides = {(sd::LongType)output->strideAt(0), (sd::LongType)output->strideAt(1), (sd::LongType)output->strideAt(2),
-                                     (sd::LongType)output->strideAt(3), (sd::LongType)output->strideAt(4)};
-
+  const std::vector<int> xStrides = {static_cast<int>(input->strideAt(0)), static_cast<int>(input->strideAt(1)), static_cast<int>(input->strideAt(2)),
+                                     static_cast<int>(input->strideAt(3)), static_cast<int>(input->strideAt(4))};
+  const std::vector<int> zStrides = {static_cast<int>(output->strideAt(0)), static_cast<int>(output->strideAt(1)), static_cast<int>(output->strideAt(2)),
+                                     static_cast<int>(output->strideAt(3)), static_cast<int>(output->strideAt(4))};
   cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   PointersManager manager(context, __func__);
   // input descriptor
@@ -142,31 +141,29 @@ static void conv3dBpCUDNN(const LaunchContext* context, const NDArray* input, co
 
   const int numDims = 5;
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnSetStream), cudnnSetStream(*handle, *context->getCudaStream()));
+  const std::vector<int> pads = {static_cast<int>(pD), static_cast<int>(pH), static_cast<int>(pW)};
+  const std::vector<int> filtStrides = {static_cast<int>(sD), static_cast<int>(sH), static_cast<int>(sW)};
+  const std::vector<int> dilations = {static_cast<int>(dD), static_cast<int>(dH), static_cast<int>(dW)};
 
-  const std::vector<sd::LongType> pads = {pD, pH, pW};
-  const std::vector<sd::LongType> filtStrides = {sD, sH, sW};
-  const std::vector<sd::LongType> dilations = {dD, dH, dW};
+  const std::vector<int> xShape = {static_cast<int>(bS), static_cast<int>(iC), static_cast<int>(iD), static_cast<int>(iH), static_cast<int>(iW)};
+  const std::vector<int> dzShape = {static_cast<int>(bS), static_cast<int>(oC), static_cast<int>(oD), static_cast<int>(oH), static_cast<int>(oW)};
+  const std::vector<int> wShape = {static_cast<int>(oC), static_cast<int>(iC), static_cast<int>(kD), static_cast<int>(kH), static_cast<int>(kW)};
+  const std::vector<int> dbShape = {1, static_cast<int>(isNCDHW ? oC : 1), 1, 1, (int)(isNCDHW ? 1 : oC)};
 
-  const std::vector<sd::LongType> xShape = {bS, iC, iD, iH, iW};
-  const std::vector<sd::LongType> dzShape = {bS, oC, oD, oH, oW};
-  const std::vector<sd::LongType> wShape = {oC, iC, kD, kH, kW};
-  const std::vector<sd::LongType> dbShape = {1, (sd::LongType)(isNCDHW ? oC : 1), 1, 1, (int)(isNCDHW ? 1 : oC)};
-
-  const std::vector<int> xStrides = {(sd::LongType)input->strideAt(0), (sd::LongType)input->strideAt(1), (sd::LongType)input->strideAt(2),
-                                     (sd::LongType)input->strideAt(3), (sd::LongType)input->strideAt(4)};
-  const std::vector<int> dxStrides = {(sd::LongType)gradI->strideAt(0), (sd::LongType)gradI->strideAt(1), (sd::LongType)gradI->strideAt(2),
-                                      (sd::LongType)gradI->strideAt(3), (sd::LongType)gradI->strideAt(4)};
-  const std::vector<int> dzStrides = {(sd::LongType)gradO->strideAt(0), (sd::LongType)gradO->strideAt(1), (sd::LongType)gradO->strideAt(2),
-                                      (sd::LongType)gradO->strideAt(3), (sd::LongType)gradO->strideAt(4)};
-
+  const std::vector<int> xStrides = {static_cast<int>(input->strideAt(0)), static_cast<int>(input->strideAt(1)), static_cast<int>(input->strideAt(2)),
+                                     static_cast<int>(input->strideAt(3)), static_cast<int>(input->strideAt(4))};
+  const std::vector<int> dxStrides = {static_cast<int>(gradI->strideAt(0)), static_cast<int>(gradI->strideAt(1)), static_cast<int>(gradI->strideAt(2)),
+                                      static_cast<int>(gradI->strideAt(3)), static_cast<int>(gradI->strideAt(4))};
+  const std::vector<int> dzStrides = {static_cast<int>(gradO->strideAt(0)), static_cast<int>(gradO->strideAt(1)), static_cast<int>(gradO->strideAt(2)),
+                                      static_cast<int>(gradO->strideAt(3)), static_cast<int>(gradO->strideAt(4))};
   cudnnTensorFormat_t format = isNCDHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
   cudnnTensorFormat_t formatW = 0 == wFormat ? format : (1 == wFormat ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC);
   PointersManager manager(context, __func__);
@@ -200,9 +197,6 @@ static void conv3dBpCUDNN(const LaunchContext* context, const NDArray* input, co
   cudnnConvolutionBwdFilterAlgo_t algoGradW;
   cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
   int count = 0;
-  // CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnGetConvolutionBackwardFilterAlgorithm),
-  // cudnnGetConvolutionBackwardFilterAlgorithm( *handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
-  // 0, &algoGradW));
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
       cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
@@ -478,8 +472,8 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
                 pD, pH, pW, dD, dH, dW, paddingMode, isNCDHW, wFormat);
 
   if (0 == wFormat) {
-    newGradW->permutei(isNCDHW ? std::vector<int>({2, 3, 4, 1, 0})
-                               : std::vector<int>({1, 2, 3, 4, 0}));  // (oC, iC, kD, kH, kW --> kD, kH, kW, iC, oC) or
+    newGradW->permutei(isNCDHW ? std::vector<sd::LongType>({2, 3, 4, 1, 0})
+                               : std::vector<sd::LongType>({1, 2, 3, 4, 0}));  // (oC, iC, kD, kH, kW --> kD, kH, kW, iC, oC) or
                                                                       // (oC, kD, kH, kW, iC --> kD, kH, kW, iC, oC)
     gradW->assign(newGradW);
   }

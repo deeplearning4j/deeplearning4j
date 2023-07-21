@@ -35,7 +35,7 @@ using namespace sd;
 using namespace sd::graph;
 using namespace sd::memory;
 
-class DataBufferTests : public testing::Test {
+class DataBufferTests : public NDArrayTests {
  public:
 };
 

@@ -20,7 +20,7 @@
 //  @author GS <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/sequence_mask.h>
-
+#include <execution/cuda/LaunchDims.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -47,10 +47,10 @@ static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const sd::LongTyp
 
 template <typename I, typename B>
 static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
-  dim3 launchDims(maxIndex, input->lengthOf(), 128);
+  dim3 launchDims = getSequenceMaskLaunchDims(maxIndex,*input);
   NDArray::prepareSpecialUse({output}, {input});
   auto stream = context->getCudaStream();
-  sequenceMaskKernel<I, B><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+  sequenceMaskKernel<I, B><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), maxIndex);
   NDArray::registerSpecialUse({output}, {input});
 }

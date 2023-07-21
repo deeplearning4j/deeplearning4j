@@ -29,7 +29,7 @@
 
 using namespace sd;
 
-class CudaExtraArgumentsTests : public testing::Test {
+class CudaExtraArgumentsTests : public NDArrayTests {
  public:
   CudaExtraArgumentsTests() {
     printf("\n");

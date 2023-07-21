@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::memory;
 
-class CudaWorkspaceTests : public testing::Test {};
+class CudaWorkspaceTests : public NDArrayTests {};
 
 TEST_F(CudaWorkspaceTests, Basic_Tests_1) {
   Workspace workspace(65536, 65536);

@@ -29,7 +29,7 @@
 
 using namespace sd;
 
-class MultiDataTypeTests : public testing::Test {
+class MultiDataTypeTests : public NDArrayTests {
  public:
 };
 

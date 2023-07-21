@@ -38,7 +38,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class NativeOpsTests : public testing::Test {
+class NativeOpsTests : public NDArrayTests {
  public:
 };
 

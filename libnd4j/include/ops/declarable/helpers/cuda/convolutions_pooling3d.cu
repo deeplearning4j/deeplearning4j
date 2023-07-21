@@ -25,6 +25,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 
@@ -158,14 +160,12 @@ void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input
                                  const int poolingMode, const int extraParam0) {
   PointersManager manager(block.launchContext(), "pooling3d");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = output.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
+  dim3 poolingDims = getPoolingDims(output.lengthOf(),output.rankOf());
 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_SINGLE_SELECTOR(
       input.dataType(), pooling3dCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.specialBuffer(),
+      (poolingDims.x, poolingDims.y, poolingDims.z, block.launchContext()->getCudaStream(), input.specialBuffer(),
        input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW,
        dD, dH, dW, poolingMode, extraParam0),
       SD_FLOAT_TYPES);

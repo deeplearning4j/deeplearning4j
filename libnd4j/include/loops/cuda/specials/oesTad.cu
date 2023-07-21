@@ -177,7 +177,7 @@ template <typename T>
 SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,
                            sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
                            sd::LongType const *tadOffsets, bool descending) {
-  execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength,
+  execOesTadKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength,
                                                                              tadShapeInfo, tadOffsets, descending);
 }
 
@@ -186,7 +186,7 @@ SD_HOST void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, 
                               void *vy, sd::LongType const *yShapeInfo, sd::LongType *dimension,
                               sd::LongType dimensionLength,
                               sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
-  execOesTadKernelKey<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+  execOesTadKernelKey<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
       vx, xShapeInfo, vy, yShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 

@@ -172,8 +172,6 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
   cudnnConvolutionBwdFilterAlgo_t algoGradW;
   cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
   int count = 0;
-  // err = cudnnGetConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw,
-  // CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW);
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
       cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
@@ -185,8 +183,6 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
   // gradI algorithm description
   cudnnConvolutionBwdDataAlgo_t algoGradI;
   cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
-  // err = cudnnGetConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
-  // 0, &algoGradI);
   CHECK_CUDNN_FAILURE_MSG(
       STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
       cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
@@ -222,8 +218,6 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
   // run calculation for gradB (if not nullptr)
   if (gradB != nullptr) {
     CudnnTensor db;
-    // db.set4D(format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1:
-    // gradB->lengthOf());
     db.set4D(CUDNN_TENSOR_NCHW, cudnnDataType(gradB->dataType()), 1, oC, 1, 1);
 
     CHECK_CUDNN_FAILURE_MSG(
@@ -243,9 +237,6 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
       cudnnConvolutionBackwardData(*handle, alpha, dw, weights->specialBuffer(), dz, gradO->specialBuffer(), conv,
                                    algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->specialBuffer()));
 
-  // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
-  // if (cudaErr != 0)
-  //     throw cuda_exception::build("conv2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
   NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
 }
@@ -310,8 +301,8 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
                     weights->dataType(), weights->getContext()));
     newWeights = tmpWeight.get();
     newWeights->assign(weights->permute(
-        isNCHW ? std::vector<int>({3, 2, 0, 1})
-               : std::vector<int>(
+        isNCHW ? std::vector<sd::LongType>({3, 2, 0, 1})
+               : std::vector<sd::LongType>(
                      {3, 0, 1, 2})));  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
   }
 
@@ -457,8 +448,8 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
 
   if (0 == wFormat) {
     newGradW->permutei(
-        isNCHW ? std::vector<int>({2, 3, 1, 0})
-               : std::vector<int>(
+        isNCHW ? std::vector<sd::LongType>({2, 3, 1, 0})
+               : std::vector<sd::LongType>(
                      {1, 2, 3, 0}));  // (oC, iC, kH, kW --> kH, kW, iC, oC) or (oC, kH, kW, iC --> kH, kW, iC, oC)
     gradW->assign(newGradW);
   }

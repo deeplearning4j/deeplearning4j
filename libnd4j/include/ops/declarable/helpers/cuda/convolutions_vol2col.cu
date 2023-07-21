@@ -24,6 +24,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 
@@ -62,14 +64,7 @@ static SD_KERNEL void vol2colCuda(const void* volume, const sd::LongType* volSha
 
   shape::index2coords(colInd, colShapeInfo, coords);
 
-  // const auto colW = coords[7];
-  // const auto colH = coords[6];
-  // const auto colD = coords[5];
-  // const auto kCol = coords[4];
-  // const auto kRow = coords[3];
-  // const auto kDep = coords[2];
-  // const auto c    = coords[1];
-  // const auto b    = coords[0];
+
 
   const auto colOffset = shape::getOffset(colShapeInfo, coords);
 
@@ -102,14 +97,12 @@ void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& vol, ND
                                const LongType dW) {
   PointersManager manager(block.launchContext(), "vol2col");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (col.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 128;
+  dim3 vol2ColDims = getVol2ColDims(col.lengthOf(),col.rankOf());
 
   NDArray::prepareSpecialUse({&col}, {&vol});
   BUILD_SINGLE_SELECTOR(
       vol.dataType(), vol2colCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), vol.specialBuffer(),
+      (vol2ColDims.x, vol2ColDims.y, vol2ColDims.z, block.launchContext()->getCudaStream(), vol.specialBuffer(),
        vol.specialShapeInfo(), col.specialBuffer(), col.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&col}, {&vol});

@@ -28,7 +28,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ServerRelatedTests : public testing::Test {
+class ServerRelatedTests : public NDArrayTests {
  public:
   ServerRelatedTests() {
     Environment::getInstance().setDebug(true);

@@ -22,6 +22,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/flatten.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -66,8 +68,8 @@ static void flatten_(sd::LaunchContext *context, std::vector<NDArray *> &inputs,
   auto dBuffers = (void **)pm.replicatePointer(hdBuffers.data(), inputs.size() * sizeof(void *));
   auto dShapes = (sd::LongType **)pm.replicatePointer(hdShapes.data(), inputs.size() * sizeof(sd::LongType *));
   auto dOffsets = (sd::LongType *)pm.replicatePointer(hOffsets.data(), inputs.size() * sizeof(sd::LongType));
-
-  flattenKernel<T><<<256, 512, 8192, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("flatten");
+  flattenKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
       dBuffers, dShapes, dOffsets, inputs.size(), output->specialBuffer(), output->specialShapeInfo(), order);
 
   pm.synchronize();
@@ -75,8 +77,9 @@ static void flatten_(sd::LaunchContext *context, std::vector<NDArray *> &inputs,
 
 void flatten(sd::LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order) {
   // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
-  for (auto v : inputs) v->syncToDevice();
-
+  const std::vector<const NDArray *> v(inputs.begin(), inputs.end());
+  //prepareSpecialUse requires const
+  NDArray::prepareSpecialUse({output}, v, {});
   BUILD_SINGLE_SELECTOR(output->dataType(), flatten_, (context, inputs, output, order), SD_COMMON_TYPES);
   NDArray::registerSpecialUse({output}, {});
 }

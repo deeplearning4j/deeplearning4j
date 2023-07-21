@@ -26,6 +26,8 @@
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/convolutions.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 
@@ -125,8 +127,9 @@ static void avgPooling2dCudaLauncher(sd::LaunchContext &block, const void *vx, c
                                      void *vz, const sd::LongType *vzShapeInfo, const LongType kH, const LongType kW,
                                      const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                                      const int extraParam0) {
-  avgPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
-                                                                     pH, pW, dH, dW, extraParam0);
+  dim3 launchDims = getLaunchDims("avg_pooling");
+  avgPooling2dCuda<X, Z><<<launchDims.y, launchDims.x, launchDims.z, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
+                                                                                               pH, pW, dH, dW, extraParam0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -224,8 +227,9 @@ static void pnormPooling2dCudaLauncher(sd::LaunchContext &block, const void *vx,
                                        void *vz, const sd::LongType *vzShapeInfo, const LongType kH, const LongType kW,
                                        const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
                                        const LongType dW, const int extraParam0) {
-  pnormPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
-                                                                       pH, pW, dH, dW, extraParam0);
+  dim3 launchDims = getLaunchDims("avg_pooling");
+  pnormPooling2dCuda<X, Z><<<launchDims.y, launchDims.x, launchDims.z, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
+                                                                                                 pH, pW, dH, dW, extraParam0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -322,10 +326,13 @@ static SD_KERNEL void maxPooling2dCuda(const void *vx, const sd::LongType *xShap
 template <typename X, typename Z>
 static void maxPooling2dCudaLauncher(sd::LaunchContext &block, const void *vx, const sd::LongType *vxShapeInfo,
                                      void *vz, const sd::LongType *vzShapeInfo, const LongType kH, const LongType kW,
-                                     const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
-                                     const int extraParam0) {
-  maxPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
-                                                                     pH, pW, dH, dW, extraParam0);
+                                     const LongType sH, const LongType sW, const LongType pH, const LongType pW,
+                                     const LongType dH, const LongType dW, const int extraParam0, const int rank,
+                                     const int len) {
+
+  dim3 poolingDims = getPoolingDims(len, rank);
+  maxPooling2dCuda<X, Z><<<poolingDims.y, poolingDims.x, poolingDims.z, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW,
+                                                                                                  pH, pW, dH, dW, extraParam0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -339,21 +346,22 @@ void ConvolutionUtils::pooling2d(sd::graph::Context &block, const NDArray &input
       BUILD_SINGLE_SELECTOR_TWICE(
           input.dataType(), maxPooling2dCudaLauncher,
           (*block.launchContext(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(),
-           output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0),
+              output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0,output.rankOf(),output.lengthOf()),
           SD_NUMERIC_TYPES);
+
     } break;
     case AVG_POOL: {
       BUILD_SINGLE_SELECTOR_TWICE(
           input.dataType(), avgPooling2dCudaLauncher,
           (*block.launchContext(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(),
-           output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0),
+              output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0),
           SD_NUMERIC_TYPES);
     } break;
     case PNORM_POOL: {
       BUILD_SINGLE_SELECTOR_TWICE(
           input.dataType(), pnormPooling2dCudaLauncher,
           (*block.launchContext(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(),
-           output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0),
+              output.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0),
           SD_FLOAT_TYPES);
     } break;
     default:

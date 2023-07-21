@@ -30,7 +30,6 @@
 
 namespace sd {
 ContextBuffers::ContextBuffers() {
-  // sd_printf("Creating ContextBuffers for device [%i]\n", AffinityManager::currentDeviceId());
   _deviceId = AffinityManager::currentDeviceId();
 }
 
@@ -81,8 +80,7 @@ ContextBuffers& ContextBuffers::operator=(ContextBuffers&& other) {
 }
 
 void ContextBuffers::release() {
-  if (_allocated) {
-    // sd_printf("Releasing ContextBuffers on device [%i]\n", _deviceId);
+  /*if (_allocated) {
 
     if (_allocationPointer != nullptr) cudaFree(_allocationPointer);
 
@@ -113,7 +111,7 @@ void ContextBuffers::release() {
     this->_scalarPointer = nullptr;
   }
 
-  _initialized = false;
+  _initialized = false;*/
 }
 
 ContextBuffers::~ContextBuffers() { release(); }
@@ -127,7 +125,6 @@ ContextBuffers::ContextBuffers(void* rPointer, void* sPointer, void* aPointer, b
 
 void ContextBuffers::initialize() {
   _deviceId = AffinityManager::currentNativeDeviceId();
-  // sd_printf("Initializing buffers on deviceId [%i]\n", _deviceId);
 
   auto res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
   if (res != 0) throw cuda_exception::build("_reductionPointer allocation failed", res);
@@ -183,10 +180,8 @@ int ContextBuffers::deviceId() { return _deviceId; }
 
 void* ContextBuffers::execStream() {
   if (!_initialized) {
-    // sd_printf("execStream not initialized\n", "");
     initialize();
   } else {
-    // sd_printf("execStream is initialized\n", "");
   }
 
   return _execStream;
@@ -194,10 +189,8 @@ void* ContextBuffers::execStream() {
 
 void* ContextBuffers::specialStream() {
   if (!_initialized) {
-    // sd_printf("specialStream not initialized\n", "");
     initialize();
   } else {
-    // sd_printf("specialStream is initialized\n", "");
   }
 
   return _specialStream;

@@ -51,12 +51,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-12.1</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
         <derby.version>10.13.1.1</derby.version>
-        <maven-surefire-plugin.version>3.0.0-M1</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
         <jackson.version>2.14.2</jackson.version>
         <jackson.databind.version>2.14.2</jackson.databind.version>
         <logback.version>1.2.3</logback.version>
@@ -487,13 +487,13 @@
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>backend.artifactId</name>
-                    <value>nd4j-cuda-11.8</value>
+                    <value>nd4j-cuda-12.1</value>
                 </property>
             </activation>
             <properties>
-                <cuda.version>11.8</cuda.version>
-                <cudnn.version>8.6</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.8</javacpp-presets.cuda.version>
+                <cuda.version>12.1</cuda.version>
+                <cudnn.version>8.9</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
                 <test.heap.size>6g</test.heap.size>
                 <test.offheap.size>6g</test.offheap.size>
                 <surefire.forks>1</surefire.forks>

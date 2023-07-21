@@ -26,6 +26,8 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/reverse.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -105,8 +107,8 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const sd::LongType* 
   if (threadIdx.x == 0) {
     linearStatus =
         (shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape)) && (inputOrder == outputOrder)
-            ? shape::elementWiseStride(inputShape)
-            : 0;
+        ? shape::elementWiseStride(inputShape)
+        : 0;
 
     char inputOrder = shape::order(inputShape);
     char outputOrder = shape::order(outputShape);
@@ -150,7 +152,9 @@ static void reverseTad(sd::LaunchContext* context, const NDArray* input, NDArray
                        const sd::LongType* inputTadShape, const sd::LongType* inputTadOffsets,
                        const sd::LongType* outputTadShape, const sd::LongType* outputTadOffsets, uint64_t tadLength) {
   auto stream = context->getCudaStream();
-  reverseTadKernel<T><<<256, 512, 8192, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+  dim3 launchDims = getLaunchDims("reverse");
+
+  reverseTadKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                    output->specialBuffer(), output->specialShapeInfo(), inputTadShape,
                                                    inputTadOffsets, outputTadShape, outputTadOffsets, input->lengthOf(),
                                                    tadLength, input->lengthOf() / tadLength);
@@ -162,8 +166,9 @@ static void reverseArray(sd::LaunchContext* context, const NDArray* input, NDArr
   auto stream = context->getCudaStream();
   sd::LongType numOfReverse = numOfElemsToReverse;
   if (numOfElemsToReverse == 0) numOfReverse = input->lengthOf();
+  dim3 launchDims = getLaunchDims("reverse");
 
-  reverseArrayKernel<T><<<256, 512, 8192, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+  reverseArrayKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                      output->specialBuffer(), output->specialShapeInfo(), numOfReverse);
 }
 
@@ -174,25 +179,26 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   int posOfNonUnityDim = -1;
   seqLengths->syncToHost();
   auto stream = context->getCudaStream();
-
+  dim3 launchDims = getLaunchDims("reverse");
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
-    int numOfElemsToReverse = seqLengths->e<int>(0);
+    sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(0);
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
       output->assign(input);
     else
-      reverseArrayKernel<T><<<256, 512, 8192, *stream>>>(
+      reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
           numOfElemsToReverse);
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {batchDim});
+    std::vector<sd::LongType> dim = {batchDim};
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,dim.data());
 
-    auto inSubArrsSet = input->allTensorsAlongDimension(dimensions);
-    auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
+    auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
+    auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
 
     for (int i = 0; i < inSubArrsSet.size(); ++i) {
-      int numOfElemsToReverse = seqLengths->e<int>(i);
+      sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
         outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
@@ -203,6 +209,8 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
           reverseArray<T>(context, inInnerSet.at(j), outInnerSet.at(j), numOfElemsToReverse);
       }
     }
+
+    delete dimensions;
   }
 }
 
@@ -220,8 +228,8 @@ void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDA
 
 //////////////////////////////////////////////////////////////////////////
 void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), *intArgs);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), *intArgs);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
 
   NDArray::prepareSpecialUse({output}, {input});
 
@@ -231,7 +239,7 @@ void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, 
     BUILD_SINGLE_SELECTOR(
         input->dataType(), reverseTad,
         (context, input, output, packX->platformShapeInfo(), packX->platformOffsets(), packZ->platformShapeInfo(),
-         packZ->platformOffsets(), (uint64_t)(input->lengthOf() / packX->numberOfTads())),
+            packZ->platformOffsets(), (uint64_t)(input->lengthOf() / packX->numberOfTads())),
         SD_COMMON_TYPES);
   }
 

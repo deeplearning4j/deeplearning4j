@@ -1374,9 +1374,10 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   }
 
   int rank = shape::rank(shapeInfo);
-  if(rank == 0)
+  if(rank == 0) {
+    printf("Rank %d\n", rank);
     return;
-
+  }
   sd::LongType *shape = shape::shapeOf(shapeInfo);
   printf("Rank %d\n", rank);
   if(rank == 0) {

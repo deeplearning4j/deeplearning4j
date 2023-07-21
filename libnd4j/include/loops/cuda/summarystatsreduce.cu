@@ -369,7 +369,7 @@ template <typename X, typename Z>
 SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
     dim3& launchDims, cudaStream_t* stream, int opNum, void const* vx, sd::LongType const* xShapeInfo,
     sd::LongType const* hxShapeInfo, void* vextraParams, void* vz, sd::LongType const* zShapeInfo,
-    sd::LongType const* hzShapeInfo, long long int* dimension, long long int dimensionLength, sd::LongType const* tadShapeInfo,
+    sd::LongType const* hzShapeInfo, sd::LongType* dimension, long long int dimensionLength, sd::LongType const* tadShapeInfo,
     sd::LongType const* tadOffsets, bool biasCorrected, void* reductionBuffer) {
   auto x = static_cast<X const*>(vx);
   auto z = static_cast<Z*>(vz);

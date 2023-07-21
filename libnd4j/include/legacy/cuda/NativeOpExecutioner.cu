@@ -52,12 +52,15 @@
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 using namespace sd;
 
 /**
  * This is utility kernel, that updates given special buffer with proper values in device memory
  */
-extern "C" SD_KERNEL void prepareShapeBuffer(int* dimension, int* maxDimension, sd::LongType* specialPointer, int rows,
+extern "C" SD_KERNEL void prepareShapeBuffer(LongType* dimension, LongType* maxDimension, sd::LongType* specialPointer,
+                                             LongType rows,
                                              sd::DataType dataType) {
   sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
   if (tid > 0) return;
@@ -93,7 +96,6 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != zType && yType != zType)
     THROW_EXCEPTION(
@@ -103,7 +105,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   if (stream == nullptr)
     THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform: CUDA stream cannot be nullptr !");
 
-  dim3 launchDims(256, 1024, 8192);
+  dim3 launchDims = getLaunchDims("pairwiseTransforms");
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
@@ -144,7 +146,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext* lc, int o
     throw sd::datatype_exception::build(
         "NativeOpExecutioner::execPairwiseBoolTransform both operands must have same data type", xType, yType);
 
-  dim3 launchDims(256, 1024, 16384);
+  dim3 launchDims = getLaunchDims("pairwiseTransforms");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::pairwise_transforms::PairWiseBoolTransform,
@@ -178,7 +180,7 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext* lc, int op
     throw sd::datatype_exception::build(
         "NativeOpExecutioner::execPairwiseIntTransform both operands must have same data type", xType, yType);
 
-  dim3 launchDims(256, 1024, 16384);
+  dim3 launchDims = getLaunchDims("pairwiseTransforms");
 
   BUILD_SINGLE_SELECTOR(
       xType, functions::pairwise_transforms::PairWiseIntTransform,
@@ -197,7 +199,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  dim3 launchDims = dim3(256, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims =  getLaunchDims("summaryStats");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -236,7 +238,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3B opType:[%i]\n", opNum);
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::broadcast::BroadcastBool,
@@ -294,7 +296,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   if (yType != xType)
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::broadcast::BroadcastBool,
@@ -325,7 +327,7 @@ void NativeOpExecutioner::execBroadcastInt(
   if (yType != xType || zType != xType)
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
   BUILD_SINGLE_SELECTOR(
       xType, functions::broadcast::BroadcastInt,
@@ -356,11 +358,8 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNu
   if (yType != xType || zType != xType)
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
-  dim3 launchDims;
-
-  launchDims.y = SD_MAX_NUM_THREADS / 4;                                          // threadsPerBlock
-  launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
-  launchDims.z = 1024;                                                            // shared memory
+  dim3 launchDims = getLaunchDims("broadcast");
+  // shared memory
 
   BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,
                         ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo),
@@ -384,14 +383,14 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!DataTypeUtils::isZ(zType))
-    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+    THROW_EXCEPTION("NativeOpExecutioner::execInverseBroadcastInt requires Z operand to have INT type");
 
   if (yType != xType || zType != xType)
-    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+    THROW_EXCEPTION("NativeOpExecutioner::execInverseBroadcastInt requires both X & Y operands to have same type");
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("F3BI opType:[%i]\n", opNum);
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
   BUILD_SINGLE_SELECTOR(
       xType, functions::broadcast::BroadcastInt,
@@ -431,7 +430,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, int opNum, void c
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
@@ -464,11 +463,8 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
-  dim3 launchDims;
-
-  launchDims.y = SD_MAX_NUM_THREADS / 4;                                          // threadsPerBlock
-  launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
-  launchDims.z = 1024;                                                            // shared memory
+  dim3 launchDims = getLaunchDims("broadcast");
+  // shared memory
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
@@ -497,7 +493,7 @@ void NativeOpExecutioner::execInverseBroadcast(
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
-  dim3 launchDims(256, 256, 1024);
+  dim3 launchDims = getLaunchDims("broadcast");
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
@@ -534,7 +530,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
         "NativeOpExecutioner::execReduceSame requires both X & Z operands to have same type", xType, zType);
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
@@ -562,7 +558,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
                                     zType);
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
@@ -590,7 +586,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
     THROW_EXCEPTION("NativeOpExecutioner::execReduceBool requires Z operand to have BOOL type");
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
@@ -623,7 +619,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, 256, 32768);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
@@ -661,9 +657,8 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto numBlocks = shape::length(hZShapeInfo);
   auto tadLength = shape::length(hXShapeInfo) / numBlocks;
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, tadLength < SD_CUDA_BLOCK_SIZE ? tadLength : SD_CUDA_BLOCK_SIZE,
-                  1024);
-
+  dim3 launchDims = getReduceDims(numBlocks);
+  sd_printf("Launch dims: %i, %i, %i\n", launchDims.x, launchDims.y, launchDims.z);
   if (zType != sd::DataType::INT64 && zType != sd::DataType::INT32)
     throw datatype_exception::build("NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type",
                                     zType);
@@ -672,9 +667,23 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
-                           dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer,
-                           reductionPointer, tadShapeInfo, tadOffsets),
+      ::executeIndexReduce(launchDims,
+                           stream,
+                           opNum,
+                           dX,
+                           dXShapeInfo,
+                           shape::rank(hXShapeInfo),
+                           extraParams,
+                           dz,
+                           dZShapeInfo,
+                           shape::rank(hZShapeInfo),
+                           dimension,
+                           dimensionLength,
+                           1,
+                           allocationPointer,
+                           reductionPointer,
+                           tadShapeInfo,
+                           tadOffsets),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
 }
@@ -687,23 +696,24 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext* lc, int opNum, void
  * @param extraParams
  */
 ////////////////////////////////////////////////////////////////////////
-void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum, void const* hX,
-                                                sd::LongType const* hXShapeInfo, void const* dX,
-                                                sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                                sd::LongType const* hZShapeInfo, void* dZ,
+void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc,
+                                                int opNum,
+                                                void const* hX,
+                                                sd::LongType const* hXShapeInfo,
+                                                void const* dX,
+                                                sd::LongType const* dXShapeInfo,
+                                                void* extraParams, void* hZ,
+                                                sd::LongType const* hZShapeInfo,
+                                                void* dZ,
                                                 sd::LongType const* dZShapeInfo) {
-  if (sd::Environment::getInstance().isDebug()) printf("F1 opType:[%i]\n", opNum);
 
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
   sd::LongType *allocationPointer = lc->getAllocationPointer();
 
   auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = 256;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(xLength);
 
-  if (sd::Environment::getInstance().isDebugAndVerbose() && launchDims.x == 1) printf("AF1 opType:[%i]\n", opNum);
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -717,7 +727,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext* lc, int opNum
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, (sd::LongType ) shape::rank(hXShapeInfo), extraParams, dz,
+      ::executeIndexReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
                                  dZShapeInfo, 0, nullptr, 0, 1, allocationPointer, reductionPointer, nullptr, nullptr),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 }
@@ -735,9 +745,7 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext* lc, int opNum
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = 256;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(xLength);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ,
@@ -763,9 +771,7 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext* lc, int opNum,
     THROW_EXCEPTION("NativeOpExecutioner::execReduceBoolScalar requires Z operand to have BOOL type");
 
   auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+  dim3 launchDims = getReduceDims(xLength);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ,
@@ -792,9 +798,7 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext* lc, int opNum,
         "NativeOpExecutioner::execReduceSameScalar requires both X & Z operands to have same type", xType, zType);
 
   auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+  dim3 launchDims = getReduceDims(xLength);
 
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ,
@@ -820,9 +824,7 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext* lc, int opNum,
                                     zType);
 
   auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+  dim3 launchDims = getReduceDims(xLength);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ,
@@ -853,7 +855,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
     THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
   }
 
-  dim3 launchDims(512, 512, 16384);
+  dim3 launchDims = getLaunchDims("transformScan");
   BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -883,7 +885,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext* lc, int opNum, vo
     THROW_EXCEPTION("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
   }
 
-  dim3 launchDims(512, 512, 16384);
+  dim3 launchDims = getLaunchDims("transformScan");
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -907,13 +909,14 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum, voi
 
   if (shape::isEmpty(hXShapeInfo)) return;
 
+
   if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
       shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
       shape::elementWiseStride(hZShapeInfo) == 1) {
     cudaMemcpyAsync(dZ, dX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType),
                     cudaMemcpyDeviceToDevice, *stream);
   } else {
-    dim3 launchDims(512, 512, 2048);
+    dim3 launchDims = getLaunchDims("transformScan");
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                           ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                    dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -945,7 +948,7 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext* lc, int opNum, 
         "NativeOpExecutioner::execTransformStrict requires X & Z to have same floating point type", xType, zType);
   }
 
-  dim3 launchDims(512, 512, 16384);
+  dim3 launchDims = getLaunchDims("transformScan");
   BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -973,7 +976,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext* lc, int opNum, v
     throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type",
                                     zType);
 
-  dim3 launchDims(512, 512, 2048);
+  dim3 launchDims = getLaunchDims("transformScan");
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                  dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
@@ -990,7 +993,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  dim3 launchDims = dim3(256, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims =  getLaunchDims("summaryStats");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -1017,7 +1020,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  dim3 launchDims = dim3(256, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims =  getLaunchDims("summaryStats");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -1049,9 +1052,8 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(shape::length(hXShapeInfo), blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+
+  dim3 launchDims = getReduceDims(shape::length(hXShapeInfo));
 
   if (xType != yType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execReduce3 requires Y operand to have X type", xType,
@@ -1097,7 +1099,7 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
         "NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type", zType);
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
@@ -1122,10 +1124,8 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext* lc, int opNum, vo
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto xLength = shape::length(hXShapeInfo);
-  auto blockWidth = SD_CUDA_BLOCK_SIZE;
-  auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 1024);
+
+  dim3 launchDims = getReduceDims(shape::length(hXShapeInfo));
 
   if (xType != yType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execReduce3Scalar requires Y operand to have X type",
@@ -1152,7 +1152,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext* lc, int opNum, void 
                                          bool allowParallelism) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims = dim3(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1184,7 +1184,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
                                          const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1215,7 +1215,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext* lc, int opNum, void c
                                         bool allowParallelism) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims = dim3(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1248,7 +1248,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
                                         const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1279,7 +1279,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
                                      sd::LongType const* dScalarShapeInfo, void* extraParams, bool allowParallelism) {
   auto stream = lc->getCudaStream();
 
-  dim3 launchDims(256, 512, 8192);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1288,7 +1288,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::executeCudaShaped(launchDims, stream, opType, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo,
                                               hZShapeInfo, dScalar, extraParams),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
@@ -1318,7 +1318,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
 
   if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
-  dim3 launchDims(256, 256, 16384);
+  dim3 launchDims = getLaunchDims("scalarScan");
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(
@@ -1351,7 +1351,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
   checkCudaErrors(cudaStreamSynchronize(*stream));
   checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
-  dim3 launchDims = dim3(512, 512, 32768);
+  dim3 launchDims = getLaunchDims("random");
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
@@ -1386,7 +1386,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
 
-  dim3 launchDims = dim3(512, 512, 32768);
+  dim3 launchDims = getLaunchDims("random");
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_SINGLE_SELECTOR(
@@ -1418,7 +1418,7 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext* lc, int opNum, sd::Point
 
   auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(stateHost);
 
-  dim3 launchDims = dim3(512, 512, 32768);
+  dim3 launchDims = getLaunchDims("random");
   auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction,
@@ -1447,7 +1447,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
 
-  dim3 launchDims(shape::length(hZShapeInfo), SD_CUDA_BLOCK_SIZE / 2, 1024);
+  dim3 launchDims = getReduceDims(shape::length(hZShapeInfo));
 
   if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
 
@@ -1499,7 +1499,7 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
         "NativeOpExecutioner::execReduce3TAD requires Z operand to have floating point data type", zType);
 
   auto numBlocks = shape::length(hZShapeInfo);
-  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, SD_CUDA_BLOCK_SIZE, 1024);
+  dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,

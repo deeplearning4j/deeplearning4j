@@ -64,8 +64,8 @@ DECLARE_SHAPE_FN(argmax) {
   if (block.width() == 1) {
     dims = *block.getIArguments();
   } else {
-    auto y = INPUT_VARIABLE(1);
-    dims = y->template asVectorT<sd::LongType>();
+    auto y = INPUT_VARIABLE(1)->cast(sd::DataType::INT64);
+    dims = y.template asVectorT<sd::LongType>();
   }
 
   auto keepDims = block.numB() ? B_ARG(0) : false;
@@ -73,7 +73,6 @@ DECLARE_SHAPE_FN(argmax) {
 
   // we're resolving negative axis here
   helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
-
   auto in = inputShape->at(0);
   for (auto d : dims) {
     // we have special case here

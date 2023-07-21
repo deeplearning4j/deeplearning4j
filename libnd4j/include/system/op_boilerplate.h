@@ -2566,7 +2566,7 @@
   if (WORKSPACE == nullptr) {                                                                                     \
     auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8);               \
     if (erc_##VARIABLE != 0) {                                                                                    \
-      throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);                                  \
+     THROW_EXCEPTION("[DEVICE] allocation failed", erc_##VARIABLE);                                  \
     } else {                                                                                                      \
     };                                                                                                            \
   } else {                                                                                                        \
@@ -2578,7 +2578,7 @@
     if (WORKSPACE == nullptr) {                                                      \
       auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));             \
       if (erc_##VARIABLE != 0) {                                                     \
-        throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE); \
+        THROW_EXCEPTION("[DEVICE] deallocation failed", erc_##VARIABLE); \
       };                                                                             \
     };                                                                               \
   };
@@ -2710,9 +2710,6 @@ void throwException(const char* exceptionMessage);
     return sd::Status::OK;                                                                                 \
   }
 
-#define STASH(NAME, ARRAY) block.getStash()->storeArray(block.getNodeId(), NAME, ARRAY);
-#define CHECK_STASH(NAME) block.getStash()->checkStash(block.getNodeId(), NAME);
-#define UNSTASH(NAME) block.getStash()->extractArray(block.getNodeId(), NAME);
 
 #define INPUT_VARIABLE(INDEX) block.array(INDEX)
 #define OUTPUT_VARIABLE(INDEX) reinterpret_cast<sd::NDArray*>(this->getZ(block, INDEX))

@@ -30,7 +30,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests5 : public testing::Test {
+class DeclarableOpsTests5 : public NDArrayTests {
  public:
   DeclarableOpsTests5() {
     printf("\n");
@@ -68,9 +68,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_0) {
                        46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  //    x.printShapeInfo("{0, 1, 2} shape");
-  //    x.printBuffer("{0, 1, 2} data");
-
   sd::ops::permute op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -90,9 +87,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_2) {
                        11.0, 12.0, 13.0, 14.0, 15.0, 31.0, 32.0, 33.0, 34.0, 35.0, 51.0, 52.0, 53.0, 54.0, 55.0,
                        16.0, 17.0, 18.0, 19.0, 20.0, 36.0, 37.0, 38.0, 39.0, 40.0, 56.0, 57.0, 58.0, 59.0, 60.0});
   x.reshapei('c', {3, 4, 5});
-
-  //    x.printShapeInfo("{1, 0, 2} shape");
-  //    x.printBuffer("{1, 0, 2} data");
 
   sd::ops::permute op;
   auto result = op.evaluate({&x}, {}, {1, 0, 2});
@@ -114,9 +108,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_3) {
                        16.0, 36.0, 56.0, 17.0, 37.0, 57.0, 18.0, 38.0, 58.0, 19.0, 39.0, 59.0, 20.0, 40.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  //    x.printShapeInfo("{1, 2, 0} shape");
-  //    x.printBuffer("{1, 2, 0} data");
-
   sd::ops::permute op;
   auto result = op.evaluate({&x}, {}, {1, 2, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -137,9 +128,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_4) {
                        49.0, 54.0, 59.0, 5.0,  10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  //    x.printShapeInfo("{2, 0, 1} shape");
-  //    x.printBuffer("{2, 0, 1} data");
-
   sd::ops::permute op;
   auto result = op.evaluate({&x}, {}, {2, 0, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -159,9 +147,6 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
                        13.0, 33.0, 53.0, 18.0, 38.0, 58.0, 4.0,  24.0, 44.0, 9.0,  29.0, 49.0, 14.0, 34.0, 54.0,
                        19.0, 39.0, 59.0, 5.0,  25.0, 45.0, 10.0, 30.0, 50.0, 15.0, 35.0, 55.0, 20.0, 40.0, 60.0});
   x.reshapei('c', {3, 4, 5});
-
-  //    x.printShapeInfo("{2, 1, 0} shape");
-  //    x.printBuffer("{2, 1, 0} data");
 
   sd::ops::permute op;
   auto result = op.evaluate({&x}, {}, {2, 1, 0});
@@ -187,9 +172,6 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printShapeInfo("RES shape");
-  // x.printShapeInfo("EXP shape");
-  // z->printIndexedBuffer("RES output");
   ASSERT_TRUE(x.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -232,13 +214,10 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
   auto result = op.evaluate({&x, &y}, {}, {120, 5});
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  //    result->at(0)->printIndexedBuffer("RES SEED");
 
   sd::ops::get_seed getOp;
   auto getRes = getOp.evaluate({});
   ASSERT_EQ(sd::Status::OK, getRes.status());
-  //    getres.at(0)->printIndexedBuffer("Output RES GET SEED");
-  //    ASSERT_EQ(result.at(0)->t<bool>(0), true);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -269,7 +248,6 @@ TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Scatter Div");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -285,7 +263,6 @@ TEST_F(DeclarableOpsTests5, scatterSub_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Scatter Sub");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -326,7 +303,6 @@ TEST_F(DeclarableOpsTests5, hardtanh_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Hardtanh 2x2");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////
@@ -340,7 +316,6 @@ TEST_F(DeclarableOpsTests5, hardtanh_test2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Hardtanh_bp 2x2");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -354,7 +329,6 @@ TEST_F(DeclarableOpsTests5, histogram_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  //    z->printIndexedBuffer("Histogram3");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 ////////////////////////////////////////////////////////////////////
@@ -373,7 +347,6 @@ TEST_F(DeclarableOpsTests5, histogram_test2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Identity_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f});
-  //    auto exp = NDArrayFactory::create<sd::LongType>('c', {3, 3}, {3, 3, 3});
 
   sd::ops::identity op;
   auto result = op.evaluate({&matrix}, {}, {}, {});
@@ -387,7 +360,6 @@ TEST_F(DeclarableOpsTests5, Identity_test1) {
 TEST_F(DeclarableOpsTests5, Identity_test2) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
   auto eps = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-  //    auto exp = NDArrayFactory::create<float>('c', {3,3});
   sd::ops::identity_bp op;
   auto result = op.evaluate({&matrix, &eps}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -399,8 +371,6 @@ TEST_F(DeclarableOpsTests5, Identity_test2) {
 TEST_F(DeclarableOpsTests5, Log1p_test1) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
   auto y = NDArrayFactory::create<double>('c', {3, 3}, {5, 4, 3, 2, 1, 2, 3, 4, 5});
-  //  auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
-  //    auto exp = NDArrayFactory::create<float>('c', {3,3});
   sd::ops::Log1p op;
   y.applyTransform(sd::transform::Log, y);
   auto result = op.evaluate({&matrix}, {}, {}, {});
@@ -451,7 +421,6 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -487,7 +456,6 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -503,7 +471,6 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printIndexedBuffer();
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -570,7 +537,6 @@ TEST_F(DeclarableOpsTests5, eye_test1) {
   sd::ops::eye op;
   auto results = op.evaluate({}, {}, {-99, 3});
   auto output = results.at(0);
-  // output->printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
@@ -599,7 +565,6 @@ TEST_F(DeclarableOpsTests5, eye_test3) {
   sd::ops::eye op;
   auto results = op.evaluate({}, {9 /*int*/}, {-99, 3, 4, 2});
   auto output = results.at(0);
-  // output->printIndexedBuffer("Output eye");
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
@@ -771,9 +736,6 @@ TEST_F(DeclarableOpsTests5, gatherNd_test9) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  // z->printIndexedBuffer();
-  // z->printShapeInfo("z shape");
 
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
@@ -1154,19 +1116,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_0) {
 
   auto v = result.at(0);
   auto i = result.at(1);
-  /*
-      v->printShapeInfo("topK_0: shape v");
-      expV.printShapeInfo("topK_0: shape expV");
-
-      i->printShapeInfo("topK_0: shape I");
-      expI.printShapeInfo("topK_0: shape expI");
-
-      v->printIndexedBuffer("topK_0: v");
-      expV.printIndexedBuffer("topK_0: expV");
-      i->printIndexedBuffer("topK_0: i");
-      expI.printIndexedBuffer("topK_0: expI");
-  */
-
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
 
@@ -1192,17 +1141,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
 
   auto v = result.at(0);
   auto i = result.at(1);
-
-  //    v->printShapeInfo("topK_1: shape v");
-  //    expV.printShapeInfo("topK_1: shape expV");
-
-  //    i->printShapeInfo("topK_1: shape I");
-  //    expI.printShapeInfo("topK_1: shape expI");
-
-  //    v->printIndexedBuffer("topK_1: v");
-  //    expV.printIndexedBuffer("topK_1: expV");
-  //    i->printIndexedBuffer("topK_1: i");
-  //    expI.printIndexedBuffer("topK_1: expI");
 
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
@@ -1234,17 +1172,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_2) {
   auto v = result.at(0);
   auto i = result.at(1);
 
-  //    v->printShapeInfo("shape v");
-  //    expV.printShapeInfo("shape expV");
-
-  //    i->printShapeInfo("shape I");
-  //    expI.printShapeInfo("shape expI");
-
-  //    v->printIndexedBuffer("v");
-  //    expV.printIndexedBuffer("expV");
-  //    i->printIndexedBuffer("i");
-  //    expI.printIndexedBuffer("expI");
-
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
 
@@ -1270,17 +1197,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
 
   auto v = result.at(0);
   auto i = result.at(1);
-
-  //    v->printShapeInfo("shape v");
-  //    expV.printShapeInfo("shape expV");
-
-  //    i->printShapeInfo("shape I");
-  //    expI.printShapeInfo("shape expI");
-
-  //    v->printIndexedBuffer("v");
-  //    expV.printIndexedBuffer("expV");
-  //    i->printIndexedBuffer("i");
-  //    expI.printIndexedBuffer("expI");
 
   ASSERT_TRUE(expV.isSameShape(v));
   ASSERT_TRUE(expV.equalsTo(v));
@@ -1366,7 +1282,6 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
                                            6.0,  9.0, 3.5,  7.0, 11.0, 13.0, 14.0, 5.0, 16.0, 9.0, 13.5, 7.0});
 
   auto y = NDArrayFactory::create<double>('c', {3}, {0, 1, 2});
-  // auto expV('f', {6}, {1, 0, 0, 0, 0, 0 });
 
   float expMean = 9.395833f;
   float expDeviation = 22.4579f;
@@ -1383,9 +1298,6 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
 
   auto v = result.at(0);
   auto d = result.at(1);
-
-  //    v->printIndexedBuffer("Result is ");
-  //    d->printIndexedBuffer("Result is ");
 
   ASSERT_TRUE(v->isScalar());
   ASSERT_NEAR(expMean, v->e<double>(0), inf);
@@ -1463,12 +1375,6 @@ TEST_F(DeclarableOpsTests5, Test_Moments_4) {
   ASSERT_TRUE(v->isMatrix());
   ASSERT_TRUE(d->isMatrix());
 
-  // v->printIndexedBuffer("v");
-  // expV.printIndexedBuffer("expV");
-
-  // d->printIndexedBuffer("d");
-  // expD.printIndexedBuffer("expD");
-
   ASSERT_TRUE(v->equalsTo(&expV));
   ASSERT_TRUE(d->equalsTo(&expD));
 }
@@ -1483,11 +1389,8 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
   double traceM = matrix.getTrace();
-  // sd_printf("Trace for matrix is %f\n", traceM);
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(exp.isSameShape(output));
-  // exp.printIndexedBuffer("EXP TRACE");
-  // output->printIndexedBuffer("OUT TRACE");
   ASSERT_TRUE(exp.equalsTo(output));
 }
 
@@ -1628,10 +1531,8 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
   sd::ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   auto output = results.at(0);
-  // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  // ASSERT_TRUE(!output->equalsTo(input));
 
   bool hasDublicates = false;
   for (int i = 0; i < output->lengthOf() - 1; ++i)
@@ -1654,7 +1555,6 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  // ASSERT_TRUE(!output->equalsTo(input));
 
   bool hasDublicates = false;
   for (int i = 0; i < output->lengthOf() - 1; ++i)
@@ -1675,7 +1575,6 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
   sd::ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   auto output = results.at(0);
-  // output->printBuffer();
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(!output->equalsTo(input));
 
@@ -1722,20 +1621,11 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
                        10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21, 12, 22, 13, 23,
                        18, 28, 19, 29, 20, 30, 21, 31, 18, 28, 19, 29, 20, 30, 21, 31, 18, 28, 19, 29, 20, 30, 21, 31});
 
-  // y.printShapeInfo("y shape");
-  // y.printIndexedBuffer("y buffer");
-
   sd::ops::embedding_lookup op;
   auto result = op.evaluate({&x, &y}, {}, {0});
   auto output = result.at(0);
-  // x.printShapeInfo("Input");
-  output->printShapeInfo("Output");
-  exp.printShapeInfo("Expected");
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_TRUE(exp.isSameShape(output));
-  // output->printIndexedBuffer("Output");
-  // exp.printIndexedBuffer("Expect");
-
   ASSERT_TRUE(exp.equalsTo(output));
 }
 
@@ -1748,20 +1638,11 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
       'c', {6, 4, 2}, {90, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80, 90, 10, 11, 12, 13, 14, 15, 16,
                        10, 20, 30, 40, 50, 60, 70, 80, 90, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80});
 
-  // y.printShapeInfo("y shape");
-  // y.printIndexedBuffer("y buffer");
-
   sd::ops::embedding_lookup op;
   auto result = op.evaluate({&x, &y}, {}, {0});
   auto output = result.at(0);
-  // x.printShapeInfo("Input");
-  // output->printShapeInfo("Output");
-  // exp.printShapeInfo("Expected");
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_TRUE(exp.isSameShape(output));
-  // output->printIndexedBuffer("Output");
-  // exp.printIndexedBuffer("Expect");
-
   ASSERT_TRUE(exp.equalsTo(output));
 }
 
@@ -1772,8 +1653,6 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
       {6, 20, 11, 21, 12, 22, 13, 23, 14, 5, 20, 11, 21, 12, 22, 13, 23, 14, 5, 20, 11, 21, 12, 22, 13, 23, 14,
        6, 20, 11, 21, 12, 22, 13, 23, 14, 4, 20, 11, 21, 12, 22, 13, 23, 14, 4, 20, 11, 21, 12, 22, 13, 23, 14});
 
-  // y.printShapeInfo("y shape");
-  // y.printIndexedBuffer("y buffer");
   auto p1 = NDArrayFactory::create<double>('c', {3, 3}, {1, 20, 11, 21, 12, 22, 13, 23, 14});
   auto p2 = NDArrayFactory::create<double>('c', {3, 3}, {2, 20, 11, 21, 12, 22, 13, 23, 14});
   auto p3 = NDArrayFactory::create<double>('c', {3, 3}, {3, 20, 11, 21, 12, 22, 13, 23, 14});
@@ -1788,33 +1667,11 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
   sd::ops::embedding_lookup op;
   auto result = op.evaluate({&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &y}, {}, {1});
   auto output = result.at(0);
-  // x.printShapeInfo("Input");
-  // output->printIndexedBuffer("Output");
-  // exp.printShapeInfo("Expected");
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_TRUE(exp.isSameShape(output));
-  // output->printIndexedBuffer("Output");
-  // exp.printIndexedBuffer("Expect");
-
   ASSERT_TRUE(exp.equalsTo(output));
 }
-/* @Test
-    public void testDynamicPartition(){
-        INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
-        INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
-        INDArray[] out = Nd4j.exec(DynamicCustomOp.builder("dynamic_partition")
-                .addOutputs(Nd4j.createUninitialized(DataType.INT, 2), Nd4j.createUninitialized(DataType.INT, 1),
-   Nd4j.createUninitialized(DataType.INT, 1)) .addIntegerArguments(3) //3 partitions .addInputs(data,
-   partitions).build());
 
-        INDArray exp0 = Nd4j.createFromArray(2, 0);
-        INDArray exp1 = Nd4j.createFromArray(2);
-        INDArray exp2 = Nd4j.createFromArray(1);
-
-        assertEquals(exp0, out[0]);     //Usually just gives [0,0]
-        assertEquals(exp1, out[1]);
-        assertEquals(exp2, out[2]);
-    }*/
 TEST_F(DeclarableOpsTests5, DynamicPartition_01) {
   auto x = NDArrayFactory::create<int>({2, 1, 2, 0});
 
@@ -1832,8 +1689,6 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_01) {
 
   for (int e = 0; e < result.size(); e++) {
     auto output = result.at(e);
-    // output->printShapeInfo("Output shape> ");
-    // output->printIndexedBuffer("Output data> ");
     ASSERT_TRUE(exp[e].isSameShape(output));
     ASSERT_TRUE(exp[e].equalsTo(output));
   }
@@ -1845,12 +1700,6 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
 
   auto y = NDArrayFactory::create<int>('c', {3, 4, 2},
                                        {0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1});
-  /*    auto y = NDArrayFactory::create<double>('c', {3, 4}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
-                        2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f,
-                        1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f
-                      }
-      );
-  */
   int numPartition = 3;
   std::vector<NDArray> exp({NDArrayFactory::create<double>('c', {6}, {10, 20, 11, 21, 12, 22}),
                             NDArrayFactory::create<double>('c', {8}, {18, 28, 19, 29, 20, 30, 21, 31}),
@@ -1864,8 +1713,6 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
 
   for (int e = 0; e < result.size(); e++) {
     auto output = result.at(e);
-    // output->printShapeInfo("Output shape> ");
-    // output->printIndexedBuffer("Output data> ");
     ASSERT_TRUE(exp[e].isSameShape(output));
     ASSERT_TRUE(exp[e].equalsTo(output));
   }
@@ -1914,10 +1761,6 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
   for (int e = 0; e < result.size(); e++) {
     auto output = result.at(e);
     if (output) {
-      // output->printShapeInfo("Output shape> ");
-      // exp[e].printShapeInfo("Expected shape> ");
-      // output->printIndexedBuffer("Output data> ");
-
       ASSERT_TRUE(exp[e].isSameShape(output));
       ASSERT_TRUE(exp[e].equalsTo(output));
     } else {
@@ -2000,11 +1843,6 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto output = result.at(0);
-
-  // output->printShapeInfo("Output shape> ");
-  // exp.printShapeInfo("Expected shape> ");
-  // output->printIndexedBuffer("Output data> ");
-  // exp.printIndexedBuffer("Expected res>");
   ASSERT_TRUE(exp.isSameShape(output));
   ASSERT_TRUE(exp.equalsTo(output));
 }

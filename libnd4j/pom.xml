@@ -43,8 +43,8 @@
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>11.8</cuda.version>
-        <cudnn.version>8.6</cudnn.version>
+        <cuda.version>12.1</cuda.version>
+        <cudnn.version>8.9</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
@@ -66,6 +66,9 @@
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
+        <libnd4j.test.filter>none</libnd4j.test.filter>
+        <libnd4j.log>none</libnd4j.log>
+        <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
     </properties>
 
     <build>
@@ -118,7 +121,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.6.0</version>
                 <configuration>
                     <descriptors>
                         <descriptor>assembly.xml</descriptor>
@@ -298,6 +301,8 @@
                                         <argument>${libnd4j.lto}</argument>
                                         <argument>--callstack</argument>
                                         <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -422,6 +427,10 @@
                                         <argument>${libnd4j.lto}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
+                                        <argument>--keep-nvcc-output</argument>
+                                        <argument>${libnd4j.keepnvcc}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -440,8 +449,12 @@
                                         <argument>run_tests.sh</argument>
                                         <argument>--chip</argument>
                                         <argument>${libnd4j.chip}</argument>
+                                        <argument>--test-filter</argument>
+                                        <argument>${libnd4j.test.filter}</argument>
                                     </buildCommand>
+
                                 </configuration>
+
                             </execution>
                         </executions>
                     </plugin>

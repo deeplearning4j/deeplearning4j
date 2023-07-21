@@ -39,7 +39,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ConvolutionTests2 : public testing::Test {
+class ConvolutionTests2 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)
@@ -90,7 +90,7 @@ TEST_F(ConvolutionTests2, im2col_1) {
 }
 
 template <typename T>
-class TypedConvolutionTests2 : public testing::Test {
+class TypedConvolutionTests2 : public NDArrayTests {
  public:
 };
 
@@ -1300,11 +1300,9 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
 
   ASSERT_TRUE(_gradWP->equalsTo(&expGWP));
 
-  //_gradWD->printShapeInfo("gradWD shape");
 
   ASSERT_TRUE(_gradWD->isSameShape(&expGWD));
   ASSERT_TRUE(_gradWD->isSameShape(&weightsD));
-  // _gradWD->printIndexedBuffer();
   ASSERT_TRUE(_gradWD->equalsTo(&expGWD));
 
   ASSERT_TRUE(_epsilon->isSameShape(&input));
@@ -2411,11 +2409,9 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test6) {
 TEST_F(ConvolutionTests2, maxpool2d_1) {
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   std::unique_ptr<VariableSpace> variableSpace(new VariableSpace());
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
@@ -2429,7 +2425,6 @@ TEST_F(ConvolutionTests2, maxpool2d_1) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2468,7 +2463,6 @@ TEST_F(ConvolutionTests2, maxpool2d_2) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2507,7 +2501,6 @@ TEST_F(ConvolutionTests2, maxpool2d_3) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2586,7 +2579,6 @@ TEST_F(ConvolutionTests2, maxpool2d_5) {
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-  // result.printShapeInfo();
   ASSERT_TRUE(exp.isSameShape(result));
 }
 
@@ -2605,10 +2597,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-#if 0    
-    exp.printIndexedBuffer("Expected");
-    z->printIndexedBuffer("Z");
-#endif
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -2628,10 +2616,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_7) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-#if 0    
-    exp.printIndexedBuffer("Expected");
-    z->printIndexedBuffer("Z");
-#endif
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -2651,10 +2635,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-#if 0    
-    exp.printIndexedBuffer("Expected");
-    z->printIndexedBuffer("Z");
-#endif
   ASSERT_TRUE(exp.isSameShape(z));
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -2710,10 +2690,6 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_10) {
   auto* output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-#if 0    
-    expOutput.printIndexedBuffer("expOutput");
-    output->printIndexedBuffer("output");
-#endif
   ASSERT_TRUE(expOutput.isSameShape(output));
   ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -4087,7 +4063,6 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_6) {
   sd::ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   NDArray* output = results.at(0);
-  // output.printIndexedBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
 

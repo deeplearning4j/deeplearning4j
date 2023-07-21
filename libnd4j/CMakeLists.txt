@@ -86,14 +86,28 @@ if (SD_CUDA AND NOT SD_AURORA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  -allow-unsupported-compiler")
+
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v")
+    if(SD_KEEP_NVCC_OUTPUT)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
+    endif()
     enable_language(CUDA)
+    # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
+    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
     find_package(CUDA REQUIRED)
+    # cuda driver library for device validator
+    find_library(CUDA_DRIVER_LIBRARY
+            NAMES cuda
+            PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES lib64 lib/x64)
+
     # Add a platform agnostic way of showing we are compiling for cuda
     # The normal way of using __NVCC__ and __CUDACC__ does not show up
     # for cpp files which makes it difficult to add guards for specific functions.
     add_compile_definitions(SD_CUDA=true)
-
+    if("$ENV{CLION_IDE}")
+        add_compile_definitions(__CUDA_CC__)
+    endif()
     if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
         message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compiling CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
         set(CMAKE_CXX_STANDARD 11)

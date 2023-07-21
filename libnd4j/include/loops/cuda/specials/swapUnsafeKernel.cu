@@ -21,6 +21,8 @@
 //
 #include <loops/special_kernels.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,7 +75,8 @@ BUILD_SINGLE_TEMPLATE(template SD_KERNEL void swapUnsafeKernel,
 template <typename T>
 void templatedSwapUnsafe(void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,
                          sd::LongType const* theSecondShape, cudaStream_t* theStream) {
-  swapUnsafeKernel<T><<<256, 512, 8192, *theStream>>>(theFirstBuffer, theFirstShape, theSecondBuffer, theSecondShape);
+  dim3 launchDims = getLaunchDims("swap_unsafe");
+  swapUnsafeKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *theStream>>>(theFirstBuffer, theFirstShape, theSecondBuffer, theSecondShape);
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwapUnsafe,
                       (void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,

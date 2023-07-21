@@ -34,7 +34,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DataTypesValidationTests : public testing::Test {
+class DataTypesValidationTests : public NDArrayTests {
  public:
 };
 

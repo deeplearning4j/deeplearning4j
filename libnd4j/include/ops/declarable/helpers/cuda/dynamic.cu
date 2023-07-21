@@ -129,7 +129,7 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
 
     for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
     // compute tad array for given dimensions
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), sourceDims);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &sourceDims);
 
     std::vector<void *> outBuffers(outSize);
     std::vector<const sd::LongType *> tadShapes(outSize);
@@ -144,7 +144,7 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
 
       for (int k = 1; k < r; k++) outDims[k - 1] = k;
 
-      auto packZ = ConstantTadHelper::getInstance().tadForDimensions(outputList.at(i)->shapeInfo(), outDims);
+      auto packZ = ConstantTadHelper::getInstance().tadForDimensions(outputList.at(i)->shapeInfo(), &outDims);
 
       outBuffers[i] = outputList.at(i)->specialBuffer();
       tadShapes[i] = packZ->platformShapeInfo();
@@ -283,7 +283,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     std::vector<sd::LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
 
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
 
     std::vector<const void *> inputBuffers(inputSize);
     std::vector<const sd::LongType *> inputTadShapes(inputSize);
@@ -296,7 +296,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
       std::vector<sd::LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
       for (int i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
-      auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), sourceDims);
+      auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
 
       indicesBuffers[e] = indices[e]->specialBuffer();
       indicesShapes[e] = indices[e]->specialShapeInfo();

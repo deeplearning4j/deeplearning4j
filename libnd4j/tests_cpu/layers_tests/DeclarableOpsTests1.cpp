@@ -39,7 +39,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class DeclarableOpsTests1 : public testing::Test {
+class DeclarableOpsTests1 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)
@@ -63,7 +63,7 @@ class DeclarableOpsTests1 : public testing::Test {
 };
 
 template <typename T>
-class TypedDeclarableOpsTests1 : public testing::Test {
+class TypedDeclarableOpsTests1 : public NDArrayTests {
  public:
   const int bS = 2;   // batch size
   const int iD = 1;   // input depth (number of picture channels, for example rgb=3)
@@ -1884,11 +1884,9 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
 TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
   auto x = NDArrayFactory::create_<float>('c', {bS, iD, iH, iW});
   auto exp = NDArrayFactory::create<float>('c', {bS, iD, oH, oW});
-  // auto z('c',{bS,iD,oH,oW});
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);
-  // variableSpace->putVariable(1, &z);
 
   auto block = new Context(1, variableSpace, false);
   block->fillInputs({-1});
@@ -2316,7 +2314,6 @@ TEST_F(DeclarableOpsTests1, ArgMax6) {
   auto x = NDArrayFactory::create<float>('c', {3, 4, 5});
   auto dim = NDArrayFactory::create<float>(-1.f);
   x.linspace(1);
-
   sd::ops::argmax op;
 
   auto expected = op.evaluate({&x}, {}, {2});
@@ -2327,7 +2324,6 @@ TEST_F(DeclarableOpsTests1, ArgMax6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
   ASSERT_EQ(*exp, *z);
 }
 
@@ -3117,9 +3113,4 @@ TEST_F(DeclarableOpsTests1, Test_Expose_2) {
   auto list1 = var1->getNDArrayList();
 
   ASSERT_TRUE(list == list1);
-}
-
-TEST_F(DeclarableOpsTests1, Test_Release) {
-  auto x = NDArrayFactory::create<float>('c', {8, 8});
-  // x.printShapeInfo("x shape");
 }

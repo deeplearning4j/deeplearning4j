@@ -781,7 +781,6 @@ SD_LIB_HIDDEN void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const 
   const sd::LongType* zStride = shape::stride(const_cast<sd::LongType*>(zShapeInfo));
   const sd::LongType len = shape::length(xShapeInfo);
 
-  if (len == 0) return;
 
   switch (kindOfLoop) {
     //*********************************************//

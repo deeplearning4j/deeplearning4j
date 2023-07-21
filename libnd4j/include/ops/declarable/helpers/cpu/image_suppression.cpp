@@ -120,19 +120,19 @@ static inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongType
 }
 
 template <typename T>
-static inline T similiratyOverlaps_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static inline T similarityOverlaps_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
   return boxes.t<T>(i, j);
 }
 
-typedef NDArray (*SimiliratyFunc)(NDArray const& boxes, sd::LongType i, sd::LongType j);
+typedef NDArray (*SimilarityFunc)(NDArray const& boxes, sd::LongType i, sd::LongType j);
 
 static NDArray similiratyOverlaps(NDArray const& boxes, sd::LongType i, sd::LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
-  BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similiratyOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
+  BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 
-static NDArray similiratyV3(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static NDArray similarityV3(NDArray const& boxes, sd::LongType i, sd::LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
@@ -142,7 +142,7 @@ static NDArray similiratyV3(NDArray const& boxes, sd::LongType i, sd::LongType j
 template <typename T, typename I>
 static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArray* boxes, NDArray* scores,
                                               int outputSize, float overlapThreshold, float scoreThreshold,
-                                              NDArray* output, SimiliratyFunc f) {
+                                              NDArray* output, SimilarityFunc f) {
   auto numBoxes = boxes->sizeAt(0);
   T* scoresData = scores->dataBuffer()->primaryAsT<T>();
 
@@ -213,7 +213,6 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
       if (nextCandidate._score == originalScore) {
         // Suppression has not occurred, so select next_candidate
         selected.push_back(nextCandidate._boxIndex);
-        //                    selected_scores.push_back(nextCandidate._score);
       }
       if ((float)nextCandidate._score > (float)scoreThreshold) {
         // Soft suppression has occurred and current score is still greater than
@@ -244,14 +243,14 @@ sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDA
                                  double overlapThreshold, double scoreThreshold, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr ? DataType::INT32 : output->dataType(),
                         return nonMaxSuppressionGeneric_,
-                        (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyV3),
+                        (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similarityV3),
                         SD_FLOAT_TYPES, SD_INTEGER_TYPES);
   return 0;
 }
 
 BUILD_DOUBLE_TEMPLATE(template sd::LongType nonMaxSuppressionGeneric_,
                       (sd::LaunchContext * context, NDArray* boxes, NDArray* scores, int maxSize,
-                       float overlapThreshold, float scoreThreshold, NDArray* output, SimiliratyFunc similiratyFunc),
+                       float overlapThreshold, float scoreThreshold, NDArray* output, SimilarityFunc SimilarityFunc),
                       SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 
 void nonMaxSuppression(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,

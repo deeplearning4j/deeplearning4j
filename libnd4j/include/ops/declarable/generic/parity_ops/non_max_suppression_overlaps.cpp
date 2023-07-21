@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
   int maxOutputSize;  // = INT_ARG(0);
   if (block.width() > 2)
-    maxOutputSize = INPUT_VARIABLE(2)->e<int>(0);
+    maxOutputSize = INPUT_VARIABLE(2)->e<sd::LongType>(0);
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
@@ -48,8 +48,7 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
                "image.non_max_suppression_overlaps: The rank of scales array should be 1, but %i is given",
                boxes->rankOf());
 
-  //            if (scales->lengthOf() < maxOutputSize)
-  //                maxOutputSize = scales->lengthOf();
+
   double overlapThreshold = 0.5;
   double scoreThreshold = -DataTypeUtils::infOrMax<double>();
   if (block.getTArguments()->size() > 0) overlapThreshold = T_ARG(0);
@@ -63,11 +62,10 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
   auto in = inputShape->at(0);
-  int outRank = shape::rank(in);
 
   int maxOutputSize;
   if (block.width() > 2)
-    maxOutputSize = INPUT_VARIABLE(2)->e<int>(0);
+    maxOutputSize = INPUT_VARIABLE(2)->e<sd::LongType>(0);
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
@@ -78,10 +76,13 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
 
   sd::LongType boxSize =
       helpers::nonMaxSuppressionGeneric(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), maxOutputSize,
-                                        overlapThreshold, scoreThreshold, nullptr);  // shape::sizeAt(in, 0);
-  if (boxSize < maxOutputSize) maxOutputSize = boxSize;
+                                        overlapThreshold, scoreThreshold, nullptr);
+  if (boxSize < maxOutputSize) {
+    sd_printf("Setting maxOutputSize of %lld with original box size of %lld\n",maxOutputSize,boxSize);
+    maxOutputSize = boxSize;
+  }
 
-  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT32);
+  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT64);
 
   return SHAPELIST(outputShape);
 }

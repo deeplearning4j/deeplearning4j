@@ -27,6 +27,8 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/stack.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -54,10 +56,10 @@ static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const sd::LongType* 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST static void stackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
+SD_HOST static void stackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                              const cudaStream_t* stream, void* pVx, void* vz,
                                              const sd::LongType* zShapeInfo) {
-  stackScalarsCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(pVx, vz, zShapeInfo);
+  stackScalarsCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -77,16 +79,15 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 
     void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
-    stackScalarsCudaLauncher<T>(blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers,
+    dim3 stackDims2 = stackDims(output.lengthOf());
+    stackScalarsCudaLauncher<T>(stackDims2.y, stackDims2.x, stackDims2.z, context->getCudaStream(), dInBuffers,
                                 output.specialBuffer(), output.specialShapeInfo());
 
     manager.synchronize();
   } else {
+    std::vector<sd::LongType> dims = {dim};
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+        output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(),1, dims.data()));
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
@@ -108,7 +109,7 @@ void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs
 }
 BUILD_SINGLE_TEMPLATE(template void stack_,
                       (sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output,
-                       const int dim),
+                          const int dim),
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
@@ -146,7 +147,6 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
                      const int dim) {
   const int numOfSubArrs = outArrs.size();
 
-  // NDArray::prepareSpecialUse(outArrs, {&input});
   input.syncToDevice();
   for (const auto a : outArrs) a->getDataBuffer()->allocateSpecial();
 
@@ -167,8 +167,9 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
 
     manager.synchronize();
   } else {
+    std::vector<sd::LongType> dims = {dim};
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+        input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), 1,dims.data()));
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
     for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
@@ -192,7 +193,7 @@ void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector
 }
 BUILD_SINGLE_TEMPLATE(template void unstack_,
                       (sd::LaunchContext * context, const NDArray& input, const std::vector<NDArray*>& outArrs,
-                       const int dim),
+                          const int dim),
                       SD_COMMON_TYPES);
 
 

@@ -22,6 +22,8 @@
 #include <array/NDArray.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -150,7 +152,8 @@ void drawBoundingBoxesH(sd::LaunchContext* context, NDArray const* images, NDArr
   auto boxesBuf = boxes->getDataBuffer()->specialAsT<float>();             // boxes should be float32
   auto colorsTableBuf = colorsTable.getDataBuffer()->specialAsT<float>();  // color table is float32
   auto outputBuf = output->dataBuffer()->specialAsT<T>();
-  drawBoundingBoxesKernel<<<128, 128, 1024, *stream>>>(
+  dim3 launchDims = getLaunchDims("draw_bounding_boxes");
+  drawBoundingBoxesKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), colorsTableBuf,
       colorsTable.specialShapeInfo(), outputBuf, output->specialShapeInfo(), batchSize, width, height, channels,
       boxSize, colorsTable.lengthOf());

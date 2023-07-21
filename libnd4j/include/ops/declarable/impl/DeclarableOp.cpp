@@ -775,6 +775,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     status = nonhelper_exec(this, *block, numOutputs);
   }
 #else
+
   if (!hasHelper) status = this->validateAndExecute(*block);
 #endif
   // optionally saving execution time
@@ -783,7 +784,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
     block->setInnerTime(outerTime);
     sd_debug("%s [%s] prepTime %lld time %lld \n", hasHelper ? "helper" : "ordinary", this->getOpName()->c_str(),
-             (long long int)prepTime, (long long int)outerTime);
+             static_cast<sd::LongType>(prepTime), static_cast<sd::LongType>(outerTime));
   }
 
   if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {

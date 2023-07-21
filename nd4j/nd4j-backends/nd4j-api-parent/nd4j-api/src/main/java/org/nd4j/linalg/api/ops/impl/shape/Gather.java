@@ -39,6 +39,7 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 import static org.nd4j.linalg.api.buffer.DataType.INT32;
+import static org.nd4j.linalg.api.buffer.DataType.INT64;
 
 /**
  * Gather op

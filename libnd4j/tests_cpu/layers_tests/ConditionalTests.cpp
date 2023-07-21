@@ -29,7 +29,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ConditionalTests : public testing::Test {
+class ConditionalTests : public NDArrayTests {
  public:
   ConditionalTests() {
   }
@@ -265,7 +265,6 @@ TEST_F(ConditionalTests, Flat_Test_6) {
 
   ASSERT_NE(nullptr, z);
 
-  // z->printIndexedBuffer();
 
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-1, -1, -1, -1});
   ASSERT_TRUE(exp.equalsTo(z));
@@ -292,7 +291,6 @@ TEST_F(ConditionalTests, Flat_Test_7) {
 
   ASSERT_NE(nullptr, z);
 
-  // z->printIndexedBuffer();
 
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-3, -3, -3, -3});
   ASSERT_TRUE(exp.equalsTo(z));

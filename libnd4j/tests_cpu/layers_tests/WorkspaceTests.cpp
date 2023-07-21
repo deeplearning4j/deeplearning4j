@@ -32,7 +32,7 @@
 using namespace sd;
 using namespace sd::memory;
 
-class WorkspaceTests : public testing::Test {};
+class WorkspaceTests : public NDArrayTests {};
 
 TEST_F(WorkspaceTests, BasicInitialization1) {
   Workspace workspace(1024);
@@ -207,11 +207,9 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
 
   auto x = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ctx);
 
-  // x.printIndexedBuffer("x0");
 
   auto y = NDArrayFactory::create<float>('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ctx);
 
-  // x.printIndexedBuffer("x2");
 
   auto z = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ctx);
 
@@ -219,9 +217,6 @@ TEST_F(WorkspaceTests, Test_Arrays_1) {
 
   y.assign(&x);
 
-  // x.printIndexedBuffer("x3");
-  // y.printIndexedBuffer("y");
-  // z.printIndexedBuffer("z");
 }
 
 #ifdef GRAPH_FILES_OK

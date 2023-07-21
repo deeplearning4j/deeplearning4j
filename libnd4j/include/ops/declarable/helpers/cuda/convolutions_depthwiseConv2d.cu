@@ -54,7 +54,7 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
   // isNCHW       0-NCHW,  1-NHWC
 
   LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
-                                       // iC*mC), output channels, output height/width
+  // iC*mC), output channels, output height/width
   LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
@@ -87,19 +87,23 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
   if (paddingMode == 1)  // SAME
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-  NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
-
+  auto  columns = new NDArray(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  auto outputReshaped = new NDArray(output->reshape(output->ordering(), outReShape, false));
+  auto other = new NDArray(NDArrayFactory::create(0.f, input->getContext()));
   helpers::im2col(
-      *output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, modifWeights,
+      *output->getContext(), *input, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
+      *other);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  MmulHelper::tensorDot(columns, weights, outputReshaped, modifColumns, modifWeights,
                         modifOutput);  // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
   if (bias)
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
   if (!isNCHW) delete input;
+
+  delete columns;
+  delete other;
+
 }
 
 //////////////////////////////////////////////////////////////////////////

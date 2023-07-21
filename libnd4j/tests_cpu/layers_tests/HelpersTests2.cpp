@@ -27,7 +27,7 @@
 
 using namespace sd;
 
-class HelpersTests2 : public testing::Test {
+class HelpersTests2 : public NDArrayTests {
  public:
   HelpersTests2() { std::cout << std::endl << std::flush; }
 };
@@ -56,15 +56,6 @@ TEST_F(HelpersTests2, Hessenberg_2) {
   NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, sd::DataType::DOUBLE);
   NDArray expQ('c', {2, 2}, {1, 0, 0, 1}, sd::DataType::DOUBLE);
   ops::helpers::Hessenberg<double> hess(x);
-
-
-
-  x.printIndexedBuffer("expected x");
-  hess._H.printIndexedBuffer("output h");
-
-
-  expQ.printIndexedBuffer("expected q");
-  hess._Q.printIndexedBuffer("output q");
 
 
   ASSERT_TRUE(hess._H.isSameShape(&x));

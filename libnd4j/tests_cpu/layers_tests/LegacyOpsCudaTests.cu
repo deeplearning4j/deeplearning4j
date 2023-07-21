@@ -37,7 +37,7 @@
 using namespace sd;
 using namespace sd::ops;
 
-class LegacyOpsCudaTests : public testing::Test {};
+class LegacyOpsCudaTests : public NDArrayTests {};
 
 TEST_F(LegacyOpsCudaTests, test_sortTad_1) {
   auto x = NDArrayFactory::create<float>(
@@ -46,14 +46,14 @@ TEST_F(LegacyOpsCudaTests, test_sortTad_1) {
   auto e = NDArrayFactory::create<float>(
       'c', {3, 5}, {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f});
 
-  int axis = 1;
+  sd::LongType axis = 1;
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), axis);
 
   sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   x.syncToDevice();
   sortTad(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), &axis, 1,
-          packX.platformShapeInfo(), packX.platformOffsets(), false);
+          packX->platformShapeInfo(), packX->platformOffsets(), false);
   x.tickWriteDevice();
 
   ASSERT_EQ(e, x);

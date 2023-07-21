@@ -34,7 +34,7 @@
 
 using namespace sd;
 
-class StringTests : public testing::Test {
+class StringTests : public NDArrayTests {
  public:
 };
 /////////////////////////////////////////////////////////////////////////
@@ -70,101 +70,78 @@ TEST_F(StringTests, Basic_Test_3) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_4) {
   NDArray array({3, 2}, std::vector<const char32_t*>{U"alpha", U"beta", U"gamma€한", U"pÿqwe", U"ß水𝄋", U"omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_5) {
   NDArray array({3, 2}, std::vector<const char16_t*>{u"alpha", u"beta", u"gamma€한", u"pÿqwe", u"ß水𝄋", u"omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_6) {
   NDArray array({3, 2}, std::vector<const char*>{"alpha", "beta", "gamma€한", "pÿqwe", "ß水𝄋", "omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_7) {
   NDArray array({3, 2}, std::vector<std::u32string>{U"alpha", U"beta", U"gamma€한", U"pÿqwe", U"ß水𝄋", U"omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_8) {
   NDArray array({3, 2}, std::vector<std::u16string>{u"alpha", u"beta", u"gamma€한", u"pÿqwe", u"ß水𝄋", u"omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_9) {
   NDArray array({3, 2}, std::vector<std::string>{"alpha", "beta", "gamma€한", "pÿqwe", "ß水𝄋", "omega"});
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_10) {
   NDArray array(std::u32string(U"gamma€한"));
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_11) {
   NDArray array(U"gamma€한");
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_12) {
   NDArray array(std::u16string(u"gamma€한"));
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_13) {
   NDArray array(u"gamma€한");
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_14) {
   NDArray array(std::string("gamma€한"));
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_15) {
   NDArray array("gamma€한");
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_16) {
@@ -173,8 +150,6 @@ TEST_F(StringTests, Basic_Test_16) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_17) {
@@ -183,8 +158,6 @@ TEST_F(StringTests, Basic_Test_17) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_18) {
@@ -193,8 +166,6 @@ TEST_F(StringTests, Basic_Test_18) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_19) {
@@ -203,8 +174,6 @@ TEST_F(StringTests, Basic_Test_19) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_20) {
@@ -213,8 +182,6 @@ TEST_F(StringTests, Basic_Test_20) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_21) {
@@ -224,8 +191,6 @@ TEST_F(StringTests, Basic_Test_21) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_22) {
@@ -508,8 +473,6 @@ TEST_F(StringTests, Basic_Test_StringVecU8toUTF16) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU8toUTF32) {
@@ -519,8 +482,6 @@ TEST_F(StringTests, Basic_Test_StringVecU8toUTF32) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U8toUTF16) {
@@ -544,8 +505,6 @@ TEST_F(StringTests, Basic_Test_StringVecU16toUTF16) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU16toUTF32) {
@@ -554,8 +513,6 @@ TEST_F(StringTests, Basic_Test_StringVecU16toUTF32) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU16toUTF8) {
@@ -564,8 +521,6 @@ TEST_F(StringTests, Basic_Test_StringVecU16toUTF8) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U16toUTF8) {
@@ -592,8 +547,6 @@ TEST_F(StringTests, Basic_Test_StringVecU32toUTF32) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU32toUTF16) {
@@ -603,12 +556,6 @@ TEST_F(StringTests, Basic_Test_StringVecU32toUTF16) {
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
 
-  array.printIndexedBuffer("String array");
-
-  printf("Array elements size: \n");
-  for (int e = 0; e < array.lengthOf(); e++) {
-    printf("Element %d size: %d\n", e, static_cast<int>(array.e<std::u16string>(e).size()));
-  }
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU32toUTF8) {
@@ -617,8 +564,6 @@ TEST_F(StringTests, Basic_Test_StringVecU32toUTF8) {
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
-
-  array.printIndexedBuffer("String array");
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U32toUTF32) {
@@ -689,7 +634,6 @@ TEST_F(StringTests, Basic_cast_UTF32toUTF8) {
   ASSERT_EQ(0, array.rankOf());
 
   auto aCast = array.cast(sd::DataType::UTF8);
-
   auto z0 = array.e<std::u32string>(0);
   auto z1 = aCast.e<std::string>(0);
 

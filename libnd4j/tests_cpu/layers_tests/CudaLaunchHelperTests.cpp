@@ -26,7 +26,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class CudaLaunchHelperTests : public testing::Test {
+class CudaLaunchHelperTests : public NDArrayTests {
  public:
 };
 

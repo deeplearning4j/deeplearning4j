@@ -22,6 +22,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/print_variable.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -44,7 +46,8 @@ static SD_KERNEL void print_device(const void *special, const sd::LongType *shap
 
 template <typename T>
 static SD_HOST void exec_print_device(LaunchContext &ctx, const void *special, const sd::LongType *shapeInfo) {
-  print_device<T><<<1, 1, 1024, *ctx.getCudaStream()>>>(special, shapeInfo);
+  dim3 launchDims = getLaunchDims("print");
+  print_device<T><<<launchDims.x, launchDims.y, launchDims.z, *ctx.getCudaStream()>>>(special, shapeInfo);
 }
 
 void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {

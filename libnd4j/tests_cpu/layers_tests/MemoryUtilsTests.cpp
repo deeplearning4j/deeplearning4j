@@ -26,7 +26,7 @@
 
 using namespace sd::memory;
 
-class MemoryUtilsTests : public testing::Test {
+class MemoryUtilsTests : public NDArrayTests {
  public:
 };
 

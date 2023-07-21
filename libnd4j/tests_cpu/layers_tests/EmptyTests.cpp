@@ -23,11 +23,10 @@
 #include <ops/declarable/CustomOperations.h>
 
 #include "testlayers.h"
-// #include <array/NDArrayList.h>
 
 using namespace sd;
 
-class EmptyTests : public testing::Test {
+class EmptyTests : public NDArrayTests {
  public:
   EmptyTests() {
     printf("\n");
@@ -70,10 +69,6 @@ TEST_F(EmptyTests, Test_Concat_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-
-  //    z->printShapeInfo("z shape");
-  //    z->printIndexedBuffer("z buffr");
-
   ASSERT_EQ(*vector, *z);
 
   delete empty;

@@ -597,7 +597,6 @@ static void reductionCase1Scalar(const int& second_rank, const sd::LongType* inn
     } else {
       auto gen = inner_total / threadingThreshold + 1;
       maxThreads = gen > maxThreads ? maxThreads : gen;
-      // sd_printf("%ld %ld  mth %d %d\n", inner_total, threadingThreshold,  maxThreads, gen);
     }
   } else {
     inner_total = getLength<LastIndexFaster>(inner_bases, second_rank, 1, inner_last);
@@ -606,7 +605,6 @@ static void reductionCase1Scalar(const int& second_rank, const sd::LongType* inn
     } else {
       auto gen = inner_total * inner_last / threadingThreshold + 1;
       maxThreads = gen > maxThreads ? maxThreads : gen;
-      // sd_printf("%ld %ld  mth %d %d\n", inner_total, threadingThreshold, maxThreads, gen);
     }
   }
 #define BLOCKX4 1
@@ -742,7 +740,6 @@ static void reductionCases(Movement& movement, sd::LongType loopTotal, const int
       auto loopCount4_8th = inner_total / 8;
       auto tail = inner_total & 7;
       bool use_vector = loopCount4_8th > 16;
-      // sd_printf("++ %d %d %d \n", loopCount4, loopCount4_8th, tail);
       for (sd::LongType i = 0; i < loopTotal_K; i++) {
         AggType agg0, agg1, agg2, agg3;
         const X* buff0 = &(bufferX[movement.First()]);
@@ -781,7 +778,6 @@ static void reductionCases(Movement& movement, sd::LongType loopTotal, const int
                                                           &(buff2[loopCount4]), &(buff3[loopCount4]), tail, agg0, agg1,
                                                           agg2, agg3);
           }
-          // sd_printf("~~~ %f %f %f \n", agg0.n, agg0.mean, agg0.M2);
         } else {
           DeviationOp::updateInnerLoop4b(buff0, buff1, buff2, buff3, inner_total, agg0, agg1, agg2, agg3);
         }
@@ -817,7 +813,6 @@ static void reductionCases(Movement& movement, sd::LongType loopTotal, const int
       sd::LongType inner_loop = getLength<LastIndexFaster>(inner_bases, second_rank, 1, inner_last);
       if (second_rank == 2) {
         LOG_CALLS(11)
-        // sd_printf("%d %d %d\n", inner_loop, inner_last, inner_stride);
         for (sd::LongType i = 0; i < loopTotal_K; i++) {
           const X* buffer0 = &(bufferX[movement.First()]);
           Z* output0 = &(outputZ[movement.Second()]);
@@ -1077,7 +1072,6 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
 
 template <typename X, typename Z, typename DeviationOp>
 static void reduction_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
-  // sd_printf("___%s_________%d+\n", __PRETTY_FUNCTION__, 0);
   char input_order = input.ordering();
   bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
   auto input_shapeInfo = input.shapeInfo();

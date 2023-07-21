@@ -25,8 +25,10 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-
+#include <execution/cuda/DeviceValidator.h>
 using namespace simdOps;
+
+
 
 template <typename X, typename Z, typename OpType>
 SD_KERNEL void transformAnySimple(const void *x, const sd::LongType *xShapeInfo,sd::LongType xRank, void *params, void *z,
@@ -48,6 +50,8 @@ SD_HOST void TransformAny<X, Y>::executeTransformShaped(dim3 launchDims, cudaStr
                                                         sd::LongType zRank, sd::LongType *allocationPointer, void *reductionPointer,
                                                         const sd::LongType *tadShapeInfo,
                                                         const sd::LongType *tadOffsets) {
+
+
   DISPATCH_BY_OPNUM_TT(intermediateShaped,
                        PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer,
                               reductionPointer, tadShapeInfo, tadOffsets),
@@ -68,6 +72,8 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
   auto params = reinterpret_cast<X *>(vparams);
   auto reductionPointer = reinterpret_cast<Z *>(vreductionPointer);
 
+  if(x == nullptr || z == nullptr)
+    return;
   __shared__ sd::LongType xEws;
   __shared__ sd::LongType zEws;
   __shared__ char xOrder;
@@ -112,6 +118,9 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_
                                                     sd::LongType *allocationPointer,
                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                     const sd::LongType *tadOffsets) {
+
+
+
   transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 

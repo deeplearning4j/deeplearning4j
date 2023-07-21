@@ -27,7 +27,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-
+#include <execution/cuda/LaunchDims.h>
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -54,7 +54,8 @@ static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, sd::LongType co
     auto zIndex = shape::getIndexOffset(segment, outputShape);
     if (lengths[segment] == 0) continue;
     auto xIndex = shape::getIndexOffset(idx, inputShape);
-
+    if(xIndex >= xLen)
+      continue;
     sd::math::atomics::sd_atomicAdd(&output[zIndex], input[xIndex] / sd::math::sd_sqrt<sd::LongType, T>(lengths[segment]));
   }
 }
@@ -62,10 +63,12 @@ static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, sd::LongType co
 // SegmentSqrtN kernel
 template <typename T, typename I>
 static SD_KERNEL void segmentSqrtNTadKernel(T* inputBuf, sd::LongType const* inputShape, sd::LongType const* inputTads,
-                                            sd::LongType const* inputTadOffsets, I* indices, sd::LongType* starts, sd::LongType* lengths,
-                                            sd::LongType numOfClasses, void* outputBuf, sd::LongType const* outputShape,
-                                            sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
+                                            sd::LongType const* inputTadOffsets, I* indices, sd::LongType* starts,
+                                            sd::LongType* lengths, sd::LongType numOfClasses, void* outputBuf,
+                                            sd::LongType const* outputShape, sd::LongType const* outputTads,
+                                            sd::LongType const* outputTadOffsets) {
   __shared__ sd::LongType len, total;
+
 
   if (threadIdx.x == 0) {
     total = shape::sizeAt(inputShape, 0);
@@ -96,7 +99,7 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
   NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
-  dim3 dims(128, 256, 256);
+  dim3 dims= getLaunchDims("segmentSqrtN");
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
@@ -108,7 +111,8 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
         output->specialShapeInfo());
   } else {
     output->nullify();
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
@@ -120,6 +124,7 @@ static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* in
         input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         indices->dataBuffer()->specialAsT<I>(), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -220,20 +225,20 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
 
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
-  dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();
     segmentSqrtNBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -243,12 +248,14 @@ static sd::Status unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context, NDA
     auto outputTadOffsets = packZ->specialOffsets();
     auto gradOutTads = packGradOut->specialShapeInfo();
     auto gradOutTadOffsets = packGradOut->specialOffsets();
+    dim3 segmentBpTad2 = segmentBpTad(indices->lengthOf(),input->lengthOf());
 
-    segmentSqrtNBPTadKernel<T, I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(
+    segmentSqrtNBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), lengths, output->specialBuffer(),
         output->specialShapeInfo(), inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads,
         outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
 

@@ -31,6 +31,8 @@
 
 #include <numeric>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -127,6 +129,8 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = 256;
 
+  dim3 dims = getConcat(output.lengthOf());
+
   // prepare arrays of pointers on buffers and shapes
   std::vector<const void*> hInBuffers(numOfInArrs);
   std::vector<const sd::LongType*> hInShapeInfo(numOfInArrs);
@@ -142,7 +146,7 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
   void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(), hInShapeInfo.size() * sizeof(sd::LongType*));
 
   BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo,
+                        (dims.y,dims.x, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo,
                          output.specialBuffer(), output.specialShapeInfo(), axis),
                         SD_COMMON_TYPES);
 

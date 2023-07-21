@@ -28,7 +28,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class TypeCastTests : public testing::Test {
+class TypeCastTests : public NDArrayTests {
  public:
 };
 

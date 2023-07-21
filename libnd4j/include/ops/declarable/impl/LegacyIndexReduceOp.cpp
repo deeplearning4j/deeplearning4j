@@ -59,7 +59,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::
     return SHAPELIST(result);
   } else if (block.getAxis()->size()) {
     // in this case we're building proper shape for reduction
-    auto array = INPUT_VARIABLE(0);  // new NDArray(nullptr, inShape, block.getWorkspace());
+    auto array = INPUT_VARIABLE(0);
 
     auto newShape =
         ShapeUtils::evalReduceShapeInfo('c', block.getAxis(), *array, DataType::INT64, false, true, block.workspace());

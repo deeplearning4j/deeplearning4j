@@ -26,6 +26,8 @@
 #include <ops/declarable/helpers/imagesHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -276,22 +278,22 @@ static void SD_KERNEL hsvToRgbCuda(const void* vx, const sd::LongType* xShapeInf
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_HOST void hsvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                         const void* vx, const sd::LongType* xShapeInfo,
+static SD_HOST void hsvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                                         const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                          const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
                                          const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
                                          const int dimC) {
-  hsvToRgbCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo,
+  hsvToRgbCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo,
                                                                     zTadOffsets, numOfTads, dimC);
 }
 
 template <typename T>
-static SD_HOST void rgbToHsvCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                         const void* vx, const sd::LongType* xShapeInfo,
+static SD_HOST void rgbToHsvCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                         const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
                                          const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
                                          const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
                                          const int dimC) {
-  rgbToHsvCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo,
+  rgbToHsvCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo,
                                                                     zTadOffsets, numOfTads, dimC);
 }
 
@@ -302,14 +304,12 @@ void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* 
 
   const sd::LongType numOfTads = packX->numberOfTads();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = imageHelper(numOfTads);
   PointersManager manager(context, "hsv_to_rgb");
 
   NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), hsvToRgbCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
+                        (launchDims.y, launchDims.x, launchDims.z,context->getCudaStream(), input->specialBuffer(),
                          input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
                          output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
@@ -325,14 +325,13 @@ void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* 
 
   const sd::LongType numOfTads = packX->numberOfTads();
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
+  dim3 launchDims = imageHelper(numOfTads);
 
   PointersManager manager(context, "rgb_to_hsv");
 
   NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), rgbToHsvCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(),
+                        (launchDims.y, launchDims.x,launchDims.z, context->getCudaStream(), input->specialBuffer(),
                          input->specialShapeInfo(), packX->platformOffsets(), output->specialBuffer(),
                          output->specialShapeInfo(), packZ->platformOffsets(), numOfTads, dimC),
                         SD_FLOAT_TYPES);
@@ -406,7 +405,8 @@ static void rgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* ou
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
   NDArray::prepareSpecialUse({output}, {input});
-  return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("image_helpers_triple");
+  return tripleTransformerCuda<T><<<launchDims.x,launchDims.y, launchDims.z, *context->getCudaStream()>>>(
       input->specialBuffer(), input->specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
       output->specialBuffer(), output->specialShapeInfo(), packZ->platformShapeInfo(), packZ->platformOffsets(), dimC, 1,
       packZ->numberOfTads());
@@ -418,8 +418,9 @@ SD_INLINE static void yiqRgb(sd::LaunchContext* context, const NDArray* input, N
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
   auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
+  dim3 launchDims = getLaunchDims("image_helpers_triple");
   NDArray::prepareSpecialUse({output}, {input});
-  return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(
+  return tripleTransformerCuda<T><<<launchDims.x, launchDims.y,launchDims.z, *context->getCudaStream()>>>(
       input->specialBuffer(), input->specialShapeInfo(), packX->platformShapeInfo(), packX->platformOffsets(),
       output->specialBuffer(), output->specialShapeInfo(), packZ->platformShapeInfo(), packZ->platformOffsets(), dimC, 2,
       packZ->numberOfTads());

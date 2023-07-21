@@ -32,7 +32,7 @@ using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
 
-class OpTrackerTests : public testing::Test {
+class OpTrackerTests : public NDArrayTests {
  public:
   int numIterations = 10;
   int poolSize = 10;

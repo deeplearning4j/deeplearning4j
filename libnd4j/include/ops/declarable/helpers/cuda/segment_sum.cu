@@ -28,6 +28,8 @@
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -35,8 +37,8 @@ namespace helpers {
 // Segment ops linear kernels
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongType* inputShape, int* starts,
-                                             int* lengths, sd::LongType numOfClasses, void* output,
+static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongType* inputShape, sd::LongType* starts,
+                                             sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                              const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
@@ -55,9 +57,10 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
+      if(zIndex >= zLen)
+        return;
       start = starts[segment];
       finish = start + lengths[segment];
-      // val[segment] = ;
       z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
     }
   }
@@ -65,6 +68,8 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
+    if(xIndex >= xLen)
+      return;
     sd::math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
   }
 }
@@ -72,14 +77,14 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const sd::LongTy
 
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd::LongType* inputShape,
-                                                     const void* indices, const sd::LongType* indicesShape, int* starts,
-                                                     int* lengths, sd::LongType numOfClasses, void* output,
+                                                     const void* indices, const sd::LongType* indicesShape, sd::LongType* starts,
+                                                     sd::LongType* lengths, sd::LongType numOfClasses, void* output,
                                                      const sd::LongType* outputShape) {
   __shared__ T* val;
   __shared__ sd::LongType xLen, zLen, segment, zIndex;
   __shared__ const T* x;
   __shared__ T* z;
-  __shared__ const I* y;  // int threadsPerSegment, start, finish;
+  __shared__ const I* y;
 
   if (threadIdx.x == 0) {
     segment = blockIdx.x;
@@ -111,13 +116,17 @@ static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const sd
 template <typename T, typename I>
 static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongType* inputShape,
                                           const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          const I* indices, int* starts, int* lengths, sd::LongType numOfClasses,
-                                          void* outputBuf, const sd::LongType* outputShape,
-                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets) {
+                                          const I* indices, sd::LongType* starts, sd::LongType* lengths,
+                                          sd::LongType numOfClasses, void* outputBuf, const sd::LongType* outputShape,
+                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets,
+                                          sd::LongType numIndices) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
   __shared__ T* z;
   __shared__ int start, finish;
+
+  if(blockIdx.x >= numIndices)
+    return;
 
   if (threadIdx.x == 0) {
     auto segment = indices[blockIdx.x];  // / threadsPerSegment;
@@ -153,33 +162,35 @@ template <typename T, typename I>
 static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
   sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
 
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
 
-  dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     segmentSumLinearKernel<T, I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    segmentSumTadKernel<T, I><<<input->sizeAt(0), 512, 2048, *stream>>>(
+    dim3 segmentTadDims = segmentTad(input->sizeAt(0));
+    segmentSumTadKernel<T, I><<<segmentTadDims.y,segmentTadDims.x,segmentTadDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -196,18 +207,14 @@ template <typename T, typename I>
 static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                        sd::LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
-  NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
-  //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-  //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
+  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
-  dim3 dims(numOfClasses, indices->lengthOf(), (numOfClasses + 1) * 64);
-  //        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
+  dim3 dims = getSegmentSumDims(numOfClasses,indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
-  int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
+  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
     unsortedSegmentSumLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
@@ -215,7 +222,8 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
   } else {
     output->assign(0);
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
@@ -226,7 +234,8 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentSumTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
+    delete dimensions;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -319,12 +328,13 @@ sd::Status segmentSumFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();
     segmentSumBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -339,6 +349,7 @@ sd::Status segmentSumFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
   return sd::Status::OK;
@@ -360,12 +371,13 @@ static sd::Status unsortedSegmentSumFunctorBP_(sd::LaunchContext* context, NDArr
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   if (input->isVector()) {
     sd::LongType loop_size = input->lengthOf();
-    auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
+    auto numOfClasses = gradOut->lengthOf();
     segmentSumBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo());
   } else {
-    std::vector<sd::LongType> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
+    sd::LongType zero = 0;
+    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
@@ -380,6 +392,7 @@ static sd::Status unsortedSegmentSumFunctorBP_(sd::LaunchContext* context, NDArr
         input->specialBuffer(), input->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
         indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         inputTads, inputTadOffsets, gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut});
   return sd::Status::OK;

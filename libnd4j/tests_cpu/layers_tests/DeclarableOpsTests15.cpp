@@ -30,7 +30,7 @@
 
 using namespace sd;
 
-class DeclarableOpsTests15 : public testing::Test {
+class DeclarableOpsTests15 : public NDArrayTests {
  public:
   DeclarableOpsTests15() {
     printf("\n");
@@ -91,33 +91,34 @@ TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
-  auto x = NDArrayFactory::create<double>('c', {4, 4, 3});
-  NDArray factor = NDArrayFactory::create<double>(2.);
-  auto e = NDArrayFactory::create<double>(
+  auto x = new NDArray(NDArrayFactory::create<double>('c', {4, 4, 3}));
+  auto factor = new NDArray(NDArrayFactory::create<double>(2.));
+  auto e = new NDArray(NDArrayFactory::create<double>(
       'c', {4, 4, 3},
       {-21.5, -20.5, -19.5, -15.5, -14.5, -13.5, -9.5, -8.5, -7.5, -3.5, -2.5, -1.5, 2.5,  3.5,  4.5,  8.5,
        9.5,   10.5,  14.5,  15.5,  16.5,  20.5,  21.5, 22.5, 26.5, 27.5, 28.5, 32.5, 33.5, 34.5, 38.5, 39.5,
-       40.5,  44.5,  45.5,  46.5,  50.5,  51.5,  52.5, 56.5, 57.5, 58.5, 62.5, 63.5, 64.5, 68.5, 69.5, 70.5});
+       40.5,  44.5,  45.5,  46.5,  50.5,  51.5,  52.5, 56.5, 57.5, 58.5, 62.5, 63.5, 64.5, 68.5, 69.5, 70.5}));
 
-  x.linspace(1.);
+  x->linspace(1.);
+
   sd::ops::adjust_contrast op;
-  auto result = op.evaluate({&x, &factor}, {}, {}, {});
+  auto result = op.evaluate({x, factor}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
 
-  ASSERT_TRUE(e.equalsTo(out));
+  ASSERT_TRUE(e->equalsTo(out));
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
-  auto x = NDArrayFactory::create<float>('c', {1, 4, 4, 3});
+  auto x = new NDArray(NDArrayFactory::create<float>('c', {1, 4, 4, 3}));
   auto e = NDArrayFactory::create<float>(
       'c', {1, 4, 4, 3}, {-21.5f, -20.5f, -19.5f, -15.5f, -14.5f, -13.5f, -9.5f, -8.5f, -7.5f, -3.5f, -2.5f, -1.5f,
                           2.5f,   3.5f,   4.5f,   8.5f,   9.5f,   10.5f,  14.5f, 15.5f, 16.5f, 20.5f, 21.5f, 22.5f,
                           26.5f,  27.5f,  28.5f,  32.5f,  33.5f,  34.5f,  38.5f, 39.5f, 40.5f, 44.5f, 45.5f, 46.5f,
                           50.5f,  51.5f,  52.5f,  56.5f,  57.5f,  58.5f,  62.5f, 63.5f, 64.5f, 68.5f, 69.5f, 70.5f});
-  x.linspace(1.);
+  x->linspace(1.);
   sd::ops::adjust_contrast op;
-  auto result = op.evaluate({&x}, {2.});
+  auto result = op.evaluate({x}, {2.});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto out = result.at(0);
   ASSERT_TRUE(e.equalsTo(out));

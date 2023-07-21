@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
 
   REQUIRE_TRUE(input->rankOf() == 4, 0, "extract_image_patches: The rank of input array should be 4, but %i is given",
                input->rankOf());
-  //
+
   if (output->isSameShape(input))
     output->assign(input);
   else {

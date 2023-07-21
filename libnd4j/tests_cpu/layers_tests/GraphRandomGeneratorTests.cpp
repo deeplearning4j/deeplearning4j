@@ -26,7 +26,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class GraphRandomGeneratorTests : public testing::Test {
+class GraphRandomGeneratorTests : public NDArrayTests {
  public:
 };
 

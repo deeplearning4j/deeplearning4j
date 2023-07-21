@@ -24,7 +24,6 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
-import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;

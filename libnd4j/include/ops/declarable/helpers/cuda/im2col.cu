@@ -22,6 +22,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/im2col.h>
 
+#include <execution/cuda/LaunchDims.h>
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -66,8 +68,10 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
+
   if (static_cast<sd::LongType>(coords[2]) >= static_cast<sd::LongType>(iH) ||
-      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW))
+      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW) ||
+      coords[2] < 0 || coords[3] < 0)
     col[colOffset] = zeroPadVal;
   else
     col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
@@ -75,13 +79,13 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext &context,
-                               const void *image, void *columns, const sd::LongType *imShapeInfo,
-                               const sd::LongType *colShapeInfo, LongType sH, LongType sW, LongType pH, LongType pW, LongType dH, LongType dW,
-                               double zeroPadVal) {
+static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                               sd::LaunchContext &context, const void *image, void *columns,
+                               const sd::LongType *imShapeInfo, const sd::LongType *colShapeInfo, LongType sH,
+                               LongType sW, LongType pH, LongType pW, LongType dH, LongType dW, double zeroPadVal) {
   im2colCuda<T>
-      <<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(sd::LongType) * 6 /* rank of columns = 6 */,
-         *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+  <<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */,
+  *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -90,14 +94,12 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
             const NDArray &arrZeroPadVal) {
   PointersManager manager(&context, "im2col");
 
-  const int threadsPerBlock = 512;
-  const int blocksPerGrid = (columns.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 im2colDevs = getim2ColLaunchParams(columns);
   NDArray::prepareSpecialUse({&columns}, {&image});
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(),
-       image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
+      (im2colDevs.y, im2colDevs.x,im2colDevs.z, context, image.specialBuffer(), columns.specialBuffer(),
+          image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&columns}, {&image});
 

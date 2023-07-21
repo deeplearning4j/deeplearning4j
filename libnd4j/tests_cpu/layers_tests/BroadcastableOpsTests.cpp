@@ -23,13 +23,14 @@
 #include <graph/Graph.h>
 #include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
-
 #include "testlayers.h"
 
 using namespace sd;
 using namespace sd::graph;
 
-class BroadcastableOpsTests : public testing::Test {
+
+
+class BroadcastableOpsTests : public NDArrayTests {
  public:
 };
 
@@ -352,8 +353,8 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_6) {
   auto e = NDArrayFactory::create<float>(3.f);
 
   auto z = y - x;
-
-  ASSERT_TRUE(e.equalsTo(z));
+  sd_printf("Data type of z is %s and e is %s\n",DataTypeUtils::asString(z.dataType()).c_str(),DataTypeUtils::asString(e.dataType()).c_str());
+  ASSERT_EQ(e, z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

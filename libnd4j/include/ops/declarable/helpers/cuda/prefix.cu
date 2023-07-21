@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/prefix.h>
 #include <ops/ops.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -38,6 +40,8 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
   __shared__ T *shared, lastElemInChunk;
   __shared__ sd::LongType numTadChunks, blockDim2;
 
+  // DeclarableOpsTests6.cumSum_12
+  //DeclarableOpsTests6.cumSum_17
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     shared = reinterpret_cast<T*>(shmem);
@@ -45,7 +49,8 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
     numTadChunks = (tadLen + blockDim2 - 1) / blockDim2;  // ceil
   }
   __syncthreads();
-
+  if(blockIdx.x >= numTads)
+    return;
   const auto xTad = reinterpret_cast<const T*>(vx) + xTadOffsets[blockIdx.x];
   auto zTad = reinterpret_cast<T*>(vz) + zTadOffsets[blockIdx.x];
 
@@ -65,12 +70,7 @@ SD_KERNEL static void prefixPerBlockCuda(scalar::Ops op, const void* vx, const s
     }
 
     if (leftArrInd < tadLen) shared[sharedInd] = xLeft = xTad[shape::getIndexOffset(leftArrInd, xTadShapeInfo)];
-    // else
-    //     shared[sharedInd] = (op == scalar::Add) ? 0 : 1;
-
     if (rightArrInd < tadLen) shared[sharedInd + 1] = xRight = xTad[shape::getIndexOffset(rightArrInd, xTadShapeInfo)];
-    // else
-    //     shared[sharedInd + 1] = (op == scalar::Add) ? 0 : 1;
 
     step = 1;
 
@@ -135,23 +135,21 @@ static void prefixPerBlockCudaLauncher(const int blocksPerGrid, const int thread
 ///////////////////////////////////////////////////////////////////
 void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<LongType>& dims,
             bool exclusive, bool reverse) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dims);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
   const sd::LongType numTads = packX->numberOfTads();
   const sd::LongType tadLen = x->lengthOf() / numTads;
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = numTads;
-  const int sharedMem = 2 * threadsPerBlock * x->sizeOfT() + 128;
 
+  dim3 launchDims = prefixDims(numTads,x->sizeOfT());
   PointersManager manager(context, "prefix");
 
   NDArray::prepareSpecialUse({z}, {x});
   BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher,
-                        (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, x->specialBuffer(),
-                         packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
-                         packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
+                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), op, x->specialBuffer(),
+                            packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
+                            packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
                         SD_NUMERIC_TYPES);
   NDArray::registerSpecialUse({z}, {x});
 

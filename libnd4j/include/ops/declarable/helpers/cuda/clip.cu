@@ -27,6 +27,8 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -91,14 +93,15 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
   }
 
   if (dims.empty()) {
-    const NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, {}) / z->lengthOf()
-                                          : z->reduceAlongDimension(reduce::Norm2, {});
+    std::vector<sd::LongType> empty;
+    const NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &empty) / z->lengthOf()
+                                          : z->reduceAlongDimension(reduce::Norm2, &empty);
 
     if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
   } else {
-    const NDArray actualNorms = z->reduceAlongDimension(reduce::Norm2, dims);
+    const NDArray actualNorms = z->reduceAlongDimension(reduce::Norm2, &dims);
 
-    std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims);
+    std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims.size(),dims.data());
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (z->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -106,17 +109,28 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
     PointersManager manager(context, "clipByNorm");
 
     const sd::LongType * dimensions = reinterpret_cast<const sd::LongType *>(
-        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(sd::LongType)));
+        manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({z}, {z, &actualNorms, &clipNorm});
+
+
     BUILD_SINGLE_SELECTOR(z->dataType(), clipByNormCudaLauncher,
-                          (blocksPerGrid, threadsPerBlock, context->getCudaStream(), clipNorm.specialBuffer(),
-                           actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), z->specialBuffer(),
-                           z->specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude.size(), useAverage),
+                          (blocksPerGrid,
+                              threadsPerBlock,
+                              context->getCudaStream(),
+                              clipNorm.specialBuffer(),
+                              actualNorms.specialBuffer(),
+                              actualNorms.specialShapeInfo(),
+                              z->specialBuffer(),
+                              z->specialShapeInfo(),
+                              dimensions,
+                              dimsToExclude->size(),
+                              useAverage),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({z}, {z, &actualNorms, &clipNorm});
 
     manager.synchronize();
+    delete dimsToExclude;
   }
 }
 
@@ -181,7 +195,7 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
                    const std::vector<sd::LongType>& dims, const NDArray& clipNorm, const bool useAverage) {
   const int rank = input.rankOf();
 
-  auto actualNorms = input.reduceAlongDimension(reduce::Norm2, dims);
+  auto actualNorms = input.reduceAlongDimension(reduce::Norm2, &dims);
 
   if (actualNorms.lengthOf() == 1) {
     const T norm = useAverage ? actualNorms.e<T>(0) / static_cast<T>(input.lengthOf()) : actualNorms.e<T>(0);
@@ -201,33 +215,33 @@ void clipByNormBp_(sd::LaunchContext* context, const NDArray& input, const NDArr
     } else
       gradI.assign(gradO);
   } else {
-    const NDArray actualNorms = input.reduceAlongDimension(reduce::Norm2, dims);
-    const NDArray sums = input.reduceAlongDimension(reduce::Sum, dims);
+    const NDArray actualNorms = input.reduceAlongDimension(reduce::Norm2, &dims);
+    const NDArray sums = input.reduceAlongDimension(reduce::Sum, &dims);
 
-    std::vector<sd::LongType> dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims);
+    std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims.size(),dims.data());
 
-    const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
+    dim3 launchDims = clipDims(gradI.lengthOf());
     PointersManager manager(context, "clipByNormBp");
 
     const sd::LongType* dimensions = reinterpret_cast<const sd::LongType*>(
-        manager.replicatePointer(dimsToExclude.data(), dimsToExclude.size() * sizeof(sd::LongType)));
+        manager.replicatePointer(dimsToExclude->data(), dimsToExclude->size() * sizeof(sd::LongType)));
 
     NDArray::prepareSpecialUse({&gradI}, {&actualNorms, &sums, &clipNorm, &input, &gradO});
-    clipByNormBpCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(
+    clipByNormBpCuda<T><<<launchDims.y, launchDims.x,launchDims.z, *context->getCudaStream()>>>(
         clipNorm.specialBuffer(), input.specialBuffer(), input.specialShapeInfo(), gradO.specialBuffer(),
         gradO.specialShapeInfo(), actualNorms.specialBuffer(), actualNorms.specialShapeInfo(), sums.specialBuffer(),
-        sums.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude.size(),
+        sums.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), dimensions, (sd::LongType)dimsToExclude->size(),
         useAverage);
     NDArray::registerSpecialUse({&gradI}, {&actualNorms, &sums, &clipNorm, &input, &gradO});
 
     manager.synchronize();
+    delete dimsToExclude;
   }
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
                       (sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                       const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
+                          const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
@@ -241,26 +255,25 @@ void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArra
 template <typename T>
 void clipByGlobalNorm_(sd::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
                        sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-  NDArray globalNorm =
-      NDArrayFactory::create<T>(0, inputs[0]->getContext());  // sqrt(sum([l2norm(t)**2 for t in t_list]))
+  T globalNorm = static_cast<T>(0.f);
 
   for (auto i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
     auto l2norm = input->reduceNumber(reduce::Norm2);
-    globalNorm += l2norm * l2norm;
+    globalNorm += l2norm.e<T>(0) * l2norm.e<T>(0);
   }
 
-  globalNorm.applyTransform(transform::Sqrt, globalNorm);  // = sd::math::sd_sqrt(globalNorm);
+  sd_printf("Outputs size is %d Inputs size is %d\n", outputs.size(), inputs.size());
+  globalNorm = sd::math::sd_sqrt<T,T>(globalNorm);
   outputs[inputs.size()]->p(0, globalNorm);
-  globalNorm.syncToHost();
-  const T factor = static_cast<T>(clipNorm) / globalNorm.e<T>(0);
+  const T factor = static_cast<T>(clipNorm) / globalNorm;
 
   for (size_t e = 0; e < inputs.size(); e++) {
     // all-reduce
     auto input = inputs[e];
     auto output = outputs[e];
 
-    if (globalNorm.e<double>(0) <= clipNorm) {
+    if (static_cast<double>(globalNorm) <= clipNorm) {
       output->assign(input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
@@ -277,7 +290,7 @@ void clipByGlobalNorm(sd::LaunchContext* context, std::vector<NDArray*> const& i
 
 BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
                       (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm,
-                       sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
+                          sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
 
 template <typename T>
@@ -325,9 +338,10 @@ static void clipByValue_(sd::LaunchContext* context, NDArray& input, double left
   auto stream = context->getCudaStream();
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   NDArray::prepareSpecialUse({&output}, {&input});
-  clipByValueKernel<T><<<256, 512, 8192, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
-                                                    output.specialBuffer(), output.specialShapeInfo(), leftBound,
-                                                    rightBound);
+  dim3 launchDims = getLaunchDims("clip");
+  clipByValueKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
+                                                                              output.specialBuffer(), output.specialShapeInfo(), leftBound,
+                                                                              rightBound);
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
@@ -337,8 +351,8 @@ void clipByValue(sd::LaunchContext* context, NDArray& input, double leftBound, d
 }
 
 BUILD_SINGLE_TEMPLATE(template void clipByValue_, (sd::LaunchContext * context, NDArray& input, double leftBound,
-                                                   double rightBound, NDArray& output);
-                      , SD_FLOAT_TYPES);
+    double rightBound, NDArray& output);
+, SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

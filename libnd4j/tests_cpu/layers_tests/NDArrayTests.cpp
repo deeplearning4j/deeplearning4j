@@ -29,7 +29,7 @@
 using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
-class NDArrayTest : public testing::Test {
+class NDArrayTest : public NDArrayTests {
  public:
   int alpha = 0;
 
@@ -175,16 +175,9 @@ TEST_F(NDArrayTest, EqualityTest1) {
     }
   }
 
-  // sd_printf("A B\n","");
   ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
-
-  // sd_printf("C B\n","");
   ASSERT_FALSE(arrayC->equalsTo(arrayB, 1e-5));
-
-  // sd_printf("D B\n","");
   ASSERT_FALSE(arrayD->equalsTo(arrayB, 1e-5));
-
-  // sd_printf("E B\n","");
   ASSERT_FALSE(arrayE->equalsTo(arrayB, 1e-5));
 
   delete arrayA;
@@ -247,11 +240,9 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
   int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 8192, 0, 99};
   int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 8192, 1, 99};
 
-  // array.printShapeInfo("before");
 
   array.permutei({1, 0, 4, 5, 2, 3});
 
-  // array.printShapeInfo("after ");
 
   auto aShape = array.shapeInfo();
 
@@ -292,17 +283,14 @@ TEST_F(NDArrayTest, TestRepeat2) {
   auto exp = new NDArray(eBuffer, eShape);
   for (int e = 0; e < array->lengthOf(); e++) array->p(e, e + 1);
 
-  // array->printBuffer();
 
   auto rep = new NDArray(exp->dup());
   rep->assign(0.);
   array->repeat(0, {2}, *rep);
-  // rep->printIndexedBuffer("Repeated");
 
   ASSERT_EQ(4, rep->sizeAt(0));
   ASSERT_EQ(2, rep->sizeAt(1));
 
-  // rep->printBuffer();
 
   ASSERT_TRUE(exp->equalsTo(rep));
 
@@ -680,18 +668,12 @@ TEST_F(NDArrayTest, TestTile1) {
   auto expA = new NDArray(array1.dup('c'));
 
   auto tiled = array1.tile(tileShape1);
-
-  // array2.printShapeInfo("Expct shape");
-  // tiled.printShapeInfo("Tiled shape");
-  // tiled.printBuffer();
-
   ASSERT_TRUE(tiled.isSameShape(&array2));
   ASSERT_TRUE(tiled.equalsTo(&array2));
 
   ASSERT_TRUE(expA->isSameShape(&array1));
   ASSERT_TRUE(expA->equalsTo(&array1));
 
-  // delete tiled;
   delete expA;
 }
 
@@ -1537,7 +1519,6 @@ TEST_F(NDArrayTest, TestStdDev3) {
   for (int e = 0; e < array.lengthOf(); e++) array.p(e, 1.f + (e % 2 ? 0.5f : -0.5f));
 
   auto std = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-  // sd_printf("Variance is %f\n", std);
   ASSERT_NEAR(std, 0.5f, 1.0e-5f);
 }
 
@@ -1567,16 +1548,13 @@ TEST_F(NDArrayTest, TestStdDev4) {
   y = M2;
   auto a = array.varianceNumber(variance::SummaryStatsStandardDeviation, false);
   auto std = a.e<float>(0);
-  //    float bY = array.varianceNumber();
   float bY = 0.3333333f;
-  // sd_printf("Variance is %f, res is %f, internal is %f\n, deviance is %f(%f)\n", std, x, bY, y,
-  // sd::math::sd_sqrt<double>(M2));
   ASSERT_NEAR(std, 0.3333333f, 1.0e-5f);
 }
 
 TEST_F(NDArrayTest, TestStdDev5) {
-  auto array = NDArrayFactory::create<float>('c', {1, 10000});    // 00000});
-  auto arrayD = NDArrayFactory::create<double>('c', {1, 10000});  // 00000});
+  auto array = NDArrayFactory::create<float>('c', {1, 10000});
+  auto arrayD = NDArrayFactory::create<double>('c', {1, 10000});
   for (int e = 0; e < array.lengthOf(); e++) {
     array.p(e, 1.f + (e % 2 ? 1 / 5.f : -1 / 5.f));
     arrayD.p(e, 1.0 + (e % 2 ? 1 / 5. : -1 / 5.));
@@ -1891,8 +1869,6 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
 
   ASSERT_TRUE(result->isSameShape(&expected));
 
-  // result->printShapeInfo("result shape");
-  // result->printBuffer("result buffer");
   ASSERT_TRUE(result->equalsTo(&expected));
   delete result;
 }
@@ -1964,18 +1940,10 @@ TEST_F(NDArrayTest, Operator_Plus_Test_1) {
   auto y = NDArrayFactory::create<double>('c', {2, 1});
   auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
 
-  // x.printShapeInfo("x shape");
-  // y.printShapeInfo("y shape");
-  // expected.printShapeInfo("e shape");
-  // expected.printIndexedBuffer("e");
-
   x.linspace(1);
   y.linspace(1);
 
   auto result = x + y;
-
-  // result.printIndexedBuffer("result");
-
   ASSERT_TRUE(expected.isSameShape(&result));
   ASSERT_TRUE(expected.equalsTo(&result));
 }
@@ -1992,7 +1960,6 @@ TEST_F(NDArrayTest, Operator_Plus_Test_2) {
   y.linspace(1);
 
   auto result = x + y;
-  // result.printIndexedBuffer();
 
   ASSERT_TRUE(expected.isSameShape(&result));
   ASSERT_TRUE(expected.equalsTo(&result));
@@ -2010,7 +1977,6 @@ TEST_F(NDArrayTest, Operator_Plus_Test_3) {
   y.linspace(1);
 
   auto result = x + y;
-  // result.printIndexedBuffer();
   ASSERT_TRUE(expected.isSameShape(&result));
   ASSERT_TRUE(expected.equalsTo(&result));
 }

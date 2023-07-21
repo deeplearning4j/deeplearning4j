@@ -117,9 +117,9 @@ PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CUDA) {
   REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
                "MAXPOOL3DNEW_BP CUDNN OP: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-  int bS, iC, iD, iH, iW, oC, oD, oH,
+  sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
       oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-  int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+  sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 

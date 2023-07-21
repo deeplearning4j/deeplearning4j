@@ -26,6 +26,8 @@
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/nth_element.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -66,9 +68,9 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
                sizeof(T), cudaMemcpyDeviceToDevice);
   } else {  // rank greater than 1
     std::vector<sd::LongType> lastDims(
-        {input->rankOf() - 1});  // = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
+        {input->rankOf() - 1});
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
 
     auto pTadShape = packX->specialShapeInfo();
     auto pTadShapeH = packX->primaryShapeInfo();
@@ -78,7 +80,8 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
     sortedVals.tickWriteDevice();
     sortedVals.syncToHost();
     auto stream = context->getCudaStream();
-    fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
+    dim3 launchDims = getLaunchDims("nth_element_fill");
+    fillUpElementKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                                       sortedVals.specialBuffer(), sortedVals.specialShapeInfo(),
                                                       pTadShape, pTadOffsets, n);
   }

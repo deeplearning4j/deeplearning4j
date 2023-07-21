@@ -72,7 +72,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
             if (initialize)
                 Pointer.memset(ptr, 0, bytes);
 
-            return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
+            return ptr;
         } else if (kind == MemoryKind.DEVICE) {
             val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
             log.trace("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());

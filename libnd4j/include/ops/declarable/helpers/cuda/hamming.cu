@@ -22,6 +22,8 @@
 #include <ops/declarable/helpers/hamming.h>
 #include <ops/declarable/helpers/helpers.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -76,7 +78,8 @@ static SD_KERNEL void _hammingKernel(const void *vx, const sd::LongType *xShapeI
 
 template <typename X, typename Z>
 static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z) {
-  _hammingKernel<X, Z><<<256, SD_CUDA_BLOCK_SIZE, 1024, *context->getCudaStream()>>>(
+  dim3 launchDims = getLaunchDims("hamming");
+  _hammingKernel<X, Z><<<launchDims.x,launchDims.y, launchDims.z, *context->getCudaStream()>>>(
       x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr,
       x.lengthOf());
 }

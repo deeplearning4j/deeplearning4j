@@ -48,7 +48,7 @@ SD_INLINE uint16_t castToU16(const T cp) {
 
 template <typename T>
 SD_INLINE uint32_t castToU32(const T cp) {
-  return static_cast<uint32_t>(0xffffff & cp);
+  return static_cast<uint32_t>(0xffffffff & cp);
 }
 
 template <typename T>

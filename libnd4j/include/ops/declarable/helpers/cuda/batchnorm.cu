@@ -26,6 +26,8 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/batchnorm.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -119,17 +121,14 @@ SD_HOST static void batchnormCudaLauncher2(const int blocksPerGrid, const int th
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
                 const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
 
-
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (input->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 batchNormDims = getBatchNormDims(input->lengthOf());
   PointersManager manager(input->getContext(), "batchnorm");
 
   const sd::LongType * dims = reinterpret_cast<LongType*>(manager.replicatePointer(axes.data(), axes.size() * sizeof(LongType)));
 
   NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
   BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2,
-                        (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->specialBuffer(),
+                        (batchNormDims.x, batchNormDims.y, input->getContext()->getCudaStream(), input->specialBuffer(),
                          input->specialShapeInfo(), mean->specialBuffer(), mean->specialShapeInfo(),
                          variance->specialBuffer(), variance->specialShapeInfo(),
                          gamma ? gamma->specialBuffer() : nullptr, gamma ? gamma->specialShapeInfo() : nullptr,

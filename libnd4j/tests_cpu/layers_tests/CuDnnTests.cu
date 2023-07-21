@@ -35,7 +35,7 @@
 
 using namespace sd;
 
-class CuDnnTests : public testing::Test {
+class CuDnnTests : public NDArrayTests {
  public:
 };
 

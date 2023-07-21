@@ -27,7 +27,7 @@
 using namespace sd;
 using namespace sd::graph;
 
-class ShapeUtilsTests : public testing::Test {
+class ShapeUtilsTests : public NDArrayTests {
  public:
 };
 

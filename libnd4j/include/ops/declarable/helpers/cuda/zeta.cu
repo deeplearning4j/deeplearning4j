@@ -21,6 +21,8 @@
 //
 #include <ops/declarable/helpers/zeta.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -41,7 +43,7 @@ SD_KERNEL static void zetaCuda(const void *vx, const sd::LongType *xShapeInfo, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
-  for (int i = tid; i < len; i += totalThreads) {
+  for (sd::LongType i = tid; i < len; i += totalThreads) {
     const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
     const auto qOffset = shape::getIndexOffset(i, qShapeInfo);
     const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
@@ -52,22 +54,20 @@ SD_KERNEL static void zetaCuda(const void *vx, const sd::LongType *xShapeInfo, c
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void zetaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
-                             const void *vx, const sd::LongType *xShapeInfo, const void *vq,
+static void zetaCudaLauncher(const int blocksPerGrid, const int sharedMemory, const int threadsPerBlock,
+                             const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, const void *vq,
                              const sd::LongType *qShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
-  zetaCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vq, qShapeInfo, vz, zShapeInfo);
+  zetaCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vq, qShapeInfo, vz, zShapeInfo);
 }
 
 void zeta(sd::LaunchContext *context, const NDArray &x, const NDArray &q, NDArray &z) {
   if (!x.isActualOnDeviceSide()) x.syncToDevice();
   if (!q.isActualOnDeviceSide()) q.syncToDevice();
 
-  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = zetaDims(x.lengthOf());
   BUILD_SINGLE_SELECTOR(
       x.dataType(), zetaCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(),
+      (launchDims.x, launchDims.z,launchDims.y, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(),
        q.specialBuffer(), q.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
       SD_FLOAT_TYPES);
 
@@ -77,7 +77,7 @@ void zeta(sd::LaunchContext *context, const NDArray &x, const NDArray &q, NDArra
 }
 
 BUILD_SINGLE_TEMPLATE(template void zetaCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vx,
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMmemory,const cudaStream_t *stream, const void *vx,
                        const sd::LongType *xShapeInfo, const void *vq, const sd::LongType *qShapeInfo, void *vz,
                        const sd::LongType *zShapeInfo),
                       SD_FLOAT_TYPES);

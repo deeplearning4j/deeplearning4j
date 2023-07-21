@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/updatersHelpers.h>
 #include <system/op_boilerplate.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -78,17 +80,18 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                const void* vx, const sd::LongType* xShapeInfo, const void* vin,
-                                const sd::LongType* inShapeInfo, void* vz, const sd::LongType* zShapeInfo, void* vst,
-                                const sd::LongType* stShapeInfo, const double dLr, const double dEpsilon) {
+void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
+                                const void* vin, const sd::LongType* inShapeInfo, void* vz,
+                                const sd::LongType* zShapeInfo, void* vst, const sd::LongType* stShapeInfo,
+                                const double dLr, const double dEpsilon) {
   const T lr = static_cast<T>(dLr);
   T epsilon = static_cast<T>(dEpsilon);
   //fp16 to prevent underflow
   if(epsilon == 0.0) {
     epsilon = static_cast<T>(1e-7);
   }
-  adaGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
+  adaGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
                                                                           zShapeInfo, vst, stShapeInfo, lr, epsilon);
 }
 
@@ -97,13 +100,11 @@ void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const N
                     NDArray& stateH, const double dLr, const double dEpsilon) {
   PointersManager manager(context, "adaGradUpdater");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-
+  dim3 launchDims = updaterDims(gradient.lengthOf());
   NDArray::prepareSpecialUse({&update, &stateH}, {&gradient, &initState});
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), adaGradUpdaterCudaLauncher,
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+      (launchDims.y, launchDims.x, launchDims.z,context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
        initState.specialBuffer(), initState.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(),
        stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dEpsilon),
       SD_FLOAT_TYPES);
