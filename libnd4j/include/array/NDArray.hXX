@@ -2394,7 +2394,60 @@ NDArray NDArray::asT() const {
   return result;
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArray::asT, () const, SD_COMMON_TYPES);
+void NDArray::checkIfStringArrayAndNotEmpty()  {
+  if (!isS()) {
+    auto actualType = DataTypeUtils::asString(dataType());
+    std::string errorMessage;
+    errorMessage += "checkIfStringArrayAndNotEmpty: Expected String array but found ";
+    errorMessage += actualType;
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
+  if (isEmpty()) {
+    THROW_EXCEPTION("checkIfStringArrayAndNotEmpty: Array is empty. Cannot proceed");
+  }
+}
+
+void NDArray::printStringType()  {
+  switch (dataType()) {
+    case DataType::UTF8:
+      std::cout << "Data Type: UTF8" << "\n";
+      break;
+    case DataType::UTF16:
+      std::cout << "Data Type: UTF16" << "\n";
+      break;
+    case DataType::UTF32:
+      std::cout << "Data Type: UTF32" << "\n";
+      break;
+    default:
+      THROW_EXCEPTION("printStringType: Unsupported data type");
+  }
+}
+
+void NDArray::printInternalState()  {
+  checkIfStringArrayAndNotEmpty();
+  printStringType();
+
+  // Length of offsets (header)
+  sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+
+  // Getting the buffer pointer
+  const auto nInputoffsets = bufferAsT<sd::LongType>();
+  std::cout << "Number of elements: " << lengthOf() << "\n";
+
+  int numStrings = isScalar() ? 1 : lengthOf();
+  for (sd::LongType e = 0; e < numStrings; e++) {
+    sd::LongType start = nInputoffsets[e];
+    sd::LongType stop = nInputoffsets[e + 1];
+    sd::LongType stringLength = stop - start;
+
+    std::cout << "String at index " << e << " Offset: " << start << " Length: " << stringLength << "\n";
+  }
+}
+
+void NDArray::debugStringArray() {
+  printInternalState();
+}
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray NDArray::asS() const {
@@ -2434,8 +2487,9 @@ NDArray NDArray::asS() const {
   sd::LongType start = 0, stop = 0;
   sd::LongType dataLength = 0;
 
+  int numStrings = isScalar() ? 1 : lengthOf();
   auto data = bufferAsT<int8_t>() + offsetsLength;
-  for (sd::LongType e = 0; e < lengthOf(); e++) {
+  for (sd::LongType e = 0; e < numStrings; e++) {
     offsets[e] = dataLength;
     start = nInputoffsets[e];
     stop = nInputoffsets[e + 1];
@@ -2457,7 +2511,8 @@ NDArray NDArray::asS() const {
   std::shared_ptr<DataBuffer> pBuffer =
       std::make_shared<DataBuffer>(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
 
-  auto desc = new ShapeDescriptor(dtype, ordering(), getShapeAsVector());
+  std::vector<sd::LongType> shape = isScalar() ? std::vector<sd::LongType>({1}) : getShapeAsVector();
+  auto desc = new ShapeDescriptor(dtype, ordering(), shape);
   NDArray res(pBuffer, desc, getContext());
   res.setAttached(getContext()->getWorkspace() != nullptr);
 
@@ -2495,7 +2550,7 @@ NDArray NDArray::asS() const {
     }
   };
 
-  samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+  samediff::Threads::parallel_for(func, 0, numStrings, 1);
 
   registerPrimaryUse({&res}, {this});
 
