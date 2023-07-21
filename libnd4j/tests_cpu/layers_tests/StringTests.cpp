@@ -634,6 +634,8 @@ TEST_F(StringTests, Basic_cast_UTF32toUTF8) {
   ASSERT_EQ(0, array.rankOf());
 
   auto aCast = array.cast(sd::DataType::UTF8);
+  array.printInternalState();
+  aCast.printInternalState();
   auto z0 = array.e<std::u32string>(0);
   auto z1 = aCast.e<std::string>(0);
 
