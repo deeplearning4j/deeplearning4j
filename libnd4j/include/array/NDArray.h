@@ -1095,6 +1095,11 @@ class SD_LIB_EXPORT NDArray {
   bool reshapei(const std::initializer_list<sd::LongType> &shape, const bool copyToNewBuff = true);
   bool reshapei(const std::vector<sd::LongType> &shape, const bool copyToNewBuff = true);
 
+  void printInternalState();
+  void printStringType();
+  void checkIfStringArrayAndNotEmpty();
+
+  void debugStringArray();
   /**
    *  creates new array with corresponding order and shape, new array will point on _buffer of this array
    *  order - order to set

@@ -103,7 +103,11 @@ static SD_KERNEL void segmentProdTadKernel(void* inputBuf, sd::LongType const* i
                                            sd::LongType const* inputTads, sd::LongType const* inputTadOffsets,
                                            I* indices, sd::LongType* starts, sd::LongType* lengths,
                                            sd::LongType numOfClasses, void* outputBuf, sd::LongType const* outputShape,
-                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets) {
+                                           sd::LongType const* outputTads, sd::LongType const* outputTadOffsets,
+                                           sd::LongType indicesLen) {
+
+ if(blockIdx.x >= indicesLen)
+    return;
   __shared__ sd::LongType len, total;
 
   if (threadIdx.x == 0) {
@@ -160,7 +164,7 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
     segmentProdTadKernel<T, I><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
     delete dimensions;
   }
 }
@@ -206,7 +210,7 @@ static void unsortedSegmentProdFunctor_(sd::LaunchContext* context, NDArray* inp
     segmentProdTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
     delete dimensions;
   }
 }

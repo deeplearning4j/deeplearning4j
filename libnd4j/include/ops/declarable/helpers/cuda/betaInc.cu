@@ -108,6 +108,8 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
     xOffset = shape::getIndexOffset(j, xShapeInfo);
     zOffset = shape::getIndexOffset(j, zShapeInfo);
 
+    if(aOffset >= aLen || bOffset >= bLen || xOffset >= xLen || zOffset >= zLen)
+      return;
 
     a = *(reinterpret_cast<const T*>(va) + aOffset);
     b = *(reinterpret_cast<const T*>(vb) + bOffset);
@@ -124,12 +126,12 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
   __syncthreads();
 
   // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
-  if (a == b && x == static_cast<T>(0.5)) {
+  if (zOffset < zLen && a == b && x == static_cast<T>(0.5)) {
     z[zOffset] = static_cast<T>(0.5);
     return;
   }
 
-  if (x == static_cast<T>(0) || x == static_cast<T>(1)) {
+  if (zOffset < zLen && x == static_cast<T>(0) || x == static_cast<T>(1)) {
     z[zOffset] = symmCond ? static_cast<T>(1) - x : x;
     return;
   }

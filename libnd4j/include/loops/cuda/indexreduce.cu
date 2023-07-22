@@ -279,17 +279,14 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         reduction = OpType::update(reduction, comp, extraParams);
       }
 
-      //printf("After xEleStride > 1 && order == c\n");
 
     } else {
-      printf("xEleStride < 1 && order == c\n");
       for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
         auto xOffset = shape::getIndexOffset(i, xShapeInfo);
         IndexValue<X> comp{dx[xOffset], i};
         reduction = OpType::update(reduction, comp, extraParams);
       }
 
-    //  printf("xEleStride < 1 && order == c\n");
 
     }
     sPartials[threadIdxX] = reduction;

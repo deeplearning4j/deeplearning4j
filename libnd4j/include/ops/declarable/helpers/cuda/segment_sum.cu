@@ -189,7 +189,7 @@ static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArr
     segmentSumTadKernel<T, I><<<segmentTadDims.y,segmentTadDims.x,segmentTadDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
     delete dimensions;
   }
 }
@@ -234,7 +234,7 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentSumTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0);
+        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
     delete dimensions;
   }
 }
