@@ -27,6 +27,8 @@
 #include <array/ConstantShapeBuffer.h>
 #include <system/common.h>
 
+#include <array/NDArray.h>
+
 namespace sd {
 class SD_LIB_EXPORT TadPack {
  private:
@@ -49,12 +51,15 @@ class SD_LIB_EXPORT TadPack {
   sd::LongType numberOfTads() const;
   sd::LongType shapeInfoLength() const;
 
+
   /**
    * These methods return either primary or special pointers depending on platform binaries were compiled for
    * @return
    */
   const sd::LongType* platformShapeInfo() const;
   const sd::LongType* platformOffsets() const;
+
+  void printOffsets(const char* msg) const;
 };
 }  // namespace sd
 

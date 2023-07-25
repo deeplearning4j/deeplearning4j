@@ -192,8 +192,7 @@ TEST_F(NDArrayTest2, Test_AllReduce3_1) {
 
   auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -206,8 +205,7 @@ TEST_F(NDArrayTest2, Test_AllReduce3_2) {
 
   auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1164,8 +1162,7 @@ TEST_F(NDArrayTest2, reduce3_1) {
 
   NDArray z = x.applyReduce3(sd::reduce3::EuclideanDistance, y, {0}, nullptr);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 TEST_F(NDArrayTest2, all_tads_1) {

@@ -738,8 +738,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -765,8 +764,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_2) {
   auto z = result.at(0);
   // z->printBuffer();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -796,8 +794,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
   auto z = result.at(0);
   // z->printBuffer();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -818,8 +815,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -841,8 +837,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_2) {
   auto z = result.at(0);
   // z->printBuffer();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -864,8 +859,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_3) {
   auto z = result.at(0);
   // z->printBuffer();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////

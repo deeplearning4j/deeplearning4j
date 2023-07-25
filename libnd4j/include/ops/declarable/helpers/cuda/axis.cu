@@ -28,8 +28,6 @@ namespace helpers {
 void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
   if(axisVector->isScalar()) {
     output.resize(1);
-    axisVector->tickReadDevice();  // mark input as read on device
-    axisVector->syncToHost();      // sync to host
     auto ca = axisVector->e<sd::LongType>(0);
     if (ca < 0)  // shift values on rank for negative vals
       ca += rank;

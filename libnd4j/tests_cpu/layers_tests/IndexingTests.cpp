@@ -50,8 +50,7 @@ TEST_F(IndexingTests, StridedSlice_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, StridedSlice_2) {
@@ -69,8 +68,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, StridedSlice_3) {
@@ -87,8 +85,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, SimpleSlice_1) {
@@ -170,8 +167,7 @@ TEST_F(IndexingTests, SimpleSlice_4) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_0) {
@@ -190,8 +186,7 @@ TEST_F(IndexingTests, MaskedSlice_0) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_00) {
@@ -210,8 +205,7 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_1) {
@@ -230,8 +224,7 @@ TEST_F(IndexingTests, MaskedSlice_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_2) {
@@ -249,8 +242,7 @@ TEST_F(IndexingTests, MaskedSlice_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_3) {
@@ -267,8 +259,7 @@ TEST_F(IndexingTests, MaskedSlice_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, MaskedSlice_4) {
@@ -285,8 +276,7 @@ TEST_F(IndexingTests, MaskedSlice_4) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Live_Slice_1) {
@@ -306,8 +296,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Test_StridedSlice_1) {
@@ -324,8 +313,7 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Test_StridedSlice_2) {
@@ -341,8 +329,7 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Test_StridedSlice_3) {
@@ -359,8 +346,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Test_StridedSlice_4) {
@@ -375,8 +361,7 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(IndexingTests, Test_Subarray_Strided_1) {

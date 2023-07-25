@@ -78,9 +78,9 @@ DECLARE_SHAPE_FN(reduce_mean) {
       dimensions.size());
 
   for (const auto &item : dimensions)
-    REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
-                 "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
-                 inputShape->at(0)[0], inputShape->at(0)[0], item);
+  REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
+               "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
+               inputShape->at(0)[0], inputShape->at(0)[0], item);
 
   auto outShapeInfo =
       ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace());
@@ -124,14 +124,18 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
         input->rankOf(), input->rankOf(), item);
     dimLength *= input->sizeAt(item);
   }
-  if (gradO->lengthOf() == 1) {
+  if (gradO->isScalar()) {
     if (dimensions.size() > 0) {
-      gradI->assign(gradO->e(0) / (dimLength + 0.0));
+      gradI->assign(gradO->e(0) / (static_cast<double>(dimLength)));
     } else {
-      gradI->assign(gradO->e(0) / (input->lengthOf() + 0.0));
+      gradI->assign(gradO->e(0) / (static_cast<double>(input->lengthOf())));
     }
   } else {
-    gradI->assign((gradO->lengthOf() + 0.) / (input->lengthOf() + 0.0));
+    auto val = (static_cast<double>(gradO->lengthOf() < 1 ? 1.0 : gradO->lengthOf()) )
+               / (static_cast<double>(input->lengthOf() < 1 ? 1.0 : input->lengthOf()));
+    if(val == 0.0)
+      val = SD_EPSILON;
+    gradI->assign(val);
     if (!keepDims) {
       auto gradOShapeKeepDims =
           ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
@@ -161,10 +165,10 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
       dimensions.size());
 
   for (const auto &item : dimensions)
-    REQUIRE_TRUE(
-        item >= -rank || item < rank, 0,
-        "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
-        rank, item);
+  REQUIRE_TRUE(
+      item >= -rank || item < rank, 0,
+      "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
+      rank, item);
 
   sd::LongType *gradIshapeInfo(nullptr);
   COPY_SHAPE(inputShape->at(0), gradIshapeInfo);

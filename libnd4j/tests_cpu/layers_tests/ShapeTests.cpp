@@ -294,8 +294,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_3) {
@@ -310,6 +309,5 @@ TEST_F(ShapeTests, Tests_Transpose_119_3) {
   auto result = op.execute({&x}, {&z}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }

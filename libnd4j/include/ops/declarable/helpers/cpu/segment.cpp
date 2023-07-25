@@ -24,6 +24,7 @@
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/segment.h>
+#include <helpers/ConstantTadHelper.h>
 
 #include <unordered_map>
 #if NOT_EXCLUDED(OP_segment)
@@ -614,10 +615,40 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
     ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+    sd_print("tempRes listofBPTensors\n");
+    tempRes.printAllTensorsAlongDimension(*restDims);
+
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
+    sd_print("gradOut listofGradOuts\n");
+    gradOut->printAllTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
+    sd_print("input listofTensors\n");
+    input->printAllTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
+    sd_print("output listofOutTensors\n");
+    output->printAllTensorsAlongDimension(*restDims);
+
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), restDims);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims);
+    auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), restDims);
+    auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), restDims);
     delete restDims;
+    sd_printf("Input tads shape info with num tads %lld\n",packX->numberOfTads());
+    shape::printShapeInfo(packX->primaryShapeInfo());
+    packX->printOffsets("Input tads offsets");
+
+    sd_printf("Output tads shape info with number of tads %lld\n",packZ->numberOfTads());
+    shape::printShapeInfo(packZ->primaryShapeInfo());
+    packZ->printOffsets("Output tads offsets");
+    sd_printf("GradIn tads shape info with number of tads %lld\n",packGradIn->numberOfTads());
+    shape::printShapeInfo(packGradIn->primaryShapeInfo());
+    packGradIn->printOffsets("GradIn tads offsets");
+    sd_printf("GradOut tads shape info %lld\n",packGradOut->numberOfTads());
+    shape::printShapeInfo(packGradOut->primaryShapeInfo());
+    packGradOut->printOffsets("GradOut tads offsets");
+
+
+
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {

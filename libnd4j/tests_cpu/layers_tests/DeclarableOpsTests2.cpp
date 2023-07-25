@@ -244,8 +244,7 @@ TEST_F(DeclarableOpsTests2, gather_12) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -354,8 +353,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
@@ -435,8 +433,7 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
@@ -451,8 +448,7 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests2, Test_Concat_BP_1) {

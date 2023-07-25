@@ -283,8 +283,7 @@ TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests6, Test_Order_1) {
@@ -312,8 +311,7 @@ TEST_F(DeclarableOpsTests6, cumSum_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests6, cumSum_2) {
@@ -326,8 +324,7 @@ TEST_F(DeclarableOpsTests6, cumSum_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests6, cumSum_3) {
@@ -340,8 +337,7 @@ TEST_F(DeclarableOpsTests6, cumSum_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests6, cumSum_4) {
@@ -1124,8 +1120,7 @@ TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
 
   auto z = result.at(0);
   auto norm = result.at(1);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1192,8 +1187,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1207,8 +1201,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1222,8 +1215,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1237,8 +1229,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1255,8 +1246,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1274,8 +1264,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_6) {
 
   auto z = result.at(0);
   ASSERT_TRUE(z->isScalar());
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1291,8 +1280,7 @@ TEST_F(DeclarableOpsTests6, LogMatrixDeterminant_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1307,8 +1295,7 @@ TEST_F(DeclarableOpsTests6, LogDet_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1323,8 +1310,7 @@ TEST_F(DeclarableOpsTests6, LogDet_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1339,8 +1325,7 @@ TEST_F(DeclarableOpsTests6, LogDet_3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1369,8 +1354,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1391,8 +1375,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_010) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1411,8 +1394,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_01) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1431,8 +1413,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_02) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1454,8 +1435,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_03) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1476,8 +1456,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1495,8 +1474,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1514,8 +1492,7 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_04) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1534,8 +1511,7 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests6, Test_Reduce3_Edge) {

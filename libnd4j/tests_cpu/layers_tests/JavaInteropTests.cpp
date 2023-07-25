@@ -907,8 +907,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
   NDArray::registerSpecialUse({&z}, {&input});
   ASSERT_EQ(sd::Status::OK, status);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 TEST_F(JavaInteropTests, Test_MaxPool2D_float_1) {
@@ -1175,8 +1174,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
   NDArray::registerSpecialUse({&z}, {&input});
   ASSERT_EQ(sd::Status::OK, status);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 TEST_F(JavaInteropTests, Test_Mixed_Add_1) {

@@ -932,8 +932,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests16, clipbynorm_2) {
@@ -945,8 +944,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -994,8 +992,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_4) {
   auto result = op.evaluate({&x}, {1.f}, {});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1010,8 +1007,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_5) {
   auto result = op.evaluate({&x}, {15.f}, {0});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1027,8 +1023,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_6) {
   auto result = op.evaluate({&x}, {15.f}, {1});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1044,8 +1039,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_7) {
   auto result = op.evaluate({&x}, {15.f}, {0, 1});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1061,8 +1055,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_8) {
   auto result = op.evaluate({&x}, {15.}, {});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1074,8 +1067,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_9) {
   auto result = op.evaluate({&x}, {4.}, {});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1087,8 +1079,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_10) {
   auto result = op.evaluate({&x}, {5.}, {});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1105,8 +1096,7 @@ TEST_F(DeclarableOpsTests16, clipbynorm_11) {
   auto result = op.evaluate({&x}, {35.}, {0, 2});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1235,8 +1225,7 @@ TEST_F(DeclarableOpsTests16, clipbyavgnorm_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1249,8 +1238,7 @@ TEST_F(DeclarableOpsTests16, clipbyavgnorm_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

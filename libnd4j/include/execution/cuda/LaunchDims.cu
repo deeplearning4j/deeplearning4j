@@ -417,6 +417,13 @@ dim3 getAccumDims(int xLength) {
   return launchDims2;
 }
 
+dim3 getReduceAllDims(int xLength) {
+  auto blockWidth = 256;
+  auto numBlocks = SD_CUDA_BLOCK_SIZE / 2;
+  dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 8192);
+  return launchDims;
+}
+
 dim3 getReduceDims(int xLength) {
   auto blockWidth = 256;
   auto numBlocks = sd::CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);

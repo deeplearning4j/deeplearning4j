@@ -57,13 +57,9 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
 
     if (segment < numOfClasses) {
       zIndex = shape::getIndexOffset(segment, outputShape);
-      if(zIndex >= zLen)
-        return;
       start = starts[segment];
       finish = start + lengths[segment];
       auto xOffset = shape::getIndexOffset(start, inputShape);
-      if(xOffset >= xLen)
-        return;
       z[zIndex] = x[xOffset];
       val[segment] = z[zIndex];
     }
@@ -72,8 +68,6 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, sd::LongType const* in
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
-    if(xIndex >= xLen)
-      break;
     sd::math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
   }
 }
@@ -128,10 +122,8 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
   __shared__ int start, finish;
   __shared__ I segment;
 
-  if(blockIdx.x >= indicesLength)
-    return;
 
-  if (threadIdx.x == 0 && blockIdx.x < numOfClasses) {
+  if (threadIdx.x == 0 && blockIdx.x < indicesLength) {
     segment = indices[blockIdx.x];
     zLen = shape::length(outputShape);
     auto zOffset = outputTadOffsets[segment];
@@ -198,7 +190,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets,0, indices->lengthOf());
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
@@ -247,7 +239,7 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets, 0, 0);
+        output->specialShapeInfo(), outputTads, outputTadOffsets,0,indices->lengthOf());
     delete dimensions;
   }
 }
@@ -269,7 +261,7 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, sd::LongType cons
                                                sd::LongType const* forwardShape, void* eps,
                                                sd::LongType const* epsShape, void* indicesBuf,
                                                sd::LongType const* indicesShape, void* outputBuf,
-                                               sd::LongType const* outputShape) {
+                                               sd::LongType const* outputShape, sd::LongType indicesLen) {
   __shared__ T* x;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
@@ -291,7 +283,7 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, sd::LongType cons
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = gridDim.x * blockDim.x;
 
-  for (auto e = start; e < xLen; e += step) {
+  for (auto e = start; e < indicesLen; e += step) {
     auto zOffset = shape::getIndexOffset(e, outputShape);
     auto xOffset = shape::getIndexOffset(e, inputShape);
     auto yOffset = shape::getIndexOffset(e, indicesShape);
@@ -307,23 +299,37 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, sd::LongType cons
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, sd::LongType const* inputShape, void* forwardOutput,
-                                            sd::LongType const* forwardShape, void* eps, sd::LongType const* epsShape,
-                                            void* indicesBuf, sd::LongType const* indicesShape, void* outputBuf,
-                                            sd::LongType const* outputShape, sd::LongType const* inputTad,
-                                            sd::LongType const* inputOffsets, sd::LongType const* gradInTad,
-                                            sd::LongType const* gradInOffsets, sd::LongType const* gradOutTad,
-                                            sd::LongType const* gradOutOffsets, sd::LongType const* outTad,
-                                            sd::LongType const* outOffsets) {
+static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf,
+                                            sd::LongType const* inputShape,
+                                            void* forwardOutput,
+                                            sd::LongType const* forwardShape,
+                                            void* eps,
+                                            sd::LongType const* epsShape,
+                                            void* indicesBuf,
+                                            sd::LongType const* indicesShape,
+                                            void* outputBuf,
+                                            sd::LongType const* outputShape,
+                                            sd::LongType const* inputTadShapeInfo,
+                                            sd::LongType const* inputOffsets,
+                                            sd::LongType const* gradInTadShapeInfo,
+                                            sd::LongType const* gradInOffsets,
+                                            sd::LongType const* gradOutTadShapeInfo,
+                                            sd::LongType const* gradOutOffsets,
+                                            sd::LongType const* outTadShapeInfo,
+                                            sd::LongType const* outOffsets,
+                                            sd::LongType indicesLen) {
   __shared__ T* x;
+  __shared__ I *indices;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
   __shared__ I* y;
   __shared__ T* z;
-  __shared__ sd::LongType xLen, yLen, gradLen, currentLen;
-
+  __shared__ sd::LongType xLen, yLen, gradLen, currentLen,gradOutLen,
+      inLen;
+//gradInTadShapeInfo
   if (threadIdx.x == 0) {
     xLen = shape::length(inputShape);
+    indices = reinterpret_cast<I*>(indicesBuf);
     x = reinterpret_cast<T*>(inputBuf);
     y = reinterpret_cast<I*>(indicesBuf);
     z = reinterpret_cast<T*>(outputBuf);
@@ -331,20 +337,36 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, sd::LongType const* 
     gradOut = reinterpret_cast<T*>(eps);
     gradIn = reinterpret_cast<T*>(forwardOutput);
     gradLen = shape::length(epsShape);
-    currentLen = shape::length(outTad);
+    inLen = shape::length(gradInTadShapeInfo);
+    gradOutLen = shape::length(gradOutTadShapeInfo);
+    currentLen = shape::length(inputTadShapeInfo);
+
   }
   __syncthreads();
+   for (auto i = blockIdx.x; i < indicesLen; i += gridDim.x) {
+    I segment = indices[i];
+    T* current = x;
+    T* currentOut = z;
+    auto classNum = segment;
+    auto currentOffset = inputOffsets[i];
+    auto currentOutOffset = outOffsets[i];
+    auto currentGradOutOffset = gradOutOffsets[classNum];
+    auto bPTensorOffset = gradInOffsets[classNum];
 
-  for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-    auto yIndex = shape::getIndexOffset(i, indicesShape);
-    auto segment = y[yIndex];
-    T* current = x + inputOffsets[i];
-    T* currentOut = z + outOffsets[i];
-    T* in = gradIn + gradInOffsets[segment];
-    T* outGrad = gradOut + gradOutOffsets[segment];
-
+    auto gradIn2 = gradIn + bPTensorOffset;
+    auto current2 = current + currentOffset;
+    auto currentGradOut2 = gradOut + currentGradOutOffset;
+    auto currentOut2 = currentOut + currentOutOffset;
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      if (sd::math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
+      auto comp = gradIn2[shape::getIndexOffset(e, gradInTadShapeInfo)];
+      auto currValue = current2[shape::getIndexOffset(e, inputTadShapeInfo)];
+      if(sd::math::sd_abs<T>(comp - currValue) <= T(1.e-6)) {
+        auto setValueOffset = shape::getIndexOffset(e, outTadShapeInfo);
+        auto gradOutValueOffset =  shape::getIndexOffset(e, gradOutTadShapeInfo);
+        auto testCurrent2 = currentOut2[setValueOffset];
+        auto currentGradOut2Test = currentGradOut2[gradOutValueOffset];
+        currentOut2[setValueOffset] = currentGradOut2[gradOutValueOffset];
+      }
     }
   }
 }
@@ -362,32 +384,47 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     dim3 segmentBpDims2 = segmentBpDims(1 + gradOut->lengthOf(),input->lengthOf());
-
-    segmentMaxBPLinearKernel<T, I><<<segmentBpDims2.y,segmentBpDims2.x, segmentBpDims2.z, *stream>>>(
+    segmentMaxBPLinearKernel<T, I><<<segmentBpDims2.y, segmentBpDims2.x, segmentBpDims2.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-        output->specialBuffer(), output->specialShapeInfo());
+        output->specialBuffer(), output->specialShapeInfo(), indices->lengthOf());
   } else {
     sd::LongType zero = 0;
     std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+
+    NDArray::preparePrimaryUse({&tempRes}, {&tempRes});
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
     auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
-    sd::LongType const* inputTads = packX->specialShapeInfo();
+    sd::LongType const* inputTadShapeInfo = packX->specialShapeInfo();
     sd::LongType const* inputTadOffsets = packX->specialOffsets();
-    sd::LongType const* outputTads = packZ->specialShapeInfo();
+    sd::LongType const* outputTadShapeInfo = packZ->specialShapeInfo();
     sd::LongType const* outputTadOffsets = packZ->specialOffsets();
-    sd::LongType const* gradInTads = packGradIn->specialShapeInfo();
+    sd::LongType const* gradInTadShapeInfo = packGradIn->specialShapeInfo();
     sd::LongType const* gradInTadOffsets = packGradIn->specialOffsets();
-    sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
+    sd::LongType const* gradOutTadShapeInfo = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
     dim3 segmentBpTad2 = segmentBpTad(gradOut->lengthOf(),input->lengthOf());
-    segmentMaxBPTadKernel<T, I><<<segmentBpTad2.y, segmentBpTad2.x, segmentBpTad2.z, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
-        gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-        output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
-        gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    segmentMaxBPTadKernel<T, I><<<segmentBpTad2.x, segmentBpTad2.y, segmentBpTad2.z, *stream>>>(
+        input->specialBuffer(),
+        input->specialShapeInfo(),
+        tempRes.specialBuffer(),
+        tempRes.specialShapeInfo(),
+
+        gradOut->specialBuffer(),
+        gradOut->specialShapeInfo(),
+
+        indices->specialBuffer(),
+        indices->specialShapeInfo(),
+        output->specialBuffer(),
+        output->specialShapeInfo(),
+        inputTadShapeInfo,
+        inputTadOffsets, gradInTadShapeInfo,
+        gradInTadOffsets, gradOutTadShapeInfo,
+        gradOutTadOffsets, outputTadShapeInfo,
+        outputTadOffsets,
+        indices->lengthOf());
 
     delete dimensions;
   }
@@ -419,7 +456,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
     segmentMaxBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-        output->specialBuffer(), output->specialShapeInfo());
+        output->specialBuffer(), output->specialShapeInfo(),indices->lengthOf());
   } else {
     sd::LongType zero = 0;
     std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
@@ -436,11 +473,16 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
     sd::LongType const* gradOutTads = packGradOut->specialShapeInfo();
     sd::LongType const* gradOutTadOffsets = packGradOut->specialOffsets();
 
+
     segmentMaxBPTadKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
-        input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
-        gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
+        input->specialBuffer(),
+        input->specialShapeInfo(),
+        tempRes.specialBuffer(),
+        tempRes.specialShapeInfo(),
+        gradOut->specialBuffer(),
+        gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
-        gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+        gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets, indices->lengthOf());
 
     delete dimensions;
   }

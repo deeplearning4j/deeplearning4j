@@ -54,5 +54,15 @@ const sd::LongType* TadPack::platformOffsets() const {
   return sd::Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
 }
 
+
+void  TadPack::printOffsets(const char* msg) const {
+  printf("%s: ", msg);
+  for (int e = 0; e < _numTads; e++) {
+    printf("%lld, ", _tadOffsets.primary()[e]);
+  }
+  printf("\n");
+}
+
+
 sd::LongType TadPack::shapeInfoLength() const { return shape::shapeInfoLength(primaryShapeInfo()); }
 }  // namespace sd

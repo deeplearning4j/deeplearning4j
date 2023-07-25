@@ -2232,8 +2232,7 @@ TEST_F(DeclarableOpsTests1, ArgMax1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax2) {
@@ -2250,8 +2249,7 @@ TEST_F(DeclarableOpsTests1, ArgMax2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax3) {
@@ -2269,8 +2267,7 @@ TEST_F(DeclarableOpsTests1, ArgMax3) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax4) {
@@ -2288,8 +2285,7 @@ TEST_F(DeclarableOpsTests1, ArgMax4) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax5) {
@@ -2306,8 +2302,7 @@ TEST_F(DeclarableOpsTests1, ArgMax5) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax6) {
@@ -2341,8 +2336,7 @@ TEST_F(DeclarableOpsTests1, ArgMin1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, SquareTests1) {
@@ -2377,8 +2371,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
   auto z = result.at(0);
   // z->printBuffer();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_2) {
@@ -2412,8 +2405,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_3) {
   auto z = result.at(0);
 
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_4) {
@@ -2429,8 +2421,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_4) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_5) {
@@ -2448,8 +2439,7 @@ TEST_F(DeclarableOpsTests1, OneHotTests_5) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests1, OneHotTests_6) {

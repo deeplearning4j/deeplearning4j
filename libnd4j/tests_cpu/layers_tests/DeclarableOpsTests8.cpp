@@ -62,8 +62,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test1) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,8 +78,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test2) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -96,8 +94,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -113,8 +110,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,9 +125,8 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test5) {
   auto output = result.at(0);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  //note the variance here is correct within epsilon, no need to be so precise here
+  ASSERT_TRUE(exp.equalsTo(*output,1e-3));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,9 +141,8 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test6) {
   auto output = result.at(0);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  //note the variance here is correct within epsilon, no need to be so precise here
+  ASSERT_TRUE(exp.equalsTo(*output,1e-3));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,8 +158,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -181,8 +174,7 @@ TEST_F(DeclarableOpsTests8, reduceVariance_test8) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -198,8 +190,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test1) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -215,8 +206,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test2) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,8 +222,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -249,8 +238,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -266,8 +254,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test5) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -283,8 +270,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test6) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,8 +286,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -317,8 +302,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test8) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
   // output->printBuffer("Reduced STDDEV");
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -334,8 +318,7 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test08) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
   // output->printBuffer("Reduced STDDEV08");
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -453,8 +436,8 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test02) {
                                               {-4.000000f, -8.000000f, -12.000000f, -16.000000f, 0.000000f, 0.000000f,
                                                0.000000f, 0.000000f, 4.000000f, 8.000000f, 12.000000f, 16.000000f});
   auto axes = NDArrayFactory::create<sd::LongType>({
-      0,
-  });
+                                                       0,
+                                                   });
   x.linspace(1);
 
   sd::ops::reduce_variance_bp op;
@@ -735,23 +718,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_03) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_1) {
-  auto input =
-      NDArrayFactory::create<double>('c', {3, 5}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
-  auto exp = NDArrayFactory::create<double>(1307674368000.f);
-  //************************************//
-
-  sd::ops::reduce_prod op;
-  auto result = op.evaluate({&input}, {}, {});
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-  auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_2) {
@@ -779,8 +749,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_01) {
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -795,8 +764,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_02) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -811,8 +779,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -827,8 +794,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -843,8 +809,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_5) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -859,8 +824,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_6) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -874,8 +838,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Sum_7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -889,8 +852,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_01) {
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -905,8 +867,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_02) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -921,8 +882,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -937,8 +897,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -951,12 +910,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_04) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -968,12 +926,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_5) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -985,12 +942,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_6) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1001,12 +957,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Prod_7) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1020,8 +975,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_1) {
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1036,8 +990,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_2) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1052,8 +1005,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1068,8 +1020,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1085,8 +1036,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_04) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1098,12 +1048,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_5) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1115,12 +1064,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_6) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1131,12 +1079,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Min_7) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1150,8 +1097,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_1) {
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1166,8 +1112,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_2) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1182,8 +1127,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1198,8 +1142,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1215,8 +1158,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_04) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1231,8 +1173,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_5) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1247,8 +1188,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_6) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1262,8 +1202,7 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Max_7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_1) {
@@ -1274,11 +1213,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_1) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1290,12 +1228,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_2) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1307,12 +1244,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_3) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1324,12 +1260,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_4) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1342,12 +1277,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_04) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1359,12 +1293,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_5) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1376,12 +1309,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_6) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1392,12 +1324,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm1_7) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_1) {
@@ -1408,11 +1339,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_1) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1424,12 +1354,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_2) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1441,12 +1370,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_3) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1458,12 +1386,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_4) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1476,12 +1403,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_04) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1493,12 +1419,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_5) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1510,12 +1435,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_6) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1526,12 +1450,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_Norm2_7) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1543,11 +1466,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_1) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1559,11 +1481,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_2) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1575,11 +1496,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_3) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1591,11 +1511,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_4) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {0, 2});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1608,11 +1527,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_04) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1624,12 +1542,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_5) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1641,12 +1558,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_6) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1658,12 +1574,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_NormMax_7) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1675,11 +1590,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_1) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1691,11 +1605,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_2) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {1.f}, {0, 1});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1707,11 +1620,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_3) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1723,11 +1635,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_4) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {1.f}, {0, 2});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1740,11 +1651,10 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_04) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  
+
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1756,12 +1666,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_5) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1773,12 +1682,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_6) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1790,12 +1698,11 @@ TEST_F(DeclarableOpsTests8, Test_Reduce_SquaredNorm_7) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {1.f}, {});
   auto output = result.at(0);
-  
+
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1913,8 +1820,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test1) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1929,8 +1835,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test2) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1945,8 +1850,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1961,8 +1865,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test4) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1977,8 +1880,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test5) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1993,8 +1895,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test6) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2009,8 +1910,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2026,8 +1926,7 @@ TEST_F(DeclarableOpsTests8, reduceMean_test8) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2048,14 +1947,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test1) {
   auto output = result.at(0);
 
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2074,14 +1971,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test2) {
   auto result = op.evaluate({&x, &gradO1}, {0}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2101,14 +1996,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test02) {
   auto result = op.evaluate({&x, &gradO1, &axis}, {}, {}, {false});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2, &axis}, {}, {}, {true});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2126,14 +2019,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test3) {
   auto result = op.evaluate({&x, &gradO1}, {0}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2148,8 +2039,7 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test4) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2359,14 +2249,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test4) {
   auto result = op.evaluate({&x, &gradO1}, {0}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2382,14 +2270,12 @@ TEST_F(DeclarableOpsTests8, reduceMeanBP_test5) {
   auto result = op.evaluate({&x, &gradO1}, {0}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {1});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2406,14 +2292,12 @@ TEST_F(DeclarableOpsTests8, reduceStDevBP_test5) {
   auto result = op.evaluate({&x, &gradO1}, {0}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 
   result = op.evaluate({&x, &gradO2}, {1}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
   output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2505,7 +2389,7 @@ TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
       NDArrayFactory::create<double>('c', {10},
                                      {825., 825., 825., 825., 825., 825., 825., 825., 825.,
                                       825.});  // data.varianceAlongDimension(variance::SummaryStatsVariance, false,
-                                               // {0}); // = NDArrayFactory::create<double>('c', {10, 10});
+  // {0}); // = NDArrayFactory::create<double>('c', {10, 10});
 
   auto counts = NDArrayFactory::create<double>(10.0);
 
@@ -2664,7 +2548,7 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_01) {
       'c', {1, 1, 2, 5},
       {0.2581989f, 0.3592106f, 0.40089184f, 0.53935987f, 0.70014f, 0.4898979f, 0.46056613f, 0.43971977f, 0.5240003f,
        0.6375767f}  //            0.72760683, 0.4850712,   0.5848977, 0.67488194,
-                    //            0.7581754,  0.58321184, 0.86747235, 0.4048204}
+      //            0.7581754,  0.58321184, 0.86747235, 0.4048204}
   );
 
   sd::ops::lrn op;

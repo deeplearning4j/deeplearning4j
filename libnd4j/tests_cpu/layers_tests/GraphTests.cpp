@@ -1198,8 +1198,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_1) {
   auto result = op.execute({&x}, {&z}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 TEST_F(GraphTests, Test_Inplace_Outputs_2) {

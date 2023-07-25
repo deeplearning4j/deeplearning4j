@@ -785,8 +785,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
 
   auto z = MmulHelper::mmul(&x, &y);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete z;
 }
@@ -811,8 +810,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
 
   auto z = MmulHelper::mmul(x_, y_);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete z;
   delete x_;
@@ -840,8 +838,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul3) {
 
   auto z = MmulHelper::mmul(&x, &y);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete z;
 }
@@ -869,8 +866,7 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul4) {
 
   auto z = MmulHelper::mmul(&x, y_);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete z;
   delete y_;
@@ -1608,9 +1604,7 @@ TEST_F(NDArrayTest, applyAllReduce3EuclideanDistance) {
   std::vector<sd::LongType> dims = {1};
 
   auto result = x.applyAllReduce3(reduce3::EuclideanDistance, y, &dims);
-
-  ASSERT_TRUE(exp.isSameShapeStrict(result));
-  ASSERT_TRUE(exp.equalsTo(result));
+  ASSERT_EQ(exp,result);
 }
 
 //////////////////////////////////////////////////////////////////////
