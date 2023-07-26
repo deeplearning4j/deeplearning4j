@@ -617,7 +617,6 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
 
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
-    gradOut->printAllTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
     delete restDims;
