@@ -528,11 +528,10 @@ TEST_F(DeclarableOpsTests12, reverse_test15) {
 
   sd::ops::reverse op;
   sd::Status status = op.execute({&x, &axis}, {&z}, {}, {1}, {});
-  
+
   ASSERT_EQ(sd::Status::OK, status);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
-  
+  ASSERT_EQ(exp,z);
+
 }
 
 /////////////////////////////////////////////////////////////////
@@ -556,8 +555,7 @@ TEST_F(DeclarableOpsTests12, mirrorPad_test17) {
   status = op.execute({&x, &padding}, {&z}, {}, {1}, {});  // symmetric
 
   ASSERT_EQ(sd::Status::OK, status);
-  ASSERT_TRUE(exp2.isSameShape(z));
-  ASSERT_TRUE(exp2.equalsTo(z));
+  ASSERT_EQ(exp2,z);
 }
 
 /////////////////////////////////////////////////////////////////
@@ -571,8 +569,7 @@ TEST_F(DeclarableOpsTests12, mirrorPad_test18) {
   sd::Status status = op.execute({&x, &padding}, {&z}, {}, {0}, {});  // reflect
 
   ASSERT_EQ(sd::Status::OK, status);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -661,8 +658,7 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
   auto output = result.at(0);
   auto result2 = op.evaluate({&x, &gradO}, {1.0}, {0});
   result2.at(0)->printBuffer();
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests12, reduceMeanBp_7) {
@@ -677,8 +673,7 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_7) {
   auto result = op.evaluate({&x, &gradO}, {}, {0});
   auto output = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -693,8 +688,7 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_5) {
   sd::ops::reduce_mean_bp op;
   auto result = op.evaluate({&x, &gradO}, {}, {1});
   auto output = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1325,8 +1319,7 @@ TEST_F(DeclarableOpsTests12, cube_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1345,8 +1338,7 @@ TEST_F(DeclarableOpsTests12, cube_bp_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1443,7 +1435,7 @@ TEST_F(DeclarableOpsTests12, pad_tests4) {
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
-  
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2587,8 +2579,8 @@ TEST_F(DeclarableOpsTests12, QR_Test_1) {
   auto q = res.at(0);
   auto r = res.at(1);
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r});  
-  auto exp = res2.at(0);               
+  auto res2 = opMul.evaluate({q, r});
+  auto exp = res2.at(0);
   ASSERT_TRUE(exp->isSameShape(in));
   ASSERT_TRUE(exp->equalsTo(in));
 }
@@ -2628,10 +2620,10 @@ TEST_F(DeclarableOpsTests12, QR_Test_1_1) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto q = res.at(0);
   auto r = res.at(1);
- 
+
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r}); 
-  auto exp = res2.at(0);               
+  auto res2 = opMul.evaluate({q, r});
+  auto exp = res2.at(0);
   ASSERT_TRUE(exp->isSameShape(in));
   ASSERT_TRUE(exp->equalsTo(in));
 }
@@ -2657,8 +2649,8 @@ TEST_F(DeclarableOpsTests12, QR_Test_2) {
   ASSERT_TRUE(r->isSameShape(expR));
 
   sd::ops::matmul opMul;
-  auto res2 = opMul.evaluate({q, r});  
-  auto exp = res2.at(0);             
+  auto res2 = opMul.evaluate({q, r});
+  auto exp = res2.at(0);
   ASSERT_TRUE(exp->isSameShape(in));
   ASSERT_TRUE(exp->equalsTo(in));
 }
@@ -2683,7 +2675,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test1) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0]; 
+  auto result = results[0];
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2708,7 +2700,7 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test2) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0]; 
+  auto result = results[0];
   ASSERT_TRUE(expected.equalsTo(result));
 }
 
@@ -2732,8 +2724,8 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test3) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  
-  
+  auto result = results[0];
+
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }
@@ -2981,8 +2973,8 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test7) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results[0];  ///.at(0);
-                             //    result->printBuffer("Mitchell cubic Resized to 7x8");
-                             //    expected.printBuffer("Mitchell cubic Expect for 7x8");
+  //    result->printBuffer("Mitchell cubic Resized to 7x8");
+  //    expected.printBuffer("Mitchell cubic Expect for 7x8");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }

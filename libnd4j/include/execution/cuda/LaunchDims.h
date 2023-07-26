@@ -720,7 +720,7 @@ dim3 getMMulDims(int length,int sizeofDataType);
 dim3 getAccumDims(int xLength);
 
 dim3 getReduceDims(int xLength);
-
+dim3 getReduceAllDims(int xLength);
 dim3 getSortFullDims(int xLength);
 
 dim3 getSortTadLarge(int numberTads);

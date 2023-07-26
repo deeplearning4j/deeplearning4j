@@ -147,7 +147,7 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
   if (input->isVector()) {
-    dim3 launchDims = getLaunchDims("segment_prod_2");
+    dim3 launchDims = segmentDims(indices->lengthOf(),input->lengthOf());
     segmentProdLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins,
                                                                                          lengths, numClasses, output->specialBuffer(),
                                                                                          output->specialShapeInfo());
@@ -160,7 +160,7 @@ static void segmentProdFunctor_(sd::LaunchContext* context, NDArray* input, NDAr
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    dim3 launchDims = getLaunchDims("segment_prod_2_tad");
+    dim3 launchDims = segmentTad(input->lengthOf());
     segmentProdTadKernel<T, I><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),

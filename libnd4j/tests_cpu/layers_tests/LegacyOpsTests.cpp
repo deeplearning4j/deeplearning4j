@@ -180,8 +180,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
   std::vector<sd::LongType> dims = {1};
   auto exp = x.reduceAlongDimension(reduce::Sum, &dims);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_3) {
@@ -198,8 +197,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_4) {
@@ -213,8 +211,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
   std::vector<sd::LongType> dims = {1};
   auto exp = x.reduceAlongDimension(reduce::Sum,&dims, true);
   ASSERT_EQ(sd::Status::OK, result.status());
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_5) {
@@ -248,8 +245,7 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
 
   auto exp = x.reduceAlongDimension(reduce::Mean,&dims);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_7) {
@@ -265,8 +261,7 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_8) {
@@ -281,8 +276,7 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
   auto exp = x.reduceAlongDimension(reduce::Mean, &dims, true);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, IndexReduceTests_1) {

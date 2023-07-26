@@ -125,8 +125,7 @@ TEST_F(FlatBuffersTest, Ae_00) {
 
   auto z = graph->getVariableSpace()->getVariable(18)->getNDArray();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete graph;
 }
@@ -149,8 +148,7 @@ TEST_F(FlatBuffersTest, expand_dims) {
 
   auto z = graph->getVariableSpace()->getVariable(5)->getNDArray();
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 
   delete graph;
 }

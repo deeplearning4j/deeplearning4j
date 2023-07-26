@@ -2424,7 +2424,7 @@ void NDArray::printStringType()  {
   }
 }
 
-void NDArray::printInternalState()  {
+void NDArray::printStringInternalState()  {
   checkIfStringArrayAndNotEmpty();
   printStringType();
 
@@ -2445,8 +2445,7 @@ void NDArray::printInternalState()  {
   }
 }
 
-void NDArray::debugStringArray() {
-  printInternalState();
+void NDArray::debugStringArray() { printStringInternalState();
 }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -3941,7 +3940,6 @@ template <>
 std::u32string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::u32string out of non-string array");
 
-  if (i == lengthOf()) THROW_EXCEPTION("Can't get std::u32string for index out of range");
 
   if (this->dataType() == DataType::UTF8) {
     auto u = this->e<std::string>(i);
@@ -3960,7 +3958,7 @@ std::u32string NDArray::e(const sd::LongType i) const {
   NDArray::preparePrimaryUse({}, {this});
 
   auto offsets = bufferAsT<sd::LongType>();
-  sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+  sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(isScalar() ? 1 : lengthOf());
   sd::LongType start = offsets[i];
   sd::LongType end = offsets[i + 1];
 
@@ -5348,6 +5346,25 @@ NDArray NDArray::diagonal(const char type) const {
   return result;
 }
 
+
+void NDArray::printAllTensorsAlongDimension(const std::vector<LongType> &dimensions) const {
+  auto allTads = allTensorsAlongDimension(dimensions);
+  for(int i = 0; i < allTads.size(); i++) {
+    sd_printf("TAD: %d\n",i);
+    allTads.at(i)->printIndexedBuffer("");
+  }
+
+}
+void NDArray::printAllTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const {
+  printAllTensorsAlongDimension(std::vector<sd::LongType>(dimensions));
+}
+void NDArray::printTensorAlongDimension(sd::LongType index, const std::initializer_list<LongType> &dimensions) const {
+  printTensorAlongDimension(index, std::vector<sd::LongType>(dimensions));
+}
+void NDArray::printTensorAlongDimension(sd::LongType index, const std::vector<LongType> &dimensions) const {
+  auto tad = this->multipleTensorsAlongDimension(dimensions, {index});
+  tad.at(0)->printIndexedBuffer("");
+}
 ////////////////////////////////////////////////////////////////////////
 ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensions) const {
   ResultSet result;

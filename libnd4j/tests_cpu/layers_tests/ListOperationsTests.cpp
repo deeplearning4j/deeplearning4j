@@ -67,8 +67,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
@@ -119,8 +118,7 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ListOperationsTests, BasicTest_Pick_1) {
@@ -148,8 +146,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
@@ -171,8 +168,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ListOperationsTests, BasicTest_Create_1) {

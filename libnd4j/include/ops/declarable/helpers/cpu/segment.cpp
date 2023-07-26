@@ -24,6 +24,7 @@
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/segment.h>
+#include <helpers/ConstantTadHelper.h>
 
 #include <unordered_map>
 #if NOT_EXCLUDED(OP_segment)
@@ -614,10 +615,12 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     std::vector<sd::LongType> zeroVec = {0};
     std::vector<sd::LongType> *restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,zeroVec.data());
     ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(*restDims);
+
     ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(*restDims);
     ResultSet listOfTensors = input->allTensorsAlongDimension(*restDims);
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(*restDims);
     delete restDims;
+
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {

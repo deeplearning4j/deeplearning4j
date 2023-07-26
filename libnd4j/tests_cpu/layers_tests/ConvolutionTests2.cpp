@@ -131,8 +131,7 @@ TYPED_TEST(TypedConvolutionTests2, deconv2d_tf_test2) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1126,8 +1125,7 @@ TYPED_TEST(TypedConvolutionTests2, Test_DeConv2D_TF_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1516,8 +1514,7 @@ TEST_F(ConvolutionTests2, deconv3d_test1) {
   // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1555,8 +1552,7 @@ TEST_F(ConvolutionTests2, deconv3d_test2) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1595,8 +1591,7 @@ TEST_F(ConvolutionTests2, deconv3d_test3) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1623,8 +1618,7 @@ TEST_F(ConvolutionTests2, deconv3d_test4) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1680,8 +1674,7 @@ TEST_F(ConvolutionTests2, deconv3d_test5) {
 
   auto output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2597,8 +2590,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2616,8 +2608,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_7) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2635,8 +2626,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////

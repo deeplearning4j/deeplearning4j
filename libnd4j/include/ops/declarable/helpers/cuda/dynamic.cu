@@ -248,7 +248,7 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, sd::LongType **xTadShape
 template <typename X, typename Y>
 static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<NDArray *> const &inputs,
                                         std::vector<NDArray *> const &indices, NDArray *output) {
-  int inputSize = inputs.size();
+  sd::LongType inputSize = inputs.size();
 
   PointersManager pm(context, "dynamicStitch");
 
@@ -258,7 +258,7 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     std::vector<const void *> indicesBuffers(inputSize);
     std::vector<const sd::LongType *> indicesShapes(inputSize);
 
-    for (int e = 0; e < inputSize; e++) {
+    for (sd::LongType e = 0; e < inputSize; e++) {
       inputBuffers[e] = inputs.at(e)->specialBuffer();
       indicesBuffers[e] = indices.at(e)->specialBuffer();
 
@@ -292,9 +292,9 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     std::vector<const void *> indicesBuffers(inputSize);
     std::vector<const sd::LongType *> indicesShapes(inputSize);
 
-    for (int e = 0; e < inputSize; e++) {
+    for (sd::LongType e = 0; e < inputSize; e++) {
       std::vector<sd::LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
-      for (int i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
+      for (sd::LongType  i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
 

@@ -74,8 +74,7 @@ TEST_F(SingleDimTests, Test_Concat_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(SingleDimTests, Test_Reduce_1) {
@@ -105,8 +104,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(SingleDimTests, Test_ExpandDims_2) {
@@ -120,8 +118,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(SingleDimTests, Test_Squeeze_1) {
@@ -151,8 +148,7 @@ TEST_F(SingleDimTests, Test_Squeeze_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(SingleDimTests, Test_Permute_1) {
@@ -165,6 +161,5 @@ TEST_F(SingleDimTests, Test_Permute_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }

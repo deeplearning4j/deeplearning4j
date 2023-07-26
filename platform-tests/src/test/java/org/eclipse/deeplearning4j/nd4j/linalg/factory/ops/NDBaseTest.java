@@ -157,27 +157,8 @@ public class NDBaseTest extends BaseNd4jTestWithBackends {
         assertEquals(y_exp, y);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDynamicpartition(Nd4jBackend backend) {
-        //Try to execute the sample in the code dcumentation:
-        NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 5);
-        int numPartitions = 2;
-        int[] partitions = new int[]{1, 0, 0, 1, 0};
-        //INDArray y = base.dynamicPartition(x, partitions, numPartitions); TODO: Fix
-        //TODO: crashes here. Op needs fixing.
 
-    }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testDynamicStitch(Nd4jBackend backend) {
-        NDBase base = new NDBase();
-        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 9).reshape(3, 3);
-        //INDArray y = base.dynamicStitch(new INDArray[]{x, x}, 0); TODO: Fix
-        //TODO: crashes here. Op needs fixing.  Bad constructor, as previously flagged. Both input and indices need to be INDArrays
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

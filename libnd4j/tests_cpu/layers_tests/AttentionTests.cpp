@@ -49,22 +49,6 @@ TEST_F(AttentionTests, basic_dot_product_attention) {
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
-/*
-//Ignored: AB 2019/05/21 - Segmentation fault on on linux-ppc64le-cpu -
-https://github.com/deeplearning4j/deeplearning4j/issues/7657 TEST_F(AttentionTests, basic_dot_product_attention_bp) {
-    auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto values = NDArrayFactory::create<float>('c', {10, 4, 3});
-    auto queries = NDArrayFactory::create<float>('c', {10, 4, 1});
-    auto eps = NDArrayFactory::create<float>('c', {10, 4, 1});
-
-    sd::ops::dot_product_attention_bp op;
-    auto result = op.execute({&queries, &keys, &values, &eps}, {}, {1, 0}, {});
-    ASSERT_EQ(sd::Status::OK, result->status());
-
-    delete result;
-}
-*/
-
 TEST_F(AttentionTests, basic_dot_product_attention_with_weights) {
   auto keys = NDArrayFactory::create<float>('c', {10, 4, 3});
   auto values = NDArrayFactory::create<float>('c', {10, 4, 3});

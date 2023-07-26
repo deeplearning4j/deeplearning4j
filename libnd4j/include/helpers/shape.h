@@ -1640,7 +1640,7 @@ SD_INLINE SD_HOST_DEVICE sd::LongType *stride(const sd::LongType *buffer) {
  * Compute the length of the given shape
  */
 SD_INLINE SD_HOST_DEVICE sd::LongType length(const sd::LongType *shapeInfo) {
-  const int rank = shape::rank(shapeInfo);
+  const sd::LongType rank = shape::rank(shapeInfo);
 
   if (rank == 0) {
     if (isEmpty(shapeInfo)) return 0L;

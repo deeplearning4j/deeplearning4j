@@ -54,8 +54,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
   auto z = result.at(0);
 
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
@@ -76,8 +75,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
@@ -98,8 +96,7 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
@@ -114,8 +111,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
@@ -130,8 +126,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
@@ -145,8 +140,7 @@ TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
@@ -264,8 +258,7 @@ TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {

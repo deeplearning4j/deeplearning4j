@@ -1447,7 +1447,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
 
   if (sd::Environment::getInstance().isDebugAndVerbose()) printf("D119 opType:[%i]\n", opNum);
 
-  dim3 launchDims = getReduceDims(shape::length(hZShapeInfo));
+  dim3 launchDims = getReduceAllDims(shape::length(hZShapeInfo));
 
   if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1) printf("AD119 opType:[%i]\n", opNum);
 

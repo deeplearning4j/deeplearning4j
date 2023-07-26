@@ -81,8 +81,9 @@ DECLARE_SHAPE_FN(broadcast_to) {
     outShape.reserve(1);
     auto firstVal = shape->cast(sd::DataType::INT64).e<sd::LongType>(0);
     outShape[0] = firstVal;
-    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
-                                                                           shape::order(inputShapeInfo), outShape);
+    ShapeDescriptor shapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), {firstVal});
+
+    auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(&shapeDescriptor);
     return SHAPELIST(outShapeInfo);
 
   }

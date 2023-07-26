@@ -205,8 +205,8 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
   const int rank = input.rankOf();
   const sd::LongType outLen = output.lengthOf();
 
-  if (rank <= 1) {
-    const sd::LongType inLen = input.lengthOf();
+  if (input.isScalar() || input.isVector()) {
+    const sd::LongType inLen = input.isScalar() ? 1 : input.lengthOf();
     const auto leftSide = paddings.e<sd::LongType>(0);
     const auto leftSideCorrected = leftSide - reflBorder;
     const sd::LongType len = 2 * (inLen - 1) + leftSide + reflBorder;

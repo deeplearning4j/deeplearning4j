@@ -1095,7 +1095,7 @@ class SD_LIB_EXPORT NDArray {
   bool reshapei(const std::initializer_list<sd::LongType> &shape, const bool copyToNewBuff = true);
   bool reshapei(const std::vector<sd::LongType> &shape, const bool copyToNewBuff = true);
 
-  void printInternalState();
+  void printStringInternalState();
   void printStringType();
   void checkIfStringArrayAndNotEmpty();
 
@@ -1322,6 +1322,11 @@ class SD_LIB_EXPORT NDArray {
   ResultSet allTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const;
 
   ResultSet allTensorsAlongDimension(const std::vector<LongType> &dimensions) const;
+
+  void printAllTensorsAlongDimension(const std::vector<LongType> &dimensions) const;
+  void printAllTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const;
+  void printTensorAlongDimension(LongType index,const std::vector<LongType> &dimensions) const;
+  void printTensorAlongDimension(LongType index,const std::initializer_list<LongType> &dimensions) const;
 
   ResultSet allExamples() const;
 

@@ -105,18 +105,18 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
   ops::dynamic_partition op;
   auto res = op.evaluate({&originalIndices, indices}, {numPartition});
   REQUIRE_TRUE(res.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  ops::dynamic_stitch stichOp;
+  ops::dynamic_stitch stitchOp;
   std::vector<NDArray *> partitions(numPartition * 2);
   for (size_t i = 0; i < res.size(); i++) {
     partitions[i] = res.at(i);
     partitions[i + numPartition] = gradOutList[i];
   }
 
-  auto result = stichOp.evaluate(partitions, {numPartition});
+  auto result = stitchOp.evaluate(partitions, {numPartition});
   REQUIRE_TRUE(result.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  result.at(0)->reshapei(outputList[0]->getShapeAsVector());
   outputList[1]->assign(indices);
   outputList[0]->assign(result.at(0));
+
   return sd::Status::OK;
 }
 

@@ -377,8 +377,7 @@ TEST_F(DeclarableOpsTests10, atan2_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -398,8 +397,7 @@ TEST_F(DeclarableOpsTests10, atan2_test2) {
   auto result = op.evaluate({&y, &x}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -420,8 +418,7 @@ TEST_F(DeclarableOpsTests10, atan2_test3) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -440,8 +437,7 @@ TEST_F(DeclarableOpsTests10, atan2_test4) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -460,8 +456,7 @@ TEST_F(DeclarableOpsTests10, atan2_test5) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -479,8 +474,7 @@ TEST_F(DeclarableOpsTests10, atan2_test6) {
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -498,8 +492,7 @@ TEST_F(DeclarableOpsTests10, IGamma_Test1) {
   auto result = op.evaluate({&y, &x}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -515,8 +508,7 @@ TEST_F(DeclarableOpsTests10, IGamma_Test2) {
   auto result = op.evaluate({&y, &x}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -530,8 +522,7 @@ TEST_F(DeclarableOpsTests10, LGamma_Test1) {
   auto result = op.evaluate({&x}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   auto z = result.at(0);
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -547,8 +538,7 @@ TEST_F(DeclarableOpsTests10, range_test10) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -566,8 +556,7 @@ TEST_F(DeclarableOpsTests10, range_test11) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -581,8 +570,7 @@ TEST_F(DeclarableOpsTests10, range_test12) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -856,8 +844,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -873,8 +860,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -890,8 +876,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -907,8 +892,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_4) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_04) {
@@ -925,8 +909,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_04) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
@@ -941,8 +924,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_5) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -956,8 +938,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* output = results.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_06) {
@@ -971,8 +952,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_06) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* output = results.at(0);
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
@@ -991,8 +971,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_8) {
@@ -1011,8 +990,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_8) {
 
   NDArray* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1030,8 +1008,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test1) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1049,8 +1026,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test2) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1068,8 +1044,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test3) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1085,8 +1060,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test4) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1102,8 +1076,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test5) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+  ASSERT_EQ(exp, *output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1135,8 +1108,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test7) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1154,8 +1126,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test8) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1174,8 +1145,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test9) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1194,8 +1164,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test10) {
 
   auto* output = results.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(output));
-  ASSERT_TRUE(exp.equalsTo(output));
+ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2014,10 +1983,10 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_1) {
   NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.9, .75, .6, .95});  // 3
   NDArray max_num = NDArrayFactory::create<sd::LongType>(3);
   NDArray expected = NDArrayFactory::create<sd::LongType>('c',
-                                                 {
-                                                     1,
-                                                 },
-                                                 {3});
+                                                          {
+                                                              1,
+                                                          },
+                                                          {3});
 
   sd::ops::non_max_suppression_overlaps op;
   auto results = op.evaluate({&boxes, &scores, &max_num}, {0.5, 0.}, {});
@@ -2035,7 +2004,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_2) {
       NDArrayFactory::create<double>('c', {4, 4}, {0, 0, 1, 1, 0, 0.1, 1, 1.1, 0, -0.1, 1, 0.9, 0, 10, 1, 11});
   NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.9, .95, .6, .75});  // 3
   NDArray max_num = NDArrayFactory::create<int>(3);
-  NDArray expected = NDArrayFactory::create<int>('c',
+  NDArray expected = NDArrayFactory::create<sd::LongType>('c',
                                                  {
                                                      3,
                                                  },
@@ -2043,12 +2012,11 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_2) {
 
   sd::ops::non_max_suppression_overlaps op;
   auto results = op.evaluate({&boxes, &scores, &max_num}, {0.5, 0.}, {});
-
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  ASSERT_TRUE(expected.isSameShapeStrict(*result));
-  ASSERT_TRUE(expected.equalsTo(result));
+  ASSERT_EQ(expected,*result);
+
 }
 
 ////////////////////////////////////////////////////////////////////

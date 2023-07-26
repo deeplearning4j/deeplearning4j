@@ -101,8 +101,7 @@ TEST_F(ScalarTests, Test_Concat_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ScalarTests, Test_Concat_2) {
@@ -118,8 +117,7 @@ TEST_F(ScalarTests, Test_Concat_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ScalarTests, Test_Concat_3) {
@@ -136,8 +134,7 @@ TEST_F(ScalarTests, Test_Concat_3) {
   auto z = result.at(0);
 
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ScalarTests, Test_ExpandDims_1) {
@@ -151,8 +148,7 @@ TEST_F(ScalarTests, Test_ExpandDims_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ScalarTests, Test_Squeeze_1) {
@@ -165,8 +161,7 @@ TEST_F(ScalarTests, Test_Squeeze_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 
@@ -183,8 +178,7 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ScalarTests, Test_Concat_Scalar_2) {
@@ -200,6 +194,5 @@ TEST_F(ScalarTests, Test_Concat_Scalar_2) {
 
   auto z = result.at(0);
 
-  ASSERT_TRUE(exp.isSameShape(z));
-  ASSERT_TRUE(exp.equalsTo(z));
+ASSERT_EQ(exp,*z);
 }

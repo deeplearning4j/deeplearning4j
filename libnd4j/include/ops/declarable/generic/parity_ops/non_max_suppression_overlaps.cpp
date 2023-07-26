@@ -61,7 +61,6 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
-  auto in = inputShape->at(0);
 
   int maxOutputSize;
   if (block.width() > 2)

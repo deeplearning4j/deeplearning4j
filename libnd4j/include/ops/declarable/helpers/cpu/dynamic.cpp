@@ -28,37 +28,35 @@ namespace helpers {
 
 template <typename T>
 static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
-  std::vector<std::pair<NDArray*, int>> outputs(outputList.size());
+  std::vector<std::pair<NDArray*, sd::LongType>> outputs(outputList.size());
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {
     std::vector<sd::LongType> sourceDims(sourceDimsLen);
 
-    for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
+    for (sd::LongType i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
     ResultSet listOfTensors = input->allTensorsAlongDimension(sourceDims);
 
-    unsigned int outSize = outputList.size();
+    sd::LongType outSize = outputList.size();
 
-    // PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance().tadThreshold())
-    for (unsigned int i = 0; i < outSize; i++) {
+    for (sd::LongType i = 0; i < outSize; i++) {
       outputs[i].first = outputList[i];
       std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
 
-      int r = outputs[i].first->rankOf();
+      sd::LongType r = outputs[i].first->rankOf();
 
-      for (int k = 1; k < r; k++) outDims[k - 1] = k;
+      for (sd::LongType k = 1; k < r; k++) outDims[k - 1] = k;
 
       ResultSet listOutForCurrent = outputs[i].first->allTensorsAlongDimension(outDims);
 
       outputs[i].second = 0;
 
-      // PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance().elementwiseThreshold())
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
         if ((*indices).e<sd::LongType>(e) == i) listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
     }
 
   } else {
-    unsigned int outSize = outputList.size();
+    sd::LongType outSize = outputList.size();
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
@@ -75,10 +73,10 @@ static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indice
 template <typename T>
 static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
                                         NDArray* output) {
-  int numOfData = inputs.size();
+  sd::LongType numOfData = inputs.size();
 
   if (output->isVector()) {
-    for (int e = 0; e < numOfData; e++) {
+    for (sd::LongType e = 0; e < numOfData; e++) {
       auto data = inputs[e];
       auto index = indices[e];
       for (sd::LongType i = 0; i < index->lengthOf(); i++) {
@@ -99,10 +97,12 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
     for (auto i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
 
     ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
-
     for (int e = 0; e < numOfData; e++) {
       auto data = inputs[e];
       auto index = indices[e];
+      sd_printf("Processing element %d\n",e);
+      data->printIndexedBuffer("data\n");
+      index->printIndexedBuffer("index\n");
       std::vector<sd::LongType > sourceDims(data->rankOf() - index->rankOf());
       for (auto i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
@@ -130,17 +130,17 @@ template <typename T>
 static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indices,
                                        std::vector<NDArray*> const& inputGradientList,
                                        std::vector<NDArray*>& outputList) {
-  std::vector<std::pair<NDArray*, int>> outputs(inputGradientList.size());
+  std::vector<std::pair<NDArray*, sd::LongType>> outputs(inputGradientList.size());
 
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {  // multidimensional case
     std::vector<sd::LongType > sourceDims(sourceDimsLen);
 
-    for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
+    for (sd::LongType i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
     ResultSet listOfTensors = outputList[0]->allTensorsAlongDimension(sourceDims);
 
-    for (auto i = 0; i < inputGradientList.size(); i++) {
+    for (sd::LongType i = 0; i < inputGradientList.size(); i++) {
       outputs[i].first = inputGradientList[i];
       if (outputs[i].first->rankOf() < 1) continue;  // skip empty gradient outs
       std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
@@ -212,19 +212,19 @@ void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray const* input,
 
 BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctorBP,
                       (NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList,
-                       std::vector<NDArray*>& outputList);
-                      , SD_COMMON_TYPES);
+                          std::vector<NDArray*>& outputList);
+, SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctorBP,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                       NDArray const* gradInput, std::vector<NDArray*>& outputList);
-                      , SD_COMMON_TYPES);
+                          NDArray const* gradInput, std::vector<NDArray*>& outputList);
+, SD_COMMON_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctor,
                       (NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
-                      , SD_COMMON_TYPES);
+, SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctor,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);
-                      , SD_COMMON_TYPES);
+, SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
