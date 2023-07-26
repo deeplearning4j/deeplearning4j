@@ -176,8 +176,6 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const sd::LongType* 
     else if (i >= leftSide && i < leftSide + xLen)  // middle
       xIndex = shape::getIndexOffset(i - leftSide, xShape);
 
-    //            else                                                // right side
-    //                z[i] = x[len - i];
     z[zIndex] = x[xIndex];
   }
 }
@@ -206,8 +204,6 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const sd::LongType* xShape
 
   for (sd::LongType i = start; i < outLen; i += step) {
     auto xzCoord = xIdx + threadIdx.x * rank;
-    // auto zxCoord = xIdx + (threadIdx.x + threadIdx.x % 2 + 1) * rank;
-
     shape::index2coords(i, zShape, xzCoord);
     auto outOffset = shape::getOffset(zShape, xzCoord);
     for (sd::LongType j = 0; j < rank; j++) {

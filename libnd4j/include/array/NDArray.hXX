@@ -3940,7 +3940,6 @@ template <>
 std::u32string NDArray::e(const sd::LongType i) const {
   if (!isS()) THROW_EXCEPTION("Can't get std::u32string out of non-string array");
 
-  if (i == lengthOf()) THROW_EXCEPTION("Can't get std::u32string for index out of range");
 
   if (this->dataType() == DataType::UTF8) {
     auto u = this->e<std::string>(i);
@@ -3959,7 +3958,7 @@ std::u32string NDArray::e(const sd::LongType i) const {
   NDArray::preparePrimaryUse({}, {this});
 
   auto offsets = bufferAsT<sd::LongType>();
-  sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+  sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(isScalar() ? 1 : lengthOf());
   sd::LongType start = offsets[i];
   sd::LongType end = offsets[i + 1];
 
