@@ -169,14 +169,14 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const sd::LongType* 
   for (int i = start; i < zLen; i += step) {
     auto zIndex = shape::getIndexOffset(i, zShape);
     auto xIndex = shape::getIndexOffset(len - i, xShape);
-
     if (i < leftSide)  // left side
       xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape);
 
     else if (i >= leftSide && i < leftSide + xLen)  // middle
       xIndex = shape::getIndexOffset(i - leftSide, xShape);
 
-    z[zIndex] = x[xIndex];
+    if(zIndex >= 0 && xIndex >= 0 && zIndex < zLen && xIndex < xLen)
+      z[zIndex] = x[xIndex];
   }
 }
 
@@ -242,15 +242,15 @@ static void mirrorPad_(sd::LaunchContext* context, const NDArray& input, const N
   NDArray::prepareSpecialUse({&output}, {&input, &paddings});
 
   if (rank <= 1) {
-    const sd::LongType inLen = input.lengthOf();
+    const sd::LongType inLen = input.isScalar() ? 1 : input.lengthOf();
     const auto leftSide = paddings.e<sd::LongType>(0);
     const auto leftSideCorrected = leftSide - reflBorder;
     const sd::LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
 
     dim3 mirrorPadLinearDims2 = mirrorPadLinearDims(len);
     mirrorPadLinearKernel<F><<<mirrorPadLinearDims2.y, mirrorPadLinearDims2.x, mirrorPadLinearDims2.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
-                                                         output.specialBuffer(), output.specialShapeInfo(), leftSide,
-                                                         leftSideCorrected, inLen, len, outLen);
+                                                                                                                  output.specialBuffer(), output.specialShapeInfo(), leftSide,
+                                                                                                                  leftSideCorrected, inLen, len, outLen);
     sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
   } else {
     dim3 mirrorPadDims = mirrorPadTad(output.lengthOf(),input.rankOf());
