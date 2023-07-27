@@ -1724,7 +1724,7 @@ NDArray NDArray::reduceNumber(sd::reduce::LongOps op, void *extraParams) const {
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
+  if (target.lengthOf() > 1 || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
     THROW_EXCEPTION("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
   prepareUse({&target}, {this});
@@ -1737,7 +1737,7 @@ void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray &target, void *extra
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber SameOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != dataType())
+  if (target.lengthOf() > 1 || target.dataType() != dataType())
     THROW_EXCEPTION("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
   prepareUse({&target}, {this});
@@ -1750,7 +1750,7 @@ void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray &target, void *extraP
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataType::BOOL)
+  if (target.lengthOf() > 1 || target.dataType() != DataType::BOOL)
     THROW_EXCEPTION("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
 
   prepareUse({&target}, {this});
@@ -1763,7 +1763,7 @@ void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray &target, void *extraP
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::LongOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber LongOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataType::INT64)
+  if (target.lengthOf() > 1 || target.dataType() != DataType::INT64)
     THROW_EXCEPTION("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
   prepareUse({&target}, {this});
