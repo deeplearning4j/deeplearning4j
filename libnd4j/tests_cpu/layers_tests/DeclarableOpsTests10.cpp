@@ -1083,7 +1083,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test5) {
 TEST_F(DeclarableOpsTests10, broadcast_to_test6) {
   auto input = NDArrayFactory::create<double>(10.f);
   auto shape = NDArrayFactory::create<double>(1.f);
-  auto exp = NDArrayFactory::create<double>('c', {}, {10.f});
+  auto exp = NDArrayFactory::create<double>('c', {1}, {10.f});
 
   sd::ops::broadcast_to op;
   auto results = op.evaluate({&input, &shape}, {}, {}, {});
@@ -1099,7 +1099,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test6) {
 TEST_F(DeclarableOpsTests10, broadcast_to_test7) {
   auto input = NDArrayFactory::create<double>(10.f);
   auto shape = NDArrayFactory::create<sd::LongType>(1);
-  auto exp = NDArrayFactory::create<double>('c', {}, {10.});
+  auto exp = NDArrayFactory::create<double>('c', {1}, {10.});
 
   sd::ops::broadcast_to op;
   auto results = op.evaluate({&input, &shape}, {}, {}, {});
@@ -2024,12 +2024,13 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
   NDArray boxes =
       NDArrayFactory::create<double>('c', {4, 4}, {0, 0, 1, 1, 0, 0.1, 1, 1.1, 0, -0.1, 1, 0.9, 0, 10, 1, 11});
   NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.5, .95, -.6, .75});  // 3
-  NDArray max_num = NDArrayFactory::create<int>(5);
-  NDArray expected = NDArrayFactory::create<int>('c',
+  NDArray max_num = NDArrayFactory::create<sd::LongType>(5);
+  NDArray expected = NDArrayFactory::create<sd::LongType>('c',
                                                  {
-                                                     5,
+                                                    5,
                                                  },
                                                  {1, 1, 1, 1, 1});
+
 
   sd::ops::non_max_suppression_overlaps op;
   auto results = op.evaluate({&boxes, &scores, &max_num}, {0.5, 0.}, {});
@@ -2037,8 +2038,8 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  ASSERT_TRUE(expected.isSameShapeStrict(*result));
-  ASSERT_TRUE(expected.equalsTo(result));
+  result->printShapeInfo("result shape");
+  ASSERT_EQ(expected,*result);
 }
 
 ////////////////////////////////////////////////////////////////////

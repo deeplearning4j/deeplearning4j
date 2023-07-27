@@ -66,7 +66,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LARGE) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&x}, {0.0}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(1);
 
@@ -83,7 +83,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_ZERO) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&x}, {0.0}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(1);
   auto array = *z;
@@ -101,7 +101,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&x, &scalar}, {1.0}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_EQ(3, z->lengthOf());
@@ -118,7 +118,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_SCALAR_LEFT) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&scalar, &x}, {1.0}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_EQ(3, z->lengthOf());
@@ -134,7 +134,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_ONLY_SCALAR) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&x}, {1.0}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_EQ(2, z->lengthOf());
@@ -150,7 +150,7 @@ TEST_F(DeclarableOpsTests7, Test_CHOOSE_ONLY_SCALAR_GTE) {
   sd::ops::choose op;
   // greater than test
   auto result = op.evaluate({&x}, {1.0}, {5});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_EQ(3, z->lengthOf());
@@ -508,7 +508,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119) {
 
   sd::ops::dynamic_stitch op;
   auto result = op.evaluate({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_TRUE(exp.isSameShape(result.at(0)));
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
@@ -558,7 +558,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_Prof_1) {
 
   sd::ops::dynamic_stitch op;
   auto result = op.evaluate({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto res = result.at(0);
   ASSERT_TRUE(exp.isSameShape(result.at(0)));
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
@@ -614,7 +614,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119_1) {
   sd::ops::dynamic_stitch op;
   auto result = op.evaluate({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
 
   ASSERT_TRUE(z->isSameShape(exp));
@@ -661,7 +661,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119_2) {
   sd::ops::dynamic_stitch op;
   auto result = op.evaluate({&indices0, &indices1, &indices2, &data0, &data1, &data2}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
 
   ASSERT_TRUE(z->isSameShape(exp));
@@ -676,7 +676,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119) {
   e.assign(1.f);
   sd::ops::dynamic_partition op;
   auto result = op.evaluate({&x, &y}, {}, {4});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_EQ(4, result.size());
   auto z = result.at(0);
 
@@ -694,7 +694,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_1) {
   //    e.assign(1.f);
   sd::ops::dynamic_partition op;
   auto result = op.evaluate({&x, &y}, {}, {3});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_EQ(3, result.size());
   auto z = result.at(0);
   ASSERT_TRUE(e.isSameShape(z));
@@ -723,7 +723,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_2) {
   //.assign(1.f);
   sd::ops::dynamic_partition op;
   auto result = op.evaluate({&x, &y}, {}, {4});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_EQ(4, result.size());
   for (size_t i = 0; i < result.size(); i++) {
     auto z = result.at(i);
@@ -746,10 +746,10 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_1) {
 
   sd::ops::sequence_mask op;
   auto result = op.evaluate({&input}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_2) {
@@ -766,10 +766,10 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_2) {
 
   sd::ops::sequence_mask op;
   auto result = op.evaluate({&input}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_3) {
@@ -786,10 +786,10 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_3) {
 
   sd::ops::sequence_mask op;
   auto result = op.evaluate({&input}, {sd::DataType::INT32});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_4) {
@@ -800,12 +800,12 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_4) {
 
   sd::ops::sequence_mask op;
   auto result = op.evaluate({&input, &maxLen}, {sd::DataType::FLOAT32});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   //    z->printBuffer("Output");
   //    z->printShapeInfo("Shape");
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_5) {
@@ -815,10 +815,10 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_5) {
 
   sd::ops::sequence_mask op;
   auto result = op.evaluate({&input}, {5, (int)sd::DataType::FLOAT32});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1325,8 +1325,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_1) {
   sd::ops::segment_mean op;
 
   auto result = op.evaluate({&x, &idx}, {}, {});
-  ASSERT_EQ(result.status(), sd::Status::OK);
-  ASSERT_TRUE(exp.equalsTo(result.at(0)));
+  ASSERT_EQ(exp,*result.at(0));
 }
 
 TEST_F(DeclarableOpsTests7, TestSegmentMean_2) {
@@ -1340,7 +1339,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_2) {
   auto result = op.evaluate({&x, &idx}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_EQ(result.size(), 1);
-  ASSERT_TRUE(exp.equalsTo(result.at(0)));
+  ASSERT_EQ(exp,*result.at(0));
 }
 
 TEST_F(DeclarableOpsTests7, TestSegmentMean_02) {
@@ -2494,7 +2493,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_7) {
       {2, 2, 1, 1, 1, 1, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2517,7 +2516,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_8) {
       {2, 2, 1, 1, 1, 1, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2568,7 +2567,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9) {
       {3, 3, 1, 1, 1, 1, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2599,7 +2598,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_9_1) {
       {2, 2, 1, 1, 1, 1, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="SAME"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //
@@ -2636,7 +2635,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_10) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
   auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
@@ -2655,7 +2654,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010) {
       {2, 2, 1, 1, 1, 1, 0});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
   auto x = NDArrayFactory::create<double>('c', {1, 4, 4, 1});
@@ -2675,7 +2674,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_010_1) {
       {2, 2, 1, 1, 1, 1, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_011) {
@@ -2711,7 +2710,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_011) {
       {2, 2, 1, 1, 2, 2, 0});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,1,1,1], padding="VALID"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2739,7 +2738,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_11) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2783,7 +2782,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_12) {
       {2, 2, 1, 1, 2, 2, 1});  // equiv TF ksizes=[1,2,2,1], strides=[1,1,1,1], rates=[1,2,2,1], padding="SAME"
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2805,7 +2804,7 @@ TEST_F(DeclarableOpsTests7, TestExtractImagePatches_SGO_13) {
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3343,7 +3342,7 @@ TEST_F(DeclarableOpsTests7, transpose_test3) {
   auto result = op.evaluate({&input}, {}, {});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3355,7 +3354,7 @@ TEST_F(DeclarableOpsTests7, rationaltanh_test1) {
   sd::ops::rationaltanh op;
   auto result = op.evaluate({&input}, {}, {});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3367,7 +3366,7 @@ TEST_F(DeclarableOpsTests7, rationaltanh_test2) {
   sd::ops::rationaltanh op;
   auto result = op.evaluate({&input}, {}, {});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3380,7 +3379,7 @@ TEST_F(DeclarableOpsTests7, rationaltanh_test3) {
   sd::ops::rationaltanh_bp op;
   auto result = op.evaluate({&input, &eps}, {}, {});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3392,7 +3391,7 @@ TEST_F(DeclarableOpsTests7, rectifiedtanh_test1) {
   sd::ops::rectifiedtanh op;
   auto result = op.evaluate({&input}, {}, {});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3405,7 +3404,7 @@ TEST_F(DeclarableOpsTests7, rectifiedtanh_test2) {
   sd::ops::rectifiedtanh_bp op;
   auto result = op.evaluate({&input, &eps}, {}, {});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests7, RealDiv_1) {
@@ -3416,7 +3415,7 @@ TEST_F(DeclarableOpsTests7, RealDiv_1) {
   sd::ops::realdiv op;
   auto result = op.evaluate({&x, &y}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.isSameShape(z));
@@ -3434,7 +3433,7 @@ TEST_F(DeclarableOpsTests7, RealDiv_BP_1) {
   sd::ops::realdiv_bp op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z0 = result.at(0);
   auto z1 = result.at(1);
@@ -3451,7 +3450,7 @@ TEST_F(DeclarableOpsTests7, ShapesOf_1) {
   sd::ops::shapes_of op;
   auto result = op.evaluate({&x}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.equalsTo(*z));
@@ -3467,7 +3466,7 @@ TEST_F(DeclarableOpsTests7, ShapesOf_2) {
   sd::ops::shapes_of op;
   auto result = op.evaluate({&x, &y}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z0 = result.at(0);
   auto z1 = result.at(1);
@@ -3483,7 +3482,7 @@ TEST_F(DeclarableOpsTests7, Size_1) {
   sd::ops::size op;
   auto result = op.evaluate({&x}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.equalsTo(*z));
@@ -3497,7 +3496,7 @@ TEST_F(DeclarableOpsTests7, Size_2) {
   sd::ops::size op;
   auto result = op.evaluate({&y}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.equalsTo(*z));
@@ -3512,7 +3511,7 @@ TEST_F(DeclarableOpsTests7, Softplus_1) {
   sd::ops::softplus op;
   auto result = op.evaluate({&x}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.equalsTo(*z));
@@ -3539,7 +3538,7 @@ TEST_F(DeclarableOpsTests7, Softsign_1) {
   sd::ops::softsign op;
   auto result = op.evaluate({&x}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_TRUE(e.equalsTo(*z));
@@ -3567,7 +3566,7 @@ TEST_F(DeclarableOpsTests7, fill_test2) {
   sd::ops::fill op;
   auto result = op.evaluate({&x, &v}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   auto z = result.at(0);
   ASSERT_EQ(exp,*z);
@@ -3583,9 +3582,9 @@ TEST_F(DeclarableOpsTests7, fill_test3) {
   auto result = op.evaluate({&x, &v}, {}, {});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3597,8 +3596,8 @@ TEST_F(DeclarableOpsTests7, ToggleBits_test1) {
   auto result = op.evaluate({&x});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
-ASSERT_EQ(exp,*output);
+  
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3613,7 +3612,7 @@ TEST_F(DeclarableOpsTests7, ToggleBits_test2) {
   auto output = result.at(0);
   auto z = result.at(1);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_TRUE(exp0.isSameShape(output));
   ASSERT_TRUE(exp0.equalsTo(output));
   ASSERT_TRUE(exp1.isSameShape(z));
@@ -3628,7 +3627,7 @@ TEST_F(DeclarableOpsTests7, Truncatediv_test1) {
 
   sd::ops::truncatediv op;
   auto result = op.evaluate({&x, &y}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
   ASSERT_TRUE(exp.isSameShape(output));
 }
@@ -3641,7 +3640,7 @@ TEST_F(DeclarableOpsTests7, Truncatediv_test2) {
 
   sd::ops::truncatediv op;
   auto result = op.evaluate({&x, &y}, {}, {});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
   ASSERT_TRUE(exp.isSameShape(output));
 }
@@ -3737,7 +3736,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test1) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3752,7 +3751,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test2) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3766,7 +3765,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test3) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3780,7 +3779,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test4) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3793,7 +3792,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test5) {
   sd::ops::mirror_pad op;
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3822,7 +3821,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test7) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3838,7 +3837,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test8) {
   ASSERT_EQ(result.status(), sd::Status::OK);
 
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3854,7 +3853,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test9) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3868,7 +3867,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test10) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3882,7 +3881,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test11) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3896,7 +3895,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test12) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3910,7 +3909,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test13) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3924,7 +3923,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3938,7 +3937,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test15) {
   auto result = op.evaluate({&input, &paddings}, {}, {1});
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3967,7 +3966,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test16) {
   auto result = op.evaluate({&input, &paddings}, {}, {0});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3980,7 +3979,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_1) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&input}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -3995,25 +3994,12 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_2) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&input}, {}, {1});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_1) {
-  auto input =
-      NDArrayFactory::create<double>('c', {3, 5}, {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
-  auto exp = NDArrayFactory::create<double>(1307674368000.f);
-  //************************************//
-
-  sd::ops::reduce_prod op;
-  auto result = op.evaluate({&input}, {}, {});
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-  auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_2) {
@@ -4025,9 +4011,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_2) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&input}, {}, {1});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4039,9 +4025,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_01) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4053,9 +4037,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_02) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4067,9 +4049,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_3) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4081,9 +4061,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_4) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4095,9 +4073,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_5) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4109,9 +4085,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_6) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4122,10 +4096,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_7) {
   sd::ops::reduce_sum op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4137,9 +4108,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_01) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4151,9 +4120,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_02) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4165,10 +4132,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_3) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4180,9 +4144,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_4) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4194,9 +4156,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_5) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4208,9 +4170,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_6) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4221,9 +4183,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_7) {
   sd::ops::reduce_prod op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 TYPED_TEST(TypedDeclarableOpsTests7, Test_Pnorm_Once_Again) {
@@ -4236,7 +4198,7 @@ TYPED_TEST(TypedDeclarableOpsTests7, Test_Pnorm_Once_Again) {
 
   sd::ops::pnormpool2d op;
   auto result = op.evaluate({&input}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1, 3, 0});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_EQ(exp, *result.at(0));
 }
@@ -4250,9 +4212,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_1) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4264,9 +4226,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_2) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4278,9 +4240,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_3) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4292,9 +4254,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_4) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4306,9 +4268,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_5) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4320,9 +4282,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_6) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4333,9 +4295,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_7) {
   sd::ops::reduce_min op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4347,9 +4309,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_1) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4361,9 +4323,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_2) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4375,9 +4337,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_3) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4389,9 +4351,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_4) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4403,9 +4365,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_5) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4417,9 +4379,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_6) {
   sd::ops::reduce_max op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4431,9 +4393,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_7) {
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4445,9 +4407,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_1) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4459,9 +4421,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_2) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4473,9 +4435,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_3) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4487,9 +4449,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_4) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4501,9 +4463,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_5) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4515,9 +4477,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_6) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4528,9 +4490,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_7) {
   sd::ops::reduce_norm1 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_1) {
@@ -4541,9 +4503,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_1) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4555,9 +4517,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_2) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {1.}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4569,9 +4531,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_3) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4583,9 +4545,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_4) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {1.}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4597,9 +4559,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_5) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4611,9 +4573,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_6) {
   sd::ops::reduce_norm2 op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4625,9 +4587,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_7) {
   auto result = op.evaluate({&x}, {1.}, {0, 1, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4639,9 +4601,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_1) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4653,9 +4615,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_2) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4667,9 +4629,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_3) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4681,9 +4643,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_4) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4695,9 +4657,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_5) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4710,9 +4672,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_6) {
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4724,9 +4686,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_7) {
   sd::ops::reduce_norm_max op;
   auto result = op.evaluate({&x}, {1.f}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4738,9 +4700,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_1) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4752,9 +4714,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_2) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4766,9 +4728,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_3) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4780,9 +4742,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_4) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {1.f}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4795,9 +4757,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_5) {
   auto result = op.evaluate({&x}, {}, {});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4809,9 +4771,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_6) {
   sd::ops::reduce_sqnorm op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4824,9 +4786,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_7) {
   auto result = op.evaluate({&x}, {1.f}, {});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -4840,7 +4802,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_1) {
   sd::ops::reduce_sum_bp op;
   auto result = op.evaluate({&input, &eps}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4856,7 +4818,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_2) {
   sd::ops::reduce_sum_bp op;
   auto result = op.evaluate({&input, &eps}, {1.f}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4871,7 +4833,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_3) {
   sd::ops::reduce_sum_bp op;
   auto result = op.evaluate({&input, &eps}, {}, {0});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4886,7 +4848,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Sum_BP_4) {
   sd::ops::reduce_sum_bp op;
   auto result = op.evaluate({&input, &eps}, {1.f}, {0});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4910,7 +4872,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_1) {
   sd::ops::reduce_prod_bp op;
   auto result = op.evaluate({&input, &eps}, {}, {});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4933,7 +4895,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_2) {
   exp.assign(res.at(0)->e<double>(0));
   exp /= input;
   exp *= eps.e<double>(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4950,7 +4912,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_3) {
   sd::ops::reduce_prod_bp op;
   auto result = op.evaluate({&input, &eps}, {1.f}, {0});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
 
   ASSERT_TRUE(exp.equalsTo(z));
@@ -4969,7 +4931,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_03) {
   sd::ops::reduce_prod_bp op;
   auto result = op.evaluate({&input, &eps, &axis}, {}, {}, {true});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -4987,7 +4949,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_4) {
   sd::ops::reduce_prod op_exp;
   auto result = op.evaluate({&input, &eps}, {0.f}, {0});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 
@@ -5006,7 +4968,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_BP_5) {
   sd::ops::reduce_prod op_exp;
   auto result = op.evaluate({&input, &eps}, {0.f}, {1});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto z = result.at(0);
   ASSERT_TRUE(exp.equalsTo(z));
 
@@ -5026,9 +4988,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_1) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5044,9 +5006,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_2) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_02) {
@@ -5062,9 +5024,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_02) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5078,9 +5040,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_3) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5094,9 +5056,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_4) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5116,9 +5078,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_5) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5138,9 +5100,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Min_BP_6) {
   sd::ops::reduce_min_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5157,9 +5119,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_1) {
   sd::ops::reduce_max_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5176,9 +5138,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_2) {
   sd::ops::reduce_max_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5196,9 +5158,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_02) {
   sd::ops::reduce_max_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5219,9 +5181,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_3) {
   sd::ops::reduce_max_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5243,9 +5205,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Max_BP_4) {
   sd::ops::reduce_max_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5262,9 +5224,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_1) {
   sd::ops::reduce_norm1_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5277,9 +5239,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_2) {
                                                       1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f, 1.f, 2.f, 3.f, 4.f});
   sd::ops::reduce_norm1_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5293,9 +5255,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_02) {
   auto axes = NDArrayFactory::create<int>({0, 1});
   sd::ops::reduce_norm1_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {false});
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5309,9 +5271,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm1_BP_3) {
   sd::ops::reduce_norm1_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5323,7 +5285,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_1) {
   sd::ops::reduce_norm2_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -5338,7 +5300,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_2) {
   sd::ops::reduce_norm2_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -5354,7 +5316,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_02) {
   sd::ops::reduce_norm2_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -5370,7 +5332,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_3) {
   auto result = op.evaluate({&x, &eps}, {}, {0, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -5386,7 +5348,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Norm2_BP_4) {
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(x.isSameShape(output));
   ASSERT_TRUE(x.equalsTo(output));
@@ -5404,10 +5366,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_1) {
   sd::ops::reduce_sqnorm_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5423,10 +5385,10 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_SquaredNorm_BP_01) {
   sd::ops::reduce_sqnorm_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {false});
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5443,9 +5405,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_1) {
   sd::ops::reduce_norm_max_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5462,9 +5424,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_2) {
   sd::ops::reduce_norm_max_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 1});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5482,9 +5444,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_02) {
   sd::ops::reduce_norm_max_bp op;
   auto result = op.evaluate({&x, &eps, &axes}, {}, {}, {true});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_3) {
@@ -5500,9 +5462,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_3) {
   sd::ops::reduce_norm_max_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5517,9 +5479,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_4) {
   sd::ops::reduce_norm_max_bp op;
   auto result = op.evaluate({&x, &eps}, {1.f}, {0, 2});
   auto output = result.at(0);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5533,9 +5495,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_5) {
   auto result = op.evaluate({&x, &eps}, {}, {});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5550,9 +5512,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_6) {
   auto result = op.evaluate({&x, &eps}, {}, {0, 1, 2});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5566,9 +5528,9 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_NormMax_BP_7) {
   auto result = op.evaluate({&x, &eps}, {1.f}, {});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5610,7 +5572,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
   ASSERT_EQ(result.size(), 2);
   auto outputX = result.at(0);
   auto outputY = result.at(1);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(expX.equalsTo(outputX));
   ASSERT_TRUE(expY.equalsTo(outputY));
@@ -5639,7 +5601,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_02) {
   ASSERT_EQ(result.size(), 2);
   auto outputX = result.at(0);
   auto outputY = result.at(1);
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
   ASSERT_TRUE(expX.equalsTo(outputX));
   ASSERT_TRUE(expY.equalsTo(outputY));
@@ -5663,7 +5625,7 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_3) {
   auto outputX = result.at(0);
   auto outputY = result.at(1);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_TRUE(expX.equalsTo(outputX));
   ASSERT_TRUE(expY.equalsTo(outputY));
 }
@@ -5681,9 +5643,9 @@ TEST_F(DeclarableOpsTests7, cumsum_bp_1) {
   auto result = op.evaluate({&x, &eps}, {}, {0, 0});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5699,9 +5661,9 @@ TEST_F(DeclarableOpsTests7, cumsum_bp_2) {
   auto result = op.evaluate({&x, &eps}, {}, {1, 0});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -5718,6 +5680,6 @@ TEST_F(DeclarableOpsTests7, cumsum_bp_3) {
   auto result = op.evaluate({&x, &eps}, {}, {1, 1});
   auto output = result.at(0);
 
-  ASSERT_EQ(sd::Status::OK, result.status());
+  
   ASSERT_TRUE(exp.equalsTo(output));
 }

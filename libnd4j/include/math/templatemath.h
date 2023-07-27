@@ -82,10 +82,9 @@ namespace sd {
         template <typename T>
         SD_HOST_DEVICE inline T sd_rotr(T val, T shift);
 
-//#ifndef __CUDACC__
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length);
-//#endif
+
 
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_ceil(T val1);

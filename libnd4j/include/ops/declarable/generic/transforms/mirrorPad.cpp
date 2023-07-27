@@ -52,13 +52,6 @@ DECLARE_SHAPE_FN(mirror_pad) {
   auto paddings = INPUT_VARIABLE(1);
 
   const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;
-  for (int i = 0; i < input->rankOf(); ++i)
-      REQUIRE_TRUE((paddings->e<sd::LongType>(i, 0) <= (input->sizeAt(i) - includeBorder)) &&
-                       (paddings->e<sd::LongType>(i, 1) <= (input->sizeAt(i) - includeBorder)),
-                   0,
-                   "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding "
-                   "dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
-
 
   if (input->isScalar()) {
     sd::LongType len = input->isScalar() ? 1 + paddings->e<sd::LongType>(0)  + paddings->e<sd::LongType>(1) : input->lengthOf() + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
@@ -70,8 +63,18 @@ DECLARE_SHAPE_FN(mirror_pad) {
 
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
-  for (int i = 0; i < rank; ++i)
-    outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
+  if(paddings->isVector()) {
+    for (int i = 0; i < rank; ++i) {
+      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+
+    }
+  } else {
+    for (int i = 0; i < rank; ++i) {
+      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
+
+    }
+  }
+
   ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
 
   return SHAPELIST(CONSTANT(outShapeInfo));

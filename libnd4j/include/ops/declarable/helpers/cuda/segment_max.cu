@@ -114,8 +114,8 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
                                           sd::LongType const* inputTadOffsets, I* indices, LongType* starts,
                                           LongType* lengths, sd::LongType numOfClasses, void* outputBuf,
                                           sd::LongType const* outputShape, sd::LongType const* outputTads,
-                                          sd::LongType const* outputTadOffsets, T filler = 0,
-                                          sd::LongType indicesLength = 0) {
+                                          sd::LongType const* outputTadOffsets, T filler,
+                                          sd::LongType indicesLength,sd::LongType numInputTads,sd::LongType numOutputTads) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total,zLen;
   __shared__ T* z;
@@ -137,7 +137,7 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, sd::LongType const* in
   __syncthreads();
 
   auto idx = blockIdx.x;
-  if (idx < total) {
+  if (idx < numInputTads) {
     auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
     if (blockIdx.x == start) {
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
@@ -190,7 +190,8 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
     segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets,0, indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets,0,
+        indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
@@ -239,7 +240,7 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
     segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-        output->specialShapeInfo(), outputTads, outputTadOffsets,0,indices->lengthOf());
+        output->specialShapeInfo(), outputTads, outputTadOffsets,0,indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
     delete dimensions;
   }
 }

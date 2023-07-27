@@ -2457,12 +2457,16 @@ NDArray NDArray::asS() const {
   if (!(DataTypeUtils::isS(dtype))) THROW_EXCEPTION("NDArray::asS: invalid DataType used");
 
   if (dtype == dataType()) {
+
+    if(isScalar()) {
+      return dup();
+    }
     sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
     const auto nInputoffsets = bufferAsT<sd::LongType>();
-    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[lengthOf()], dtype,
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[isScalar() ? 1 : lengthOf()], dtype,
                                                                        getContext()->getWorkspace(), true);
 
-    auto shapeDesc = new ShapeDescriptor(dtype, ordering(), getShapeAsVector());
+    auto shapeDesc = new ShapeDescriptor(dtype, ordering(),isScalar() ? std::vector<sd::LongType>({1}) :  getShapeAsVector());
     auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeDesc);
     NDArray res(pBuffer, shapeDesc, getContext());
     res.setAttached(getContext()->getWorkspace() != nullptr);
@@ -2471,7 +2475,7 @@ NDArray NDArray::asS() const {
     memcpy(res.bufferAsT<int8_t>(), nInputoffsets, offsetsLength);
     auto data = res.bufferAsT<int8_t>() + offsetsLength;
     const auto inData = bufferAsT<int8_t>() + offsetsLength;
-    memcpy(data, inData, nInputoffsets[lengthOf()]);
+    memcpy(data, inData, nInputoffsets[isScalar() ? 1 : lengthOf()]);
     delete shapeDesc;
     registerPrimaryUse({&res}, {this});
     return res;
@@ -2489,9 +2493,11 @@ NDArray NDArray::asS() const {
   int numStrings = isScalar() ? 1 : lengthOf();
   auto data = bufferAsT<int8_t>() + offsetsLength;
   for (sd::LongType e = 0; e < numStrings; e++) {
+    sd_printf("e is currently %d\n",e);
     offsets[e] = dataLength;
     start = nInputoffsets[e];
     stop = nInputoffsets[e + 1];
+    sd_printf("Start is %d and stop is %d\n",start,stop);
     if (dataType() == DataType::UTF8) {
       dataLength += (dtype == DataType::UTF16) ? unicode::offsetUtf8StringInUtf16(data + start, stop)
                                                : unicode::offsetUtf8StringInUtf32(data + start, stop);
@@ -2505,7 +2511,7 @@ NDArray NDArray::asS() const {
                     : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
     }
   }
-  offsets[lengthOf()] = dataLength;
+  offsets[isScalar() ? 1 : lengthOf()] = dataLength;
 
   std::shared_ptr<DataBuffer> pBuffer =
       std::make_shared<DataBuffer>(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
@@ -2527,16 +2533,19 @@ NDArray NDArray::asS() const {
       auto cdata = outData + offsets[e];
       auto end = nInputoffsets[e + 1];
       auto idata = inData + nInputoffsets[e];
+      sd_printf("data type is %s e is %d offsets[%d] is %d and offsets[%d] is %d\n",DataTypeUtils::asString(dtype).c_str(),e,e,offsets[e],e+1,offsets[e+1]);
       if (dtype == DataType::UTF16) {
+        sd_print("dtype is utf16\n");
         if (dataType() == DataType::UTF8) {
           unicode::utf8to16(idata, outData, end);
         } else if(dataType() == DataType::UTF32) {
+          sd_print("utf32to16\n");
           unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
         }
       } else if (dtype == DataType::UTF32) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to32(idata, cdata, end);
-        } else if(dataType() == DataType::UTF32) {
+        } else if(dataType() == DataType::UTF16) {
           unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
         }
       } else {
