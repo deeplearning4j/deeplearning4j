@@ -803,8 +803,6 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_4) {
   
 
   auto z = result.at(0);
-  //    z->printBuffer("Output");
-  //    z->printShapeInfo("Shape");
   ASSERT_EQ(exp,*z);
 }
 

@@ -1070,10 +1070,6 @@ template <typename X>
 class Reciprocal {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
-  //        SD_OP_DEF static T op(T d1) {
-  //            return (T(1.0f) / d1);
-  //        }
-  // op for MetaOps
   SD_OP_DEF static X
   op(X d1, X *params) {
     return (static_cast<X>(1) / d1);
@@ -2959,8 +2955,6 @@ class Variance {
   }
 
   SD_OP_DEF static Z postProcess(InterType reduction, sd::LongType n, Z *extraParams) {
-    // T bias = extraParams[1];
-    // return (reduction - (sd::math::sd_pow<T>(bias, static_cast<T>(2.0f)) / static_cast<T>(n))) / (n - 1)
     return static_cast<Z>(reduction / static_cast<InterType>(n - 1));
   }
 };
@@ -3000,12 +2994,10 @@ class CosineSimilarity {
   static const int extraParamsLen = 2;
 
   SD_OP_DEF static X *generateExtraParams() {
-    // T *extraParams = new T[2];
     return nullptr;
   }
 
   SD_OP_DEF static void finalizeExtraParams(X *extraParams) {
-    // delete[] extraParams;
   }
 
   SD_OP_DEF static Y startingValue(const X *input) { return static_cast<Y>(0.0f); }
@@ -3045,12 +3037,10 @@ class JaccardDistance {
   static const int extraParamsLen = 2;
 
   SD_OP_DEF static X *generateExtraParams() {
-    // T *extraParams = new T[2];
     return nullptr;
   }
 
   SD_OP_DEF static void finalizeExtraParams(X *extraParams) {
-    // delete[] extraParams;
   }
 
   SD_OP_DEF static Y startingValue(const X *input) { return static_cast<X>(0.0f); }
@@ -3096,12 +3086,10 @@ class SimpleHammingDistance {
   static const int extraParamsLen = 0;
 
   SD_OP_DEF static X *generateExtraParams() {
-    // T *extraParams = new T[2];
     return nullptr;
   }
 
   SD_OP_DEF static void finalizeExtraParams(X *extraParams) {
-    // delete[] extraParams;
   }
 
   SD_OP_DEF static Y startingValue(const X *input) { return static_cast<Y>(0.0f); }
@@ -3128,12 +3116,10 @@ class CosineDistance {
   static const int extraParamsLen = 2;
 
   SD_OP_DEF static X *generateExtraParams() {
-    // T *extraParams = new T[2];
     return nullptr;
   }
 
   SD_OP_DEF static void finalizeExtraParams(X *extraParams) {
-    // delete[] extraParams;
   }
 
   SD_OP_DEF static Y startingValue(const X *input) { return static_cast<Y>(0.0f); }
@@ -3180,7 +3166,7 @@ class Dot {
 
   SD_OP_DEF static void finalizeExtraParams(X *extraParamsRef) {
     // no-op
-    // delete[] * extraParamsRef;
+
   }
 
   SD_OP_DEF static Y startingValue(const X *input) { return static_cast<Y>(0.0f); }
@@ -3365,8 +3351,6 @@ class FirstIndex {
 #endif
 
     auto res = simdOps::MatchCondition<X, X>::op(opOutput.value, extraParams);
-
-    // printf("res: %f; oldIdx: %i; newIdx: %i\n", res, old.index, opOutput.index);
 
     if (res == static_cast<X>(0)) return old;
 

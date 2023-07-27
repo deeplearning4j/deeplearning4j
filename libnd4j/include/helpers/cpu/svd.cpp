@@ -95,17 +95,14 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
   _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
   _m = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.dataType(), matrix.getContext());
-  // _m.assign(0.f);
 
   if (_calcU)
     _u = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.dataType(), matrix.getContext());
   else
     _u = NDArray(matrix.ordering(), {2, _diagSize + 1}, matrix.dataType(), matrix.getContext());
-  // _u.assign(0.);
 
   if (_calcV) {
     _v = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
-    // _v.assign(0.);
   }
 }
 

@@ -2038,7 +2038,6 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   NDArray* result = results.at(0);
-  result->printShapeInfo("result shape");
   ASSERT_EQ(expected,*result);
 }
 

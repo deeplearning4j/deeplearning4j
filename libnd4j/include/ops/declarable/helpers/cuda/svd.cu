@@ -34,61 +34,6 @@ namespace helpers {
 // FIXME -> we should optimize these helpers for the case when input matrices have c order (perform transpositions
 // appropriately)
 
-template <typename T>
-SD_KERNEL static void inverseColumnSignCuda(void* vu, const sd::LongType* uShapeInfo, void* vv,
-                                            const sd::LongType* vShapeInfo) {
-  T* u = reinterpret_cast<T*>(vu);
-  T* v = reinterpret_cast<T*>(vv);
-
-  __shared__ int rank, uLastButOneColumn, vLastButOneColumn;  // uRank = vRank
-  __shared__ sd::LongType uLen, vLen;
-  __shared__ sd::LongType* sharedMem;
-
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
-
-    rank = shape::rank(uShapeInfo);
-    uLen = shape::length(uShapeInfo);
-    vLen = shape::length(vShapeInfo);
-
-    uLastButOneColumn = uShapeInfo[rank] - 2;
-    vLastButOneColumn = vShapeInfo[rank - 1] - 2;
-  }
-
-  __syncthreads();
-
-  const auto ind = threadIdx.x + blockIdx.x * blockDim.x;
-
-  auto coords = sharedMem + threadIdx.x * rank;
-
-  // u
-  for (sd::LongType i = ind; i < uLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, uShapeInfo, coords);
-
-    if (coords[rank - 1] == 0 ||
-        coords[rank - 1] == uLastButOneColumn)  // do not change sign in first and last but one columns
-      continue;
-
-    const auto uOffset = shape::getOffset(uShapeInfo, coords);
-
-    u[uOffset] = -u[uOffset];
-  }
-
-  // v
-  for (sd::LongType i = ind; i < vLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, vShapeInfo, coords);
-
-    if (coords[rank - 2] == 0 ||
-        coords[rank - 2] == vLastButOneColumn)  // do not change sign in first and last but one columns
-      continue;
-
-    const auto vOffset = shape::getOffset(vShapeInfo, coords);
-
-    v[vOffset] = -v[vOffset];
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////

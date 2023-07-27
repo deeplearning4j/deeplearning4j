@@ -3080,16 +3080,6 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray &oth
 
   if (isEmpty() || other.isEmpty()) return;
 
-  // if (lengthOf() == 1) {
-  //     NDArray temp(target._shapeInfo, dataType(), false, getContext());
-  //     temp.assign(this);
-  //     temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
-  //     return;
-  // }
-  // if (other.lengthOf() == 1) {
-  //     this->applyScalarArr(op.s, other, target, extraArgs);
-  //     return;
-  // }
 
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;

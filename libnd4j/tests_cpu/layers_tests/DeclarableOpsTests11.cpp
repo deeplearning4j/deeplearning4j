@@ -1740,10 +1740,6 @@ TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2) {
   auto res = op.evaluate({&a});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-
-  z->printIndexedBuffer("L matrix is");
-  exp.printIndexedBuffer("L expected is");
-
   ASSERT_TRUE(exp.equalsTo(z));
 }
 

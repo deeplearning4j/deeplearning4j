@@ -142,7 +142,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_2) {
 
   auto z = result.at(0);
 
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -663,12 +663,7 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_3) {
   auto result = op.evaluate({&input, &weightsD, &weightsP, &bias}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
 
   auto z = result.at(0);
-
-  // printf("\n");
-  // output.printBuffer("output");
-  // z->printBuffer("z");
-
-  // ASSERT_TRUE(expOutput.isSameShape(z));
+  ASSERT_EQ(expOutput,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1554,7 +1549,7 @@ TEST_F(ConvolutionTests1, Test_Dilation2D_1) {
 
   auto z = result.at(0);
 
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(ConvolutionTests1, Test_Dilation2D_2) {
@@ -1572,7 +1567,7 @@ TEST_F(ConvolutionTests1, Test_Dilation2D_2) {
 
   auto z = result.at(0);
 
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3312,7 +3307,7 @@ TEST_F(ConvolutionTests1, deconv2d_test1) {
 
   auto output = results.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3345,7 +3340,7 @@ TEST_F(ConvolutionTests1, deconv2d_test2) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3378,7 +3373,7 @@ TEST_F(ConvolutionTests1, deconv2d_test3) {
 
   auto output = results.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3433,7 +3428,7 @@ TEST_F(ConvolutionTests1, deconv2d_test4) {
 
   auto z = result.at(0);
 
-ASSERT_EQ(exp,*z);
+  ASSERT_EQ(exp,*z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3571,7 +3566,7 @@ TYPED_TEST(TypedConvolutionTests1, deconv2d_test6) {
 
   auto output = results.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 TEST_F(ConvolutionTests1, deconv2d_test7) {
@@ -3599,7 +3594,7 @@ TEST_F(ConvolutionTests1, deconv2d_test7) {
 
   auto output = result.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3650,7 +3645,7 @@ TEST_F(ConvolutionTests1, deconv2d_test8) {
 
   auto output = results.at(0);
 
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -3843,7 +3838,7 @@ TYPED_TEST(TypedConvolutionTests1, deconv2d_tf_test1) {
   auto output = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-ASSERT_EQ(exp,*output);
+  ASSERT_EQ(exp,*output);
 }
 
 //////////////////////////////////////////////////////////////////////

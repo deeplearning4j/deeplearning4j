@@ -292,9 +292,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     sPartials[threadIdxX] = reduction;
     __syncthreads();
     aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType>(blockDim.x, n), extraParams);
-    //printf("After aggregate partials\n");
     if (gridDimX > 1) {
-     // printf("grimdDimX > 1\n");
       __shared__ bool amLast;
       unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;
       tid = threadIdx.x;
@@ -326,13 +324,10 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
       }
     } else {
-     // printf("grimdDimX < 1\n" );
       if (threadIdx.x == 0) {
         z[0] = static_cast<Z>(sPartials[threadIdx.x].index);
-       // printf("z[0] %f\n", z[0]);
       }
 
-      //printf("After imdDimX < 1\n" );
     }
   }
 }

@@ -309,8 +309,6 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
-  exp.printShapeInfo("exp shape ");
-  z->printShapeInfo("z shape ");
   ASSERT_EQ(exp,*z);
 }
 
