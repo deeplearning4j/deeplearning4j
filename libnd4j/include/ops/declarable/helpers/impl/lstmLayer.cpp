@@ -942,7 +942,6 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
   if (!seqLen) {
     std::vector<sd::LongType> dim =  {dataFormat < 3 ? dataFormat : 0};
     dims = ShapeUtils::evalDimsToExclude(x->rankOf(),dim.size(),dim.data());  // points on [bS, nIn/nOut]
-    sd_printf("!seqLen after evalDimsToExclude\n",0);
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));                  // sub-arrays with shape [bS, nIn]
     dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));            // sub-arrays with shape [bS, nIn]
     hSet = new ResultSet(h.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, nOut]
@@ -950,11 +949,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
     zSet = new ResultSet(z.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, 4*nOut]
     aSet = new ResultSet(a.allTensorsAlongDimension({1, 2}));                 // sub-arrays with shape [bS, 4*nOut]
     if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(*dims));  // sub-arrays with shape [bS, nOut]
-    sd_printf("!seqLen after result sets\n",0);
 
   } else {
     dims = dataFormat == 2 ? new std::vector<sd::LongType>({1}) : new std::vector<sd::LongType>({2});  // points on nIn/nOut axis
-    sd_printf("seqLen before allTensorsAlongDimension\n",0);
 
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));        // sub-arrays with shape [nIn]
     dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));  // sub-arrays with shape [nIn]
@@ -972,7 +969,6 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
     if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(*dims));    // sub-arrays with shape [nOut]
     if (dLdhL) dLdhLSet = new ResultSet(dLdhL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
     if (dLdcL) dLdcLSet = new ResultSet(dLdcL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
-    sd_printf("seqLen after allTensorsAlongDimension\n",0);
 
     delete dims;
   }
@@ -990,33 +986,26 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       else
         cSet->at(0)->nullify();
 
-      sd_printf("forward !seqLen\n",0);
       // ff
       for (sd::LongType t = 0; t < sL; ++t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t + 1), cSet->at(t + 1));
       }
 
-      sd_printf("after forward !seqLen\n",0);
       // bp
       for (sd::LongType t = sL - 1; t >= 0; --t) {
-        sd_printf(" forward !seqLen in time step %lld\n",t);
 
         const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
         const NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
         const NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL, zSet->at(t),
                         aSet->at(t), cSet->at(t + 1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
-        sd_printf("after  time step %lld\n",t);
 
       }
 
 
-      sd_printf("forward !seqLen after backprop\n",0);
 
     } else {  // seqLen is present
-      sd_printf("forward seqLen\n",0);
-
 
       for (sd::LongType e = 0; e < bS; ++e) {
         const sd::LongType limit = seqLen->e<sd::LongType>(e);
@@ -1058,8 +1047,6 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
               .nullify();  // nullify for given e and time range [limit, sL)
       }
 
-      sd_printf("backward !seqLen\n",0);
-
     }
   } else {  // backward or bidirectional
 
@@ -1074,14 +1061,12 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       else
         cSet->at(sL)->nullify();
 
-      sd_printf("backward !seqLen\n",0);
       // ff
       for (sd::LongType t = sL - 1; t >= 0; --t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), cSet->at(t + 1), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t), cSet->at(t));
       }
 
-      sd_printf("After backward !seqLen lstmLayerCell\n",0);
       // bp
       for (sd::LongType t = 0; t < sL; ++t) {
         const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
@@ -1093,11 +1078,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       }
 
 
-      sd_printf("After backward !seqLen lstmLayerCell 2\n",0);
 
     } else if (directionMode == 1) {  // backward, seqLen is present
 
-      sd_printf("directionMode 1\n",0);
       for (sd::LongType e = 0; e < bS; ++e) {
         const sd::LongType limit = seqLen->e<sd::LongType>(e);
 
@@ -1138,10 +1121,8 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
               .nullify();  // nullify for given e and time range [limit, sL)
       }
 
-      sd_printf("after directionMode 1\n",0);
 
     } else {  // bidirectional mode, seqLen is present
-      sd_printf("bidirectional mode \n",0);
 
       for (sd::LongType e = 0; e < bS; ++e) {
         const int limit = seqLen->e<sd::LongType>(e);
@@ -1183,7 +1164,6 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
               .nullify();  // nullify for given e and time range [limit, sL)
       }
 
-      sd_printf("after bidirectional mode \n",0);
 
     }
   }

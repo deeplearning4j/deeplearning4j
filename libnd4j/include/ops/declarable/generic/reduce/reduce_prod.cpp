@@ -35,7 +35,6 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
 
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   if(input->lengthOf() == 0) {
-    sd_printf("reduce_prod: Assigning 1 to length 0 array ",0);
     output->assign(1);
     return sd::Status::OK;
   }

@@ -47,7 +47,6 @@ bool BooleanOp::verify(sd::graph::Context &block) {
 
   sd::Status status = this->validateNonEmptyInput(block);
   if (status != sd::Status::OK) {
-    sd_printf("Inputs should be not empty for BooleanOps", "");
     THROW_EXCEPTION("Bad inputs");
   }
 

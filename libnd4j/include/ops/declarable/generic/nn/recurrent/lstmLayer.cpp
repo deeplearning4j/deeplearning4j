@@ -677,7 +677,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   auto dLdcI = hasInitC ? OUTPUT_NULLIFIED(count++) : nullptr;  // gradient vs. initial cell state
   auto dLdWp = hasPH ? OUTPUT_NULLIFIED(count) : nullptr;       // gradient vs. peephole weights
 
-  sd_printf("Obtained all inputs/outputs\n",0);
   // inputs validations
   if (directionMode < 2) {  // no bidirectional
 
@@ -782,17 +781,13 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
   if (directionMode == 0) {  // forward
 
-    sd_printf("Before directionMode 0 layerTimeLoopBp\n",0);
     helpers::lstmLayerTimeLoopBp(x, Wx, Wr, b, seqLen, hI, cI, Wp, dLdh, dLdhL, dLdcL, params, true, dLdx, dLdWx, dLdWr,
                                  dLdb, dLdhI, dLdcI, dLdWp);
-    sd_printf("After directionMode 0 layerTimeLoopBp\n",0);
 
   } else if (directionMode == 1) {  // backward
-    sd_printf("Before directionMode 1 layerTimeLoopBp\n",0);
 
     helpers::lstmLayerTimeLoopBp(x, Wx, Wr, b, seqLen, hI, cI, Wp, dLdh, dLdhL, dLdcL, params, false, dLdx, dLdWx,
                                  dLdWr, dLdb, dLdhI, dLdcI, dLdWp);
-    sd_printf("After directionMode 1 layerTimeLoopBp\n",0);
 
   } else {  // bidirectional
 
@@ -860,7 +855,6 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
 
     NDArray dLdxBwd = dLdx->ulike();
 
-    sd_printf("Before lstmLayerTimeLoopBp\n",0);
     // FIXME - following two calls are independent and may run in different streams
     helpers::lstmLayerTimeLoopBp(x, &WxFwd, &WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd,
                                  params, true, dLdx, &dLdWxFwd, &dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);

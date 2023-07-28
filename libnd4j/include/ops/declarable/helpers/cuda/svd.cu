@@ -201,7 +201,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   // U [m, m] or [m, n] if fullUV = false and m > n
   // V [n, n] or [n, m] if fullUV = false and m < n
 
-  sd_print("svdJcb\n");
   if (A->rankOf() != 2) THROW_EXCEPTION("svdJcb: rank of A array is not equal 2 !");
 
   int m = A->sizeAt(0);
@@ -249,10 +248,8 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   int ldu(transA ? n : m), ldv(transA ? m : n);
   bool uForder(true), vForder(true);
 
-  sd_print("Before calcUV\n");
 
   if (calcUV) {
-    sd_print("before calcUV\n");
     pU = transA ? V : U;
     pV = transA ? U : V;
 
@@ -273,7 +270,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
     ldv = pV->strideAt(1);
   }
 
-  sd_print("lock\n");
   std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
   // create cusolverDn handle
@@ -311,7 +307,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   }
   // ******************
 
-  sd_print("prepare special use\n");
   NDArray::prepareSpecialUse({pS, pU, pV}, {pA});
 
   // query working space of SVD
@@ -333,7 +328,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   else
     THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
-  sd_print("Buffer size\n");
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
 
   // allocate memory dWork
@@ -361,12 +355,10 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   } else
     THROW_EXCEPTION("svdJcb: given data type is unsupported !");
 
-  sd_print("cuSolverDnSgesdvdj\n");
   if (status != CUSOLVER_STATUS_SUCCESS) throw cuda_exception::build("svdJcb: cuda failed !", status);
 
   manager.synchronize();
 
-  sd_print("manager synchronize\n");
   NDArray::registerSpecialUse({pS, pU, pV}, {pA});
 
   if (S->ews() != 1) S->assign(pS);
@@ -380,12 +372,10 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  sd_print("Before free\n");
   if (devInfo) cudaFree(devInfo);
   if (dWork) cudaFree(dWork);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 
-  sd_print("destroyed\n");
 
 }
 

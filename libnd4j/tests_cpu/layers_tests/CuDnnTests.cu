@@ -86,7 +86,6 @@ TEST_F(CuDnnTests, helpers_includer) {
 
 TEST_F(CuDnnTests, mixed_helpers_test_1) {
 #if defined(HAVE_CUDNN) && defined(HAVE_ONEDNN)
-  sd_printf("Mixed platforms test\n", "");
 
   int bS = 2, iH = 4, iW = 3, iC = 4, oC = 3, kH = 3, kW = 2, sH = 1, sW = 1, pH = 0, pW = 0, dH = 1, dW = 1;
   int oH = 2, oW = 2;

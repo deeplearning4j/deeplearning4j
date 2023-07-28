@@ -263,7 +263,6 @@ void clipByGlobalNorm_(sd::LaunchContext* context, std::vector<NDArray*> const& 
     globalNorm += l2norm.e<T>(0) * l2norm.e<T>(0);
   }
 
-  sd_printf("Outputs size is %d Inputs size is %d\n", outputs.size(), inputs.size());
   globalNorm = sd::math::sd_sqrt<T,T>(globalNorm);
   outputs[inputs.size()]->p(0, globalNorm);
   const T factor = static_cast<T>(clipNorm) / globalNorm;

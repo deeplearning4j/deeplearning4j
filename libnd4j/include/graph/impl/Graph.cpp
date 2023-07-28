@@ -1004,8 +1004,6 @@ void Graph::printOutNode(Node *node) {
   }
 
   sd_printf("]; \n", "");
-
-  //            printf("\n");
   fflush(stdout);
 }
 

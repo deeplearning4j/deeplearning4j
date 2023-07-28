@@ -32,8 +32,6 @@ CUSTOM_OP_IMPL(compare_and_bitpack, 2, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
-  sd_printf("In compare_and_bitpack\n", x->shapeInfo(), y->shapeInfo(), z->shapeInfo());
   sd::ops::helpers::compareAndBitpack(block, *x, *y, *z);
   return sd::Status::OK;
 }

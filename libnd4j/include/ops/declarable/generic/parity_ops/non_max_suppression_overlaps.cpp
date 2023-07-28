@@ -77,7 +77,6 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
       helpers::nonMaxSuppressionGeneric(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), maxOutputSize,
                                         overlapThreshold, scoreThreshold, nullptr);
   if (boxSize < maxOutputSize) {
-    sd_printf("Setting maxOutputSize of %lld with original box size of %lld\n",maxOutputSize,boxSize);
     maxOutputSize = boxSize;
   }
 
