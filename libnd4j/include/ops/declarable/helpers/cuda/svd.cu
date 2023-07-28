@@ -275,7 +275,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
   // create cusolverDn handle
   cusolverDnHandle_t* handle = (cusolverDnHandle_t*)context->getCusolverHandle();
   if (handle == nullptr) throw cuda_exception::build("svdJcb: cuda failed !", -1);
-  sd_print("handle\n");
 
   // stream
   auto status = cusolverDnSetStream(*handle, *context->getCudaStream());
@@ -296,7 +295,6 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
 
   if (transA) math::sd_swap<int>(m, n);
 
-  sd_print("before buffer\n");
   // *** avoid bug in cuda API ***
   void* nullPtr = nullptr;
   NDArray* arrToAvoidBugInAPI = nullptr;
