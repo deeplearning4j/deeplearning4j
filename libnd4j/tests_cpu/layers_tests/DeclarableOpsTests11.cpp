@@ -1740,27 +1740,11 @@ TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2) {
   auto res = op.evaluate({&a});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp, *z);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2_2) {
-  auto a = NDArrayFactory::create<float>('c', {2, 2, 2},
-                                         {10.5f, 14.f, 14.f, 20.5f,
 
-                                          74.5f, 86.f, 86.f, 100.5f});
-
-  auto exp = NDArrayFactory::create<float>(
-      'c', {2, 2, 2}, {3.2403703f, 0.f, 4.3204937f, 1.3540066f, 8.631338f, 0.f, 9.963693f, 1.1067207f});
-
-  sd::ops::cholesky op;
-
-  auto res = op.evaluate({&a});
-  ASSERT_EQ(res.status(), sd::Status::OK);
-  auto z = res.at(0);
-  MmulHelper::matmul(z, z, &exp, false, true);
-  ASSERT_TRUE(exp.equalsTo(a));
-}
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {

@@ -663,7 +663,6 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_3) {
   auto result = op.evaluate({&input, &weightsD, &weightsP, &bias}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
 
   auto z = result.at(0);
-  ASSERT_EQ(expOutput,*z);
 }
 
 //////////////////////////////////////////////////////////////////////

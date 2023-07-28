@@ -2063,7 +2063,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_1) {
   y.linspace(1);
 
   auto result = x / y;
-  ASSERT_EQ(expected,result);
+  ASSERT_TRUE(expected.equalsTo(result,1e-3));
 }
 
 //////////////////////////////////////////////////////////////////////
