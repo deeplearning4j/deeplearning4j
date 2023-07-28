@@ -1008,6 +1008,7 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
 }
 
 
+#ifndef __JAVACPP_HACK__
 inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
   arr.syncToHost();
 
@@ -1050,7 +1051,6 @@ inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
 }
 
 
-
 inline std::ostream& operator<<(std::ostream os,  NDArray& arr) {
   const auto arr2 = arr;
   return os << arr2;
@@ -1061,6 +1061,7 @@ void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
   *os << arr;
 }
 
+#endif
 //end google test print statement
 ////////////////////////////////////////////////////////////////////////
 // assignment operator

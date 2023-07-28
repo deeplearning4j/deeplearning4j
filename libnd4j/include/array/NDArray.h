@@ -52,9 +52,11 @@
 #include <iostream>
 namespace sd {
 
-
+#ifndef __JAVACPP_HACK__
 //used in google test for printing
 SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  const NDArray& arr);
+#endif
+
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator+(const NDArray &arr, const T &scalar);
