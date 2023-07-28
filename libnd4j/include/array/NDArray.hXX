@@ -2494,11 +2494,9 @@ NDArray NDArray::asS() const {
   int numStrings = isScalar() ? 1 : lengthOf();
   auto data = bufferAsT<int8_t>() + offsetsLength;
   for (sd::LongType e = 0; e < numStrings; e++) {
-    sd_printf("e is currently %d\n",e);
     offsets[e] = dataLength;
     start = nInputoffsets[e];
     stop = nInputoffsets[e + 1];
-    sd_printf("Start is %d and stop is %d\n",start,stop);
     if (dataType() == DataType::UTF8) {
       dataLength += (dtype == DataType::UTF16) ? unicode::offsetUtf8StringInUtf16(data + start, stop)
                                                : unicode::offsetUtf8StringInUtf32(data + start, stop);
@@ -2534,13 +2532,10 @@ NDArray NDArray::asS() const {
       auto cdata = outData + offsets[e];
       auto end = nInputoffsets[e + 1];
       auto idata = inData + nInputoffsets[e];
-      sd_printf("data type is %s e is %d offsets[%d] is %d and offsets[%d] is %d\n",DataTypeUtils::asString(dtype).c_str(),e,e,offsets[e],e+1,offsets[e+1]);
       if (dtype == DataType::UTF16) {
-        sd_print("dtype is utf16\n");
         if (dataType() == DataType::UTF8) {
           unicode::utf8to16(idata, outData, end);
         } else if(dataType() == DataType::UTF32) {
-          sd_print("utf32to16\n");
           unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
         }
       } else if (dtype == DataType::UTF32) {
