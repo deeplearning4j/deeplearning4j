@@ -1,0 +1,2 @@
+org.eclipse.deeplearning4j.tests.extensions.BackendCheckerExtension
+org.eclipse.deeplearning4j.tests.extensions.DeallocationExtension

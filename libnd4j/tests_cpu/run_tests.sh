@@ -22,8 +22,8 @@
 
 set -exo pipefail
 TEST_FILTER="none"
-
-
+echo "RUNNING IN DIRECTORY $(pwd)/../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests"
+TEST_RUNNER_PREFIX=
 
 
 while [[ $# -gt 0 ]]
@@ -37,9 +37,13 @@ do
         shift # past argument
         ;;
         -test|--test-filter)
-              TEST_FILTER="${value}"
-              shift # past argument
-              ;;
+        TEST_FILTER="${value}"
+        shift # past argument
+        ;;
+        -trp|--test-runner-prefix)
+        TEST_RUNNER_PREFIX="${value}"
+        shift # past argument
+        ;;
         *)
         # unknown option
         ;;
@@ -64,6 +68,7 @@ if [ -n "$BUILD_PATH" ]; then
     export PATH="$PATH:$BUILD_PATH"
 fi
 
+TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX:-}"
 
 unameOut="$(uname)"
 echo "$OSTYPE"
@@ -128,7 +133,8 @@ if [[ "$TEST_FILTER" != "none" ]]; then
 
    echo "Running with filter"
    env
-   /usr/local/cuda-12.1/bin/compute-sanitizer ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
+
+   $TEST_RUNNER_PREFIX $(pwd)/../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_filter="$TEST_FILTER"
 
 else
   export GRID_SIZE_TRANSFORM_SCAN=1
@@ -189,7 +195,7 @@ else
   export BLOCK_SIZE_INVERT_PERMUTATION=128
   echo "Running without filter"
   env
-   /usr/local/cuda-12.1/bin/compute-sanitizer --print-limit=10 ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+   $TEST_RUNNER_PREFIX  $(pwd)/../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/
