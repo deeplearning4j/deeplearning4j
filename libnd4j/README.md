@@ -215,3 +215,44 @@ for running tests and getting cpu builds working is as follows:
 The way the main build script works, it dynamically generates a set of flags
 suitable for use for building the projects. Understanding the build script
 will go a long way in to configuring cmake for your particular IDE.
+
+
+## CMakeSettings.Presets.json overview
+
+This document presents an overview of two key configuration files: `CMakeSettings.json` and `CMakePresets.json`, used in building the libnd4j C++ library.
+
+### `CMakeSettings.json`
+
+`CMakeSettings.json` provides project configurations for building the libnd4j C++ library with CMake in an IDE.
+
+#### Configurations
+
+- **x64-Debug and x64-Release**
+    - Purpose: Building the project on a 64-bit system using the Ninja generator and specifically for Microsoft Visual Studio's 64-bit compiler (`msvc_x64_x64`).
+    - CUDA: Enabled
+    - Library name: `nd4jcuda`
+
+- **WSL-GCC-Debug**
+    - Purpose: Building the project using the GCC compiler on the Windows Subsystem for Linux (WSL).
+    - All operations enabled: Yes (`-DSD_ALL_OPS=true`)
+    - Library name: `nd4jcpu`
+    - Additional: Utilizes OpenBLAS
+
+### `CMakePresets.json`
+
+`CMakePresets.json` defines presets for the configure, build, and test steps. Each preset can be selected based on the specific needs of the user.
+
+#### Configure Presets
+
+- **base_cpu and base_cpu_tests**: Presets for CPU builds, with optional tests.
+- **base_cuda and base_cuda_tests**: Presets for CUDA-enabled GPU builds.
+- **veda_vednn_base and veda_vednn_debug**: Presets for Veda architecture with optional debugging.
+- **cuda_cudnn and cuda_cudnn_debug**: Presets for CUDA-enabled builds with cuDNN, a GPU-accelerated library from NVIDIA for deep neural networks.
+
+#### Build Presets
+
+Presets for building the project after configuration, specifying the number of parallel jobs to run during the build process.
+
+#### Test Presets
+
+Presets for testing the project after building. They inherit the configuration from the configure presets, ensuring that the testing environment matches the build environment.

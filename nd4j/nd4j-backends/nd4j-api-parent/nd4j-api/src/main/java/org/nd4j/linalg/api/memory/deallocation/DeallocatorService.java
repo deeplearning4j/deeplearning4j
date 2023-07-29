@@ -96,6 +96,35 @@ public class DeallocatorService {
 
     private final transient AtomicLong counter = new AtomicLong(0);
 
+
+    /**
+     * A listener for custom times for deallocation.
+     * THe main use case is to prevent deallocation race conditions
+     * when exiting a JVM process during tests.
+     * Users may have other use cases for this listener, however.
+     */
+    public  interface CustomDeallocatorListener {
+
+       void registerDeallocatable(DeallocatableReference reference);
+        /**
+         * Adds a listener for deallocation.
+         * This intercepts deallocate calls and calls them when the user is ready.
+         * @param reference
+         */
+        void addForDeallocation(DeallocatableReference reference);
+    }
+
+
+
+    public void registerDeallocatbleToListener(DeallocatableReference reference) {
+        for(CustomDeallocatorListener listener : listeners) {
+            listener.registerDeallocatable(reference);
+        }
+    }
+
+    @Getter
+    private List<CustomDeallocatorListener> listeners = new ArrayList<>();
+
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
@@ -128,6 +157,10 @@ public class DeallocatorService {
 
     }
 
+
+    public void addListener(CustomDeallocatorListener listener) {
+        listeners.add(listener);
+    }
 
     /**
      * Returns the retained size
@@ -244,10 +277,18 @@ public class DeallocatorService {
                                 referenceTypes.remove(reference.getId());
                             }
 
-                            reference.deallocate();
+                            if(!listeners.isEmpty()) {
+                                reference.deallocate();
+                                if(referenceMap.containsKey(reference.getId()))
+                                    referenceMap.remove(reference.getId());
+                            }
 
-                            if(referenceMap.containsKey(reference.getId()))
-                                referenceMap.remove(reference.getId());
+                            else {
+                                for(CustomDeallocatorListener listener : listeners)
+                                    listener.addForDeallocation(reference);
+                            }
+
+
                         }
                     }
                 } else {
@@ -256,13 +297,20 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
+                        if(!listeners.isEmpty()) {
+                            reference.deallocate();
+                            if(referenceMap.containsKey(reference.getId()))
+                                referenceMap.remove(reference.getId());
 
-                        updateDeallocationCount(reference.getId());
+                            updateDeallocationCount(reference.getId());
 
-                        reference.deallocate();
+                        }
 
-                        if(referenceMap.containsKey(reference.getId()))
-                            referenceMap.remove(reference.getId());
+                        else {
+                            for(CustomDeallocatorListener listener : listeners)
+                                listener.addForDeallocation(reference);
+                        }
+
                     } catch (InterruptedException e) {
                         canRun = false;
                     } catch (Exception e) {

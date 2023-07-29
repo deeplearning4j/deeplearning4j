@@ -52,10 +52,6 @@
 #include <iostream>
 namespace sd {
 
-#ifndef __JAVACPP_HACK__
-//used in google test for printing
-SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  const NDArray& arr);
-#endif
 
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
@@ -1155,7 +1151,11 @@ class SD_LIB_EXPORT NDArray {
 
   //used in google test for printing
   //See gtest-printers.h for more information.
-  void PrintTo(const NDArray&, std::ostream*);
+  void PrintTo(std::ostream*);
+
+
+  std::ostream& operator<<(std::ostream &os);
+
   /**
    *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
    *  idx - intervals of indexes which define the subarrays to point on, idx has form {dim0Start,dim0End,

@@ -1008,57 +1008,54 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
 }
 
 
-#ifndef __JAVACPP_HACK__
-inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
-  arr.syncToHost();
+ std::ostream& NDArray::operator<<(std::ostream &os) {
+  syncToHost();
 
-  sd::LongType rank = arr.rankOf();
 
-  bool rowFlag = (rank < 2) || (rank == 2 && arr.sizeAt(0) == 1);
+  sd::LongType rank = rankOf();
 
-  if (arr.isEmpty()) {
+  bool rowFlag = (rank < 2) || (rank == 2 && sizeAt(0) == 1);
+
+  if (isEmpty()) {
     os << "Empty\n";
-  } else if (arr.rankOf() == 0) {
-    if (arr.isZ()) {
-      os << arr.e<sd::LongType>(0) << "\n";
-    } else if (arr.isR()) {
-      os << arr.e<float>(0) << "\n";
-    } else if (arr.isB()) {
-      os << (arr.e<bool>(0) ? "true" : "false") << "\n";
-    } else if (arr.isS()) {
-      os << "\"" << arr.e<std::string>(0) << "\"\n";
+  } else if (rankOf() == 0) {
+    if (isZ()) {
+      os << e<sd::LongType>(0) << "\n";
+    } else if (isR()) {
+      os << e<float>(0) << "\n";
+    } else if (isB()) {
+      os << (e<bool>(0) ? "true" : "false") << "\n";
+    } else if (isS()) {
+      os << "\"" << e<std::string>(0) << "\"\n";
     }
-  } else if (rowFlag && arr.ews() == 1) {
+  } else if (rowFlag && ews() == 1) {
     os << "[ ";
-    for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
-      if (arr.isR())
-        os << arr.e<float>(i) << ", ";
-      else if (arr.isZ())
-        os << arr.e<sd::LongType>(i) << ", ";
-      else if (arr.isB())
-        os << (arr.e<bool>(i) ? "true" : "false") << ", ";
-      else if (arr.isS()) {
-        os << "\"" << arr.e<std::string>(i) << "\", ";
+    for (sd::LongType i = 0; i < lengthOf(); ++i) {
+      if (isR())
+        os << e<float>(i) << ", ";
+      else if (isZ())
+        os << e<sd::LongType>(i) << ", ";
+      else if (isB())
+        os << (e<bool>(i) ? "true" : "false") << ", ";
+      else if (isS()) {
+        os << "\"" << e<std::string>(i) << "\", ";
       }
     }
     os << "]\n";
   } else {
-    if(arr.isEmpty())
+    if(isEmpty())
       throw std::runtime_error("NULL buffer found but shape is not empty.");
-    printFormatted(os, arr, 1,arr.lengthOf());
+    printFormatted(os, *this, 1,lengthOf());
   }
   return os;
 }
 
 
-inline std::ostream& operator<<(std::ostream os,  NDArray& arr) {
-  const auto arr2 = arr;
-  return os << arr2;
-}
+
 
 //used in gtest printing
-void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
-  *os << arr;
+void NDArray::PrintTo(std::ostream *os) {
+  *os << this;
 }
 
 #endif
@@ -1968,7 +1965,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
 
   if (msg) printf("%s: ", msg);
   //uses the << operator instead which is used in gtest as well
-  std::cout << *this;
+  std::cout << this;
 }
 
 

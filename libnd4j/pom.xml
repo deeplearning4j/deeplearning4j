@@ -68,8 +68,42 @@
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
         <libnd4j.test.filter>none</libnd4j.test.filter>
         <libnd4j.log>none</libnd4j.log>
+        <libnd4j.test.runner></libnd4j.test.runner>
         <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
+        <junit.version>5.9.2</junit.version>
+        <cpu.core.count></cpu.core.count>
+
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.9.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
 
     <build>
         <extensions>
@@ -81,6 +115,42 @@
         </extensions>
 
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire.version}</version>
+                <configuration>
+                    <reportsDirectory>tests_cpu/surefire-reports/</reportsDirectory>
+                    <systemPropertyVariables>
+                        <libnd4j.build.dir>${project.basedir}</libnd4j.build.dir>
+                        <libnd4j.chip>${libnd4j.chip}</libnd4j.chip>
+                        <libnd4j.test.filter>${libnd4j.test.filter}</libnd4j.test.filter>
+                        <libnd4j.test.runner>${libnd4j.test.runner}</libnd4j.test.runner>
+                    </systemPropertyVariables>
+                    <forkedProcessExitTimeoutInSeconds>0</forkedProcessExitTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test-results</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <reportsDirectory>tests_cpu/surefire-reports/</reportsDirectory>
+                            <systemPropertyVariables>
+                                <libnd4j.build.dir>${project.build.directory}</libnd4j.build.dir>
+                                <libnd4j.chip>${libnd4j.chip}</libnd4j.chip>
+                                <libnd4j.test.filter>${libnd4j.test.filter}</libnd4j.test.filter>
+                                <libnd4j.test.runner>${libnd4j.test.runner}</libnd4j.test.runner>
+
+                            </systemPropertyVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- Infer the number of CPU cores and put it in the cpu.core.count property -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -100,8 +170,9 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
                         <id>javacpp-cppbuild-clean</id>
@@ -120,6 +191,7 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
                 <configuration>
@@ -310,8 +382,9 @@
                         </executions>
                     </plugin>
                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <version>3.0.0</version>
+                        <version>3.6.0</version>
                         <executions>
                             <execution>
                                 <id>libnd4j-package-cuda</id>
@@ -435,27 +508,7 @@
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>libnd4j-test-run</id>
-                                <phase>test</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${libnd4j.test.skip}</skip>
-                                    <workingDirectory>${basedir}/tests_cpu</workingDirectory>
-                                    <buildCommand>
-                                        <program>bash</program>
-                                        <argument>run_tests.sh</argument>
-                                        <argument>--chip</argument>
-                                        <argument>${libnd4j.chip}</argument>
-                                        <argument>--test-filter</argument>
-                                        <argument>${libnd4j.test.filter}</argument>
-                                    </buildCommand>
 
-                                </configuration>
-
-                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -474,7 +527,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.6.0</version>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
                                 <id>libnd4j-test-clean</id>
