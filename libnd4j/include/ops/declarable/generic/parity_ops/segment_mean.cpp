@@ -62,7 +62,6 @@ DECLARE_SHAPE_FN(segment_mean) {
 
   outputShape[0] = outRank;
   outputShape[1] = numOfClasses;
-  sd_printf("segment_mean numOfClasses: %i\n", numOfClasses);
   for (sd::LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
 
   ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));

@@ -189,7 +189,7 @@ else
   export BLOCK_SIZE_INVERT_PERMUTATION=128
   echo "Running without filter"
   env
-   /usr/local/cuda-12.1/bin/compute-sanitizer --print-limit=10 ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+   valgrind ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 fi
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/

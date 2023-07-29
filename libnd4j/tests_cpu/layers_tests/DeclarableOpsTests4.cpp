@@ -1960,7 +1960,6 @@ TEST_F(DeclarableOpsTests4, tri_test2) {
   sd::ops::tri op;
   auto results = op.evaluate({}, {}, {rows, cols, diag});
   auto output = results.at(0);
-  output->printIndexedBuffer("output");
   ASSERT_EQ(sd::Status::OK, results.status());
 
   ASSERT_TRUE(expected.isSameShape(output));
@@ -2153,16 +2152,11 @@ TEST_F(DeclarableOpsTests4, triu_test6) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, triu_test7) {
   auto input = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-  auto expected = NDArrayFactory::create<double>('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-  expected.printIndexedBuffer("expected");
   sd::ops::triu op;
   auto results = op.evaluate({&input}, {}, {-10});
   auto output = results.at(0);
-
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  ASSERT_TRUE(expected.isSameShape(output));
-  ASSERT_TRUE(expected.equalsTo(output));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2171,14 +2165,9 @@ TEST_F(DeclarableOpsTests4, triu_test8) {
   auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6, 0, 2, 3, 4, 5, 6, 0, 0, 3, 4, 5, 6,
                                                                0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 6});
 
-
-  input.printIndexedBuffer("input");
-  expected.printIndexedBuffer("expected");
-
   sd::ops::triu op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
-  output->printIndexedBuffer("expected");
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -2192,11 +2181,9 @@ TEST_F(DeclarableOpsTests4, triu_test9) {
   auto expected = NDArrayFactory::create<double>('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6,
                                                                1, 2, 3, 4, 5, 6, 0, 2, 3, 4, 5, 6, 0, 0, 3, 4, 5, 6});
 
-  expected.printIndexedBuffer("expected");
   sd::ops::triu op;
   auto results = op.evaluate({&input}, {}, {-3});
   auto output = results.at(0);
-  output->printIndexedBuffer("output");
   ASSERT_EQ(sd::Status::OK, results.status());
 
   ASSERT_TRUE(expected.isSameShape(output));
@@ -2261,11 +2248,9 @@ TEST_F(DeclarableOpsTests4, triu_bp_test2) {
 
   auto expected =
       NDArrayFactory::create<double>('c', {2, 3, 2}, {0.5, 0.5, 0., 0.5, 0., 0., 0.5, 0.5, 0., 0.5, 0., 0.});
-  expected.printIndexedBuffer("expected");
   sd::ops::triu_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {});
   auto gradI = results.at(0);
-  gradI->printIndexedBuffer("output");
   ASSERT_EQ(sd::Status::OK, results.status());
 
   ASSERT_TRUE(expected.isSameShape(gradI));

@@ -314,7 +314,6 @@ void NDArray::applyLambda(Lambda func, NDArray &target) {
   auto dtype = this->dataType();
 
   if (dtype != target.dataType()) THROW_EXCEPTION("NDArray::applyLambda X/Z data types must be the same");
-  // throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
@@ -331,7 +330,6 @@ void NDArray::applyPairwiseLambda(const NDArray &other, Lambda func, NDArray &ta
 
   if (dtype != target.dataType() || dtype != other.dataType())
     THROW_EXCEPTION("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
-  // throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
   bool otherIsScalar = other.isScalar();
   prepareSpecialUse({&target}, {this, &other});
   BUILD_SINGLE_SELECTOR(

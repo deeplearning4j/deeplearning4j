@@ -82,10 +82,9 @@ namespace sd {
         template <typename T>
         SD_HOST_DEVICE inline T sd_rotr(T val, T shift);
 
-//#ifndef __CUDACC__
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length);
-//#endif
+
 
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_ceil(T val1);
@@ -890,7 +889,6 @@ namespace sd {
             if (a > 171.624) {
                 // Correct answer too large to display. Force +infinity.
                 return Z(DOUBLE_MAX_VALUE);
-                //                return DataTypeUtils::infOrMax<Z>();
             }
 
             return sd::math::sd_exp<Z, Z>(sd::math::sd_lgamma<X, Z>(a));
@@ -902,7 +900,6 @@ namespace sd {
             auto sum = Z(0.);
             auto denom = Z(1.);
             if (a <= X(0.000001))
-                // THROW_EXCEPTION("Cannot calculate gamma for a zero val.");
                 return Z(0);
 
             for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {

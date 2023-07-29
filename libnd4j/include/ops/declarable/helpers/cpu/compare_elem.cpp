@@ -31,7 +31,6 @@ static void _compare_elem(NDArray* input, bool isStrictlyIncreasing, bool& outpu
   sd::LongType sumt = 0;
 
   if (isStrictlyIncreasing) {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
     auto func = PRAGMA_REDUCE_LONG {
       sd::LongType sum = 0;
       for (auto i = start; i < stop; i++) {
@@ -43,7 +42,6 @@ static void _compare_elem(NDArray* input, bool isStrictlyIncreasing, bool& outpu
     };
     sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
   } else {
-    // PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
     auto func = PRAGMA_REDUCE_LONG {
       sd::LongType sum = 0;
       for (auto i = start; i < stop; i++) {

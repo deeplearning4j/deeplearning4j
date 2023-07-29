@@ -123,7 +123,6 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
         THROW_EXCEPTION("");
       }
 
-      // printf("%lld: num = %.15f, ana = %.15f\n", j, numericalGrad, analyticGrad);
 
       // calculate relative error
       double relError;

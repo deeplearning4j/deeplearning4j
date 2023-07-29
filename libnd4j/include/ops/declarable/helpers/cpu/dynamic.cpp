@@ -100,9 +100,6 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
     for (int e = 0; e < numOfData; e++) {
       auto data = inputs[e];
       auto index = indices[e];
-      sd_printf("Processing element %d\n",e);
-      data->printIndexedBuffer("data\n");
-      index->printIndexedBuffer("index\n");
       std::vector<sd::LongType > sourceDims(data->rankOf() - index->rankOf());
       for (auto i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 

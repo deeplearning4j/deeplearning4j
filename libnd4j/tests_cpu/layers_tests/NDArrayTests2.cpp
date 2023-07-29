@@ -474,10 +474,6 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_2) {
 
   x.permutei({1, 0, 2});
   x.streamline();
-
-  //    x.printShapeInfo("{1, 0, 2} shape");
-  //    x.printBuffer("{1, 0, 2} data");
-
   ASSERT_TRUE(exp.isSameShape(&x));
   ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -657,9 +653,6 @@ TEST_F(NDArrayTest2, TestStdDev3) {
 
   const double variance = array.varianceNumber(variance::SummaryStatsStandardDeviation, false).e<double>(0);
   const double varianceCorr = array.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
-
-  // printf("%s  expected %.10f    calculated %.10f\n","variance          :", trueVariance, variance );
-  // printf("%s  expected %.10f    calculated %.10f\n","variance corrected:", trueVarianceCorr, varianceCorr);
 
   ASSERT_NEAR(trueVariance, variance, 1e-8);
   ASSERT_NEAR(trueVarianceCorr, varianceCorr, 1e-8);
@@ -849,13 +842,6 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
   exp._infCount = 0;
   exp._nanCount = 0;
   DebugHelper::retrieveDebugStatistics(&info, &testArray);
-  printf("Output statistics %lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
-  printf("Expect statistics %lf %lf %lf %lf\n", exp._minValue, exp._maxValue, exp._meanValue, exp._stdDevValue);
-  printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount,
-         info._nanCount);
-  // printf("%lf %lf %lf %lf\n", info._minValue, info._maxValue, info._meanValue, info._stdDevValue);
-  // printf("%lld %lld %lld %lld %lld\n", info._zeroCount, info._negativeCount, info._positiveCount, info._infCount,
-  // info._nanCount);
   ASSERT_EQ(exp, info);
 }
 

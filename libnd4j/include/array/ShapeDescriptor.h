@@ -68,7 +68,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
  public:
   int _rank = 0;
   std::vector<sd::LongType> _shape_strides;
-  // std::vector<sd::LongType> _strides;
   sd::LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;

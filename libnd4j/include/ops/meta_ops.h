@@ -137,7 +137,6 @@ class ReduceMetaOp {
 
   SD_META_DEF static T merge(T old, T opOutput, T *params) {
     sd::Pointer *wrap = reinterpret_cast<sd::Pointer *>(params);
-    //            T *paramsA = reinterpret_cast<T *> (wrap[0]);
     T *paramsB = reinterpret_cast<T *>(wrap[1]);
 
     return OpTypeB::merge(old, opOutput, paramsB);
@@ -145,7 +144,6 @@ class ReduceMetaOp {
 
   SD_META_DEF static T update(T old, T opOutput, T *params) {
     sd::Pointer *wrap = reinterpret_cast<sd::Pointer *>(params);
-    // T *paramsA = reinterpret_cast<T *> (wrap[0]);
     T *paramsB = reinterpret_cast<T *>(wrap[1]);
 
     return OpTypeB::update(old, opOutput, paramsB);
@@ -161,7 +159,6 @@ class ReduceMetaOp {
 
   SD_META_DEF static T postProcess(T reduction, sd::LongType n, T *params) {
     sd::Pointer *wrap = reinterpret_cast<sd::Pointer *>(params);
-    //            T *paramsA = reinterpret_cast<T *> (wrap[0]);
     T *paramsB = reinterpret_cast<T *>(wrap[1]);
 
     return OpTypeB::postProcess(reduction, n, paramsB);

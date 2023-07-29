@@ -116,9 +116,6 @@ void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void Householder<T>::mulRight(NDArray& matrix, const NDArray& tail, const T coeff) {
-  // if(matrix.rankOf() != 2)
-  //     throw "ops::helpers::Householder::mulRight method: input array must be 2D matrix !";
-
   if (matrix.sizeAt(1) == 1 && coeff != (T)0) {
     matrix *= (T)1.f - coeff;
   } else if (coeff != (T)0.f) {

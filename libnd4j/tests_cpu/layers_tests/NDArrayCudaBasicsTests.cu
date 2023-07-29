@@ -1377,24 +1377,25 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
   std::vector<sd::LongType> dims02 = {0,2};
 
   NDArray z1 = x.reduceAlongDimension(sd::reduce::CountZero, &dims);
+  ASSERT_EQ(z1,exp1);
   ASSERT_TRUE(z1.equalsTo(&exp1));
 
   NDArray z2 = x.reduceAlongDimension(sd::reduce::CountZero, &dims1);
-  ASSERT_TRUE(z2.equalsTo(&exp2));
+  ASSERT_EQ(z2,exp2);
 
   NDArray z3 = x.reduceAlongDimension(sd::reduce::CountZero, &dims02);
-  ASSERT_TRUE(z3.equalsTo(&exp3));
+  ASSERT_EQ(exp3,z3);
 
   x.permutei({1, 0, 2});  // 3x2x2
 
   NDArray z4 = x.reduceAlongDimension(sd::reduce::CountZero, &dims);
-  ASSERT_TRUE(z4.equalsTo(&exp1));
+  ASSERT_EQ(z4,exp1);
 
   NDArray z5 = x.reduceAlongDimension(sd::reduce::CountZero, &dims1);
-  ASSERT_TRUE(z5.equalsTo(&exp4));
+  ASSERT_EQ(exp4,z5);
 
   NDArray z6 = x.reduceAlongDimension(sd::reduce::CountZero, &dims02);
-  ASSERT_TRUE(z6.equalsTo(&exp5));
+  ASSERT_EQ(exp5,z6);
 }
 
 TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
@@ -1403,22 +1404,22 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest1) {
   auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
   NDArray expRow('c',
                  {
-                     1,
+
                      5,
                  },
                  {1, 2, 3, 4, 5}, sd::DataType::FLOAT32);
   NDArray exp('c', {5, 5}, {1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5},
               sd::DataType::FLOAT32);
 
-  ASSERT_TRUE(row->equalsTo(&expRow));
-
+  ASSERT_EQ(expRow,*row);
+  \
   std::vector<sd::LongType> dims = {0, 1, 2};
   std::vector<sd::LongType> dims1 = {1};
 
   x.applyBroadcast(broadcast::Add, &dims1, *row, z);
   x += *row;
 
-  ASSERT_TRUE(x.equalsTo(z));
+  ASSERT_EQ(x,z);
 
   delete row;
 }
@@ -1428,7 +1429,7 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
   auto row = NDArrayFactory::linspace(1.0f, 5.0f, 5);
   NDArray expRow('c',
                  {
-                     1,
+
                      5,
                  },
                  {1, 2, 3, 4, 5}, sd::DataType::FLOAT32);
@@ -1437,9 +1438,9 @@ TEST_F(NDArrayCudaBasicsTests, BroadcastOpsTest2) {
 
   std::vector<sd::LongType> dims1 = {1};
 
-  ASSERT_TRUE(row->equalsTo(&expRow));
+  ASSERT_EQ(expRow,*row);
   x.applyBroadcast(broadcast::Add, &dims1, *row, x);
-  ASSERT_TRUE(x.equalsTo(&exp));
+  ASSERT_EQ(exp,x);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1453,25 +1454,25 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcast_1) {
   std::vector<sd::LongType> dims1 = {1};
   bias.linspace(1);
   input.applyBroadcast(broadcast::Add,&dims1, bias, input);
-  ASSERT_TRUE(exp.equalsTo(&input));
+  ASSERT_EQ(exp,input);
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat16_1) {
   auto x = NDArrayFactory::create<float>({1, 2, 3, 4, 5, 7, 8, 9});
   auto y = NDArrayFactory::create<float>({1, 2, 3, 4, 5, 7, 8, 9});
-  ASSERT_TRUE(x.equalsTo(&y));
+  ASSERT_EQ(x,y);
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat16_2) {
   auto x = NDArrayFactory::create<float16>('c', {9}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto y = NDArrayFactory::create<float16>('c', {9}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-  ASSERT_TRUE(x.equalsTo(y));
+  ASSERT_EQ(x,y);
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat16_3) {
   auto x = NDArrayFactory::create<bfloat16>({1, 2, 3, 4, 5, 7, 8, 9});
   auto y = NDArrayFactory::create<bfloat16>({1, 2, 3, 4, 5, 7, 8, 9});
-  ASSERT_TRUE(x.equalsTo(&y));
+  ASSERT_EQ(x,y);
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat_4) {
@@ -1505,8 +1506,8 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_05) {
 
   x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y, res2);  // *= y;
 
-  ASSERT_TRUE(expected.isSameShape(&res2));
-  ASSERT_TRUE(expected.equalsTo(&res2));
+  ASSERT_EQ(expected,res2);
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1521,8 +1522,7 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_5) {
 
   auto result = x + y;
 
-  ASSERT_TRUE(expected.isSameShape(&result));
-  ASSERT_TRUE(expected.equalsTo(&result));
+  ASSERT_EQ(expected,result);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1536,8 +1536,7 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_51) {
   expected = 3.;
   auto result = x + y;
 
-  ASSERT_TRUE(expected.isSameShape(&result));
-  ASSERT_TRUE(expected.equalsTo(&result));
+  ASSERT_EQ(expected,result);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1) {
@@ -1547,7 +1546,7 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_1) {
   auto exp = NDArrayFactory::create<float>('c', {2, 2, 2});
   exp = 10.;
 
-  ASSERT_TRUE(exp.equalsTo(y));
+  ASSERT_EQ(exp,y);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_2) {
@@ -1556,7 +1555,7 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_2) {
   auto y = x.tile({1, 2, 1});
   auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
   exp = 10.;
-  ASSERT_TRUE(exp.equalsTo(y));
+  ASSERT_EQ(exp,y);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3) {
@@ -1570,7 +1569,7 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3) {
   exp.p(1, 0, 1, 20.);
   exp.p(1, 1, 1, 20.);
   exp.syncToDevice();
-  ASSERT_TRUE(exp.equalsTo(y));
+  ASSERT_EQ(exp,y);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1584,9 +1583,8 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2) {
   x.linspace(1);
   y.linspace(1);
   auto result = x + y;
+  ASSERT_EQ(expected,result);
 
-  ASSERT_TRUE(expected.isSameShape(&result));
-  ASSERT_TRUE(expected.equalsTo(&result));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1597,7 +1595,7 @@ TEST_F(NDArrayCudaBasicsTests, assign_2) {
 
   y.assign(x);
 
-  ASSERT_TRUE(expected.equalsTo(&y));
+  ASSERT_EQ(expected,y);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1636,65 +1634,62 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1) {
   NDArray x0 = x(0, {1, 2});
   NDArray xExp(buffExpX0, shapeExpX0);
 
-  ASSERT_TRUE(xExp.isSameShape(x0));
-  ASSERT_TRUE(xExp.equalsTo(x0));
+  ASSERT_EQ(xExp,x0);
 
   NDArray x1 = x(1, {1, 2});
   NDArray x1Exp(buffExpX1, shapeExpX1);
-  ASSERT_TRUE(x1Exp.isSameShape(x1));
-  ASSERT_TRUE(x1Exp.equalsTo(x1));
+  ASSERT_EQ(x1Exp,x1);
+
 
 
   NDArray x2 = x(0, {1, 2}, true);
   NDArray x2Exp(buffExpX2, shapeExpX2);
-  ASSERT_TRUE(x2Exp.isSameShape(x2));
+  ASSERT_EQ(x2Exp,x2);
 
-  ASSERT_TRUE(x2Exp.equalsTo(x2));
 
   NDArray x3 = x(2, {1});
   NDArray x3Exp(buffExpX3, shapeExpX3);
-  ASSERT_TRUE(x3Exp.isSameShape(x3));
-  ASSERT_TRUE(x3Exp.equalsTo(x3));
+  ASSERT_EQ(x3Exp,x3);
 
   NDArray x4 = x(2, {1}, true);
   NDArray x4Exp(buffExpX4, shapeExpX4);
-  ASSERT_TRUE(x4Exp.isSameShape(x4));
-  ASSERT_TRUE(x4Exp.equalsTo(x4));
+  ASSERT_EQ(x4Exp,x4);
 
   NDArray x5 = x(3, {2});
   NDArray x5Exp(buffExpX5, shapeExpX5);
-  ASSERT_TRUE(x5Exp.isSameShape(x5));
-  ASSERT_TRUE(x5Exp.equalsTo(x5));
+  ASSERT_EQ(x5Exp,x5);
+
   // ******************* //
   NDArray y0 = y(0, {1, 2});
   NDArray y0Exp(buffExpY0, shapeExpY0);
-  ASSERT_TRUE(y0Exp.isSameShape(y0));
-  ASSERT_TRUE(y0Exp.equalsTo(y0));
+
+  ASSERT_EQ(y0Exp,y0);
+
 
   NDArray y1 = y(1, {1, 2});
   NDArray y1Exp(buffExpY1, shapeExpY1);
-  ASSERT_TRUE(y1Exp.isSameShape(y1));
-  ASSERT_TRUE(y1Exp.equalsTo(y1));
+
+  ASSERT_EQ(y1Exp,y1);
 
   NDArray y2 = y(0, {1, 2}, true);
   NDArray y2Exp(buffExpY2, shapeExpY2);
-  ASSERT_TRUE(y2Exp.isSameShape(y2));
-  ASSERT_TRUE(y2Exp.equalsTo(y2));
+  ASSERT_EQ(y2Exp,y2);
 
   NDArray y3 = y(2, {1});
   NDArray y3Exp(buffExpY3, shapeExpY3);
-  ASSERT_TRUE(y3Exp.isSameShape(y3));
-  ASSERT_TRUE(y3Exp.equalsTo(y3));
+
+  ASSERT_EQ(y3Exp,y3);
 
   NDArray y4 = y(2, {1}, true);
   NDArray y4Exp = NDArrayFactory::create<float>('f', {2, 1, 4}, {5, 6, 11, 12, 17, 18, 23, 24});
-  ASSERT_TRUE(y4Exp.isSameShape(y4));
-  ASSERT_TRUE(y4Exp.equalsTo(y4));
+
+  ASSERT_EQ(y4Exp,y4);
+
 
   NDArray y5 = y(3, {2});
   NDArray y5Exp(buffExpY5, shapeExpY5);
-  ASSERT_TRUE(y5Exp.isSameShape(y5));
-  ASSERT_TRUE(y5Exp.equalsTo(y5));
+  ASSERT_EQ(y5Exp,y5);
+
 
 }
 //////////////////////////////////////////////////////////////////////

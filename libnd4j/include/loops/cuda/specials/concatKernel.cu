@@ -54,9 +54,6 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
   __shared__ int numTads;
 
   if (shape::isVector(resultShapeInfo)) {
-    // if (threadIdx.x == 0 && blockIdx.x == 0)
-    //    printf("Vector here\n");
-
     if (zEWS >= 1) {
       for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
         if (shape::isVector(shapeInfoPointers[r]) ||
@@ -163,15 +160,12 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
           }
         } else {
           if (tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-            // if (threadIdx.x == 0 && blockIdx.x == 0)
-            //    printf("Branch B\n");
 
             if (threadIdx.x == 0) {
               baseIdx = 0;
               for (int f = 0; f < r; f++) {
                 baseIdx += shape::length(shapeInfoPointers[f]);
               }
-              // printf("R: %i; baseIdx: %i;\n", baseIdx);
             }
             __syncthreads();
 
@@ -192,9 +186,6 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
             }
             __syncthreads();
           } else {
-            // if (threadIdx.x == 0 && blockIdx.x  == 0)
-            //    printf("Branch C; yLength: %i;\n", yLength);
-
             sd::LongType zIdx[SD_MAX_RANK];
             sd::LongType yIdx[SD_MAX_RANK];
 

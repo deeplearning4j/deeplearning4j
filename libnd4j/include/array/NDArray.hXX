@@ -1008,6 +1008,7 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
 }
 
 
+#ifndef __JAVACPP_HACK__
 inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
   arr.syncToHost();
 
@@ -1050,7 +1051,6 @@ inline std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
 }
 
 
-
 inline std::ostream& operator<<(std::ostream os,  NDArray& arr) {
   const auto arr2 = arr;
   return os << arr2;
@@ -1061,6 +1061,7 @@ void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
   *os << arr;
 }
 
+#endif
 //end google test print statement
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
@@ -1724,7 +1725,7 @@ NDArray NDArray::reduceNumber(sd::reduce::LongOps op, void *extraParams) const {
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber FloatOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
+  if (target.lengthOf() > 1 || target.dataType() != DataTypeUtils::pickFloatingType(dataType()))
     THROW_EXCEPTION("NDArray::reduceNumber FloatOps: target array should be scalar and have corresponding float type!");
 
   prepareUse({&target}, {this});
@@ -1737,7 +1738,7 @@ void NDArray::reduceNumber(sd::reduce::FloatOps op, NDArray &target, void *extra
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber SameOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != dataType())
+  if (target.lengthOf() > 1 || target.dataType() != dataType())
     THROW_EXCEPTION("NDArray::reduceNumber SameOps: target array should be scalar and have same type as this array!");
 
   prepareUse({&target}, {this});
@@ -1750,7 +1751,7 @@ void NDArray::reduceNumber(sd::reduce::SameOps op, NDArray &target, void *extraP
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber BoolOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataType::BOOL)
+  if (target.lengthOf() > 1 || target.dataType() != DataType::BOOL)
     THROW_EXCEPTION("NDArray::reduceNumber BoolOps: target array should be scalar and have bool type!");
 
   prepareUse({&target}, {this});
@@ -1763,7 +1764,7 @@ void NDArray::reduceNumber(sd::reduce::BoolOps op, NDArray &target, void *extraP
 //////////////////////////////////////////////////////////////////////////
 void NDArray::reduceNumber(sd::reduce::LongOps op, NDArray &target, void *extraParams) const {
   if (isS()) THROW_EXCEPTION("NDArray::reduceNumber LongOps: you can't use this method on String array!");
-  if (target.lengthOf() != 1 || target.dataType() != DataType::INT64)
+  if (target.lengthOf() > 1 || target.dataType() != DataType::INT64)
     THROW_EXCEPTION("NDArray::reduceNumber LongOps: target array should be scalar and have long type!");
 
   prepareUse({&target}, {this});
@@ -2457,12 +2458,16 @@ NDArray NDArray::asS() const {
   if (!(DataTypeUtils::isS(dtype))) THROW_EXCEPTION("NDArray::asS: invalid DataType used");
 
   if (dtype == dataType()) {
+
+    if(isScalar()) {
+      return dup();
+    }
     sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
     const auto nInputoffsets = bufferAsT<sd::LongType>();
-    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[lengthOf()], dtype,
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[isScalar() ? 1 : lengthOf()], dtype,
                                                                        getContext()->getWorkspace(), true);
 
-    auto shapeDesc = new ShapeDescriptor(dtype, ordering(), getShapeAsVector());
+    auto shapeDesc = new ShapeDescriptor(dtype, ordering(),isScalar() ? std::vector<sd::LongType>({1}) :  getShapeAsVector());
     auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeDesc);
     NDArray res(pBuffer, shapeDesc, getContext());
     res.setAttached(getContext()->getWorkspace() != nullptr);
@@ -2471,7 +2476,7 @@ NDArray NDArray::asS() const {
     memcpy(res.bufferAsT<int8_t>(), nInputoffsets, offsetsLength);
     auto data = res.bufferAsT<int8_t>() + offsetsLength;
     const auto inData = bufferAsT<int8_t>() + offsetsLength;
-    memcpy(data, inData, nInputoffsets[lengthOf()]);
+    memcpy(data, inData, nInputoffsets[isScalar() ? 1 : lengthOf()]);
     delete shapeDesc;
     registerPrimaryUse({&res}, {this});
     return res;
@@ -2505,7 +2510,7 @@ NDArray NDArray::asS() const {
                     : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
     }
   }
-  offsets[lengthOf()] = dataLength;
+  offsets[isScalar() ? 1 : lengthOf()] = dataLength;
 
   std::shared_ptr<DataBuffer> pBuffer =
       std::make_shared<DataBuffer>(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
@@ -2536,7 +2541,7 @@ NDArray NDArray::asS() const {
       } else if (dtype == DataType::UTF32) {
         if (dataType() == DataType::UTF8) {
           unicode::utf8to32(idata, cdata, end);
-        } else if(dataType() == DataType::UTF32) {
+        } else if(dataType() == DataType::UTF16) {
           unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
         }
       } else {
@@ -3071,16 +3076,6 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray &oth
 
   if (isEmpty() || other.isEmpty()) return;
 
-  // if (lengthOf() == 1) {
-  //     NDArray temp(target._shapeInfo, dataType(), false, getContext());
-  //     temp.assign(this);
-  //     temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
-  //     return;
-  // }
-  // if (other.lengthOf() == 1) {
-  //     this->applyScalarArr(op.s, other, target, extraArgs);
-  //     return;
-  // }
 
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
