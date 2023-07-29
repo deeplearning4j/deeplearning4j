@@ -468,8 +468,6 @@ SD_KERNEL static void execCudaDecodeBitmapKernel(const void *dx, sd::LongType N,
   int lim = N / 16 + 5;
   for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
     int byteId = i / 16 + 4;
-    //        printf("I: [%i]; byteId: [%i]\n", i, byteId);
-
     shmem[threadIdx.x] = dz[i];
     __syncthreads();
 
@@ -514,8 +512,6 @@ BUILD_SINGLE_TEMPLATE(template void cudaDecodeBitmapGeneric,
 template <bool storeSum, bool isNP2>
 SD_HOST void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata,
                              const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
-  // printf("Prescan grid: <%i/%i/%i>; threads: <%i/%i/%i>; shareMemSize: %i\n", blocks.x, blocks.y, blocks.z,
-  // threads.x, threads.y, threads.z,    shmem);
   shmem = sd::math::sd_max<int>(shmem, 16384);
   prescan<storeSum, isNP2>
       <<<blocks, threads, shmem, *stream>>>(g_odata, g_idata, g_blockSums, n, blockIndex, baseIndex);

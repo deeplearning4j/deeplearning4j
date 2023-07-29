@@ -73,13 +73,10 @@ class SD_LIB_EXPORT Stash {
   Stash();
   ~Stash();
 
-  // void storeArray(sd::graph::Block<T>& block, const char *name, sd::NDArray<T> *array);
   void storeArray(int nodeId, const char *name, sd::NDArray *array);
 
-  // bool checkStash(sd::graph::Block<T>& block, const char *name);
   bool checkStash(int nodeId, const char *name);
 
-  // sd::NDArray<T>* extractArray(sd::graph::Block<T>& block, const char *name);
   sd::NDArray *extractArray(int nodeId, const char *name);
 
   void clear();

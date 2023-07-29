@@ -53,7 +53,6 @@
 namespace sd {
 
 
-//used in google test for printing
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator+(const NDArray &arr, const T &scalar);

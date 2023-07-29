@@ -98,7 +98,7 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const sd::LongTy
 template <typename T>
 static void _diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
-  auto inputLength = input->lengthOf();
+  auto inputLength = input->isScalar() ? 1 : input->lengthOf();
   dim3 launchDims = getLaunchDims("diagPart");
   if (!input->isActualOnDeviceSide()) input->syncToDevice();
   diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -122,7 +122,7 @@ BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, 
 template <typename T>
 void _diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
   const int outLen = output->lengthOf();
-  const int inLen = input->lengthOf();
+  const int inLen = input->isScalar() ? 1 : input->lengthOf();
   auto stream = context->getCudaStream();
 
   dim3 launchDims = getLaunchDims("diagPart");

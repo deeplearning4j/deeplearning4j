@@ -115,12 +115,7 @@ class SD_LIB_EXPORT Variable {
   VariableType variableType();
   void setVariableType(VariableType variableType);
 
-  /**
-   * This method returns InputType of this variable
-   */
-  // InputType variableType() {
-  //    return _variableType;
-  //}
+
 
   void markExternal(bool reallyExternal);
   void markReadOnly(bool reallyReadOnly);

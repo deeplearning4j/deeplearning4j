@@ -49,9 +49,8 @@ class SD_LIB_EXPORT Scope {
  public:
   // attach GiG here, with shared namespace?
   // or just rebuilt graph leaf?
-  //          ¯\_(ツ)_/¯
 
-  // default consructor
+  // default constructor
   explicit Scope(int id, const char* name = nullptr);
 
   // default destructor

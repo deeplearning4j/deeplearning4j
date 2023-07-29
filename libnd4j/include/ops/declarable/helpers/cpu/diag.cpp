@@ -32,7 +32,7 @@ namespace helpers {
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
 static void _diagFunctor(const NDArray* input, NDArray* output) {
-  const int inLength = input->lengthOf();
+  const int inLength = input->isScalar() ? 1 : input->lengthOf();
 
   for (int i = 0; i < inLength; ++i) output->p<T>(i * (inLength + 1), (*input).e<T>(i));
 }

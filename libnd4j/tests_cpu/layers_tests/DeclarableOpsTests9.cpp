@@ -1983,10 +1983,8 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
   ASSERT_TRUE(result.size() == 2);
   auto gradX = result.at(0);
   auto gradY = result.at(1);
+  ASSERT_EQ(exp,*gradY);
 
-  ASSERT_TRUE(exp.isSameShape(gradY));
-
-  ASSERT_TRUE(exp.equalsTo(gradY));
 }
 
 
@@ -2001,7 +1999,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(res));
+  ASSERT_EQ(exp,*res);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2016,7 +2014,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(res));
+  ASSERT_EQ(exp,*res);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2031,7 +2029,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
 
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
+  ASSERT_EQ(exp,*result.at(0));
   auto res = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(res, 1e-4));
 }
 

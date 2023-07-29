@@ -87,15 +87,6 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
   padTop = pH;
   padRight = (iW - 1) * sW - oW + kW - pW;
   padBottom = (iH - 1) * sH - oH + kH - pH;
-  // deconv2dMKLDNN(input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
-#if 0
-    sd_printf("deconv2d  bS = %d,  iH =%d, iW = %d,  oH=%d, oW=%d  kH=%d, kW=%d wformat=%d, iC =%d, , oC=%d\n",
-       bS, iH, iW, oH, oW, kH, kW, wFormat, iC, oC
-     );
-    sd_printf("deconv2d kH = %d, kW = %d, sH = %d, sW = %d  , pH = %d  , pW = %d, dH = %d, dW = %d, paddingMode = %d , isNCHW %d \n" , kH , kW , sH , sW  , pH 
-     , pW , dH , dW , paddingMode,isNCHW?1:0 );
-#endif
-
   auto dataLayout = isNCHW ? arm_compute::DataLayout::NCHW : arm_compute::DataLayout::NHWC;
   // check weight input datalayout match
   bool dataLayoutMatch = (isNCHW && wFormat == 1) || (!isNCHW && wFormat == 2);

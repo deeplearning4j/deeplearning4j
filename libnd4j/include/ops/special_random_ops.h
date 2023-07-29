@@ -107,9 +107,7 @@ class Choice {
             z[e * zEWS] = x[f * xEWS];
             f += yLength;
           }
-          //                        __syncthreads();  // Eliminated due RTX20xx specific
         }
-        //                    __syncthreads();  // Eliminated due RTX20xx specific
       }
     } else {
       for (sd::LongType i = tid; i < zLength; i += blockDim.x * gridDim.x) {
@@ -127,9 +125,7 @@ class Choice {
             z[zOffset2] = x[xOffset2];
             f += yLength;
           }
-          //                        __syncthreads();  // Eliminated due RTX20xx specific
         }
-        //                    __syncthreads();  // Eliminated due RTX20xx specific
       }
     }
   }

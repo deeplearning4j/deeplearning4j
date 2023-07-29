@@ -4111,8 +4111,6 @@ TEST_F(DeclarableOpsTests2, ctc_loss_grad_test1) {
 
   auto *gradient = results.at(0);
 
-  // gradient->printIndexedBuffer("gradient");
-
   ASSERT_TRUE(expected.isSameShape(gradient));
   ASSERT_TRUE(expected.equalsTo(gradient, 1.e-06));
 }

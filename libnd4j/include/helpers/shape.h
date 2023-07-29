@@ -1885,7 +1885,7 @@ SD_INLINE SD_HOST_DEVICE bool haveSameShapeAndStrides(const sd::LongType *shapeI
          shape::haveSameShapeAndStrides(shapeInfo1, shapeInfo3);
 }
 
-#if not defined(__JAVACPP_HACK__)
+#ifndef __JAVACPP_HACK__
 
 SD_INLINE SD_HOST_DEVICE sd::LongType sizeAt(const sd::LongType *shapeInfo, const sd::LongType dim) {
   if (0 == rank(shapeInfo)) return 1;

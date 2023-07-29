@@ -125,11 +125,7 @@ TEST_F(ThreadsTests, test_span_converage_1) {
     for (int c = 1; c <= 64; c++) {
       for (int t = 1; t <= 64; t++) {
         auto threads = ThreadsHelper::numberOfThreads2d(t, b, c);
-        auto loop = ThreadsHelper::pickLoop2d(threads, b, c);
-
-        if (t > 1 && threads == 1 && (b > 1 && c > 1)) {
-          sd_printf("Got 1 thread for [%i, %i] loop; initial max threads: %i\n", b, c, t)
-        }
+        auto loop = ThreadsHelper::pickLoop2d(threads, b, c)
 
         auto sum = 0;
         for (auto a = 0; a < threads; a++) {
@@ -177,7 +173,6 @@ TEST_F(ThreadsTests, validation_test_2d_1) {
       }
     }
 
-    sd_printf("Finished iteration %i\n", e);
   }
 }
 

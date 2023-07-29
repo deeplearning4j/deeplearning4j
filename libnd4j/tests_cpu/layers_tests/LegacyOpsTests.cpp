@@ -299,7 +299,9 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
   auto x = NDArrayFactory::create<float>('c', {5, 5});
   auto indices = NDArrayFactory::create<int>('c', {1}, {1});
   x.linspace(1);
+  std::vector<sd::LongType> shape = {5,1};
   auto exp = NDArrayFactory::create<sd::LongType>({4, 4, 4, 4, 4});
+  exp.reshapei(shape);
   sd::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
   auto result = op.evaluate({&x, &indices}, {}, {});
@@ -307,14 +309,14 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
+  ASSERT_EQ(exp,*z);
 }
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
   auto x = NDArrayFactory::create<double>('c', {5, 5});
   x.assign(0.0f);
 
-  auto row = NDArrayFactory::create<double>('c', {1, 5});
+  auto row = NDArrayFactory::create<double>('c', { 5});
   row.linspace(1);
   auto axis = NDArrayFactory::create<sd::LongType>('c', {1}, {1});
   sd::ops::LegacyBroadcastOp op(broadcast::Add);

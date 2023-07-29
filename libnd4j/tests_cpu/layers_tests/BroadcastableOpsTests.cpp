@@ -654,8 +654,6 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_empty_2) {
 
   auto z = result.at(0);
 
-  // z->printShapeInfo("z");
-
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_TRUE(e.isSameShape(z));
   ASSERT_TRUE(e.equalsTo(*z));

@@ -1964,10 +1964,8 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  auto *s = result.at(0);
-
-  ASSERT_TRUE(expS.equalsTo(s));
-  ASSERT_TRUE(expS.isSameShape(s));
+  auto s = result.at(0);
+  ASSERT_EQ(expS,*s);
 }
 
 

@@ -46,19 +46,10 @@ sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::Long
       if (!present) ++pRowCounts[pCols[i]];
     }
   }
-  NDArray numElementsArr = rowCounts.sumNumber();  // reduceAlongDimension(reduce::Sum, {});
-  // rowCounts.printBuffer("Row counts");
+  NDArray numElementsArr = rowCounts.sumNumber();
   auto numElements = numElementsArr.e<sd::LongType>(0);
   return numElements;
 }
-//    static
-//    void printVector(std::vector<int> const& v) {
-//        for (auto x: v) {
-//            printf("%d ", x);
-//        }
-//        printf("\n");
-//        fflush(stdout);
-//    }
 
 template <typename T>
 static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
@@ -73,9 +64,8 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
   int const* pCols = reinterpret_cast<int const*>(colP->buffer());
   T const* pVals = reinterpret_cast<T const*>(valP->buffer());
   T* pOutput = reinterpret_cast<T*>(outputVals->buffer());
-  std::vector<int> offset(N);  // = NDArrayFactory::create<int>('c', {N});
+  std::vector<int> offset(N);
 
-  // PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))
   for (sd::LongType n = 0; n < N; n++) {
     int begin = pRows[n];
     int bound = pRows[n + 1];
@@ -86,7 +76,6 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
       int start = pRows[colPI];
       int end = pRows[colPI + 1];
 
-      // PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(offset))
       for (int m = start; m < end; m++) {
         if (pCols[m] == n) {
           present = true;
@@ -99,10 +88,7 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
         }
       }
 
-      // If (colP[i], n) is not present, there is no addition involved
       if (!present) {
-        // int colPI = pCols[i];
-        // if (n <= colPI) {
         symColP[symRowP[n] + offset[n]] = colPI;
         symColP[symRowP[pCols[i]] + offset[colPI]] = n;
         pOutput[symRowP[n] + offset[n]] = pVals[i];
@@ -115,7 +101,6 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
 
         if (colPI != n) ++offset[colPI];
       }
-      //                printVector(offset);
     }
   }
 }
@@ -126,7 +111,6 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
                         (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), SD_NUMERIC_TYPES);
 
   *outputVals /= 2.0;
-  // output->assign(symValP);
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_,
                       (const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
@@ -141,7 +125,6 @@ static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArra
   T* outputP = reinterpret_cast<T*>(output->buffer());
   int colCount = data->columns();
 
-  //        auto shift = 0;
   auto rowSize = sizeof(T) * colCount;
 
   auto func = PRAGMA_THREADS_FOR {
@@ -161,7 +144,6 @@ static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArra
         res = vals[i] / res;
         for (int k = 0; k < colCount; k++) outputP[shift + k] += ((dataP[shift + k] - thisSlice[k]) * res);
       }
-      // shift += colCount;
     }
   };
 
@@ -180,13 +162,7 @@ BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_,
 
 template <typename T>
 static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
-  //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
-  //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
   auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-    //            return T((x + 2.) * sd::math::sd_sign<T,T>(grad) != sd::math::sd_sign<T,T>(eps)) + T(x * 0.8 *
-    //            sd::math::sd_sign<T,T>(grad) != sd::math::sd_sign<T,T>(eps));
-    // return T((x + 2.) * sd::math::sd_sign<T,T>(grad) == sd::math::sd_sign<T,T>(eps)) + T(x * 0.8 *
-    // sd::math::sd_sign<T,T>(grad) == sd::math::sd_sign<T,T>(eps));
     T res = sd::math::sd_sign<T, T>(grad) != sd::math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
     if (res < .01) res = .01;
     return res;
@@ -196,23 +172,7 @@ static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDAr
 }
 
 void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
-  //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
-  //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
   BUILD_SINGLE_SELECTOR(input->dataType(), barnes_gains_, (input, gradX, epsilon, output), SD_NUMERIC_TYPES);
-  //        auto signGradX = *gradX;
-  //        auto signEpsilon = *epsilon;
-  //        gradX->applyTransform(transform::Sign, &signGradX, nullptr);
-  //        epsilon->applyTransform(transform::Sign, &signEpsilon, nullptr);
-  //        auto leftPart = (*input + 2.) * signGradX;
-  //        auto leftPartBool = NDArrayFactory::create<bool>(leftPart.ordering(), leftPart.getShapeAsVector());
-  //
-  //        leftPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &leftPartBool, nullptr);
-  //        auto rightPart = *input * 0.8 * signGradX;
-  //        auto rightPartBool = NDArrayFactory::create<bool>(rightPart.ordering(), rightPart.getShapeAsVector());
-  //        rightPart.applyPairwiseTransform(pairwise::NotEqualTo, &signEpsilon, &rightPartBool, nullptr);
-  //        leftPart.assign(leftPartBool);
-  //        rightPart.assign(rightPartBool);
-  //        leftPart.applyPairwiseTransform(pairwise::Add, &rightPart, output, nullptr);
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray * input, NDArray* gradX, NDArray* epsilon, NDArray* output),
                       SD_NUMERIC_TYPES);

@@ -201,7 +201,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
         begin_idx = x_fwd;
         end_idx = begin_idx + 1;
         if (x_fwd < 0 || x_fwd >= size_idx) {
-          sd_printf("slice index %i of dimension %i out of bounds.\n", begin_idx, e);
           return false;
         }
       } else {
@@ -260,8 +259,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
   }
 
   std::vector<int> postshape;
-  // sd_printv("Preshape: ", preshape);
-
   final_shape->clear();
   for (auto gather_index : dense_spec.final_shape_gather_indices) {
     if (gather_index >= 0) {

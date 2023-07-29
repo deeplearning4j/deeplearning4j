@@ -563,7 +563,6 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_6) {
   expected.reshapei({3});
 #if 0
     //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
-    subArrHsvs.printShapeInfo("subArrHsvs");
 #endif
 
   Context ctx(1);

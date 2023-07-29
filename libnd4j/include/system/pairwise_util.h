@@ -347,31 +347,6 @@ int SD_HOST_DEVICE PrepareTwoRawArrayIter(int ndim, sd::LongType *shape, X *data
   *out_dataB = dataB;
   *out_ndim = ndim;
 
-#if 0
-    /* DEBUG */
-    {
-        printf("raw iter ndim %d\n", ndim);
-        printf("shape: ");
-        for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outShape[i]);
-        }
-        printf("\n");
-        printf("strides a: ");
-        for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outStridesA[i]);
-        }
-
-        printf("\n");
-        printf("strides b: ");
-
-        for (i = 0; i < ndim; ++i) {
-            printf("%d ", (int)outStridesB[i]);
-        }
-
-        printf("\n");
-
-    }
-#endif
 
   return 0;
 }

@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
       dims[d * 2 + 1] = 1;
     }
     auto tempIn((temp)(dims));
-    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, tempIn, *gradY);
+    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, -tempIn, *gradY);
   }
   return sd::Status::OK;
 }
