@@ -70,6 +70,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lz4.version>1.8.0</lz4.version>
 
+        <dokka.version>1.4.30</dokka.version>
+        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
 
         <java.version>11</java.version>
         <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
@@ -81,9 +84,6 @@
         <surefire.threads>1</surefire.threads>
 
         <test.nogc>true</test.nogc>
-        <dokka.version>1.4.30</dokka.version>
-        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-        <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
 
         <!--
         TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address
