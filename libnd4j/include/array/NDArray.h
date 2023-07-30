@@ -51,9 +51,12 @@
 #include <types/bfloat16.h>
 #include <iostream>
 namespace sd {
-
-
-
+#ifndef __JAVACPP_HACK__
+static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit);
+//used in google test for printing
+SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  const NDArray& arr);
+void PrintTo(const sd::NDArray &arr, std::ostream *os);
+#endif
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator+(const NDArray &arr, const T &scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
@@ -201,6 +204,9 @@ class SD_LIB_EXPORT NDArray {
 
  public:
   NDArray() = default;
+
+
+  void PrintTo(const sd::NDArray &arr, std::ostream *os);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
@@ -1148,10 +1154,6 @@ class SD_LIB_EXPORT NDArray {
    *  check whether array is unitary matrix
    */
   bool isUnitary();
-
-  //used in google test for printing
-  //See gtest-printers.h for more information.
-  void PrintTo(std::ostream*);
 
 
   std::ostream& operator<<(std::ostream &os);

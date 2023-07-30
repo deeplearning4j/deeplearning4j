@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-12.1</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
@@ -177,6 +177,12 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.maven.surefire</groupId>
+                <artifactId>maven-surefire-common</artifactId>
+                <version>${maven-surefire.version}</version>
             </dependency>
 
 
@@ -878,8 +884,9 @@
 
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
+                <version>${maven-surefire.version}</version>
 
                 <configuration>
                     <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
@@ -895,6 +902,9 @@
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <ASAN_SHADOW_OFFSET>0</ASAN_SHADOW_OFFSET>
+                        <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->
+                        <TEST_RUNNER_PREFIX>/usr/local/cuda-12.1/bin/compute-sanitizer</TEST_RUNNER_PREFIX>
+                        <TEST_FILTER></TEST_FILTER>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
                     <classpathDependencyExcludes>
@@ -914,6 +924,8 @@
                     <properties>
                         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
                     </properties>
+                   <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
+                    <jvm>${project.basedir}/bin/java</jvm>
                 </configuration>
             </plugin>
         </plugins>

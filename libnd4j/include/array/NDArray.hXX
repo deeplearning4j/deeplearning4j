@@ -942,7 +942,6 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 }
 
 
-
 //google test print statement
 static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
   // adapted printFormatted function
@@ -1007,8 +1006,13 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
   }
 }
 
+std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
+  printFormatted(os, arr, 0, -1);
+  return os;
+}
 
- std::ostream& NDArray::operator<<(std::ostream &os) {
+
+std::ostream& NDArray::operator<<(std::ostream &os) {
   syncToHost();
 
 
@@ -1051,12 +1055,6 @@ static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongTyp
 }
 
 
-
-
-//used in gtest printing
-void NDArray::PrintTo(std::ostream *os) {
-  *os << this;
-}
 
 #endif
 //end google test print statement
@@ -1165,9 +1163,11 @@ std::string NDArray::asString(sd::LongType limit) {
       os << toStringValue(this->e<sd::LongType>(e));
     else if (this->isB())
       os << toStringValue(this->e<bool>(e));
-    else if (this->isS())  // todo add utf16 and utf32
-      os << this->e<std::string>(e);
-    if (e < limit - 1) os << ", ";
+    else if (this->isS()) {  // todo add utf16 and utf32
+      if(this->dataType() == DataType::UTF8)
+        os << this->e<std::string>(e);
+
+    }if (e < limit - 1) os << ", ";
   }
   os << "]";
   return os.str();
@@ -5347,6 +5347,12 @@ void NDArray::printAllTensorsAlongDimension(const std::vector<LongType> &dimensi
   }
 
 }
+
+//used in gtest printing
+void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
+  *os << &arr;
+}
+
 void NDArray::printAllTensorsAlongDimension(const std::initializer_list<LongType> &dimensions) const {
   printAllTensorsAlongDimension(std::vector<sd::LongType>(dimensions));
 }
@@ -6147,5 +6153,4 @@ template SD_LIB_EXPORT NDArray operator/
 template SD_LIB_EXPORT NDArray operator/<NDArray, const NDArray &, void>(NDArray &&arr1, const NDArray &arr2);
 template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
 
-#endif
 }

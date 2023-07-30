@@ -125,7 +125,7 @@ TEST_F(ThreadsTests, test_span_converage_1) {
     for (int c = 1; c <= 64; c++) {
       for (int t = 1; t <= 64; t++) {
         auto threads = ThreadsHelper::numberOfThreads2d(t, b, c);
-        auto loop = ThreadsHelper::pickLoop2d(threads, b, c)
+        auto loop = ThreadsHelper::pickLoop2d(threads, b, c);
 
         auto sum = 0;
         for (auto a = 0; a < threads; a++) {
