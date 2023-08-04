@@ -46,7 +46,7 @@ if(SD_AURORA)
     endif()
 else()
 
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND NOT SD_CUDA)
         SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
     endif()
 

@@ -224,7 +224,7 @@ void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::
 
   sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
-  //for (sd::LongType i = 0; i < numArrays; ++i) delete inputs[i];
+  for (sd::LongType i = 0; i < numArrays; ++i) delete inputs[i];
 }
 
 template <typename T>

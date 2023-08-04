@@ -780,8 +780,6 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int nOut = 3;
 
         for(WorkspaceMode ws : WorkspaceMode.values()) {
-//            System.out.println("***** WORKSPACE: " + ws);
-
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Adam(0.01))
                     .trainingWorkspaceMode(ws)

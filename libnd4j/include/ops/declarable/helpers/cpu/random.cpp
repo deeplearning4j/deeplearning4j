@@ -139,12 +139,12 @@ void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArr
     for (sd::LongType e = 0; e < step; e++)
       if (directOutput) {
         outputBuf[pos + e] = copyAlpha->t<T>(e) <= 1
-                                 ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
-                                 : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
+                             ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
+                             : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
       } else {
         output->r<T>(pos + e) = copyAlpha->t<T>(e) <= 1
-                                    ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
-                                    : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
+                                ? gammaLess(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f))
+                                : gammaGreat(rng, copyAlpha->t<T>(e), beta ? copyBeta->t<T>(e) : T(1.f));
       }
   }
 
@@ -160,7 +160,7 @@ void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArra
 }
 BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
-                       NDArray* output),
+                          NDArray* output),
                       SD_FLOAT_NATIVE);
 
 /*

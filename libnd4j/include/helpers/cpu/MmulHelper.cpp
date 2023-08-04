@@ -342,7 +342,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
                                         (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
     }
 
-    if (pA != A) delete pA;
+     if (pA != A) delete pA;
   }
 
   return Y;

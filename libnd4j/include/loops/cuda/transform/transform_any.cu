@@ -27,7 +27,9 @@
 #include <types/types.h>
 #include <execution/cuda/DeviceValidator.h>
 using namespace simdOps;
+#include <exceptions/backward.hpp>
 
+using namespace backward;
 
 
 template <typename X, typename Z, typename OpType>
@@ -119,6 +121,8 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_
                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                     const sd::LongType *tadOffsets) {
 
+  if(stream == nullptr)
+    THROW_EXCEPTION("Found null stream when executing transformAny");
 
 
   transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

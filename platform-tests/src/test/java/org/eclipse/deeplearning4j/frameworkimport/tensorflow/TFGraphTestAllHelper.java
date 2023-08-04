@@ -30,6 +30,7 @@ import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.eclipse.deeplearning4j.tests.extensions.TFTestAllocationHandler;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
@@ -144,9 +145,13 @@ public class TFGraphTestAllHelper {
     public static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
         String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
         List<Object[]> modelParams = new ArrayList<>();
+        //set the tf allocation handler model for controlling deallocations of these variables later
+        //after the test is done
         for (int i = 0; i < modelNames.length; i++) {
             System.out.println("Loading model " + modelNames[i] + " - " + (i + 1) + " of " + modelNames.length);
             Object[] currentParams = new Object[4];
+            System.setProperty(TFTestAllocationHandler.CURRENT_MODEL_PROPERTY,modelNames[i]);
+
             System.out.println("Reading input variables");
             currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
             System.out.println("Reading output variables");
@@ -176,6 +181,7 @@ public class TFGraphTestAllHelper {
             outputsToCheck.add(s);
         }
 
+        System.out.println("Getting graph for " + modelName);
 
         //Collect coverage info about ops
         Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
@@ -476,7 +482,13 @@ public class TFGraphTestAllHelper {
             String nestedName = resources[i].getURL().toString().split(base_dir + "/")[1];
             exampleNames[i] = nestedName.replaceAll(Pattern.quote(base_dir), "").replaceAll("/" + modelFileName, "");
         }
-        return exampleNames;
+
+        //only load models we need
+        if(TestTFGraphAllSameDiff.EXECUTE_ONLY_MODELS.isEmpty())
+            return exampleNames;
+        else {
+            return Arrays.stream(exampleNames).filter(s -> TestTFGraphAllSameDiff.EXECUTE_ONLY_MODELS.contains(s)).toArray(String[]::new);
+        }
     }
 
     protected static Map<String, INDArray> inputVars(String modelName, String base_dir, File localTestDir) throws IOException {
@@ -767,8 +779,8 @@ public class TFGraphTestAllHelper {
                             case HALF:
                             case BFLOAT16:
                                 double[] dArr = new double[cLines.length];
-                                int x=0;
-                                while(x < dArr.length){
+                                int x = 0;
+                                while(x < dArr.length) {
                                     dArr[x] = parseDouble(cLines[x]);
                                     x++;
                                 }

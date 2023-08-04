@@ -92,7 +92,7 @@ Context::~Context() {
   this->_fastpath_in.clear();
   this->_fastpath_out.clear();
 
-  for (auto v : _handles) delete v;
+ // for (auto v : _handles) delete v;
 
   if (_context != nullptr) delete _context;
 }
@@ -235,9 +235,9 @@ void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *arr
       sd_debug("Context: After getting variable in push ndarray to variable space\n",0);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
-          if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
+        /*  if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
             delete var->getNDArray();
-          }
+          } */
           var->setNDArray(array);
           var->markRemovable(removable);
         }

@@ -134,7 +134,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
   helpers::preluBP(block.launchContext(), *input, *alpha, *dLdO, *dLdI, *dLdA);
 
   if (alphaShape != expectedAlphaShape) {
-    delete alpha;
+   delete alpha;
     delete dLdA;
   }
 

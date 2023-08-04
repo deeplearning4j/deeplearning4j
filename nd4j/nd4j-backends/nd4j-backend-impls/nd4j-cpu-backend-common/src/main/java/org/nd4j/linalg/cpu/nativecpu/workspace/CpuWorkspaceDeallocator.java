@@ -68,7 +68,7 @@ public class CpuWorkspaceDeallocator implements Deallocator {
     public void deallocate() {
         log.trace("Deallocating CPU workspace");
 
-        // purging workspace planes
+       // purging workspace planes
         if (pointersPair != null && (pointersPair.getDevicePointer() != null || pointersPair.getHostPointer() != null)) {
             if (pointersPair.getDevicePointer() != null) {
                 Nd4j.getMemoryManager().release(pointersPair.getDevicePointer(), MemoryKind.DEVICE);

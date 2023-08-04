@@ -373,7 +373,6 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
   if (node != nullptr) {
     this->_id = node->id();
-    // this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
     this->_opNum = node->opNum();
     this->_opType = node->opType();
 

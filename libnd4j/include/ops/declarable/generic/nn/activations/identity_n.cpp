@@ -28,7 +28,6 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
-  // just for lulz
   if (!block.isInplace()) {
     for (sd::LongType i = 0; i < block.width(); ++i) {
       auto x = INPUT_VARIABLE(i);

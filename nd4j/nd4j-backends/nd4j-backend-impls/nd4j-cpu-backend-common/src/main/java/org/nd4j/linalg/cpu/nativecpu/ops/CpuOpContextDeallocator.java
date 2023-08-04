@@ -30,10 +30,13 @@ import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class CpuOpContextDeallocator implements Deallocator {
     private transient final OpaqueContext context;
     private LogEvent logEvent;
     private long ctxId = -1;
+    private AtomicInteger numTimesCalled = new AtomicInteger(0);
 
 
     public CpuOpContextDeallocator(CpuOpContext ctx) {
@@ -55,6 +58,11 @@ public class CpuOpContextDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
+        if(numTimesCalled.get() > 0)
+            return;
+
+        numTimesCalled.incrementAndGet();
+
         //update the log event with the actual time of de allocation and then
         //perform logging
         if(logEvent != null) {
@@ -67,7 +75,7 @@ public class CpuOpContextDeallocator implements Deallocator {
             OpContextTracker.getInstance().deallocateContext(ctxId);
         }
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
+        //NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
     }
 
     @Override

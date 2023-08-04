@@ -37,8 +37,8 @@ sd::Status LogicNextIeration::processNode(Graph *graph, Node *node) {
   else
     lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
-  //            if (lvar->hasNDArray())
-  //                delete lvar->getNDArray();
+  if (lvar->hasNDArray())
+    delete lvar->getNDArray();
 
   auto array = var->getNDArray();
   lvar->setNDArray(array);

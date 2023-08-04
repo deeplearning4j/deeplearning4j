@@ -128,7 +128,6 @@ ThreadPool::~ThreadPool() {
     // release queue and thread
     delete _queues[e];
     _threads[e].detach();
-    // delete _interfaces[e];
   }
 
   while (!_tickets.empty()) {

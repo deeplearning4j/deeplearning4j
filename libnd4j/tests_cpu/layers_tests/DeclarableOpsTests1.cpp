@@ -756,40 +756,7 @@ TEST_F(DeclarableOpsTests1, SubtractTest_2) {
   ASSERT_TRUE(res.at(0)->equalsTo(&exp));
 }
 
-TEST_F(DeclarableOpsTests1, TestRng1) {
-  /*
-      sd::LongType *buffer = new sd::LongType[100000];
 
-      sd::random::RandomBuffer *rng = (sd::random::RandomBuffer *) initRandom(nullptr, 123, 100000, (sd::Pointer)
-     buffer);
-
-      if (rng == nullptr)
-          THROW_EXCEPTION("RNG initialization failed");
-
-      auto x = NDArrayFactory::create_<float>('c', {5, 3});
-      auto variableSpace = new VariableSpace();
-      variableSpace->putVariable(-1, x);
-      auto block = new Context(1, variableSpace, true);
-      block->fillInputs({-1});
-      block->setRNG(rng);
-      block->getTArguments()->push_back(0.0f);
-      block->getTArguments()->push_back(1.0f);
-
-      sd::ops::randomuniform uniform;
-
-      sd::Status status = uniform.execute(block);
-
-      ASSERT_EQ(sd::Status::OK, status);
-
-      ASSERT_TRUE(x->sumNumber() > 0.0);
-
-      destroyRandom((sd::Pointer) rng);
-      delete[] buffer;
-
-      delete variableSpace;
-      delete block;
-      */
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeSumTest1) {

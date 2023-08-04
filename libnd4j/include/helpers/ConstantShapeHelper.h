@@ -44,7 +44,6 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   ConstantShapeHelper();
 
  public:
-  ~ConstantShapeHelper() = default;
 
 #if defined(__NEC__)
   //Warning: Use it with caution. please, restore it to the previous state to avoid interfering internals
@@ -59,6 +58,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
 
   static ConstantShapeHelper& getInstance();
 
+  ~ConstantShapeHelper() {}
   ConstantShapeBuffer* bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<sd::LongType>& shape);
   ConstantShapeBuffer* bufferForShapeInfo(ShapeDescriptor *descriptor);
   ConstantShapeBuffer* bufferForShapeInfo(const sd::LongType* shapeInfo);

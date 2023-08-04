@@ -113,7 +113,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
 
   STORE_RESULT(*output);
 
-  if (weightsBroad != weights) delete weightsBroad;
+   if (weightsBroad != weights) delete weightsBroad;
 
   return sd::Status::OK;
 }
@@ -287,7 +287,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 
   dLdl->assign(-(*dLdp));
 
-  if (weightsBroad != weights) delete weightsBroad;
+   if (weightsBroad != weights) delete weightsBroad;
 
   return sd::Status::OK;
 }

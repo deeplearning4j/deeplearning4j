@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpContextTracker;
@@ -105,7 +106,9 @@ public class DeallocatorService {
      */
     public  interface CustomDeallocatorListener {
 
-       void registerDeallocatable(DeallocatableReference reference);
+        void registerDataBuffer(DataBuffer reference);
+
+        void registerDeallocatable(DeallocatableReference reference);
         /**
          * Adds a listener for deallocation.
          * This intercepts deallocate calls and calls them when the user is ready.
@@ -115,7 +118,11 @@ public class DeallocatorService {
     }
 
 
-
+    public void registerDataBufferToListener(DataBuffer reference) {
+        for(CustomDeallocatorListener listener : listeners) {
+            listener.registerDataBuffer(reference);
+        }
+    }
     public void registerDeallocatbleToListener(DeallocatableReference reference) {
         for(CustomDeallocatorListener listener : listeners) {
             listener.registerDeallocatable(reference);
@@ -226,6 +233,10 @@ public class DeallocatorService {
 
             }
 
+            if(!getListeners().isEmpty() && deallocatable instanceof DataBuffer) {
+                registerDataBufferToListener((DataBuffer) deallocatable);
+            }
+
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
@@ -277,7 +288,7 @@ public class DeallocatorService {
                                 referenceTypes.remove(reference.getId());
                             }
 
-                            if(!listeners.isEmpty()) {
+                            if(listeners.isEmpty()) {
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
                                     referenceMap.remove(reference.getId());
@@ -297,7 +308,7 @@ public class DeallocatorService {
                         if (reference == null)
                             continue;
 
-                        if(!listeners.isEmpty()) {
+                        if(listeners.isEmpty()) {
                             reference.deallocate();
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());

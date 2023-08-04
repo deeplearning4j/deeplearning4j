@@ -165,7 +165,7 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
     } else if (descriptor.isInteger()) {
       BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
-                             descriptor.length(), cbuff->pointer()),
+                                descriptor.length(), cbuff->pointer()),
                             (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES);
     }
 

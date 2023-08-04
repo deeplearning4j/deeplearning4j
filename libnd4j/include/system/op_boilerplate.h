@@ -2644,11 +2644,11 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #if !defined(_RELEASE)
     sd::memory::MemoryTracker::getInstance().countOut(var);
 #endif
-#if defined(SD_ALIGNED_ALLOC)
+/*#if defined(SD_ALIGNED_ALLOC)
     free(var);
 #else
     delete[] var;
-#endif
+#endif */
   }
 }
 

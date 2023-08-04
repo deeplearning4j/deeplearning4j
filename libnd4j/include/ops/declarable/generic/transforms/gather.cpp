@@ -144,8 +144,8 @@ DECLARE_SHAPE_FN(gather) {
 
     for (sd::LongType i = axis + 1; i < inputRank; ++i) outputShapeInfo[shapeIdx++] = inputShapeInfo[i + 1];
   } else
-    REQUIRE_TRUE(false, 0,
-                 "GATHER op: indices should be provided either as additional input array or as IntArguments !");
+  REQUIRE_TRUE(false, 0,
+               "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
   ShapeUtils::updateStridesAndType(outputShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 

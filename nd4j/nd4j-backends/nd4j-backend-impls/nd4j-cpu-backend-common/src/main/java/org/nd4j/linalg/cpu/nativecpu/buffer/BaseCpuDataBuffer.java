@@ -67,7 +67,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return ptrDataBuffer;
@@ -872,8 +872,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-        if(!released)
+        if(!released.get())
             ptrDataBuffer.closeBuffer();
+
+
 
     }
 

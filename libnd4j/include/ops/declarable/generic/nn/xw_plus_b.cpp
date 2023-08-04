@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
       *z += *b;
     }
   } else {
-    
+
     if(b->rankOf() == 1) {
       b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{1,INPUT_VARIABLE(2)->lengthOf()}));
     }

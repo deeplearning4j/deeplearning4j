@@ -62,7 +62,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void close() {
-        purge();
+     //   purge();
         if(OpContextTracker.getInstance().isEnabled()) {
             OpContextTracker.getInstance().deallocateContext(this);
             Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);

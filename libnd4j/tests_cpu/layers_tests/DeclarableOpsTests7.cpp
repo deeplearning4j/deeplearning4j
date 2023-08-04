@@ -5574,8 +5574,6 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Dot_BP_2) {
 
   ASSERT_TRUE(expX.equalsTo(outputX));
   ASSERT_TRUE(expY.equalsTo(outputY));
-
-  //    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

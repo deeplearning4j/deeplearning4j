@@ -74,8 +74,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
                               extraParam0);
 
   if (!isNCHW) {
-    delete input;
-    delete output;
+     delete input;
+      delete output;
   }
 
   return sd::Status::OK;
@@ -121,7 +121,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   // allocate memory for new shape
-  sd::LongType newShape[4];
+  sd::LongType *newShape = new sd::LongType[4];
   if (isNCHW) {
     newShape[0] = bS;
     newShape[1] = iD;
@@ -136,6 +136,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), newShape, 4);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   delete desc;
+  delete[] newShape;
   return ret;
 }
 

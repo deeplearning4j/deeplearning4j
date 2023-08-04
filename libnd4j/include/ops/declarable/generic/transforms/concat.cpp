@@ -123,8 +123,6 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
-  // delete dynamically allocated vectors with length=1
- // for (sd::LongType index : arrsToDelete) delete nonEmptyArrs[index];
 
   return sd::Status::OK;
 }

@@ -33,10 +33,10 @@ namespace ops {
 namespace helpers {
 
 
- void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
-                   int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
-                   sd::NDArray *all) {
-   sd::NDArray *allIndex = nullptr;
+void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
+           int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
+           sd::NDArray *all) {
+  sd::NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
@@ -175,8 +175,8 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
 
 BUILD_SINGLE_TEMPLATE(template void bgemm_,
                       ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
-                           int lda,  int ldb,  int ldc),
+                          NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
+                          int lda,  int ldb,  int ldc),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

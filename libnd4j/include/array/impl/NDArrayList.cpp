@@ -40,7 +40,7 @@ NDArrayList::NDArrayList(int height, bool expandable) {
 
 NDArrayList::~NDArrayList() {
   sd_debug("\nDeleting NDArrayList: [%i]\n", _chunks.size());
-  for (auto const& v : _chunks) delete v.second;
+ // for (auto const& v : _chunks) delete v.second;
 
   _chunks.clear();
 }

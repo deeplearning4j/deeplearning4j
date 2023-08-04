@@ -187,32 +187,4 @@ TEST_F(VariableSpaceTest, CloneTests_2) {
   ASSERT_TRUE(spaceA.hasVariable(pair));
 }
 
-TEST_F(VariableSpaceTest, Test_DType_Conversion_1) {
-  /*
-  VariableSpace spaceA;
 
-  auto arrayA = NDArrayFactory::create_<float>('c', {3, 3});
-  arrayA->assign(1.0);
-
-  auto variableA = new Variable(arrayA, "alpha");
-
-  std::string str("alpha");
-  std::pair<int, int> pair(2, 3);
-
-  spaceA.putVariable(pair, variableA);
-
-
-  auto sd = spaceA.template asT<double>();
-  auto sf = sd->template asT<float>();
-
-  ASSERT_TRUE(sf->hasVariable(pair));
-
-  auto xf = sf->getVariable(pair)->getNDArray();
-
-  ASSERT_TRUE(arrayA->isSameShape(xf));
-  ASSERT_TRUE(arrayA->equalsTo(xf));
-
-  delete sd;
-  delete sf;
-  */
-}

@@ -79,8 +79,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   ConvolutionUtils::pooling3d(block, *input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
 
   if (!isNCDHW) {
-    delete input;
-    delete output;
+     delete input;
+     delete output;
   }
 
   return sd::Status::OK;

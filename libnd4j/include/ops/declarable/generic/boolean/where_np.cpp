@@ -105,7 +105,6 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
 
     REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                  block.width());
-    //                if (output->isEmpty())
     sd::LongType width = condition->rankOf();
 
     sd::ops::Where op;

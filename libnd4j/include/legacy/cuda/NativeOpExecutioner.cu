@@ -846,9 +846,6 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) {
-    return;
-  }
 
   if (xType != zType) {
     THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
@@ -876,10 +873,6 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext* lc, int opNum, vo
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) {
-    return;
-  }
-
   if (!DataTypeUtils::isB(zType)) {
     THROW_EXCEPTION("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
   }
@@ -906,21 +899,11 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum, voi
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) return;
-
-
-  if (opNum == sd::transform::Assign && shape::order(hXShapeInfo) == shape::order(hZShapeInfo) &&
-      shape::order(hXShapeInfo) == 'c' && xType == zType && shape::elementWiseStride(hXShapeInfo) == 1 &&
-      shape::elementWiseStride(hZShapeInfo) == 1) {
-    cudaMemcpyAsync(dZ, dX, shape::length(hXShapeInfo) * sd::DataTypeUtils::sizeOfElement(xType),
-                    cudaMemcpyDeviceToDevice, *stream);
-  } else {
-    dim3 launchDims = getLaunchDims("transformScan");
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                          ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                   dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-  }
+  dim3 launchDims = getLaunchDims("transformScan");
+  BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
+                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 }
 

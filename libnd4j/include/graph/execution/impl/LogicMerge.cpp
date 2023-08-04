@@ -82,8 +82,8 @@ sd::Status LogicMerge::processNode(Graph *graph, Node *node) {
       else
         lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
-      //                    if (lvar->hasNDArray())
-      //                        delete lvar->getNDArray();
+      if (lvar->hasNDArray())
+        delete lvar->getNDArray();
 
       auto array = var->getNDArray();
       lvar->setNDArray(array);
@@ -104,12 +104,12 @@ sd::Status LogicMerge::processNode(Graph *graph, Node *node) {
         else
           lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
 
-        if (lvar->hasNDArray()) delete lvar->getNDArray();
+          if (lvar->hasNDArray()) delete lvar->getNDArray();
 
         auto array = var->getNDArray();
         lvar->setNDArray(array);
         lvar->markReadOnly(true);
-        // lvar->markExternal(false);h
+         lvar->markExternal(false);
 
         break;
       }

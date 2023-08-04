@@ -209,7 +209,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if(op.z() != null){
                 Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
                         " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
-                op.z().assign(op.x());
+                op.setZ(op.x().dup());
                 return op.z();
             } else {
                 op.setZ(op.x().dup());
@@ -429,10 +429,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(ReduceOp op) {
         checkForCompression(op);
 
-        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
-            if(op.z() != null){
+            if(op.z() != null) {
                 Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
                         " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
                 op.z().assign(op.x());
@@ -848,6 +848,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 if(!x.isScalar() && !z.isScalar())
                     Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
                             " Got: x=%ndShape, z=%ndShape", x, z);
+                //assign will crash if z < x. Just return empty z.
+                if(z.length() < x.length())
+                    return context;
+
                 z.assign(x);
                 return context;
             } else {
@@ -1277,7 +1281,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        //validateDataType(Nd4j.dataType(), op);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -1333,14 +1336,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         PointerPointer xShapeInfoHostPointer =
                 extraz.get().put(AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer()), // 0
-                        (Pointer) context.getOldStream(), // 1
+                        context.getOldStream(), // 1
                         allocator.getDeviceIdPointer(), // 2
                         context.getBufferAllocation(), // 3
                         context.getBufferReduction(), // 4
                         context.getBufferScalar(), // 5
                         context.getBufferSpecial(), // 6
-                        (Pointer) hostYShapeInfo, // 7
-                        (Pointer) hostZShapeInfo, // 8
+                        hostYShapeInfo, // 7
+                        hostZShapeInfo, // 8
                         hostTadShapeInfo, // 9
                         devTadShapeInfo, // 10
                         devTadOffsets, // 11
@@ -1350,7 +1353,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimensionDevPointer, // special pointer for IsMax  // 15
                         dimensionHostPointer, // special pointer for IsMax  // 16
                         retPointer, // special pointer for IsMax // 17
-                        (Pointer) new CudaPointer(dimension == null ? 0 : dimension.length),
+                        new CudaPointer(dimension == null ? 0 : dimension.length),
                         retHostShape);
 
 
@@ -2114,8 +2117,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        val dbf = nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        LongPointer shape2 = new LongPointer(shape);
+        LongPointer stride2 = new LongPointer(stride);
+        shape2.retainReference();
+        stride2.retainReference();
+        val dbf = nativeOps.shapeBuffer(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, empty);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -2123,6 +2129,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
+        shape2.deallocate();
+        stride2.deallocate();
         return result;
     }
 
@@ -2131,14 +2139,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        val dbf = nativeOps.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        LongPointer shape2 = new LongPointer(shape);
+        LongPointer stride2 = new LongPointer(stride);
+        shape2.retainReference();
+        stride2.retainReference();
+        val dbf = nativeOps.shapeBufferEx(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, extras);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
-
+        shape2.deallocate();
+        stride2.deallocate();
         return result;
     }
 

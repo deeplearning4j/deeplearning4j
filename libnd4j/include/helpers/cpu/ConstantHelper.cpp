@@ -46,13 +46,9 @@ ConstantHelper::ConstantHelper() {
   }
 }
 
-ConstantHelper::~ConstantHelper() {
-  for (const auto &v : _cache) {
-    for (const auto &c : v) {
-      delete c.second;
-    }
-  }
-}
+
+
+ConstantHelper::~ConstantHelper() {}
 
 ConstantHelper &ConstantHelper::getInstance() {
   static ConstantHelper instance;

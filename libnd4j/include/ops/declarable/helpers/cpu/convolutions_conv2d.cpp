@@ -98,7 +98,6 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   //----- add biases if required -----//
   if (bias)
-    // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
   if (!isNCHW) delete input;

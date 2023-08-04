@@ -251,7 +251,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
   auto z = mmul(*x, *Wx) + mmul(*hI, *Wr);  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-                                            // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
 
   // add biases if they are given
   if (b != nullptr) z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
@@ -300,7 +300,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
 
   z->assign(mmul(*x, *Wx) +
             mmul(*hI, *Wr));  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-                              // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
   // add biases if they are given
   if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
@@ -659,7 +659,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
     if (h) hSet = new ResultSet(h->allTensorsAlongDimension(*dims));    //  sub-arrays with shape [nOut]
     if (ht) htSet = new ResultSet(ht->allTensorsAlongDimension({1}));  //  sub-arrays with shape [nOut]
 
-    delete dims;
+     delete dims;
   }
 
   // loops

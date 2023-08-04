@@ -235,6 +235,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if(!x.isScalar() && !z.isScalar())
                     Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
                             " Got: x=%ndShape, z=%ndShape", x, z);
+                //assign will crash if z < x. Just return empty z.
+                if(z.length() < x.length())
+                    return z;
+
+
                 z.assign(x);
                 return z;
             } else {
@@ -1469,7 +1474,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             result.add(getShapeFromPointer(new PagedPointer(loop.getShape(ptrptr, e)).asLongPointer()));
 
 
-        loop.deleteShapeList(ptrptr);
+        //loop.deleteShapeList(ptrptr);
 
         if(log.isTraceEnabled()) {/**/
             String[] arr = new String[result.size()];
@@ -1564,7 +1569,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             newMap.put(nodeName, array);
         }
 
-        loop.deleteVariablesSet(result);
+        // loop.deleteVariablesSet(result);
 
         return newMap;
     }
@@ -1757,8 +1762,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Shape.setElementWiseStride(merged,(int) elementWiseStride);
         LongPointer longPointer = new LongPointer(merged);
         loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
-        longPointer.deallocate();
-        longPointer.releaseReference();
+         longPointer.deallocate();
+         longPointer.releaseReference();
         return ret;
     }
 
@@ -1772,7 +1777,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        loop.deleteConstantShapeBuffer(dbf);
+        //loop.deleteConstantShapeBuffer(dbf);
 
         return result;
     }

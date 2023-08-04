@@ -276,7 +276,7 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   sd::ops::helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, transA2, transB2, M2, N2, k2, lda2, ldb2, ldc2);
 
 
-  if(alphaInput != alpha) {
+   if(alphaInput != alpha) {
     delete alphaInput;
   }
 

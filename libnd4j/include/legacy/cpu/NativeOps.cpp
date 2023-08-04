@@ -154,26 +154,6 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 //note this is outside extern C. This is fine.
 
 
-//sets the file to be written to.
-void setInstrumentOut(char *instrumentOutPath) {
-  if (instrumentOutPath != nullptr) {
-    if(instrumentFile != nullptr)
-      fclose(instrumentFile);
-    instrumentFile = fopen(instrumentOutPath, "w");
-    if (instrumentFile == nullptr) {
-      perror("Failed to open profiler output file");
-      exit(EXIT_FAILURE);
-    }
-  }
-}
-
-//clears the file.
-
-void closeInstrumentOut() {
-  if(instrumentFile != nullptr)
-    fclose(instrumentFile);
-}
-
 #endif
 
 
@@ -611,8 +591,6 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
                     const sd::LongType *hZShapeInfo, const sd::LongType *dZShapeInfo) {
   try {
     OpaqueDataBuffer::preparePrimaryUse({dbZ}, {dbX});
-    auto dbxSpecial = dbX != nullptr ? dbX->special() : nullptr;
-    sd_printf("After dbz special\n",0);
     NativeOpExecutioner::execReduceBoolScalar(nullptr, opNum, dbX != nullptr ? dbX->primary() : nullptr, hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo,
                                               extraParams, dbZ != nullptr ? dbZ->primary() : nullptr, hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, dZShapeInfo);
     OpaqueDataBuffer::registerPrimaryUse({dbZ}, {dbX});
@@ -1900,7 +1878,7 @@ sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) {
 void deleteShapeList(sd::Pointer shapeList) {
   auto list = reinterpret_cast<sd::ShapeList *>(shapeList);
 
-  // list->destroy();
+  list->destroy();
   delete list;
 }
 
@@ -1955,9 +1933,9 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
 
 sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueDataBuffer **inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+                                            sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                            sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
+                                            int numDArgs) {
 
   sd::graph::VariableSpace varSpace;
   Context block(2, &varSpace);
@@ -2020,14 +1998,14 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+                                        sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                        sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
+                                        int numDArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
     return _calculateOutputShapesBuffer(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs);
+                                        numIArgs, bArgs, numBArgs, dArgs, numDArgs);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -2295,9 +2273,9 @@ sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::L
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
 
-  for (auto v : inputs) delete v;
+   for (auto v : inputs) delete v;
 
-  for (auto v : outputs) delete v;
+   for (auto v : outputs) delete v;
 
   return hZ;
 }
@@ -2426,7 +2404,9 @@ void deleteLongArray(sd::Pointer pointer) {
   delete[] ptr;
 }
 
-void deleteVariablesSet(sd::graph::VariablesSet *pointer) { delete pointer; }
+void deleteVariablesSet(sd::graph::VariablesSet *pointer) {
+  delete pointer;
+}
 
 const char *getAllOperations() { return sd::OpTracker::getInstance().exportOperations(); }
 
@@ -2752,7 +2732,9 @@ char *getUtf8StringBuffer(sd::Pointer *extraPointers, sd::Pointer ptr) {
   return reinterpret_cast<sd::utf8string *>(ptr)->_buffer;
 }
 
-void deleteUtf8String(sd::Pointer *extraPointers, sd::Pointer ptr) { delete (reinterpret_cast<sd::utf8string *>(ptr)); }
+void deleteUtf8String(sd::Pointer *extraPointers, sd::Pointer ptr) {
+  delete (reinterpret_cast<sd::utf8string *>(ptr));
+}
 
 template <typename I>
 static void _scatterUpdate(sd::Pointer *extraPointers, int opCode, int numOfSubArrs, void *hX,
@@ -2885,7 +2867,9 @@ void deleteConstantDataBuffer(sd::ConstantDataBuffer *ptr) {
   //constant buffers otherwise should stick around
 }
 
-void deleteTadPack(sd::TadPack *ptr) { delete ptr; }
+void deleteTadPack(sd::TadPack *ptr) {
+  delete ptr;
+}
 
 sd::ConstantDataBuffer *constantBufferLong(sd::DataType dtype, const sd::LongType *data, int length) { return nullptr; }
 
@@ -2985,7 +2969,9 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
-void deleteGraphContext(sd::graph::Context *ptr) { delete ptr; }
+void deleteGraphContext(sd::graph::Context *ptr) {
+  delete ptr;
+}
 
 void ctxAllowHelpers(OpaqueContext *ptr, bool reallyAllow) { ptr->allowHelpers(reallyAllow); }
 
@@ -3058,7 +3044,9 @@ double getRandomGeneratorNextDouble(sd::graph::RandomGenerator *ptr) {
   return result;
 }
 
-void deleteRandomGenerator(sd::graph::RandomGenerator *ptr) { delete ptr; }
+void deleteRandomGenerator(sd::graph::RandomGenerator *ptr) {
+  delete ptr;
+}
 
 
 void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned int *shape, const unsigned int ndims,
@@ -3202,7 +3190,7 @@ void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) {
 int binaryLevel() {
 #ifdef CPU_FEATURES
 
-#if defined(F_X64)
+  #if defined(F_X64)
   return 1;
 #elif defined(F_AVX2)
   return 2;
@@ -3395,7 +3383,9 @@ void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) { dataBuffer->set
 
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
 
-void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(); }
+void dbClose(OpaqueDataBuffer *dataBuffer) {
+  dataBuffer->getDataBuffer()->close();
+}
 
 void setVedaDeviceLibFolder(std::string path) {
   sd::Environment::getInstance().setVedaDeviceDir(path);

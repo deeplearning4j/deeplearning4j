@@ -90,7 +90,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return ptrDataBuffer;
@@ -113,8 +113,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
 
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
+
     }
 
     /**
@@ -303,7 +304,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public boolean shouldDeAllocate() {
-        return !released && !isConstant();
+        return !released.get() && !isConstant();
     }
 
     protected void initHostPointerAndIndexer() {
@@ -621,7 +622,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     @Override
     public long address() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         if(allocationPoint.getHostPointer() == null)
@@ -636,7 +637,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer pointer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         // FIXME: very bad thing,
@@ -1434,7 +1435,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer addressPointer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return AtomicAllocator.getInstance().getHostPointer(this);
@@ -2026,7 +2027,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     protected void release() {
-        if (!released) {
+        if (!released.get()) {
             ptrDataBuffer.closeBuffer();
             allocationPoint.setReleased(true);
         }

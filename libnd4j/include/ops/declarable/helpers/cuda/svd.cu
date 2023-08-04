@@ -185,11 +185,11 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
     VT->assign(pVT);
   }
 
-  for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
+  //for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
-  if (rWork) cudaFree(rWork);
+  // if (devInfo) cudaFree(devInfo);
+  // if (dWork) cudaFree(dWork);
+  // if (rWork) cudaFree(rWork);
 
 }
 

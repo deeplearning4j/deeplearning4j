@@ -375,7 +375,7 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
 
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-  // RELEASE(shapeInfoNew, workspace);
+  RELEASE(shapeInfoNew, workspace);
   delete descriptor;
   return ret;
 }

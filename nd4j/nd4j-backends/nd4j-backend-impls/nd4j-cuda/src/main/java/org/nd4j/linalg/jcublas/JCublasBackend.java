@@ -106,7 +106,7 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public String buildInfo() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+        return "";
     }
 
     @Override

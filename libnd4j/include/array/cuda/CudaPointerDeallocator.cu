@@ -22,9 +22,13 @@
 //  @author raver119@gmail.com
 //
 #include <array/CudaPointerDeallocator.h>
+#include <iostream>
 
 namespace sd {
 
-void CudaPointerDeallocator::release(void *ptr) { cudaFree(ptr); }
+void CudaPointerDeallocator::release(void *ptr) {
+  printf("Calling cuda free\n");
+  cudaFree(ptr);
+}
 
 }  // namespace sd

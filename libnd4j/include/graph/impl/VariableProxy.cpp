@@ -32,7 +32,9 @@ VariableProxy::VariableProxy(VariableSpace *ref) {
   _current = new VariableSpace();
 }
 
-VariableProxy::~VariableProxy() { delete _current; }
+VariableProxy::~VariableProxy() {
+  delete _current;
+}
 
 int VariableProxy::numberOfPlaceholders() { return _backed->numberOfPlaceholders(); }
 

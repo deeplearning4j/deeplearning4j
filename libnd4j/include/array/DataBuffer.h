@@ -31,7 +31,7 @@
 #include <system/op_boilerplate.h>
 
 #include <cstring>
-
+#include <mutex>
 namespace sd {
 
 class SD_LIB_EXPORT DataBuffer {
@@ -44,7 +44,7 @@ class SD_LIB_EXPORT DataBuffer {
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
   std::atomic<int> _deviceId;
-
+  std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
 #if defined(__CUDABLAS__) || defined(HAVE_VEDA)
   mutable std::atomic<sd::LongType> _counter;

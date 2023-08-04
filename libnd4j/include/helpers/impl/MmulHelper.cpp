@@ -63,10 +63,10 @@ sd::NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* A, const sd::NDArray* 
 
   c->reshapei(outShape);
 
-  if (aP != aPR) delete aPR;
-  if (bP != bPR) delete bPR;
-  if (A != aP) delete aP;
-  if (B != bP) delete bP;
+   if (aP != aPR) delete aPR;
+   if (bP != bPR) delete bPR;
+   if (A != aP) delete aP;
+   if (B != bP) delete bP;
 
   return c;
 }
@@ -216,6 +216,7 @@ void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::N
     // always points on c->buffer()
     cP->assign(cPR);
   }
+
   if (aP != aPR) delete aPR;
   if (bP != bPR) delete bPR;
   if (a != aP) delete aP;
@@ -337,8 +338,8 @@ NDArray* sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b,
 
   NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
-  if (aPR != a) delete aPR;
-  if (bPR != b) delete bPR;
+   if (aPR != a) delete aPR;
+   if (bPR != b) delete bPR;
   return result;
 }
 #endif
@@ -376,8 +377,8 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
     NDArray* A2 = new NDArray(A->reshape(A->ordering(), {1, A->lengthOf()}));                       // A{M} -> A2{1,M}
     NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), {1, C->lengthOf()}, false)) : nullptr;  // C{N} -> C2{1,N}
     auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                        // result{1,N}
-    // delete A2;
-    // delete C2;
+    delete A2;
+    delete C2;
 
     if (!C) {
       result->reshapei({result->lengthOf()});  // result{1,N} -> result{N}

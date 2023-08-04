@@ -475,18 +475,27 @@
                                 <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>
                             </linkPaths>
                             <compilerOptions>
-                                    <compilerOption>${javacpp.compiler.options}</compilerOption>
-                                    <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
-                                    <compilerOption>-finstrument-functions</compilerOption>
-                                    <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
-                                    <compilerOption>-rdynamic</compilerOption>
-                                    <!-- Need these 2 libraries including bin utils for handling address decoding-->
-                                    <compilerOption>-ldl</compilerOption>
-                                    <compilerOption>-lbfd</compilerOption>
-                                    <compilerOption>-O0</compilerOption>
-                                    <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
-                                    <!-- Need to pass this to gcc in order to enable the right functions to appear in cmake.  -->
-                                    <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
+                                <compilerOption>${javacpp.compiler.options}</compilerOption>
+                                <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
+                                <compilerOption>-finstrument-functions</compilerOption>
+                                <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
+                                <compilerOption>-rdynamic</compilerOption>
+                                <!-- Need these 2 libraries including bin utils for handling address decoding-->
+                                <compilerOption>-ldl</compilerOption>
+                                <compilerOption>-lbfd</compilerOption>
+                                <compilerOption>-O0</compilerOption>
+                                <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
+                                <!-- Need to pass this to gcc in order to enable the right functions to appear in cmake.  -->
+                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
+                                <compilerOption>-v</compilerOption>
+                                <compilerOption>-lunwind</compilerOption>
+                                <compilerOption>-lbfd</compilerOption>
+                                <compilerOption>-ldw</compilerOption>
+                                <compilerOption>-Bsymbolic</compilerOption>
+                                <compilerOption>-fno-omit-frame-pointer</compilerOption>
+                                <compilerOption>-fno-optimize-sibling-calls</compilerOption>
+                                <compilerOption>-g</compilerOption>
+                                <compilerOption>-fPIC</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

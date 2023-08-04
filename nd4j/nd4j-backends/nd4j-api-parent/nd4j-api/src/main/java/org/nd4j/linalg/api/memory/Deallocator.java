@@ -23,6 +23,8 @@ package org.nd4j.linalg.api.memory;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 
 public interface Deallocator {
+
+
     /**
      * This method does actual deallocation
      */

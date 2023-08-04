@@ -56,12 +56,12 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
                " SCONV2D OP: rank of weightsDepth array must be equal to 4, but got %i instead !",
                weightsDepth->rankOf());
   if (weightsPoint)
-    REQUIRE_TRUE(weightsPoint->rankOf() == 4, 0,
-                 " SCONV2D OP: rank of weightsPoint array must be equal to 4, but got %i instead !",
-                 weightsPoint->rankOf());
+  REQUIRE_TRUE(weightsPoint->rankOf() == 4, 0,
+               " SCONV2D OP: rank of weightsPoint array must be equal to 4, but got %i instead !",
+               weightsPoint->rankOf());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() == 1 || bias->rankOf() == 2, 0,
-                 " SCONV2D OP: rank of biases array must be equal to 1 or 2, but got %i instead !", bias->rankOf());
+  REQUIRE_TRUE(bias->rankOf() == 1 || bias->rankOf() == 2, 0,
+               " SCONV2D OP: rank of biases array must be equal to 1 or 2, but got %i instead !", bias->rankOf());
   ;
 
   LongType kH = INT_ARG(0);                                               // filter(kernel) height
@@ -75,8 +75,8 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
@@ -98,9 +98,9 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
                  ShapeUtils::shapeAsString(weightsPoint).c_str());
   }
   if (bias)
-    REQUIRE_TRUE(oC == bias->lengthOf(), 0,
-                 " SCONV2D OP: length of bias array must be equal to outChannels, but got %i instead",
-                 bias->lengthOf());
+  REQUIRE_TRUE(oC == bias->lengthOf(), 0,
+               " SCONV2D OP: length of bias array must be equal to outChannels, but got %i instead",
+               bias->lengthOf());
 
   if (iC == 1) {
     sd_debug("SCONV2D OP: for input_channels = 1 this op is equivalent to standard conv2d\n", "");
@@ -142,12 +142,12 @@ DECLARE_SHAPE_FN(sconv2d) {
                "SCONV2D OP: rank of weightsDepth array must be equal to %i, but got %i instead !", rank,
                weightsDShapeInfo[0]);
   if (weightsPShapeInfo)
-    REQUIRE_TRUE(weightsPShapeInfo[0] == rank, 0,
-                 "SCONV2D OP: rank of weightsPoint array must be equal to %i, but got %i instead !", rank,
-                 weightsPShapeInfo[0]);
+  REQUIRE_TRUE(weightsPShapeInfo[0] == rank, 0,
+               "SCONV2D OP: rank of weightsPoint array must be equal to %i, but got %i instead !", rank,
+               weightsPShapeInfo[0]);
   if (biasShapeInfo)
-    REQUIRE_TRUE(biasShapeInfo[0] <= 2, 0, "SCONV2D OP: rank of biases array must be <= 2, but got %i instead !",
-                 biasShapeInfo[0]);
+  REQUIRE_TRUE(biasShapeInfo[0] <= 2, 0, "SCONV2D OP: rank of biases array must be <= 2, but got %i instead !",
+               biasShapeInfo[0]);
 
 
   LongType kH = INT_ARG(0);                                               // filter(kernel) height
@@ -161,8 +161,8 @@ DECLARE_SHAPE_FN(sconv2d) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   LongType indIOioC, indIiH, indWmC(0 == wFormat ? 3 : 0);
   if (!isNCHW) {
@@ -193,10 +193,10 @@ DECLARE_SHAPE_FN(sconv2d) {
                  ShapeUtils::shapeAsString(weightsPShapeInfo).c_str());
   }
   if (biasShapeInfo)
-    REQUIRE_TRUE(
-        biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-        "SCONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC,
-        biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(
+      biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+      "SCONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC,
+      biasShapeInfo[0], shape::length(biasShapeInfo));
 
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
@@ -289,8 +289,8 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   LongType bS, iC, iH, iW, mC, oC, oH,
       oW;  // batch size, input channels, input height/width, channels multiplier, output channels, output height/width
@@ -389,12 +389,12 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
                " SCONV2D_BP OP: rank of weightsDepth array must be equal to %i, but got %i instead !", rank,
                weightsDShapeInfo[0]);
   if (weightsPShapeInfo)
-    REQUIRE_TRUE(weightsPShapeInfo[0] == rank, 0,
-                 " SCONV2D_BP OP: rank of weightsPoint array must be equal to %i, but got %i instead !", rank,
-                 weightsPShapeInfo[0]);
+  REQUIRE_TRUE(weightsPShapeInfo[0] == rank, 0,
+               " SCONV2D_BP OP: rank of weightsPoint array must be equal to %i, but got %i instead !", rank,
+               weightsPShapeInfo[0]);
   if (biasShapeInfo)
-    REQUIRE_TRUE(biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2, 0,
-                 " SCONV2D_BP OP: rank of biases array must be 1 or 2, but got %i instead !", biasShapeInfo[0]);
+  REQUIRE_TRUE(biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2, 0,
+               " SCONV2D_BP OP: rank of biases array must be 1 or 2, but got %i instead !", biasShapeInfo[0]);
 
 
   LongType kH = INT_ARG(0);                                               // filter(kernel) height
@@ -408,8 +408,8 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   int indIOioC, indIiH, indWmC(0 == wFormat ? 3 : 0);
   if (!isNCHW) {
@@ -449,10 +449,10 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
                  ShapeUtils::shapeAsString(weightsPShapeInfo).c_str());
   }
   if (biasShapeInfo)
-    REQUIRE_TRUE(
-        (biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2) && oC == shape::length(biasShapeInfo), 0,
-        "SCONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC,
-        biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(
+      (biasShapeInfo[0] == 1 || biasShapeInfo[0] == 2) && oC == shape::length(biasShapeInfo), 0,
+      "SCONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC,
+      biasShapeInfo[0], shape::length(biasShapeInfo));
 
   auto gradIshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());

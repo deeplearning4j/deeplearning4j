@@ -107,7 +107,7 @@ SD_HOST void printCudaHost(void *pointer, const int len, cudaStream_t &stream) {
   for (int i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<T *>(ptr)[i]);
   printf("\n");
 
-  free(ptr);
+  //free(ptr);
 }
 
 #endif

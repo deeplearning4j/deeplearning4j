@@ -62,7 +62,7 @@ void ShapeList::destroy() {
   if (_destroyed) return;
   if (!_workspace){
     for (int i = 0; i < size(); i++){
-      if (_shapes[i] != nullptr) delete[] _shapes[i];
+     // if (_shapes[i] != nullptr) delete[] _shapes[i];
     }
   }
   _destroyed = true;

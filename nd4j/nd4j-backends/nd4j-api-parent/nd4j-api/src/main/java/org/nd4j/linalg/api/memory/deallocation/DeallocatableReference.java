@@ -38,9 +38,7 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
 
         this.id = referent.getUniqueId();
         this.deallocator = referent.deallocator();
-        if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
-          Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
-        }
+
     }
 
     public void deallocate() {
@@ -48,9 +46,7 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
             throw new IllegalStateException("Unable to deallocate reference. Not ready yet.");
         }
 
-        if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
-            Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
-        }
+
         deallocator.deallocate();
     }
 

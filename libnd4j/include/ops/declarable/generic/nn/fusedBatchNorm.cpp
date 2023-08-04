@@ -153,8 +153,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     y->assign(xShifted1);
 
   if (isTraining) {
-    delete mean;
-    delete variance;
+   delete mean;
+   delete variance;
   }
 
   return sd::Status::OK;

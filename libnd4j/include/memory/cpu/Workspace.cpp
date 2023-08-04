@@ -74,7 +74,7 @@ Workspace::Workspace(sd::LongType initialSize, sd::LongType secondaryBytes) {
 
 void Workspace::init(sd::LongType bytes, sd::LongType secondaryBytes) {
   if (this->_currentSize < bytes) {
-    if (this->_allocatedHost && !_externalized) free((void *)this->_ptrHost);
+    //if (this->_allocatedHost && !_externalized) free((void *)this->_ptrHost);
 
     this->_ptrHost = (char *)malloc(bytes);
 
@@ -97,13 +97,13 @@ void Workspace::freeSpills() {
 
   if (_spills.size() < 1) return;
 
-  for (auto v : _spills) free(v);
+  //for (auto v : _spills) free(v);
 
   _spills.clear();
 }
 
 Workspace::~Workspace() {
-  if (this->_allocatedHost && !_externalized) free((void *)this->_ptrHost);
+  //if (this->_allocatedHost && !_externalized) free((void *)this->_ptrHost);
 
   freeSpills();
 }

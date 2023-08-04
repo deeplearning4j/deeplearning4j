@@ -66,8 +66,8 @@ public class CpuMemoryManager extends BasicMemoryManager {
      */
     @Override
     public void release(@NonNull Pointer pointer, MemoryKind kind) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
-        pointer.setNull();
+       // NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+       // pointer.setNull();
     }
 
     /**

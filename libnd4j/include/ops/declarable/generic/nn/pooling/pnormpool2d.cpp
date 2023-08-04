@@ -195,9 +195,9 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
   ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 2, pnorm);
 
   if (!isNCHW) {
-    delete input;
-    delete gradI;
-    delete gradO;
+     delete input;
+     delete gradI;
+      delete gradO;
   }
 
   return sd::Status::OK;

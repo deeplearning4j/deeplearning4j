@@ -709,11 +709,11 @@ SD_LIB_HIDDEN void reduceDefault(sd::memory::Workspace* workspace, const X* x, c
 
   samediff::Threads::parallel_for(func, 0, shape::length(zShapeInfo));
 
-  RELEASE(outerXTadShapeInfo, workspace);
-  RELEASE(innerXTadShapeInfo, workspace);
-  RELEASE(zOffsets, workspace);
-  if (!sameOffsets1) RELEASE(outerXTadOffsets, workspace);
-  if (!sameOffsets2) RELEASE(innerXTadOffsets, workspace);
+ // RELEASE(outerXTadShapeInfo, workspace);
+  //RELEASE(innerXTadShapeInfo, workspace);
+ // RELEASE(zOffsets, workspace);
+ // if (!sameOffsets1) RELEASE(outerXTadOffsets, workspace);
+ // if (!sameOffsets2) RELEASE(innerXTadOffsets, workspace);
 }
 
 //////////////////////////////////////////////////////////////////////////////

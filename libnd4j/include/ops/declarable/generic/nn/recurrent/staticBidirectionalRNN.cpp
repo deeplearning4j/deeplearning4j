@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
   NDArray* h0BW = nullptr;  // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
   NDArray* maxTimeStep =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
-                // per each input in batch, this means there are no calculations for time >= maxTimeStep
+  // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
   switch (block.width()) {
     case 8:
@@ -118,10 +118,10 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
                  ShapeUtils::shapeAsString(expectedh0BWshape).c_str(), ShapeUtils::shapeAsString(h0BW).c_str());
   }
   if (maxTimeStep)
-    REQUIRE_TRUE(maxTimeStep->isSameShape({bS}), 0,
-                 "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
-                 "got %s instead !",
-                 bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
+  REQUIRE_TRUE(maxTimeStep->isSameShape({bS}), 0,
+               "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
+               "got %s instead !",
+               bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
   // forward steps
   auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.launchContext());
@@ -180,7 +180,7 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
       nullptr;  // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
   sd::LongType const* maxTimeStepShapeInfo =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
-                // per each input in batch, this means there are no calculations for time >= maxTimeStep
+  // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
   switch (block.width()) {
     case 8:
@@ -253,10 +253,10 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
                  ShapeUtils::shapeAsString(h0BWShapeInfo).c_str());
   }
   if (maxTimeStepShapeInfo)
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, {bS}), 0,
-                 "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
-                 "got %s instead !",
-                 bS, ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, {bS}), 0,
+               "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
+               "got %s instead !",
+               bS, ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
 
   // evaluate output shapeInfos
   sd::LongType *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);

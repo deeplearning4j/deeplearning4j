@@ -133,8 +133,9 @@ OpArgsHolder OpArgsHolder::createArgsHolderForBP(const std::vector<NDArray*>& in
 ////////////////////////////////////////////////////////////////////////
 // default destructor
 OpArgsHolder::~OpArgsHolder() noexcept {
-  for (int i = 0; i < _isArrAlloc.size(); ++i)
+  for (int i = 0; i < _isArrAlloc.size(); ++i) {
     if (_isArrAlloc[i]) delete _inArrs[i];
+  }
 }
 
 }  // namespace sd

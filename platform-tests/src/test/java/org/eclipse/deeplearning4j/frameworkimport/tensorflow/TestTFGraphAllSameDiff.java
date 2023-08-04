@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.eclipse.deeplearning4j.tests.extensions.DeallocationExtension;
 import org.junit.jupiter.api.*;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -131,7 +132,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
        If a test name matches any regex here, an ExecPrintListener will be added to the listeners, and all output
        arrays will be printed during execution
      */
-    private final List<String> debugModeRegexes = Arrays.asList("fused_batch_norm/float16_nhwc");
+    private final List<String> debugModeRegexes = Arrays.asList();
 
 
 
@@ -162,11 +163,11 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         } else if(!EXECUTE_ONLY_MODELS.contains(modelName)) {
             log.info("Not executing " + modelName);
             assumeFalse(true);
-            //OpValidationSuite.ignoreFailing();
         }
 
 
 
+        System.out.println("Testing with test name " + System.getProperty(DeallocationExtension.CURRENT_TEST_DISPLAY_NAME));
         Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());

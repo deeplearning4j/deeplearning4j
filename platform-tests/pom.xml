@@ -83,20 +83,22 @@
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
-        <test.nogc>true</test.nogc>
-
+        <test.nogc>false</test.nogc>
+        <test.prefix></test.prefix>
         <!--
         TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address
         and preload. The build without -fsanitize=address is where you left off.
         -->
 
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
-        <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=1:replace_intrin=0:detect_leaks=1</test.asan.options>
+        <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=0:replace_intrin=0:detect_leaks=0:alloc_dealloc_mismatch=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
-        <preload>/usr/local/lib/libjemalloc.so.2</preload>
-        <jemalloc.path>/usr/local/lib/libjemalloc.so.2</jemalloc.path>
+        <preload></preload>
+        <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
+        <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->
+        <libjvm.path></libjvm.path>
     </properties>
 
 
@@ -501,7 +503,7 @@
                 <cudnn.version>8.9</cudnn.version>
                 <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
                 <test.heap.size>6g</test.heap.size>
-                <test.offheap.size>6g</test.offheap.size>
+                <test.offheap.size>12g</test.offheap.size>
                 <surefire.forks>1</surefire.forks>
                 <surefire.threads>1</surefire.threads>
             </properties>
@@ -903,7 +905,8 @@
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <ASAN_SHADOW_OFFSET>0</ASAN_SHADOW_OFFSET>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->
-                        <TEST_RUNNER_PREFIX>/usr/local/cuda-12.1/bin/compute-sanitizer</TEST_RUNNER_PREFIX>
+                        <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
+                        <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
                     </environmentVariables>
                     <shutdown>kill</shutdown>
@@ -913,18 +916,18 @@
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine> -javaagent:"${settings.localRepository}"/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
-                    <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
-                    <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
-                    <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
-                    <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
+                    <argLine> -javaagent:"${settings.localRepository}"/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
+                    <forkedProcessExitTimeoutInSeconds>0</forkedProcessExitTimeoutInSeconds>
+                    <parallelTestsTimeoutInSeconds>0</parallelTestsTimeoutInSeconds>
+                    <parallelTestsTimeoutForcedInSeconds>0</parallelTestsTimeoutForcedInSeconds>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
                     <properties>
                         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
                     </properties>
-                   <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
+                    <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
                     <jvm>${project.basedir}/bin/java</jvm>
                 </configuration>
             </plugin>

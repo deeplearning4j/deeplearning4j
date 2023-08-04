@@ -21,6 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
@@ -35,6 +36,7 @@ public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;
     private LogEvent logEvent;
     private boolean isConstant;
+    private AtomicBoolean deallocated = new AtomicBoolean(false);
 
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();
@@ -56,10 +58,14 @@ public class CpuDeallocator implements Deallocator {
     }
 
     @Override
-    public void deallocate() {
+    public synchronized void deallocate() {
         if (opaqueDataBuffer == null)
             throw new RuntimeException("opaqueDataBuffer is null");
 
+        if(deallocated.get())
+            return;
+
+        deallocated.set(true);
         //update the log event with the actual time of de allocation and then
         //perform logging
         if(logEvent != null) {

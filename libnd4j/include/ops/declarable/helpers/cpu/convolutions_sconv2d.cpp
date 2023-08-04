@@ -80,7 +80,7 @@ void ConvolutionUtils::sconv2d(sd::graph::Context& block, const NDArray* input, 
                                const int paddingMode, const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_,
                               (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
-                               paddingMode, isNCHW, wFormat),
+                                  paddingMode, isNCHW, wFormat),
                               SD_FLOAT_TYPES);
 }
 

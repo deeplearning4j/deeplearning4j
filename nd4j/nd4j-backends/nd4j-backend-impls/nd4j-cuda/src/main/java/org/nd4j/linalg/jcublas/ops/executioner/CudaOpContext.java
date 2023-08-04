@@ -64,7 +64,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void close() {
-        //nativeOps.ctxPurge(context);
+        nativeOps.ctxPurge(context);
 
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 

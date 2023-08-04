@@ -117,7 +117,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     }
   }
 
-  if (weightsBroad != weights) delete weightsBroad;
+   if (weightsBroad != weights) delete weightsBroad;
 
   return sd::Status::OK;
 }
@@ -311,7 +311,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
     }
   }
 
-  if (weightsBroad != weights) delete weightsBroad;
+   if (weightsBroad != weights) delete weightsBroad;
 
   return sd::Status::OK;
 }

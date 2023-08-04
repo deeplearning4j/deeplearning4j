@@ -106,10 +106,6 @@ OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bo
   _divergent = divergent;
 }
 
-// default destructor
-OpDescriptor::~OpDescriptor() {
-  //
-}
 
 int OpDescriptor::getNumberOfTArgs() { return _tArgs; }
 

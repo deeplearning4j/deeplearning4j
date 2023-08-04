@@ -73,7 +73,8 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
   std::lock_guard<std::mutex> lock(_mutex);
 
   if (_cache[deviceId].count(descriptor) == 0) {
-    const auto shapeInfo = descriptor->originalShape().toShapeInfo();
+    auto toShapeInfo = descriptor->originalShape();
+    const auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo());
     const sd::LongType rank = shape::rank(shapeInfo);
     auto descAxis = descriptor->axis();
     const std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(rank,descAxis.size(), descAxis.data());
@@ -101,17 +102,15 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
     // TODO: add deallocator here?
     auto ssPtr = std::make_shared<PointerWrapper>(
         ConstantHelper::getInstance().replicatePointer(sPtr->pointer(), shape::shapeInfoByteLength(subArrRank)));
-
-    ConstantShapeBuffer shapesBuffer(sPtr, ssPtr);
-    ConstantOffsetsBuffer offsetsBuffer(
+    ConstantOffsetsBuffer *offsetsBuffer = new ConstantOffsetsBuffer(
         oPtr, std::make_shared<PointerWrapper>(soPtr, std::make_shared<CudaPointerDeallocator>()));
 
-    TadPack *t = new TadPack(shapesBuffer, offsetsBuffer, numOfSubArrs);
+    auto shapesBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(&toShapeInfo);
+    TadPack *t = new TadPack(*shapesBuffer, *offsetsBuffer, numOfSubArrs);
     _cache[deviceId][descriptor] = t;
 
     TadPack *r = _cache[deviceId][descriptor];
     delete dimsToExclude;
-    delete[] shapeInfo;
 
     return r;
   } else {

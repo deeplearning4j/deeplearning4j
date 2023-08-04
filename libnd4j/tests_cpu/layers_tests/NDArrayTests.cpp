@@ -685,7 +685,6 @@ TEST_F(NDArrayTest, TestTile2) {
 
   ASSERT_TRUE(tiled.isSameShape(&array2));
   ASSERT_TRUE(tiled.equalsTo(&array2));
-  // delete tiled;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1931,7 +1930,7 @@ TEST_F(NDArrayTest, Operator_Minus_Test_5) {
   auto result = x - y;
 
   ASSERT_EQ(expected,result);
-  
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2228,7 +2227,7 @@ TEST_F(NDArrayTest, Test_diagonal_1) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2239,7 +2238,7 @@ TEST_F(NDArrayTest, Test_diagonal_2) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2250,7 +2249,7 @@ TEST_F(NDArrayTest, Test_diagonal_3) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2261,7 +2260,7 @@ TEST_F(NDArrayTest, Test_diagonal_4) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2272,7 +2271,7 @@ TEST_F(NDArrayTest, Test_diagonal_5) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2283,7 +2282,7 @@ TEST_F(NDArrayTest, Test_diagonal_6) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2294,7 +2293,7 @@ TEST_F(NDArrayTest, Test_diagonal_7) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2305,7 +2304,7 @@ TEST_F(NDArrayTest, Test_diagonal_8) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2316,7 +2315,7 @@ TEST_F(NDArrayTest, Test_diagonal_9) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2327,7 +2326,7 @@ TEST_F(NDArrayTest, Test_diagonal_10) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2338,7 +2337,7 @@ TEST_F(NDArrayTest, Test_diagonal_11) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2349,7 +2348,7 @@ TEST_F(NDArrayTest, Test_diagonal_12) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2360,7 +2359,7 @@ TEST_F(NDArrayTest, Test_diagonal_13) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2371,7 +2370,7 @@ TEST_F(NDArrayTest, Test_diagonal_14) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2382,7 +2381,7 @@ TEST_F(NDArrayTest, Test_diagonal_15) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2393,7 +2392,7 @@ TEST_F(NDArrayTest, Test_diagonal_16) {
 
   auto diag = x.diagonal('c');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2404,7 +2403,7 @@ TEST_F(NDArrayTest, Test_diagonal_17) {
 
   auto diag = x.diagonal('r');
 
- ASSERT_EQ(exp,diag);
+  ASSERT_EQ(exp,diag);
 }
 
 //////////////////////////////////////////////////////////////////////

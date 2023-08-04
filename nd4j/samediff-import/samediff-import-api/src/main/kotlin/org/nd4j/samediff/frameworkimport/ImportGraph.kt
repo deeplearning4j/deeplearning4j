@@ -864,12 +864,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             inName = inName.substring(0, inName.length - 2)
                         }
 
-//                        log.info("Input: {}, {}", s, inName);
                         //note on initializers, sometimes ops mentions pre initialized constants
                         //that haven't been seen by import yet. In this case, we need to allow the
                         //op to be added, otherwise no further import can happen
                         if (!sd.hasVariable(inName) && !skipCase && !irGraph.hasConstantInitializer(inName) && !irGraph.hasConstantInitializer(inName)) {
-//                            log.info("Not found: {} for op {}", inName, nextOpDef.getName());
                             allAlreadyInGraph = false
                             break
                         } else if (!isControlDep(s)) {

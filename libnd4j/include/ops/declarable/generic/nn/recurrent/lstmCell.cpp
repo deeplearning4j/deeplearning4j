@@ -33,7 +33,7 @@ namespace ops {
 CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
   auto xt = INPUT_VARIABLE(0);    // input [bS x inSize]
   auto ht_1 = INPUT_VARIABLE(1);  // previous cell output [bS x numProj],  that is at previous time step t-1, in case of
-                                  // projection=false -> numProj=numUnits!!!
+  // projection=false -> numProj=numUnits!!!
   auto ct_1 = INPUT_VARIABLE(2);  // previous cell state  [bS x numUnits], that is at previous time step t-1
 
   auto Wx = INPUT_VARIABLE(3);  // input-to-hidden  weights, [inSize  x 4*numUnits]
@@ -51,9 +51,9 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
 
   // FIXME: double?
   const double clippingCellValue = T_ARG(0);
-   // clipping value for ct, if it is not equal to zero, then cell state is clipped
+  // clipping value for ct, if it is not equal to zero, then cell state is clipped
   const double clippingProjValue = T_ARG(1);
-   // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
+  // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
   const double forgetBias = T_ARG(2);
 
   const int rank = xt->rankOf();
@@ -111,7 +111,7 @@ DECLARE_TYPES(lstmCell) {
 DECLARE_SHAPE_FN(lstmCell) {
   auto xtShapeInfo = inputShape->at(0);    // input [bS x inSize]
   auto ht_1ShapeInfo = inputShape->at(1);  // previous cell output [bS x numProj],  that is at previous time step t-1,
-                                           // in case of projection=false -> numProj=numUnits!!!
+  // in case of projection=false -> numProj=numUnits!!!
   auto ct_1ShapeInfo = inputShape->at(2);  // previous cell state  [bS x numUnits], that is at previous time step t-1
 
   auto WxShapeInfo = inputShape->at(3);  // input-to-hidden  weights, [inSize  x 4*numUnits]

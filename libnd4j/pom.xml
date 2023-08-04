@@ -371,7 +371,7 @@
                                         <argument>${libnd4j.sanitize}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
-                                        <argument>--callstack</argument>
+                                        <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
                                         <argument>${libnd4j.log}</argument>

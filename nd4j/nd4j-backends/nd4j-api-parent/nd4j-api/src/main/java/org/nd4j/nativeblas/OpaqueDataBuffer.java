@@ -215,10 +215,7 @@ public class OpaqueDataBuffer extends Pointer {
     /**
      * This method releases underlying buffer
      */
-    public void closeBuffer() {
+    public  void closeBuffer() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(this);
-        if(this.primaryBuffer() != null && !this.primaryBuffer().isNull())
-            this.primaryBuffer().deallocate();
-        this.deallocate();
     }
 }

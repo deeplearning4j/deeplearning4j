@@ -43,7 +43,6 @@ sd::graph::VariableSpace* sd::graph::VariableSpace::clone() {
 }
 
 void VariableSpace::setWorkspace(sd::memory::Workspace* workspace) {
-  //_workspace = *workspace;
 }
 
 sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {
@@ -51,10 +50,6 @@ sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {
 
   for (auto const& x : _paired) {
     std::pair<int, int> pair(x.first.first, x.first.second);
-
-    // Variable* clonedVar = x.second->template asT<N>();
-
-    // result->injectVariable(pair, clonedVar);
   }
 
   return result;
@@ -353,7 +348,6 @@ void VariableSpace::replaceVariable(Variable* variable) {
       auto vs = getVariable(variable->getName());
       dropVariable(vs->id(), vs->index());
       putVariable(vs->id(), vs->index(), variable);
-      // delete vs;
       replaced = true;
     }
   } else {
@@ -363,7 +357,6 @@ void VariableSpace::replaceVariable(Variable* variable) {
       auto vs = getVariable(variable->id(), variable->index());
       dropVariable(variable->id(), variable->index());
       putVariable(vs->id(), vs->index(), variable);
-      // delete vs;
       replaced = true;
     }
   }

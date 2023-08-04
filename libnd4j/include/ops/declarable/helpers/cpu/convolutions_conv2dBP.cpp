@@ -132,7 +132,7 @@ void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input,
                                 const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_,
                               (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW,
-                               paddingMode, isNCHW, wFormat),
+                                  paddingMode, isNCHW, wFormat),
                               SD_FLOAT_TYPES);
 }
 

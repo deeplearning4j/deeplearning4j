@@ -83,7 +83,7 @@ extern "C" {
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
   if(instrumentFile == nullptr) {
-        return;
+    return;
   }
   Dl_info info;
   if (dladdr(this_fn, &info)) {
@@ -112,15 +112,15 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
                                                                                     void *call_site) {
-  //writeLog(true,this_fn, call_site);
+  writeLog(true,this_fn, call_site);
 }
 
 
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                   void *call_site) {
-  //writeLog(false,this_fn, call_site);
+                                                                                     void *call_site) {
+  writeLog(false,this_fn, call_site);
 
 }
 
@@ -129,26 +129,6 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 //note this is outside extern C. This is fine.
 
-
-//sets the file to be written to.
-SD_LIB_EXPORT void setInstrumentOut(char *instrumentOutPath) {
-  if (instrumentOutPath != nullptr) {
-    if(instrumentFile != nullptr)
-      fclose(instrumentFile);
-    instrumentFile = fopen(instrumentOutPath, "w");
-    if (instrumentFile == nullptr) {
-      perror("Failed to open profiler output file");
-      exit(EXIT_FAILURE);
-    }
-  }
-}
-
-//clears the file.
-
-SD_LIB_EXPORT void closeInstrumentOut() {
-  if(instrumentFile != nullptr)
-    fclose(instrumentFile);
-}
 
 #endif
 
@@ -427,51 +407,6 @@ void printDeviceBuffer(InteropDataBuffer *buffer) {
 }
 
 
-template <typename T>
-class ScalarInfo {
-  sd::buffer::Buffer<T> *scalarData;
-  ScalarShapeInformation *shapeInfo;
-  T finalResult;
-  cudaStream_t streamRef;
-
- public:
-  ScalarInfo(cudaStream_t stream) {
-    T *scalarResult = reinterpret_cast<T *>(malloc(sizeof(T)));
-
-    CHECK_ALLOC(scalarResult, "Failed to allocate new scalar buffer", sizeof(T));
-
-    shapeInfo = new ScalarShapeInformation(stream);
-    scalarData = sd::buffer::createBuffer(scalarResult, 1, stream);
-    streamRef = stream;
-    sd::buffer::copyDataToGpu(&scalarData, stream);
-  }
-
-  T getFinalResultFromDevice() {
-    sd::buffer::copyDataFromGpu(&scalarData, streamRef);
-    return scalarData->data[0];
-  }
-
-  /**
-   * Get the device shape information
-   * representing a scalar
-   */
-  sd::LongType *getDeviceShapeInfo() { return shapeInfo->getShapeInfoGpuPointer(); }
-
-  /**
-   * Get the dZ pointers
-   */
-  T *getDevicePointer() { return scalarData->gData; }
-
-  /**
-   * Get the infinite dimension device pointer
-   */
-  sd::LongType *getDimensionDevicePointer() { return shapeInfo->getDimensionGpuPointer(); }
-
-  ~ScalarInfo() {
-    sd::buffer::freeBuffer(&scalarData);
-    delete shapeInfo;
-  }
-};
 
 void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
                            sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY,
@@ -2837,9 +2772,9 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
 
- // for (auto v : inputs) delete v;
+  for (auto v : inputs) delete v;
 
- // for (auto v : outputs) delete v;
+  for (auto v : outputs) delete v;
 
   return Status::OK;
 }
@@ -3005,7 +2940,9 @@ void deleteLongArray(sd::Pointer pointer) {
   delete[] ptr;
 }
 
-void deleteVariablesSet(sd::graph::VariablesSet *pointer) { delete pointer; }
+void deleteVariablesSet(sd::graph::VariablesSet *pointer) {
+  delete pointer;
+}
 
 void deleteShapeList(sd::Pointer shapeList) {
   sd::ShapeList *list = reinterpret_cast<sd::ShapeList *>(shapeList);
@@ -3469,10 +3406,11 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
 
 void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {
-  //delete ptr;
+  delete ptr;
 }
 
-void deleteTadPack(sd::TadPack *ptr) { //delete ptr;
+void deleteTadPack(sd::TadPack *ptr) {
+  delete ptr;
 }
 
 bool isBlasVersionMatches(int major, int minor, int build) {
@@ -3567,7 +3505,6 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
 }
 
 void deleteGraphContext(sd::graph::Context *ptr) {
-  //delete ptr;
 }
 
 sd::graph::RandomGenerator *createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
@@ -3777,7 +3714,11 @@ int dbUseCount(OpaqueDataBuffer* dataBuffer){
 
 void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
 
-void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToPrimary(nullptr); }
+void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(),false);
+
+}
 
 void dbTickHostRead(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->readPrimary(); }
 
@@ -3789,7 +3730,9 @@ void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()-
 
 void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) { dataBuffer->expand(elements); }
 
-void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(); }
+void dbClose(OpaqueDataBuffer *dataBuffer) {
+  dataBuffer->getDataBuffer()->close();
+}
 
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
 
@@ -3832,7 +3775,6 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
   auto descriptor = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride);
   if(isEmpty) {
     descriptor._extraProperties = ARRAY_EMPTY;
-    sd_printf("Setting empty for shape buffer \n",0);
   }
 
   auto buffer = descriptor.toShapeInfo();
@@ -3840,7 +3782,6 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
     bufferToSet[i] = buffer[i];
   }
 
-  sd_printf("Shape buffer is empty: %d\n",shape::isEmpty(buffer));
 
 
 

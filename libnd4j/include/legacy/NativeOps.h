@@ -94,12 +94,6 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_en
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
 }
 
-
-//sets the file to be written to.
-SD_LIB_EXPORT void setInstrumentOut(char * instrumentOutPath);
-//closes the file
-SD_LIB_EXPORT void closeInstrumentOut();
-
 #endif
 
 SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
@@ -1212,7 +1206,7 @@ static sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray) {
   }
 
   auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
-  delete[] shape;
+ // delete[] shape;
   return reinterpret_cast<sd::Pointer>(shapeBuffer);
 }
 

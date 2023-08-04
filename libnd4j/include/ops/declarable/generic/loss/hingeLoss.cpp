@@ -294,7 +294,7 @@ CUSTOM_OP_IMPL(hinge_loss_grad, 3, 3, false, 0, 1) {
     }
   }
 
-  if (weightsBroad != weights) delete weightsBroad;
+   if (weightsBroad != weights) delete weightsBroad;
 
   return sd::Status::OK;
 }

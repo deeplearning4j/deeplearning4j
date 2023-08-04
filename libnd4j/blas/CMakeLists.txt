@@ -140,7 +140,7 @@ ELSE()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq  -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true")
     endif()
 
-    if (NOT WIN32)
+    if (NOT WIN32 AND NOT SD_CUDA)
         # we don't want this definition for msvc
         set(ARCH_TUNE "-march=${SD_ARCH} -mtune=${ARCH_TYPE}")
     endif()
@@ -159,7 +159,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
     set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora" AND NOT SD_CUDA)
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS}  -std=c++11")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,-z,--verbose")
@@ -240,7 +240,7 @@ if(SD_CUDA)
 
 
     if (CUDA_FOUND)
-        message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+        message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with cxx compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE ${SD_GCC_FUNCTRACE}")
         include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
         if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
@@ -254,19 +254,18 @@ if(SD_CUDA)
 
         # the only difference for debug mode here is host/device debug symbols
         set(CMAKE_CUDA_FLAGS_DEBUG " -G -g")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+
         # we need -fPIC on Linux/GCC
+        message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
         if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-            message("Enabling fPIC...")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
             #enable gnu extensions
             # functrace works for cuda as well as long as the underlying compiler is gcc
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
-                # note that cuda can't use -MT and -finstrument-functions
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -DSD_GCC_FUNCTRACE=1 -Xcompiler=-DSD_GCC_FUNCTRACE=1 -ldl  -lbfd  -lunwind -ldwv -Xcompiler=-Bsymbolic   -Xcompiler=-rdynamic -Xcompiler=-fno-omit-frame-pointer -Xcompiler=-fno-optimize-sibling-calls  -g -O0")
+                set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
             else()
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+                set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS}  -fPIC -G -g ")
 
             endif()
         endif()

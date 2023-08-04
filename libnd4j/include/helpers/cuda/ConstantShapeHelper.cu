@@ -32,6 +32,7 @@
 
 namespace sd {
 
+
 ConstantShapeHelper::ConstantShapeHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
 
@@ -41,6 +42,7 @@ ConstantShapeHelper::ConstantShapeHelper() {
     _cache[e] = cache;
   }
 }
+
 
 ConstantShapeHelper& ConstantShapeHelper::getInstance() {
   static ConstantShapeHelper instance;
@@ -75,9 +77,9 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
         ConstantHelper::getInstance().replicatePointer(hPtr->pointer(),
                                                        shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>())),
         std::make_shared<CudaPointerDeallocator>());
-    ConstantShapeBuffer *buffer = new ConstantShapeBuffer(hPtr, dPtr);
+    ConstantShapeBuffer *buffer =  new ConstantShapeBuffer(hPtr, dPtr);
     _cache[deviceId][*descriptor] = buffer;
-    return _cache[deviceId][*descriptor];
+    return buffer;
   } else {
     return _cache[deviceId].at(*descriptor);
   }
@@ -98,9 +100,10 @@ bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *desc
 }
 
 const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order, const int rank,
-                                                    const sd::LongType* shape) {
+                                                          const sd::LongType* shape) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape, rank);
   auto ret = bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
   return ret;
 }
 
@@ -111,7 +114,9 @@ const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dat
 
 const sd::LongType * ConstantShapeHelper::emptyShapeInfo(const sd::DataType dataType) {
   auto descriptor = ShapeDescriptor::emptyDescriptor(dataType);
-  return bufferForShapeInfo(descriptor)->primary();
+  auto ret = bufferForShapeInfo(descriptor)->primary();
+  delete descriptor;
+  return ret;
 }
 
 const sd::LongType * ConstantShapeHelper::scalarShapeInfo(const sd::DataType dataType) {
@@ -129,7 +134,7 @@ const sd::LongType * ConstantShapeHelper::vectorShapeInfo(const sd::LongType len
 }
 
 const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order,
-                                                    const std::vector<sd::LongType>& shape) {
+                                                          const std::vector<sd::LongType>& shape) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape);
   auto ret = bufferForShapeInfo(descriptor)->primary();
   delete descriptor;
@@ -159,9 +164,9 @@ const sd::LongType * ConstantShapeHelper::createFromExisting(sd::LongType* shape
 
 ////////////////////////////////////////////////////////////////////////
 ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
-                                                                                 const sd::LongType* minShapeInfo,
-                                                                                 sd::memory::Workspace* workspace,
-                                                                                 const std::vector<sd::LongType>& dimensions) {
+                                                                                  const sd::LongType* minShapeInfo,
+                                                                                  sd::memory::Workspace* workspace,
+                                                                                  const std::vector<sd::LongType>& dimensions) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), sd::LongType);
 
@@ -207,7 +212,7 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
 
 ////////////////////////////////////////////////////////////////////////
 ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo, const std::vector<LongType> *dimsWithUnities,
-                                                                                sd::memory::Workspace* workspace) {
+                                                                                 sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities->size()),
            sd::LongType);

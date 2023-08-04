@@ -49,7 +49,7 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public void close() {
-        nativeOps.deleteRandomGenerator((OpaqueRandomGenerator)statePointer);
+      //  nativeOps.deleteRandomGenerator((OpaqueRandomGenerator)statePointer);
     }
 
     @Override

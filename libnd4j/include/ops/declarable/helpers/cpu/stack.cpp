@@ -47,7 +47,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), vec);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
-    delete vec;
+   delete vec;
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
@@ -88,7 +88,7 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         input.shapeInfo(), vec);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-    delete vec;
+   delete vec;
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         auto xBuff = input.bufferWithOffset(xTadPack->primaryOffsets()[i]);

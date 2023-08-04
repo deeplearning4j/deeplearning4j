@@ -577,7 +577,7 @@ sd::Status Graph::buildGraph() {
           } else if (node->opType() == OpType_LOGIC) {
             // just allow it?
           } else  // checking if that's static variable
-              if (nodeId > 0 && !_variableSpace->hasExternalVariable(nodeId)) {
+          if (nodeId > 0 && !_variableSpace->hasExternalVariable(nodeId)) {
             breaker = true;
             break;
           }
@@ -911,8 +911,8 @@ void Graph::toposortNodes() {
           // can't map this node yet, due to non-resolved dependencies
           canMap = false;
         } else if (_variableSpace->hasVariable(
-                       in.first)) {  // that's probably variable. if not - we'll throw exception later
-                                     // do nothing, maxDepLayer is -1 here, because it's a variable input
+            in.first)) {  // that's probably variable. if not - we'll throw exception later
+          // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
           throw graph::unresolved_input_exception::build("Unknown input specified", id, in);
         }

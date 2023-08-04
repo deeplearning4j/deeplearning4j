@@ -28,6 +28,9 @@
 #include <helpers/logger.h>
 
 namespace sd {
+
+
+
 ConstantShapeHelper::ConstantShapeHelper() {
   _cache.resize(1);
   for (int e = 0; e < 1; e++) {

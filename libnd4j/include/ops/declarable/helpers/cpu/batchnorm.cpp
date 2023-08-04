@@ -91,7 +91,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
       if (!xzSameOffset)
         shape::outerArrayOffsets(zOffsets, j, output->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude->data());
 
-      PRAGMA_OMP_SIMD
+          PRAGMA_OMP_SIMD
       for (sd::LongType i = 0; i < steps; ++i) z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
     }
 
@@ -183,7 +183,7 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
 
 BUILD_SINGLE_TEMPLATE(template void batchnorm_,
                       (const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                       const NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
+                          const NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

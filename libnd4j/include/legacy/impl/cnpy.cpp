@@ -653,7 +653,7 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
  */
 template <typename T>
 std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsigned int ndims,
-                                        unsigned int wordSize) {
+                                         unsigned int wordSize) {
 
   std::vector<char> dict;
   dict += "{'descr': '";
@@ -697,5 +697,5 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHe
 
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,
                       (std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
-                       std::string mode),
+                          std::string mode),
                       SD_COMMON_TYPES);

@@ -44,7 +44,7 @@ NDArray *FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
 
   // empty arrays is special case, nothing to restore here
   if (shape::isEmpty(newShape)) {
-    delete[] newShape;
+     delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }
   // TODO fix UTF16 and UTF32
@@ -62,7 +62,7 @@ NDArray *FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
     auto offsets = new sd::LongType[length + 1];
 #if defined(__NEC__)
-    #pragma _NEC novector
+#pragma _NEC novector
 #endif
     for (sd::LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];

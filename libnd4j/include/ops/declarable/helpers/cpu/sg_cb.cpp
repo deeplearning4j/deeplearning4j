@@ -405,6 +405,7 @@ class AlignedAllocator
 
   void deallocate(pointer p, size_type)
   {
+
 #if defined(_MSC_VER)
     _aligned_free(p);
 #else
@@ -971,11 +972,11 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
     BUILD_SINGLE_SELECTOR(
         xType, cbow_,
         (syn0,
-         syn1,
-         syn1Neg,
-         expTable,
-         negTable,
-         inferenceVector,
+            syn1,
+            syn1Neg,
+            expTable,
+            negTable,
+            inferenceVector,
             target.isEmpty() ? -1 : target.e<int>(0),
             ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0),
             context.isEmpty() ? nullptr : context.bufferAsT<int>(),

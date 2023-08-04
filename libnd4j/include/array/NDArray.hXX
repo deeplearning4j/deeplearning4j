@@ -1384,6 +1384,7 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
 
     prepareUse({this}, {&other});
 
+    sd_print("execTransformAny assign\n");
     NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
                                           other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
                                           specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr,
@@ -1625,9 +1626,8 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::FloatOps op, const std::initia
                                       const bool keepDims) const {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
-  // delete vec;
   return ret;
-  ;
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1635,7 +1635,6 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::SameOps op, const std::initial
                                       const bool keepDims) const {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
-  // delete vec;
   return ret;
 }
 
@@ -1644,7 +1643,6 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::BoolOps op, const std::initial
                                       const bool keepDims) const {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
-  // delete vec;
   return ret;
 }
 
@@ -1653,7 +1651,6 @@ NDArray NDArray::reduceAlongDimension(sd::reduce::LongOps op, const std::initial
                                       const bool keepDims) const {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(*dimensions);
   auto ret = reduceAlongDimension(op, vec, keepDims);
-  // delete vec;
   return ret;
 }
 
@@ -1791,7 +1788,6 @@ NDArray NDArray::indexReduceNumber(sd::indexreduce::Ops op, ExtraArguments *extr
 sd::LongType NDArray::tensorsAlongDimension(std::initializer_list<LongType> dimensions) const {
   std::vector<sd::LongType> *vec = new std::vector<sd::LongType>(dimensions);
   auto ret = tensorsAlongDimension(vec);
-  delete vec;
   return ret;
 }
 
@@ -1938,7 +1934,7 @@ static void printFormatted(NDArray const *arr, LongType depth, LongType limit) {
         printf("]");
     }
     printf("]");
-    if (padding) delete[] padding;
+    // if (padding) delete[] padding;
   } else {
     sd::LongType restCount = 2;
     printf("[");
@@ -2241,7 +2237,7 @@ bool NDArray::isUnitary() {
   auto trMul = MmulHelper::mmul(this, &tr, nullptr, 1.f, 0.f);
 
   bool result = trMul->isIdentityMatrix();
-  delete trMul;
+  // delete trMul;
 
   return result;
 }
@@ -2350,7 +2346,7 @@ NDArray NDArray::subarray(const std::initializer_list<NDIndex *> &idx) const {
   }
 
   // release NDIndices
-  for (auto i : idx) delete i;
+  // for (auto i : idx) delete i;
 
   return NDArray((*this)(indexes, true, true));
 }
@@ -3379,7 +3375,7 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongTyp
                                         tad.buffer(), yShapeInfoH, tad.specialBuffer(), yShapeInfoD, target.buffer(),
                                         target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
 
-  delete copy;
+  // delete copy;
   registerUse({&target}, {this, &tad});
 }
 
@@ -3405,7 +3401,7 @@ void *NDArray::operator new(size_t i) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
   if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
-    free(p);
+    //  free(p);
   }
 }
 
@@ -3459,7 +3455,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
-    RELEASE(shapeInfoNew, getContext()->getWorkspace());
+    // RELEASE(shapeInfoNew, getContext()->getWorkspace());
     return true;
   }
 
@@ -3509,7 +3505,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   for (sd::LongType e = 0; e < shape.size(); e++) shape[e] = shape_[e];
 
-  if (numberNegativesOnes > 0) delete[] shape_;
+  //if (numberNegativesOnes > 0) delete[] shape_;
 
   sd::LongType arrLength = 1;
   for (const auto &item : shape) arrLength *= item;
@@ -3555,7 +3551,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     *this = std::move(temp);
   }
 
-  RELEASE(shapeInfoNew, getContext()->getWorkspace());
+  //RELEASE(shapeInfoNew, getContext()->getWorkspace());
 
   return canReshape;
 }
@@ -4809,7 +4805,7 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, cons
     NativeOpExecutioner::execReduceBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                         nullptr, target.buffer(), zShapeInfoH, target.specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
-    delete dims;
+    // delete dims;
   }
   synchronize("NDArray::reduceAlongDimension LongOps");
 

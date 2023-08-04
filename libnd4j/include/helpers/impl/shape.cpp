@@ -502,7 +502,7 @@ SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, 
     stride[0] = 1;
     return stride;
   }
-  
+
 
   sd::LongType st = startNum;
   for (sd::LongType j = rank - 1; j >= 0; j--) {
@@ -519,7 +519,7 @@ SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, 
     ret[0] = 1;
     return ret;
   }
-  
+
 
   sd::LongType st = startNum;
   for (sd::LongType j = rank - 1; j >= 0; j--) {

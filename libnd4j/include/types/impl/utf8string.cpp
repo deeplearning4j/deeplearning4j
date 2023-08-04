@@ -25,7 +25,7 @@
 
 namespace sd {
 utf8string::~utf8string() {
-  if (_allocated) delete[] _buffer;
+ // if (_allocated) delete[] _buffer;
 }
 
 utf8string::utf8string() {

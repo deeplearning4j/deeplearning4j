@@ -203,7 +203,7 @@ class SD_LIB_EXPORT OpDescriptor {
   bool operator==(const OpDescriptor& other) const;
 
   // default destructor
-  ~OpDescriptor();
+  ~OpDescriptor() = default;
 
   // this method returns minimal expected number of T arguments
   int getNumberOfTArgs();

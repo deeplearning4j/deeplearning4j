@@ -442,8 +442,8 @@ sd::Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace)
                      type.c_str(), values.c_str());
           } else if (__variableSpace->getVariable(node->id())->hasNDArrayList()) {
             auto list = __variableSpace->getVariable(node->id())->hasNDArrayList()
-                            ? __variableSpace->getVariable(node->id())->getNDArrayList()
-                            : nullptr;
+                        ? __variableSpace->getVariable(node->id())->getNDArrayList()
+                        : nullptr;
             sd_debug("node_% is ListOp, skipping evaluation", node->id());
           } else {
             sd_debug("node_% is Unknown: has no NDArray or NDArrayList", node->id());
@@ -663,7 +663,7 @@ flatbuffers::Offset<FlatResult> GraphExecutioner::execute(Graph *graph, flatbuff
 Graph *GraphExecutioner::importFromFlatBuffers(const char *filename) {
   auto data = readFlatBuffers(filename);
   auto restoredGraph = importFromFlatPointer(reinterpret_cast<sd::Pointer>(data));
-  delete[] data;
+   delete[] data;
   return restoredGraph;
 }
 

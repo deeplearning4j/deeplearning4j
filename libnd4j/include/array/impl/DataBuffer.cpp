@@ -91,8 +91,8 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary,
                        memory::Workspace* workspace)
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
- if(primary != nullptr)
-  syncToSpecial(true);
+  if(primary != nullptr)
+    syncToSpecial(true);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -279,15 +279,18 @@ void DataBuffer::deletePrimary() {
       sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::HOST, getLenInBytes());
     }
   }
+
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteBuffers() {
-  if(_primaryBuffer != nullptr)
-    deletePrimary();
-  if(_specialBuffer != nullptr)
-    deleteSpecial();
+  std::unique_lock<std::mutex> lock(_deleteMutex);
+  deletePrimary();
+  deleteSpecial();
   _lenInBytes = 0;
+  lock.unlock();
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////
