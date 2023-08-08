@@ -895,23 +895,23 @@ SD_HOST sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::Lo
 }
 
 SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rearrange, sd::LongType len) {
+  if(shapeInfo == nullptr || rearrange == nullptr || len <= 1)
+    return;
   if (len == -1)  // calculate array length if it is not given
     len = shape::length(shapeInfo);
 
-  // check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute
-  if (len == 1) return;
 
   const sd::LongType rank = shape::rank(shapeInfo);
 
   // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well
-  bool isPermutNecessary = false;
+  bool isPermuteNecessary = false;
   for (sd::LongType i = 0; i < rank; ++i)
     if (rearrange[i] != i) {
-      isPermutNecessary = true;
+      isPermuteNecessary = true;
       break;
     }
 
-  if (!isPermutNecessary) return;
+  if (!isPermuteNecessary) return;
 
   // check whether rearrange contains correct indexes
   for (sd::LongType i = 0; i < rank; ++i) {
@@ -1373,7 +1373,7 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
       THROW_EXCEPTION("Input shape buffer is corrupt. First rank is < 0 or greater than the max rank of 32.");
   }
 
-  int rank = shape::rank(shapeInfo);
+  sd::LongType rank = shape::rank(shapeInfo);
   if(rank == 0) {
     printf("Rank %d\n", rank);
     return;
@@ -1385,7 +1385,7 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   }
   printf("Shape:\n");
   for (int i = 0; i < rank; i++) {
-    printf(" %lld ", (long long)shape[i]);
+    printf(" %lld ", (sd::LongType)shape[i]);
   }
 
   printf("\n");
@@ -1393,7 +1393,7 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   sd::LongType *stride = shape::stride(shapeInfo);
   printf("Stride:\n");
   for (int i = 0; i < rank; i++) {
-    printf(" %lld ", (long long)stride[i]);
+    printf(" %lld ", (sd::LongType)stride[i]);
   }
 
   printf("\n");
@@ -1402,11 +1402,11 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
 }
 
 SD_HOST void printShapeInfoLinear(const sd::LongType *shapeInfo) {
-  int rank = shape::rank(shapeInfo);
-  int lim = shape::shapeInfoLength(rank);
+  sd::LongType rank = shape::rank(shapeInfo);
+  sd::LongType lim = shape::shapeInfoLength(rank);
   printf("ShapeInfo: [");
-  for (int i = 0; i < lim; i++) {
-    printf("%lld", (long long)shapeInfo[i]);
+  for (sd::LongType i = 0; i < lim; i++) {
+    printf("%lld", shapeInfo[i]);
 
     if (i < lim - 1) {
       printf(", ");
@@ -1422,11 +1422,11 @@ SD_HOST void printShapeInfoLinear(const char *msg, int rank, const sd::LongType 
                                   const sd::LongType *strides) {
   printf("%s : [", msg);
   for (int i = 0; i < rank; i++) {
-    printf("%lld, ", (long long)shape[i]);
+    printf("%lld, ", shape[i]);
   }
 
   for (int i = 0; i < rank; i++) {
-    printf("%lld", (long long)strides[i]);
+    printf("%lld", strides[i]);
 
     if (i < rank - 1) printf(", ");
   }
@@ -1442,7 +1442,7 @@ SD_HOST void printShapeInfoLinear(const char *msg, const sd::LongType *shapeInfo
   int lim = shape::shapeInfoLength(rank);
   printf("%s : [", msg);
   for (int i = 0; i < lim; i++) {
-    printf("%lld", (long long)shapeInfo[i]);
+    printf("%lld",shapeInfo[i]);
 
     if (i < lim - 1) {
       printf(", ");

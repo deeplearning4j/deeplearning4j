@@ -37,6 +37,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
  private:
   std::shared_ptr<DataBuffer> _dataBuffer;
   uint64_t _offset = 0;
+  bool owner;
 
  public:
   InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
@@ -62,6 +63,9 @@ class SD_LIB_EXPORT InteropDataBuffer {
 
   int deviceId() const;
   void setDeviceId(int deviceId);
+
+  //updates whether the buffer is the owner of its associated buffers or not.
+  void markOwner(bool owner);
 
   int useCount() const;
 

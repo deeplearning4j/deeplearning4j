@@ -71,16 +71,26 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
   std::lock_guard<std::mutex> lock(_mutex);
 
   if (_cache[deviceId].count(*descriptor) == 0) {
+    sd_print("Creating new bufferForShapeInfo\n");
+    sd_print("Here is the descriptor\n");
+    shape::printShapeInfo(descriptor->toShapeInfo());
+    sd_print("About to create new hPtr\n");
+
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
+    sd_print("About to create new dPtr\n");
+
     auto dPtr = std::make_shared<PointerWrapper>(
         ConstantHelper::getInstance().replicatePointer(hPtr->pointer(),
                                                        shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>())),
         std::make_shared<CudaPointerDeallocator>());
+    sd_print("Creating constant shape buffer\n");
+
     ConstantShapeBuffer *buffer =  new ConstantShapeBuffer(hPtr, dPtr);
     _cache[deviceId][*descriptor] = buffer;
     return buffer;
   } else {
+    sd_print("bufferForShapeInfo: Returning cache access\n");
     return _cache[deviceId].at(*descriptor);
   }
 }

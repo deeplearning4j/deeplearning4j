@@ -84,14 +84,14 @@ public class AllocationPoint {
     private long accessDeviceWrite = 0L;
 
     protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-/*
-    @Getter
-    @Setter
-    protected volatile cudaEvent_t writeLane;
+    /*
+        @Getter
+        @Setter
+        protected volatile cudaEvent_t writeLane;
 
-    @Getter
-    protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
-*/
+        @Getter
+        protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
+    */
     @Getter
     @Setter
     private boolean constant;
@@ -110,10 +110,7 @@ public class AllocationPoint {
         objectId = Nd4j.getDeallocatorService().nextValue();
     }
 
-    public void setPointers(Pointer primary, Pointer special, long numberOfElements) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, primary, numberOfElements);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(ptrDataBuffer, special, numberOfElements);
-    }
+
 
     public int getDeviceId() {
         return ptrDataBuffer.deviceId();
@@ -159,11 +156,6 @@ public class AllocationPoint {
         return bytes;
     }
 
-    /*
-    public void addReadLane(cudaEvent_t event) {
-        readLane.add(event);
-    }
-    */
 
     /**
      * This method stores WeakReference to original BaseCudaDataBuffer
@@ -171,11 +163,9 @@ public class AllocationPoint {
      * @param buffer
      */
     public void attachBuffer(@NonNull BaseDataBuffer buffer) {
-        //originalDataBufferReference = new WeakReference<BaseDataBuffer>(buffer);
     }
 
     public void attachReference(GarbageBufferReference reference) {
-        //garbageBufferReference = reference;
     }
 
     /**
@@ -186,9 +176,6 @@ public class AllocationPoint {
      * @return
      */
     public DataBuffer getBuffer() {
-        //if (originalDataBufferReference != null) {
-        //    return originalDataBufferReference.get();
-        //} else
         return null;
     }
 

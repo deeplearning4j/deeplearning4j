@@ -26,7 +26,7 @@
 
 namespace sd {
 InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) {
-  _dataBuffer = dataBuffer.getDataBuffer();
+  _dataBuffer = std::make_shared<DataBuffer>(*dataBuffer.getDataBuffer().get());
 
   // offset is always absolute to the original buffer
   _offset = offset;
@@ -37,7 +37,7 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t len
   }
 }
 
-InteropDataBuffer::InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer) { _dataBuffer = databuffer; }
+InteropDataBuffer::InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer) { _dataBuffer = std::make_shared<DataBuffer>(*databuffer.get()); }
 
 InteropDataBuffer::InteropDataBuffer(size_t elements, sd::DataType dtype, bool allocateBoth) {
   if (elements == 0) {
@@ -46,6 +46,12 @@ InteropDataBuffer::InteropDataBuffer(size_t elements, sd::DataType dtype, bool a
   } else {
     _dataBuffer = std::make_shared<DataBuffer>(elements, dtype, nullptr, allocateBoth);
   }
+}
+
+void InteropDataBuffer::markOwner(bool owner) {
+  this->owner = owner;
+  this->_dataBuffer->_isOwnerPrimary = owner;
+  this->_dataBuffer->_isOwnerSpecial = owner;
 }
 
 std::shared_ptr<DataBuffer> InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }

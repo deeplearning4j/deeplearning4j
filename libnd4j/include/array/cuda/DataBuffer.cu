@@ -76,7 +76,15 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
-  if (_specialBuffer == nullptr && getLenInBytes() > 0) {
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    allocationStackTraceSpecial = new backward::StackTrace();
+    allocationStackTraceSpecial->load_here(32);
+  }
+
+#endif
+
+  if (_specialBuffer == nullptr) {
     auto deviceId = sd::AffinityManager::currentDeviceId();
 
     if (_workspace == nullptr) {
@@ -86,6 +94,7 @@ void DataBuffer::allocateSpecial() {
                                               getLenInBytes());
     }
 
+    sd_printf("Allocating special buffer of size %lld on device %d\n", getLenInBytes(), deviceId);
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
 
@@ -143,8 +152,32 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
-  if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
+
+  if (_isOwnerSpecial && _specialBuffer != nullptr) {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
+#if defined(SD_GCC_FUNCTRACE)
+    if(Environment::getInstance().isFuncTracePrintAllocate()) {
+      sd_print("Beginning printing for allocation part of  deallocation event deleteSpecial\n");
+      Printer p2;
+      if(allocationStackTraceSpecial != nullptr && allocationStackTraceSpecial->size() > 0)
+        p2.print(*allocationStackTraceSpecial);
+      else {
+        sd_print("No stack trace available for deletePrimary\n");
+      }
+      sd_print("End printing for allocation part of deallocation event deleteSpecial\n");
+    }
+
+    if(Environment::getInstance().isFuncTracePrintDeallocate()) {
+      sd_print("Beginning printing for deallocation event deleteSpecial\n");
+      Printer p2;
+      StackTrace deallocTrace;
+      deallocTrace.load_here();
+      p2.print(deallocTrace);
+      sd_print("End printing for deallocation event deleteSpecial\n");
+
+    }
+
+#endif
     RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;
     _isOwnerSpecial = false;
@@ -232,6 +265,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
+ //note we don't use locks here
   deleteSpecial();
   _specialBuffer = special;
   _isOwnerSpecial = isOwnerSpecial;

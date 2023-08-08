@@ -41,8 +41,7 @@ class SD_LIB_EXPORT DataBuffer {
   size_t _lenInBytes = 0;
   DataType _dataType;
   memory::Workspace *_workspace = nullptr;
-  bool _isOwnerPrimary;
-  bool _isOwnerSpecial;
+
   std::atomic<int> _deviceId;
   std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
@@ -53,7 +52,15 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<sd::LongType> _readPrimary;
   mutable std::atomic<sd::LongType> _readSpecial;
 #endif
+
+#if defined(SD_GCC_FUNCTRACE)
+  StackTrace *allocationStackTracePrimary = nullptr;
+  StackTrace *allocationStackTraceSpecial = nullptr;
 #endif
+#endif
+
+
+
 
   void setCountersToZero();
   void copyCounters(const DataBuffer &other);
@@ -69,6 +76,10 @@ class SD_LIB_EXPORT DataBuffer {
                           const sd::LongType offsetHostBuffer = 0);
 
  public:
+
+  bool _isOwnerPrimary;
+  bool _isOwnerSpecial;
+
   DataBuffer(void *primary, void *special, const size_t lenInBytes, const DataType dataType,
              const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
              memory::Workspace *workspace = nullptr);

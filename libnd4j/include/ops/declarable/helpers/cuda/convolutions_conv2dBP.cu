@@ -87,16 +87,16 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     colPermut = {2, 3, 1, 0, 4, 5};
   }
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  NDArray *columns = new NDArray(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
   // ----- calculation of gradW ----- //
   if (gradW) {
     auto ctx = block.launchContext();
-    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
+    helpers::im2col(*ctx, *input, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
                     NDArrayFactory::create(
                         0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
     sd::MmulHelper::tensorDot(
-        &columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
+        columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
         wPermut);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
   }
 
@@ -113,16 +113,18 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   // [oC, iC, kH, kW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, bS, oH, oW]
   // [oC, kH, kW, iC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
   sd::MmulHelper::tensorDot(
-      weights, gradO, &columns, {indWoC}, {indIOioC},
+      weights, gradO, columns, {indWoC}, {indIOioC},
       colPermut);  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
 
-  helpers::col2im(*block.launchContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
+  helpers::col2im(*block.launchContext(), *columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   if (!isNCHW) {
     delete input;
     delete gradI;
   }
+
+  delete columns;
 }
 
 //////////////////////////////////////////////////////////////////////////

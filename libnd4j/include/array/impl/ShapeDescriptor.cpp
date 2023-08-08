@@ -96,6 +96,11 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape,
                                  const sd::LongType *strides, const LongType rank, sd::LongType ews, sd::LongType extras) {
+  if(shape == nullptr)
+    THROW_EXCEPTION("ShapeDescriptor constructor: Shape can not be null!");
+
+  if(strides == nullptr)
+    THROW_EXCEPTION("ShapeDescriptor constructor: Strides can not be null!");
   _shape_strides.resize(2 * rank);
   _dataType = type;
   _order = order;
@@ -341,8 +346,8 @@ ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const sd::LongType length, c
 }
 
 ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, const char order,
-                                                        const std::vector<sd::LongType> &shape,
-                                                        const std::vector<sd::LongType> &paddings) {
+                                                           const std::vector<sd::LongType> &shape,
+                                                           const std::vector<sd::LongType> &paddings) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
   descriptor->_dataType = type;
   descriptor->_order = order;

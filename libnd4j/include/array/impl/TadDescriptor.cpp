@@ -35,7 +35,7 @@ TadDescriptor::TadDescriptor(const TadDescriptor &other) {
 #endif
 TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
-  ShapeDescriptor descriptor(originalShape);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape);
 
   _axis.resize(length);
   for (sd::LongType e = 0; e < length; e++) {
@@ -44,7 +44,7 @@ TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *
 
   if (length > 1) std::sort(_axis.begin(), _axis.end());
 
-  _originalShape = descriptor;
+  _originalShape = *descriptor;
   _unitiesInShape = keepUnitiesInShape;
 }
 

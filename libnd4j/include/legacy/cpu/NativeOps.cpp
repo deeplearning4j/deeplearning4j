@@ -3297,8 +3297,7 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
-    sd::LongType totalElementSize = elements * DataTypeUtils::sizeOf(dtype);
-    sd::LongType  size = DataTypeUtils::sizeOf(dtype);
+    sd::LongType totalElementSize = elements == 0 ?  DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
     return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3322,6 +3321,7 @@ void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                              sd::Pointer special) {
   auto buffer = dbAllocateDataBuffer(0, dataType, false);
+  buffer->markOwner(false);
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 

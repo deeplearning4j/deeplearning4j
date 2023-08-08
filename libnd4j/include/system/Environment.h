@@ -50,7 +50,8 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _precBoost;
   std::atomic<bool> _useONEDNN{true};
   std::atomic<bool> _allowHelpers{true};
-
+  std::atomic<bool> funcTracePrintDeallocate;
+  std::atomic<bool> funcTracePrintAllocate;
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
 
@@ -160,6 +161,13 @@ class SD_LIB_EXPORT Environment {
   const char* getVedaDeviceDir();
 
   void setVedaDeviceDir(const std::string &dir);
+
+  bool isFuncTracePrintDeallocate();
+  void setFuncTracePrintDeallocate(bool reallyPrint);
+  bool isFuncTracePrintAllocate();
+  void setFuncTracePrintAllocate(bool reallyPrint);
+
+
 };
 }  // namespace sd
 

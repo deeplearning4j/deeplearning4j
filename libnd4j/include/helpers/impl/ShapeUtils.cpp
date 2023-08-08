@@ -357,6 +357,7 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
   if (rank != arr.rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
 
+
   auto shapeInfoLength = shape::shapeInfoLength(rank);
 
   // allocate memory for new array - shapeInfo
@@ -385,13 +386,18 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-const sd::LongType* ShapeUtils::evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
+const sd::LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
                                                     const bool setContigStrides) {
   sd::LongType rank = arr.rankOf();
-  std::vector<sd::LongType> dimensions(rank);
-  for (sd::LongType i = 0; i < rank; ++i) dimensions[i] = rank - 1 - i;
 
-  return evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace, setContigStrides);
+  //note we do this because of stack allocation crashes
+  //if the stack is used a vector's data can cause crashes when it goes out of scope
+  sd::LongType  *dims = new sd::LongType[rank];
+  for (sd::LongType i = 0; i < rank; ++i) dims[i] = rank - 1 - i;
+
+  auto ret = evalPermShapeInfo(dims, rank, arr, workspace, setContigStrides);
+  delete[] dims;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////

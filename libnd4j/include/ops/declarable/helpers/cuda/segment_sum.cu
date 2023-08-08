@@ -122,7 +122,6 @@ static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongTy
                                           sd::LongType numIndices) {
   __shared__ T* val;
   __shared__ sd::LongType len, zIndex, total;
-  __shared__ T* z;
   __shared__ int start, finish;
 
   if(blockIdx.x >= numIndices)
@@ -130,7 +129,6 @@ static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongTy
 
   if (threadIdx.x == 0) {
     auto segment = indices[blockIdx.x];  // / threadsPerSegment;
-    z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
     len = shape::length(inputTads);
     start = starts[segment];
     finish = start + lengths[segment];
@@ -141,17 +139,18 @@ static SD_KERNEL void segmentSumTadKernel(const void* inputBuf, const sd::LongTy
   auto idx = blockIdx.x;
   if (blockIdx.x <= total) {
     auto x = reinterpret_cast<const T*>(inputBuf) + inputTadOffsets[idx];
+    auto z2 = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[idx];
     if (blockIdx.x == start) {
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        sd::math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+        sd::math::atomics::sd_atomicAdd(&z2[zIndex], x[xIndex]);
       }
     } else {
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        if (lengths[indices[idx]]) sd::math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+        if (lengths[indices[idx]]) sd::math::atomics::sd_atomicAdd(&z2[zIndex], x[xIndex]);
       }
     }
   }
@@ -230,12 +229,13 @@ static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* inpu
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
-    dims.x = input->sizeAt(0);
+    dim3 dims = segmentTad(input->sizeAt(0));
     segmentSumTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
     delete dimensions;
+    dimensions = nullptr;
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //

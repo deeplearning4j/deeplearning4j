@@ -229,13 +229,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public void lazyAllocateHostPointer() {
-        if (length() == 0)
-            return;
-
         // java side might be unaware of native-side buffer allocation
-        if (this.indexer == null || this.pointer == null || this.pointer.address() == 0) {
-            initHostPointerAndIndexer();
-        } else if (allocationPoint.getHostPointer() != null && allocationPoint.getHostPointer().address() != this.pointer.address()) {
+        if (this.indexer == null || this.pointer == null || this.pointer.address() == 0 || allocationPoint.getHostPointer() != null && allocationPoint.getHostPointer().address() != this.pointer.address()) {
             initHostPointerAndIndexer();
         }
     }
@@ -308,25 +303,27 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     protected void initHostPointerAndIndexer() {
-        if (length() == 0)
-            return;
 
         if (allocationPoint.getHostPointer() == null) {
             val location = allocationPoint.getAllocationStatus();
+            // let cpp allocate primary buffer
             if (parentWorkspace == null) {
-                // let cpp allocate primary buffer
                 NativeOpsHolder.getInstance().getDeviceNativeOps().dbAllocatePrimaryBuffer(ptrDataBuffer);
+                if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                    ptrDataBuffer.captureTrace();
             } else {
                 val ptr = parentWorkspace.alloc(this.length * this.elementSize, MemoryKind.HOST, this.dataType(), false);
+                if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                    ptrDataBuffer.captureTrace();
                 ptrDataBuffer.setPrimaryBuffer(ptr, this.length);
             }
             this.allocationPoint.setAllocationStatus(location);
-            this.allocationPoint.tickDeviceWrite();
+            this.allocationPoint.tickHostWrite();
         }
 
         val hostPointer = allocationPoint.getHostPointer();
-
-        assert hostPointer != null;
+        if(hostPointer == null)
+            throw new IllegalStateException("Allocation point Host pointer is NULL");
 
         initPointerAndIndexerFromHost(hostPointer);
     }
@@ -404,6 +401,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         // we allocate native DataBuffer AND it will contain our device pointer
         ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, false);
+        if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+            ptrDataBuffer.captureTrace();
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * type.width());
 
         if (initialize) {
@@ -440,7 +439,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             // allocate from workspace, and pass it  to native DataBuffer
             ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
-
+            if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                ptrDataBuffer.captureTrace();
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
@@ -450,7 +450,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // we can register this pointer as device, because it's pinned memory
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
             ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
-
+            if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                ptrDataBuffer.captureTrace();
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();
                 NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(devicePtr, 0, length * elementSize, 0, ctx.getSpecialStream());
@@ -513,6 +514,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         // we're creating view of the native DataBuffer
         ptrDataBuffer = ((BaseCudaDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
+        if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+            ptrDataBuffer.captureTrace();
+
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length);
         val hostPointer = allocationPoint.getHostPointer();
 
@@ -766,8 +770,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             case BOOL: {
                 val pointer = new BytePointer(ArrayUtil.toBytes(data));
                 copyDataFromSrc(pointer,length,offset,dstOffset);
-
-
             }
             break;
 

@@ -2129,8 +2129,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
-        shape2.deallocate();
-        stride2.deallocate();
         return result;
     }
 
@@ -2150,8 +2148,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
-        shape2.deallocate();
-        stride2.deallocate();
+
         return result;
     }
 

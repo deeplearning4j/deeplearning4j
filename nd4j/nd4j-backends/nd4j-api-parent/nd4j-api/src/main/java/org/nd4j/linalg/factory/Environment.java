@@ -116,4 +116,11 @@ public interface Environment {
      * @return
      */
     long getDeviceCouner(int deviceId);
+
+    boolean isFuncTracePrintDeallocate();
+    boolean isFuncTracePrintAllocate();
+
+    void setFuncTraceForDeallocate(boolean reallyTrace);
+    void setFuncTraceForAllocate(boolean reallyTrace);
+
 }

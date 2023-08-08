@@ -303,20 +303,20 @@ SD_INLINE void TAD::printTADsND(T *x) {
   }
 }
 
-SD_INLINE void TAD::permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, const long long int *rearrange,
+SD_INLINE void TAD::permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, const sd::LongType *rearrange,
                                               sd::LongType *out) {
   memcpy(out, shapeBuffer, sizeof(sd::LongType) * shape::shapeInfoLength(this->rank));
   doPermuteShapeInfo(out, rearrange);
 }
 
-SD_INLINE sd::LongType *TAD::permuteShapeBuffer(sd::LongType const *shapeBuffer, long long int *rearrange) {
+SD_INLINE sd::LongType *TAD::permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange) {
   int len = shape::shapeInfoLength(this->rank);
   sd::LongType *copy = shape::copyOf(len, shapeBuffer);
   doPermuteShapeInfo(copy, rearrange);
   return copy;
 }
 
-SD_INLINE bool TAD::dimensionsDescending(int rank, const long long int *dimensions, int length) {
+SD_INLINE bool TAD::dimensionsDescending(int rank, const sd::LongType *dimensions, int length) {
   int desired = rank - 1;
   for (int e = length - 1; e >= 0; e--) {
     if (dimensions[e] != desired--) return false;

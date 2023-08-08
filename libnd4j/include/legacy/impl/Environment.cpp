@@ -178,7 +178,6 @@ sd::Environment::Environment() {
     cudaSetDevice(i);
     cudaGetDeviceProperties(&devProperties[i], i);
 
-    // cudaDeviceSetLimit(cudaLimitStackSize, 4096);
     Pair p(devProperties[i].major, devProperties[i].minor);
     _capabilities.emplace_back(p);
   }
@@ -321,21 +320,37 @@ uint64_t Environment::maxPrimaryMemory() { return _maxTotalPrimaryMemory.load();
 
 uint64_t Environment::maxSpecialMemory() { return _maxTotalSpecialMemory.load(); }
 
+bool Environment::isFuncTracePrintAllocate() {
+  return this->funcTracePrintAllocate;
+}
+
+bool Environment::isFuncTracePrintDeallocate() {
+  return this->funcTracePrintDeallocate;
+}
+
+void Environment::setFuncTracePrintAllocate(bool reallyPrint) {
+  this->funcTracePrintAllocate = reallyPrint;
+}
+
+void Environment::setFuncTracePrintDeallocate(bool reallyPrint) {
+  this->funcTracePrintDeallocate = reallyPrint;
+}
+
 const char* Environment::getVedaDeviceDir(){
 #if !defined(HAVE_VEDA)
-    return nullptr;
+  return nullptr;
 #else
-    const std::lock_guard<std::mutex> lock(path_mutex);
+  const std::lock_guard<std::mutex> lock(path_mutex);
     if (veda_device_dir.empty()) return nullptr;
     return veda_device_dir.c_str();
 #endif
-  }
+}
 
-  void Environment::setVedaDeviceDir(const std::string &dir){
+void Environment::setVedaDeviceDir(const std::string &dir) {
 #if defined(HAVE_VEDA)
-    const std::lock_guard<std::mutex> lock(path_mutex);
+  const std::lock_guard<std::mutex> lock(path_mutex);
     if (!dir.empty()) veda_device_dir=dir;
 #endif
-  }
+}
 
 }  // namespace sd

@@ -26,7 +26,7 @@
 namespace sd {
 ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary)
     : ConstantShapeBuffer(primary, std::shared_ptr<PointerWrapper>(nullptr)) {
-  //
+
 }
 
 ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary,

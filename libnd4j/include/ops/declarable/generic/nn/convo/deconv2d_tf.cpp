@@ -65,12 +65,12 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
                gradIShape->lengthOf());
 
   // create empty conv2d input array
-  NDArray input(gradO->ordering(), gradIShape->asVectorT<sd::LongType>(), gradO->dataType(), block.launchContext());
+  NDArray *input = new NDArray(gradO->ordering(), gradIShape->asVectorT<sd::LongType>(), gradO->dataType(), block.launchContext());
 
   LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
   LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
-  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
+  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
   LongType trueoH, trueoW;  // true output height, width
@@ -87,9 +87,11 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
                "CUSTOM DECONV2D_TF OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
 
-  ConvolutionUtils::conv2dBP(block, &input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH, kW, sH, sW, pH, pW,
+  ConvolutionUtils::conv2dBP(block, input, weights, nullptr, gradO, gradI, nullptr, nullptr, kH, kW, sH, sW, pH, pW,
                              dH, dW, isSameMode, isNCHW, wFormat);
 
+
+  delete input;
   return sd::Status::OK;
 }
 

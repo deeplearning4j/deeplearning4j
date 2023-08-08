@@ -50,7 +50,6 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
     auto seed = INT_ARG(1);
     rng.setStates(seed, seed ^ 0xdeadbeef);
     sd_debug("randomuniform: Setting seed %d\n", seed);
-    // rng.setSeed(seed);
   }
 
   auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*)nullptr;
@@ -58,8 +57,8 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   bool disposable = false;
 
   if (min == nullptr && max == nullptr && block.numT() >= 2) {
-    min = NDArrayFactory::create_(dtype, block.launchContext());
-    max = NDArrayFactory::create_(dtype, block.launchContext());
+    min = new NDArray(NDArrayFactory::create_(dtype, block.launchContext()));
+    max = new NDArray(NDArrayFactory::create_(dtype, block.launchContext()));
     min->p(0, T_ARG(0));
     max->p(0, T_ARG(1));
     disposable = true;
@@ -70,10 +69,9 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
 
-  if (disposable) {
-    delete min;
-    delete max;
-  }
+  delete min;
+  delete max;
+
   return sd::Status::OK;
 }
 
@@ -85,8 +83,8 @@ DECLARE_SHAPE_FN(randomuniform) {
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)
-    REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
-                 "RandomUniform: data type of output and min/max args should be the same");
+  REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
+               "RandomUniform: data type of output and min/max args should be the same");
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
   return SHAPELIST(newShape);

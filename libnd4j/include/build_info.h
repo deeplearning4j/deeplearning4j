@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 SD_LIB_EXPORT const char *buildInfo();
-
+SD_LIB_EXPORT bool isFuncTrace();
 #ifdef __cplusplus
 }
 #endif

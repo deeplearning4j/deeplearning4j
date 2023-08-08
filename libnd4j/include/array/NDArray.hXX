@@ -310,7 +310,7 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd
   _context = context;
   _offset = offset;
   setShapeInfo(shapeInfo);
-  _buffer = buffer;
+  _buffer = std::make_shared<DataBuffer>(*buffer.get());
 
   if(buffer != nullptr)
     _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
@@ -1997,7 +1997,7 @@ NDArray NDArray::transpose() && {
 ////////////////////////////////////////////////////////////////////////
 // method performs transpose operation based on this array and store result in target, this array remains unaffected
 void NDArray::transpose(NDArray &target) const {
-  auto correctShape = ShapeUtils::evalTranspShapeInfo(*this, getContext()->getWorkspace());
+  auto correctShape = ShapeUtils::evalTransposeShapeInfo(*this, getContext()->getWorkspace());
   if (!shape::equalsStrict(correctShape, target.shapeInfo()))
     THROW_EXCEPTION("NDArray::transpose method: the shapeInfo of target array is wrong !");
 
@@ -2155,9 +2155,10 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank) const & {
   // evaluate shapeInfo for output (permuted) array ret
   auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
-  NDArray ret(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
-  ret._isView = true;
-  return ret;
+  NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
+  ret->_isView = true;
+  delete[] shapeInfoPermuted;
+  return *ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2177,17 +2178,8 @@ NDArray NDArray::permute(const std::vector<LongType> &dimensions) && {
   return std::move(*this);
 }
 
-//////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::initializer_list<LongType> &dimensions) const & {
-  std::vector<sd::LongType> vec(dimensions);
-  return permute(vec);
-}
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::initializer_list<LongType> &dimensions) && {
-  this->permutei(dimensions);
-  return std::move(*this);
-}
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::permute(const LongType *dimensions, const int rank, NDArray &target) const {

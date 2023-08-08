@@ -426,7 +426,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   auto newShapeInfoCast = reinterpret_cast<const sd::LongType *>(primary);
   auto newShapeCast2 = const_cast<sd::LongType *>(newShapeInfoCast);
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(newShapeCast2)) {
+  if (dataBuffer != nullptr) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2,
                         sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(

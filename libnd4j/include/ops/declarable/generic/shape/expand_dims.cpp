@@ -30,7 +30,7 @@ namespace ops {
 CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<int>(0);
+  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<sd::LongType>(0);
 
   if (axis < 0) axis += input->rankOf() + 1;
 
@@ -39,16 +39,13 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
                axis);
 
 
-  if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
-    output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(),
-                                         output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0,
-                                         input->bufferOffset());
-  } else {
-    //the shape was already determined in the calculate shape info, just reshape to the same shape as the output
-    auto tmp = input->reshape(input->ordering(), output->getShapeAsVector(),false);
-    output->assign(tmp);
-  }
-  return sd::Status::OK;
+  //note we used to have a specific copy case here but we should
+  //be abstracting away data copy and reshape details like buffer copying
+
+  //the shape was already determined in the calculate shape info, just reshape to the same shape as the output
+  auto tmp = input->reshape(input->ordering(), output->getShapeAsVector(),true);
+  output->assign(tmp);
+  return Status::OK;
 }
 
 DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
@@ -57,7 +54,7 @@ DECLARE_SHAPE_FN(expand_dims) {
   auto inShape = inputShape->at(0);
 
   // 0D scalar edge case
-  if (shape::rank(inShape) == 0) {
+  if (shape::isScalar(inShape)) {
     sd::LongType x = 1;
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x);
     return SHAPELIST(newShape);

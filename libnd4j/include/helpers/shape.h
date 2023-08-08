@@ -1565,6 +1565,9 @@ SD_INLINE SD_HOST_DEVICE sd::LongType slices(sd::LongType *shapeBuffer) {
  * @return rank * 2 + 4
  */
 SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(sd::LongType rank) {
+   //rank takes up 1 element + usual elements
+  if(rank == 0)
+    return 1 * 2 + 4;
   // FIXME magic numbers
   return rank * 2 + 4;
 }
@@ -1577,12 +1580,16 @@ SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(const sd::LongType *shape)
   return shapeInfoLength(static_cast<sd::LongType>(shape[0]));
 }
 
-SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoByteLength(long long int rank) {
+SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoByteLength(sd::LongType rank) {
+  //scalar formula isn't correct
+  if(rank == 0)
+    return 1 + (2 + 4) * sizeof(sd::LongType);
   // FIXME magic numbers
   return (rank * 2 + 4) * sizeof(sd::LongType);
 }
 
 SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shapeInfo) {
+
   // FIXME magic numbers
   return shapeInfoByteLength((sd::LongType)shapeInfo[0]);
 }

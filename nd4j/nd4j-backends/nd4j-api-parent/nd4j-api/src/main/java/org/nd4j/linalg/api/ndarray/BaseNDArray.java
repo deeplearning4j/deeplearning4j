@@ -1619,6 +1619,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup(char order) {
+        System.err.println("Dupping array of shape " + shapeInfoToString());
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
 
         if (this.isCompressed() && this.ordering() == order) {
@@ -1631,14 +1632,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        // fixme: eventually it would be nice to have this in native code
-        if (isS()) {
-            val list = new ArrayList<String>();
-            for (int e = 0; e < this.length(); e++)
-                list.add(this.getString(e));
-
-            return Nd4j.create(list, this.shape(), this.ordering());
-        }
         val z = Nd4j.createUninitialized(this.dataType(), this.shape(), order);
         z.assign(this);
         return z;

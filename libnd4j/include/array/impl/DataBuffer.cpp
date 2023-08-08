@@ -52,7 +52,10 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-
+#if defined(SD_GCC_FUNCTRACE)
+  allocationStackTracePrimary = other.allocationStackTracePrimary;
+  allocationStackTraceSpecial = other.allocationStackTraceSpecial;
+#endif
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
 
@@ -132,14 +135,13 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 
   setCountersToZero();
 
-  if (lenInBytes != 0) {
-    allocateBuffers(allocBoth);
+  allocateBuffers(allocBoth);
 #if defined(HAVE_VEDA)
-    readPrimary();
+  readPrimary();
 #else
-    writeSpecial();
+  writeSpecial();
 #endif
-  }
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -155,7 +157,10 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _deviceId.store(other._deviceId);
 
   copyCounters(other);
-
+#if defined(SD_GCC_FUNCTRACE)
+  allocationStackTracePrimary = other.allocationStackTracePrimary;
+  allocationStackTraceSpecial = other.allocationStackTraceSpecial;
+#endif
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
@@ -225,7 +230,14 @@ size_t DataBuffer::getNumElements()   {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocatePrimary() {
-  if (_primaryBuffer == nullptr && getLenInBytes() > 0) {
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    allocationStackTracePrimary = new StackTrace();
+    allocationStackTracePrimary->load_here(32);
+  }
+
+#endif
+  if (_primaryBuffer == nullptr) {
     auto deviceId = sd::AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {
@@ -243,6 +255,8 @@ void DataBuffer::allocatePrimary() {
               sd::memory::MemoryCounter::getInstance().groupLimit(sd::memory::MemoryType::HOST), getLenInBytes());
       }
     }
+
+
 
     ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerPrimary = true;
@@ -265,8 +279,32 @@ void DataBuffer::setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpec
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deletePrimary() {
-  if (_isOwnerPrimary && _primaryBuffer != nullptr && getLenInBytes() != 0) {
+#if defined(SD_GCC_FUNCTRACE)
+  sd_print("Beginning printing for allocation part of deallocation event deletePrimary\n");
+  Printer p2;
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
+      p2.print(*allocationStackTracePrimary);
+    else {
+      sd_print("No stack trace available for deletePrimary\n");
+    }
+    sd_print("End printing for allocation part of deallocation event deletePrimary\n");
+  }
+
+  if(Environment::getInstance().isFuncTracePrintDeallocate()) {
+    sd_print("Beginning printing for deallocation event deletePrimary\n");
+    StackTrace deallocTrace;
+    deallocTrace.load_here();
+    p2.print(deallocTrace);
+    sd_print("End printing for deallocation event deletePrimary\n");
+
+  }
+
+
+#endif
+  if (_isOwnerPrimary && _primaryBuffer != nullptr) {
     auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
+
     RELEASE(p, _workspace);
     _primaryBuffer = nullptr;
     _isOwnerPrimary = false;
@@ -280,23 +318,29 @@ void DataBuffer::deletePrimary() {
     }
   }
 
+#if defined(SD_GCC_FUNCTRACE)
+  sd_print("After deletePrimary\n");
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteBuffers() {
-  std::unique_lock<std::mutex> lock(_deleteMutex);
+  std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
+  if(allocationStackTracePrimary != nullptr)
+    delete allocationStackTracePrimary;
+  if(allocationStackTraceSpecial != nullptr)
+    delete allocationStackTraceSpecial;
   _lenInBytes = 0;
-  lock.unlock();
-
-
 }
 
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::~DataBuffer() { deleteBuffers(); }
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
+  std::lock_guard<std::mutex> lock(_deleteMutex);
   if (_primaryBuffer != nullptr && _isOwnerPrimary) {
     deletePrimary();
   }
@@ -307,6 +351,8 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
+  std::lock_guard<std::mutex> lock(_deleteMutex);
+
   if (_specialBuffer != nullptr && _isOwnerSpecial) {
     deleteSpecial();
   }

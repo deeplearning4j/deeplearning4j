@@ -17,9 +17,33 @@
  ******************************************************************************/
 #include <build_info.h>
 #include <config.h>
+
 #include <string>
+
+#include "helpers/logger.h"
+
+#if defined(SD_GCC_FUNCTRACE)
+
+bool isFuncTrace() {
+  return true;
+}
+
+#else
+
+bool isFuncTrace() {
+  return false;
+}
+
+#endif
+
 const char *buildInfo() {
   std::string ret = "Build Info: ";
+#if defined(SD_GCC_FUNCTRACE)
+  ret += "\nFunctrace: ";
+  ret += isFuncTrace() ? "ON\n" : "OFF";
+
+#endif
+
 #if defined(__clang__)
   ret += "Clang: " STRINGIZE(__clang_version__);
 #elif defined(_MSC_VER)
@@ -64,7 +88,7 @@ const char *buildInfo() {
   ret +=  "\nHAVE_ARMCOMPUTE";
 #endif
 
-#if defined(__CUDACC__)
+#if defined(SD_CUDA)
 
   ret +=  "\nCUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(
       __CUDACC_VER_BUILD__);
@@ -74,10 +98,15 @@ const char *buildInfo() {
 #if defined(CUDA_ARCHITECTURES)
   ret += "\nCUDA_ARCHITECTURES: " STRINGIZE(CUDA_ARCHITECTURES);
 #endif
-  if(ret.size() < 1) {
-    ret = "No build info available";
-  }
-  char *ret2 = new char[ret.size() + 1];
-  std::copy(ret.begin(), ret.end(), ret2);
-  return ret2;
+
+
+
+
+  std::string *ret2 =  new std::string(ret);
+  //risk of build information not being printed during debug settings
+  if(isFuncTrace())
+    sd_printf("%s", ret2->c_str());
+  return ret2->c_str();
 }
+
+

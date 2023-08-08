@@ -22,7 +22,7 @@ import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
 /**
  * CUDA backend implementation of {@link Environment}
- * 
+ *
  * @author Alex Black
  */
 public class CudaEnvironment implements Environment {
@@ -194,4 +194,25 @@ public class CudaEnvironment implements Environment {
     public long getDeviceCouner(int deviceId) {
         return e.getDeviceCounter(deviceId);
     }
+
+    @Override
+    public boolean isFuncTracePrintDeallocate() {
+        return e.isFuncTracePrintDeallocate();
+    }
+
+    @Override
+    public boolean isFuncTracePrintAllocate() {
+        return e.isFuncTracePrintAllocate();
+    }
+
+    @Override
+    public void setFuncTraceForDeallocate(boolean reallyTrace) {
+        e.setFuncTracePrintDeallocate(reallyTrace);
+    }
+
+    @Override
+    public void setFuncTraceForAllocate(boolean reallyTrace) {
+        e.setFuncTracePrintAllocate(reallyTrace);
+    }
+
 }

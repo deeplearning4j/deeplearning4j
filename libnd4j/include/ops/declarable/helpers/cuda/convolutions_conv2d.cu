@@ -75,17 +75,17 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   else
     wAxes = {1, 2, 3};
 
-  NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-  NDArray colP = col.permute({0, 5, 3, 4, 1, 2});  // {bS, iC, kH, kW, oH, oW}
+  NDArray *col = new NDArray('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
+  NDArray *colP = new NDArray(col->permute({0, 5, 3, 4, 1, 2}));  // {bS, iC, kH, kW, oH, oW}
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
   //----- calculation of output -----//
   auto ctx = block.launchContext();
-  const NDArray paddingArr = NDArrayFactory::create(0.f, input->getContext());
+  const NDArray *paddingArr = new NDArray(NDArrayFactory::create(0.f, input->getContext()));
   helpers::im2col(
-      *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
-      paddingArr);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
+      *ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
+      *paddingArr);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  MmulHelper::tensorDot(col, weights, &mmulResult, {3, 4, 5}, wAxes,
                         {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
   //----- assign outTemp to output  -----//
@@ -100,6 +100,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
     helpers::addBias(block, *output, *bias, *output, isNCHW);
 
   if (!isNCHW) delete input;
+
+  delete col;
+  delete colP;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -1525,7 +1525,7 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType*dimension, sd::LongType dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
   try {
     auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     return pack;
@@ -3394,7 +3394,6 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
   try {
     auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-    delete desc;
     return buffer;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3651,6 +3650,7 @@ void ctxSetExecutionMode(OpaqueContext *ptr, int execMode) {
 OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                              sd::Pointer special) {
   auto buffer = dbAllocateDataBuffer(0, dataType, false);
+  buffer->markOwner(false);
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 
@@ -3666,7 +3666,8 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
-    return new sd::InteropDataBuffer(elements * DataTypeUtils::sizeOf(dtype), dtype, allocateBoth);
+    sd::LongType totalElementSize = elements == 0 ?  DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
+    return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

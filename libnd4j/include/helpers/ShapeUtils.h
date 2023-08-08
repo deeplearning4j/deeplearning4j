@@ -84,7 +84,7 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // evaluate shapeInfo of transposed array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const sd::LongType* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
+  static const sd::LongType* evalTransposeShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
                                                  const bool setContigStrides = false);
 
   static bool copyVectorPart(std::vector<sd::LongType>& target, std::vector<sd::LongType>& source, LongType rank,

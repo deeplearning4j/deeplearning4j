@@ -1429,6 +1429,7 @@ public interface NativeOps {
     void  dbSetDeviceId(OpaqueDataBuffer dataBuffer, int deviceId);
     void dbExpand(OpaqueDataBuffer dataBuffer, long newLength);
 
+    boolean isFuncTrace();
     /**
      * Gets the build information of the backend
      *

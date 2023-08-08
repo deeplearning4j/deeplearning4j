@@ -74,6 +74,8 @@ public class CpuDeallocator implements Deallocator {
             EventLogger.getInstance().log(logEvent);
         }
 
+        opaqueDataBuffer.printAllocationTraceIfNeeded();
+
         if(!opaqueDataBuffer.isNull())
             NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }

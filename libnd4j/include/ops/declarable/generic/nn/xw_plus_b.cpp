@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   const int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
   auto weightsShape =
-      (1 == nWeightsFormat) ? ShapeUtils::evalTranspShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
+      (1 == nWeightsFormat) ? ShapeUtils::evalTransposeShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
 
   auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, aTranspose,
                                                     bTranspose,

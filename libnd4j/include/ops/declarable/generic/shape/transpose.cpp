@@ -59,12 +59,28 @@ DECLARE_SHAPE_FN(transpose) {
   auto x = INPUT_VARIABLE(0);
 
   if (block.width() == 1 && block.getIArguments()->size() == 0)
-    return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
+    return SHAPELIST(ShapeUtils::evalTransposeShapeInfo(*x, block.workspace(), true));
 
   std::vector<sd::LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getIArguments();
+  bool isPermuteNecessary = false;
+  const sd::LongType rank = x->rankOf();
+  for (sd::LongType i = 0; i < rank; ++i) {
+    if (permutationVector[i] != i) {
+      isPermuteNecessary = true;
+      break;
+    }
+  }
 
+  if(!isPermuteNecessary) {
+        auto outputShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(const_cast<sd::LongType *>(x->shapeInfo()),true);
+        return SHAPELIST(outputShapeInfo);
+  }
+
+
+  //TODO: likely issue we need to sort out with cuda and data here. Change this to be a proper vector and
+  //debug why this is corrupt.
   auto outputShapeInfo =
-      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
+      ConstantShapeHelper::getInstance().createFromExisting(const_cast<sd::LongType *>(ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true)),true);
 
   return SHAPELIST(outputShapeInfo);
 }

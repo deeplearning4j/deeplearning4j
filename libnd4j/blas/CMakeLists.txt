@@ -264,6 +264,7 @@ if(SD_CUDA)
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
                 set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                add_compile_definitions(SD_GCC_FUNCTRACE)
             else()
                 set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS}  -fPIC -G -g ")
 
