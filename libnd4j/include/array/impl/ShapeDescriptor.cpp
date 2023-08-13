@@ -101,19 +101,32 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
 
   if(strides == nullptr)
     THROW_EXCEPTION("ShapeDescriptor constructor: Strides can not be null!");
-  _shape_strides.resize(2 * rank);
-  _dataType = type;
-  _order = order;
-  _rank = rank;
-  _extraProperties = extras;
-  _ews = ews;
-  auto _shape = _shape_strides.data();
-  auto _strides = _shape_strides.data() + rank;
-  for (int e = 0; e < rank; e++) {
-    _shape[e] = shape[e];
-    _strides[e] = strides[e];
-    if (shape[e] == 0) _extraProperties |= ARRAY_EMPTY;
+
+  //note this used to operate directly on the vector buffer
+  //it now does manual copies with more checks.
+  //this is to handle the 0 length case.
+  if(rank < 1) {
+    _dataType = type;
+    _order = order;
+    _rank = rank;
+    _extraProperties |= ARRAY_EMPTY;
+  } else {
+    _shape_strides.resize(2 * rank);
+    _dataType = type;
+    _order = order;
+    _rank = rank;
+    _extraProperties = extras;
+    _ews = ews;
+    auto _shape = _shape_strides.data();
+    auto _strides = _shape_strides.data() + rank;
+    for (int e = 0; e < rank; e++) {
+      _shape[e] = shape[e];
+      _strides[e] = strides[e];
+      if (shape[e] == 0) _extraProperties |= ARRAY_EMPTY;
+    }
   }
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////

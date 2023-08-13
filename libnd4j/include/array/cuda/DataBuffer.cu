@@ -98,6 +98,7 @@ void DataBuffer::allocateSpecial() {
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
 
+    sd_print("After allocated special\n");
     if (_workspace == nullptr) {
       sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
@@ -122,7 +123,12 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     return;
   }
 
+  if(_specialBuffer == nullptr)
+    return;
+
+
   allocatePrimary();
+
 
   auto res = cudaStreamSynchronize(*context->getCudaStream());
   if (res != 0) throw cuda_exception::build("DataBuffer::syncToPrimary failed to to some previous kernel failre", res);
@@ -143,6 +149,9 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   }
 
   allocateSpecial();
+
+  if(_specialBuffer == nullptr || _primaryBuffer == nullptr)
+    return;
 
   auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
   if (res != 0) throw cuda_exception::build("DataBuffer::syncToSpecial cudaMemcpy failed", res);
@@ -265,7 +274,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
- //note we don't use locks here
+  //note we don't use locks here
   deleteSpecial();
   _specialBuffer = special;
   _isOwnerSpecial = isOwnerSpecial;
@@ -274,7 +283,6 @@ void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate special buffer only (cuda case)
   allocateSpecial();
-
   if (allocBoth) allocatePrimary();
 }
 

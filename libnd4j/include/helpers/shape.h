@@ -110,7 +110,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool haveSameShapeAndStrides(const sd::LongType *sh
 template <typename T>
 SD_LIB_EXPORT SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongType length);
 
-SD_LIB_EXPORT SD_HOST_DEVICE void traceNew(int id);
 
 SD_LIB_EXPORT SD_HOST_DEVICE int tadIndexForLinear(int linearIndex, int tadLength);
 
@@ -1379,13 +1378,8 @@ SD_INLINE SD_HOST_DEVICE int checkArrangeArray(T *arr, int arrLength, int shapeL
   return 1;
 }
 
-SD_INLINE SD_HOST_DEVICE void traceNew(int id){
-// printf("new happened: [%i]\n", id);
 
-#ifndef __CUDACC__
-// fflush(stdout);
-#endif
-}
+
 
 /**
  * Returns whether the
@@ -1523,8 +1517,6 @@ SD_INLINE SD_HOST_DEVICE sd::LongType *shapeOf(const sd::LongType *shapeInfo) {
  */
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T *copyOf(sd::LongType length, T const *toCopy) {
-  traceNew(18);
-
   T *ret = new T[length];
   return copyOf(length, toCopy, ret);
 }
@@ -1615,8 +1607,6 @@ SD_INLINE SD_HOST_DEVICE sd::LongType *ews(sd::LongType *shapeInfo) { return sha
  * where shape and stride are both straight int pointers
  */
 SD_INLINE SD_HOST_DEVICE ShapeInformation *infoFromBuffer(sd::LongType *buffer) {
-  traceNew(19);
-
   auto info = new ShapeInformation;
   auto length = shapeInfoLength(rank(buffer));
   auto rank = buffer[0];
@@ -1826,7 +1816,6 @@ SD_INLINE SD_DEVICE int tadOffset(ShapeInformation *xInfo, int offset) {
  * @return the new shape
  */
 SD_INLINE SD_HOST_DEVICE sd::LongType *ensureVectorShape(sd::LongType *shape, int dimension) {
-  traceNew(21);
 
   sd::LongType *ret = new sd::LongType[2];
 
@@ -1951,9 +1940,6 @@ SD_INLINE SD_HOST_DEVICE T *range(int from, int to, int increment) {
   int diff = sd::math::sd_abs<int>(from - to);
   int retLength = diff / increment;
   T *ret;
-
-  traceNew(22);
-
   if (diff / increment < 1)
     ret = new T[1];
   else
@@ -1998,8 +1984,6 @@ template <typename T>
 SD_INLINE SD_HOST_DEVICE T *reverseCopy(T const *data, sd::LongType length) {
   if (length < 1) return nullptr;
 
-  traceNew(24);
-
   T *copy = new T[length];
   for (sd::LongType i = 0; i <= length / 2; i++) {
     T temp = data[i];
@@ -2041,8 +2025,6 @@ SD_INLINE SD_HOST_DEVICE void reverseCopyTo(T const *from, T *to, sd::LongType *
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T *concat(T const *arr1, sd::LongType const arr1Length, T const *arr2,
                                    sd::LongType const arr2Length) {
-  traceNew(25);
-
   T *ret = new T[arr1Length + arr2Length];
   std::memcpy(ret, arr1, arr1Length * sizeof(T));
   std::memcpy(ret + arr1Length, arr2, arr2Length * sizeof(T));
@@ -2196,8 +2178,6 @@ SD_INLINE SD_HOST_DEVICE int reductionIndexForLinear(int i, int elementWiseStrid
 }
 
 SD_INLINE SD_HOST_DEVICE sd::LongType *createScalarShapeInfo() {
-  traceNew(30);
-
   auto shape = new sd::LongType[1];
   shape[0] = 1;
   auto stride = new sd::LongType[1];

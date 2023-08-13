@@ -329,10 +329,12 @@ void DataBuffer::deleteBuffers() {
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
+#if defined(SD_GCC_FUNCTRACE)
   if(allocationStackTracePrimary != nullptr)
     delete allocationStackTracePrimary;
   if(allocationStackTraceSpecial != nullptr)
     delete allocationStackTraceSpecial;
+#endif
   _lenInBytes = 0;
 }
 

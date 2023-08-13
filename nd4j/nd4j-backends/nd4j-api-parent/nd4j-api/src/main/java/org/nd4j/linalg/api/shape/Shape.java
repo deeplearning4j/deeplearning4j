@@ -3816,7 +3816,7 @@ public class Shape {
     }
 
     public static void assertValidOrder(char order) {
-        if(order != 'c' && order != 'f' && order != 'a'){
+        if(order != 'c' && order != 'f' && order != 'a') {
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
     }

@@ -303,7 +303,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     protected void initHostPointerAndIndexer() {
-
         if (allocationPoint.getHostPointer() == null) {
             val location = allocationPoint.getAllocationStatus();
             // let cpp allocate primary buffer

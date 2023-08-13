@@ -179,5 +179,14 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, sd::LongType xEws, void
   }
 }
 
+//TODO: figure out why this error is thrown:
+/*
+ * template class ScalarTransform<std::string, std::string, std::string> ; template class ScalarTransform<std::u16string, std::string, std::string> ; template class ScalarTransform<std::u32string, std::string, std::string> ; template class ScalarTransform<std::string, std::u16string, std::string> ; template class ScalarTransform<std::u16string, std::u16string, std::string> ; template class ScalarTransform<std::u32string, std::u16string, std::string> ; template class ScalarTransform<std::string, std::u32string, std::string> ; template class ScalarTransform<std::u16string, std::u32string, std::string> ; template class ScalarTransform<std::u32string, std::u32string, std::string> ; template class ScalarTransform<std::string, std::string, std::u16string> ; template class ScalarTransform<std::u16string, std::string, std::u16string> ; template class ScalarTransform<std::u32string, std::string, std::u16string> ; template class ScalarTransform<std::string, std::u16string, std::u16string> ; template class ScalarTransform<std::u16string, std::u16string, std::u16string> ; template class ScalarTransform<std::u32string, std::u16string, std::u16string> ; template class ScalarTransform<std::string, std::u32string, std::u16string> ; template class ScalarTransform<std::u16string, std::u32string, std::u16string> ; template class ScalarTransform<std::u32string, std::u32string, std::u16string> ; template class ScalarTransform<std::string, std::string, std::u32string> ; template class ScalarTransform<std::u16string, std::string, std::u32string> ; template class ScalarTransform<std::u32string, std::string, std::u32string> ; template class ScalarTransform<std::string, std::u16string, std::u32string> ; template class ScalarTransform<std::u16string, std::u16string, std::u32string> ; template class ScalarTransform<std::u32string, std::u16string, std::u32string> ; template class ScalarTransform<std::string, std::u32string, std::u32string> ; template class ScalarTransform<std::u16string, std::u32string, std::u32string> ; template class ScalarTransform<std::u32string, std::u32string, std::u32string> ;;
+
+ It seems like a formatting issue with the template rather than it being invalid. ScalarTemplate does indeed take 3 types. It seems BUILD_TRIPLE_TEMPLATE use is wrong?
+ */
+BUILD_TRIPLE_TEMPLATE(template class ScalarTransform, , SD_COMMON_TYPES, SD_STRING_TYPES,SD_STRING_TYPES);
+
+
 }  // namespace scalar
 }  // namespace functions

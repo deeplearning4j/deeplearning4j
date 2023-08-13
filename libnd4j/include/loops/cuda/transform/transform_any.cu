@@ -72,10 +72,10 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto params = reinterpret_cast<X *>(vparams);
-  auto reductionPointer = reinterpret_cast<Z *>(vreductionPointer);
 
-  if(x == nullptr || z == nullptr)
+  if(x == nullptr || z == nullptr) {
     return;
+  }
   __shared__ sd::LongType xEws;
   __shared__ sd::LongType zEws;
   __shared__ char xOrder;
@@ -90,6 +90,7 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
     length = shape::length(xShapeInfo);
   }
   __syncthreads();
+
 
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;

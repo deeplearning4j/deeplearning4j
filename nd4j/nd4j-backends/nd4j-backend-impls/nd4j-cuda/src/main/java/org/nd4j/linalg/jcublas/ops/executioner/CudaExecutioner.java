@@ -46,6 +46,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.rng.Random;
@@ -597,6 +598,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Op op, OpContext oc) {
         checkForCompression(op);
 
+        //redirect assign so we support more ops cases lke strings
+        if(op instanceof Assign) {
+            org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
+            if(oc == null) {
+                op2.addInputArgument(op.x());
+                op2.addInputArgument(op.z());
+                op2.addOutputArgument(op.z());
+                return exec(op2)[0];
+            } else {
+                op2.setInputArgument(0,op.x());
+                op2.setInputArgument(1,op.z());
+                exec(op2, oc);
+                return op2.getOutputArgument(0);
+            }
+
+        }
         if (op instanceof TransformOp) {
             TransformOp t = (TransformOp) op;
             invoke(t, oc);
@@ -1357,9 +1374,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         retHostShape);
 
 
-        val xb = x == null ? null : ((BaseCudaDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = y == null ? null : ((BaseCudaDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = z == null ? null : ((BaseCudaDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = x == null ? null : x.data().opaqueBuffer();
+        val yb = y == null ? null : y.data().opaqueBuffer();
+        val zb = z == null ? null : z.data().opaqueBuffer();
 
         if (y != null) {
             Pointer yShapeInfo = allocator.getPointer(y.shapeInfoDataBuffer(), context);
@@ -1484,7 +1501,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null){
+
+        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null) {
             //Ugly hack to ensure the triple arg call occurs
             //See GaussianDistribution.setZ etc
             x = z;
@@ -1675,7 +1693,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             shape[i] = ptr.get(i);
         }
 
-        //val extras = ptr.get(Shape.shapeInfoLength(rank) - 3);
         val t = ArrayOptionsHelper.arrayType(shape);
         return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }
@@ -1757,7 +1774,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         cnt = 0;
-        if(opContext != null){
+        if(opContext != null) {
             for (val b: opContext.getTArguments())
                 tArgs.put(cnt++, b);
         } else {
@@ -1784,9 +1801,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (ptrptr == null)
             throw new RuntimeException();
 
-        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++ )
-            result.add(getShapeFromPointer(new PagedPointer(nativeOps.getShape(ptrptr, e)).asLongPointer()));
-
+        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++ ) {
+            LongPointer shape = nativeOps.getShape(ptrptr, e);
+            LongShapeDescriptor getShape = getShapeFromPointer(new PagedPointer(shape).asLongPointer());
+            result.add(getShape);
+        }
         nativeOps.deleteShapeList(ptrptr);
 
 
@@ -2141,6 +2160,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         LongPointer stride2 = new LongPointer(stride);
         shape2.retainReference();
         stride2.retainReference();
+
         val dbf = nativeOps.shapeBufferEx(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, extras);
 
         if (nativeOps.lastErrorCode() != 0)
@@ -2157,7 +2177,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
+        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo(new LongPointer(array.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer()),
+                new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

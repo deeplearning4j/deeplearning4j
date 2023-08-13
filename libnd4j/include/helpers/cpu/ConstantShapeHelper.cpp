@@ -155,6 +155,21 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
   return result;
 }
 
+
+const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  delete descriptor;
+  return result;
+}
+
+const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  delete descriptor;
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////
 ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
                                                                                  const sd::LongType* minShapeInfo,

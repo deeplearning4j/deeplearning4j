@@ -126,15 +126,11 @@ SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo,
                                                   bool reverseCopyStride) {
   sd::LongType rank = dimensionLength == 1 ? 2 : dimensionLength;
 
-  traceNew(4);
-
   sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(rank)];
   return shapeInfoOnlyShapeAndStride(shapeInfo, dimension, dimensionLength, reverseCopyStride, ret);
 }
 
 SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride, sd::LongType rank) {
-  traceNew(5);
-
   sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(rank)];
 
   return createShapeInfo(shape, stride, rank, ret);
@@ -461,8 +457,6 @@ SD_LIB_EXPORT SD_HOST sd::LongType outerArrayIndexes(sd::LongType *maxIdxs, cons
 SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
   sd::LongType dimensions = rank;
 
-  traceNew(5);
-
   sd::LongType *stride = new sd::LongType[dimensions];
   sd::LongType st = startNum;
   for (sd::LongType j = 0; j < rank; j++) {
@@ -494,7 +488,6 @@ SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank, in
  * @return the strides for a matrix of n dimensions
  */
 SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
-  traceNew(7);
 
   sd::LongType *stride = new sd::LongType[rank];
 
@@ -575,13 +568,9 @@ SD_HOST void updateStrides(const sd::LongType rank, const sd::LongType *shapeOnl
 SD_HOST ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
   auto copy = new ShapeInformation;
 
-  traceNew(8);
-
   copy->shape = new sd::LongType[toCopy->rank];
 
   memcpy(copy->shape, toCopy->shape, toCopy->rank * sizeof(sd::LongType));
-
-  traceNew(9);
 
   copy->stride = new sd::LongType[toCopy->rank];
   for (sd::LongType i = 0; i < toCopy->rank; i++) {
@@ -609,7 +598,6 @@ SD_HOST int computeElementWiseStride(sd::LongType rank, sd::LongType const *shap
     sd::LongType np, op, last_stride;
     sd::LongType oldStart, oldStop, ok, newStart, newStop, nk;
 
-    traceNew(10);
 
     auto newStrides = new sd::LongType[rank];
     oldnd = 0;
@@ -747,7 +735,6 @@ SD_HOST int computeElementWiseStride(sd::LongType rank, sd::LongType const *shap
 SD_HOST sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType const *shape) {
   sd::LongType *stride = shape::calcStrides(shape, rank);
 
-  traceNew(11);
 
   auto shapeInfo = new shape::ShapeInformation();
   shapeInfo->shape = const_cast<sd::LongType *>(shape);
@@ -794,8 +781,6 @@ SD_HOST sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType con
  */
 SD_HOST sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongType const *shape) {
   auto stride = shape::calcStridesFortran(shape, rank);
-
-  traceNew(12);
 
   auto shapeInfo = new shape::ShapeInformation();
   shapeInfo->shape = const_cast<sd::LongType *>(shape);
@@ -895,8 +880,11 @@ SD_HOST sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::Lo
 }
 
 SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rearrange, sd::LongType len) {
-  if(shapeInfo == nullptr || rearrange == nullptr || len <= 1)
+  if(shapeInfo == nullptr || rearrange == nullptr || len <= 1) {
+    sd_debug("doPermuteShapeInfo: early return\n",0);
     return;
+  }
+
   if (len == -1)  // calculate array length if it is not given
     len = shape::length(shapeInfo);
 
@@ -905,13 +893,16 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rea
 
   // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well
   bool isPermuteNecessary = false;
-  for (sd::LongType i = 0; i < rank; ++i)
+  for (sd::LongType i = 0; i < rank; ++i) {
     if (rearrange[i] != i) {
       isPermuteNecessary = true;
       break;
     }
-
-  if (!isPermuteNecessary) return;
+  }
+  if (!isPermuteNecessary) {
+    sd_debug("shape::doPermuteShapeInfo function: no permute is necessary\n",0);
+    return;
+  }
 
   // check whether rearrange contains correct indexes
   for (sd::LongType i = 0; i < rank; ++i) {
@@ -921,17 +912,22 @@ SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rea
           i, rearrange[i]);
       return;
     }
+
   }
   // if everything is ok then perform permute
-  auto temp = new sd::LongType[shape::shapeInfoLength(rank) - 3];
-  memcpy(temp, shapeInfo, sizeof(sd::LongType) * (shape::shapeInfoLength(rank) - 3));
-  for (sd::LongType i = 0; i < rank; ++i) {
+  int len2 = shape::shapeInfoLength(rank);
+  auto temp = new sd::LongType[len2];
+  //note: it's obvious to do simd or something fancy
+  //here it actually seems to cause segfaults. Better to be careful.
+  for(int i = 0; i < len2; i++)
+    temp[i] = shapeInfo[i];
+
+  for (sd::LongType i = 0; i < rank; i++) {
     shapeInfo[i + 1] = temp[rearrange[i] + 1];
     shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
   }
 
   shape::checkStridesEwsAndOrder(shapeInfo);
-
   delete[] temp;
 }
 
@@ -939,7 +935,6 @@ SD_HOST sd::LongType *createPermuteIndexes(sd::LongType originalRank, sd::LongTy
                                            sd::LongType dimensionLength) {
   int delta = originalRank - dimensionLength;
 
-  traceNew(17);
 
   sd::LongType *ret = new sd::LongType[originalRank];
   for (sd::LongType i = 0; i < delta; i++) {
@@ -1115,7 +1110,6 @@ SD_HOST sd::LongType *everyIndexBut(const sd::LongType *indexes, int indexesLeng
                                     int end) {
   int len = end - indexesLength;
 
-  traceNew(20);
 
   auto ret = new sd::LongType[len];
   int retIdx = 0;
@@ -1147,7 +1141,6 @@ SD_HOST sd::LongType *everyIndexBut(const sd::LongType *indexes, int indexesLeng
  */
 SD_HOST sd::LongType *keep(volatile sd::LongType *data, const sd::LongType *index, int indexLength,
                            int dataLength) {
-  traceNew(23);
 
   sd::LongType *ret = new sd::LongType[indexLength];
   int count = 0;
@@ -1186,7 +1179,6 @@ SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape
   } else if (rank == dimensionLength)
     return shape::prodLong(shape, rank);
   sd::LongType  absSelta = sd::math::sd_abs<sd::LongType >(rank - dimensionLength);
-  traceNew(27);
   auto ret2 = shape::removeIndex<sd::LongType>(shape, dimension, rank, dimensionLength);
   auto ret = prodLong(ret2, absSelta);
   delete[] ret2;
@@ -1298,8 +1290,6 @@ SD_HOST void getOffsetBroadcast(const sd::LongType &startInd, const sd::LongType
  * for the shape information metadata.
  */
 SD_HOST sd::LongType *toShapeBuffer(ShapeInformation *info) {
-  traceNew(29);
-
   auto ret = new sd::LongType[shapeInfoLength(info->rank)];
   int count = 1;
   int rank = info->rank;

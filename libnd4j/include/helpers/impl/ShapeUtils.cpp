@@ -371,9 +371,10 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
   shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr.lengthOf());
 
   if (setContigStrides) shape::updateStrides(shapeInfoNew, arr.ordering());
+  sd_print("ShapeUtils::evalPermShapeInfo");
+  shape::printShapeInfo(shapeInfoNew);
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoNew);
-
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   RELEASE(shapeInfoNew, workspace);
@@ -387,13 +388,16 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
 const sd::LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace,
-                                                    const bool setContigStrides) {
+                                                       const bool setContigStrides) {
   sd::LongType rank = arr.rankOf();
 
   //note we do this because of stack allocation crashes
   //if the stack is used a vector's data can cause crashes when it goes out of scope
   sd::LongType  *dims = new sd::LongType[rank];
-  for (sd::LongType i = 0; i < rank; ++i) dims[i] = rank - 1 - i;
+  for (sd::LongType i = 0; i < rank; i++) {
+    dims[i] = rank - 1 - i;
+    sd_printf("evalTransposeShapeInfo: dims[%i] = %i\n", i, dims[i]);
+  }
 
   auto ret = evalPermShapeInfo(dims, rank, arr, workspace, setContigStrides);
   delete[] dims;

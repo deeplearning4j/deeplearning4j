@@ -821,8 +821,7 @@ SD_INLINE void TAD::collapse() {
       dimension[0] = -1;
       break;
     }
-    // captures intermediary result from the for loop
-    traceNew(3);
+
 
     int intermediaryResult[SD_MAX_RANK];
     for (int i = 0; i < dimensionLength; i++) {

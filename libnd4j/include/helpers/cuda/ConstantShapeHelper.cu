@@ -80,17 +80,19 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
         std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     sd_print("About to create new dPtr\n");
 
+    auto hPtrPointer = hPtr->pointer();
+    auto byteLength = shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>());
+    auto dealloc = std::make_shared<CudaPointerDeallocator>();
+    auto replicated =  ConstantHelper::getInstance().replicatePointer(hPtrPointer,
+                                                                     byteLength);
     auto dPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(hPtr->pointer(),
-                                                       shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>())),
-        std::make_shared<CudaPointerDeallocator>());
-    sd_print("Creating constant shape buffer\n");
+        replicated,
+        dealloc);
 
     ConstantShapeBuffer *buffer =  new ConstantShapeBuffer(hPtr, dPtr);
     _cache[deviceId][*descriptor] = buffer;
     return buffer;
   } else {
-    sd_print("bufferForShapeInfo: Returning cache access\n");
     return _cache[deviceId].at(*descriptor);
   }
 }
@@ -154,6 +156,22 @@ const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dat
 const sd::LongType * ConstantShapeHelper::createShapeInfo(ShapeDescriptor *descriptor) {
   return bufferForShapeInfo(descriptor)->primary();
 }
+
+
+const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  delete descriptor;
+  return result;
+}
+
+const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  delete descriptor;
+  return result;
+}
+
 
 const sd::LongType * ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);

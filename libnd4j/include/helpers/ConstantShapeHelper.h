@@ -81,6 +81,8 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   const sd::LongType* createShapeInfo(sd::DataType dataType, char order, const std::vector<sd::LongType>& shape);
   const sd::LongType* createShapeInfo(sd::DataType dataType, char order, int rank, const sd::LongType* shape);
   const sd::LongType* createShapeInfo(sd::DataType dataType, const sd::LongType* shapeInfo);
+  const sd::LongType* createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
+  const sd::LongType* createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal = true);
 
   const sd::LongType* createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
   const sd::LongType* createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal = true);

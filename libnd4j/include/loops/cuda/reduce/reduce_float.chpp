@@ -232,10 +232,6 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStrea
                                                        const  sd::LongType *dims) {
 
     if(shape::isEmpty(hXShapeInfo)) {
-
-        if(shape::isEmpty(hZShapeInfo))
-            return;
-
         const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
         auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
@@ -273,10 +269,6 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
                                                            const sd::LongType *tadOnlyShapeInfo) {
 
     if (shape::isEmpty(hXShapeInfo)) {
-
-        if (shape::isEmpty(hZShapeInfo))
-            return;
-
         const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
 
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
@@ -320,17 +312,6 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
-SD_DEVICE void initializeShared(X *extraParams, X **sPartials, int sMemSize) {
-    int sPartialsLength = sMemSize / sizeof(X);
-    X *sPartialsDeref = (X *) *sPartials;
-    for (int i = 0; i < sPartialsLength; i++)
-        sPartialsDeref[i] = extraParams[0];
-
-}
-
-
-//BUILD_DOUBLE_TEMPLATE(template class SD_LIB_HIDDEN ReduceFloatFunction, , SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
 }
 }

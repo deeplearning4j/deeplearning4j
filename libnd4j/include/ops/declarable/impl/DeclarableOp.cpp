@@ -825,7 +825,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
     for (int e = 0; e < numOutputs; e++) {
       // if given output index doesn't exist - we're done
-      sd_printf("Declarable op execute: processing output %d\n",e);
+      sd_printf("Declarable op execute: processing output %d for op %s\n",e,this->getOpName()->c_str());
 
       if (!block->isFastPath()) {
         if (!vs->hasVariable(block->nodeId(), e)) break;

@@ -37,8 +37,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
 
   auto d = delim->e<std::string>(0);
 
-  input->syncToHost();
-  delim->syncToHost();
+  NDArray::preparePrimaryUse({values},{indices});
 
   // output rank N+1 wrt input rank
   std::vector<sd::LongType> icoords(input->rankOf());
@@ -89,6 +88,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   indices->syncToDevice();
   values->syncToDevice();
 
+  NDArray::registerPrimaryUse({values});
   // we have to tick buffers
   values->dataBuffer()->writePrimary();
   values->dataBuffer()->readSpecial();

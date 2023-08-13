@@ -68,18 +68,17 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
-
-  delete min;
-  delete max;
-
+  if(block.numT() >= 2) {
+    delete min;
+    delete max;
+  }
   return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(randomuniform) {
   auto in = INPUT_VARIABLE(0);
-  // auto min = INPUT_VARIABLE(1);
   auto shape = in->template asVectorT<sd::LongType>();
-  auto dtype = DataType::FLOAT32;  // ArrayOptions::dataType(inputShape->at(1)); // output type is by given min
+  auto dtype = DataType::FLOAT32;
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)

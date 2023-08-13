@@ -126,10 +126,8 @@ void GEMV<X, Y, Z>::op(int TRANS, int M, int N, double alpha, void *vX, int lda,
   };
   samediff::Threads::parallel_for(func, 0, M);
 
-  //if (TRANS == CblasTrans) delete[] aT;
 }
 
-// BUILD_TRIPLE_TEMPLATE(template class  GEMV, , SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
-// BUILD_TRIPLE_TEMPLATE(template class  GEMM, , SD_COMMON_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
+
 }  // namespace blas
 }  // namespace sd

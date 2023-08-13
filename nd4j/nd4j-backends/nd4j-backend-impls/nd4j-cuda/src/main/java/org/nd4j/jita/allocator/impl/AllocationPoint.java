@@ -74,9 +74,7 @@ public class AllocationPoint {
     // thread safety is guaranteed by allocLock
     private AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 
-    private transient TimeProvider timeProvider = new OperativeProvider();
 
-    // corresponding access times in TimeProvider quants
     private long accessHostRead = 0L;
     private long accessDeviceRead = 0L;
 
@@ -84,14 +82,7 @@ public class AllocationPoint {
     private long accessDeviceWrite = 0L;
 
     protected static final NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-    /*
-        @Getter
-        @Setter
-        protected volatile cudaEvent_t writeLane;
 
-        @Getter
-        protected Queue<cudaEvent_t> readLane = new ConcurrentLinkedQueue<>();
-    */
     @Getter
     @Setter
     private boolean constant;

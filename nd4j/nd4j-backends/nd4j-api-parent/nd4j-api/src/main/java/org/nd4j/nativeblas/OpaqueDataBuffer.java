@@ -23,6 +23,7 @@ package org.nd4j.nativeblas;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 public class OpaqueDataBuffer extends Pointer {
     private static final int MAX_TRIES = 5;
     private String allocationTrace = null;
+    public static AtomicBoolean currentlyExecuting = new AtomicBoolean(false);
 
     /**
      * Record the current allocation stack trace.
@@ -44,6 +46,9 @@ public class OpaqueDataBuffer extends Pointer {
      */
 
     public void captureTrace() {
+        if(currentlyExecuting.get())
+            return;
+        currentlyExecuting.set(true);
         allocationTrace = currentTrace();
     }
 
@@ -54,6 +59,10 @@ public class OpaqueDataBuffer extends Pointer {
 
     public OpaqueDataBuffer(Pointer p) { super(p); }
 
+
+    public static void tracingSetExecuting(boolean executing) {
+        currentlyExecuting.set(executing);
+    }
 
     public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special) {
         OpaqueDataBuffer ret = NativeOpsHolder.getInstance().getDeviceNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
@@ -188,7 +197,7 @@ public class OpaqueDataBuffer extends Pointer {
      * @return
      */
     public Pointer primaryBuffer() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(this);
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(this).retainReference();
     }
 
     /**
@@ -197,7 +206,7 @@ public class OpaqueDataBuffer extends Pointer {
      */
     public Pointer specialBuffer() {
         return NativeOpsHolder.getInstance().getDeviceNativeOps().
-                dbSpecialBuffer(this);
+                dbSpecialBuffer(this).retainReference();
     }
 
     /**

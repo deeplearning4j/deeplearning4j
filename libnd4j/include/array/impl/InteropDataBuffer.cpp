@@ -39,12 +39,15 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t len
 
 InteropDataBuffer::InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer) { _dataBuffer = std::make_shared<DataBuffer>(*databuffer.get()); }
 
-InteropDataBuffer::InteropDataBuffer(size_t elements, sd::DataType dtype, bool allocateBoth) {
-  if (elements == 0) {
+InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, sd::DataType dtype, bool allocateBoth) {
+  if (lenInBytes == 0) {
     _dataBuffer = std::make_shared<DataBuffer>();
     _dataBuffer->setDataType(dtype);
+
   } else {
-    _dataBuffer = std::make_shared<DataBuffer>(elements, dtype, nullptr, allocateBoth);
+    //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
+    _dataBuffer = std::make_shared<DataBuffer>(lenInBytes, dtype, nullptr, allocateBoth);
+
   }
 }
 
@@ -56,17 +59,27 @@ void InteropDataBuffer::markOwner(bool owner) {
 
 std::shared_ptr<DataBuffer> InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }
 
-std::shared_ptr<DataBuffer> InteropDataBuffer::dataBuffer() { return _dataBuffer; }
+std::shared_ptr<DataBuffer> InteropDataBuffer::dataBuffer() {
+  if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
+    return nullptr;
+  return _dataBuffer;
+}
 
 void* InteropDataBuffer::primary() const {
   if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
     return nullptr;
+  if(_dataBuffer->primary() == nullptr) {
+    return nullptr;
+  }
   return reinterpret_cast<int8_t*>(_dataBuffer->primary()) + _offset;
 }
 
 void* InteropDataBuffer::special() const {
   if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
     return nullptr;
+  if(_dataBuffer->special() == nullptr) {
+    return nullptr;
+  }
   return reinterpret_cast<int8_t*>(_dataBuffer->special()) + _offset;
 }
 

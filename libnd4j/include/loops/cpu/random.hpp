@@ -256,6 +256,5 @@ void RandomFunction<X>::execTransform(int opNum, sd::Pointer state, void *z, con
   DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeInfo, extraArguments), RANDOM_OPS)
 }
 
-// BUILD_SINGLE_TEMPLATE(template class SD_LIB_HIDDEN RandomFunction, , SD_FLOAT_TYPES);
 }  // namespace random
 }  // namespace functions

@@ -2273,9 +2273,9 @@ sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::L
         outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
     }
 
-   for (auto v : inputs) delete v;
+  for (auto v : inputs) delete v;
 
-   for (auto v : outputs) delete v;
+  for (auto v : outputs) delete v;
 
   return hZ;
 }
@@ -2635,7 +2635,6 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
     } else if (dstType == ND4J_INT16) {
       sd::TypeCast::convertGeneric<float, int16_t>(nullptr, hx, N, hz);
     } else if (dstType == ND4J_UINT16) {
-      //            sd::TypeCast::convertGeneric<float, uint16_t>(nullptr, hx, N, hz);
     } else if (dstType == ND4J_FLOAT24) {
     } else if (dstType == ND4J_DOUBLE) {
       sd::TypeCast::convertGeneric<float, double>(nullptr, hx, N, hz);
@@ -2646,7 +2645,6 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
     }
   } else if (srcType == ND4J_DOUBLE) {
     if (dstType == ND4J_FLOAT8) {
-      //   sd::TypeCast::convertGeneric<double, sd::float8>(nullptr, hx, N, hz);
     } else if (dstType == ND4J_INT8) {
       sd::TypeCast::convertGeneric<double, int8_t>(nullptr, hx, N, hz);
     } else if (dstType == ND4J_UINT8) {
@@ -2845,6 +2843,10 @@ OpaqueConstantShapeBuffer *shapeBuffer(int rank, sd::LongType *shape, sd::LongTy
 OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
                                          char order, sd::LongType ews, sd::LongType extras) {
   try {
+
+    if(rank < 1) {
+      return sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
+    }
     auto desc = new  ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
         desc);
