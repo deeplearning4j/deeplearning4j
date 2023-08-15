@@ -71,7 +71,6 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext *lc, int opNum
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   auto hz = reinterpret_cast<sd::LongType *>(hZ);
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams), SD_COMMON_TYPES, SD_INDEXING_TYPES);
@@ -132,7 +131,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
@@ -188,7 +186,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, const int opNum, 
                                         const sd::LongType *hYShapeInfo, const void *dY,
                                         const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                         void *dZ, const sd::LongType *dZShapeInfo) {
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -214,7 +211,6 @@ void NativeOpExecutioner::execInverseBroadcast(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!sd::Environment::getInstance().isExperimentalBuild())
     if ((yType != xType && yType != sd::DataType::BOOL) || xType != zType)
@@ -253,7 +249,6 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext *lc, int opNum, co
                                             sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadOnlyShapeInfo,
                                             const sd::LongType *tadOffsets, const sd::LongType *tadOnlyShapeInfoZ,
                                             const sd::LongType *tadOffsetsZ) {
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -280,7 +275,6 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext *lc, const int opN
                                             const sd::LongType *hYShapeInfo, const void *dY,
                                             const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                             void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -301,7 +295,6 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (!sd::Environment::getInstance().isExperimentalBuild())
     if (yType != xType || sd::DataType::BOOL != zType)
@@ -334,7 +327,6 @@ void NativeOpExecutioner::execBroadcastInt(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
@@ -367,7 +359,6 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext *lc, const int opNu
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
@@ -389,7 +380,6 @@ void NativeOpExecutioner::execInverseBroadcastInt(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execInverseBroadcastInt", zType, xType, yType);
@@ -469,7 +459,6 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext *lc, int o
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != yType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execPairwiseBoolTransform", xType, yType);
@@ -501,7 +490,6 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext *lc, int op
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform", zType, xType, yType);
@@ -605,7 +593,6 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext *lc, int opNum
                                                 const sd::LongType *dZShapeInfo) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execScalar(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo), SD_COMMON_TYPES,
@@ -814,10 +801,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) {
-    return;
-  }
-
 
 
 #ifdef SD_EXPERIMENTAL_ENABLED
@@ -859,8 +842,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
-
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
                           ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension,
@@ -897,8 +878,6 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hSscalarShapeInfo)) return;
-
   if (xType != yType) throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
 
   if (zType != sd::DataType::BOOL)
@@ -931,8 +910,6 @@ void NativeOpExecutioner::execScalarBool(
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
-
   if (xType != yType) throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
 
   if (zType != sd::DataType::BOOL)
@@ -959,13 +936,10 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
                                         const sd::LongType *hSscalarShapeInfo, const void *dScalar,
                                         const sd::LongType *dSscalarShapeInfo, void *extraParams,
                                         bool allowParallelism) {
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hSscalarShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
@@ -1000,7 +974,6 @@ void NativeOpExecutioner::execScalarInt(
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo)) return;
 
   if (xType != yType || xType != zType)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
@@ -1038,7 +1011,6 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
                                            bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
@@ -1062,7 +1034,6 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
                                                  const sd::LongType *dZShapeInfo, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
                         ::execScalar(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo),
@@ -1115,8 +1086,6 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) return;
-
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
@@ -1136,8 +1105,6 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
                                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool,
@@ -1161,16 +1128,28 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) return;
-  auto func = PRAGMA_THREADS_DO {
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                          ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                          SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
-  };
+  if(DataTypeUtils::isS(xType)) {
+    auto func = PRAGMA_THREADS_DO {
+      BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
+                            SD_STRING_TYPES, SD_STRING_TYPES);
+    };
 
     samediff::Threads::parallel_do(
         func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
                                                              sd::Environment::getInstance().maxMasterThreads())));
+  } else {
+    auto func = PRAGMA_THREADS_DO {
+      BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
+                            SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
+    };
+
+    samediff::Threads::parallel_do(
+        func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+                                                             sd::Environment::getInstance().maxMasterThreads())));
+  }
+
 
 }
 
@@ -1183,7 +1162,6 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
@@ -1205,8 +1183,6 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
                                               const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  if (shape::isEmpty(hXShapeInfo)) return;
 
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,

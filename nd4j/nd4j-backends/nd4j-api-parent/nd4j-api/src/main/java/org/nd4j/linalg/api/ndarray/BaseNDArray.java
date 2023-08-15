@@ -5432,7 +5432,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isEmpty() {
-        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+        return data() == null || Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 
     @Override

@@ -987,12 +987,11 @@ void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
                       sd::LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
-
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto streamSpecial = reinterpret_cast<cudaStream_t &>(extraPointers[4]);
     LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3],
                      reinterpret_cast<int *>(extraPointers[6]));
-
+    sd_print("Created local launch context\n");
     NativeOpExecutioner::execTransformAny(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                           dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
@@ -2564,6 +2563,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
 
+
   for (int e = 0; e < numInputShapes; e++) {
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
 
@@ -2582,9 +2582,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
   }
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
-
   if (varSpace.launchContext()->getWorkspace() != nullptr) shapeList->detach();
-
   return shapeList;
 }
 
@@ -3392,6 +3390,11 @@ OpaqueConstantShapeBuffer *shapeBuffer(int rank, sd::LongType *shape, sd::LongTy
 OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
                                          char order, sd::LongType ews, sd::LongType extras) {
   try {
+    if(rank < 1) {
+      return sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
+    }
+
+
     auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
@@ -3666,7 +3669,9 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
+    sd_printf("allocateDataBuffer: Creating buffer of type %i\n", dtype);
     sd::LongType totalElementSize = elements == 0 ?  DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
+    sd_printf("Total element size: %lld\n", totalElementSize);
     return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3675,28 +3680,53 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
   }
 }
 
-sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->primary(); }
+sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
+  return dataBuffer->primary();
 
-sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->special(); }
+}
+
+sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSpecialBuffer: dataBuffer is null");
+  return dataBuffer->special();
+}
 
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
   delete dataBuffer;
 }
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetPrimaryBuffer: dataBuffer is null");
   dataBuffer->setPrimary(primaryBuffer, numBytes);
 }
 
 void dbSetSpecialBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer specialBuffer, sd::LongType numBytes) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetSpecialBuffer: dataBuffer is null");
   dataBuffer->setSpecial(specialBuffer, numBytes);
 }
 
-void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocatePrimary(); }
+void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbAllocatePrimaryBuffer: dataBuffer is null");
+  dataBuffer->dataBuffer()->allocatePrimary();
+}
 
-void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocateSpecial(); }
+void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbAllocateSpecialBuffer: dataBuffer is null");
+  dataBuffer->dataBuffer()->allocateSpecial();
+}
 
 void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
   try {
+    if(dataBuffer == nullptr)
+      THROW_EXCEPTION("dbExpandBuffer: dataBuffer is null");
     dataBuffer->dataBuffer()->expand(elements * DataTypeUtils::sizeOf(dataBuffer->dataBuffer()->getDataType()));
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3705,6 +3735,8 @@ void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
 }
 
 OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length, sd::LongType offset) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbCreateView: dataBuffer is null");
   return new InteropDataBuffer(*dataBuffer, length, offset);
 }
 
@@ -3713,33 +3745,75 @@ int dbUseCount(OpaqueDataBuffer* dataBuffer){
   return 0;
 }
 
-void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
+void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSyncToSpecial: dataBuffer is null");
+  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToSpecial();
+}
 
 void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer->dataBuffer() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
+  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
     dataBuffer->dataBuffer()->syncToPrimary(sd::LaunchContext::defaultContext(),false);
 
 }
 
-void dbTickHostRead(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->readPrimary(); }
-
-void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->writePrimary(); }
-
-void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->readSpecial(); }
-
-void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->writeSpecial(); }
-
-void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) { dataBuffer->expand(elements); }
-
-void dbClose(OpaqueDataBuffer *dataBuffer) {
-  dataBuffer->getDataBuffer()->close();
+void dbTickHostRead(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickHostRead: dataBuffer is null");
+  dataBuffer->dataBuffer()->readPrimary();
 }
 
-int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
+void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickHostWrite: dataBuffer is null");
+  dataBuffer->dataBuffer()->writePrimary();
+}
 
-void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) { dataBuffer->setDeviceId(deviceId); }
+void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickDeviceRead: dataBuffer is null");
+  dataBuffer->dataBuffer()->readSpecial();
+}
+
+void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickDeviceWrite: dataBuffer is null");
+  dataBuffer->dataBuffer()->writeSpecial();
+
+}
+
+void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbExpand: dataBuffer is null");
+  dataBuffer->expand(elements);
+}
+
+void dbClose(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbClose: dataBuffer is null");
+  auto ret = dataBuffer->getDataBuffer();
+  if(ret != nullptr)
+    dataBuffer->getDataBuffer()->close();
+}
+
+int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
+  return dataBuffer->deviceId();
+}
+
+void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetDeviceId: dataBuffer is null");
+  dataBuffer->setDeviceId(deviceId);
+}
 
 int dbLocality(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbLocality: dataBuffer is null");
   auto p = dataBuffer->dataBuffer()->isPrimaryActual();
   auto d = dataBuffer->dataBuffer()->isSpecialActual();
 
@@ -3757,6 +3831,11 @@ void setVedaDeviceLibFolder(std::string path){
 
 
 void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
+  if(inputShapeData == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: inputShapeData is null");
+
+  if(bufferToSet == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: bufferToSet is null");
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     THROW_EXCEPTION("Invalid rank for shape buffer.");

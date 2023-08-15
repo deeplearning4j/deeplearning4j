@@ -39,6 +39,7 @@
 #include <loops/transform_same.h>
 #include <memory/MemoryRegistrator.h>
 #include <memory/Workspace.h>
+#include <system/op_boilerplate.h>
 
 namespace sd {
 
@@ -311,7 +312,6 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd
   _offset = offset;
   setShapeInfo(shapeInfo);
   _buffer = std::make_shared<DataBuffer>(*buffer.get());
-
   if(buffer != nullptr)
     _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
   else {
@@ -1329,6 +1329,10 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray &other, size_t sizeToCop
   dataBuffer()->copyBufferFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
 }
 
+bool NDArray::isBroadcastableTo(const NDArray &other) const {
+  return ShapeUtils::areShapesBroadcastable(this->shapeInfo(), other.shapeInfo());
+}
+
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
@@ -1961,7 +1965,7 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
 
   if (msg) printf("%s: ", msg);
   //uses the << operator instead which is used in gtest as well
-  std::cout << this;
+  std::cout << *this;
 }
 
 
@@ -2157,7 +2161,6 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank) const & {
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
   NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
   ret->_isView = true;
-  delete[] shapeInfoPermuted;
   return *ret;
 }
 
@@ -2442,60 +2445,16 @@ NDArray NDArray::asS() const {
 
   if (!(DataTypeUtils::isS(dtype))) THROW_EXCEPTION("NDArray::asS: invalid DataType used");
 
+  // If the data types are the same, then simply duplicate the array
   if (dtype == dataType()) {
-
-    if(isScalar()) {
-      return dup();
-    }
-    sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
-    const auto nInputoffsets = bufferAsT<sd::LongType>();
-    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[isScalar() ? 1 : lengthOf()], dtype,
-                                                                       getContext()->getWorkspace(), true);
-
-    auto shapeDesc = new ShapeDescriptor(dtype, ordering(),isScalar() ? std::vector<sd::LongType>({1}) :  getShapeAsVector());
-    auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeDesc);
-    NDArray res(pBuffer, shapeDesc, getContext());
-    res.setAttached(getContext()->getWorkspace() != nullptr);
-
-    preparePrimaryUse({&res}, {this});
-    memcpy(res.bufferAsT<int8_t>(), nInputoffsets, offsetsLength);
-    auto data = res.bufferAsT<int8_t>() + offsetsLength;
-    const auto inData = bufferAsT<int8_t>() + offsetsLength;
-    memcpy(data, inData, nInputoffsets[isScalar() ? 1 : lengthOf()]);
-    delete shapeDesc;
-    registerPrimaryUse({&res}, {this});
-    return res;
+    return dup();
   }
 
+  // Calculate buffer length requirements
   sd::LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+  std::vector<sd::LongType> offsets = StringUtils::calculateOffsetsForTargetDataType<T>(this);
 
-  std::vector<sd::LongType> offsets(lengthOf() + 1);
-
-  const auto nInputoffsets = bufferAsT<sd::LongType>();
-
-  sd::LongType start = 0, stop = 0;
-  sd::LongType dataLength = 0;
-
-  int numStrings = isScalar() ? 1 : lengthOf();
-  auto data = bufferAsT<int8_t>() + offsetsLength;
-  for (sd::LongType e = 0; e < numStrings; e++) {
-    offsets[e] = dataLength;
-    start = nInputoffsets[e];
-    stop = nInputoffsets[e + 1];
-    if (dataType() == DataType::UTF8) {
-      dataLength += (dtype == DataType::UTF16) ? unicode::offsetUtf8StringInUtf16(data + start, stop)
-                                               : unicode::offsetUtf8StringInUtf32(data + start, stop);
-    } else if (dataType() == DataType::UTF16) {
-      dataLength += (dtype == DataType::UTF32)
-                    ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
-                    : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
-    } else if(dataType() == DataType::UTF32) {
-      dataLength += (dtype == DataType::UTF16)
-                    ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
-                    : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
-    }
-  }
-  offsets[isScalar() ? 1 : lengthOf()] = dataLength;
+  sd::LongType dataLength = offsets.back();
 
   std::shared_ptr<DataBuffer> pBuffer =
       std::make_shared<DataBuffer>(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
@@ -2507,46 +2466,16 @@ NDArray NDArray::asS() const {
 
   preparePrimaryUse({&res}, {this});
 
-  memcpy(res.bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(sd::LongType));
+  // Copy offsets
+  memcpy(res.bufferAsT<int8_t>(), offsets.data(), offsetsLength * sizeof(sd::LongType));
 
-  auto outData = res.bufferAsT<int8_t>() + offsetsLength;
-  const auto inData = bufferAsT<int8_t>() + offsetsLength;
-
-  auto func = PRAGMA_THREADS_FOR {
-    for (int e = start; e < stop; e++) {
-      auto cdata = outData + offsets[e];
-      auto end = nInputoffsets[e + 1];
-      auto idata = inData + nInputoffsets[e];
-      if (dtype == DataType::UTF16) {
-        if (dataType() == DataType::UTF8) {
-          unicode::utf8to16(idata, outData, end);
-        } else if(dataType() == DataType::UTF32) {
-          unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
-        }
-      } else if (dtype == DataType::UTF32) {
-        if (dataType() == DataType::UTF8) {
-          unicode::utf8to32(idata, cdata, end);
-        } else if(dataType() == DataType::UTF16) {
-          unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
-        }
-      } else {
-        if (dataType() == DataType::UTF16) {
-          unicode::utf16to8(idata, outData, (end / sizeof(char16_t)));
-        } else if(dataType() == DataType::UTF32) {
-          unicode::utf32to8(idata, outData, (end / sizeof(char32_t)));
-        }
-      }
-    }
-  };
-
-  samediff::Threads::parallel_for(func, 0, numStrings, 1);
+  // Convert string data
+  StringUtils::convertStringsForDifferentDataType<T>(this, &res);
 
   registerPrimaryUse({&res}, {this});
 
   return res;
 }
-BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArray::asS, () const, SD_STRING_TYPES);
-
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::asT(DataType dtype) const {
   if (isS() && !DataTypeUtils::isS(dtype))
@@ -2618,6 +2547,35 @@ void NDArray::operator+=(const NDArray &other) {
       *this = std::move(result);  // move assignment operator, zero cost copy
     }
   }
+}
+
+
+
+NDArray NDArray::broadcastTo(const std::vector<sd::LongType>& targetShape) {
+
+  const int inputRank = rankOf();
+
+
+
+  NDArray result = NDArrayFactory::create(dataType(), targetShape, getContext());
+
+  // Get TAD information for both input and output arrays
+  auto inputTadPack = this->allTensorsAlongDimension({0});
+  auto resultTadPack = result.allTensorsAlongDimension({0});
+
+  for (int i = 0; i < inputTadPack.size(); ++i) {
+    auto inputTad = inputTadPack.at(i);
+    for (int j = 0; j < resultTadPack.size(); ++j) {
+      auto resultTad = resultTadPack.at(j);
+
+      for (int e = 0; e < resultTad->lengthOf(); ++e) {
+        auto xVal = inputTad->e(e);
+        result.p(e, xVal);
+      }
+    }
+  }
+
+  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2959,17 +2917,6 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
     THROW_EXCEPTION("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
   if (isEmpty() || other.isEmpty()) return;
-
-  // if (lengthOf() == 1) {
-  //     target.assign(this);
-  //     target.applyPairwiseTransform(op.p, other, extraArgs);
-  //     return;
-  // }
-  // if (other.lengthOf() == 1) {
-  //     const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
-  //     return;
-  // }
-
   if (checkTargetShape) {
     const sd::LongType *newShapeInfo = nullptr;
     if (!ShapeUtils::evalBroadcastShapeInfo(
@@ -3406,13 +3353,16 @@ std::vector<T> NDArray::asVectorT() {
     return result;
   }
 
-  if(lengthOf() < 1 || isEmpty()) {
+  if(isEmpty()) {
+    sd_debug("asVectorT before return empty vector\n",0);
     return std::vector<T>();
   }
 
-  std::vector<T> result(this->lengthOf());
-  PRAGMA_OMP_SIMD
-  for (int e = 0; e < this->lengthOf(); e++) {
+
+  int len = isScalar() ? 1 : lengthOf();
+
+  std::vector<T> result(len);
+  for (int e = 0; e < len; e++) {
     result[e] = this->e<T>(e);
   }
 
@@ -3543,7 +3493,6 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     *this = std::move(temp);
   }
 
-  //RELEASE(shapeInfoNew, getContext()->getWorkspace());
 
   return canReshape;
 }
@@ -3576,12 +3525,20 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
         "NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array "
         "!");
 
-  prepareUse({&target}, {this, &other});
+  prepareUse({&target}, {this, &other},true);
+  this->printIndexedBuffer("applyPairwiseTransform::this");
+  this->printCurrentBuffer<float>(true, "applyPairwiseTransform::this host\n");
+  this->printCurrentBuffer<float>(false, "applyPairwiseTransform::this device\n");
+  other.printCurrentBuffer<float>(true, "applyPairwiseTransform::other host\n");
+  other.printCurrentBuffer<float>(false, "applyPairwiseTransform::other device\n");
+
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(),
       other.specialBuffer(), other.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(),
       target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
   registerUse({&target}, {this, &other});
+  target.printCurrentBuffer<float>(true, "applyPairwiseTransform::target host\n");
+  target.printCurrentBuffer<float>(false, "applyPairwiseTransform::target device\n");
 
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");
 }
@@ -3977,7 +3934,7 @@ T NDArray::e(const sd::LongType i) const {
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
   if(getDataBuffer() != nullptr)
-      BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
+    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, NDArray::e(const sd::LongType) const, SD_COMMON_TYPES_ALL);
 
@@ -4007,7 +3964,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j) const {
   NDArray::registerPrimaryUse({}, {this});
 
   if(getDataBuffer() != nullptr)
-      BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
+    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
@@ -4059,7 +4016,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k) c
   NDArray::registerPrimaryUse({}, {this});
 
   if(getDataBuffer() != nullptr)
-      BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
+    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
@@ -4093,7 +4050,7 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
   if(getDataBuffer() != nullptr)
-      BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
+    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
 }
@@ -4297,12 +4254,12 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray &target, ExtraArguments *extraParams) {
-  if (isS()) THROW_EXCEPTION("NDArray::applyScalarArr: you can't use this method on String array!");
   if (!scalar.isScalar()) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
 
   if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()) &&
       !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))
     THROW_EXCEPTION("NDArray::applyScalarArr method: wrong type of target array!");
+
 
   NDArray::prepareSpecialUse({&target}, {this, &scalar});
   NativeOpExecutioner::execScalar(
@@ -4315,7 +4272,6 @@ void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyScalarArr(sd::scalar::BoolOps op, const NDArray &scalar, NDArray &target,
                              ExtraArguments *extraParams) const {
-  if (isS()) THROW_EXCEPTION("NDArray::applyScalarArr BoolOps: you can't use this method on String array!");
   if (!target.isB()) THROW_EXCEPTION("NDArray::applyScalarArr bool method: target has not bool type!");
   if (dataType() != scalar.dataType()) {
     sd_printf("NDArray::applyScalarArr BoolOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(),
@@ -4808,7 +4764,7 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray &target, cons
 // This method sets value in linear buffer to position i
 template <typename T>
 void NDArray::p(const sd::LongType i, const T value) {
-  if (i >= this->getDataBuffer()->getNumElements()) {
+  if (!isScalar() && i >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::p(i, value): input index is out of array length !";
     errorMessage += " Array length: ";
@@ -5337,7 +5293,7 @@ void NDArray::printAllTensorsAlongDimension(const std::vector<LongType> &dimensi
 }
 
 //used in gtest printing
-void NDArray::PrintTo(const sd::NDArray &arr, std::ostream *os) {
+void PrintTo(const sd::NDArray &arr, std::ostream *os) {
   *os << &arr;
 }
 

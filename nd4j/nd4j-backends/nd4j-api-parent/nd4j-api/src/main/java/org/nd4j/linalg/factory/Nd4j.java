@@ -32,6 +32,7 @@ import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -645,6 +646,11 @@ public class Nd4j {
      */
     public static Environment getEnvironment(){
         return backend.getEnvironment();
+    }
+
+
+    public static NativeOps getNativeOps() {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps();
     }
 
     /**
@@ -4538,7 +4544,7 @@ public class Nd4j {
      * @return the created detached array.
      */
     @SuppressWarnings("WeakerAccess") // For now. If part of public API it will need testing.
-    public static INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
+    public static INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape) {
         logAllocationIfNeeded(dataType,ArrayUtil.prod(shape) * dataType.width());
         return INSTANCE.createUninitializedDetached(dataType, ordering, shape);
     }
@@ -6754,6 +6760,7 @@ public class Nd4j {
     public static INDArray exec(Op op, OpContext context) {
         return getExecutioner().exec(op, context);
     }
+
 
 
 

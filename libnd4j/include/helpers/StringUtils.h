@@ -45,7 +45,35 @@ class SD_LIB_EXPORT StringUtils {
 
     // convert the string stream into a string and return
     return os.str();
+
   }
+
+  static NDArray* createDataBufferFromVector(const std::vector<sd::LongType>& vec, DataType dataType);
+
+  static void broadcastStringAssign(NDArray* x, NDArray* z);
+
+  static std::vector<sd::LongType>* determineOffsetsAndLengths(const NDArray& array, DataType dtype);
+
+  static void convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<sd::LongType>& offsets, DataType inType, DataType outType);
+
+  static std::shared_ptr<DataBuffer> createBufferForStringData(const std::vector<sd::LongType>& offsets, DataType dtype, const LaunchContext* context);
+
+  static NDArray createStringNDArray(const NDArray& array, const std::vector<sd::LongType>& offsets, DataType dtype);
+
+  template <typename T>
+  static void convertStringsForDifferentDataType(const NDArray* sourceArray, NDArray* targetArray);
+
+  template <typename T>
+  static std::vector<sd::LongType> calculateOffsetsForTargetDataType(const NDArray* sourceArray);
+
+  std::vector<sd::LongType> determineOffsets(const std::string& input, const std::vector<sd::LongType>& lengths);
+
+  std::vector<sd::LongType> determineLengths(const std::string& input);
+
+  static void setValueForDifferentDataType(NDArray* arr, sd::LongType idx, NDArray* input, DataType zType);
+
+  static void assignStringData(NDArray& dest, const NDArray& src, const std::vector<sd::LongType>& offsets, DataType dtype);
+
 
   /**
    * These methods convert integer values to string with 0s and 1s

@@ -21,6 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <helpers/StringUtils.h>
 #if NOT_EXCLUDED(OP_assign)
 
 #include <ops/declarable/CustomOperations.h>
@@ -33,12 +34,19 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  BROADCAST_CHECK_EMPTY(x, y, z);
 
-  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), x, y, z);
-  if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
-  else if (tZ != z) {
+  // Check if any array is of string type
+  if (x->isS() || y->isS() || z->isS()) {
+    // Handle string broadcast at high level
+    StringUtils::broadcastStringAssign(x,z);
+    return Status::OK;
+  }
+
+  BROADCAST_CHECK_EMPTY(x, y, z);
+  auto castedX = x->cast(z->dataType());
+  auto castedY = y->cast(z->dataType());
+  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
+  if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
@@ -51,11 +59,11 @@ DECLARE_TYPES(assign) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedOutputTypes(0, DataType::ANY);
 }
 
 DECLARE_TYPES(assign_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_INTS,ALL_STRINGS});
 }
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {

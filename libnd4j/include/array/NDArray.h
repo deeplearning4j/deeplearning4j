@@ -206,7 +206,6 @@ class SD_LIB_EXPORT NDArray {
   NDArray() = default;
 
 
-  void PrintTo(const sd::NDArray &arr, std::ostream *os);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
@@ -805,6 +804,11 @@ class SD_LIB_EXPORT NDArray {
 
   void applyPairwiseTransform(sd::pairwise::IntOps op, const NDArray &other, NDArray &target,
                               ExtraArguments *extraParams = nullptr) const;
+
+
+  bool isBroadcastableTo(const NDArray &other) const;
+
+  NDArray broadcastTo(const std::vector<sd::LongType>& targetShape);
 
   /**
    *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)

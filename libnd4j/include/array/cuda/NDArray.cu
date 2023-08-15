@@ -52,12 +52,6 @@ namespace sd {
 
 
 
-void PrintTo(const sd::NDArray &arr, std::ostream *os) {
-  NDArray constCast = const_cast<NDArray &>(arr);
-  *os << arr;
-}
-
-
 void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 

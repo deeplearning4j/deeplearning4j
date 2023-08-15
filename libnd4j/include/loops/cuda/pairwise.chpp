@@ -84,8 +84,8 @@ SD_KERNEL static void pairwiseSimpleShaped(void const*  vx, sd::LongType const* 
       auto xOffset = shape::getIndexOffset(i, xShapeInfo);
       auto yOffset = shape::getIndexOffset(i, yShapeInfo);
       auto zOffset = shape::getIndexOffset(i, zShapeInfo);
-
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+
     }
   }
 }
@@ -100,7 +100,7 @@ void SD_HOST PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cuda
                                                           void const* vx, sd::LongType const* xShapeInfo,
                                                           void const* vy, sd::LongType const* yShapeInfo,
                                                           void *vz, sd::LongType const* zShapeInfo,
-                                                          void *vextraParams){
+                                                          void *vextraParams) {
 
   pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
 }

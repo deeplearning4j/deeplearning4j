@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -619,7 +620,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         long st = profilingConfigurableHookIn(op,oc);
+        //redirect assign so we support more ops cases lke strings
+        if(op instanceof Assign) {
+            org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
+            if(oc == null) {
+                op2.addInputArgument(op.x());
+                op2.addOutputArgument(op.y());
+                op2.addOutputArgument(op.z());
+                exec(op2);
+            } else {
+                exec(op2, oc);
 
+            }
+
+        }
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1762,8 +1776,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Shape.setElementWiseStride(merged,(int) elementWiseStride);
         LongPointer longPointer = new LongPointer(merged);
         loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
-         longPointer.deallocate();
-         longPointer.releaseReference();
+        longPointer.deallocate();
+        longPointer.releaseReference();
         return ret;
     }
 
@@ -1776,8 +1790,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(loop.lastErrorMessage());
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
-
-        //loop.deleteConstantShapeBuffer(dbf);
 
         return result;
     }
@@ -1795,9 +1807,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
         val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
-
-        //    loop.deleteTadPack(pack);
-
         return new TadPack(tadShape, tadOffsets);
     }
 

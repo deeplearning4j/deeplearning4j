@@ -602,13 +602,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if(op instanceof Assign) {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
             if(oc == null) {
+                //assign works on both x and y. we just want
+                //to assign x to z. aka copy
                 op2.addInputArgument(op.x());
-                op2.addInputArgument(op.z());
+                op2.addInputArgument(op.x());
                 op2.addOutputArgument(op.z());
                 return exec(op2)[0];
             } else {
+                //assign works on both x and y. we just want
+                //to assign x to z. aka copy
                 op2.setInputArgument(0,op.x());
-                op2.setInputArgument(1,op.z());
+                op2.setInputArgument(1,op.x());
+                op2.setOutputArgument(0,op.z());
                 exec(op2, oc);
                 return op2.getOutputArgument(0);
             }
@@ -920,7 +925,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
         val offsets = x.isEmpty() ? null : tadBuffers.getSecond();
-        val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer((DataBuffer) offsets, context);
+        val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
 
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context);
 
@@ -1036,8 +1041,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             }
         } else {
-            val dimensionPointer = AtomicAllocator.getInstance().getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
-
             if (y != null) {
                 val yShapeInfo = AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context);
                 nativeOps.execReduce3Tad(xShapeInfoHostPointer, op.opNum(),

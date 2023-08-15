@@ -28,7 +28,6 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(get_seed, -2, 1, false, 0, 0) {
-  //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
   auto rng = block.getRng();
   auto z = OUTPUT_VARIABLE(0);
 
