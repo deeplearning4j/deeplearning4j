@@ -62,7 +62,6 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   // this is contrast calculation
   output->assign(part3);
 
-  if (block.width() == 1) delete factor;
 
   return sd::Status::OK;
 }
@@ -81,8 +80,6 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
 
   REQUIRE_TRUE(input->rankOf() > 2, 0,
                "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
-  //    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B),
-  //    but got %i instead", input->sizeAt(-1));
   REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
 
   NDArray* factor = nullptr;

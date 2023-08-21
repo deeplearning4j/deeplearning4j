@@ -115,12 +115,68 @@ public interface Environment {
      * @param deviceId
      * @return
      */
-    long getDeviceCouner(int deviceId);
+    long getDeviceCounter(int deviceId);
 
+    /**
+     * This function returns whether functrace deallocate is on or not.
+     * This means that stack traces will be printed every time a data buffer deallocation happens.
+     * This is used for debugging events like double frees
+     * @return
+     */
     boolean isFuncTracePrintDeallocate();
+
+    /**
+     * This function returns whether functrace allocate is on or not.
+     * This means that stack traces will be printed every time a data buffer allocation happens
+     * when a delete method is called. This is used for debugging events like double frees
+     * tracing where a databuffer was created in the context of where it was deleted.
+     * @return
+     */
     boolean isFuncTracePrintAllocate();
 
+    /**
+     * This method sets whether to print stack traces on deallocate or not
+     * See {@link #isFuncTracePrintAllocate()} for more information.
+
+     * @param reallyTrace
+     */
     void setFuncTraceForDeallocate(boolean reallyTrace);
+
+    /**
+     * This method sets whether to print stack traces on allocate or not
+     * See {@link #isFuncTracePrintAllocate()} for more information.
+     *
+     * @param reallyTrace
+     */
     void setFuncTraceForAllocate(boolean reallyTrace);
+
+
+    /**
+     * This method returns whether to delete cpu side (host side in gpu terms)
+     */
+    boolean isDeletePrimary();
+
+
+    /**
+     * This method returns whether to delete special (device side in gpu terms)
+     * @return
+     */
+    boolean isDeleteSpecial();
+
+    /**
+     * This method sets whether to deleted cpu side (host side in gpu terms)
+     * databuffers. Disabling this should be for debugging double frees only.
+     * @param reallyDelete
+     */
+    void setDeletePrimary(boolean reallyDelete);
+
+
+    /**
+     * This method sets whether to deleted special (device side in gpu terms)
+     * databuffers. Disabling this should be for debugging double frees only.
+     * @param reallyDelete
+     */
+    void setDeleteSpecial(boolean reallyDelete);
+
 
 }

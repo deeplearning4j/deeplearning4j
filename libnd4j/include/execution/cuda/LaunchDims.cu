@@ -165,6 +165,8 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"image_resize_neighbor", {dim3(GRID_SIZE_IMAGE_RESIZE_NEIGHBOR, BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR, SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR)}},
     {"swap_unsafe", {dim3(GRID_SIZE_SWAP_UNSAFE, BLOCK_SIZE_SWAP_UNSAFE, SHARED_MEM_SIZE_SWAP_UNSAFE)}},
     {"digamma", {dim3(GRID_SIZE_DIGAMMA, BLOCK_SIZE_DIGAMMA, SHARED_MEM_SIZE_DIGAMMA)}},
+    {"fill_tri", {dim3(GRID_SIZE_FILL_TRI, BLOCK_SIZE_FILL_TRI, SHARED_MEM_SIZE_FILL_TRI)}},
+    {"identity", {dim3(GRID_SIZE_IDENTITY, BLOCK_SIZE_IDENTITY, SHARED_MEM_SIZE_IDENTITY)}},
 
 
 };
@@ -327,9 +329,41 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"image_resize_neighbor", {"GRID_SIZE_IMAGE_RESIZE_NEIGHBOR", "BLOCK_SIZE_IMAGE_RESIZE_NEIGHBOR", "SHARED_MEM_SIZE_IMAGE_RESIZE_NEIGHBOR"}},
     {"swap_unsafe", {"GRID_SIZE_SWAP_UNSAFE", "BLOCK_SIZE_SWAP_UNSAFE", "SHARED_MEM_SIZE_SWAP_UNSAFE"}},
     {"digamma", {"GRID_SIZE_DIGAMMA", "BLOCK_SIZE_DIGAMMA", "SHARED_MEM_SIZE_DIGAMMA"}},
+    {"fill_tri", {"GRID_SIZE_FILL_TRI", "BLOCK_SIZE_FILL_TRI", "SHARED_MEM_SIZE_FILL_TRI"}},
+    {"repeat", {"GRID_SIZE_FILL_REPEAT", "BLOCK_SIZE_FILL_REPEAT", "SHARED_MEM_SIZE_FILL_REPEAT"}},
+    {"identity", {"GRID_SIZE_FILL_IDENTITY", "BLOCK_SIZE_FILL_IDENTITY", "SHARED_MEM_SIZE_FILL_IDENTITY"}},
 
 };
 
+dim3 getIdentityLaunchDims(int len,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (len + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(int) *rank + 128;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_FILL_IDENTITY",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_FILL_IDENTITY",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_FILL_IDENTITY",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+}
+
+dim3 getRepeatLaunchDims(int len,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (len + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(int) *rank + 128;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_REPEAT",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_FILL_REPEAT",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_FILL_REPEAT",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+}
+
+dim3 getFillTriLaunchDims(int len,int rank) {
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = (len + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = threadsPerBlock * sizeof(int) *rank + 128;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_FILL_TRI",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_FILL_TRI",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_FILL_TRI",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+}
 
 // Retrieve the environment variable value for the given variable name
 int getEnvVariable(const std::string& varName, int defaultValue) {
@@ -1116,13 +1150,13 @@ dim3 mirrorPadTad(int length,int rank) {
 }
 
 dim3 digammaDims(int length) {
-        int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-        int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
-        int sharedMem = 512;
-        threadsPerBlock = getEnvVariable("GRID_SIZE_DIGAMMA", threadsPerBlock);
-        blocksPerGrid = getEnvVariable("BLOCK_SIZE_DIGAMMA", blocksPerGrid);
-        sharedMem = getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", sharedMem);
-        return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
+  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int sharedMem = 512;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_DIGAMMA", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_DIGAMMA", blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", sharedMem);
+  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
 }
 
 

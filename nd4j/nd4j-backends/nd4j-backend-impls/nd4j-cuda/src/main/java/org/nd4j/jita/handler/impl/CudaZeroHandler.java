@@ -645,16 +645,6 @@ public class CudaZeroHandler implements MemoryHandler {
             if (workspace == null) {
                 // if we're out of workspace, we should mark our buffer as detached, so gc will pick it up eventually
                 // host part is optional
-                if (dstPoint.getHostPointer() != null) {
-                    //val pairH = alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
-                    //dstPoint.getPointers().setHostPointer(pairH.getHostPointer());
-                }
-
-                //val pairD = alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
-                //dstPoint.getPointers().setDevicePointer(pairD.getDevicePointer());
-
-                ////log.info("New host pointer: {}; Old host pointer: {}", dstPoint.getHostPointer().address(), ohPtr.address());
-
                 CudaContext context = getCudaContext();
 
                 val profD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -679,16 +669,9 @@ public class CudaZeroHandler implements MemoryHandler {
                 dstPoint.tickDeviceWrite();
             } else {
                 // this call will automagically take care of workspaces, so it'll be either
-                //log.info("Relocating to deviceId [{}], workspace [{}]...", deviceId, workspace.getId());
                 BaseCudaDataBuffer nBuffer = (BaseCudaDataBuffer) Nd4j.createBuffer(buffer.length());
 
                 Nd4j.getMemoryManager().memcpy(nBuffer, buffer);
-
-                //dstPoint.getPointers().setDevicePointer(nBuffer.getAllocationPoint().getDevicePointer());
-
-                if (dstPoint.getHostPointer() != null) {
-                  //  dstPoint.getPointers().setHostPointer(nBuffer.getAllocationPoint().getHostPointer());
-                }
 
                 dstPoint.setDeviceId(deviceId);
 
@@ -715,11 +698,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
                 context.syncSpecialStream();
             }
-
-            //deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
-
-            // we replace original device pointer with new one
-            //alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -762,19 +740,14 @@ public class CudaZeroHandler implements MemoryHandler {
                 Nd4j.getConstantHandler().moveToConstantSpace(buffer);
             } else {
 
-                PointersPair pair = null; //memoryProvider.malloc(dstPoint.getShape(), dstPoint, AllocationStatus.DEVICE);
-
+                PointersPair pair = null;
                 if (pair != null) {
                     Integer deviceId = getDeviceId();
-                    //               log.info("Promoting object to device: [{}]", deviceId);
-
-                    //dstPoint.setDevicePointer(pair.getDevicePointer());
                     dstPoint.setAllocationStatus(AllocationStatus.DEVICE);
 
                     deviceAllocations.get(deviceId).put(dstPoint.getObjectId(), dstPoint.getObjectId());
 
                     zeroAllocations.get(dstPoint.getBucketId()).remove(dstPoint.getObjectId());
-                    //deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, AllocationUtils.getRequiredMemory(dstPoint.getShape()));
 
 
                     dstPoint.tickHostWrite();
@@ -912,11 +885,9 @@ public class CudaZeroHandler implements MemoryHandler {
         if (deviceAllocations.get(deviceId).containsKey(objectId))
             throw new IllegalStateException("Can't happen ever");
 
-        //deviceMemoryTracker.subFromAllocation(threadId, deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
 
         point.setAllocationStatus(AllocationStatus.HOST);
 
-        //environment.trackAllocatedMemory(deviceId, AllocationUtils.getRequiredMemory(point.getShape()));
     }
 
     /**
@@ -938,9 +909,6 @@ public class CudaZeroHandler implements MemoryHandler {
         // we call for caseless deallocation here
         if (point.getHostPointer() != null) {
             free(point, AllocationStatus.HOST);
-
-            //long reqMem = AllocationUtils.getRequiredMemory(point.getShape()) * -1;
-            //zeroUseCounter.addAndGet(reqMem);
         }
 
         point.setAllocationStatus(AllocationStatus.DEALLOCATED);

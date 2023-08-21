@@ -24,22 +24,29 @@
 namespace sd {
 
 sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, sd::memory::Workspace* workspace) {
-  sd::LongType* newShape;
-  ALLOCATE(newShape, workspace, shape::shapeInfoLength(static_cast<sd::LongType>(0)), sd::LongType);
+  // there is no reason for shape info to use workspaces. we have constant shape helper for this
+  // workspaces with shapebuffers also appears to cause issues when reused elsewhere.
+  sd::LongType lenOfShapeInfo = shape::shapeInfoLength(static_cast<sd::LongType>(0));
+  sd_printf("Scalar shape info shape info length is %d\n", lenOfShapeInfo);
+  sd::LongType* newShape = new sd::LongType[lenOfShapeInfo];
+  sd_print("Created new shape\n");
   newShape[0] = 0;
   newShape[1] = 0;
   newShape[2] = 1;
-  newShape[3] = 99;
+  newShape[3] = 0;
+  newShape[4] = 1;
+  newShape[5] = 99;
+  sd_print("Set all values about to set data type\n");
 
   sd::ArrayOptions::setDataType(newShape, dataType);
-
+  sd_print("Finished createScalarShapeInfo\n");
   return newShape;
 }
-
 sd::LongType* ShapeBuilders::createVectorShapeInfo(const sd::DataType dataType, const sd::LongType length,
                                                    sd::memory::Workspace* workspace) {
-  sd::LongType* newShape;
-  ALLOCATE(newShape, workspace, shape::shapeInfoLength(1), sd::LongType);
+  //there is no reason for shape info to use workspaces. we have constant shape helper for this
+  //workspaces with shapebuffers also appears to cause issues when reused elsewhere.
+  sd::LongType* newShape = new sd::LongType[shape::shapeInfoLength(static_cast<sd::LongType>(2))];
 
   newShape[0] = 1;
   newShape[1] = length;
@@ -99,7 +106,7 @@ sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const c
 }
 
 sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
-                                       const sd::LongType* shapeOnly, memory::Workspace* workspace){
+                                            const sd::LongType* shapeOnly, memory::Workspace* workspace){
 
   auto shapeInfo = createShapeInfo(dataType, order, rank, shapeOnly, workspace);
   memset(shape::stride(shapeInfo), 0, rank * sizeof(sd::LongType));

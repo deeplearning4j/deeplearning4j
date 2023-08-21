@@ -135,6 +135,7 @@ export BLOCK_SIZE_INVERT_PERMUTATION=128
 echo "$TEST_RUNNER_PREFIX $JAVA_CALL $@"
 export MALLOC_CHECK_=3
 # Execute the command
+
 $TEST_RUNNER_PREFIX $JAVA_CALL "$@"
 
 # If TEST_RUNNER_PREFIX is not empty and contains "valgrind", remove the suppression file

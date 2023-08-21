@@ -39,8 +39,6 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
                "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !",
                ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
-  sd::LongType arrLen = n->lengthOf();
-  // FIXME: this shit should be single op call, not a loop!
   auto nNegative = n->reduceNumber(sd::reduce::IsNegative, nullptr);
   auto xPositive = x->reduceNumber(sd::reduce::IsPositive, nullptr);
   bool nPositiveFlag = !nNegative.e<bool>(0);  // require all n >= 0

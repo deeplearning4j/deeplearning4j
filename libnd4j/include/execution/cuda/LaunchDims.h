@@ -708,6 +708,21 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_DIGAMMA getEnvVariable("BLOCK_SIZE_DIGAMMA", 512)
 #define SHARED_MEM_SIZE_DIGAMMA getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", 1024)
 
+
+#define GRID_SIZE_FILL_TRI getEnvVariable("GRID_SIZE_FILL_TRI", 256)
+#define BLOCK_SIZE_FILL_TRI getEnvVariable("BLOCK_SIZE_FILL_TRI", 512)
+#define SHARED_MEM_SIZE_FILL_TRI getEnvVariable("SHARED_MEM_SIZE_FILL_TRI", 1024)
+
+#define GRID_SIZE_IDENTITY getEnvVariable("GRID_SIZE_IDENTITY", 256)
+#define BLOCK_SIZE_IDENTITY getEnvVariable("GRID_SIZE_IDENTITY", 512)
+#define SHARED_MEM_SIZE_IDENTITY getEnvVariable("SHARED_MEM_SIZE_IDENTITY", 1024)
+
+
+dim3 getIdentityLaunchDims(int len,int rank);
+dim3 getRepeatLaunchDims(int len,int rank);
+
+dim3 getFillTriLaunchDims(int len,int rank);
+
 dim3 getGemVDims(int m);
 dim3 getAddBiasDims(int len,int rank) ;
 

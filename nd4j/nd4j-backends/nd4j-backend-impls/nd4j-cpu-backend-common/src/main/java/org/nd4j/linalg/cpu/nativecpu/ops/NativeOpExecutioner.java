@@ -1384,12 +1384,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputShapes = new PointerPointer<>(nIn);
         val inputArgs = opContext != null && opContext.getInputArrays() != null && !opContext.getInputArrays().isEmpty()
                 ? opContext.getInputArrays() : op.inputArguments();
-        int cnt= 0;
+        int cnt = 0;
+        int numProcessed = 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().opaqueBuffer().primaryBuffer());
+                inputBuffers.put(cnt, in.data().opaqueBuffer());
 
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer());
+            numProcessed++;
+        }
+
+
+
+        if(numProcessed != nIn) {
+            throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
+                    "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
 
@@ -1397,11 +1406,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
         cnt = 0;
         if(opContext != null) {
-            for (val i: opContext.getIArguments())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: opContext.getIArguments())
+                    iArgs.put(cnt++, i);
         } else {
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: op.iArgs())
+                    iArgs.put(cnt++, i);
         }
 
 
@@ -1416,36 +1427,49 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getBArguments())
-                bArgs.put(cnt++, b);
+            if(bArgs != null)
+                for (val b: opContext.getBArguments())
+                    bArgs.put(cnt++, b);
         } else {
-            for (val b: op.bArgs())
-                bArgs.put(cnt++, b);
+            if(bArgs != null)
+                for (val b: op.bArgs())
+                    bArgs.put(cnt++, b);
         }
 
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getTArguments())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: opContext.getTArguments())
+                    tArgs.put(cnt++, b);
         } else {
-            for (val b: op.tArgs())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: op.tArgs())
+                    tArgs.put(cnt++, b);
         }
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getDArguments())
-                dArgs.put(cnt++, b.toInt());
+            if(dArgs != null)
+                for (val b: opContext.getDArguments())
+                    dArgs.put(cnt++, b.toInt());
         } else {
-            for (val b: op.dArgs())
-                dArgs.put(cnt++, b.toInt());
+            if(dArgs != null)
+                for (val b: op.dArgs())
+                    dArgs.put(cnt++, b.toInt());
+        }
+
+
+
+        if(numProcessed != nIn) {
+            throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
+                    "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
 
         OpaqueShapeList ptrptr;
         try {
-            ptrptr = loop.calculateOutputShapes2(null,
+            ptrptr = loop.calculateOutputShapes3(null,
                     hash, inputBuffers, inputShapes, nIn, tArgs,
                     nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 

@@ -129,18 +129,12 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
         if (dataBuffers.size() > 1) {
             dataBuffers.entrySet().stream().forEach(entry -> {
-                TestParams testParams2 = TestParams.builder()
-                        .testDisplayName(context.getDisplayName())
-                        .testClass(currentTestClassName())
-                        .testMethod(context.getTestMethod().get().getName())
-                        .build();
                 if (executed.contains(entry.getKey())) {
-                    System.out.println("Current test name deallocation: " + testParams + " vs " + entry.getKey());
                     entry.getValue().stream().forEach(reference -> {
-                        System.out.println("Current test name deallocation: " + testParams + " vs " + entry.getKey());
                         if (!Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.NO_ARRAY_GC, "false"))) {
-                            if (!reference.wasClosed() && reference.closeable() && !reference.isConstant())
+                            if (!reference.wasClosed() && reference.closeable() && !reference.isConstant()) {
                                 reference.close();
+                            }
                         }
                     });
                     //clear references

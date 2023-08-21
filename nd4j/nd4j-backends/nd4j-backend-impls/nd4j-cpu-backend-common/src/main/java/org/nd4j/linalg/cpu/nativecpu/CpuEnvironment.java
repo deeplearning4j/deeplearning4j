@@ -183,7 +183,7 @@ public class CpuEnvironment implements Environment {
     }
 
     @Override
-    public long getDeviceCouner(int deviceId) {
+    public long getDeviceCounter(int deviceId) {
         return 0;
     }
 }

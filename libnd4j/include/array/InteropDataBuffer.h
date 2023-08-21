@@ -38,13 +38,16 @@ class SD_LIB_EXPORT InteropDataBuffer {
   std::shared_ptr<DataBuffer> _dataBuffer;
   uint64_t _offset = 0;
   bool owner;
-
  public:
+  bool isConstant = false;
+
   InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
   InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer);
   InteropDataBuffer(size_t lenInBytes, sd::DataType dtype, bool allocateBoth);
-  ~InteropDataBuffer() = default;
-
+  ~InteropDataBuffer() {
+    if(!isConstant)
+      dataBuffer()->close();
+  }
 #ifndef __JAVACPP_HACK__
   std::shared_ptr<DataBuffer> getDataBuffer() const;
   std::shared_ptr<DataBuffer> dataBuffer();
@@ -53,6 +56,10 @@ class SD_LIB_EXPORT InteropDataBuffer {
   void *primary() const;
   void *special() const;
 
+  void markConstant(bool reallyConstant) {
+    isConstant = reallyConstant;
+    dataBuffer()->markConstant(reallyConstant);
+  }
   uint64_t offset() const;
   void setOffset(uint64_t offset);
 

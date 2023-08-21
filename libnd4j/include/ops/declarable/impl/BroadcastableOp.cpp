@@ -31,6 +31,7 @@ BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
 }
 
 ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+  sd_print("Calculate output shape of BroadcastableOp\n");
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
   auto y = inputShape->at(1);

@@ -227,6 +227,16 @@ void Environment::setDefaultFloatDataType(sd::DataType dtype) {
   _dataType.store(dtype);
 }
 
+void Environment::setDeletePrimary(bool reallyDelete) { deletePrimary = reallyDelete; }
+
+bool Environment::isDeletePrimary() { return deletePrimary; }
+
+void Environment::setDeleteSpecial(bool reallyDelete) { deleteSpecial = reallyDelete; }
+
+bool Environment::isDeleteSpecial() { return deleteSpecial; }
+
+
+
 void Environment::setVerbose(bool reallyVerbose) { _verbose = reallyVerbose; }
 
 bool Environment::isDebug() { return _debug.load(); }

@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  if (gradO->lengthOf() == 1) {
+  if (gradO->lengthOf() <= 1) {
     gradI->assign(2 * (*input) * gradO->e(0));
   } else {
     bool keepDims = false;

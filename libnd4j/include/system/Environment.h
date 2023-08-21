@@ -54,6 +54,8 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> funcTracePrintAllocate;
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
+  std::atomic<bool> deleteSpecial{true};
+  std::atomic<bool> deletePrimary{true};
 
   // these fields hold defaults
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
@@ -88,6 +90,11 @@ class SD_LIB_EXPORT Environment {
   int _blasPatchVersion = 0;
 
   static Environment& getInstance();
+
+  bool isDeleteSpecial();
+  void setDeleteSpecial(bool reallyDelete);
+  bool isDeletePrimary();
+  void setDeletePrimary(bool reallyDelete);
 
   bool isVerbose();
   void setVerbose(bool reallyVerbose);

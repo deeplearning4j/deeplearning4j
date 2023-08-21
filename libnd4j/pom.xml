@@ -58,6 +58,11 @@
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
+        <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
+         FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
+         FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow
+         -->
+        <libnd4j.sanitizers>thread,undefined,float-divide-by-zero,float-cast-overflow</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
@@ -369,6 +374,8 @@
                                         <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
                                         <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
                                         <argument>--functrace</argument>
@@ -494,6 +501,8 @@
                                         <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
                                         <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--arch</argument>
                                         <argument>${libnd4j.arch}</argument>
                                         <argument>--use_lto</argument>

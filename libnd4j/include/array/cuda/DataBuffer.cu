@@ -79,7 +79,7 @@ void DataBuffer::allocateSpecial() {
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
     allocationStackTraceSpecial = new backward::StackTrace();
-    allocationStackTraceSpecial->load_here(32);
+    allocationStackTraceSpecial->load_here();
   }
 
 #endif
@@ -94,11 +94,9 @@ void DataBuffer::allocateSpecial() {
                                               getLenInBytes());
     }
 
-    sd_printf("Allocating special buffer of size %lld on device %d\n", getLenInBytes(), deviceId);
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerSpecial = true;
 
-    sd_print("After allocated special\n");
     if (_workspace == nullptr) {
       sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
@@ -159,35 +157,57 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   readSpecial();
 }
 
+void DataBuffer::printSpecialAllocationTraces() {
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    sd_print("Beginning printing for allocation part of  deallocation event deleteSpecial\n");
+    Printer p2;
+    if(allocationStackTraceSpecial != nullptr && allocationStackTraceSpecial->size() > 0)
+      p2.print(*allocationStackTraceSpecial);
+    else {
+      sd_print("No stack trace available for deleteSpecial\n");
+    }
+    sd_print("End printing for allocation part of deallocation event deleteSpecial\n");
+
+
+    sd_print("Beginning printing for creation part of deallocation event deleteSpecial\n");
+    if(creationStackTrace != nullptr && creationStackTrace->size() > 0)
+      p2.print(*creationStackTrace);
+    else {
+      sd_print("No creation stack trace available for deleteSpecial\n");
+    }
+    sd_print("End printing for creation part of deallocation event deleteSpecial\n");
+
+
+  }
+
+  if(Environment::getInstance().isFuncTracePrintDeallocate()) {
+    sd_print("Beginning printing for deallocation event deleteSpecial\n");
+    Printer p2;
+    StackTrace deallocTrace;
+    deallocTrace.load_here();
+    sd_printf("Deleting special databuffer of length %d and type %s\n", getLenInBytes(), DataTypeUtils::asString(getDataType()).c_str());
+
+    p2.print(deallocTrace);
+    sd_print("End printing for deallocation event deleteSpecial\n");
+
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
 
   if (_isOwnerSpecial && _specialBuffer != nullptr) {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
 #if defined(SD_GCC_FUNCTRACE)
-    if(Environment::getInstance().isFuncTracePrintAllocate()) {
-      sd_print("Beginning printing for allocation part of  deallocation event deleteSpecial\n");
-      Printer p2;
-      if(allocationStackTraceSpecial != nullptr && allocationStackTraceSpecial->size() > 0)
-        p2.print(*allocationStackTraceSpecial);
-      else {
-        sd_print("No stack trace available for deletePrimary\n");
-      }
-      sd_print("End printing for allocation part of deallocation event deleteSpecial\n");
-    }
-
-    if(Environment::getInstance().isFuncTracePrintDeallocate()) {
-      sd_print("Beginning printing for deallocation event deleteSpecial\n");
-      Printer p2;
-      StackTrace deallocTrace;
-      deallocTrace.load_here();
-      p2.print(deallocTrace);
-      sd_print("End printing for deallocation event deleteSpecial\n");
-
-    }
+    printSpecialAllocationTraces();
 
 #endif
-    RELEASE_SPECIAL(p, _workspace);
+
+    if(Environment::getInstance().isDeleteSpecial()) {
+      RELEASE_SPECIAL(p, _workspace);
+
+    }
+
     _specialBuffer = nullptr;
     _isOwnerSpecial = false;
 
@@ -230,6 +250,15 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
   }
   if (sizeToCopyinBytes == 0) {
     return;
+  }
+
+
+  if(closed) {
+    THROW_EXCEPTION("Unable to write to buffer that has been closed.");
+  }
+
+  if(other.closed) {
+    THROW_EXCEPTION("Trying to copy from buffer that has been closed.");
   }
 
   if (other.isPrimaryActual()) {

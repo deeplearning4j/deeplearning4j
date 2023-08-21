@@ -70,15 +70,17 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
 
   std::lock_guard<std::mutex> lock(_mutex);
 
-  if (_cache[deviceId].count(*descriptor) == 0) {
-    sd_print("Creating new bufferForShapeInfo\n");
-    sd_print("Here is the descriptor\n");
-    shape::printShapeInfo(descriptor->toShapeInfo());
-    sd_print("About to create new hPtr\n");
+  /*
+   * TODO: see if there's something special we need to do for scalar.
+   * Crashes with shapeBufferEx still seem to be  happening.
+   * Workspaces deallocations are a likely reason.
+   * We also might be running in to more 0 length shape buffers.
+   */
 
+
+  if (_cache[deviceId].count(*descriptor) == 0) {
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
-    sd_print("About to create new dPtr\n");
 
     auto hPtrPointer = hPtr->pointer();
     auto byteLength = shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>());

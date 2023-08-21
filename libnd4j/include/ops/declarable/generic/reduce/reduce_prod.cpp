@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-  if(input->lengthOf() == 0) {
+  if(input->isScalar()) {
     output->assign(1);
     return sd::Status::OK;
   }
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  if (gradO->lengthOf() == 1) {
+  if (gradO->lengthOf() <= 1) {
     gradI->assign(input->reduceNumber(sd::reduce::Prod));
     *gradI /= *input;
     *gradI *= gradO->e(0);

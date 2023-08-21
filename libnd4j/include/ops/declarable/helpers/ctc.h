@@ -29,7 +29,6 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-//#define LOGIT_SOFTMAX_NORMALIZATION 1
 
 template <typename T>
 constexpr T negative_infinity() {

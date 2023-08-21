@@ -3240,7 +3240,7 @@ public class SameDiff extends SDBaseOps {
         if (name == null || name.length() < 1)
             name = getNewVarName();
         if(constant.isView()) {
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 constant = constant.dup();
             }
         }

@@ -39,6 +39,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,7 +52,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
-   private long deallocationId;
+    private long deallocationId;
 
 
 
@@ -64,7 +65,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void close() {
-        nativeOps.ctxPurge(context);
+        //nativeOps.ctxPurge(context);
 
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
@@ -118,10 +119,12 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             INDArray array = arrays.get(i);
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array.isEmpty() ? null : array);
+            fastpath_in.put(i,array);
             if(OpContextTracker.getInstance().isEnabled()) {
                 OpContextTracker.getInstance().associateInput(array,this);
             }
+
+            array.setCloseable(false);
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
@@ -143,6 +146,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             if(OpContextTracker.getInstance().isEnabled()) {
                 OpContextTracker.getInstance().associateOutput(array,this);
             }
+            array.setCloseable(false);
         }
 
         PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
@@ -153,40 +157,12 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArrays(INDArray... arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.length];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.length];
-        if(!fastpath_in.isEmpty())
-            fastpath_in.clear();
-        for(int i = 0; i < arrays.length; i++) {
-            INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null :  array.data().opaqueBuffer();
-            shapeInfoBufers2[i] =  array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array);
-        }
-
-
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
-        PointerPointer<OpaqueDataBuffer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextInputBuffers(context,arrays.length,buffers,shapeInfoBuffer,null);
+        setInputArrays(Arrays.asList(arrays));
     }
 
     @Override
     public void setOutputArrays(INDArray... arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.length];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.length];
-
-        for(int i = 0; i < arrays.length; i++) {
-            INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null :  array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_out.put(i,array);
-        }
-
-
-        PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
-
-        PointerPointer<OpaqueDataBuffer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.length,outputBuffers,shapeInfoOutputBuffer,null);
+        setOutputArrays(Arrays.asList(arrays));
     }
 
 

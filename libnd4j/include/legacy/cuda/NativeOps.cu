@@ -2564,20 +2564,37 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
 
 
+  sd_print("About to calculate output shape\n");
   for (int e = 0; e < numInputShapes; e++) {
+    if(inputShapes[e] == nullptr) {
+      std::string errorMessage;
+      errorMessage += "Input shape at index ";
+      errorMessage += std::to_string(e);
+      errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    sd_printf("Processing array %d\n",e);
     auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    sd_print("Got the shape\n");
+    sd_printf("Input buffer is nullptr %d\n",inputBuffers == nullptr);
+    sd_printf("Input buffer at index is nullptr %d\n",inputBuffers[e] == nullptr);
 
+    /*
+     * Doesn't seem to be a null pointer but an out of bounds? Is it empty then?
+     */
     // we shouldn't copy buffer if that's empty array
     void *buffer_ = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
     void *bufferD_ =
         sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputShapes];
 
+    sd_print("About to create array\n");
     auto array = new sd::NDArray(buffer_, bufferD_, shape_);
 
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);
     block.pickInput(1, e);
 
+    sd_print("Pushing shape\n");
     inShapes.push_back(shape_);
   }
 
@@ -2588,7 +2605,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
 
 sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueDataBuffer **inputBuffers,
-                                            sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                            OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                             sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
                                             int numDArgs) {
 
@@ -2605,7 +2622,7 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
 
   for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]->primary());
     if(shape_ == nullptr) {
       THROW_EXCEPTION("Input shape was null!");
     }
@@ -2617,7 +2634,7 @@ sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops:
     // we shouldn't copy buffer if that's empty array
     InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
     auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
-    auto array = new sd::NDArray(buff->primary(), shape_, varSpace.launchContext(),false);
+    auto array = new sd::NDArray(buff,shape_);
 
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);
@@ -2641,7 +2658,6 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
                                       int numDArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
                                   numIArgs, bArgs, numBArgs, dArgs, numDArgs);
   } catch (std::exception &e) {
@@ -2653,7 +2669,7 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 
 
 OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                        sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                        OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                         sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
                                         int numDArgs) {
   try {
@@ -3669,9 +3685,7 @@ OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool
 OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
-    sd_printf("allocateDataBuffer: Creating buffer of type %i\n", dtype);
     sd::LongType totalElementSize = elements == 0 ?  DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
-    sd_printf("Total element size: %lld\n", totalElementSize);
     return new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3794,6 +3808,7 @@ void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
 void dbClose(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbClose: dataBuffer is null");
+
   auto ret = dataBuffer->getDataBuffer();
   if(ret != nullptr)
     dataBuffer->getDataBuffer()->close();

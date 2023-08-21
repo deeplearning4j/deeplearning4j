@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 
   // input validation
   // check whether shapes of all input array are the same
-  for (int i = 0; i < (int)block.width() - 1; ++i)
+  for (sd::LongType i = 0; i < block.width() - 1; ++i)
     REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
                  "STACK op: the shapes of all input arrays must be the same !");
 
@@ -60,11 +60,11 @@ DECLARE_SYN(pack, stack);
 DECLARE_SYN(Pack, stack);
 
 DECLARE_TYPES(stack) {
-  // getOpDescriptor()->setSameMode(true);
   getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes(DataType::ANY);
 }
 
 DECLARE_SHAPE_FN(stack) {
+  sd_print("Stack shape\n");
   // check whether input dimension is within rank range
   auto inShapeInfo = inputShape->at(0);
   int rank = shape::rank(inShapeInfo);
@@ -78,11 +78,12 @@ DECLARE_SHAPE_FN(stack) {
 
   // empty input arrays require some special handling
   if (shape::isEmpty(inShapeInfo)) {
+    sd_print("Handling empty stack\n");
     switch (rank) {
       case 0: {
         // we're going to return rank 1 here
         if (block.width() == 1) {
-          return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, ArrayOptions::dataType(inShapeInfo)));
+          return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShapeInfo)));
         } else {
           return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c',
                                                                               {(sd::LongType)block.width(), 0}));
@@ -93,7 +94,7 @@ DECLARE_SHAPE_FN(stack) {
 
   if (rank == 0) {
     return SHAPELIST(
-        ConstantShapeHelper::getInstance().vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
+        ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShapeInfo)));
   }
 
   // the rank of output ShapeInfo is larger by one compared to input ShapeInfo

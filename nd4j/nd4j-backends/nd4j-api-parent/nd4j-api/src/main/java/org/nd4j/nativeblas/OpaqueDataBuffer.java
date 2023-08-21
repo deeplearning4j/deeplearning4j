@@ -90,7 +90,7 @@ public class OpaqueDataBuffer extends Pointer {
                 //when  using func trace we want to print allocation traces when deallocation is called. this is used to debug
                 //potential race condition and crashes. c++ prints the equivalent stack trace when func trace is enabled.
                 //This allows us to check where a deallocated buffer that caused an issue was allocated.
-                if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                if(buffer != null && NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
                     buffer.captureTrace();
                 // check error code
                 ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();

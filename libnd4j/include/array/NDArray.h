@@ -1806,7 +1806,8 @@ bool NDArray::isScalar() const { return 0 != shape::isScalar(this->_shapeInfo); 
 
 //////////////////////////////////////////////////////////////////////////
 sd::LongType SD_INLINE NDArray::memoryFootprint() {
-  sd::LongType size = this->lengthOf() * this->sizeOfT();
+  int len = isScalar() ? 1 : lengthOf();
+  sd::LongType size = len * this->sizeOfT();
   size += shape::shapeInfoByteLength(this->rankOf());
   return size;
 }

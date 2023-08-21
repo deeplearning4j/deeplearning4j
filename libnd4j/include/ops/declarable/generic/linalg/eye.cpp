@@ -52,7 +52,7 @@ DECLARE_SHAPE_FN(eye) {
       auto input = INPUT_VARIABLE(i);
       REQUIRE_TRUE(input->rankOf() == 1, 0, "Inputs to eye should be 1D");
 
-      for (int e = 0; e < input->lengthOf(); e++) params.emplace_back(input->e<int>(e));
+      for (int e = 0; e < input->lengthOf(); e++) params.emplace_back(input->e<sd::LongType>(e));
     }
   }
 

@@ -46,8 +46,9 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   auto outputLength = StringUtils::byteLength(*input);
   sd::LongType ss = 0L;
   sd::LongType ic = 0L;
+  int len = input->isScalar() ? 1 : input->lengthOf();
   // loop through each string within tensor
-  for (sd::LongType e = 0L; e < input->lengthOf(); e++) {
+  for (sd::LongType e = 0L; e < len; e++) {
     // now we should map substring to indices
     auto s = input->e<std::string>(e);
 
@@ -106,7 +107,8 @@ DECLARE_SHAPE_FN(compat_string_split) {
 
   // count number of delimiter substrings in all strings within input tensor
   sd::LongType cnt = 0;
-  for (auto e = 0L; e < input->lengthOf(); e++) {
+  int len = input->isScalar() ? 1 : input->lengthOf();
+  for (auto e = 0L; e < len; e++) {
     auto s = input->e<std::string>(e);
 
     // each substring we see in haystack, splits string in two parts. so we should add 1 to the number of subarrays

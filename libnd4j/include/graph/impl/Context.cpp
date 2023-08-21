@@ -94,7 +94,7 @@ Context::~Context() {
 
  // for (auto v : _handles) delete v;
 
-  if (_context != nullptr) delete _context;
+ // if (_context != nullptr) delete _context;
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -342,6 +342,7 @@ unsigned long Context::width() {
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
+  sd_print("Using void * setInput array 2\n");
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
@@ -356,6 +357,7 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
                             void const *specialShapeInfo) {
   auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
+  sd_print("Using void * setInput array\n");
 
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
@@ -368,6 +370,7 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
+sd_print("Using void * setOutput array 1\n");
 
   _fastpath_out[index] = array;
 
@@ -383,6 +386,7 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
                              const void *specialShapeInfo) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
+sd_print("Using void * setOutput array\n");
   auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
 
   _fastpath_out[index] = array;
@@ -405,7 +409,8 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, sd::LaunchContext::defaultContext(),
+    auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
+    array = new NDArray(newRef,newShapeInfoCast, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeInfoCast)));
 
@@ -427,7 +432,9 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   auto newShapeCast2 = const_cast<sd::LongType *>(newShapeInfoCast);
   NDArray *array;
   if (dataBuffer != nullptr) {
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2,
+    auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
+
+    array = new NDArray(newRef,newShapeCast2,
                         sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeCast2)));

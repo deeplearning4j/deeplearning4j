@@ -60,8 +60,8 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
         if (array.isView())
             array = array.dup();    //Device local doesn't support views
         if (!map.containsKey(name)) {
-            INDArray toBroadcast = array.dataType() == DataType.UTF8 ? array.dup() : array;
-            DeviceLocalNDArray dla = new DeviceLocalNDArray(toBroadcast, lazyInit);
+            INDArray toBroadcast = array.isS() ? array.dup() : array;
+            DeviceLocalNDArray dla = new DeviceLocalNDArray(toBroadcast, false);
             map.put(name, dla);
         } else {
             DeviceLocalNDArray dla = map.get(name);

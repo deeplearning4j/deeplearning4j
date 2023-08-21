@@ -56,9 +56,14 @@ class SD_LIB_EXPORT DataBuffer {
 #if defined(SD_GCC_FUNCTRACE)
   StackTrace *allocationStackTracePrimary = nullptr;
   StackTrace *allocationStackTraceSpecial = nullptr;
-#endif
+  StackTrace *creationStackTrace = nullptr;
+
 #endif
 
+
+#endif
+
+  bool closed = false;
 
 
 
@@ -79,6 +84,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
+  bool isConstant = false;
 
   DataBuffer(void *primary, void *special, const size_t lenInBytes, const DataType dataType,
              const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
@@ -131,6 +137,7 @@ class SD_LIB_EXPORT DataBuffer {
   template <typename T>
   SD_INLINE T *specialAsT();
 
+  void markConstant(bool reallyConstant);
 
 
   void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
@@ -161,6 +168,8 @@ class SD_LIB_EXPORT DataBuffer {
    * This method deletes buffers, if we're owners
    */
   void close();
+  void printPrimaryAllocationStackTraces();
+  void printSpecialAllocationTraces();
 };
 ///// IMLEMENTATION OF INLINE METHODS /////
 

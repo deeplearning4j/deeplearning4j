@@ -31,15 +31,9 @@ template <typename T>
 static sd::Status _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,
                                      int seed) {
   graph::RandomGenerator rngX(context.getRng());
-  // functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng,
-  // output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->e(last)}).data());
-  // NativeOpExecutioner::execRandom(random::UniformDistribution, rng, output->buffer(), output->shapeInfo(),
-  // std::vector<T>({T(0.), shape->e<T>(last)}).data());
   sd::LongType last = shape->lengthOf() - 1;
 
   rngX.setSeed(seed);
-  // functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng,
-  // output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
   for (sd::LongType e = 0; e < output->lengthOf(); ++e) {
     output->p(e, rngX.relativeT<T>(e, 0, shape->e<sd::LongType>(last)));
   }

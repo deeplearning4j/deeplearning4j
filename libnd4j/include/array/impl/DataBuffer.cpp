@@ -41,7 +41,13 @@ DataBuffer::DataBuffer() {
   _isOwnerPrimary = false;
   _isOwnerSpecial = false;
   _deviceId = sd::AffinityManager::currentDeviceId();
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
 
+#endif
   setCountersToZero();
 }
 
@@ -58,6 +64,14 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 #endif
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
+
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
+
+#endif
 
   _deviceId.store(other._deviceId.load());
 
@@ -79,7 +93,13 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   _isOwnerPrimary = isOwnerPrimary;
   _isOwnerSpecial = isOwnerSpecial;
   _deviceId = sd::AffinityManager::currentDeviceId();
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
 
+#endif
   setCountersToZero();
 
   if (primary != nullptr) {
@@ -96,6 +116,14 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
   if(primary != nullptr)
     syncToSpecial(true);
+
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
+
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -119,6 +147,14 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
   allocateBuffers();
 
   copyBufferFromHost(hostBuffer, lenInBytes);
+
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
+
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -140,6 +176,14 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
   readPrimary();
 #else
   writeSpecial();
+#endif
+
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
+
 #endif
 
 }
@@ -164,6 +208,14 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
+
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -171,7 +223,7 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   if (this == &other) return *this;
 
-  deleteBuffers();
+  //deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
@@ -179,7 +231,13 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 
   allocateBuffers();
   copyBufferFrom(other);
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
 
+#endif
   return *this;
 }
 
@@ -188,7 +246,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   if (this == &other) return *this;
 
-  deleteBuffers();
+  //deleteBuffers();
 
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
@@ -203,11 +261,20 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    creationStackTrace = new backward::StackTrace();
+    creationStackTrace->load_here();
+  }
 
+#endif
   return *this;
 }
 
 
+void DataBuffer::markConstant(bool reallyConstant) {
+  isConstant = reallyConstant;
+}
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::primary() { return _primaryBuffer; }
 
@@ -233,7 +300,7 @@ void DataBuffer::allocatePrimary() {
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
     allocationStackTracePrimary = new StackTrace();
-    allocationStackTracePrimary->load_here(32);
+    allocationStackTracePrimary->load_here();
   }
 
 #endif
@@ -280,33 +347,17 @@ void DataBuffer::setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpec
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deletePrimary() {
 #if defined(SD_GCC_FUNCTRACE)
-  sd_print("Beginning printing for allocation part of deallocation event deletePrimary\n");
-  Printer p2;
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
-      p2.print(*allocationStackTracePrimary);
-    else {
-      sd_print("No stack trace available for deletePrimary\n");
-    }
-    sd_print("End printing for allocation part of deallocation event deletePrimary\n");
-  }
-
-  if(Environment::getInstance().isFuncTracePrintDeallocate()) {
-    sd_print("Beginning printing for deallocation event deletePrimary\n");
-    StackTrace deallocTrace;
-    deallocTrace.load_here();
-    p2.print(deallocTrace);
-    sd_print("End printing for deallocation event deletePrimary\n");
-
-  }
-
+  printPrimaryAllocationStackTraces();
 
 #endif
   if (_isOwnerPrimary && _primaryBuffer != nullptr) {
     auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
 
-    RELEASE(p, _workspace);
-    _primaryBuffer = nullptr;
+    if(Environment::getInstance().isDeletePrimary()) {
+      RELEASE(p, _workspace);
+      _primaryBuffer = nullptr;
+    }
+
     _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
@@ -318,23 +369,66 @@ void DataBuffer::deletePrimary() {
     }
   }
 
-#if defined(SD_GCC_FUNCTRACE)
-  sd_print("After deletePrimary\n");
-#endif
 
+
+}
+
+void DataBuffer::printPrimaryAllocationStackTraces() {
+  Printer p2;
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    sd_print("Beginning printing for allocation part of deallocation event deletePrimary\n");
+    if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
+      p2.print(*allocationStackTracePrimary);
+    else {
+      sd_print("No stack trace available for deletePrimary\n");
+    }
+    sd_print("End printing for allocation part of deallocation event deletePrimary\n");
+
+
+
+    sd_print("Beginning printing for creation part of deallocation event deletePrimary\n");
+    if(creationStackTrace != nullptr && creationStackTrace->size() > 0)
+      p2.print(*creationStackTrace);
+    else {
+      sd_print("No creation stack trace available for deletePrimary\n");
+    }
+    sd_print("End printing for creation part of deallocation event deletePrimary\n");
+  }
+
+  if(Environment::getInstance().isFuncTracePrintDeallocate()) {
+    sd_print("Beginning printing for deallocation event deletePrimary\n");
+    StackTrace deallocTrace;
+    deallocTrace.load_here();
+    sd_printf("Deleting primary databuffer of length %d and type %s\n", getLenInBytes(), DataTypeUtils::asString(getDataType()).c_str());
+    p2.print(deallocTrace);
+    sd_print("End printing for deallocation event deletePrimary\n");
+
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteBuffers() {
+  if(isConstant || closed) {
+    return;
+  }
+
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
 #if defined(SD_GCC_FUNCTRACE)
-  if(allocationStackTracePrimary != nullptr)
+  if(allocationStackTracePrimary != nullptr) {
+    Printer p;
+    sd_print("Begin printing allocation stack trace for primary");
+    p.print(*allocationStackTracePrimary);
     delete allocationStackTracePrimary;
-  if(allocationStackTraceSpecial != nullptr)
+  }
+  if(allocationStackTraceSpecial != nullptr) {
+    Printer p;
+    p.print(*allocationStackTraceSpecial);
     delete allocationStackTraceSpecial;
+  }
 #endif
+  closed = true;
   _lenInBytes = 0;
 }
 
@@ -343,8 +437,11 @@ DataBuffer::~DataBuffer() { deleteBuffers(); }
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
-  if (_primaryBuffer != nullptr && _isOwnerPrimary) {
-    deletePrimary();
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    if(allocationStackTracePrimary != nullptr)
+      delete allocationStackTracePrimary;
+    allocationStackTracePrimary = new StackTrace();
+    allocationStackTracePrimary->load_here();
   }
 
   _primaryBuffer = buffer;
@@ -354,11 +451,12 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
-
-  if (_specialBuffer != nullptr && _isOwnerSpecial) {
-    deleteSpecial();
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    if(allocationStackTraceSpecial != nullptr)
+      delete allocationStackTraceSpecial;
+    allocationStackTraceSpecial = new StackTrace();
+    allocationStackTraceSpecial->load_here();
   }
-
   this->setSpecial(buffer, false);
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
 }

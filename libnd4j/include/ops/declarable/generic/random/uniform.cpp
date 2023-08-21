@@ -56,9 +56,9 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*)nullptr;
   bool disposable = false;
 
-  if (min == nullptr && max == nullptr && block.numT() >= 2) {
-    min = new NDArray(NDArrayFactory::create_(dtype, block.launchContext()));
-    max = new NDArray(NDArrayFactory::create_(dtype, block.launchContext()));
+  if (min == nullptr && max == nullptr || block.numT() >= 2) {
+    min = NDArrayFactory::create_(dtype, block.launchContext());
+    max = NDArrayFactory::create_(dtype, block.launchContext());
     min->p(0, T_ARG(0));
     max->p(0, T_ARG(1));
     disposable = true;
@@ -68,10 +68,6 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
-  if(block.numT() >= 2) {
-    delete min;
-    delete max;
-  }
   return sd::Status::OK;
 }
 

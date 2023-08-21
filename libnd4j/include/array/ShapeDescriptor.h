@@ -129,6 +129,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
   static ShapeDescriptor * paddedBufferDescriptor(const DataType type, const char order,
                                                 const std::vector<sd::LongType> &shape,
                                                 const std::vector<sd::LongType> &paddings);
+  bool isScalar() const;
 };
 }  // namespace sd
 

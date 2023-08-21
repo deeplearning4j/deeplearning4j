@@ -435,10 +435,7 @@ if(SD_CUDA)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-        if(SD_SANITIZE)
-            set_target_properties(${SD_LIBRARY_NAME} PROPERTIES LINK_FLAGS --Wl,-z,stack-size=8192)
 
-        endif()
         # note cuda and cudart are for the driver api access needed for using the driver api for setting things like attributes
         # with the DeviceValidator
         target_link_libraries(${SD_LIBRARY_NAME} ${CUDA_LIBRARIES} ${CUDA_DRIVER_LIBRARY} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})

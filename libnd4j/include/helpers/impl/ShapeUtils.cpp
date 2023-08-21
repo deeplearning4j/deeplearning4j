@@ -371,8 +371,6 @@ const sd::LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, co
   shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr.lengthOf());
 
   if (setContigStrides) shape::updateStrides(shapeInfoNew, arr.ordering());
-  sd_print("ShapeUtils::evalPermShapeInfo");
-  shape::printShapeInfo(shapeInfoNew);
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoNew);
 

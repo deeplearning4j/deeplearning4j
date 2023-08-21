@@ -253,8 +253,6 @@ public class TFGraphTestAllHelper {
 
                         if(!eq) {
                             NDArrayStrings s = new NDArrayStrings();
-                            String s1 = s.format(tfPred, false);
-                            String s2 = s.format(nd4jPred, false);
                             System.out.print("TF: ");
                             System.out.println(tfPred.toStringFull());
                             System.out.print("SD: ");

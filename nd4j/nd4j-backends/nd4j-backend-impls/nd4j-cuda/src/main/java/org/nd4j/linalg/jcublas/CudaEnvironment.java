@@ -191,7 +191,7 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
-    public long getDeviceCouner(int deviceId) {
+    public long getDeviceCounter(int deviceId) {
         return e.getDeviceCounter(deviceId);
     }
 
@@ -213,6 +213,26 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setFuncTraceForAllocate(boolean reallyTrace) {
         e.setFuncTracePrintAllocate(reallyTrace);
+    }
+
+    @Override
+    public boolean isDeletePrimary() {
+        return e.isDeletePrimary();
+    }
+
+    @Override
+    public boolean isDeleteSpecial() {
+        return e.isDeleteSpecial();
+    }
+
+    @Override
+    public void setDeletePrimary(boolean reallyDelete) {
+        e.setDeletePrimary(reallyDelete);
+    }
+
+    @Override
+    public void setDeleteSpecial(boolean reallyDelete) {
+        e.setDeleteSpecial(reallyDelete);
     }
 
 }

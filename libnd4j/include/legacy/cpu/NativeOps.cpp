@@ -1998,7 +1998,7 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                        sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                        OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                         sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
                                         int numDArgs) {
   try {
@@ -2172,7 +2172,16 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
 
-  for (int e = 0; e < numInputShapes; e++) inShapes.push_back(reinterpret_cast<sd::LongType *>(inputShapes[e]));
+  for (int e = 0; e < numInputShapes; e++) {
+    if(inputShapes[e] == nullptr) {
+      std::string errorMessage;
+      errorMessage += "Input shape at index ";
+      errorMessage += std::to_string(e);
+      errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    inShapes.push_back(reinterpret_cast<sd::LongType *>(inputShapes[e]));
+  }
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
   shapeList->detach();

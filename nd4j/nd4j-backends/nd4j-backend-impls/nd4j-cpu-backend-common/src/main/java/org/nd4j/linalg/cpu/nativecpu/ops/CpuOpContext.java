@@ -164,7 +164,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             INDArray array = arrays.get(i);
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array.isEmpty() ? null : array);
+            fastpath_in.put(i,array);
             if(OpContextTracker.getInstance().isEnabled()) {
                 OpContextTracker.getInstance().associateInput(array,this);
             }

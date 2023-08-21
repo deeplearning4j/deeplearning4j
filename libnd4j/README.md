@@ -20,12 +20,12 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
  --check-vectorization  auto-vectorization report for developers. (Currently, only GCC is supported)
 ```
 
-[More about AutoVectorization report](auto_vectorization/AutoVectorization.md)  
+[More about AutoVectorization report](auto_vectorization/AutoVectorization.md)
 
 You can provide the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus) or use auto.  
 Please also check your Cuda Toolkit Release notes for supported and dropped features.  
 Here is [the latest CUDA Toolkit Release note](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#deprecated-features).  
-You can find the same information for the older Toolkit versions [in the CUDA archives](https://docs.nvidia.com/cuda/archive/).  
+You can find the same information for the older Toolkit versions [in the CUDA archives](https://docs.nvidia.com/cuda/archive/).
 
 
 | -cc and --compute option examples | description | 
@@ -111,29 +111,29 @@ See [Windows.md](windows.md)
 ## Setup for All OS
 
 1. Set a LIBND4J_HOME as an environment variable to the libnd4j folder you've obtained from GIT
-     *  Note: this is required for building nd4j as well.
+    *  Note: this is required for building nd4j as well.
 
 2. Setup cpu followed by gpu, run the following on the command line:
-     * For standard builds:
+    * For standard builds:
 
-        ```bash
-        ./buildnativeoperations.sh
-        ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
-        ```
+       ```bash
+       ./buildnativeoperations.sh
+       ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
+       ```
 
-     * For Debug builds:
+    * For Debug builds:
 
-        ```bash
-        ./buildnativeoperations.sh blas -b debug
-        ./buildnativeoperations.sh blas -c cuda -сс YOUR_DEVICE_ARCH -b debug
-        ```
+       ```bash
+       ./buildnativeoperations.sh blas -b debug
+       ./buildnativeoperations.sh blas -c cuda -сс YOUR_DEVICE_ARCH -b debug
+       ```
 
-     * For release builds (default):
+    * For release builds (default):
 
-        ```bash
-        ./buildnativeoperations.sh
-        ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
-        ```
+       ```bash
+       ./buildnativeoperations.sh
+       ./buildnativeoperations.sh -c cuda -сс YOUR_DEVICE_ARCH
+       ```
 
 ## OpenMP support
 
@@ -150,7 +150,7 @@ export LD_PRELOAD=/usr/lib64/libgomp.so.1
 
 ##Troubleshooting MKL
 
-Sometimes the above steps might not be all you need to do. Another additional step might be the need to 
+Sometimes the above steps might not be all you need to do. Another additional step might be the need to
 add:
 
 ```bash
@@ -181,11 +181,11 @@ make package
 
 ## Running tests
 
-Tests are written with [gtest](https://github.com/google/googletest), 
+Tests are written with [gtest](https://github.com/google/googletest),
 run using cmake.
 Tests are currently under tests_cpu/
 
-There are 2 directories for running tests: 
+There are 2 directories for running tests:
 
     1. libnd4j_tests: These are older legacy ops tests.
     2. layers_tests: This covers the newer graph operations and ops associated with samediff.

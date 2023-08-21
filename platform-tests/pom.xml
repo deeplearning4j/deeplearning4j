@@ -94,6 +94,14 @@
         <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=0:replace_intrin=0:detect_leaks=0:alloc_dealloc_mismatch=0:handle_segv=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
+        <!--
+        Some notes on preload:
+        1. Typical uses for debugging are pre loading address sanitizer or jemalloc to track down allocation bugs.
+        2. You must also pre load libtsan if you build with thread sanitizer like so:
+        export LD_PRELOAD=/lib64/libtsan.so.0
+        The reason for this is you run in to errors like:  libtsan.so: cannot allocate memory in static TLS block
+        This at least always seems to happen with cuda + thread sanitizer but may happen with other combinations.
+        -->
         <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>

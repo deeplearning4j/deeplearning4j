@@ -31,7 +31,7 @@ namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
+  auto y = block.width() > 1 ? x : INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
 
@@ -46,9 +46,17 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto castedX = x->cast(z->dataType());
   auto castedY = y->cast(z->dataType());
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
+  if(tZ->isActualOnDeviceSide())
+    tZ->syncToHost();
+  if(tZ->isActualOnHostSide())
+    tZ->syncToDevice();
   if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
+
+
+
+
 
   return sd::Status::OK;
 }

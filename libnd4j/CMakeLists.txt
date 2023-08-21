@@ -314,9 +314,18 @@ else()
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
-    if (SD_CPU AND SD_SANITIZE)
+    if (SD_SANITIZE)
+        set(SANITIZE_FLAGS " -Wall -Wextra -fPIE  -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
+        message("Using sanitizers: ${SD_SANITIZERS} - note you can not use both thread and address sanitizer at the same time. Be careful what sanitizers you specify.
+         FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
+         FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow")
+        if(SD_CPU)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS}")
+        endif()
+        if(SD_CUDA)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic")
+        endif()
         # adds stack size to prevent misc errors with address sanitizer
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}   -Wall -Wextra -shared-libsan -fPIE  -fsanitize=address,thread,undefined,float-divide-by-zero,float-cast-overflow -fno-sanitize-recover=all  -fPIE stack-size=8192")
     endif()
 endif()
 

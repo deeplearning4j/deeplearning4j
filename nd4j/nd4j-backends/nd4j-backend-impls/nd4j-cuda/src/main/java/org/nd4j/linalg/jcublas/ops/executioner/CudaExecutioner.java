@@ -1728,6 +1728,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
         int cnt = 0;
+        /**
+         * Seems like there's a silent failure when the first input is null.
+         *
+         * Debugging steps:
+         *
+         * 1. print the graph and find out why the input is null.
+         * 2. Add validation for null arguments and add guards against crashes.
+         * 3. If there is some edge case that shows up ensure import handles it correctly.
+         * The likely cause is something related to scalars or something. The import
+         * seems to be aware of the correct number of nodes but a for each loop with a null entry seems
+         * to lead to a silent failure.
+         *
+         */
+
+        int numProcessed = 0;
         for (val in: inputArgs) {
             // TODO: once we implement Context-based shape function call this method should be removed
             val loc = Nd4j.getAffinityManager().getActiveLocation(in);
@@ -1742,6 +1757,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+            numProcessed++;
+        }
+
+        if(numProcessed != nIn) {
+            throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
+                    "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
 
@@ -1749,11 +1770,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
         cnt = 0;
         if(opContext != null) {
-            for (val i: opContext.getIArguments())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: opContext.getIArguments())
+                    iArgs.put(cnt++, i);
         } else {
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: op.iArgs())
+                    iArgs.put(cnt++, i);
         }
 
 
@@ -1767,9 +1790,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dArgs = nDArgs > 0 ? new IntPointer(nDArgs) : null;
 
         cnt = 0;
-        if(opContext != null){
-            for (val b: opContext.getBArguments())
-                bArgs.put(cnt++, b);
+
+        if(opContext != null) {
+            if(bArgs != null)
+                for (val b: opContext.getBArguments())
+                    bArgs.put(cnt++, b);
         } else {
             for (val b: op.bArgs())
                 bArgs.put(cnt++, b);
@@ -1778,11 +1803,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getTArguments())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: opContext.getTArguments())
+                    tArgs.put(cnt++, b);
         } else {
-            for (val b: op.tArgs())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: op.tArgs())
+                    tArgs.put(cnt++, b);
         }
 
         cnt = 0;
@@ -1793,6 +1820,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val b: op.dArgs())
                 dArgs.put(cnt++, b.toInt());
         }
+
 
         OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null,
                 hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
@@ -1809,7 +1837,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             LongShapeDescriptor getShape = getShapeFromPointer(new PagedPointer(shape).asLongPointer());
             result.add(getShape);
         }
-        nativeOps.deleteShapeList(ptrptr);
 
 
         return result;

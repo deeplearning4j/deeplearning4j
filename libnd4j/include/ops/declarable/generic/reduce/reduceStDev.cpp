@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
-  if(input->lengthOf() == 0) {
+  if(input->lengthOf() <= 1) {
     output->assign(1);
     return sd::Status::OK;
   }
