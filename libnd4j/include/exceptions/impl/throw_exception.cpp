@@ -6,7 +6,7 @@
 #if defined(SD_GCC_FUNCTRACE)
 void throwException(const char* exceptionMessage) {
   StackTrace st;
-  st.load_here();
+  st.load_here(64);
   Printer p;
   p.print(st);
   throw std::runtime_error(exceptionMessage);

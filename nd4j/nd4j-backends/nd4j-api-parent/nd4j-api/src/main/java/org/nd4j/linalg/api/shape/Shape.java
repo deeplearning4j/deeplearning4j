@@ -2855,6 +2855,8 @@ public class Shape {
      * @return rank * 2 + 4
      */
     public static int shapeInfoLength(long rank) {
+        if(rank == 0)
+            return 1 * 2  + 4;
         return (int) rank * 2 + 4;
     }
 
@@ -3092,14 +3094,15 @@ public class Shape {
     }
 
     public static long options(long[] buffer) {
-        int length = shapeInfoLength(rank(buffer));
-        long ret = buffer[length - 3];
+        long rank = rank(buffer);
+        int idx =  rank == 0 ? 3 : (int) (rank + rank + 1);
+        //follows the c++ calculation in ArrayOptions.h under extra(...)
+        long ret = buffer[idx];
         return ret;
     }
 
 
     public static long options(DataBuffer buffer) {
-        int length = shapeInfoLength(rank(buffer));
         long ret = buffer.getLong(buffer.length() - 3);
         return ret;
     }
@@ -3181,8 +3184,7 @@ public class Shape {
      * @return the element wise stride for the buffer
      */
     public static long elementWiseStride(long[] buffer) {
-        int length2 = shapeInfoLength(buffer);
-        return buffer[length2 - 2];
+        return buffer[buffer.length - 2];
     }
 
 
@@ -3273,8 +3275,7 @@ public class Shape {
     }
 
     public static char order(long[] buffer) {
-        int length = Shape.shapeInfoLength(Shape.rank(buffer));
-        return (char) buffer[length - 1];
+        return (char) buffer[buffer.length - 1];
     }
 
 

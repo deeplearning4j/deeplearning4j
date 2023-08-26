@@ -31,7 +31,7 @@ namespace ops {
 OP_IMPL(Assert, 1, 1, false) {
   auto x = INPUT_VARIABLE(0);
 
-  if (!x->e<bool>(0)) {
+  if (!x->isEmpty() && !x->e<bool>(0)) {
     REQUIRE_TRUE(false, 0, "Assertion failed for node [%i]\n", block.getNodeId());
   }
 

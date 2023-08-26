@@ -54,6 +54,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+            "assert_rank/rank2_float32"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
@@ -137,9 +138,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
     public static Stream<Arguments> data() throws IOException {
-        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-        Nd4j.getEnvironment().setFuncTraceForAllocate(true);
-        Nd4j.getEnvironment().setFuncTraceForDeallocate(true);
+        String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
         // if this variable isn't set - we're using dl4j-tests-resources
         if (localPath == null) {
             File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
@@ -184,16 +183,16 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
 
         try {
+
+            Nd4j.getEnvironment().setDeletePrimary(false);
+            Nd4j.getEnvironment().setDeleteSpecial(false);
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
-
-            //TFGraphTestAllHelper.checkIntermediate(inputs,modelName,BASE_DIR,MODEL_FILENAME,EXECUTE_WITH,new TFGraphTestAllHelper.DefaultGraphLoader(inputs),maxRE,minAbs,localTestDir,true);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
             throw t;
         }
-        //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 
 

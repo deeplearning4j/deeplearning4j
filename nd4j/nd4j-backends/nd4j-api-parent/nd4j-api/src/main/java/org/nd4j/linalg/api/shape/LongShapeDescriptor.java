@@ -168,7 +168,13 @@ public class LongShapeDescriptor {
         return new LongShapeDescriptor(shape, stride, offset, ews, order, extras);
     }
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
     }
+
+
+    public boolean isScalar() {
+        return !isEmpty() && rank() < 1;
+    }
+
 }

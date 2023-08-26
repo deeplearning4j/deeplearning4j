@@ -422,7 +422,7 @@ public class TFGraphTestAllHelper {
         log.info("RUNNING TEST {}...", modelName);
         ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         SameDiff graph = result.getSameDiff();
-        if(listeners != null){
+        if(listeners != null) {
             graph.setListeners(listeners);
         }
 
@@ -782,7 +782,8 @@ public class TFGraphTestAllHelper {
                                     dArr[x] = parseDouble(cLines[x]);
                                     x++;
                                 }
-                                varValue = Nd4j.createFromArray(dArr).castTo(type).reshape('c', varShape);
+                                INDArray originalArr = Nd4j.createFromArray(dArr);
+                                varValue = originalArr.castTo(type).reshape('c', varShape);
                                 break;
                             case LONG:
                             case INT:

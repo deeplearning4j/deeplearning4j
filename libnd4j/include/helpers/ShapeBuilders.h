@@ -29,9 +29,14 @@
 
 #include <vector>
 
+#include "array/ShapeDescriptor.h"
+
 namespace sd {
 class SD_LIB_EXPORT ShapeBuilders {
  public:
+
+  static sd::LongType* createShapeInfoFrom(ShapeDescriptor* descriptor);
+
   static sd::LongType* createScalarShapeInfo(sd::DataType dataType, sd::memory::Workspace* workspace = nullptr);
 
   static sd::LongType* createVectorShapeInfo(const sd::DataType dataType, const sd::LongType length,
@@ -74,6 +79,7 @@ class SD_LIB_EXPORT ShapeBuilders {
 
   static sd::LongType* emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
                                        const sd::LongType* shapeOnly, memory::Workspace* workspace = nullptr);
+
 };
 }  // namespace sd
 

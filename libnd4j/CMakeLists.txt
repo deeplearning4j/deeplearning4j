@@ -87,7 +87,7 @@ if (SD_CUDA AND NOT SD_AURORA)
     endif()
 
 
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}    -allow-unsupported-compiler --ptxas-options=-v")
     if(SD_KEEP_NVCC_OUTPUT)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
     endif()
@@ -323,7 +323,7 @@ else()
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS}")
         endif()
         if(SD_CUDA)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
         endif()
         # adds stack size to prevent misc errors with address sanitizer
     endif()

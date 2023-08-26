@@ -49,40 +49,7 @@ bool ShapeDescriptor::operator<(const ShapeDescriptor &other) const {
 
 sd::LongType *ShapeDescriptor::toShapeInfo() const {
   // for empty array use original
-  if (isEmpty()) {
-    if (_rank == 0)
-      return ShapeBuilders::emptyShapeInfo(_dataType);
-    else {
-      auto _shape = _shape_strides.data();
-      return ShapeBuilders::emptyShapeInfo(_dataType, _order, _rank, _shape);
-    }
-  }
-
-  //don't access to early if vector is actually empty due to scalar case
-  auto _shape = _shape_strides.data();
-  auto _strides = _shape_strides.data() + _rank;
-  sd::LongType *shapeInfo;
-  switch (_rank) {
-    case 0: {
-      shapeInfo = ShapeBuilders::createScalarShapeInfo(_dataType);
-      shapeInfo[2] = _ews;
-    } break;
-    case 1: {
-      shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
-      shapeInfo[2 + _rank * 2] = _ews;
-      shapeInfo[2] = _strides[0];
-      shapeInfo[2 + _rank * 2 + 1] = _order;
-    } break;
-    default: {
-      shapeInfo = ShapeBuilders::createShapeInfo(_dataType, _order, _rank, _shape);
-      for (int e = 0; e < _rank; e++) shapeInfo[e + 1 + _rank] = _strides[e];
-      shapeInfo[2 + _rank * 2] = _ews;
-    }
-  }
-
-
-  ArrayOptions::setPropertyBit(shapeInfo, _extraProperties);
-  return shapeInfo;
+  return ShapeBuilders::createShapeInfoFrom(const_cast<ShapeDescriptor *>(this));
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const LongType rank)
@@ -112,7 +79,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
     _dataType = type;
     _order = order;
     _rank = rank;
-    _extraProperties |= ARRAY_EMPTY;
+    //_extraProperties |= ARRAY_EMPTY;
   } else {
     _shape_strides.resize(2 * rank);
     _dataType = type;
@@ -136,15 +103,22 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape)
     : _dataType(type), _order(order) {
   _rank = shape.size();
+  printf("Set rank to %d\n",_rank);
   int rank2 = shape.size() < 1 ? 1 : shape.size();
   _ews = 1;
   _shape_strides.resize(2 * rank2);
-  auto _shape = _shape_strides.data();
-  for (int i = 0; i < rank2; i++) {
-    _shape[i] = shape[i];
+  printf("After resize\n");
+  if(_rank > 0) {
+    auto _shape = _shape_strides.data();
+    for (int i = 0; i < rank2; i++) {
+      _shape[i] = shape[i];
+    }
+    printf("About to fill in strides\n");
+    _order = order;
+    fillStrides();
   }
-  _order = order;
-  fillStrides();
+
+  printf("Created shape descriptor object\n");
 }
 
 
@@ -163,37 +137,52 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
   if(shapeInfo == nullptr) {
-    THROW_EXCEPTION("ShapeDescriptor constructor: Shape info can not be null!");
+    THROW_EXCEPTION("ShapeDescriptor constructor: Shape info cannot be null!");
   }
 
-  if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
+  int rankVal = shape::rank(shapeInfo);
+
+  if(rankVal < 0 || rankVal > SD_MAX_RANK) {
     THROW_EXCEPTION("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
   }
 
   _order = shape::order(shapeInfo);
   _ews = shape::elementWiseStride(shapeInfo);
-  _rank = shape::rank(shapeInfo);
+  _rank = rankVal;
 
+  _extraProperties = ArrayOptions::extra(const_cast<LongType *>(shapeInfo));
+  ArrayOptions::unsetAllFlags(_extraProperties);
+  if(ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY) && inheritDtype) {
+    printf("ShapeDescriptor constructor: Empty array\n");
 
-  _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
-  if (inheritDtype) _dataType = ArrayOptions::dataType(shapeInfo);
-
-  int rank2 = _rank < 1 ? 1 : _rank;
-  _shape_strides.resize(2 * rank2);
-
-  auto _shape = _shape_strides.data();
-  auto _strides = _shape_strides.data() + rank2;
-  auto shapePtr = shape::shapeOf(shapeInfo);
-  auto stridePtr = shape::stride(shapeInfo);
-
-  for (sd::LongType e = 0; e < rank2; e++) {
-    _shape[e] = shapePtr[e];
-    _strides[e] = stridePtr[e];
-    if (shapePtr[e] == 0) _extraProperties |= ARRAY_EMPTY;
+    _dataType = ArrayOptions::dataType(shapeInfo);
+    _extraProperties = ARRAY_EMPTY | _dataType;
+  } else {
+    printf("ShapeDescriptor constructor: Not Empty array\n");
+    _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
+    _dataType = ArrayOptions::dataType(shapeInfo);  // Ensure datatype is set even when array is not empty
   }
 
-}
+  if (_rank > 0) {
+    _shape_strides.resize(2 * _rank);
+    auto _shape = _shape_strides.data();
+    auto _strides = _shape_strides.data() + _rank;
+    auto shapePtr = shape::shapeOf(shapeInfo);
+    auto stridePtr = shape::stride(shapeInfo);
 
+    for (sd::LongType e = 0; e < _rank; e++) {
+      _shape[e] = shapePtr[e];
+      _strides[e] = stridePtr[e];
+      if (shapePtr[e] == 0 && ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY)) {
+        _extraProperties |= ARRAY_EMPTY;
+      }
+    }
+  } else {  // Handle scalar case
+    _shape_strides.resize(2); // Since we're setting shape and stride
+    _shape_strides[0] = 0;    // Shape for scalar
+    _shape_strides[1] = 1;    // Stride for scalar
+  }
+}
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
   _dataType = dtypeOverride;
@@ -283,7 +272,7 @@ char ShapeDescriptor::order() const { return _order; }
 
 DataType ShapeDescriptor::dataType() const { return _dataType; }
 
-bool ShapeDescriptor::isEmpty() const { return _extraProperties & ARRAY_EMPTY; }
+bool ShapeDescriptor::isEmpty() const { return (_extraProperties & ARRAY_EMPTY) == ARRAY_EMPTY; }
 bool ShapeDescriptor::isScalar() const { return !isEmpty() && rank() == 0 || rank() == 1 && arrLength() == 1; }
 
 std::vector<sd::LongType> &ShapeDescriptor::shape_strides() { return _shape_strides; }

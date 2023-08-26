@@ -794,7 +794,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             return Invoke.doInvoke(invoke,inputs,valueInputs);
         } else if (op instanceof Assert) {
             Assert a = (Assert)op;
-            boolean condition = !opContext.getInputArray(0).isEmpty() &&  opContext.getInputArray(0).getDouble(0) != 0.0;
+            boolean condition =  !opContext.getInputArray(0).isEmpty() && opContext.getInputArray(0).getDouble(0) != 0.0;
             if(!condition) {
                 //Assertion failed
                 String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";

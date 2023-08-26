@@ -960,6 +960,19 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 //google test print statement
 static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
   // adapted printFormatted function
+  if(arr.isScalar()) {
+        if (arr.isR())
+          os << arr.e<float>(0) << "\n";
+        else if (arr.isZ())
+          os << arr.e<sd::LongType>(0) << "\n";
+        else if (arr.isB())
+          os << (arr.e<bool>(0) ? "true" : "false") << "\n";
+        else if (arr.isS()) {
+          os << "\"" << arr.e<std::string>(0) << "\"\n";
+        }
+        return;
+  }
+
   if (arr.rankOf() == 1) {
     os << "[ ";
     for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
@@ -1374,7 +1387,7 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
   //scalar case
   if (other.isScalar()) {
     if (isScalar()) {
-      NDArray::preparePrimaryUse({this}, {&other});
+      prepareUse({this}, {&other});
       BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.buffer(), 0),
                             SD_COMMON_TYPES, SD_COMMON_TYPES);
       NDArray::registerPrimaryUse({this}, {&other});
@@ -1980,8 +1993,6 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit) const {
   syncToHost();
 
   sd::LongType rank = this->rankOf();
-
-  bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
 
   if (msg) printf("%s: ", msg);
   //uses the << operator instead which is used in gtest as well

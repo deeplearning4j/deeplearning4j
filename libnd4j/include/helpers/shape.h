@@ -144,34 +144,34 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType tadLength(const sd::LongType *shapeInf
 SD_LIB_EXPORT SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *shapeInfo, sd::LongType *dimension,
                                                       sd::LongType dimensionLength);
 
-SD_LIB_EXPORT SD_HOST bool canReshape(const sd::LongType oldRank, sd::LongType *oldShape, const sd::LongType newRank,
+SD_LIB_EXPORT SD_HOST_DEVICE bool canReshape(const sd::LongType oldRank, sd::LongType *oldShape, const sd::LongType newRank,
                                       sd::LongType *newShape, bool isFOrder);
 
-SD_LIB_EXPORT SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, const char newOrder, const sd::LongType newRank,
+SD_LIB_EXPORT SD_HOST_DEVICE bool reshapeC(const sd::LongType *oldShapeInfo, const char newOrder, const sd::LongType newRank,
                                     const sd::LongType *newShape, sd::LongType *newShapeInfo);
 /**
  * newShapeInfo contains rank, shape and order only, no strides/ews/type
  */
-SD_LIB_EXPORT SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeInfo);
 
 /**
  * Get the shape info buffer
  * for the given rank and shape.
  */
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType const *shape);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType const *shape);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType const *shape,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(int rank, sd::DataType dtype, sd::LongType const *shape,
                                                 sd::LongType *buffer);
 
-SD_LIB_EXPORT SD_HOST void transposeInplace(sd::LongType *shapeBuffer);
+SD_LIB_EXPORT SD_HOST_DEVICE void transposeInplace(sd::LongType *shapeBuffer);
 
 /**
  * Get the shape info buffer
  * for the given rank and shape.
  */
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongType const *shape);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongType const *shape);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongType const *shape,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBufferFortran(int rank, sd::DataType dtype, sd::LongType const *shape,
                                                        sd::LongType *output);
 
 #ifdef __CUDACC__
@@ -202,8 +202,8 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape, int rank, sd::LongType *ret);
 
-SD_LIB_EXPORT SD_HOST void updateStrides(sd::LongType *shape, const char order);
-SD_LIB_EXPORT SD_HOST void updateStrides(const long long int rank, const sd::LongType *shapeOnly, sd::LongType *stridesOnly,
+SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(sd::LongType *shape, const char order);
+SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(const long long int rank, const sd::LongType *shapeOnly, sd::LongType *stridesOnly,
                                          const char order);
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -241,7 +241,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape
  * @param toCopy the shape to copy
  * @return a copy of the original struct
  */
-SD_LIB_EXPORT SD_HOST ShapeInformation *shapeCopy(ShapeInformation *toCopy);
+SD_LIB_EXPORT SD_HOST_DEVICE ShapeInformation *shapeCopy(ShapeInformation *toCopy);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer);
 
@@ -251,7 +251,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool isContiguous(const sd::LongType *shapeInfo);
  * copy-past from java hasDefaultStridesForShape function
  * check whether array is not permuted and has contiguous elements in memory
  */
-SD_LIB_EXPORT SD_HOST bool areStridesDefault(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE bool areStridesDefault(const sd::LongType *shapeInfo);
 
 /**
  * Compute the element wise stride
@@ -264,7 +264,7 @@ SD_LIB_EXPORT SD_HOST bool areStridesDefault(const sd::LongType *shapeInfo);
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-SD_LIB_EXPORT SD_HOST int computeElementWiseStride(long long int rank, sd::LongType const *shape, sd::LongType const *stride,
+SD_LIB_EXPORT SD_HOST_DEVICE int computeElementWiseStride(long long int rank, sd::LongType const *shape, sd::LongType const *stride,
                                                    int isFOrder);
 
 /**
@@ -278,23 +278,23 @@ SD_LIB_EXPORT SD_HOST int computeElementWiseStride(long long int rank, sd::LongT
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-SD_LIB_EXPORT SD_HOST int computeElementWiseStride(sd::LongType rank, sd::LongType const *shape, sd::LongType const *stride,
+SD_LIB_EXPORT SD_HOST_DEVICE int computeElementWiseStride(sd::LongType rank, sd::LongType const *shape, sd::LongType const *stride,
                                                    sd::LongType isFOrder, sd::LongType const *dimension, sd::LongType dimensionLength);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(sd::LongType const *shapeInfo, sd::LongType *dimension,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeInfoOnlyShapeAndStride(sd::LongType const *shapeInfo, sd::LongType *dimension,
                                                                 sd::LongType dimensionLength, bool reverseCopyStride);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo, sd::LongType *dimension,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeInfoOnlyShapeAndStride(const sd::LongType *shapeInfo, sd::LongType *dimension,
                                                                 sd::LongType dimensionLength, bool reverseCopyStride,
                                                                 sd::LongType *buffer);
 
 
 
-SD_LIB_EXPORT SD_HOST sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange);
 
-SD_LIB_EXPORT SD_HOST void permuteShapeBufferInPlace(sd::LongType *shapeBuffer, sd::LongType *rearrange, sd::LongType *out);
+SD_LIB_EXPORT SD_HOST_DEVICE void permuteShapeBufferInPlace(sd::LongType *shapeBuffer, sd::LongType *rearrange, sd::LongType *out);
 
-SD_LIB_EXPORT SD_HOST void doPermuteShapeInfo(sd::LongType *shapeBuffer, const sd::LongType *rearrange, sd::LongType len = -1);
+SD_LIB_EXPORT SD_HOST_DEVICE void doPermuteShapeInfo(sd::LongType *shapeBuffer, const sd::LongType *rearrange, sd::LongType len = -1);
 
 /**
  * Rearrange the permute indexes
@@ -311,9 +311,9 @@ SD_LIB_EXPORT SD_HOST void doPermuteShapeInfo(sd::LongType *shapeBuffer, const s
  * wise stride.
  */
 
-SD_LIB_EXPORT SD_HOST sd::LongType *createPermuteIndexes(sd::LongType originalRank, sd::LongType *dimension, sd::LongType dimensionLength);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *createPermuteIndexes(sd::LongType originalRank, sd::LongType *dimension, sd::LongType dimensionLength);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *computeResultShape(const sd::LongType *originalShapeBuffer, sd::LongType *dimension,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *computeResultShape(const sd::LongType *originalShapeBuffer, sd::LongType *dimension,
                                                        sd::LongType dimensionLength);
 
 /**
@@ -420,7 +420,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE void copyTo(sd::LongType length, T const *from, T *
  * This buffer allocates memory
  * that must be freed elsewhere.
  */
-SD_LIB_EXPORT SD_HOST void copyTo(int length, sd::LongType const *from, sd::LongType *to, sd::LongType *indexes);
+SD_LIB_EXPORT SD_HOST_DEVICE void copyTo(int length, sd::LongType const *from, sd::LongType *to, sd::LongType *indexes);
 
 /**
  * Return the slice (shape + 1 in pointer arithmetic)
@@ -431,7 +431,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *slice(sd::LongType *shape);
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType slices(sd::LongType *shapeBuffer);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *sliceOfShapeBuffer(sd::LongType sliceIdx, sd::LongType *shapeBuffer);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *sliceOfShapeBuffer(sd::LongType sliceIdx, sd::LongType *shapeBuffer);
 /**
  * Returns the length of the
  * shape information buffer:
@@ -523,7 +523,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType elementWiseStride(const sd::LongType *
  * buffer
  * relative to a dimension and ordering for a reduction index
  */
-SD_LIB_EXPORT SD_HOST sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, sd::LongType *dimension,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType reductionIndexElementWiseStride(sd::LongType *buffer, sd::LongType *dimension,
                                                                    sd::LongType dimensionLength);
 
 /**
@@ -585,7 +585,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE T1 *removeIndex(T1 const *data, T2 const *indexes, 
  * indexes should be the indexes to exclude
  * indexes length should be the length of indexes
  */
-SD_LIB_EXPORT SD_HOST sd::LongType *everyIndexBut(sd::LongType const *indexes, int indexesLength, int begin, int end);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *everyIndexBut(sd::LongType const *indexes, int indexesLength, int begin, int end);
 
 /**
  * Computes the offset for accessing
@@ -631,7 +631,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE T *range(int from, int to);
  * Keep the given indexes
  * in the data
  */
-SD_LIB_EXPORT SD_HOST sd::LongType *keep(volatile sd::LongType *data, const sd::LongType *index, int indexLength,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *keep(volatile sd::LongType *data, const sd::LongType *index, int indexLength,
                                          int dataLength);
 
 /**
@@ -651,7 +651,7 @@ template <typename T>
 SD_LIB_EXPORT SD_HOST_DEVICE void reverseCopyTo(T const *from, T *to, sd::LongType *indexes, sd::LongType length);
 
 template <typename T1, typename T2>
-SD_LIB_EXPORT SD_HOST void convertT(T1 *from, T2 *to, sd::LongType length);
+SD_LIB_EXPORT SD_HOST_DEVICE void convertT(T1 *from, T2 *to, sd::LongType length);
 /**
  *
  * @param arr1
@@ -688,7 +688,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE T *concat(int const numArrays, int const numTotalEl
  * @return the length per slice of the given shape
  * along the given dimension
  */
-SD_LIB_EXPORT SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape, const sd::LongType *dimension,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape, const sd::LongType *dimension,
                                                   sd::LongType dimensionLength);
 
 /**
@@ -698,7 +698,7 @@ SD_LIB_EXPORT SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongTyp
  * @param tensorShape
  * @return
  */
-SD_LIB_EXPORT SD_HOST sd::LongType sliceOffsetForTensor(sd::LongType rank, sd::LongType index, sd::LongType const *shape,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType sliceOffsetForTensor(sd::LongType rank, sd::LongType index, sd::LongType const *shape,
                                                         sd::LongType const *tensorShape, sd::LongType tensorShapeLength,
                                                         const sd::LongType *dimension, sd::LongType dimensionLength);
 
@@ -717,7 +717,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType sliceOffsetForTensor(sd::LongType inde
  * of tensors along
  * a given dimension
  */
-SD_LIB_EXPORT SD_HOST sd::LongType tensorsAlongDimension(sd::LongType *shapeInfo, sd::LongType *dimension, sd::LongType dimensionLength);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType tensorsAlongDimension(sd::LongType *shapeInfo, sd::LongType *dimension, sd::LongType dimensionLength);
 
 /**
  * Returns the tensor along dimension
@@ -740,9 +740,9 @@ SD_LIB_EXPORT SD_HOST_DEVICE int tadsPerBlock(int blockSize, int tads);
  * Returns a shape buffer
  * for the shape information metadata.
  */
-SD_LIB_EXPORT SD_HOST sd::LongType *toShapeBuffer(ShapeInformation *info);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *toShapeBuffer(ShapeInformation *info);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *toShapeBuffer(ShapeInformation *info, sd::LongType *ret);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *toShapeBuffer(ShapeInformation *info, sd::LongType *ret);
 
 /**
  * Returns the number of elements per thread
@@ -848,15 +848,15 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInf
 // all three arrays should have same rank
 // all three arrays should have same dimensions or some of them are 1 (that is satisfy broadcasting principle), strides
 // may be different shapeInfo1 - first array should have max length compared to rest of two arrays
-SD_LIB_EXPORT SD_HOST void getOffsetBroadcast(const sd::LongType &startInd, const sd::LongType ind,
+SD_LIB_EXPORT SD_HOST_DEVICE void getOffsetBroadcast(const sd::LongType &startInd, const sd::LongType ind,
                                               const sd::LongType *shapeInfo1, const sd::LongType *shapeInfo2,
                                               const sd::LongType *shapeInfo3, const bool sameOffsets12,
                                               const bool sameOffsets13, sd::LongType *coords, sd::LongType &offset1,
                                               sd::LongType &offset2, sd::LongType &offset3);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride, long long int rank);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride, long long int rank);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride, long long int rank,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *createShapeInfo(sd::LongType *shape, sd::LongType *stride, long long int rank,
                                                     sd::LongType *buffer);
 
 
@@ -899,32 +899,32 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType getIndexOffset(sd::LongType index, con
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType indexOffset(sd::LongType index, const sd::LongType *lShapeInfo,
                                                       const sd::LongType *uShapeInfo, const bool useUnsigned);
 
-SD_LIB_EXPORT SD_HOST void printShapeInfo(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE void printShapeInfo(const sd::LongType *shapeInfo);
 
-SD_LIB_EXPORT SD_HOST void printShapeInfoLinear(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE void printShapeInfoLinear(const sd::LongType *shapeInfo);
 
-SD_LIB_EXPORT SD_HOST void printShapeInfoLinear(const char *msg, const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE void printShapeInfoLinear(const char *msg, const sd::LongType *shapeInfo);
 
-SD_LIB_EXPORT SD_HOST void printShapeInfoLinear(const char *msg, int rank, const sd::LongType *shape,
+SD_LIB_EXPORT SD_HOST_DEVICE void printShapeInfoLinear(const char *msg, int rank, const sd::LongType *shape,
                                                 const sd::LongType *strides);
 
-SD_LIB_EXPORT SD_HOST void printIntArray(const sd::LongType *arr, const int length);
-SD_LIB_EXPORT SD_HOST void printIntArray(const int *arr, const int length);
+SD_LIB_EXPORT SD_HOST_DEVICE void printIntArray(const sd::LongType *arr, const int length);
+SD_LIB_EXPORT SD_HOST_DEVICE void printIntArray(const int *arr, const int length);
 
-SD_LIB_EXPORT SD_HOST void printArray(float *arr, int length);
+SD_LIB_EXPORT SD_HOST_DEVICE void printArray(float *arr, int length);
 
 template <typename T>
 SD_LIB_EXPORT SD_HOST_DEVICE void printArray(T *arr, int length, const char *message);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBufferOfNpy(sd::LongType rank, sd::LongType *shape, bool fortranOrder);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBufferOfNpy(sd::LongType rank, sd::LongType *shape, bool fortranOrder);
 
-SD_LIB_EXPORT SD_HOST sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr);
 
 
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also sort input array of dimensions, this operation is also necessary for creating TAD
 // object
-SD_LIB_EXPORT SD_HOST void checkDimensions(const sd::LongType rank, std::vector<sd::LongType> *dimensions);
+SD_LIB_EXPORT SD_HOST_DEVICE void checkDimensions(const sd::LongType rank, std::vector<sd::LongType> *dimensions);
 
 // function calculates linear index of array min, min is sub-array of max, index to be returned is min-array's index and
 // corresponds to maxIdx of max array dimsToExclude - should be sorted in increasing order
@@ -987,7 +987,7 @@ SD_INLINE SD_HOST_DEVICE void index2coords(sd::LongType index, const sd::LongTyp
   coords[dims[0]] = index;  // last iteration
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType subArrayIndex(sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType maxIdx, const sd::LongType *maxShapeInfo,
                                                            const sd::LongType *minShapeInfo) {
   sd::LongType maxIdxs[SD_MAX_RANK];
   shape::index2coords(const_cast<sd::LongType &>(maxIdx), maxShapeInfo, maxIdxs);
@@ -1000,7 +1000,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType subArrayIndex(sd::LongType maxIdx, 
 
 // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array
 // of max-array dimsToExclude - should be sorted in increasing order
-SD_LIB_EXPORT SD_HOST sd::LongType outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx, const sd::LongType *maxShapeInfo,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType outerArrayIndexes(sd::LongType *maxIdxs, const sd::LongType minIdx, const sd::LongType *maxShapeInfo,
                                                      const sd::LongType *minShapeInfo, const sd::LongType *dimsToExclude = nullptr);
 
 // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of
@@ -1025,10 +1025,10 @@ SD_LIB_EXPORT SD_HOST_DEVICE void shapeOldScalar(sd::DataType dtype, sd::LongTyp
 // if array is common vector then ews = stride of non-unity dimension and order is preserved
 // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is
 // preserved
-SD_LIB_EXPORT SD_HOST void checkStridesEwsAndOrder(sd::LongType *shapeInfo, const char proposedOrder,
+SD_LIB_EXPORT SD_HOST_DEVICE void checkStridesEwsAndOrder(sd::LongType *shapeInfo, const char proposedOrder,
                                                    const long long int numOfNonUnitDims, const sd::LongType *shapeNoUnities,
                                                    const sd::LongType *stridesNoUnities);
-SD_LIB_EXPORT SD_HOST void checkStridesEwsAndOrder(sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE void checkStridesEwsAndOrder(sd::LongType *shapeInfo);
 
 /**
  * processes whole set of sub-arrays
@@ -1042,7 +1042,7 @@ SD_LIB_EXPORT SD_HOST void checkStridesEwsAndOrder(sd::LongType *shapeInfo);
  * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
  * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
  */
-SD_LIB_EXPORT SD_HOST void calcSubArrsShapeInfoAndOffsets(const sd::LongType *wholeShapeInfo,
+SD_LIB_EXPORT SD_HOST_DEVICE void calcSubArrsShapeInfoAndOffsets(const sd::LongType *wholeShapeInfo,
                                                           const sd::LongType numOfSubArrs, const long long int dimsSize,
                                                           const sd::LongType *dimsToExclude, sd::LongType *subArrShapeInfo,
                                                           sd::LongType *subArrOffsets, bool keepUnitiesInShape = false);
@@ -1074,14 +1074,14 @@ SD_LIB_EXPORT void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const s
  * if there is no unities in inShapeInfo, then no copy procedure will be performed and shapeNoUnities/stridesNoUnities
  * will point on corresponding places in inShapeInfo
  */
-SD_LIB_EXPORT SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::LongType *&shapeNoUnities,
+SD_LIB_EXPORT SD_HOST_DEVICE int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::LongType *&shapeNoUnities,
                                                       sd::LongType *&stridesNoUnities);
 
 /**
  * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude(points on unity dimensions) =
  * {1,3}, dimsSize = 2 then outShapeInfo will contain {3, 2,3,4, 12,4,1, 16384,1,99}
  */
-SD_LIB_EXPORT SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const sd::LongType *dimsToExclude, const long long int dimsSize, sd::LongType *outShapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const sd::LongType *dimsToExclude, const long long int dimsSize, sd::LongType *outShapeInfo);
 
 /**
  * get stride over contiguous axis (contiguous axis must have stride = 1)
@@ -1159,11 +1159,11 @@ SD_INLINE SD_HOST_DEVICE bool strideEquals(sd::LongType const *stride1, int cons
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-SD_INLINE SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank) {
+SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank) {
   return calcStridesFortran(shape, rank, 1);
 }
 
-SD_INLINE SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank, sd::LongType *ret) {
+SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::LongType const *shape, int rank, sd::LongType *ret) {
   return calcStridesFortran(shape, rank, 1, ret);
 }
 
@@ -1174,9 +1174,9 @@ SD_INLINE SD_HOST sd::LongType *calcStridesFortran(sd::LongType const *shape, in
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-SD_INLINE SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, int rank) { return calcStrides(shape, rank, 1); }
+SD_INLINE SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape, int rank) { return calcStrides(shape, rank, 1); }
 
-SD_INLINE SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, int rank, sd::LongType *ret) {
+SD_INLINE SD_HOST_DEVICE sd::LongType *calcStrides(sd::LongType const *shape, int rank, sd::LongType *ret) {
   return calcStrides(shape, rank, 1, ret);
 }
 
@@ -1189,7 +1189,7 @@ SD_INLINE SD_HOST_DEVICE bool isDimPermuted(const T *dimensions, const sd::LongT
   return false;
 }
 
-SD_INLINE SD_HOST int computeElementWiseStride(sd::LongType rank, const sd::LongType  *shape, const sd::LongType  *stride,
+SD_INLINE SD_HOST_DEVICE int computeElementWiseStride(sd::LongType rank, const sd::LongType  *shape, const sd::LongType  *stride,
                                                sd::LongType isFOrder, const sd::LongType  *dimension, sd::LongType dimensionLength) {
   if (dimensionLength == 1) {
     return stride[dimension[0]];
@@ -1428,14 +1428,14 @@ SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, long
   return numOfNonUnity == 1;
 }
 
-SD_INLINE SD_HOST sd::LongType const *detachShape(sd::LongType const *originalShape) {
+SD_INLINE SD_HOST_DEVICE sd::LongType const *detachShape(sd::LongType const *originalShape) {
   sd::LongType *newShape = new sd::LongType[shape::shapeInfoLength(originalShape)];
   memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
 
   return newShape;
 }
 
-SD_INLINE SD_HOST sd::LongType *copyShape(sd::LongType const *originalShape) {
+SD_INLINE SD_HOST_DEVICE sd::LongType *copyShape(sd::LongType const *originalShape) {
   sd::LongType *newShape = new sd::LongType[shape::shapeInfoLength(originalShape)];
   memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
 
@@ -1557,7 +1557,7 @@ SD_INLINE SD_HOST_DEVICE sd::LongType slices(sd::LongType *shapeBuffer) {
  * @return rank * 2 + 4
  */
 SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(sd::LongType rank) {
-   //rank takes up 1 element + usual elements
+  //rank takes up 1 element + usual elements
   if(rank == 0)
     return 1 * 2 + 4;
   // FIXME magic numbers
@@ -1575,7 +1575,7 @@ SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoLength(const sd::LongType *shape)
 SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoByteLength(sd::LongType rank) {
   //scalar formula isn't correct
   if(rank == 0)
-    return 1 + (2 + 4) * sizeof(sd::LongType);
+    return 7 * sizeof(sd::LongType);
   // FIXME magic numbers
   return (rank * 2 + 4) * sizeof(sd::LongType);
 }
@@ -2238,7 +2238,7 @@ SD_INLINE SD_HOST_DEVICE bool isContiguous(const sd::LongType *shapeInfo) {
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also it sorts input array of dimensions, this operation is also necessary for creating TAD
 // object
-SD_INLINE SD_HOST void checkDimensions(const sd::LongType rank, std::vector<sd::LongType> *dimensions) {
+SD_INLINE SD_HOST_DEVICE void checkDimensions(const sd::LongType rank, std::vector<sd::LongType> *dimensions) {
   int dimSize = dimensions->size();
   if (dimSize == 0) THROW_EXCEPTION("shape::checkDimensions method: array of dimensions is empty!");
   // check presence of negative dimensions and if they are present transform them to positive ones -dim -> rank - |dim|
@@ -2275,7 +2275,7 @@ SD_INLINE SD_HOST_DEVICE void shapeOldScalar(sd::DataType dataType, sd::LongType
 }
 
 template <typename T1, typename T2>
-SD_INLINE SD_HOST void convertT(T1 *from, T2 *to, sd::LongType length) {
+SD_INLINE SD_HOST_DEVICE void convertT(T1 *from, T2 *to, sd::LongType length) {
   for (sd::LongType e = 0; e < length; e++) to[e] = (T2)from[e];
 };
 
@@ -2408,7 +2408,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayOffset(const sd::Lon
   return getOffset(minShapeInfo, minIdxs);
 }
 
-SD_LIB_EXPORT SD_INLINE SD_DEVICE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
+SD_LIB_EXPORT SD_INLINE SD_DEVICE SD_HOST_DEVICE int outerArrayOffsets(sd::LongType *maxOffsets, const sd::LongType minIdx,
                                                                 const sd::LongType *maxShapeInfo,
                                                                 const sd::LongType *minShapeInfo, sd::LongType *memBuff,
                                                                 const sd::LongType *dimsToExclude) {

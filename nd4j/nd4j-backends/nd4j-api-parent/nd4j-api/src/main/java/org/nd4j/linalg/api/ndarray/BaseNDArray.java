@@ -196,6 +196,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type, false));
         init(shape, stride);
+        boolean isScalar =  isScalar();
+        System.out.println();
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
@@ -5481,7 +5483,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray castTo(DataType dataType) {
         if(dataType == dataType())  //No-op if correct datatype
             return this;
-        if(isEmpty() && rank() == 0){
+        if(isEmpty() && rank() == 0) {
             return Nd4j.empty(dataType);
         }
         val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());

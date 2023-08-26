@@ -162,10 +162,13 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
     when(dtype) {
         DataType.FLOAT -> {
             val floatArray = inputTensor.floatDataList.toFloatArray()
+            println("Float array is ${floatArray}")
             if(floatArray.isEmpty())
                 return loadDataBufferFromRawData(inputTensor)
             else  if(totalLen <= 1 && shape.isEmpty()) {
-                return Nd4j.scalar(floatArray[0])
+                val ret = Nd4j.scalar(floatArray[0])
+                println("Ret is ${ret}")
+                return ret
             } else if(totalLen != floatArray.size) {
                 //broadcast case
                 if(floatArray.size == 1) {

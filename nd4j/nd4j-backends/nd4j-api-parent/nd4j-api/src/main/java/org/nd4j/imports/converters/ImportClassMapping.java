@@ -718,7 +718,7 @@ public class ImportClassMapping {
                     //Ignore
                 }
 
-            } catch (Throwable t){
+            } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
         }

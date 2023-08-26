@@ -585,7 +585,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
       void* pHost = operator new(sizeOfBuffer);
 
       cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
-
+      cudaDeviceSynchronize();
       cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
       auto cast = reinterpret_cast<T*>(pHost);
       if (cudaResult != 0) THROW_EXCEPTION("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");

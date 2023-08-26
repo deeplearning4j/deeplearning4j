@@ -21,7 +21,44 @@
 //
 #include <helpers/ShapeBuilders.h>
 
+#include "array/ShapeDescriptor.h"
+
 namespace sd {
+
+LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor *descriptor) {
+  int bufferLen = shape::shapeInfoLength(descriptor->rank());
+  sd::LongType  *ret;
+  printf("Executing createShapeInfoFrom...\n");
+  if(descriptor->_dataType == sd::DataType::ANY) {
+    ret = new sd::LongType[bufferLen];
+    memset(ret, 0, bufferLen * sizeof(sd::LongType));
+    return ret;
+  }
+  //don't access to early if vector is actually empty due to scalar case
+  auto _shape = descriptor->_shape_strides.data();
+  auto _strides = descriptor->_shape_strides.data() + descriptor->_rank;
+  switch (descriptor->_rank) {
+    case 0: {
+      ret = ShapeBuilders::createScalarShapeInfo(descriptor->_dataType);
+      ret[2] = descriptor->_ews;
+    } break;
+    case 1: {
+      ret = ShapeBuilders::createVectorShapeInfo(descriptor->_dataType, _shape[0]);
+      ret[2 + descriptor->_rank * 2] = descriptor->_ews;
+      ret[2] = _strides[0];
+      ret[2 + descriptor->_rank * 2 + 1] = descriptor->_order;
+    } break;
+    default: {
+      ret = ShapeBuilders::createShapeInfo(descriptor->_dataType, descriptor->_order, descriptor->_rank, _shape);
+      for (int e = 0; e < descriptor->_rank; e++) ret[e + 1 + descriptor->_rank] = _strides[e];
+      ret[2 + descriptor->_rank * 2] = descriptor->_ews;
+    }
+  }
+
+
+  ArrayOptions::setPropertyBit(ret, descriptor->_extraProperties);
+  return ret;
+}
 
 sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, sd::memory::Workspace* workspace) {
   // there is no reason for shape info to use workspaces. we have constant shape helper for this
@@ -37,7 +74,6 @@ sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, 
   newShape[4] = 1;
   newShape[5] = 99;
   sd_print("Set all values about to set data type\n");
-
   sd::ArrayOptions::setDataType(newShape, dataType);
   sd_print("Finished createScalarShapeInfo\n");
   return newShape;
@@ -46,12 +82,12 @@ sd::LongType* ShapeBuilders::createVectorShapeInfo(const sd::DataType dataType, 
                                                    sd::memory::Workspace* workspace) {
   //there is no reason for shape info to use workspaces. we have constant shape helper for this
   //workspaces with shapebuffers also appears to cause issues when reused elsewhere.
-  sd::LongType* newShape = new sd::LongType[shape::shapeInfoLength(static_cast<sd::LongType>(2))];
+  sd::LongType* newShape = new sd::LongType[shape::shapeInfoLength(static_cast<sd::LongType>(1))];
 
   newShape[0] = 1;
   newShape[1] = length;
   newShape[2] = 1;
-  newShape[3] = 0;
+  newShape[3] = 1;
   newShape[4] = 1;
   newShape[5] = 99;
 

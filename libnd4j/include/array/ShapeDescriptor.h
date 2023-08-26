@@ -41,6 +41,8 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
 
   SD_INLINE void fillStrides() {
+    if(_rank == 0)
+      return;
     // double checks if the _rank and _shape_strides are set correctly before filling strides
     if (_rank + _rank == _shape_strides.size()) {
       auto _shape = _shape_strides.data();
