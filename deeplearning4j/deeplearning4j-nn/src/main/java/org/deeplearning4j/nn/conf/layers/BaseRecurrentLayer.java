@@ -37,7 +37,7 @@ import java.util.List;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class BaseRecurrentLayer extends FeedForwardLayer {
+public abstract class BaseRecurrentLayer extends FeedForwardLayer implements IRnnLayerFormatInfo {
 
     protected IWeightInit weightInitFnRecurrent;
     protected RNNFormat rnnDataFormat;
