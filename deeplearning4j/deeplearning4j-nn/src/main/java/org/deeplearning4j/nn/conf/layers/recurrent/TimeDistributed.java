@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.IRnnLayerFormatInfo;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.layers.recurrent.TimeDistributedLayer;
@@ -39,7 +40,7 @@ import java.util.Collection;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class TimeDistributed extends BaseWrapperLayer {
+public class TimeDistributed extends BaseWrapperLayer implements IRnnLayerFormatInfo {
 
     private RNNFormat rnnDataFormat = RNNFormat.NCW;
 

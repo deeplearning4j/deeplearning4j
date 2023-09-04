@@ -22,13 +22,15 @@ package org.deeplearning4j.util;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.RNNFormat;
-import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
+import org.deeplearning4j.nn.conf.layers.IRnnLayerFormatInfo;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -37,9 +39,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.primitives.Pair;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -419,17 +418,15 @@ public class TimeSeriesUtils {
      * @param layer Layer to get the RNNFormat from
      */
     public static RNNFormat getFormatFromRnnLayer(Layer layer) {
-        if(layer instanceof BaseRecurrentLayer){
-            return ((BaseRecurrentLayer) layer).getRnnDataFormat();
+        if (layer instanceof IRnnLayerFormatInfo) {
+            return ((IRnnLayerFormatInfo) layer).getRnnDataFormat();
         } else if(layer instanceof MaskZeroLayer){
             return getFormatFromRnnLayer(((MaskZeroLayer) layer).getUnderlying());
         } else if(layer instanceof Bidirectional){
             return getFormatFromRnnLayer(((Bidirectional) layer).getFwd());
         } else if(layer instanceof LastTimeStep){
             return getFormatFromRnnLayer(((LastTimeStep) layer).getUnderlying());
-        } else if(layer instanceof TimeDistributed){
-            return ((TimeDistributed) layer).getRnnDataFormat();
-        } else {
+        }  else {
             throw new IllegalStateException("Unable to get RNNFormat from layer of type: " + layer);
         }
     }
