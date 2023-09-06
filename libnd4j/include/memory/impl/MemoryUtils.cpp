@@ -40,19 +40,6 @@
 bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport &report) {
 #if defined(__APPLE__)
   sd_debug("APPLE route\n", "");
-  /*
-      struct task_basic_info t_info;
-      mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-
-      if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count))
-          return false;
-
-      report.setVM(t_info.resident_size);
-      report.setRSS(t_info.resident_size);
-
-
-      sd_debug("RSS: %lld; VM: %lld;\n", report.getRSS(), report.getVM());
-  */
   struct rusage _usage;
 
   auto res = getrusage(RUSAGE_SELF, &_usage);
@@ -62,7 +49,7 @@ bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport 
   sd_debug("Usage: %lld; %lld; %lld; %lld;\n", _usage.ru_ixrss, _usage.ru_idrss, _usage.ru_isrss, _usage.ru_maxrss);
 
   return true;
-#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)  || defined(__MINGW32__) || defined(__CYGWIN__)
   sd_debug("WIN32 route\n", "");
 
 #else
