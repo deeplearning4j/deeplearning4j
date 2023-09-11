@@ -368,7 +368,6 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-D_WIN32</compilerOption>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
                             </compilerOptions>
                         </configuration>
