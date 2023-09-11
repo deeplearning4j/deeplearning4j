@@ -391,8 +391,8 @@ class AlignedAllocator
 
   pointer allocate(size_type n, const void* = nullptr)
   {
-#if defined(_MSC_VER)
-    void* ptr = _aligned_malloc(n * sizeof(T), Alignment);
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__CYGWIN__)
+    void* ptr = this->_aligned_malloc(n * sizeof(T), Alignment);
 #else
     void* ptr = nullptr;
     if(posix_memalign(&ptr, Alignment, n * sizeof(T)) != 0)

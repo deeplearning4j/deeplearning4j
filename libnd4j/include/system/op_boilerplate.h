@@ -2653,6 +2653,7 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 }
 
 
+#ifndef __JAVACPP_HACK__
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
 #pragma once
@@ -2665,7 +2666,7 @@ void throwException(const char* exceptionMessage);
 void throwException(const char* exceptionMessage);
 
 #endif
-
+#endif
 #if defined(SD_GCC_FUNCTRACE)
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
 #else
