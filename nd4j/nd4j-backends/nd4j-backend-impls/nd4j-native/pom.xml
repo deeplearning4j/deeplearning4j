@@ -368,6 +368,7 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
+                                <compilerOption>-D_WIN32</compilerOption>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
                             </compilerOptions>
                         </configuration>
@@ -785,6 +786,12 @@
                         <artifactId>javacpp</artifactId>
                         <configuration>
                             <properties>${javacpp.platform}-mingw</properties>
+                            <!-- Add the _WIN32 macro to gcc forcibly. Depending on what version
+                            within msys2/mingw is used it will use the wrong code path in the generated javacpp
+                            code that reads in a file.-->
+                            <compilerOptions>
+                                <compilerOption>-D_WIN32</compilerOption>
+                            </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>
