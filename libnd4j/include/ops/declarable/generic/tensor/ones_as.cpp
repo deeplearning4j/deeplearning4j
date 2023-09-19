@@ -37,6 +37,8 @@ CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(ones_as) {
   auto in = inputShape->at(0);
+  if(shape::isEmpty(in))
+    return SHAPELIST(in);
   auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
   auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
   return SHAPELIST(shape);

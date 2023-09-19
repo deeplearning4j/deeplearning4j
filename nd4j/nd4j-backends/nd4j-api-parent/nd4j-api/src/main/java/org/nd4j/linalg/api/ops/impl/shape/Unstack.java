@@ -54,7 +54,7 @@ public class Unstack extends DynamicCustomOp {
                 num = (int)value.getShape()[axis];
             }
         }
-        if (num <= 0){
+        if (num <= 0) {
             throw new ND4JIllegalStateException("Unstack: Unable to infer number of outputs from input. Provide number of outputs explicitly.");
         }
         addArgs();
@@ -67,7 +67,7 @@ public class Unstack extends DynamicCustomOp {
         addArgs();
     }
 
-    public Unstack(@NonNull INDArray value, int axis, int num){
+    public Unstack(@NonNull INDArray value, int axis, int num) {
         super(new INDArray[]{value}, null);
         this.jaxis = axis;
         this.num = num;
@@ -169,7 +169,7 @@ public class Unstack extends DynamicCustomOp {
         Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
         //Output types are same as input type - i.e., just unpack rank R array into N rank R-1 arrays
         List<DataType> out = new ArrayList<>();
-        for( int i=0; i<num; i++ ){
+        for( int i = 0; i < num; i++) {
             out.add(dataTypes.get(0));
         }
         return out;

@@ -261,7 +261,6 @@ TEST_F(NDArrayTest, TestRepeat1) {
   auto exp = new NDArray(eBuffer, eShape);
   for (int e = 0; e < array.lengthOf(); e++) array.p(e, e + 1);
 
-  // array.printBuffer();
 
   auto rep = array.repeat(0, {2});
 

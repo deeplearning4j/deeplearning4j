@@ -74,6 +74,7 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
       delete dims;
     }
   } else {
+    printf("where: second case\n");
     // in this case we return 2D matrix, which basically contains coordinates fo true
     REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                  block.width());
@@ -112,7 +113,7 @@ DECLARE_SHAPE_FN(Where) {
     if (numOfTrue > 0) {
       sd::LongType* newShape;
       ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-
+      printf("where: num true is %d\n",numOfTrue);
       newShape[0] = 2;
       newShape[1] = numOfTrue;
       newShape[2] = shape::rank(inShape);

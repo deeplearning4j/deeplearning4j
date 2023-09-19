@@ -564,7 +564,7 @@ NDArray* NDArrayFactory::empty_(sd::LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  //RELEASE(shapeInfo, context->getWorkspace());
 
   return result;
 }
@@ -578,7 +578,7 @@ NDArray* NDArrayFactory::empty_(sd::DataType dataType, sd::LaunchContext* contex
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  //RELEASE(shapeInfo, context->getWorkspace());
 
   return result;
 }
@@ -597,7 +597,7 @@ NDArray NDArrayFactory::empty(sd::DataType dataType, sd::LaunchContext* context)
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   NDArray result(nullptr, shapeInfo, context, false);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  //RELEASE(shapeInfo, context->getWorkspace());
 
   return result;
 }

@@ -32,6 +32,7 @@ namespace ops {
 
 CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
+  if (input->isEmpty()) return sd::Status::OK;
 
   auto dim = INT_ARG(0);
   if (dim < 0) dim += input->rankOf();
@@ -40,7 +41,6 @@ CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
                "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
   REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value, but got %i !", dim);
 
-  if (input->isEmpty()) return sd::Status::OK;
 
   std::vector<NDArray*> outArrs(input->sizeAt(dim));
   for (sd::LongType i = 0; i < outArrs.size(); ++i) outArrs[i] = OUTPUT_VARIABLE(i);
@@ -56,25 +56,31 @@ DECLARE_SHAPE_FN(unstack) {
   auto inShapeInfo = inputShape->at(0);
 
   auto dim = INT_ARG(0);
+  const sd::LongType numTads = block.numI() > 1 ? I_ARG(1) : shape::shapeOf(inShapeInfo)[dim];
   if (dim < 0) dim += shape::rank(inShapeInfo);
+  if(!shape::isEmpty(inShapeInfo)) {
+    REQUIRE_TRUE(dim < inShapeInfo[0], 0,
+                 "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0],
+                 dim);
+    REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
 
-  REQUIRE_TRUE(dim < inShapeInfo[0], 0,
-               "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0],
-               dim);
-  REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
+  }
+
+
+
+
 
   if (ArrayOptions::arrayType(inShapeInfo) == ArrayType::EMPTY) {
-    if (shape::shapeOf(inShapeInfo)[dim] == 0) return SHAPELIST();
-
-    const sd::LongType numTads = shape::shapeOf(inShapeInfo)[dim];
     std::vector<sd::LongType> outShape;
     for (sd::LongType i = 0; i < shape::rank(inShapeInfo); ++i)
       if (i != dim) outShape.push_back(shape::shapeOf(inShapeInfo)[i]);
 
     auto result = SHAPELIST();
     for (sd::LongType i = 0; i < numTads; ++i)
-      result->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
-                                                                           shape::order(inShapeInfo), outShape));
+      result->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShapeInfo),outShape));
+    if(numTads < 1) {
+      result->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShapeInfo),outShape));
+    }
 
     return result;
   }
@@ -83,9 +89,8 @@ DECLARE_SHAPE_FN(unstack) {
   std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], 1,dimVec.data());
 
   if (dims->size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lengthOf scalars
-
     auto result = SHAPELIST();
-    for (sd::LongType e = 0; e < shape::length(inShapeInfo); e++)
+    for (sd::LongType e = 0; e < numTads; e++)
       result->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShapeInfo)));
     delete dims;
 
@@ -106,7 +111,7 @@ DECLARE_SHAPE_FN(unstack) {
   }
 
   auto result = SHAPELIST();
-  for (int e = 0; e < shape::shapeOf(inShapeInfo)[dim]; e++) {
+  for (int e = 0; e < numTads; e++) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                        shape::order(inShapeInfo), subArrShape);
     result->push_back(newShape);

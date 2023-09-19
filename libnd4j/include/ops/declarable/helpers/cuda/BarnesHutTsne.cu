@@ -61,7 +61,6 @@ sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::Long
   auto stream = rowCounts.getContext()->getCudaStream();
   countRowsKernel<<<1, 1, 128, *stream>>>(pRowCounts, pRows, pCols, N);
   NDArray numElementsArr = rowCounts.sumNumber();  // reduceAlongDimension(reduce::Sum, {});
-  // rowCounts.printBuffer("Row counts");
   auto numElements = numElementsArr.e<sd::LongType>(0);
   return numElements;
 }

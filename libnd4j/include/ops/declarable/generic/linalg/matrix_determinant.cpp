@@ -53,7 +53,7 @@ DECLARE_SHAPE_FN(matrix_determinant) {
         ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), -1);
   }
   return SHAPELIST(determinantShape);
 }
@@ -100,7 +100,7 @@ DECLARE_SHAPE_FN(log_matrix_determinant) {
         ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), -1);
   }
   return SHAPELIST(determinantShape);
 }
@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(logdet) {
         ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, static_cast<sd::LongType>(0)), ArrayOptions::dataType(inShape));
   } else {  // only two last dimensions are excluded
     determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+        ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape), -1);
   }
   return SHAPELIST(determinantShape);
 }

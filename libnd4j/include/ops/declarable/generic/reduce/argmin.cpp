@@ -58,6 +58,14 @@ CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
 }
 
 DECLARE_SHAPE_FN(argmin) {
+  auto firstInputShape = inputShape->at(0);
+  if(shape::isEmpty(firstInputShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT64));
+  }
+  if(shape::isScalar(firstInputShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
+  }
+
   std::vector<sd::LongType> dims;
 
   if (block.width() == 1) {
@@ -67,6 +75,8 @@ DECLARE_SHAPE_FN(argmin) {
     dims = y->template asVectorT<sd::LongType>();
   }
 
+
+
   auto keepDims = block.numB() ? B_ARG(0) : false;
   auto dtype = block.numD() ? D_ARG(0) : DataType::INT64;
 
@@ -74,6 +84,11 @@ DECLARE_SHAPE_FN(argmin) {
   helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
 
   auto in = inputShape->at(0);
+
+  if(shape::isEmpty(in)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
+  }
+
   for (auto d : dims) {
     // we have special case here
     if (d == sd::DataTypeUtils::max<int>()) continue;

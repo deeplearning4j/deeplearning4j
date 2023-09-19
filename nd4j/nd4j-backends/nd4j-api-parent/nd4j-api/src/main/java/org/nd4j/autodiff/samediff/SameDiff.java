@@ -2900,7 +2900,7 @@ public class SameDiff extends SDBaseOps {
                 .inputs(placeholders).output();
     }
 
-    /**
+    /**a
      * Do inference for the given variables for a single batch.
      * <p>
      * See {@link #output(Map, List, String...)}.
@@ -3253,7 +3253,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a a placeholder variable. Placeholders are variables that expect an array to be provided during training
+     * Create  a placeholder variable. Placeholders are variables that expect an array to be provided during training
      * and inference.<br>
      * For example, the SDVariables for your input/features and labels should be placeholders.<br>
      * See also: {@link VariableType}

@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(onehot) {
   for (int e = 0; e < rank; e++) shape.push_back(shape::shapeOf(inShape)[e]);
 
   shape.insert(shape.begin() + axis, depth);
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', rank + 1, shape.data());
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', rank + 1, shape.data(), -1);
 
   return SHAPELIST(newShape);
 }

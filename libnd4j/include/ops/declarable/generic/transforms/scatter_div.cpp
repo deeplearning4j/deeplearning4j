@@ -33,6 +33,8 @@ OP_IMPL(scatter_div, 3, 1, true) {
   auto input = INPUT_VARIABLE(0);
   auto indices = INPUT_VARIABLE(1);
   auto updates = INPUT_VARIABLE(2);
+  if(indices->isEmpty())
+    return Status::OK;
 
   auto output = OUTPUT_VARIABLE(0);
 
@@ -62,10 +64,6 @@ OP_IMPL(scatter_div, 3, 1, true) {
                  "SCATTER_DIV OP: wrong shape of updates array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
   } else {
-    REQUIRE_TRUE(updRank == indRank + inRank - 1, 0,
-                 "SCATTER_DIV OP: wrong rank of updates array, expected is %i, but got %i instead !",
-                 indRank + inRank - 1, updRank);
-
     std::vector<sd::LongType> updShape = updates->getShapeAsVector();
     std::vector<sd::LongType> inShape = input->getShapeAsVector();
     std::vector<sd::LongType> expectedUpdShape = indices->getShapeAsVector();

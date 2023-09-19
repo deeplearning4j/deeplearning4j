@@ -40,15 +40,24 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   }
 
   //scalars can either be 0 or 1
-  if(!x->isScalar())
+  if(!x->isScalar() && !x->isEmpty())
   REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
                "Reshape: lengths before and after reshape should match, but "
                "got %i vs %i",
                x->lengthOf(), z->lengthOf());
 
   if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
+  if(z->ordering() != 'c' && z->ordering() != 'f') {
+    std::string errorMessage;
+    errorMessage += "Reshape: new shape has unknown order: [";
+    errorMessage += z->ordering();
+    errorMessage += "]";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
+    printf("Reshaping with z ordering %c\n",z->ordering());
     z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
   }
   return sd::Status::OK;
@@ -62,7 +71,6 @@ bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {
   if (reshapeArgs.size() > 0) {
     // check if any optional negative ordering value is passed
     auto optional = reshapeArgs[0];
-    sd_debug("Reshape: Optional reshape arg was %d\n", optional);
     if (optional < 0) {
       optional = abs(optional);
       // check if passed option is allowed. (-1 -> dynamic shape)
@@ -81,7 +89,6 @@ bool handleOptionalOrder(std::vector<LongType> &reshapeArgs, char &ordering) {
 
 DECLARE_SHAPE_FN(reshape) {
   const auto x = INPUT_VARIABLE(0);
-
   std::vector<sd::LongType> reshapeArgs;
   std::vector<sd::LongType> shapeNew;
   char orderNew = 'c';
@@ -121,21 +128,19 @@ DECLARE_SHAPE_FN(reshape) {
       };
 
       orderNew = -potentialOrdering;
-    } else
-      orderNew = 'c';
-
-
+    }
   }
 
-  REQUIRE_TRUE(!reshapeArgs.empty() || x->lengthOf() == 1, 0, "Reshape buffer should have at least 1 dimension !");
+
 
   sd::LongType newShapeLen = 1;
   int pos = -1;
   bool newShapeEmpty = false;
 
-  for (int i = 0; i < reshapeArgs.size(); ++i) {
+  for (int i = 0; i < reshapeArgs.size(); i++) {
     const int dim = reshapeArgs[i];
     if (dim == -1) {
+      printf("processing -1 dimension\n");
       REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
       pos = i;
       shapeNew.push_back(1);
@@ -159,12 +164,22 @@ DECLARE_SHAPE_FN(reshape) {
     shapeNew[pos] = xLen / newShapeLen;
   }
 
+  if(newShapeEmpty) {
+    for(int i = 0; i < reshapeArgs.size(); i++) {
+       if(reshapeArgs[i] < 0)
+         reshapeArgs[i] = 1;
+    }
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs));
+  }
+
+
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
-  if(!x->isScalar())
+  if(!x->isScalar() && !x->isEmpty())
   REQUIRE_TRUE(x->lengthOf() == len, 0,
                "Reshape: lengths before and after reshape should match, but "
                "got %i vs %i",
                x->lengthOf(), len);
+
 
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }

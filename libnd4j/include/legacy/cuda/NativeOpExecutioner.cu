@@ -1304,6 +1304,8 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+  printf("About to setup scalar transform for input type %s and output type %s\n", DataTypeUtils::asString(xType).c_str(), DataTypeUtils::asString(zType).c_str());
+
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
     THROW_EXCEPTION("NativeOPExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }

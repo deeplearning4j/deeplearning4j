@@ -64,7 +64,6 @@ DECLARE_SHAPE_FN(bitcast) {
   // correct output shape to conform with output data type
   auto inputSize = DataTypeUtils::sizeOf(oldType);
   auto outputSize = DataTypeUtils::sizeOf(newType);
-
   if (shape::length(inShape) == 0) {
     auto desc = new ShapeDescriptor(inShape, newType);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));

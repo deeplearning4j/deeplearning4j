@@ -156,18 +156,16 @@ fun convertNameSpaceTensorDataTypeFromNd4jDataType(dataType: DataType): TensorNa
 
 fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArray {
     val dtype = convertNd4jDataTypeFromNameSpaceTensorDataType(TensorNamespace.DataType.values()[inputTensor.dataType])
-    val shape = inputTensor.dimsList.filter { input -> input > 0 }.toLongArray()
+    val shape = inputTensor.dimsList.toLongArray()
     val totalLen = ArrayUtil.prod(*shape)
     //note for all cases here scalars can be either zero shape with 1 element or rank >= 1 with 1 element
     when(dtype) {
         DataType.FLOAT -> {
             val floatArray = inputTensor.floatDataList.toFloatArray()
-            println("Float array is ${floatArray}")
             if(floatArray.isEmpty())
                 return loadDataBufferFromRawData(inputTensor)
             else  if(totalLen <= 1 && shape.isEmpty()) {
                 val ret = Nd4j.scalar(floatArray[0])
-                println("Ret is ${ret}")
                 return ret
             } else if(totalLen != floatArray.size) {
                 //broadcast case
@@ -434,14 +432,6 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     val byteArray = inputTensor.rawData.toByteArray()
     //note: scalar can be zero
     var totalLen = ArrayUtil.prod(*shape)
-    if(totalLen < 1 && byteArray.isEmpty()) {
-        if(shape.isNotEmpty()) {
-            return Nd4j.zeros(*shape).castTo(dtype)
-        }
-        else {
-            return Nd4j.empty(dtype)
-        }
-    }
 
 
     if(dtype == DataType.UTF8) {
@@ -460,7 +450,8 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
             totalLen = 1
 
         val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
-        byteBuffer.put(byteArray)
+        if(byteArray.size > 0)
+            byteBuffer.put(byteArray)
         //See: https://github.com/apache/felix/pull/114
         val castBuffer = byteBuffer as Buffer
         castBuffer.rewind()

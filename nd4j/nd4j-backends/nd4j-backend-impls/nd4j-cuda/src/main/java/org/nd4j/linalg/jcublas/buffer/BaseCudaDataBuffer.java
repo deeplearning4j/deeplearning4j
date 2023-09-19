@@ -1255,7 +1255,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             break;
             case DOUBLE: {
-                val pointer = new DoublePointer(data);
+                val pointer = new DoublePointer(data).retainReference();
                 copyDataFromSrc(pointer,length,offset,dstOffset);
 
             }

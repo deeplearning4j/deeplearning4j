@@ -47,12 +47,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
   auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
   auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
 
-
   for (sd::LongType i = 0; i < numOfInArrs; ++i) {
     auto input = INPUT_VARIABLE(i);
-    auto currentRank = input->rankOf();
-    auto *shapeInfoCast = input->shapeInfo();
-
     if (!input->isEmpty()) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
@@ -123,6 +119,9 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
+  for(int i = 0; i < arrsToDelete.size(); i++) {
+    delete nonEmptyArrs[arrsToDelete[i]];
+  }
 
   return sd::Status::OK;
 }
@@ -147,20 +146,32 @@ DECLARE_SHAPE_FN(concat) {
   ShapeList arrShapes;
   std::vector<sd::LongType> shapesToDelete;
   sd::LongType index = 0;
-  for (sd::LongType i = 0; i < numOfInArrs; ++i) {
-    if (inputShape->at(i)[0] == 0) {
-      if (shape::isEmpty(inputShape->at(i))) {
-        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
+  for (sd::LongType i = 0; i < numOfInArrs; i++) {
+    if (shape::rank(inputShape->at(i)) <= 1) {
+      if(shape::isEmpty(inputShape->at(i))) {
+        auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
+        arrShapes.push_back(newShape);
       } else {
-        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
+        int isScalar = shape::isScalar(inputShape->at(i));
+        int len = isScalar ? 1 : shape::length(inputShape->at(i));
+        arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(len, INPUT_VARIABLE(0)->dataType()));
       }
+
     } else {
       arrShapes.push_back(inputShape->at(i));
     }
-    ++index;
+    index++;
   }
 
+
+
   const sd::LongType numOfNonEmptyArrs = arrShapes.size();
+
+  if(numOfNonEmptyArrs < 1) {
+    // All inputs are empty arrays -> return empty, mainly for TF import compatibility (no op)
+    auto newShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INPUT_VARIABLE(0)->dataType());
+    return SHAPELIST(newShape);
+  }
 
   const sd::LongType rank = shape::rank(arrShapes.at(0));
 
@@ -170,40 +181,23 @@ DECLARE_SHAPE_FN(concat) {
   }
 
   // ******** input validation ******** //
+  //axis needs to be flexible between 0 and 1
+  if(axis > 1)
   REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!",
                rank - 1, axis);
 
 
-  for (sd::LongType i = 1; i < numOfNonEmptyArrs; ++i) {
-    if (shape::rank(arrShapes.at(i)) != rank) {
-      std::string error;
-      error += std::string("CONCAT op: array at index: ");
-      error += std::string("" + i);
-      error += std::string(" ");
-      error += std::string(" did not have same rank. Expected rank: " + rank);
-      error += std::string(" but was: " + shape::rank(arrShapes.at(i)));
-      THROW_EXCEPTION(error.c_str());
-    }
-
-    for (sd::LongType dim = 0; dim < rank; ++dim) {
-      if (dim != axis) {
-        if (arrShapes.at(i)[dim + 1] != arrShapes.at(0)[dim + 1]) {
-          std::string error;
-          error += std::string("CONCAT op: array at index: ");
-          error += std::string("" + i);
-          error += std::string(" ");
-          error += std::string(" did not have same dimension. Expected dimension : " + arrShapes.at(0)[dim + 1]);
-          error += std::string(" but was: " + arrShapes.at(0)[dim + 1]);
-          THROW_EXCEPTION(error.c_str());
-        }
-      }
-    }
-  }
 
   // ******** end of input validation ******** //
 
   sd::LongType* outShapeInfo(nullptr);
   COPY_SHAPE(arrShapes.at(0), outShapeInfo);
+  //reset flags: if an array is empty we can have unintended side effects from the flags
+  //in our case by this point we handled empty and should only need the data type.
+  ArrayOptions::resetFlags(outShapeInfo);
+  ArrayOptions::setDataType(outShapeInfo, INPUT_VARIABLE(0)->dataType());
+  printf("Out shape info concat copy\n");
+  shape::printShapeInfo(outShapeInfo);
   // case when we have only one input array
   if (numOfNonEmptyArrs == 1) {
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
@@ -211,13 +205,43 @@ DECLARE_SHAPE_FN(concat) {
   }
 
 
-  for (sd::LongType i = 1; i < numOfNonEmptyArrs; ++i) {
-    outShapeInfo[axis + 1] += arrShapes.at(i)[axis + 1];
+  int newDim = 0;
+  for (sd::LongType i = 0; i < numOfNonEmptyArrs; i++) {
+    auto newShape = shape::shapeOf(arrShapes.at(i));
+    //print the shape based on the shape info rank for this current iteration
+    printf("shape of arrShapes at %d\n",i);
+    shape::printShapeInfo(arrShapes.at(i));
+
+    if(!shape::isEmpty(arrShapes.at(i))) {
+      auto newDim2 = newShape[axis];
+      if(newDim2 < 1) {
+        printf("new dim 2 is %d\n",newDim2);
+        newDim += 1;
+      }
+      else
+        newDim += newDim2;
+    }
+
+    printf("new dim is %d axis %d\n",newDim,axis);
   }
+
+  if(newDim < 1)
+    newDim = 1;
+
+  //concat can't output scalars
+  if(rank < 1) {
+    outShapeInfo[0] = 1;
+  }
+
+
+  auto outShape = shape::shapeOf(outShapeInfo);
+  outShape[axis] = newDim;
+
 
   ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
 
   auto desc = new ShapeDescriptor(outShapeInfo);
+  printf("number of in arrays %d new dim is %d desc is empty %d\n",numOfInArrs,newDim,desc->isEmpty());
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   delete desc;
   return SHAPELIST(result);

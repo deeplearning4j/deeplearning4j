@@ -299,7 +299,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       tInd[i] = ki;
     }
 
-    RELEASE(permut, _m.getContext()->getWorkspace());
+    //RELEASE(permut, _m.getContext()->getWorkspace());
   }
 
   {

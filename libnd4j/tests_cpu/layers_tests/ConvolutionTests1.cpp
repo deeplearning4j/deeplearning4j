@@ -2843,7 +2843,6 @@ TEST_F(ConvolutionTests1, vol2col_test1) {
 
   graph::Context context(1);
   sd::ops::ConvolutionUtils::vol2col(context, volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
-  // columns.printBuffer();
 
   ASSERT_TRUE(columns.equalsTo(columnsExpected));
 }
@@ -2912,7 +2911,6 @@ TEST_F(ConvolutionTests1, vol2col_test2) {
 
   graph::Context context(1);
   sd::ops::ConvolutionUtils::vol2col(context, volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);
-  // columns.printBuffer();
 
   ASSERT_TRUE(columns.equalsTo(columnsExpected));
 }

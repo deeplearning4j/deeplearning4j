@@ -43,7 +43,8 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
                "%i, but got dimension = %i instead !",
                rank, dim);
 
-  helpers::logSoftmax(block.launchContext(), *input, *output, dim);
+  if(!input->isEmpty())
+    helpers::logSoftmax(block.launchContext(), *input, *output, dim);
 
   return sd::Status::OK;
 }

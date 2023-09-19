@@ -141,7 +141,6 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 #ifdef __CUDABLAS__
   ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
   PointersManager manager(sd::LaunchContext ::defaultContext(), "test");
-  // manager.printDevContentOnDev<sd::LongType>(dup->special(), shape::shapeInfoLength(2), 0);
 #endif
 
   delete array;

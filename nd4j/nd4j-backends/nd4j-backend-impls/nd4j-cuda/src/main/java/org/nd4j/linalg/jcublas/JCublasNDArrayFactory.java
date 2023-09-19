@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
@@ -189,6 +190,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray create(double[] data, long[] shape, char ordering) {
         return new JCublasNDArray(data, shape, ordering);
+    }
+
+    @Override
+    public INDArray create(LongShapeDescriptor longShapeDescriptor) {
+        return new JCublasNDArray(longShapeDescriptor);
     }
 
     @Override
@@ -390,9 +396,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         ((BaseCudaDataBuffer) ret.data()).lazyAllocateHostPointer();
 
         nativeOps.specialConcat(null, dimension, toConcat.length, dataPointers, shapeInfoPointers,
-                    ret.data().addressPointer(),
-                    (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    null, null);
+                ret.data().addressPointer(),
+                (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                null, null);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -864,7 +870,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         val shuffleMap = allocator.getPointer(shuffle, context);
 
         val extras = new PointerPointer(null, // not used
-                        context.getOldStream(), allocator.getDeviceIdPointer());
+                context.getOldStream(), allocator.getDeviceIdPointer());
 
 
         long[] hPointers = new long[arrays.size()];
@@ -877,7 +883,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             val array = arrays.get(i);
 
             //we have to sync manually here as we are calling the method with raw cuda pointers
-            AllocationPoint point = allocator.getAllocationPoint(array); 
+            AllocationPoint point = allocator.getAllocationPoint(array);
             if(point.isActualOnHostSide()){
                 AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                 point.tickDeviceWrite();
@@ -924,16 +930,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(tadOffsets), xPointers.length * 8, 0);
 
         nativeOps.shuffle(extras,
-                            null,
-                            hosthost,
-                            new PointerPointer(allocator.getPointer(tempX, context)),
-                            new PointerPointer(allocator.getPointer(tempShapes, context)),
-                            null,
-                            null,
-                            new PointerPointer(allocator.getPointer(tempX, context)),
-                            new PointerPointer(allocator.getPointer(tempShapes, context)), arrays.size(),
-                            (IntPointer) shuffleMap, new PointerPointer(allocator.getPointer(tempTAD, context)),
-                            new PointerPointer(allocator.getPointer(tempOffsets, context)));
+                null,
+                hosthost,
+                new PointerPointer(allocator.getPointer(tempX, context)),
+                new PointerPointer(allocator.getPointer(tempShapes, context)),
+                null,
+                null,
+                new PointerPointer(allocator.getPointer(tempX, context)),
+                new PointerPointer(allocator.getPointer(tempShapes, context)), arrays.size(),
+                (IntPointer) shuffleMap, new PointerPointer(allocator.getPointer(tempTAD, context)),
+                new PointerPointer(allocator.getPointer(tempOffsets, context)));
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -1305,12 +1311,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.tear(extraz,
-                    x, (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), (LongPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
-                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
-            );
+                x, (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), (LongPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                (LongPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
+        );
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -1363,12 +1369,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.sort(extraz,
-                    null,
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    AtomicAllocator.getInstance().getPointer(tmpX, context),
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(tmpX.shapeInfoDataBuffer(), context),
-                    descending
-            );
+                null,
+                (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                AtomicAllocator.getInstance().getPointer(tmpX, context),
+                (LongPointer) AtomicAllocator.getInstance().getPointer(tmpX.shapeInfoDataBuffer(), context),
+                descending
+        );
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -1383,6 +1389,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         long extras  = ArrayOptionsHelper.setOptionBit(0L, ArrayType.EMPTY);
         extras = ArrayOptionsHelper.setOptionBit(extras, type);
         val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0], 1, 'c', extras);
+        if(!Shape.isEmpty(shape.getRight()))
+            throw new IllegalStateException("ShapeInfo should have been marked as empty");
         return new JCublasNDArray(null, (CudaLongDataBuffer) shape.getFirst(), shape.getSecond());
     }
 
@@ -1409,16 +1417,16 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.sortTad(extraz,
-                    null,
-                    (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                    AtomicAllocator.getInstance().getPointer(x, context),
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                    (LongPointer) dimensionPointer,
-                    dimension.length,
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
-                    descending
-            );
+                null,
+                (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
+                AtomicAllocator.getInstance().getPointer(x, context),
+                (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                (LongPointer) dimensionPointer,
+                dimension.length,
+                (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
+                descending
+        );
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -1516,7 +1524,14 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createBuffer(dataType, Shape.lengthOf(shape), true, workspace), shape, strides, ordering, dataType);
+        boolean hasZeros = false;
+        for (long v : shape) {
+            if (v == 0) {
+                hasZeros = true;
+                break;
+            }
+        }
+        return new JCublasNDArray(hasZeros ? null : Nd4j.createBuffer(dataType, Shape.lengthOf(shape), true, workspace), shape, strides, ordering, dataType);
     }
 
     @Override
@@ -1546,9 +1561,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
-        //if (data.dataType() != dataType  && data.dataType() != DataType.COMPRESSED)
-        //    throw new ND4JIllegalStateException("Data types mismatch: [" + data.dataType() + "] vs [" + dataType + "]");
-
         return new JCublasNDArray(data, newShape, newStride, offset, ordering, dataType);
     }
 
@@ -1596,7 +1608,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
-            MemoryWorkspace workspace) { 
+                           MemoryWorkspace workspace) {
         return new JCublasNDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 }

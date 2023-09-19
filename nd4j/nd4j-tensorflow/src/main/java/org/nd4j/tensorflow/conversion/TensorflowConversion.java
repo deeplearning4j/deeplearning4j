@@ -225,7 +225,8 @@ public class TensorflowConversion {
         DataType nd4jType = typeFor(tfType);
 
         //scalars are technically length 1 but of rank 0
-        int length = Math.max(1,ArrayUtil.prod(ndShape));
+        long byteSize = TF_TensorByteSize(tensor);
+        int length = (int) byteSize / nd4jType.width();
         INDArray array;
         if (nd4jType == DataType.UTF8) {
             String[] strings = new String[length];
@@ -244,10 +245,16 @@ public class TensorflowConversion {
             TF_DeleteStatus(status);
             array = Nd4j.create(strings);
         } else {
-            Pointer pointer = TF_TensorData(tensor).capacity(length);
-            Indexer indexer = indexerForType(nd4jType,pointer);
-            DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
-            array = Nd4j.create(d,ndShape);
+            if(length < 1) { //note this is the real length of the underlying data buffer not prod(shape)
+                //which can also produce 0 for scalars despite it being 1.
+                return Nd4j.emptyWithShape(ArrayUtil.toLongArray(ndShape),nd4jType);
+            } else {
+                Pointer pointer = TF_TensorData(tensor).capacity(length);
+                Indexer indexer = indexerForType(nd4jType,pointer);
+                DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
+                array = Nd4j.create(d,ndShape);
+            }
+
         }
         // we don't need this in this case. Device memory will be updated right in the constructor
         //Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);

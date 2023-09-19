@@ -113,7 +113,7 @@ DECLARE_SHAPE_FN(range) {
   const int numTArgs = block.getTArguments()->size();
   const int numIArgs = block.getIArguments()->size();
   sd::LongType steps = 0;
-  sd::DataType dataType = block.numD() ? D_ARG(0) : sd::DataType::INHERIT;
+  sd::DataType dataType = block.numD() ? D_ARG(0) : INPUT_VARIABLE(0)->dataType();
 
   if (numInArrs > 0) {
     auto isR = INPUT_VARIABLE(0)->isR();
@@ -135,8 +135,9 @@ DECLARE_SHAPE_FN(range) {
       }
 
       if (limit == start) {
+        printf("limit == start range case\n");
         // Return [0] to match TF
-        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, dtype));
+        return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
       }
 
       REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -178,7 +179,7 @@ DECLARE_SHAPE_FN(range) {
 
       if (limit == start) {
         // Return [0] to match TF
-        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, dtype));
+        return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
       }
 
       REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -221,7 +222,7 @@ DECLARE_SHAPE_FN(range) {
 
     if (limit == start) {
       // Return [0] to match TF
-      return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, sd::DataType::INT32));
+      return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(sd::DataType::INT32));
     }
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -269,7 +270,7 @@ DECLARE_SHAPE_FN(range) {
     if (limit == start) {
       // Return [0] to match TF
       return SHAPELIST(
-          ConstantShapeHelper::getInstance().vectorShapeInfo(0, Environment::getInstance().defaultFloatDataType()));
+          ConstantShapeHelper::getInstance().emptyShapeInfo(Environment::getInstance().defaultFloatDataType()));
     }
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
@@ -307,6 +308,10 @@ DECLARE_SHAPE_FN(range) {
 
 
   REQUIRE_TRUE(steps > 0, 0, "CUSTOM RANGE OP: value of (limit-start)/delta should be positive !");
+  if(steps == 0) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dataType));
+  }
+
   return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(steps, dataType));
 }
 

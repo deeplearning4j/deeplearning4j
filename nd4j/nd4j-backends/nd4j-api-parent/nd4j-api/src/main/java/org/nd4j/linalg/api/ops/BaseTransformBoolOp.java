@@ -122,7 +122,11 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
-        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
+
+        LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType()) :
+                LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL);
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        return Collections.singletonList(desc);
     }
 
     @Override

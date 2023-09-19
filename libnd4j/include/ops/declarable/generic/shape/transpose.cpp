@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(transpose) {
   }
 
 
-   bool isPermuteNecessary = false;
+  bool isPermuteNecessary = false;
 
   if(permutationVector.size() == rank)
     for (sd::LongType i = 0; i < rank; ++i) {
@@ -97,6 +97,7 @@ DECLARE_SHAPE_FN(transpose) {
     }
 
   if(!isPermuteNecessary) {
+    printf("!isPermuteNecessary\n");
     //note: do not deallocate thhis buffer. they are kept around.
     auto permEvalShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(inputShape->at(0));
     return SHAPELIST(permEvalShapeInfo);
@@ -104,7 +105,11 @@ DECLARE_SHAPE_FN(transpose) {
 
 
   //note: do not deallocate thhis buffer. they are kept around.
-  auto permEvalShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, nullptr, true),true);
+  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, nullptr, true);
+  if(x->isEmpty()) {
+    ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
+  }
+  printf("Returning final permEvalShapeInfo\n");
   auto ret = CONSTANT(permEvalShapeInfo);
   return SHAPELIST(ret);
 }

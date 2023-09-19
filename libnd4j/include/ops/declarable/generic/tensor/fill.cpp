@@ -68,7 +68,9 @@ DECLARE_TYPES(fill) {
 
 DECLARE_SHAPE_FN(fill) {
   auto shapeArray = INPUT_VARIABLE(0);
-  const int len = (int)shapeArray->lengthOf();
+  if(shapeArray->isEmpty())
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
+  const sd::LongType len = shapeArray->lengthOf();
   sd::LongType *newShape = nullptr;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
 

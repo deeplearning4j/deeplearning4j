@@ -712,7 +712,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
             }
             else if (elemSize == Double.SIZE){
-                DoublePointer dPointer = new DoublePointer(dataPointer.limit() / elemSize);
+                DoublePointer dPointer = new DoublePointer(dataPointer.limit() / elemSize).retainReference();
                 DataBuffer data = Nd4j.createBuffer(dPointer,
                         DataType.DOUBLE,
                         length,

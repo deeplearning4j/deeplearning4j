@@ -374,7 +374,9 @@ void DataBuffer::deletePrimary() {
 }
 
 void DataBuffer::printPrimaryAllocationStackTraces() {
+#if defined(SD_GCC_FUNCTRACE)
   Printer p2;
+
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
     sd_print("Beginning printing for allocation part of deallocation event deletePrimary\n");
     if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
@@ -404,6 +406,8 @@ void DataBuffer::printPrimaryAllocationStackTraces() {
     sd_print("End printing for deallocation event deletePrimary\n");
 
   }
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -421,11 +425,13 @@ void DataBuffer::deleteBuffers() {
     sd_print("Begin printing allocation stack trace for primary");
     p.print(*allocationStackTracePrimary);
     delete allocationStackTracePrimary;
+    allocationStackTracePrimary = nullptr;
   }
   if(allocationStackTraceSpecial != nullptr) {
     Printer p;
     p.print(*allocationStackTraceSpecial);
     delete allocationStackTraceSpecial;
+    allocationStackTraceSpecial = nullptr;
   }
 #endif
   closed = true;
@@ -437,13 +443,16 @@ DataBuffer::~DataBuffer() { deleteBuffers(); }
 
 void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
+#if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    if(allocationStackTracePrimary != nullptr)
+    if(allocationStackTracePrimary != nullptr) {
       delete allocationStackTracePrimary;
+      allocationStackTracePrimary = nullptr;
+    }
     allocationStackTracePrimary = new StackTrace();
     allocationStackTracePrimary->load_here();
   }
-
+#endif
   _primaryBuffer = buffer;
   _isOwnerPrimary = false;
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
@@ -451,12 +460,16 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
   std::lock_guard<std::mutex> lock(_deleteMutex);
+#if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    if(allocationStackTraceSpecial != nullptr)
+    if(allocationStackTraceSpecial != nullptr) {
       delete allocationStackTraceSpecial;
+      allocationStackTraceSpecial = nullptr;
+    }
     allocationStackTraceSpecial = new StackTrace();
     allocationStackTraceSpecial->load_here();
   }
+#endif
   this->setSpecial(buffer, false);
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
 }

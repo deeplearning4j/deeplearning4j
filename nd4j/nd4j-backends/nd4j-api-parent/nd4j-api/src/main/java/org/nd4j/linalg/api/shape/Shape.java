@@ -475,7 +475,8 @@ public class Shape {
 
         // we'll return full array of 1 as shape
         if (isWholeArray(wholeShape, dimensions)) {
-            val result = new long[wholeShape.length];
+            int len = Math.max(wholeShape.length,dimensions.length);
+            val result = new long[len];
 
             Arrays.fill(result, 1);
             return result;
@@ -1557,9 +1558,6 @@ public class Shape {
         }
 
 
-        shape1 = squeeze(shape1);
-        shape2 = squeeze(shape2);
-
         return scalarEquals(shape1, shape2) || Arrays.equals(shape1, shape2);
     }
 
@@ -1818,8 +1816,17 @@ public class Shape {
     public static long elementWiseStride(long[] shape, long[] stride, boolean isFOrder) {
         if(shape == null)
             return 0;
+
+        boolean hasZero = false;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 0) {
+                hasZero = true;
+                break;
+            }
+        }
+
         // 0D edge case
-        if (shape.length == 0 || stride == null && stride.length == 0)
+        if (hasZero || shape.length == 0 || stride == null && stride.length == 0)
             return 1;
 
         if (shape.length == 1 && stride.length == 1)
@@ -3103,7 +3110,9 @@ public class Shape {
 
 
     public static long options(DataBuffer buffer) {
-        long ret = buffer.getLong(buffer.length() - 3);
+        long rank = rank(buffer);
+        int idx =  rank == 0 ? 3 : (int) (rank + rank + 1);
+        long ret = buffer.getLong(idx);
         return ret;
     }
 
@@ -3419,26 +3428,12 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new long[] {Integer.MAX_VALUE};
 
-        if(rank == 0) {
-            if(axis.length != 1 || (axis[0] != 0 && axis[0] != Integer.MAX_VALUE)) {
-                throw new ND4JIllegalStateException("Array axis for scalar (rank 0) array invalid: rank " + Arrays.toString(axis));
-            }
-            if(axis[0] == Integer.MAX_VALUE)
-                return axis;
-            return new long[]{Integer.MAX_VALUE};
-        }
-
         // first we should get rid of all negative axis
         long[] tmp = new long[axis.length];
 
         int cnt = 0;
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
-
-            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0) {
-                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above array rank (rank=" + rank + ")");
-            }
-
             tmp[cnt++] =  t;
         }
 
@@ -3812,8 +3807,15 @@ public class Shape {
         return typeX;
     }
 
+
     public static boolean isEmpty(long[] shapeInfo) {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
+    }
+
+
+
+    public static boolean isEmpty(long opt) {
+        return ArrayOptionsHelper.arrayType(opt) == ArrayType.EMPTY;
     }
 
     public static void assertValidOrder(char order) {
@@ -3884,11 +3886,12 @@ public class Shape {
                         retShape[i] = 1;
                     }
                 } else {
-                    for (long d : dimension) {
-                        if(d < 0)
-                            d += dimension.length;
-                        retShape[(int) d] = 1;
-                    }
+                    if(retShape.length > 0)
+                        for (long d : dimension) {
+                            if(d < 0)
+                                d += dimension.length;
+                            retShape[(int) d] = 1;
+                        }
                 }
             } else {
                 if(wholeArray)

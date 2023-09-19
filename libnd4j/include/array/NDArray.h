@@ -20,7 +20,6 @@
 #define NDARRAY_H
 #pragma  once
 #include <array/ArrayOptions.h>
-#include <array/ArrayType.h>
 #include <array/ConstantShapeBuffer.h>
 #include <array/DataBuffer.h>
 #include <array/DataType.h>
@@ -884,7 +883,7 @@ class SD_LIB_EXPORT NDArray {
   void applyScalarArr(sd::scalar::IntOps op, const NDArray &scalar, NDArray &target,
                       ExtraArguments *extraParams = nullptr) const;
 
-#if defined(__CUDABLAS__)  //&& defined(BUILD_TESTS)
+#if defined(__CUDABLAS__)
   template <typename Lambda>
   SD_INLINE void applyLambda(Lambda func, NDArray &target);
 
@@ -1661,6 +1660,7 @@ SD_INLINE R NDArray::templatedGet(void const *buffer, sd::LongType index) const 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
+
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     if(buffer == nullptr) {
       THROW_EXCEPTION("Returned buffer from cache was null!");
@@ -1681,8 +1681,8 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo) {
     else
       _length = shape::length(_shapeInfo);
   } else {
-    _dataType = sd::DataType::INHERIT;
-    _length = 0;
+    //note this used to be a silent fall back. This is a silent source of bugs.
+    THROW_EXCEPTION("Unable to create ndarray. Shape info must always be specified");
   }
 
 }
@@ -1703,8 +1703,8 @@ void NDArray::setShapeInfo(sd::LongType *shapeInfo, const sd::DataType dtype) {
     else
       _length = shape::length(_shapeInfo);
   } else {
-    _dataType = sd::DataType::INHERIT;
-    _length = 0;
+    //note this used to be a silent fall back. This is a silent source of bugs.
+    THROW_EXCEPTION("Unable to create ndarray. Shape info must always be specified");
   }
 }
 
@@ -1858,10 +1858,11 @@ bool NDArray::isSameShapeStrict(const NDArray &other) const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
-  if (this->_shapeInfo == nullptr) return false;
+  if (this->_shapeInfo == nullptr) THROW_EXCEPTION("NDArray::isEmpty() - shapeInfo is nullptr!");
   if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0)
     THROW_EXCEPTION("NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated.");
-  return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY;
+  bool baseEmpty =  ArrayOptions::hasPropertyBitSet(this->_shapeInfo, ARRAY_EMPTY);
+  return baseEmpty;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1996,8 +1997,12 @@ T NDArray::t(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
     THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
-    THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    std::string errorMessage;
+    errorMessage += "Expected data type was ";
+    errorMessage += DataTypeUtils::asString(inputDtype);
+    errorMessage += " but was ";
+    errorMessage += DataTypeUtils::asString(_dataType);
+    THROW_EXCEPTION(errorMessage.c_str());
   }
   syncToHost();
 

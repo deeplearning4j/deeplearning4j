@@ -218,7 +218,10 @@ public class AtomicAllocator implements Allocator {
      * @param buffer
      */
     @Override
-    public Pointer getPointer(@NonNull DataBuffer buffer, CudaContext context) {
+    public Pointer getPointer(DataBuffer buffer, CudaContext context) {
+        //be tolerant of empty arrays
+        if(buffer == null)
+            return null;
         return memoryHandler.getDevicePointer(buffer, context);
     }
 

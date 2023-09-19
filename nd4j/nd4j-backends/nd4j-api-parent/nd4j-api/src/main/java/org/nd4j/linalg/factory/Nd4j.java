@@ -620,8 +620,8 @@ public class Nd4j {
      * @return the ndarray of the specified description.
      */
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
-        if(descriptor.isEmpty() && descriptor.rank() == 0) {
-            return Nd4j.empty(descriptor.dataType());
+        if(descriptor.isEmpty()) {
+            return Nd4j.emptyWithShape(descriptor.getShape(),descriptor.dataType());
         }
         if (initialize)
             return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
@@ -1684,7 +1684,7 @@ public class Nd4j {
      * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
-       //TODO: byte thing
+        //TODO: byte thing
         DataBuffer buffer = dataType() == DataType.INT8 ? getDataBuffer(data.length * DataType.INT8.width(),dataType) : getDataBuffer(data.length * DataType.INT8.width(),dataType);
         buffer.setData(data);
         return buffer;
@@ -2139,7 +2139,7 @@ public class Nd4j {
         if(num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
-        
+
         return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace((double) lower, (double)step, num, dtype, false))[0];
 
     }
@@ -3882,18 +3882,30 @@ public class Nd4j {
         return empty(Nd4j.dataType());
     }
 
+
+    /**
+     * This method creates "empty" INDArray of the specified datatype
+     *
+     * @return Empty INDArray
+     */
+    public static INDArray emptyWithShape(long[] shape,DataType type) {
+      LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,new long[shape.length],0 ,'c',type,true);
+      return INSTANCE.create(longShapeDescriptor);
+    }
+
     /**
      * This method creates "empty" INDArray of the specified datatype
      *
      * @return Empty INDArray
      */
     public static INDArray empty(DataType type) {
-        if(EMPTY_ARRAYS[type.ordinal()] == null){
+        if(EMPTY_ARRAYS[type.ordinal()] == null) {
             try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 val ret = INSTANCE.empty(type);
                 EMPTY_ARRAYS[type.ordinal()] = ret;
             }
         }
+
         return EMPTY_ARRAYS[type.ordinal()];
     }
 
@@ -5150,6 +5162,18 @@ public class Nd4j {
     }
 
     public static long[] getStrides(long[] shape, char order) {
+        boolean hasZero = false;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 0) {
+                hasZero = true;
+            }
+
+        }
+
+        if(hasZero) {
+            return new long[shape.length];
+        }
+
         if (order == NDArrayFactory.FORTRAN)
             return ArrayUtil.calcStridesFortran(shape);
         return ArrayUtil.calcStrides(shape);

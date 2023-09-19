@@ -707,7 +707,6 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_8) {
 
   sd::ops::scatter_add op;
   sd::Status status = op.execute({&input, &indices, &updates}, {&z}, {}, {}, {true});
-  // z.printBuffer();
 
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(expected.isSameShapeStrict(z));

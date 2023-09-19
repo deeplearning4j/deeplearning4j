@@ -46,8 +46,8 @@ class SD_LIB_EXPORT ShapeBuilders {
    *   create shapeInfo for given order basing on shape stored in shapeOnly vector
    *   memory allocation for shapeInfo is on given workspace
    */
-  static sd::LongType* createShapeInfo(const sd::DataType dataType, const char order, int rank,
-                                       const sd::LongType* shapeOnly, memory::Workspace* workspace = nullptr);
+  static LongType* createShapeInfo(const sd::DataType dataType, const char order, int rank,
+                                   const sd::LongType* shapeOnly, memory::Workspace* workspace, bool empty);
   static sd::LongType* createShapeInfo(const sd::DataType dataType, const char order,
                                        const std::vector<sd::LongType>& shapeOnly,
                                        memory::Workspace* workspace = nullptr);
@@ -80,6 +80,8 @@ class SD_LIB_EXPORT ShapeBuilders {
   static sd::LongType* emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
                                        const sd::LongType* shapeOnly, memory::Workspace* workspace = nullptr);
 
+  LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<sd::LongType>& shape,
+                                    memory::Workspace* workspace);
 };
 }  // namespace sd
 

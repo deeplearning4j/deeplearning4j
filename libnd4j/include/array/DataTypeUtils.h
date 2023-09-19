@@ -113,6 +113,7 @@ class SD_LIB_EXPORT DataTypeUtils {
                               std::is_same<sd::LongType, T>::value || std::is_same<int, T>::value ||
                               std::is_same<bool, T>::value;
   };
+  static bool validDataType(DataType dataType);
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -427,6 +428,32 @@ SD_INLINE SD_HOST_DEVICE T DataTypeUtils::nanOrZero() {
   return static_cast<T>(0);
 }
 
+
+SD_INLINE  bool DataTypeUtils::validDataType(DataType dataType) {
+  switch (dataType) {
+    case INT8:
+    case INT16:
+    case INT32:
+    case INT64:
+    case BFLOAT16:
+    case FLOAT32:
+    case DOUBLE:
+    case HALF:
+    case BOOL:
+    case UINT8:
+    case UINT16:
+    case UINT32:
+    case UINT64:
+    case UTF8:
+    case UTF16:
+    case UTF32:
+      return true;
+    case UNKNOWN:
+    default:
+      return false;
+  }
+}
+
 SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
   switch (dataType) {
     case INT8:
@@ -461,8 +488,9 @@ SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
       return std::string("UTF16");
     case UTF32:
       return std::string("UTF32");
+    case UNKNOWN:
     default:
-      THROW_EXCEPTION("Unknown data type used");
+      return std::string("UNKNOWN");
   }
 }
 
@@ -537,7 +565,11 @@ SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(sd::DataType type) 
     default: {
       sd_printf("Unknown DataType used: [%i]\n", asInt(type));
 #ifndef __CUDA_ARCH__
-      THROW_EXCEPTION("Unknown DataType requested");
+      std::string errorMessage;
+      errorMessage += "Unknown data type requested DataTypeUtils:";
+      errorMessage += DataTypeUtils::asString(type);
+      THROW_EXCEPTION(errorMessage.c_str());
+      return -1;
 #endif
     }
   }

@@ -54,6 +54,16 @@ sd::LongType *ShapeDescriptor::toShapeInfo() const {
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape, const LongType rank)
     : _dataType(type), _order(order), _rank(rank), _ews(1) {
+  if(order != 'c' && order != 'f') {
+    std::string errorMessage;
+    errorMessage += "Invalid ordering from shape buffer";
+    errorMessage += std::to_string(order);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
   int rank2 = rank < 1 ? 1 : rank;
   _shape_strides.resize(2 * rank2);
   auto _shape = _shape_strides.data();
@@ -61,16 +71,17 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
     _shape[i] = shape[i];
   }
 
+  _extraProperties = ArrayOptions::flagForDataType(type);
+
   fillStrides();
+
+
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape,
-                                 const sd::LongType *strides, const LongType rank, sd::LongType ews, sd::LongType extras) {
+                                 const sd::LongType *strides, const LongType rank, sd::LongType extras = -1) {
   if(shape == nullptr)
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape can not be null!");
-
-  if(strides == nullptr)
-    THROW_EXCEPTION("ShapeDescriptor constructor: Strides can not be null!");
 
   //note this used to operate directly on the vector buffer
   //it now does manual copies with more checks.
@@ -79,46 +90,70 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
     _dataType = type;
     _order = order;
     _rank = rank;
-    //_extraProperties |= ARRAY_EMPTY;
+    _extraProperties = extras;
   } else {
     _shape_strides.resize(2 * rank);
     _dataType = type;
     _order = order;
     _rank = rank;
     _extraProperties = extras;
-    _ews = ews;
+    _ews = 1;
     auto _shape = _shape_strides.data();
     auto _strides = _shape_strides.data() + rank;
     for (int e = 0; e < rank; e++) {
       _shape[e] = shape[e];
-      _strides[e] = strides[e];
-      if (shape[e] == 0) _extraProperties |= ARRAY_EMPTY;
+      if(rank > 1 && shape[e] == 0 && !ArrayOptions::hasPropertyBitSet(_extraProperties, ARRAY_EMPTY)) {
+        _extraProperties = ArrayOptions::setPropertyBitForFlagsValue(_extraProperties, ARRAY_EMPTY);
+      }
+      if(strides != nullptr)
+        _strides[e] = strides[e];
     }
+
+    if(strides == nullptr)
+      fillStrides();
   }
 
-
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape)
     : _dataType(type), _order(order) {
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
   _rank = shape.size();
-  printf("Set rank to %d\n",_rank);
+  _extraProperties = ArrayOptions::defaultFlag();
+  _extraProperties = ArrayOptions::setDataTypeValue(_extraProperties, type);
   int rank2 = shape.size() < 1 ? 1 : shape.size();
   _ews = 1;
   _shape_strides.resize(2 * rank2);
-  printf("After resize\n");
   if(_rank > 0) {
     auto _shape = _shape_strides.data();
-    for (int i = 0; i < rank2; i++) {
+    for (int i = 0; i < _rank; i++) {
       _shape[i] = shape[i];
+      if(shape[i] == 0 && !ArrayOptions::hasPropertyBitSet(_extraProperties, ARRAY_EMPTY)) {
+        _extraProperties = ArrayOptions::setPropertyBitForFlagsValue(_extraProperties, ARRAY_EMPTY);
+      }
     }
-    printf("About to fill in strides\n");
-    _order = order;
     fillStrides();
   }
 
-  printf("Created shape descriptor object\n");
+  _order = order;
+  if(_order != 'c' && _order != 'f') {
+    std::string errorMessage;
+    errorMessage += "Invalid ordering from shape buffer";
+    errorMessage += std::to_string(_order);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 
@@ -128,11 +163,17 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
                                  const std::vector<sd::LongType> &strides, const sd::LongType ews)
     : ShapeDescriptor(type, order, shape, strides) {
   _ews = ews;
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
     : _dataType(type), _ews(1), _order('c'), _rank(1), _extraProperties(0) {
   _shape_strides = {length, 1};  //{shape, stride}
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
@@ -146,56 +187,125 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
     THROW_EXCEPTION("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
   }
 
+
   _order = shape::order(shapeInfo);
+  if(_order != 'c' && _order != 'f') {
+    std::string errorMessage;
+    errorMessage += "Invalid ordering from shape buffer";
+    errorMessage += std::to_string(_order);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
   _ews = shape::elementWiseStride(shapeInfo);
   _rank = rankVal;
+  _extraProperties = shape::extra(shapeInfo);
 
-  _extraProperties = ArrayOptions::extra(const_cast<LongType *>(shapeInfo));
-  ArrayOptions::unsetAllFlags(_extraProperties);
-  if(ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY) && inheritDtype) {
-    printf("ShapeDescriptor constructor: Empty array\n");
-
-    _dataType = ArrayOptions::dataType(shapeInfo);
-    _extraProperties = ARRAY_EMPTY | _dataType;
-  } else {
-    printf("ShapeDescriptor constructor: Not Empty array\n");
-    _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
-    _dataType = ArrayOptions::dataType(shapeInfo);  // Ensure datatype is set even when array is not empty
-  }
-
-  if (_rank > 0) {
+  if(_rank > 0 && shape::isEmpty(shapeInfo)) {
     _shape_strides.resize(2 * _rank);
-    auto _shape = _shape_strides.data();
     auto _strides = _shape_strides.data() + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
     auto stridePtr = shape::stride(shapeInfo);
-
     for (sd::LongType e = 0; e < _rank; e++) {
-      _shape[e] = shapePtr[e];
-      _strides[e] = stridePtr[e];
-      if (shapePtr[e] == 0 && ArrayOptions::hasPropertyBitSet(shapeInfo, ARRAY_EMPTY)) {
-        _extraProperties |= ARRAY_EMPTY;
+      _shape_strides[e] = shapePtr[e];
+      _strides[e] = 0;
+    }
+
+  }
+
+  else if (_rank > 0 && !shape::isEmpty(shapeInfo)) {
+    _shape_strides.resize(2 * _rank);
+    auto _strides = _shape_strides.data() + _rank;
+    auto shapePtr = shape::shapeOf(shapeInfo);
+    auto stridePtr = shape::stride(shapeInfo);
+    for (sd::LongType e = 0; e < _rank; e++) {
+      _shape_strides[e] = shapePtr[e];
+      _shape_strides[e + _rank] = stridePtr[e];
+
+    }
+    //validate construction of the shape descriptor. This is to prevent flag regressions when modifying
+    //_extraProperties.
+    //ensure that we only validate this for array size > 1
+    if(!ArrayOptions::hasPropertyBitSet(_extraProperties, ARRAY_EMPTY) && this->arrLength() > 1) {
+      for(int i = 0; i < _rank; i++) {
+        if(_strides[i] == 0 && shapePtr[i] != 1) {
+          std::string errorMessage;
+          errorMessage += "Shape descriptor:";
+          errorMessage += toString();
+          errorMessage += "Array set as  not empty but stride is not 0. Index is ";
+          errorMessage += std::to_string(i);
+          errorMessage += " Stride is ";
+          errorMessage += std::to_string(_strides[i]);
+          //append the full _shape_strides data
+          errorMessage += " _shape_strides is ";
+          for(int j = 0; j < _shape_strides.size(); j++) {
+            errorMessage += std::to_string(_shape_strides[j]);
+            if(j < _shape_strides.size() - 1) {
+              errorMessage += ", ";
+            }
+          }
+
+          THROW_EXCEPTION(errorMessage.c_str());
+        }
+      }
+    } else if(this->arrLength() > 1) {
+      for(int i = 0; i < _rank; i++) {
+        if(_strides[i] != 0) {
+          std::string errorMessage;
+          errorMessage += "Array set as not empty but stride is 0. Index is";
+          errorMessage += std::to_string(i);
+          THROW_EXCEPTION(errorMessage.c_str());
+        }
       }
     }
-  } else {  // Handle scalar case
+
+  } else if(!shape::isEmpty(shapeInfo)) {  // Handle scalar case
     _shape_strides.resize(2); // Since we're setting shape and stride
     _shape_strides[0] = 0;    // Shape for scalar
     _shape_strides[1] = 1;    // Stride for scalar
+  } else {
+    _shape_strides.resize(2);
+    _shape_strides[0] = 0;
+    _shape_strides[1] = 0;
   }
+
+  _dataType = ArrayOptions::dataType(shapeInfo);
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
+
 }
+
+
+
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
   _dataType = dtypeOverride;
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
+  //data type has already been set by another constructor. We need to update the _extraProperties
+  //to reflect the new data type. This is effectively a cast.
+  _extraProperties = ArrayOptions::propertyWithoutDataTypeValue(_extraProperties);
+  _extraProperties = ArrayOptions::setDataTypeValue(_extraProperties, dtypeOverride);
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride,
                                  const sd::LongType *orderOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
   _order = shape::order(orderOverride);
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
 }
 
 int ShapeDescriptor::rank() const { return _rank; }
@@ -213,6 +323,21 @@ sd::LongType ShapeDescriptor::arrLength() const {
 
   return len;
 }
+
+void ShapeDescriptor::print() const {
+  printf("ShapeDescriptor: [");
+  for (int i = 0; i < _rank; i++) {
+    printf("%lld", _shape_strides[i]);
+    if (i < _rank - 1) printf(", ");
+  }
+  printf("], [");
+  for (int i = _rank; i < 2 * _rank; i++) {
+    printf("%lld", _shape_strides[i]);
+    if (i < 2 * _rank - 1) printf(", ");
+  }
+  printf("], %c, %lld, %s, %lld\n", _order, _ews, DataTypeUtils::asString(_dataType).c_str(), _extraProperties);
+}
+
 
 sd::LongType ShapeDescriptor::allocLength() const {
   if (_paddedAllocSize > 0) return _paddedAllocSize;
@@ -235,10 +360,23 @@ sd::LongType ShapeDescriptor::allocLength() const {
 sd::LongType ShapeDescriptor::validate() const {
   auto status = SHAPE_DESC_OK;
   bool is_continous = true;
-  if (_rank != _shape_strides.size() / 2 || _rank > SD_MAX_RANK) status |= SHAPE_DESC_INCORRECT_RANK;
+  //exclude scalars on purpose here
+  if (_rank > 0 && _rank != _shape_strides.size() / 2 || _rank > SD_MAX_RANK) status |= SHAPE_DESC_INCORRECT_RANK;
   auto _shape = _shape_strides.data();
   auto _strides = _shape_strides.data() + _rank;
-  if (_rank > 0) {
+  if(_order != 'c' && _order != 'f') {
+    THROW_EXCEPTION("Invalid ordering from shape buffer");
+  }
+
+  bool hasZero = false;
+  for (int i = 0; i < _rank; i++) {
+    if (_shape[i] == 0) {
+      hasZero = true;
+      break;
+    }
+  }
+  //this check isn't correct for vectors
+  if (_rank > 0 && !shape::isVector(_shape_strides.data(),2) && !hasZero) {
     if (_order == 'c') {
       for (int j = _rank - 2; j >= 0; j--) {
         sd::LongType currentStride = _strides[j];
@@ -263,14 +401,40 @@ sd::LongType ShapeDescriptor::validate() const {
 
     int index = (_order == 'c') ? _rank - 1 : 0;
     auto correctEws = is_continous ? _strides[index] : 0;
-    if (correctEws != _ews) status = status | SHAPE_DESC_INCORRECT_EWS;
+    if (correctEws != _ews)  {
+      status = status | SHAPE_DESC_INCORRECT_EWS;
+    }
   }
+
+  if(isEmpty()) {
+    for(int i = 0; i < _rank; i++) {
+      if(_strides[i] != 0) {
+        std::string errorMessage;
+        errorMessage += "Array set as empty but stride is not 0. Index is ";
+        errorMessage += std::to_string(i);
+        errorMessage += " Stride is ";
+        errorMessage += std::to_string(_strides[i]);
+        THROW_EXCEPTION(errorMessage.c_str());
+        break;
+      }
+    }
+  }
+
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
+
   return status;
 }
 
 char ShapeDescriptor::order() const { return _order; }
 
-DataType ShapeDescriptor::dataType() const { return _dataType; }
+DataType ShapeDescriptor::dataType() const {
+  if(!DataTypeUtils::validDataType(_dataType)) {
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+  }
+  return _dataType;
+}
 
 bool ShapeDescriptor::isEmpty() const { return (_extraProperties & ARRAY_EMPTY) == ARRAY_EMPTY; }
 bool ShapeDescriptor::isScalar() const { return !isEmpty() && rank() == 0 || rank() == 1 && arrLength() == 1; }
@@ -310,9 +474,6 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     for (int i = 0; i < rank2; i++) {
       _shape[i] = shape[i];
       _strides[i] = strides[i];
-      if (shape[i] == 0) {
-        _extraProperties |= ARRAY_EMPTY;
-      }
     }
   }
 }
@@ -320,7 +481,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
   descriptor->_dataType = type;
-  descriptor->_extraProperties = ARRAY_EMPTY;
+  descriptor->_extraProperties = ARRAY_EMPTY | ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
   descriptor->_order = 'c';
   descriptor->_ews = 1;
@@ -331,7 +492,7 @@ ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
 ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
   descriptor->_dataType = type;
-  descriptor->_extraProperties = 0;
+  descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
   descriptor->_order = 'c';
   descriptor->_ews = 1;
@@ -344,11 +505,15 @@ ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const sd::LongType length, c
   descriptor->_dataType = type;
   descriptor->_shape_strides = {length, 0};
 
-  if (length > 0)
+
+  if (length > 0) {
     descriptor->_shape_strides[1] = 1;
+    descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
+  }
   else {
     descriptor->_shape_strides[1] = 0;
     descriptor->_extraProperties = ARRAY_EMPTY;
+    descriptor->_extraProperties = ArrayOptions::setDataTypeValue(descriptor->_extraProperties, type);
   }
 
   descriptor->_order = 'c';
@@ -365,7 +530,7 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
   descriptor->_dataType = type;
   descriptor->_order = order;
   descriptor->_rank = shape.size();
-  descriptor->_extraProperties = 0;
+  descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
   if (descriptor->_rank < 1) {
     descriptor->_ews = 1;
     return descriptor;

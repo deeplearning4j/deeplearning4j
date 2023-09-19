@@ -29,6 +29,9 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(lu, 1, 2, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
+  if(input->isEmpty()) {
+    return Status::OK;
+  }
   auto z = OUTPUT_VARIABLE(0);
 
   auto p = OUTPUT_VARIABLE(1);
@@ -51,17 +54,26 @@ CUSTOM_OP_IMPL(lu, 1, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(lu) {
   auto in = inputShape->at(0);
-  auto shapeVector = ShapeUtils::shapeAsVector(in);
-  auto luShape = ShapeBuilders::copyShapeInfoAndType(in, in, true, block.workspace());
   auto dtype = sd::DataType::INT32;
   if (block.getIArguments()->size()) {
     dtype = (DataType)INT_ARG(0);
     REQUIRE_TRUE(dtype == sd::DataType::INT32 || dtype == sd::DataType::INT64, 0,
-                 "lu: Permutation data type should be 32bit or 64bit int only, but '%s' given.",
+                 "lu: Permutation data type should be 32 bit or 64bit int only, but '%s' given.",
                  DataTypeUtils::asString(dtype).c_str());
   }
+
+  auto shapeVector = ShapeUtils::shapeAsVector(in);
+
+  if(shape::isEmpty(in)) {
+
+    auto luP = ShapeBuilders::createShapeInfo(dtype, shape::order(in), shapeVector.size() - 1, shapeVector.data(),
+                                              block.workspace(), true);
+    return SHAPELIST(in,luP);
+  }
+  auto luShape = ShapeBuilders::copyShapeInfoAndType(in, in, true, block.workspace());
   auto luP = ShapeBuilders::createShapeInfo(dtype, shape::order(in), shapeVector.size() - 1, shapeVector.data(),
-                                            block.workspace());
+                                            block.workspace(), false);
+
   return SHAPELIST(CONSTANT(luShape), CONSTANT(luP));
 }
 

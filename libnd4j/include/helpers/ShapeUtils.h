@@ -78,7 +78,7 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const sd::LongType* evalPermShapeInfo(const LongType* dimensions, const LongType rank, const NDArray& arr,
+  static LongType* evalPermShapeInfo(const LongType* dimensions, const LongType rank, const NDArray& arr,
                                                sd::memory::Workspace* workspace, const bool setContigStrides = false);
 
 
@@ -102,9 +102,9 @@ class SD_LIB_EXPORT ShapeUtils {
   // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
   // if evalMinMax == false then array with larger rank has to be passed as first argument
   static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax,
-                                     const sd::LongType*& resultShapeInfo, sd::memory::Workspace* workspace);
+                                     const LongType*& resultShapeInfo, sd::memory::Workspace* workspace);
   static bool evalBroadcastShapeInfo(const sd::LongType* max, const sd::LongType* min, const bool evalMinMax,
-                                     const sd::LongType*& resultShapeInfo, sd::memory::Workspace* workspace);
+                                     const LongType*& resultShapeInfo, sd::memory::Workspace* workspace);
 
   // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
   // if simple broadcast is not possible then empty vector is returned

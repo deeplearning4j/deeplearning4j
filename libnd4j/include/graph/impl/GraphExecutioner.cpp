@@ -460,7 +460,6 @@ sd::Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace)
   if (Environment::getInstance().isProfiling()) {
     flowPath->profile()->nodeById(lastId)->setTotalTime(GraphProfile::relativeTime(nodeTime));
     flowPath->profile()->setExecutionTime(GraphProfile::relativeTime(timeStart));
-    // flowPath->profile().printOut();
   }
 
   // saving memory footprint for current run

@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(qr) {
     shape[targetRank - 1] = shape::sizeAt(inShape, static_cast<sd::LongType>(-1));
     shape[targetRank - 2] = shape[targetRank - 1];
     shapeQ = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
-                                                                targetRank, shape::shapeOf(inShape));
+                                                                targetRank, shape::shapeOf(inShape), -1);
     shapeR = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
                                                                 shape);
 
@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(qr) {
     shape[targetRank - 1] = shape::sizeAt(inShape, static_cast<sd::LongType>(-2));
     shape[targetRank - 2] = shape[targetRank - 1];
     shapeR = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
-                                                                targetRank, shape::shapeOf(inShape));
+                                                                targetRank, shape::shapeOf(inShape), -1);
     shapeQ = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape),
                                                                 shape);
   }

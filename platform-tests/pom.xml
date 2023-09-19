@@ -83,7 +83,7 @@
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
-        <test.nogc>false</test.nogc>
+        <test.nogc>true</test.nogc>
         <test.prefix></test.prefix>
         <!--
         TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address

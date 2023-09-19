@@ -493,7 +493,9 @@ DECLARE_SHAPE_FN(strided_slice) {
     return SHAPELIST(newShape);
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
+  printf("strided slice: empty case\n");
+  std::vector<sd::LongType> retShape = {0};
+  return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape),retShape));
 }
 
 CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
@@ -617,8 +619,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
       _preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0),
       0, "StridedSliceBP: shape calculation failed");
-  // REQUIRE_TRUE(epsNext->isSameShape(final_shape), 0, "StridedSlice_bp: gradOut shape should be equals to output from
-  // strided_slice op."); Zero output array, so unused elements have 0 gradient
+
   output->nullify();
   //
   // the first case: only for scalar gradient step

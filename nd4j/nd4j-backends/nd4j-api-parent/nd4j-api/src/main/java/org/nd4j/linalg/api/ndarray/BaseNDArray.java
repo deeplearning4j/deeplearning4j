@@ -139,6 +139,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.compressed = reallyCompressed;
     }
 
+
+    public BaseNDArray(LongShapeDescriptor descriptor) {
+        this(descriptor.isEmpty() ? null :
+                Nd4j.createBuffer(descriptor.length())
+                , descriptor.getShape(), descriptor.getStride(), 0, descriptor.getOrder(), descriptor.dataType());
+    }
+
     /**
      *
      * @param buffer
@@ -164,8 +171,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
         Shape.assertValidOrder(ordering);
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
+        boolean isEmpty = isEmpty(buffer, shape);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, buffer.dataType(), false));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, buffer.dataType(), isEmpty));
         init(shape, stride);
 
     }
@@ -177,7 +185,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
         Shape.assertValidOrder(ordering);
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, buffer.dataType(), false ));
+        boolean isEmpty = isEmpty(buffer, shape);
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, buffer.dataType(), isEmpty));
         init(shape, stride);
     }
 
@@ -187,24 +197,49 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering, DataType dataType) {
         this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, dataType, false));
+        boolean isEmpty = isEmpty(buffer, shape);
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, ews, ordering, dataType, isEmpty));
         init(shape, stride);
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type) {
         this.data = buffer;
+        boolean isEmpty = isEmpty(buffer, shape);
+
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type, false));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type, isEmpty));
         init(shape, stride);
-        boolean isScalar =  isScalar();
-        System.out.println();
     }
 
     public BaseNDArray(DataBuffer buffer, long[] shape, long[] stride, char ordering, DataType type, MemoryWorkspace workspace) {
         this.data = buffer;
+        boolean isEmpty = isEmpty(buffer, shape);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
-                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type, false));
+                Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, type, isEmpty));
         init(shape, stride);
+    }
+
+    private static boolean isEmpty(DataBuffer buffer, long[] shape) {
+        boolean isEmpty = false;
+        if(buffer == null || buffer.length() < 1)
+            isEmpty = true;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 0)
+                isEmpty = true;
+        }
+        return isEmpty;
+    }
+
+    private static boolean isEmpty(DataBuffer buffer, int[] shape) {
+        boolean isEmpty = false;
+        if(buffer == null || buffer.length() < 1)
+            isEmpty = true;
+        for(int i = 0; i < shape.length; i++) {
+            if(shape[i] == 0)
+                isEmpty = true;
+        }
+        return isEmpty;
     }
 
     public BaseNDArray(DataBuffer buffer,  DataType dataType, long[] shape, long[] stride, long offset, char ordering) {
@@ -964,7 +999,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] tensorShape = ArrayUtil.keep(shape(), dimension);
         long len = ArrayUtil.prodLong(tensorShape);
         if (len == 0)
-           return 1;
+            return 1;
         long length = length();
         if (length / len >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Tensors along dimension can not be >= Integer.MAX_VALUE");
@@ -2879,12 +2914,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public long[] toLongVector() {
+        if(isEmpty())
+            return new long[0];
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1){
+        if(isView() || elementWiseStride() != 1) {
             return dup().data().asLong();
         }
+
+
         return data().asLong();
     }
 
@@ -3637,12 +3676,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray reshape(char order, boolean enforceView, long... newShape){
+    public INDArray reshape(char order, boolean enforceView, long... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
+        boolean hasZeros = false;
+        for(int i = 0; i < newShape.length; i++) {
+            if(newShape[i] == 0) {
+                hasZeros = true;
+                break;
+            }
+        }
+
+        //shape doesn't matter just let it through
+        if(hasZeros) {
+            return Nd4j.create(dataType(),newShape);
+        }
+
+
         // special case for empty reshape
-        if (this.length() == 1 && (newShape == null || newShape.length == 0) && this.elementWiseStride() == 1) {
-            return Nd4j.create(this.data(), new int[0], new int[0], 0);
+        if (this.length() <= 1 && (newShape == null || newShape.length == 0)) {
+            if(data() == null)
+                return Nd4j.empty(dataType());
+            else //scalar case
+                return Nd4j.create(this.data(), new int[0], new int[0], 0);
         }
 
         if (newShape == null || newShape.length < 1)
@@ -5434,7 +5490,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isEmpty() {
-        return data() == null || Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+        return data() == null  || data.length() < 1|| Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 
     @Override

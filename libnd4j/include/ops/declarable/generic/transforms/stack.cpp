@@ -41,8 +41,8 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   // input validation
   // check whether shapes of all input array are the same
   for (sd::LongType i = 0; i < block.width() - 1; ++i)
-    REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
-                 "STACK op: the shapes of all input arrays must be the same !");
+  REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
+               "STACK op: the shapes of all input arrays must be the same !");
 
   REQUIRE_TRUE(
       dim <= input->rankOf(), 0,
@@ -52,7 +52,9 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   std::vector<const NDArray*> inArrs(block.width());
   for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
 
-  helpers::stack(block.launchContext(), inArrs, *output, dim);
+  //empty arrays are a no op
+  if(block.width() >= 1 && !inArrs[0]->isEmpty())
+    helpers::stack(block.launchContext(), inArrs, *output, dim);
 
   return sd::Status::OK;
 }
@@ -67,6 +69,8 @@ DECLARE_SHAPE_FN(stack) {
   sd_print("Stack shape\n");
   // check whether input dimension is within rank range
   auto inShapeInfo = inputShape->at(0);
+  shape::printShapeInfo(inShapeInfo);
+
   int rank = shape::rank(inShapeInfo);
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
   if (dim < 0) dim += rank + 1;
@@ -76,26 +80,6 @@ DECLARE_SHAPE_FN(stack) {
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",
       inShapeInfo[0], dim);
 
-  // empty input arrays require some special handling
-  if (shape::isEmpty(inShapeInfo)) {
-    sd_print("Handling empty stack\n");
-    switch (rank) {
-      case 0: {
-        // we're going to return rank 1 here
-        if (block.width() == 1) {
-          return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShapeInfo)));
-        } else {
-          return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c',
-                                                                              {(sd::LongType)block.width(), 0}));
-        }
-      }
-    }
-  }
-
-  if (rank == 0) {
-    return SHAPELIST(
-        ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShapeInfo)));
-  }
 
   // the rank of output ShapeInfo is larger by one compared to input ShapeInfo
   std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);

@@ -33,7 +33,7 @@
 #include <array/SparseType.h>
 
 #include <initializer_list>
-
+#include <vector>
 #define ARRAY_SPARSE 2
 #define ARRAY_COMPRESSED 4
 #define ARRAY_EMPTY 8
@@ -90,6 +90,7 @@
 // flag for arrays with padded buffer
 #define ARRAY_HAS_PADDED_BUFFER (1 << 25)
 
+#define DEFAULT_FLAG 0
 
 
 
@@ -97,55 +98,61 @@
 namespace sd {
 class SD_LIB_EXPORT ArrayOptions {
  public:
-  static SD_HOST_DEVICE LongType extra(sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE void setExtra(sd::LongType *shapeInfo, sd::LongType value);
-  static SD_HOST_DEVICE bool isNewFormat(const sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE bool hasPropertyBitSet(const sd::LongType *shapeInfo, int property);
-  static SD_HOST_DEVICE bool togglePropertyBit(sd::LongType *shapeInfo, int property);
-  static SD_HOST_DEVICE void unsetPropertyBit(sd::LongType *shapeInfo, int property);
+  static SD_HOST LongType extra(const LongType *shapeInfo);
+  static SD_HOST void setExtra(sd::LongType *shapeInfo, sd::LongType value);
+  static SD_HOST bool isNewFormat(const sd::LongType *shapeInfo);
+  static SD_HOST bool hasPropertyBitSet(const sd::LongType *shapeInfo, LongType property);
+  static SD_HOST bool togglePropertyBit(sd::LongType *shapeInfo, LongType property);
+  static SD_HOST void unsetPropertyBit(sd::LongType *shapeInfo, LongType property);
 
-  static SD_HOST_DEVICE void setPropertyBit(sd::LongType *shapeInfo, int property);
-  static SD_HOST_DEVICE void setPropertyBits(sd::LongType *shapeInfo, std::initializer_list<int> properties);
+  static SD_HOST void setPropertyBit(sd::LongType *shapeInfo, LongType property);
+  static SD_HOST void setPropertyBits(sd::LongType *shapeInfo, std::initializer_list<LongType> properties);
 
-  static SD_HOST_DEVICE bool isSparseArray(sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE bool isUnsigned(sd::LongType *shapeInfo);
+  static SD_HOST bool isSparseArray(sd::LongType *shapeInfo);
+  static SD_HOST bool isUnsigned(sd::LongType *shapeInfo);
 
-  static sd::DataType dataType(const sd::LongType *shapeInfo);
+  static SD_HOST_DEVICE sd::DataType dataType(const sd::LongType *shapeInfo);
 
-  static SD_HOST_DEVICE SpaceType spaceType(sd::LongType *shapeInfo);
+  static SD_HOST SpaceType spaceType(sd::LongType *shapeInfo);
   static SD_HOST_DEVICE SpaceType spaceType(const sd::LongType *shapeInfo);
 
   static SD_HOST_DEVICE ArrayType arrayType(sd::LongType *shapeInfo);
   static SD_HOST_DEVICE ArrayType arrayType(const sd::LongType *shapeInfo);
 
   static SD_HOST_DEVICE SparseType sparseType(sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE SparseType sparseType(const sd::LongType *shapeInfo);
+  static SD_HOST SparseType sparseType(const sd::LongType *shapeInfo);
 
   static SD_HOST_DEVICE bool hasExtraProperties(sd::LongType *shapeInfo);
 
-  static SD_HOST_DEVICE bool hasPaddedBuffer(const sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE void flagAsPaddedBuffer(sd::LongType *shapeInfo);
+  static SD_HOST bool hasPaddedBuffer(const sd::LongType *shapeInfo);
+  static SD_HOST void flagAsPaddedBuffer(sd::LongType *shapeInfo);
 
-  static SD_HOST_DEVICE void resetDataType(sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE sd::LongType propertyWithoutDataType(const sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE void setDataType(sd::LongType *shapeInfo, const sd::DataType dataType);
+  static SD_HOST void resetDataType(sd::LongType *shapeInfo);
+  static SD_HOST sd::LongType propertyWithoutDataType(const sd::LongType *shapeInfo);
+  static SD_HOST void setDataType(sd::LongType *shapeInfo, const sd::DataType dataType);
+  static SD_HOST sd::LongType setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType);
+  static SD_HOST LongType flagForDataType(const sd::DataType dataType);
+  static SD_HOST void copyDataType(sd::LongType *to, const sd::LongType *from);
+  static SD_HOST const char *enumerateSetFlags(const LongType *shapeInfo);
+  static SD_HOST void unsetAllFlags(LongType *shapeInfo);
+  static SD_HOST int enumerateSetFlags(const LongType *shapeInfo, const char **setFlagsOutput, int maxFlags);
+  static SD_HOST const char *findFlagString(int flag);
+  static SD_HOST sd::LongType extraIndex(const sd::LongType *shapeInfo);
+  static SD_HOST sd::LongType extraIndex(sd::LongType *shapeInfo);
+  static SD_HOST void unsetAllFlags(LongType &flagStorage);
+  static SD_HOST const char *enumerateSetFlagsForFlags(const LongType flagStorage);
+  static SD_HOST SpaceType spaceTypeForFlags(const LongType &flagStorage);
+  static SD_HOST ArrayType arrayTypeForFlags(const LongType &flagStorage);
+  static SD_HOST bool togglePropertyBitForFlags(LongType &flagStorage, LongType property);
+  static SD_HOST sd::LongType unsetPropertyBitForFlags(LongType &flagStorage, LongType property);
+  static SD_HOST SparseType sparseTypeForFlags(const LongType &flagStorage);
+  static sd::LongType setPropertyBitForFlagsValue(LongType extraStorage, LongType property);
+  static SD_HOST bool hasPropertyBitSet(const LongType extra, LongType property);
+  static SD_HOST void resetFlags(LongType *to);
+  static SD_HOST sd::LongType defaultFlag();
 
-  static SD_HOST_DEVICE void copyDataType(sd::LongType *to, const sd::LongType *from);
-  static SD_HOST_DEVICE std::vector<std::string> enumerateSetFlags(const LongType *shapeInfo);
-  static SD_HOST_DEVICE void unsetAllFlags(LongType *shapeInfo);
-  static SD_HOST_DEVICE int enumerateSetFlags(const LongType *shapeInfo, const char **setFlagsOutput, int maxFlags);
-  static SD_HOST_DEVICE const char *findFlagString(int flag);
-  static SD_HOST_DEVICE sd::LongType extraIndex(const sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE sd::LongType extraIndex(sd::LongType *shapeInfo);
-  static SD_HOST_DEVICE void unsetAllFlags(LongType &flagStorage);
-  static SD_HOST_DEVICE int enumerateSetFlagsForFlags(const LongType &flagStorage, const char **setFlagsOutput,
-                                                      int maxFlags);
-  static SD_HOST_DEVICE SpaceType spaceTypeForFlags(const LongType &flagStorage);
-  static SD_HOST_DEVICE ArrayType arrayTypeForFlags(const LongType &flagStorage);
-  static SD_HOST_DEVICE bool togglePropertyBitForFlags(LongType &flagStorage, int property);
-  static SD_HOST_DEVICE void unsetPropertyBitForFlags(LongType &flagStorage, int property);
-  static SD_HOST_DEVICE SparseType sparseTypeForFlags(const LongType &flagStorage);
-  static void setPropertyBitForFlagsValue(LongType &extraStorage, int property);
+  static SD_HOST  LongType propertyWithoutDataTypeValue(LongType extra);
+  static SD_HOST DataType dataTypeValue(LongType property);
 };
 
 }

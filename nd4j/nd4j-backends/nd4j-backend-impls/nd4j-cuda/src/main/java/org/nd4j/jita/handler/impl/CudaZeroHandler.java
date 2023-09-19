@@ -574,6 +574,8 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public org.bytedeco.javacpp.Pointer getHostPointer(DataBuffer buffer) {
+        if(buffer == null)
+             return null;
         AllocationPoint dstPoint = ((BaseCudaDataBuffer) buffer).getAllocationPoint();
 
         // return pointer with offset if needed. length is specified for constructor compatibility purposes

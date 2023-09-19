@@ -92,9 +92,9 @@ Context::~Context() {
   this->_fastpath_in.clear();
   this->_fastpath_out.clear();
 
- // for (auto v : _handles) delete v;
+  // for (auto v : _handles) delete v;
 
- // if (_context != nullptr) delete _context;
+  if (_context != nullptr) delete _context;
 }
 
 void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
@@ -235,9 +235,9 @@ void Context::pushNDArrayToVariableSpace(std::pair<int, int> &pair, NDArray *arr
       sd_debug("Context: After getting variable in push ndarray to variable space\n",0);
       if (var->hasNDArray()) {
         if (var->getNDArray() != array) {
-        /*  if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
-            delete var->getNDArray();
-          } */
+          /*  if (var->isRemovable() && var->hasNDArray() && !var->getNDArray()->isView()) {
+              delete var->getNDArray();
+            } */
           var->setNDArray(array);
           var->markRemovable(removable);
         }
@@ -341,8 +341,19 @@ unsigned long Context::width() {
 }
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
+  if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
+    std::string errorMessage;
+    errorMessage += std::string("Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has a different data type than the shape buffer!");
+    //add the shape info as a string to the error message
+    errorMessage += std::string(" Shape info: ");
+    errorMessage += ShapeUtils::shapeAsString(array->shapeInfo());
+    errorMessage += std::string(" Data type: ");
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
-  sd_print("Using void * setInput array 2\n");
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
@@ -355,9 +366,27 @@ void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *spec
 
 void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void *specialBuffer,
                             void const *specialShapeInfo) {
+  const sd::LongType *shapeInfoCast = reinterpret_cast<const sd::LongType*>(shapeInfo);
+  if(!DataTypeUtils::validDataType(ArrayOptions::dataType(shapeInfoCast))) {
+    std::string errorMessage;
+    errorMessage += std::string("Shape Buffer at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has an invalid data type!");
+    //add the shape info as a string to the error message
+    errorMessage += std::string(" Shape info: ");
+    errorMessage += ShapeUtils::shapeAsString(shapeInfoCast);
+    errorMessage += std::string(" Data type: ");
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfoCast));
+    errorMessage += std::string(" Data buffer: ");
+    errorMessage += buffer != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Special buffer: ");
+    errorMessage += specialBuffer != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Offset: ");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
+
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
-  sd_print("Using void * setInput array\n");
 
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
@@ -370,8 +399,18 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
-sd_print("Using void * setOutput array 1\n");
-
+  if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
+    std::string errorMessage;
+    errorMessage += std::string("Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has a different data type than the shape buffer!");
+    //add the shape info as a string to the error message
+    errorMessage += std::string(" Shape info: ");
+    errorMessage += ShapeUtils::shapeAsString(array->shapeInfo());
+    errorMessage += std::string(" Data type: ");
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   _fastpath_out[index] = array;
 
   if (removable) _handles.emplace_back(array);
@@ -386,7 +425,7 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
                              const void *specialShapeInfo) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-sd_print("Using void * setOutput array\n");
+  sd_print("Using void * setOutput array\n");
   auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
 
   _fastpath_out[index] = array;
@@ -406,10 +445,74 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
     error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
     THROW_EXCEPTION(error.c_str());
   }
+
+  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmpty(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
+    std::string errorMessage;
+    errorMessage += std::string("Shape Buffer at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is marked as empty but data buffer is not null!");
+    //add the shape info as a string to the error message
+    errorMessage += std::string(" Shape info: ");
+    errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
+    errorMessage += std::string(" Data type: ");
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
+    errorMessage += std::string(" Data buffer: ");
+    errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Special buffer: ");
+    errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Offset: ");
+    errorMessage += std::to_string(dataBuffer->offset());
+    //print the elements. we know these are longs
+    errorMessage += std::string(" Elements: ");
+    for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
+      errorMessage += std::to_string(newShapeInfoCast[i]);
+      errorMessage += std::string(", ");
+    }
+    errorMessage += std::string("\n");
+
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+
+
+
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
+    if(dataBuffer->dataBuffer() != nullptr && dataBuffer->getDataBuffer()->getDataType() != ArrayOptions::dataType(newShapeInfoCast)
+       || !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())
+       || !DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast))) {
+      std::string errorMessage;
+      errorMessage += std::string("Data buffer at index ");
+      errorMessage += std::to_string(index);
+      errorMessage += std::string(" has a different data type than the shape buffer!");
+      //add the shape info as a string to the error message
+      errorMessage += std::string(" Shape info: ");
+      errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
+      errorMessage += std::string(" Data type: ");
+      errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
+      errorMessage += std::string(" Data buffer: ");
+      errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
+      errorMessage += std::string(" Special buffer: ");
+      errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
+      errorMessage += std::string(" Offset: ");
+      errorMessage += std::to_string(dataBuffer->offset());
+
+      //print the elements. we know these are longs
+      errorMessage += std::string(" Elements: ");
+      for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
+        errorMessage += std::to_string(newShapeInfoCast[i]);
+        errorMessage += std::string(", ");
+      }
+
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
     auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
+    if(!DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast)) && !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())) {
+      THROW_EXCEPTION("Invalid data type for new shape info");
+    }
+
+
     array = new NDArray(newRef,newShapeInfoCast, sd::LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeInfoCast)));
@@ -430,6 +533,32 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   auto primary = shapeInfoCast->primary();
   auto newShapeInfoCast = reinterpret_cast<const sd::LongType *>(primary);
   auto newShapeCast2 = const_cast<sd::LongType *>(newShapeInfoCast);
+  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmpty(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
+    std::string errorMessage;
+    errorMessage += std::string("Shape Buffer at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" is marked as empty but data buffer is not null!");
+    //add the shape info as a string to the error message
+    errorMessage += std::string(" Shape info: ");
+    errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
+    errorMessage += std::string(" Data type: ");
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
+    errorMessage += std::string(" Data buffer: ");
+    errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Special buffer: ");
+    errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
+    errorMessage += std::string(" Offset: ");
+    errorMessage += std::to_string(dataBuffer->offset());
+    //print the elements. we know these are longs
+    errorMessage += std::string(" Elements: ");
+    for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
+      errorMessage += std::to_string(newShapeInfoCast[i]);
+      errorMessage += std::string(", ");
+    }
+    errorMessage += std::string("\n");
+
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   NDArray *array;
   if (dataBuffer != nullptr) {
     auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());

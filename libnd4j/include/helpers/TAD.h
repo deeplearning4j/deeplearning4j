@@ -107,7 +107,7 @@ class TAD {
                                                           const long long int *rearrange,
                                                           sd::LongType *out);
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, long long int *rearrange);
+  SD_INLINE SD_HOST_DEVICE sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange);
 
   SD_INLINE SD_HOST_DEVICE void createTadOnlyShapeInfo();
 

@@ -68,8 +68,6 @@ std::shared_ptr<DataBuffer> InteropDataBuffer::dataBuffer() {
 
 
 void* InteropDataBuffer::primary() const {
-  if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
-    return nullptr;
   if(_dataBuffer->primary() == nullptr) {
     return nullptr;
   }
@@ -77,7 +75,7 @@ void* InteropDataBuffer::primary() const {
 }
 
 void* InteropDataBuffer::special() const {
-  if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
+  if(_dataBuffer == nullptr)
     return nullptr;
   if(_dataBuffer->special() == nullptr) {
     return nullptr;

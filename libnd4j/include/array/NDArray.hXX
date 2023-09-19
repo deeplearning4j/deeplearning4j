@@ -97,14 +97,23 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
   _offset = 0;
 
   if (shape.empty()) {
-    auto desc = ShapeDescriptor::emptyDescriptor(dtype);
+    printf("Creating scalar array \n");
+    //scalar
+    auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+    if(desc->dataType() != dtype) {
+      THROW_EXCEPTION("New data type is not reflected in the created descriptor");
+    }
+
     setShapeInfo(desc);
+
     delete desc;
+
   } else {
-    auto desc = new ShapeDescriptor(dtype, order, shape);
+    printf("Creating normal array \n");
+    auto desc = ShapeBuilders::createShapeInfo(dtype,order,shape);
     auto desc2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(desc2);
-    delete desc;
+    delete[] desc;
   }
 
   int len = isScalar() ? 1 : lengthOf();
@@ -118,6 +127,10 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
                  sd::DataType dtype, sd::LaunchContext *context) {
   if (shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
+
+  if(dtype == DataType::UNKNOWN) {
+    THROW_EXCEPTION("Unable to create array with unknown data type.");
+  }
 
   _context = context;
   _offset = 0;
@@ -163,12 +176,11 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
   _isAttached = getContext()->getWorkspace() != nullptr;
 
   if (copyStrides) {
-    auto desc = new ShapeDescriptor(other->_shapeInfo);
-    auto desc2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    auto desc2 = ConstantShapeHelper::getInstance().createFromExisting(other->_shapeInfo);
     setShapeInfo(desc2);
-    delete desc;
   } else {
-    auto newDesc = new ShapeDescriptor(other->dataType(), other->ordering(), other->shapeOf(), other->rankOf());
+    auto newDesc = ShapeBuilders::createShapeInfo(other->dataType(), other->ordering(), other->rankOf(),
+                                                  other->shapeOf(), getContext()->getWorkspace(), false);
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(newDesc);
     setShapeInfo(constDesc);
     delete newDesc;
@@ -204,7 +216,8 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   _offset = offset;
   _isAttached = getContext()->getWorkspace() != nullptr;
   _isView = isView;
-  auto desc = new ShapeDescriptor(dtype, order, shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, order, shape.size(), shape.data(), getContext()->getWorkspace(),
+                                             false);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   setShapeInfo(constDesc);
   delete desc;
@@ -217,7 +230,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
 NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const bool copyStrides,
                  sd::LaunchContext *context, const bool nullify) {
-  if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor: can't be initalized without shapeinfo");
+  if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor: can't be initialized without shapeinfo");
 
   if ((int)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
@@ -230,7 +243,9 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
     setShapeInfo(constDesc);
     delete desc;
   } else {
-    auto desc = new ShapeDescriptor(dtype, shape::order(shapeInfo), shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
+    auto desc = ShapeBuilders::createShapeInfo(dtype, shape::order(shapeInfo), shape::rank(shapeInfo),
+                                               shape::shapeOf(const_cast<sd::LongType *>(shapeInfo)),
+                                               getContext()->getWorkspace(), false);
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(constDesc);
     delete desc;
@@ -251,7 +266,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
   _isAttached = getContext()->getWorkspace() != nullptr;
 
   if (isScalar) {
-    auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+    auto desc = ShapeBuilders::createScalarShapeInfo(dtype, getContext()->getWorkspace());
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(constDesc);
     delete desc;
@@ -320,6 +335,22 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd
                  const sd::LongType offset) {
   _context = context;
   _offset = offset;
+  //ensure the shape info and databuffer state are consistent
+  //we can assume databuffer and shapeinfo are consistent now check for data type
+  if(!shape::isEmpty(shapeInfo)) {
+    if(ArrayOptions::dataType(shapeInfo) != buffer->getDataType()) {
+      std::string errorMessage;
+      errorMessage += "NDArray constructor: data buffer and shape info are inconsistent. ";
+      errorMessage += "Data buffer has data type ";
+      errorMessage += DataTypeUtils::asString(buffer->getDataType());
+      errorMessage += ", shape info has data type ";
+      errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo));
+      errorMessage += ". ";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+
+
   setShapeInfo(shapeInfo);
   _buffer = buffer;
   if(buffer != nullptr)
@@ -334,6 +365,32 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor
                  const sd::LongType offset) {
   _context = context;
   _offset = offset;
+  if(descriptor->dataType() == DataType::UNKNOWN) {
+    THROW_EXCEPTION("Unable to create array with unknown data type.");
+  } else {
+    printf("Before descriptor data type is %s\n", DataTypeUtils::asString(descriptor->dataType()).c_str());
+  }
+
+
+  //ensure the shape info and databuffer state are consistent
+
+
+  //we can assume databuffer and shapeinfo are consistent now check for data type
+  if(!descriptor->isEmpty()) {
+    if(descriptor->dataType() != buffer->getDataType()) {
+      std::string errorMessage;
+      errorMessage += "NDArray constructor: data buffer and shape info are inconsistent. ";
+      errorMessage += "Data buffer has data type ";
+      errorMessage += DataTypeUtils::asString(buffer->getDataType());
+      errorMessage += ", shape info has data type ";
+      errorMessage += DataTypeUtils::asString(descriptor->dataType());
+      errorMessage += ". ";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+
+
+
   setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor));
   _buffer = buffer;
   _dataType = descriptor->dataType();
@@ -389,9 +446,7 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
   _offset = 0;
   _length = shape::length(shapeInfo);
   _dataType = ArrayOptions::dataType(shapeInfo);
-  auto descriptor = new ShapeDescriptor(shapeInfo);
-  setShapeInfo(descriptor);
-  delete descriptor;
+  setShapeInfo(shapeInfo);
   int len = isScalar() ? 1 : lengthOf();
   _buffer = std::make_shared<DataBuffer>(buffer,bufferD, len * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
                                          getContext()->getWorkspace());
@@ -409,8 +464,8 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
   _context = context;
   _offset = 0;
 
-  auto desc = new ShapeDescriptor(buffer->getDataType(), order, shape);
-  setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(desc));
+  auto desc = ShapeBuilders::createShapeInfo(buffer->getDataType(), order, shape);
+  setShapeInfo(desc);
   delete desc;
   _buffer = buffer;
 
@@ -961,16 +1016,16 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 static void printFormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
   // adapted printFormatted function
   if(arr.isScalar()) {
-        if (arr.isR())
-          os << arr.e<float>(0) << "\n";
-        else if (arr.isZ())
-          os << arr.e<sd::LongType>(0) << "\n";
-        else if (arr.isB())
-          os << (arr.e<bool>(0) ? "true" : "false") << "\n";
-        else if (arr.isS()) {
-          os << "\"" << arr.e<std::string>(0) << "\"\n";
-        }
-        return;
+    if (arr.isR())
+      os << arr.e<float>(0) << "\n";
+    else if (arr.isZ())
+      os << arr.e<sd::LongType>(0) << "\n";
+    else if (arr.isB())
+      os << (arr.e<bool>(0) ? "true" : "false") << "\n";
+    else if (arr.isS()) {
+      os << "\"" << arr.e<std::string>(0) << "\"\n";
+    }
+    return;
   }
 
   if (arr.rankOf() == 1) {
@@ -1369,6 +1424,7 @@ bool NDArray::isBroadcastableTo(const NDArray &other) const {
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
   if (this == &other) {
+    printf("assign: this == other\n");
     return;
   }
 
@@ -1387,11 +1443,27 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
   //scalar case
   if (other.isScalar()) {
     if (isScalar()) {
-      prepareUse({this}, {&other});
-      BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.buffer(), 0),
-                            SD_COMMON_TYPES, SD_COMMON_TYPES);
-      NDArray::registerPrimaryUse({this}, {&other});
-      this->syncToDevice();
+      if (dataType() != other.dataType()) {
+        auto tmp = other.cast(dataType());
+        prepareUse({this}, {&tmp});
+        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
+                                        specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                        tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(),
+                                        nullptr, allowParallelism);
+        registerUse({this}, {});
+      } else {
+        prepareUse({this}, {&other});
+        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws,
+                                        buffer(),
+                                        shapeInfo(), specialBuffer(),
+                                        specialShapeInfo(), buffer(),
+                                        shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                        other.buffer(),
+                                        other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(),
+                                        nullptr, allowParallelism);
+        registerUse({this}, {&other});
+      }
+
     } else {
       if (dataType() != other.dataType()) {
         auto tmp = other.cast(dataType());
@@ -1420,7 +1492,6 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
 
     prepareUse({this}, {&other});
 
-    sd_print("execTransformAny assign\n");
     NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
                                           other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
                                           specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr,
@@ -2079,6 +2150,13 @@ bool NDArray::reshapei(const std::vector<sd::LongType> &shape, const bool copyTo
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::enforce(const std::initializer_list<sd::LongType> &dimensions, char order) {
+  if(order != 'c' && order != 'f') {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
+    errorMessage += order;
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
   std::vector<sd::LongType> dims(dimensions);
   enforce(dims, order);
 }
@@ -2124,15 +2202,43 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
 NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) const & {
-  auto desc = new ShapeDescriptor(shapeInfo());
+  if(order != 'c' && order != 'f') {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
+    errorMessage += order;
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  auto desc = new ShapeDescriptor(shapeInfo(),true);
+  if(!DataTypeUtils::validDataType(desc->dataType()))
+    THROW_EXCEPTION("Array created with unknown data type!");
+  if(!DataTypeUtils::validDataType(_dataType))
+    THROW_EXCEPTION("Array created with unknown data type!");
+  if(desc->dataType() != _dataType)
+    THROW_EXCEPTION("New shape descriptor didn't have matching data type");
   NDArray newArr(getDataBuffer(), desc, getContext(), bufferOffset());
+  if(!DataTypeUtils::validDataType(newArr.dataType()))
+    THROW_EXCEPTION("Array created with unknown data type!");
+  if(desc->order() != 'c' && desc->order() != 'f') {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
+    errorMessage += desc->order();
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   newArr.reshapei(order, shape, copyToNewBuff);
+  if(newArr.dataType() == sd::DataType::UNKNOWN)
+    THROW_EXCEPTION("Array created with unknown data type!");
   delete desc;
   return newArr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) && {
+  if(order != 'c' && order != 'f') {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
+    errorMessage += order;
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   this->reshapei(order, shape, copyToNewBuff);
   return std::move(*this);
 }
@@ -2402,8 +2508,6 @@ NDArray NDArray::subarray(const Intervals &idx) const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray NDArray::asT() const {
-  //TODO: valgrind still be complaining about uninitialized values here.
-
   auto result = isScalar() ? NDArray('c', {}, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext())
                            : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
 
@@ -2523,7 +2627,6 @@ NDArray NDArray::asT(DataType dtype) const {
     BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES);
   }
 
-  return NDArray();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3431,7 +3534,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
-    // RELEASE(shapeInfoNew, getContext()->getWorkspace());
+    //RELEASE(shapeInfoNew, getContext()->getWorkspace());
     return true;
   }
 
@@ -3518,6 +3621,36 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
   bool canReshape = shape::reshapeC(shapeInfo(), order, shape.size(), shape.data(), shapeInfoNew);
+
+  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(_dataType))) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: bad data type of new shape !\n";
+    errorMessage += "Shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += ShapeUtils::shapeAsString(shape);
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    errorMessage += "Length of new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    errorMessage += "Length of array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Original data type: ";
+    errorMessage += DataTypeUtils::asString(_dataType);
+    //add what the expected flag is and what the extra property flag is
+    errorMessage += "\n";
+    errorMessage += "Expected data type: ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfoNew));
+    errorMessage += "\n";
+    errorMessage += "Extra property flag: ";
+    errorMessage += std::to_string(ArrayOptions::extra(shapeInfoNew));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   if (canReshape) {
     setShapeInfo(shapeInfoNew);
@@ -3616,6 +3749,12 @@ void NDArray::templatedDoubleAssign(void *xBuffer, const sd::LongType xOffset, c
                                     const sd::LongType yOffset) const {
   auto x = reinterpret_cast<X *>(xBuffer);
   const auto y = reinterpret_cast<const Y *>(yBuffer);
+  if(x == nullptr)
+    THROW_EXCEPTION("NDArray::templatedDoubleAssign: x buffer is nullptr !");
+  if(y == nullptr)
+    THROW_EXCEPTION("NDArray::templatedDoubleAssign: y buffer is nullptr !");
+
+  printf("X offset %d Y offset %d\n",xOffset,yOffset);
   x[xOffset] = y[yOffset];
 }
 BUILD_DOUBLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedDoubleAssign,
@@ -4284,8 +4423,22 @@ void NDArray::applyScalarArr(sd::scalar::Ops op, const NDArray &scalar, NDArray 
   if (!scalar.isScalar()) THROW_EXCEPTION("NDArray::applyScalarArr method: operand is not a scalar!");
 
   if (target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()) &&
-      !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))
-    THROW_EXCEPTION("NDArray::applyScalarArr method: wrong type of target array!");
+      !(target.dataType() == dataType() || target.dataType() == scalar.dataType())) {
+    std::string errorMessage;
+    errorMessage += "NDArray::applyScalarArr method: wrong type of target array !\n";
+    errorMessage += "Expected array with type: ";
+    errorMessage += DataTypeUtils::asString(DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.shapeInfo()));
+    errorMessage += " or ";
+    errorMessage += DataTypeUtils::asString(dataType());
+    errorMessage += " or ";
+    errorMessage += DataTypeUtils::asString(scalar.dataType());
+    errorMessage += ", but got ";
+    errorMessage += DataTypeUtils::asString(target.dataType());
+
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+
 
 
   NDArray::prepareSpecialUse({&target}, {this, &scalar});
@@ -4493,7 +4646,7 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, const NDArray &other, const E
       ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), getContext()->getWorkspace());
   // create output array (scalar)
   NDArray result(newShape, true, getContext());
-  RELEASE(newShape, getContext()->getWorkspace());
+  //RELEASE(newShape, getContext()->getWorkspace());
   // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
   void *params = extraParams != nullptr ? const_cast<ExtraArguments *>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
@@ -5304,7 +5457,7 @@ NDArray NDArray::diagonal(const char type) const {
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
   NDArray result(_buffer, const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
 
-  RELEASE(outShapeInfo, getContext()->getWorkspace());
+  //RELEASE(outShapeInfo, getContext()->getWorkspace());
 
   return result;
 }
@@ -5463,6 +5616,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclud
 void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
     ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+    descriptor->validate();
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
     _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
@@ -5517,7 +5671,11 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
   _shapeInfoBuffer = shapeBuffer;
+
   _shapeInfo = shapeBuffer->primary();
+  if(ArrayOptions::dataType(_shapeInfo) != descriptor->dataType()) {
+    THROW_EXCEPTION("New data type is not reflected in the created descriptor");
+  }
 #ifdef __CUDABLAS__
   _shapeInfoD = shapeBuffer->special();
 #endif

@@ -36,10 +36,6 @@ class BroadcastHelper {
   static SD_INLINE NDArray* broadcastApply(sd::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
-      if (!z->isEmpty())
-        THROW_EXCEPTION(
-            "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
-            "as well !");
       return z;
     }
 
@@ -107,10 +103,16 @@ class BroadcastHelper {
   static SD_INLINE NDArray* broadcastApply(sd::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
-      if (!z->isEmpty())
+      if (!z->isEmpty()) {
+        std::string errorMessage;
+        errorMessage += "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty as well !";
+        errorMessage += "X is empty: ";
+        errorMessage += std::to_string(x->isEmpty());
+        errorMessage += "Y is empty: ";
+        errorMessage += std::to_string(y->isEmpty());
         THROW_EXCEPTION(
-            "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
-            "as well !");
+            errorMessage.c_str());
+      }
       return z;
     }
 

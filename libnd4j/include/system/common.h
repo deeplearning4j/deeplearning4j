@@ -158,12 +158,18 @@
 #define SD_DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
 #define SD_DOUBLE_PI_X X(2.0 * 3.14159265358979323846)
 
+#include <cstdarg>
+#include <cstdio>
+#include <string>
+
 namespace sd {
 
     using Pointer = void*;
     using LongType = long long;
     using UnsignedLong = uint64_t;
     using Unsigned = unsigned int;
+
+
 
     enum class Status : int {
         OK = 0,
@@ -189,6 +195,12 @@ namespace sd {
         EQ_FALSE = 101,
         MAYBE = 119
     };
+#ifndef __JAVACPP_HACK__
+    struct ErrorResult {
+      sd::Status status;
+      std::string message;
+    };
+#endif
 
 }  // namespace sd
 

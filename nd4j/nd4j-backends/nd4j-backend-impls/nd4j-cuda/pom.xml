@@ -368,6 +368,7 @@
                                 </goals>
                                 <configuration>
                                     <skip>${javacpp.parser.skip}</skip>
+                                    <deleteJniFiles>false</deleteJniFiles>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                                     <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets
                                     </classOrPackageName>
@@ -434,6 +435,8 @@
                         </dependencies>
                         <configuration>
                             <properties>${javacpp.platform}</properties>
+                            <deleteJniFiles>false</deleteJniFiles>
+
                             <propertyKeysAndValues>
                                 <property>
                                     <name>libnd4j.functrace</name>

@@ -161,7 +161,7 @@ sd::LongType Graph::estimateRequiredMemory() {
           auto numTads = shape::tadLength(oldShape, const_cast<sd::LongType * const>(node->getDimensions()->data()), node->getDimensions()->size());
           sd::LongType shape[2] = {1, (int)numTads};
           newShape =
-              ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
+              ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape, -1);
         }
 
         std::pair<int, int> pairAddr(node->id(), 0);

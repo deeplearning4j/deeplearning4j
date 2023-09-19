@@ -368,7 +368,6 @@ TEST_F(DeclarableOpsTests8, reduceVarianceBP_test29) {
   auto x = NDArrayFactory::create<double>('c', {3, 4});
   auto gradO1 = NDArrayFactory::create<double>('c', {1, 1}, {0.5f});
   auto gradO2 = NDArrayFactory::create<double>(0.5f);
-  gradO2.printCurrentBuffer<double>("gradO2");
   auto exp12 =
       NDArrayFactory::create<double>('c', {3, 4},
                                      {-0.5f, -0.4090909f, -0.3181818f, -0.22727273f, -0.13636364f, -0.045454547f,
@@ -2556,9 +2555,6 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_01) {
   auto out = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  // ASSERT_TRUE(exp.isSameShape(out));
-  // out->printBuffer("LRN out");
-  // exp.printBuffer("LRN exp");
   ASSERT_TRUE(exp.equalsTo(out));
 }
 
@@ -2806,10 +2802,6 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_BP_01) {
   auto out = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  //    ASSERT_TRUE(exp.isSameShape(out));
-  // out->printBuffer("LRN BP out");
-  // exp.printBuffer("LRN BP exp");
-  // ASSERT_TRUE(exp.equalsTo(out));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2852,16 +2844,7 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_BP_02) {
   const OpArgsHolder argsHolderBP({&x, &eps}, {1., 1., 0.5}, {5});
 
   bool gradOK = true;  // GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-  // auto  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5}, {}, false, sd::DataType::DOUBLE);
-  // auto out = results.at(0);
-
-  // ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(gradOK);
-  // out->printBuffer("LRN BP out");
-  // exp.printBuffer("LRN BP exp");
-  // ASSERT_TRUE(exp.equalsTo(out));
-
-  //
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2902,10 +2885,6 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_BP_1) {
   auto out = results.at(0);
 
   ASSERT_EQ(sd::Status::OK, results.status());
-  //    ASSERT_TRUE(exp.isSameShape(out));
-  // out->printBuffer("LRN BP out");
-  // exp.printBuffer("LRN BP exp");
-  // ASSERT_TRUE(exp.equalsTo(out));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

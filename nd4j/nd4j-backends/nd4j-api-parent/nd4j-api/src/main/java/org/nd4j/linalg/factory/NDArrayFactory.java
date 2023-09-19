@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.io.File;
 import java.util.*;
@@ -1447,7 +1448,16 @@ public interface NDArrayFactory {
     INDArray create(float[] data, long[] shape, char ordering);
     INDArray create(double[] data, long[] shape, char ordering);
 
+    /**
+     * Create from a {@link LongShapeDescriptor}
+     * a buffer will be allocated if the descriptor is not marked as empty.
+     * @param longShapeDescriptor the shape descriptor
+     * @return
+     */
+    INDArray create(LongShapeDescriptor longShapeDescriptor);
+
     // =========== String methods ============
 
     INDArray create(Collection<String> strings, long[] shape, char order);
+
 }

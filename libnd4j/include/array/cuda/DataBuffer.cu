@@ -43,21 +43,21 @@ void DataBuffer::expand(const uint64_t size) {
       ALLOCATE(newBuffer, _workspace, size, int8_t);
       std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
 
-      if (_isOwnerPrimary) {
+   /*   if (_isOwnerPrimary) {
         auto ipb = reinterpret_cast<int8_t*>(_primaryBuffer);
         RELEASE(ipb, _workspace);
       }
-
+*/
       _primaryBuffer = newBuffer;
       _isOwnerPrimary = true;
     }
 
     cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
 
-    if (_isOwnerSpecial) {
+ /*   if (_isOwnerSpecial) {
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
       RELEASE_SPECIAL(isb, _workspace);
-    }
+    }*/
 
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
@@ -158,6 +158,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 }
 
 void DataBuffer::printSpecialAllocationTraces() {
+#if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
     sd_print("Beginning printing for allocation part of  deallocation event deleteSpecial\n");
     Printer p2;
@@ -179,7 +180,6 @@ void DataBuffer::printSpecialAllocationTraces() {
 
 
   }
-
   if(Environment::getInstance().isFuncTracePrintDeallocate()) {
     sd_print("Beginning printing for deallocation event deleteSpecial\n");
     Printer p2;
@@ -189,8 +189,9 @@ void DataBuffer::printSpecialAllocationTraces() {
 
     p2.print(deallocTrace);
     sd_print("End printing for deallocation event deleteSpecial\n");
-
   }
+#endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -304,7 +305,6 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
   //note we don't use locks here
-  deleteSpecial();
   _specialBuffer = special;
   _isOwnerSpecial = isOwnerSpecial;
 }

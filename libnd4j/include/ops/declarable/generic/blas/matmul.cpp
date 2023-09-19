@@ -36,7 +36,8 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
+  if(x->isEmpty() || y->isEmpty())
+    return Status::OK;
   int iSize = (int)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
@@ -122,15 +123,12 @@ DECLARE_SHAPE_FN(matmul) {
   auto xShapeInfo = inputShape->at(0);
   auto yShapeInfo = inputShape->at(1);
 
+  if(shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo))
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(xShapeInfo)));
   const int iSize = (int)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;
-
-  REQUIRE_TRUE(xShapeInfo[0] > 0 && yShapeInfo[0] > 0, 0,
-               "MATMUL OP: input arrays must have rank bigger than 0 (should not be scalars), but got instead: x rank "
-               "= %i, y rank = %i !",
-               xShapeInfo[0], yShapeInfo[0]);
 
   if (transZ) {
     xShapeInfo = inputShape->at(1);

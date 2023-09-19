@@ -35,20 +35,32 @@
 
 namespace sd {
 namespace ops {
-sd::Status conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
+
+
+sd::ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
+  std::string message;
   if (!condition) {
     va_list args;
+    char buffer[512]; // Assuming the message won't exceed 512 characters. Adjust if needed.
 
-    printf("Error at [%s:%i:%i]:\n", file, line, argNumber);
+    int written = snprintf(buffer, sizeof(buffer), "Error at [%s:%i:%i]:\n", file, line, argNumber);
+    if (written > 0 && written < sizeof(buffer)) {
+      message += buffer;
+    }
+
     va_start(args, format);
-    vprintf(format, args);
+    written = vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    printf("\n");
-    fflush(stdout);
 
-    return sd::Status::BAD_PARAMS;
+    if (written > 0 && written < sizeof(buffer)) {
+      message += buffer;
+    }
+
+    message += "\n";
+
+    return { sd::Status::BAD_PARAMS, message };
   }
-  return sd::Status::OK;
+  return { sd::Status::OK, "" };
 }
 
 DeclarableOp::DeclarableOp() {
@@ -376,13 +388,38 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
             if (eShapeInfoString != aShapeInfoString) {
               delete outSha;
+              std::string errorMessage;
+                  errorMessage += "OP PREPARE OUTPUTS: Op name: ";
+                        errorMessage += getOpName()->c_str();
+                        errorMessage += " Failed to set output for op context. Expected vs provided shapes mismatch ";
+                        errorMessage += eShape;
+                        errorMessage += " vs ";
+                        errorMessage += aShape;
+                        errorMessage += " at index ";
+                        errorMessage += std::to_string(idx);
+                        errorMessage += " with expected shape info ";
+                        errorMessage += eShapeInfoString;
+                        errorMessage += " and output shape info ";
+                        errorMessage += aShapeInfoString;
+                        errorMessage += ". Conditions, shapeEquals: ";
+                        errorMessage += std::to_string(shapeEquals);
+                        errorMessage += ", array empty: ";
+                        errorMessage += std::to_string(arrayEmpty);
+                        errorMessage += "\n";
+                        errorMessage += "Expected shape info: ";
+                        errorMessage += eShapeInfoString;
+                        errorMessage += "\n";
+                        errorMessage += "Provided shape info: ";
+                        errorMessage += aShapeInfoString;
+                        errorMessage += "\n";
+                        errorMessage += "Expected shape: ";
+                        errorMessage += eShape;
+                        errorMessage += "\n";
+                        errorMessage += "Provided shape: ";
+                        errorMessage += aShape;
+                        errorMessage += "\n";
+                        THROW_EXCEPTION(errorMessage.c_str());
 
-              sd_printf(
-                  "OP PREPARE OUTPUTS: OP name: %s Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
-                  "shape info %s. Conditions, shapeEquals: %d, array empty: %d\n",
-                  getOpName()->c_str(),eShape.c_str(), aShape.c_str(), idx, eShapeInfoString.c_str(), aShapeInfoString.c_str(), shapeEquals,
-                  arrayEmpty);
-              THROW_EXCEPTION("Output array did not match expected shape.");
             }
           }
         }

@@ -571,9 +571,6 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test1) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
   NDArray *result = results.at(0);
-
-  //    result->printBuffer("Resized to 30x30");
-  //    expected.printBuffer("Expect for 30x30");
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }

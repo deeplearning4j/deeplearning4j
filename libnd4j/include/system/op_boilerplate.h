@@ -2269,22 +2269,17 @@
 #define CALL_T(A, B) EXPAND(_EXPAND_PACKED_CALL_T(A, B))
 #define DIRECT(A, B) EXPAND(_EXPAND_PACKED_DIRECT(A, B))
 
+#ifndef  __JAVACPP_HACK__
 /// graph definitions
 #define REQUIRE_OK(A) \
   if (sd::ops::resultHelper((A), #A, __FILE__, __LINE__) != sd::Status::OK) return sd::Status::VALIDATION;
 #define REQUIRE_TRUE(COND, ...)                                                            \
   if (!(COND)) {                                                                           \
-    if (sd::ops::conditionHelper(__FILE__, __LINE__, COND, __VA_ARGS__) != sd::Status::OK) \
-      THROW_EXCEPTION("Op validation failed");                                 \
+    sd::ErrorResult errorResult = sd::ops::conditionHelper(__FILE__, __LINE__, COND, __VA_ARGS__); \
+    if (errorResult.status != sd::Status::OK) \
+      THROW_EXCEPTION(errorResult.message.c_str());                                 \
   };
-
-#define DECLARE_ENTRY(NAME, ...)                                          \
-  template struct SD_LIB_EXPORT __registratorFloat<NAME<float>>;          \
-  template struct SD_LIB_EXPORT __registratorHalf<NAME<float16>>;         \
-  template struct SD_LIB_EXPORT __registratorDouble<NAME<double>>;        \
-  template struct SD_LIB_EXPORT __registratorSynonymHalf<NAME<float16>>;  \
-  template struct SD_LIB_EXPORT __registratorSynonymDouble<NAME<double>>; \
-  template struct SD_LIB_EXPORT __registratorSynonymFloat<NAME<float>>;
+#endif
 
 #if defined(SD_ALL_OPS)
 #define SD_ALL_OPS_ACTIVATED 1
@@ -2395,7 +2390,7 @@
     for (int e = 0; e < opLimit; e++) {                                                                               \
       auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
           ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), \
-          shape::shapeOf(inputShape->at(e)));                                                                         \
+          shape::shapeOf(inputShape->at(e)),shape::extra(inputShape->at(e)));                                                                         \
       shapeList->push_back(newshape);                                                                                 \
     }                                                                                                                 \
     return shapeList;                                                                                                 \
@@ -2465,11 +2460,28 @@
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
     for (int e = 0; e < opLimit; e++) {                                                                               \
-      int inputShapeIdx = block.width() < opLimit ? 0 : e;                                                                                                                  \
-      auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
-          ArrayOptions::dataType(inputShape->at(inputShapeIdx)), shape::order(inputShape->at(inputShapeIdx)), shape::rank(inputShape->at(inputShapeIdx)), \
-          shape::shapeOf(inputShape->at(inputShapeIdx)));                                                                         \
-      shapeList->push_back(newshape);                                                                                 \
+      int inputShapeIdx = block.width() < opLimit ? 0 : e;                                                            \
+      auto shapeInfo = inputShape->at(inputShapeIdx);                                                                 \
+      if(shape::isEmpty(shapeInfo)) {                                                                                 \
+           std::vector<sd::LongType> shape2;                                                                          \
+             if(shape::rank(shapeInfo) < 1)                                                                           \
+                  shape2.push_back(0);                                                                                \
+              else {                                                                                                  \
+                 auto shapeOf = shape::shapeOf(shapeInfo);                                                            \
+                  for(int i = 0; i < shape::rank(shapeInfo); i++) {                                                   \
+                          shape2.push_back(shapeOf[i]);                                                               \
+                }                                                                                                      \
+             }                                                                                                          \
+            auto newShape = ConstantShapeHelper::getInstance()                                                        \
+                            .emptyShapeInfoWithShape(ArrayOptions::dataType(shapeInfo),shape2);               \
+            shapeList->push_back(newShape);                                                                                  \
+      }    else {                                                                                                               \
+        auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
+               ArrayOptions::dataType(shapeInfo), shape::order(shapeInfo), shape::rank(shapeInfo), \
+               shape::shapeOf(shapeInfo),shape::extra(shapeInfo));                             \
+           shapeList->push_back(newshape);  \
+      }                                                                                                    \
+                                                                                  \
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \
@@ -2653,10 +2665,10 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 }
 
 
+#ifndef __JAVACPP_HACK__
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
 #pragma once
-
 #define OP_BOILER_PLATE_THROW_EXCEPTIONS
 #include <exceptions/backward.hpp>
 using namespace backward;
@@ -2665,12 +2677,9 @@ void throwException(const char* exceptionMessage);
 void throwException(const char* exceptionMessage);
 
 #endif
-
-#if defined(SD_GCC_FUNCTRACE)
 #define THROW_EXCEPTION(exceptionMessage) throwException(exceptionMessage);
-#else
-#define THROW_EXCEPTION(exceptionMessage) throw std::runtime_error(exceptionMessage);
 #endif
+
 
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, static_cast<sd::LongType>(LENGTH));
 #define RELEASE(VARIABLE, WORKSPACE) internal_release_host(WORKSPACE, VARIABLE);
@@ -2704,8 +2713,14 @@ void throwException(const char* exceptionMessage);
   this->storeResult(block, 4, E)
 #define BROADCAST_CHECK_EMPTY(X, Y, Z)                                                                     \
   if (X->isEmpty() || Y->isEmpty()) {                                                                      \
-    if (!Z->isEmpty()) {                                                                                   \
-      THROW_EXCEPTION("Broadcast op validation failed: if x or y are empty, z must be empty"); \
+    if (!Z->isEmpty()) {                                                                                     \
+       std::string errorMessage;                                                                             \
+       errorMessage += "Broadcast op validation failed: if x or y are empty, z must be empty";               \
+       errorMessage += " X empty:";                                                                     \
+       errorMessage += std::to_string(X->isEmpty());                                                         \
+       errorMessage += "\n Y empty:";                                                                     \
+       errorMessage += std::to_string(Y->isEmpty());                                                          \
+      THROW_EXCEPTION(errorMessage.c_str()); \
     }                                                                                                      \
     return sd::Status::OK;                                                                                 \
   }

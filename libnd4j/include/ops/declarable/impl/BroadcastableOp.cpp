@@ -31,7 +31,6 @@ BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
 }
 
 ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-  sd_print("Calculate output shape of BroadcastableOp\n");
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
   auto y = inputShape->at(1);
@@ -53,14 +52,30 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
     if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
-      auto desc = ShapeDescriptor::emptyDescriptor(dtype);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-      delete desc;
+      std::vector<sd::LongType> vecShape;
+      auto xShape = shape::shapeOf(x);
+      for(int i = 0; i < shape::rank(x); i++)
+        vecShape.emplace_back(xShape[i]);
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype,vecShape));
       return shapeList;
     }
 
+    if(dtype == sd::DataType::ANY) {
+      THROW_EXCEPTION("No data type found!");
+    }
+
+
     const sd::LongType *newshape = nullptr;
-    ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
+    if(!ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace())) {
+      std::string errorMessage;
+      errorMessage += "Unable to evaluate broadcast shape info:";
+      errorMessage += shape::shapeToString(x,"");
+      errorMessage += " vs ";
+      errorMessage += shape::shapeToString(y,"");
+      errorMessage += "\n";
+      THROW_EXCEPTION(errorMessage.c_str());
+
+    }
     auto desc = new ShapeDescriptor(newshape, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;

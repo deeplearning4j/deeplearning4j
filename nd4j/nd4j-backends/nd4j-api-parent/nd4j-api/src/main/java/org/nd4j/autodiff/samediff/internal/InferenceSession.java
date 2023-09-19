@@ -88,7 +88,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
 
     @Getter
-    private Map<String,OpContext> opContexts = new HashMap<>();
+    private Map<String,OpContext> opContexts = new LinkedHashMap<>();
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
@@ -793,7 +793,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             return Invoke.doInvoke(invoke,inputs,valueInputs);
         } else if (op instanceof Assert) {
-            Assert a = (Assert)op;
+            Assert a = (Assert) op;
             boolean condition =  !opContext.getInputArray(0).isEmpty() && opContext.getInputArray(0).getDouble(0) != 0.0;
             if(!condition) {
                 //Assertion failed
@@ -1463,11 +1463,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray z = mmgr.allocate(false, oc.getInputArray(0).dataType(), oc.getInputArray(0).shape());
                 oc.setOutputArray(0, z);
             } else {
-                List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape(oc);
-                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-                LongShapeDescriptor lsd = outputShape.get(0);
-                INDArray z = mmgr.allocate(isOutput, lsd);
-                oc.setOutputArray(0, z);
+                if(op.z() != null) {
+                    oc.setOutputArray(0,op.z());
+                } else {
+                    List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape(oc);
+                    Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                    LongShapeDescriptor lsd = outputShape.get(0);
+                    INDArray z = mmgr.allocate(isOutput, lsd);
+                    oc.setOutputArray(0, z);
+                }
+
             }
         }
 

@@ -1876,10 +1876,10 @@ sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) {
 }
 
 void deleteShapeList(sd::Pointer shapeList) {
-  auto list = reinterpret_cast<sd::ShapeList *>(shapeList);
+ // auto list = reinterpret_cast<sd::ShapeList *>(shapeList);
 
-  list->destroy();
-  delete list;
+ // list->destroy();
+ // delete list;
 }
 
 sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputBuffers,

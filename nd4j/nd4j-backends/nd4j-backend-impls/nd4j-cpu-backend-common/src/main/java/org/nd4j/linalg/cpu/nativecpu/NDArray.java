@@ -59,6 +59,9 @@ public class NDArray extends BaseNDArray {
         super();
     }
 
+    public NDArray(LongShapeDescriptor descriptor) {
+        super(descriptor);
+    }
 
     public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);

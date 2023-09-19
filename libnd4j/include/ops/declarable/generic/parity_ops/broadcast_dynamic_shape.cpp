@@ -56,7 +56,8 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
       xShapeInfo.data(),
       sd::DataType::INT64);  // fill with some data type, it doesn't matter what type exactly to choose
   ArrayOptions::setDataType(yShapeInfo.data(), sd::DataType::INT64);
-
+  shape::setOrder(xShapeInfo.data(), 'c');
+  shape::setOrder(yShapeInfo.data(), 'c');
   for (sd::LongType i = 0; i < x->lengthOf(); ++i) xShapeInfo[i + 1] = x->e<sd::LongType>(i);
 
   for (sd::LongType i = 0; i < y->lengthOf(); ++i) yShapeInfo[i + 1] = y->e<sd::LongType>(i);

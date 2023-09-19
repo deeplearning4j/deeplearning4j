@@ -105,10 +105,12 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
   if (luckCase1) {  // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6}
                     // order f
 
+    printf("concat luck case\n");
     void* z = static_cast<int8_t*>(output.specialBuffer());
 
     for (sd::LongType i = 0; i < numOfInArrs; ++i) {
-      const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
+      int len = inArrs[i]->isScalar() ? 1 : inArrs[i]->lengthOf();
+      const auto memAmountToCopy = len * sizeofT;
       cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy,
                       cudaMemcpyDeviceToDevice, *context->getCudaStream());
       z = static_cast<int8_t*>(z) + memAmountToCopy;
@@ -125,9 +127,8 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
 
 
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = 256;
+
+  printf("cuda concat\n");
 
   dim3 dims = getConcat(output.lengthOf());
 
@@ -145,13 +146,14 @@ void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArr
   void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
   void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(), hInShapeInfo.size() * sizeof(sd::LongType*));
 
+  printf("concat cuda launcher\n");
   BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher,
-                        (dims.y,dims.x, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo,
+                        (dims.x,dims.y, dims.z, context->getCudaStream(), dInBuffers, dInShapeInfo,
                          output.specialBuffer(), output.specialShapeInfo(), axis),
                         SD_COMMON_TYPES);
 
   manager.synchronize();
-  // }
+
 
   NDArray::registerSpecialUse({&output}, inArrs);
 }

@@ -124,7 +124,7 @@ DECLARE_SHAPE_FN(dilation2d) {
 
   std::array<sd::LongType, 4> shape = {{bS, oH, oW, iC}};
   auto newShape =
-      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
+      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), -1);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

@@ -30,13 +30,44 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
-  auto output = OUTPUT_VARIABLE(0);
+  if(input->dataType() != ArrayOptions::dataType(input->shapeInfo())) {
+    std::string errorMessage;
+    errorMessage += "Input data type is not equal to data type reflected in shape info: ";
+    errorMessage += DataTypeUtils::asString(input->dataType());
+    errorMessage += " != ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(input->shapeInfo()));
+    errorMessage += " for input shape info: ";
+    errorMessage += ShapeUtils::shapeAsString(input->shapeInfo());
+    errorMessage += " and output shape info: ";
+    errorMessage += ShapeUtils::shapeAsString(OUTPUT_VARIABLE(0)->shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
 
+  }
+  auto output = OUTPUT_VARIABLE(0);
+  if(output->dataType() != ArrayOptions::dataType(output->shapeInfo())) {
+    std::string errorMessage;
+    errorMessage += "Input data type is not equal to data type reflected in shape info: ";
+    errorMessage += DataTypeUtils::asString(input->dataType());
+    errorMessage += " != ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(input->shapeInfo()));
+    errorMessage += " for input shape info: ";
+    errorMessage += ShapeUtils::shapeAsString(input->shapeInfo());
+    errorMessage += " and output shape info: ";
+    errorMessage += ShapeUtils::shapeAsString(OUTPUT_VARIABLE(0)->shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
   if (input->isEmpty()) {
+    printf("cast: input was empty\n");
     REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
     return sd::Status::OK;
   }
 
+  printf("Assigning new input: %s to data type %s with shape info for input data type being %s and output data type shape info being %s\n",
+         DataTypeUtils::asString(input->dataType()).c_str(),
+         DataTypeUtils::asString(ArrayOptions::dataType(input->shapeInfo())).c_str(),
+         DataTypeUtils::asString(output->dataType()).c_str(),
+         DataTypeUtils::asString(ArrayOptions::dataType(output->shapeInfo())).c_str());
   if (!block.isInplace()) output->assign(input);
 
   STORE_RESULT(output);
@@ -47,13 +78,21 @@ DECLARE_SYN(Cast, cast);
 DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
+    printf("Casting to new type: %s\n",
+           DataTypeUtils::asString(static_cast<sd::DataType>(D_ARG(0))).c_str());
     DataType newType = block.dataType(0);
     auto desc = new ShapeDescriptor(inShape, newType);
+    if(desc->dataType() != newType) {
+      THROW_EXCEPTION("New data type is not reflected in the created descriptor");
+    }
+    desc->print();
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    REQUIRE_TRUE(desc->dataType() == ArrayOptions::dataType(ret->at(0)),0,"Data types for cast did not equal!");
     delete desc;
     return ret;
 
   } else {
+    printf("int arguments\n");
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
     auto desc = new ShapeDescriptor(inShape, newType);

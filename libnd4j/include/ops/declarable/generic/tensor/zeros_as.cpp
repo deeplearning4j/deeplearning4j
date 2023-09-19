@@ -40,6 +40,19 @@ DECLARE_SYN(zeros_like, zeros_as);
 DECLARE_SHAPE_FN(zeros_as) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
+  if(shape::isEmpty(in)) {
+    if(shape::rank(in) < 1) {
+      return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
+
+    }
+    std::vector<sd::LongType> inShape;
+    auto inShape2 = shape::shapeOf(in);
+    for(int i = 0; i < shape::rank(in); i++) {
+      inShape.emplace_back(inShape2[i]);
+    }
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype,inShape));
+  }
   auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
 
   return SHAPELIST(shape);

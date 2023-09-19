@@ -49,8 +49,8 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   const LongType rank = gradO->rankOf();
 
@@ -102,24 +102,11 @@ DECLARE_TYPES(deconv2d_tf) {
 DECLARE_SHAPE_FN(deconv2d_tf) {
   auto gradOShapeInfo = inputShape->at(2);       // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto weightsShapeInfo = inputShape->at(1);     // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
-  auto gradIShapeShapeInfo = inputShape->at(0);  // [4]
-
-  const int rank = 4;
-
-  REQUIRE_TRUE(shape::rank(weightsShapeInfo) == rank, 0,
-               "CUSTOM DECONV2D_TF OP: rank of weights array must be equal to %i, but got %i instead !", rank,
-               shape::rank(weightsShapeInfo));
-  REQUIRE_TRUE(shape::rank(gradOShapeInfo) == rank, 0,
-               "CUSTOM DECONV2D_TF OP: rank of input array must be equal to %i, but got %i instead !", rank,
-               shape::rank(gradOShapeInfo));
-  REQUIRE_TRUE(shape::rank(gradIShapeShapeInfo) == 1, 0,
-               "CUSTOM DECONV2D_TF OP: rank of array with output shape must be equal to %i, but got %i instead !", 1,
-               shape::rank(gradIShapeShapeInfo));
 
   const LongType kH =
-      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
   const LongType kW =
-      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
   const LongType sH = INT_ARG(2);                                                               // strides height
   const LongType sW = INT_ARG(3);                                                               // strides width
   const LongType pH = INT_ARG(4);                                                               // paddings height
@@ -129,8 +116,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
   const int isSameMode = INT_ARG(8);                                                       // 0-VALID, 1-SAME
   const int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;                  // INT_ARG(9): 1-NHWC, 0-NCHW
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType indIOioC, indIiH, indWoC(0 == wFormat ? 3 : 0), indOoH;
   if (!isNCHW) {
@@ -158,6 +145,11 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
 
   std::vector<sd::LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, trueiH, trueiW, 0, indIOioC, indIiH, indIiH + 1});
+  if(INPUT_VARIABLE(0)->isScalar()) {
+
+  }
+
+
   std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(expectedGradIShape == gradIShape, 0,
                "CUSTOM DECONV2D_TF OP: wrong shape of array with output shape, expected is %s, but got %s instead !",
@@ -182,7 +174,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
   }
 
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weightsShapeInfo),
-                                                                      shape::order(gradOShapeInfo), 4, shape));
+                                                                      shape::order(gradOShapeInfo), 4, shape, -1));
 }
 
 }  // namespace ops

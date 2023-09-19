@@ -324,6 +324,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void computeArrays() {
+        /*
+        TODO: boolean_mask/strided_slice_1
+        should be empty. It's currently a scalar.
+         */
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
             if(inputArguments.isEmpty()) {
@@ -369,23 +373,25 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             if(outputVariables.length > 0 && outputArguments().isEmpty()) {
                 //override output variables to ensure data types, shapes and output arrays are properly computed
                 List<LongShapeDescriptor> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
-                for(int i = 0; i < outputVariables.length; i++) {
-                    if(outputVariables[i].getArr() != null) {
-                        addOutputArgument(outputVariables[i].getArr());
-                    } else {
-                        //not yet computed
-                        long[] shape = longShapeDescriptors.get(i).getShape();
-                        DataType defaultType = DataType.FLOAT;
-                        if(outputVariables[i].dataType() != null) {
-                            defaultType = outputVariables[i].dataType();
+                if(!longShapeDescriptors.isEmpty())
+                    for(int i = 0; i < longShapeDescriptors.size(); i++) {
+                        if(outputVariables[i].getArr() != null) {
+                            addOutputArgument(outputVariables[i].getArr());
+                        } else {
+                            //not yet computed
+                            long[] shape = longShapeDescriptors.get(i).getShape();
+
+                            DataType defaultType = DataType.FLOAT;
+                            if(outputVariables[i].dataType() != null) {
+                                defaultType = outputVariables[i].dataType();
+                            }
+
+                            INDArray arr = longShapeDescriptors.get(i).isEmpty() ? Nd4j.create(longShapeDescriptors.get(i)) : Nd4j.create(defaultType,shape);
+                            addOutputArgument(arr);
                         }
 
-                        INDArray arr = longShapeDescriptors.get(i).isEmpty() ? Nd4j.create(longShapeDescriptors.get(i)) : Nd4j.create(defaultType,shape);
-                        addOutputArgument(arr);
+
                     }
-
-
-                }
 
                 INDArray[] exec = Nd4j.getExecutioner().exec(this);
                 if(outputVariables.length != exec.length) {

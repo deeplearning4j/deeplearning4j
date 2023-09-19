@@ -142,7 +142,6 @@ public class JCublasNDArray extends BaseNDArray {
      * @param ordering the ordering of the JCublasNDArray
      */
     public JCublasNDArray(int[] shape, int[] stride, char ordering) {
-
         super(shape, stride, ordering);
 
     }
@@ -252,7 +251,6 @@ public class JCublasNDArray extends BaseNDArray {
     }
 
     public JCublasNDArray(float[] data, int[] shape, long offset) {
-
         super(data, shape, offset);
 
     }
@@ -266,7 +264,6 @@ public class JCublasNDArray extends BaseNDArray {
      * @param offset the desired offset
      */
     public JCublasNDArray(int[] shape, int[] stride, long offset) {
-
         super(shape, stride, offset);
     }
 
@@ -370,6 +367,10 @@ public class JCublasNDArray extends BaseNDArray {
 
     public JCublasNDArray(DataBuffer buffer) {
         super(buffer);
+    }
+
+    public JCublasNDArray(LongShapeDescriptor descriptor) {
+        super(descriptor);
     }
 
     public JCublasNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {

@@ -162,7 +162,13 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora" AND NOT SD_CUDA)
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} ${INFORMATIVE_FLAGS}  -std=c++11")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,-z,--verbose")
+    # windows doesn't support -z linker flag:  https://stackoverflow.com/questions/55418931/ld-exe-unrecognized-option-z
+    if(UNIX)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,-z,--no-undefined,--verbose")
+    else() # windows
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,--no-undefined,--verbose")
+    endif()
+
     # keep this, we need to ensure that all symbols are defined or it may fail on mac based platforms
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(APPLE) AND NOT(WIN32))
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic,--verbose")

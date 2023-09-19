@@ -126,7 +126,10 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
-
+        if(x.isEmpty()) {
+            LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType());
+            return Collections.singletonList(longShapeDescriptor);
+        }
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
     }
 

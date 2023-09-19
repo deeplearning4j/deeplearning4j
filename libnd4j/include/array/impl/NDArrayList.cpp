@@ -35,12 +35,12 @@ NDArrayList::NDArrayList(int height, bool expandable) {
   _id.first = 0;
   _id.second = 0;
   _height = height;
-   sd_debug("\nCreating NDArrayList\n","");
+  sd_debug("\nCreating NDArrayList\n","");
 }
 
 NDArrayList::~NDArrayList() {
   sd_debug("\nDeleting NDArrayList: [%i]\n", _chunks.size());
- // for (auto const& v : _chunks) delete v.second;
+  // for (auto const& v : _chunks) delete v.second;
 
   _chunks.clear();
 }
@@ -73,6 +73,7 @@ NDArray* NDArrayList::remove(int idx) {
 
 
 sd::Status NDArrayList::write(int idx, NDArray* array) {
+  printf("list write at index %d with array empty %d\n",idx,array->isEmpty());
   if (_chunks.count(idx) == 0)
     _elements++;
   else {
@@ -155,7 +156,9 @@ void NDArrayList::unstack(NDArray* array, LongType axis) {
 
 NDArray* NDArrayList::stack() {
   int numElements = _elements.load();
+  printf("Stacking list: num elements is %d\n",numElements);
   if(numElements < 1) {
+    printf("Returning empty list for stack\n");
     return  new NDArray(NDArrayFactory::empty<double>());
 
   }
@@ -163,6 +166,9 @@ NDArray* NDArrayList::stack() {
   for (int e = 0; e < numElements; e++) {
     if(!_chunks[e]->isEmpty())
       _chunks[e]->syncToDevice();
+    printf("Chunk %d\n",e);
+    _chunks[e]->printIndexedBuffer("CHunk array:");
+    printf("chunk is empty %d\n",_chunks[e]->isEmpty());
     inputs[e] = _chunks[e];
   }
 
@@ -170,11 +176,14 @@ NDArray* NDArrayList::stack() {
     THROW_EXCEPTION("First input element was a null ptr!");
   }
 
+
+
   auto inShapeInfo = inputs[0]->shapeInfo();
   int rank = shape::rank(inShapeInfo);
   NDArray* array = nullptr;
 
   if (shape::isEmpty(inShapeInfo)) {
+    printf("empty list\n");
     switch (rank) {
       case 0: {
         if (numElements == 1) {
@@ -187,13 +196,15 @@ NDArray* NDArrayList::stack() {
     }
   } else {
 
+    printf("non empty list\n");
     std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
     outShape.insert(outShape.begin(), (sd::LongType)numElements);
     array =
         new NDArray(shape::order(inShapeInfo), outShape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
   }
 
-  ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
+  if(inputs[0] != nullptr && !shape::isEmpty(inputs[0]->shapeInfo()))
+    ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
 
   return array;
 }

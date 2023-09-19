@@ -54,8 +54,8 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "assert_rank/rank2_float32"
     );
+
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //crashes JVM
@@ -188,6 +188,7 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             Nd4j.getEnvironment().setDeleteSpecial(false);
             Nd4j.getExecutioner().enableDebugMode(true);
             Nd4j.getExecutioner().enableVerboseMode(true);
+            // TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,localTestDir,verboseDebugMode);
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

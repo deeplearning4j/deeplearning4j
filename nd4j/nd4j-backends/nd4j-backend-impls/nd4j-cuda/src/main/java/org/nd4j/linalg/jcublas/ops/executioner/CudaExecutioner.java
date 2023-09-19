@@ -911,11 +911,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (dimension != null && dimension.length > 1)
             Arrays.sort(dimension);
 
-        for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= x.rank() && dimension[i] != Integer.MAX_VALUE)
-                throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
-                        + " contains element that higher then rank of op.X: [" + x.rank() + "]");
-
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
@@ -955,11 +950,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val dataType = oc != null ? op.resultType(oc) : op.resultType();
 
-        if( z == null ){
+        if( z == null) {
             val ret = Nd4j.createUninitialized(dataType, retShape);
             setZ(ret, op, oc);
             z = ret;
-        } else if(z.dataType() != dataType || !Arrays.equals(retShape, z.shape())){
+        } else if(z.dataType() != dataType || !Arrays.equals(retShape, z.shape())) {
             throw new ND4JIllegalStateException("Output array for op " + op.getClass().getSimpleName() + " should have type " + dataType + " and shape " + Arrays.toString(retShape)
                     + " but has datatype " + z.dataType() + " and shape " + Arrays.toString(z.shape()));
         }
@@ -990,9 +985,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val zShapeInfo = AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context);
 
-        val xb = x == null ? null : x.data().opaqueBuffer();
-        val yb = y == null ? null : y.data().opaqueBuffer();
-        val zb = z == null ? null : z.data().opaqueBuffer();
+        val xb = x == null || x.data() == null ?  null : x.data().opaqueBuffer();
+        val yb = y == null || y.data() == null   ? null : y.data().opaqueBuffer();
+        val zb = z == null || z.data() == null ? null : z.data().opaqueBuffer();
 
         op.validateDataTypes(null);
 
@@ -1377,9 +1372,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         retHostShape);
 
 
-        val xb = x == null ? null : x.data().opaqueBuffer();
-        val yb = y == null ? null : y.data().opaqueBuffer();
-        val zb = z == null ? null : z.data().opaqueBuffer();
+        val xb = x == null || x.data()== null  || x.isEmpty() ? null : x.data().opaqueBuffer();
+        val yb = y == null || y.isEmpty()  || y.data() == null ? null : y.data().opaqueBuffer();
+        val zb = z == null  || z.isEmpty() || z.data() == null ? null : z.data().opaqueBuffer();
 
         if (y != null) {
             Pointer yShapeInfo = allocator.getPointer(y.shapeInfoDataBuffer(), context);
@@ -1691,7 +1686,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
         val rank = (int) ptr.get(0);
 
-        val shape = new long[rank * 2 + 4];
+        val shape = new long[rank < 1 ? (1 * 2 + 4)  : rank * 2 + 4];
         for (int i = 0; i < shape.length; i++) {
             shape[i] = ptr.get(i);
         }
@@ -1728,19 +1723,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
         int cnt = 0;
-        /**
-         * Seems like there's a silent failure when the first input is null.
-         *
-         * Debugging steps:
-         *
-         * 1. print the graph and find out why the input is null.
-         * 2. Add validation for null arguments and add guards against crashes.
-         * 3. If there is some edge case that shows up ensure import handles it correctly.
-         * The likely cause is something related to scalars or something. The import
-         * seems to be aware of the correct number of nodes but a for each loop with a null entry seems
-         * to lead to a silent failure.
-         *
-         */
 
         int numProcessed = 0;
         for (val in: inputArgs) {
@@ -1826,9 +1808,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
                 iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        if (nativeOps.lastErrorCode() != 0) {
+            //used with debuggers mainly
+            String errorMessage = nativeOps.lastErrorMessage();
+            throw new RuntimeException(errorMessage);
+        }
         if (ptrptr == null)
             throw new RuntimeException();
 
@@ -1905,7 +1889,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw e;
         } catch (Exception e) {
             StringBuilder message = new StringBuilder();
-            message.append("Op [" + name + "] execution failed with error " + "Cuda last error message: " + cudaGetErrorName(org.bytedeco.cuda.global.cublas.cublasGetError()).getString());
+            message.append("Op [" + name + "] execution failed with error " + "Cuda last error message: " + cudaGetErrorName(org.bytedeco.cuda.global.cublas.cublasGetError()).getString() + " libnd4j lastErrorMessage: " + nativeOps.lastErrorMessage());
             throw new RuntimeException(message.toString(), e);
         }
     }
@@ -2095,9 +2079,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        if (nativeOps.lastErrorCode() != 0) {
+            String errorMessage = nativeOps.lastErrorMessage();
+            throw new RuntimeException(errorMessage);
+        }
         if (status != 0)
             throw new RuntimeException("Op [" + op.opName() + "] execution failed");
 
@@ -2193,9 +2178,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val dbf = nativeOps.shapeBufferEx(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, extras);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        if (nativeOps.lastErrorCode() != 0) {
+            //mainly to make use debugger easier
+            String errorMessage = nativeOps.lastErrorMessage();
+            throw new RuntimeException(errorMessage);
+        }
         val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
@@ -2241,7 +2228,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        val dbf = nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
+        DoublePointer doublePointer =  new DoublePointer(values);
+        val dbf = nativeOps.constantBufferDouble(desiredType.toInt(), doublePointer, values.length);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

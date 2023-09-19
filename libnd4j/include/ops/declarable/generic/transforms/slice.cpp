@@ -33,6 +33,8 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   int x_rank = input->rankOf();
 
+
+
   std::vector<sd::LongType> begin;
   std::vector<sd::LongType> sz;
 
@@ -116,6 +118,9 @@ DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY
 
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
+  if(shape::isEmpty(inShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
+  }
   auto x_rank = shape::rank(inShape);
 
   std::vector<sd::LongType> begin;
@@ -169,6 +174,10 @@ DECLARE_SHAPE_FN(slice) {
     }
 
     shape.emplace_back(size);
+  }
+
+  if(shape.size() == 1 && shape[0] == 0) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
   }
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);

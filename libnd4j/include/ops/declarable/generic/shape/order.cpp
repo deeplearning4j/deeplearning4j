@@ -46,7 +46,7 @@ DECLARE_SHAPE_FN(order) {
   auto isFOrder = INT_ARG(0) == 1;
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(
-      ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
+      ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input), -1);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

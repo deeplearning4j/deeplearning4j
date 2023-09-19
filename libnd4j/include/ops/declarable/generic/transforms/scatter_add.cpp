@@ -34,6 +34,8 @@ OP_IMPL(scatter_add, 3, 1, true) {
     auto input = INPUT_VARIABLE(0);
     auto indices = INPUT_VARIABLE(1);
     auto updates = INPUT_VARIABLE(2);
+    if(indices->isEmpty())
+      return Status::OK;
 
     auto output = OUTPUT_VARIABLE(0);
 

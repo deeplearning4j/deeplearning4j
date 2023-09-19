@@ -93,7 +93,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void setTArguments(double... arguments) {
         if (arguments.length > 0) {
             super.setTArguments(arguments);
-            DoublePointer tArgs = new DoublePointer(arguments);
+            DoublePointer tArgs = new DoublePointer(arguments).retainReference();
             nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
         };
     }

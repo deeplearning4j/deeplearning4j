@@ -300,7 +300,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     y = args[1].getArr();
                 else if((opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL  || opType() == Type.REDUCE_BOOL || opType() == Type.REDUCE_SAME) && args.length > 1) {
                     this.dimensionz = args[1].getArr();
-                    this.dimensions = args[1].getArr().toLongVector();
+                    if(!args[1].getArr().isEmpty())
+                        this.dimensions = args[1].getArr().toLongVector();
+                    else
+                        this.dimensions = new long[0];
                 }
             }
 
@@ -320,9 +323,14 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             if(z == null) {
-                if(!(this instanceof ReduceOp))
-                    setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
-                else {
+                if(!(this instanceof ReduceOp)) {
+                    if(x.isEmpty()) {
+                        setZ(Nd4j.emptyWithShape(x.shape(),x.dataType()));
+                    }
+                    else {
+                        setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
+                    }
+                }  else {
                     if(this instanceof BaseReduceOp) {
                         if(dimensions == null && dimensionz != null)
                             dimensions = dimensionz.ravel().toLongVector();

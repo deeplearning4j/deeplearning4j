@@ -104,16 +104,10 @@ DECLARE_SHAPE_FN(gather) {
 
   sd::LongType inputRank = shape::rank(inputShapeInfo);
   if (axis < 0) axis += inputRank;
-
-  REQUIRE_TRUE(axis < inputRank, 0,
-               "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis,
-               inputRank);
-
-  bool isEmpty = false;
+  bool isEmpty = shape::isEmpty(inputShapeInfo);
 
   if (block.width() > 1) {
     auto indicesShapeInfo = inputShape->at(1);
-
     sd::LongType indicesRank = shape::rank(indicesShapeInfo);
 
     sd::LongType outputRank = inputRank + indicesRank - 1;

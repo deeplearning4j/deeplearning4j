@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty() || output->lengthOf() < 1) return sd::Status::OK;
 
   auto axis = *block.getIArguments();
 
@@ -59,6 +59,16 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
 }
 
 DECLARE_SHAPE_FN(argmax) {
+  auto firstInputShape = inputShape->at(0);
+  if(shape::isEmpty(firstInputShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT64));
+  }
+
+
+
+  if(shape::isScalar(firstInputShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
+  }
   std::vector<sd::LongType> dims;
 
   if (block.width() == 1) {
@@ -73,13 +83,14 @@ DECLARE_SHAPE_FN(argmax) {
 
   // we're resolving negative axis here
   helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
-  auto in = inputShape->at(0);
+
+
   for (auto d : dims) {
     // we have special case here
     if (d == sd::DataTypeUtils::max<int>()) continue;
 
-    REQUIRE_TRUE(d < shape::rank(in), 0, "ArgMax: axis can't be above rank")
-    REQUIRE_TRUE(in[d + 1] != 0, 0, "ArgMax: you can't reduce along axis with 0 in shape");
+    REQUIRE_TRUE(d < shape::rank(firstInputShape), 0, "ArgMax: axis can't be above rank")
+    REQUIRE_TRUE(firstInputShape[d + 1] != 0, 0, "ArgMax: you can't reduce along axis with 0 in shape");
   }
 
   // special case - output is scalar
@@ -88,7 +99,7 @@ DECLARE_SHAPE_FN(argmax) {
   }
 
   return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo('c', &dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));
+      ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace()));
 }
 }  // namespace ops
 }  // namespace sd

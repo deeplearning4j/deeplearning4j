@@ -105,7 +105,7 @@ T SD_DEVICE gammaGreat(T const* U, sd::LongType index, sd::LongType maxLength, T
   float normalizedVar;
   for (;;) {
     do {
-      x = normalDistributed(indexV);  // printf("X = %f\n", x);
+      x = normalDistributed(indexV);
       normalizedVar = T(1.f) + c * x;
     } while (normalizedVar < T(0.f));
     normalizedVar = normalizedVar * normalizedVar * normalizedVar;  // v * v * v;

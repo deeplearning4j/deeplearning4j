@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
-    REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
+  REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
   double overlayThreshold = 0.5;
   double scoreThreshold = -DataTypeUtils::infOrMax<float>();
@@ -82,6 +82,9 @@ CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(non_max_suppression) {
   auto in = inputShape->at(0);
+  if(shape::isEmpty(in)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT32));
+  }
   int outRank = shape::rank(in);
   const sd::LongType *outputShape = nullptr;
 
@@ -91,7 +94,7 @@ DECLARE_SHAPE_FN(non_max_suppression) {
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
-    REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
+  REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
   if (maxOutputSize > 0) {
     auto actualIndicesCount = shape::sizeAt(in, static_cast<sd::LongType>(0));
@@ -130,7 +133,7 @@ CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
-    REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
+  REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
   double overlayThreshold = 0.5;
   double scoreThreshold = -DataTypeUtils::infOrMax<float>();
@@ -174,6 +177,10 @@ CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(non_max_suppression_v3) {
   auto in = inputShape->at(0);
+  if(shape::isEmpty(in)) {
+    printf("empty non_max_suppression_v3\n");
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT32));
+  }
   int outRank = shape::rank(in);
 
   int maxOutputSize;
@@ -182,7 +189,7 @@ DECLARE_SHAPE_FN(non_max_suppression_v3) {
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
-    REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
+  REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
   auto boxes = INPUT_VARIABLE(0);
   auto scales = INPUT_VARIABLE(1);
 
@@ -206,8 +213,10 @@ DECLARE_SHAPE_FN(non_max_suppression_v3) {
     len = helpers::nonMaxSuppressionV3(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold,
                                        scoreThreshold, nullptr);
 
-  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(len, DataType::INT32);
+  if(len == 0)
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT32));
 
+  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(len, DataType::INT32);
   return SHAPELIST(outputShape);
 }
 #endif

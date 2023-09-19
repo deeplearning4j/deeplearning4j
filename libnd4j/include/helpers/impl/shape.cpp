@@ -20,9 +20,72 @@
 // Created by raver119 on 07.10.2017.
 //
 #include <helpers/shape.h>
-
+#include <array/ArrayOptions.h>
 namespace shape {
 
+//return a null terminated string of the shape info. we avoid std::string to allow usage in cuda.
+SD_LIB_EXPORT SD_HOST const char *shapeToString(const sd::LongType *shapeInfo, const char *message) {
+  if(shapeInfo == nullptr) {
+    auto ret =  new std::string("Shape info is empty");
+    return ret->c_str();
+  }
+
+  if(shapeInfo != nullptr) {
+    if(shapeInfo[0] > 32 || shapeInfo[0] < 0)
+      THROW_EXCEPTION("Input shape buffer is corrupt. First rank is < 0 or greater than the max rank of 32.");
+  }
+
+  std::string shapeInfoString;
+  shapeInfoString += message;
+  shapeInfoString += "  ";
+  sd::LongType rank = shape::rank(shapeInfo);
+  if(rank == 0) {
+    shapeInfoString += "Rank: ";
+    shapeInfoString += std::to_string(rank);
+    return shapeInfoString.c_str();
+  }
+
+  shapeInfoString += " Rank ";
+  shapeInfoString += std::to_string(rank);
+
+  sd::LongType *shape = shape::shapeOf(shapeInfo);
+  shapeInfoString += " Shape: ";
+  for (int i = 0; i < rank; i++) {
+    shapeInfoString += std::to_string(shape[i]);
+    shapeInfoString += " ";
+  }
+
+  shapeInfoString += " ";
+
+  sd::LongType *stride = shape::stride(shapeInfo);
+  shapeInfoString += (" Stride: ");
+  for (int i = 0; i < rank; i++) {
+    shapeInfoString += std::to_string(stride[i]);
+    shapeInfoString += " ";
+  }
+
+  shapeInfoString += (" ");
+
+  shapeInfoString += ("Order: ");
+  shapeInfoString +=  shape::order(shapeInfo);
+  shapeInfoString += " ";
+
+  shapeInfoString += " Flags extra value: ";
+  shapeInfoString += std::to_string(shape::extra(shapeInfo));
+  shapeInfoString += " ";
+
+
+
+  shapeInfoString += ("Buffer is:");
+  for(int i = 0; i < shape::shapeInfoLength(rank); i++) {
+    shapeInfoString += std::to_string(shapeInfo[i]);
+    shapeInfoString += " ";
+  }
+  shapeInfoString += (" ");
+  printf("Returning %s\n",shapeInfoString.c_str());
+  auto ret =  new std::string(shapeInfoString.c_str());
+  return ret->c_str();
+}
 
 
 
@@ -527,6 +590,12 @@ SD_HOST sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, 
 SD_HOST void updateStrides(sd::LongType *shapeInfo, const char order) {
   sd::LongType rank = shapeInfo[0];
   sd::LongType doubleRank = 2 * rank;
+  if(shape::isEmpty(shapeInfo)) {
+    auto strides = shape::stride(shapeInfo);
+    for(int i = 0; i < rank; i++) {
+      strides[i] = 0;
+    }
+  }
 
   if (rank > 0) {
     if (order == 'c') {
@@ -543,7 +612,7 @@ SD_HOST void updateStrides(sd::LongType *shapeInfo, const char order) {
   }
   // set last 2 elements in shapeInfo
   shapeInfo[doubleRank + 2] = 1;
-  shapeInfo[doubleRank + 3] = (int)order;
+  shape::setOrder(shapeInfo, order);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -880,14 +949,12 @@ SD_HOST sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::Lo
 }
 
 SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo, const sd::LongType *rearrange, sd::LongType len) {
-  if(shapeInfo == nullptr || rearrange == nullptr || len <= 1) {
-    sd_debug("doPermuteShapeInfo: early return\n",0);
+  if(shapeInfo == nullptr || rearrange == nullptr || shape::rank(shapeInfo) < 1) {
     return;
   }
 
-  if (len == -1)  // calculate array length if it is not given
-    len = shape::length(shapeInfo);
-
+  //note we used to automatically return early here but we can also permute
+  //shapes like 1,2,1,0 (aka empty) and the shape there can matter.
 
   const sd::LongType rank = shape::rank(shapeInfo);
 
@@ -1355,6 +1422,8 @@ SD_HOST void printIntArray(const int *arr, const int length) {
   printf("\n");
 }
 
+
+
 SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     return;
@@ -1366,13 +1435,18 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   sd::LongType rank = shape::rank(shapeInfo);
   if(rank == 0) {
     printf("Rank %d\n", rank);
+    printf("Buffer is:");
+    for(int i = 0; i < shape::shapeInfoLength(rank); i++) {
+      printf(" %lld ", shapeInfo[i]);
+    }
+
+    auto flags = sd::ArrayOptions::enumerateSetFlags(shapeInfo);
+    printf(flags);
+    printf("\n");
     return;
   }
   sd::LongType *shape = shape::shapeOf(shapeInfo);
   printf("Rank %d\n", rank);
-  if(rank == 0) {
-    return;
-  }
   printf("Shape:\n");
   for (int i = 0; i < rank; i++) {
     printf(" %lld ", (sd::LongType)shape[i]);
@@ -1389,6 +1463,16 @@ SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
   printf("\n");
 
   printf("Order %c\n", shape::order(shapeInfo));
+
+  printf("Buffer is:");
+  for(int i = 0; i < shape::shapeInfoLength(rank); i++) {
+    printf(" %lld ", (sd::LongType)shapeInfo[i]);
+  }
+
+  auto flags = sd::ArrayOptions::enumerateSetFlags(shapeInfo);
+  printf(flags);
+  printf("\n");
+
 }
 
 SD_HOST void printShapeInfoLinear(const sd::LongType *shapeInfo) {
@@ -1407,6 +1491,9 @@ SD_HOST void printShapeInfoLinear(const sd::LongType *shapeInfo) {
   fflush(stdout);
 #endif
 }
+
+
+
 
 SD_HOST void printShapeInfoLinear(const char *msg, int rank, const sd::LongType *shape,
                                   const sd::LongType *strides) {
@@ -1591,20 +1678,29 @@ SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, const char newOrder, con
 
   // copy order
   newShapeInfo[2 * newRank + 3] = newOrder;
+  sd::ArrayOptions::copyDataType(newShapeInfo, oldShapeInfo);
+  shape::setOrder(newShapeInfo, newOrder);
 
+  //inherit old data type
   return shape::reshapeC(oldShapeInfo, newShapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////
 SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeInfo) {
   // newShapeInfo contains rank, shape and order; but no strides, type and ews
-
   const int newRank = shape::rank(newShapeInfo);
 
+  auto oldDt = sd::ArrayOptions::dataType(oldShapeInfo);
+  if(oldDt == sd::DataType::UNKNOWN) {
+    THROW_EXCEPTION("Attempting to reshape with an unknown data type");
+  }
+
+
+
   // if oldShapeInfo is scalar or vector with length=1
-  if (shape::length(oldShapeInfo) == 1) {
+  if (shape::length(oldShapeInfo) <= 1) {
     for (sd::LongType i = 0; i < newRank; ++i) shape::stride(newShapeInfo)[i] = 1;
-    newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);
+    sd::ArrayOptions::setDataType(newShapeInfo, sd::ArrayOptions::dataType(oldShapeInfo));
     *shape::ews(newShapeInfo) = 1;
     return true;
   }
@@ -1666,9 +1762,11 @@ SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeIn
     newShapeInfo[2 * newRank + 3] = oldOrder;  // order
     *shape::ews(newShapeInfo) = oldEws;        // ews
   }
-  newShapeInfo[2 * newShapeInfo[0] + 1] = 0;
-  sd::ArrayOptions::copyDataType(newShapeInfo, oldShapeInfo);  // type
 
+  sd::ArrayOptions::setExtra(newShapeInfo, sd::ArrayOptions::extra(oldShapeInfo));
+
+
+  printf("Reshape c data type is %s\n", sd::DataTypeUtils::asString(sd::ArrayOptions::dataType(newShapeInfo)).c_str());
   return true;
 }
 
@@ -1943,6 +2041,8 @@ SD_HOST void calcSubArrsShapeInfoAndOffsets(const sd::LongType *wholeShapeInfo,
     return;
   }
 
+  printf("calcSubArrsShapeInfoAndOffsets\n");
+
   const sd::LongType subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
 
   subArrShapeInfo[0] = subArrRank;                                     // rank
@@ -1983,6 +2083,7 @@ void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *m
                                   sd::LongType *minShapeInfo, sd::LongType &minOffset,
                                   const bool keepUnitiesInShape, const bool isStrided,
                                   const sd::LongType numOfUntiesInMinShape) {
+  printf("calcSubArrShapeInfoAndOffset\n");
   const sd::LongType maxRank = shape::rank(maxShapeInfo);
   minOffset = 0;
   sd::LongType first, last, stride, n(isStrided ? 3 : 2);
@@ -2020,7 +2121,7 @@ void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *m
   minShapeInfo[2 * shape::rank(minShapeInfo) + 1] = 0;                           // zero
   minShapeInfo[2 * shape::rank(minShapeInfo) + 3] = shape::order(maxShapeInfo);  // order
   sd::ArrayOptions::copyDataType(minShapeInfo, maxShapeInfo);                    // type
-
+  sd::ArrayOptions::setDataType(minShapeInfo, sd::ArrayOptions::dataType(maxShapeInfo));  // type
   shape::checkStridesEwsAndOrder(minShapeInfo);
 }
 
@@ -2052,6 +2153,7 @@ SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::Lon
 SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const sd::LongType *dimsToExclude,
                                          const sd::LongType dimsSize, sd::LongType *outShapeInfo) {
   outShapeInfo[0] = inShapeInfo[0] - dimsSize;
+  printf("excludeUnitiesFromShapeInfo\n");
 
   for (sd::LongType j = 0, k = 0, i = 0; i < inShapeInfo[0]; ++i) {
     if (j < dimsSize && i == dimsToExclude[j]) {

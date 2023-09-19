@@ -158,7 +158,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 @Platform(value = "linux-armhf",preload = "gomp@.1", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64",preload = "gomp@.1", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
-                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
+                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"},define = {"_WIN32"}),
                 @Platform(extension = {"-onednn", "-onednn-avx512","-onednn-avx2", "-vednn", "-vednn-avx512", "-vednn-avx2", "-","-avx2","-avx512", "-compat"}, resource={"libnd4jcpu_device.vso"})
         })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
@@ -219,6 +219,8 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false))
                 .put(funcTrace ?  new Info("__JAVACPP_HACK__", "SD_ALL_OPS","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
+                //define _WIN32 for javacpp on windows in case of environments like MSYS2
+                .put(new Info("_WIN32").define(System.getProperty("os.name").toLowerCase().contains("win")))
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
                         "sd::graph::FlatResult",
                         "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper",

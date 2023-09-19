@@ -48,17 +48,25 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
     }
   }
 
+
+  //print list shape:
+  for (int e = 0; e < list.shape().size(); e++) {
+    printf("List shape element %d\n",list.shape().at(e));
+  }
+
+
   auto s = list.stack();
-  output.assign(s);
+  if(!output.isEmpty() && s != nullptr && !s->isEmpty())
+    output.assign(s);
   delete s;
 }
 BUILD_SINGLE_TEMPLATE(template void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),
                       SD_COMMON_TYPES);
 
 void _where(sd::LaunchContext *context, NDArray &condition, NDArray &output, memory::Workspace *workspace) {
-  condition.syncToHost();
+  NDArray::prepareSpecialUse({&output}, {&condition});
   BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), SD_COMMON_TYPES);
-  output.syncToDevice();
+  NDArray::preparePrimaryUse({&output}, {&condition});
 }
 }  // namespace helpers
 }  // namespace ops

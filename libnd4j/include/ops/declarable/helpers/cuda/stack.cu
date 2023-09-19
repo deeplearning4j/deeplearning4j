@@ -70,7 +70,8 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  if (inArrs[0]->rankOf() == 0) {
+  if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
+    printf("stack_ rankOf() == 0\n");
     std::vector<void const*> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();
@@ -84,7 +85,8 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
                                 output.specialBuffer(), output.specialShapeInfo());
 
     manager.synchronize();
-  } else {
+  } else if (!inArrs[0]->isEmpty()) {
+    printf("stack_ rankOf() != 0\n");
     std::vector<sd::LongType> dims = {dim};
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(),1, dims.data()));

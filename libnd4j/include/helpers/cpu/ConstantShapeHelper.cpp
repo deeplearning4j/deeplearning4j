@@ -47,6 +47,7 @@ ConstantShapeHelper& ConstantShapeHelper::getInstance() {
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(sd::DataType dataType, char order,
                                                              const std::vector<sd::LongType>& shape) {
   auto descriptor = new ShapeDescriptor(dataType, order, shape);
+
   auto ret =  bufferForShapeInfo(descriptor);
   delete descriptor;
   return ret;
@@ -65,6 +66,15 @@ ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *d
   std::lock_guard<std::mutex> lock(_mutex);
   if(_cache.empty()) {
     THROW_EXCEPTION("Cache is empty!");
+  }
+
+  auto currValidate = descriptor->validate();
+  if(currValidate != 0) {
+    std::string errorMessage;
+    errorMessage += "Invalid shape descriptor attempting to be set for shape info. Error code: ";
+    errorMessage += ShapeDescriptor::messageForShapeDescriptorError(currValidate);
+    errorMessage += descriptor->toString();
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   if (_cache[deviceId].count(*descriptor) == 0) {
@@ -150,7 +160,7 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 
-  RELEASE(shapeInfo, workspace);
+  //RELEASE(shapeInfo, workspace);
   delete descriptor;
   return result;
 }
@@ -182,7 +192,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
   newShapeInfo[2 * shape::rank(maxShapeInfo) + 1] = 0;
   sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                      // type
   newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo);  // ews
-  newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);              // order
+  newShapeInfo[2 * newShapeInfao[0] + 3] = shape::order(minShapeInfo);              // order
 
   if (!dimensions.empty()) {
     for (sd::LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
@@ -211,7 +221,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  RELEASE(newShapeInfo, workspace);
+  //RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;
@@ -235,7 +245,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  RELEASE(newShapeInfo, workspace);
+  //RELEASE(newShapeInfo, workspace);
 
   auto ret =  bufferForShapeInfo(descriptor);
   delete descriptor;
@@ -249,7 +259,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongTy
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  RELEASE(newShapeInfo, workspace);
+  //RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;

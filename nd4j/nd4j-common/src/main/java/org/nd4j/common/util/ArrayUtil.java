@@ -2064,6 +2064,9 @@ public class ArrayUtil {
      * item
      */
     public static long[] removeIndex(long[] data, long... index) {
+        if(data.length < 1)
+            return data;
+
         if (index.length >= data.length) {
             throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
                     + index.length + ", data.length=" + data.length + ")");

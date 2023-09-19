@@ -42,10 +42,12 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  BROADCAST_CHECK_EMPTY(x, y, z);
-  auto castedX = x->cast(z->dataType());
-  auto castedY = y->cast(z->dataType());
+  auto castedX = x->dataType() == z->dataType() ? *x : x->cast(z->dataType());
+  auto castedY = y->dataType() == z->dataType() ? *y : y->cast(z->dataType());
+
+
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
+
   if(tZ->isActualOnDeviceSide())
     tZ->syncToHost();
   if(tZ->isActualOnHostSide())

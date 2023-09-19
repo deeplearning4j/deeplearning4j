@@ -55,12 +55,10 @@ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   PointersManager manager(block.launchContext(), "LegacyBroadcastOp");
   auto pTadShape = Environment::getInstance().isCPU()
                        ? packX->primaryShapeInfo()
-                       : packX->specialShapeInfo();  //(sd::LongType *) manager.replicatePointer(tad.tadOnlyShapeInfo,
-                                                    //shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                       : packX->specialShapeInfo();
   auto pTadOffsets = Environment::getInstance().isCPU()
                          ? packX->primaryOffsets()
-                         : packX->specialOffsets();  //(sd::LongType *) manager.replicatePointer(tad.tadOffsets,
-                                                    //tad.numTads * sizeof(sd::LongType));
+                         : packX->specialOffsets();
 
   if (x == z)
     NativeOpExecutioner::execBroadcast(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),

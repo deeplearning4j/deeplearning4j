@@ -27,9 +27,7 @@
 #include <types/types.h>
 #include <execution/cuda/DeviceValidator.h>
 using namespace simdOps;
-#include <exceptions/backward.hpp>
 
-using namespace backward;
 
 
 template <typename X, typename Z, typename OpType>

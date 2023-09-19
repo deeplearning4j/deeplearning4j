@@ -33,7 +33,8 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
   auto a = INPUT_VARIABLE(0);
   auto b = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
+  if(a->isEmpty() || b->isEmpty())
+    return Status::OK;
   bool useAdjoint = false;
 
   if (block.numB() > 0) {

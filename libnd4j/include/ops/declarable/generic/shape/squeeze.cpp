@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> axis;
+  std::vector<sd::LongType> axis;
 
   if (block.numI() > 0)
     for (int e = 0; e < block.numI(); e++) {
@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   else if (block.width() > 1) {
     auto a = INPUT_VARIABLE(1);
     for (sd::LongType e = 0; e < a->lengthOf(); e++) {
-      int _a = a->e<int>(e);
+      int _a = a->e<sd::LongType>(e);
 
       if (_a < 0) _a += input->rankOf();
 
@@ -90,17 +90,15 @@ DECLARE_TYPES(squeeze) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::A
 DECLARE_SHAPE_FN(squeeze) {
   auto shapeList = SHAPELIST();
 
-  //            sd::LongType* newShape;
   auto in = inputShape->at(0);
   auto rank = shape::rank(in);
   auto length = shape::length(in);
-
   if (rank == 0 || (rank == 1 && length == 1)) {
     shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
     return shapeList;
   }
 
-  std::vector<int> axis;
+  std::vector<sd::LongType> axis;
 
   if (block.numI() > 0)
     for (int e = 0; e < block.numI(); e++) {
@@ -141,8 +139,25 @@ DECLARE_SHAPE_FN(squeeze) {
     return shapeList;
   }
 
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
-  shapeList->push_back(newShape);
+  if(shape::isEmpty(in)) {
+    if(shape::rank(in) < 1) {
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(in)));
+      return shapeList;
+    }
+    std::vector<sd::LongType> inShape;
+    auto inShape2 = shape::shapeOf(in);
+    for(int i = 0; i < shape::rank(in); i++) {
+      inShape.emplace_back(inShape2[i]);
+    }
+
+    shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(in),inShape));
+    return shapeList;
+  } else {
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
+    shapeList->push_back(newShape);
+  }
+
+
   return shapeList;
 }
 }  // namespace ops

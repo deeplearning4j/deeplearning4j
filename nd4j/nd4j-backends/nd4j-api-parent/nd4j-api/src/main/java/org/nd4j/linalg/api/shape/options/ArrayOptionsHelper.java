@@ -66,9 +66,8 @@ public class ArrayOptionsHelper {
         return ((storage & bit) == bit);
     }
 
-    public static ArrayType arrayType(long[] shapeInfo) {
-        val opt = Shape.options(shapeInfo);
 
+    public static ArrayType arrayType(long opt) {
         if (hasBitSet(opt, ATYPE_SPARSE_BIT))
             return ArrayType.SPARSE;
         else if (hasBitSet(opt, ATYPE_COMPRESSED_BIT))
@@ -77,6 +76,10 @@ public class ArrayOptionsHelper {
             return ArrayType.EMPTY;
         else
             return ArrayType.DENSE;
+    }
+
+    public static ArrayType arrayType(long[] shapeInfo) {
+        return arrayType(Shape.options(shapeInfo));
     }
 
     public static DataType dataType(long opt) {

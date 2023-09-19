@@ -39,7 +39,11 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
     if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+      std::vector<sd::LongType> vecShape;
+      auto xShape = shape::shapeOf(x);
+      for(int i = 0; i < shape::rank(x); i++)
+        vecShape.emplace_back(xShape[i]);
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype,vecShape));
       return shapeList;
     }
 
