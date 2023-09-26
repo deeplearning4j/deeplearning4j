@@ -113,6 +113,31 @@ class ModelSerializerTest extends BaseDL4JTest {
     }
 
     @Test
+    @DisplayName("Test Write Mln Model Input Stream With Normalizer")
+    void testWriteMlnModelInputStreamWithNormalizer() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list().layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build()).layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build()).build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        NormalizerMinMaxScaler scaler = new NormalizerMinMaxScaler();
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        scaler.fit(iter);
+        File tempFile = new File(tempDir.toFile(),"new-model.zip");
+        FileOutputStream fos = new FileOutputStream(tempFile);
+        ModelSerializer.writeModel(net, fos, true, scaler);
+        NormalizerMinMaxScaler restoredScaler = ModelSerializer.restoreNormalizerFromFile(tempFile);
+        assertNotEquals(null, scaler.getMax());
+        assertEquals(scaler.getMax(), restoredScaler.getMax());
+        assertEquals(scaler.getMin(), restoredScaler.getMin());
+        FileInputStream fis = new FileInputStream(tempFile);
+        MultiLayerNetwork network = ModelSerializer.restoreMultiLayerNetwork(fis);
+        assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
+        assertEquals(net.params(), network.params());
+        assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
+    }
+
+    @Test
     @DisplayName("Test Write CG Model")
     void testWriteCGModel() throws Exception {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1)).graphBuilder().addInputs("in").addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).activation(Activation.SOFTMAX).build(), "dense").setOutputs("out").build();
