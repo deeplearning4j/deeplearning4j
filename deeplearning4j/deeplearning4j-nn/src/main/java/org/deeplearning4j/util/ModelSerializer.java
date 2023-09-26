@@ -189,7 +189,7 @@ public class ModelSerializer {
             // now, add our normalizer as additional entry
             ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
             zipfile.putNextEntry(nEntry);
-            NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
+            NormalizerSerializer.getDefault().write(dataNormalization, CloseShieldOutputStream.wrap(zipfile));
         }
 
         dos.close();
