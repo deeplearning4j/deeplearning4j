@@ -59,9 +59,6 @@ CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
 
 DECLARE_SHAPE_FN(argmin) {
   auto firstInputShape = inputShape->at(0);
-  if(shape::isEmpty(firstInputShape)) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT64));
-  }
   if(shape::isScalar(firstInputShape)) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
   }
@@ -85,9 +82,7 @@ DECLARE_SHAPE_FN(argmin) {
 
   auto in = inputShape->at(0);
 
-  if(shape::isEmpty(in)) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
-  }
+
 
   for (auto d : dims) {
     // we have special case here

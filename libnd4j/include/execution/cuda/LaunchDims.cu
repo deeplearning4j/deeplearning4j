@@ -167,6 +167,8 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"digamma", {dim3(GRID_SIZE_DIGAMMA, BLOCK_SIZE_DIGAMMA, SHARED_MEM_SIZE_DIGAMMA)}},
     {"fill_tri", {dim3(GRID_SIZE_FILL_TRI, BLOCK_SIZE_FILL_TRI, SHARED_MEM_SIZE_FILL_TRI)}},
     {"identity", {dim3(GRID_SIZE_IDENTITY, BLOCK_SIZE_IDENTITY, SHARED_MEM_SIZE_IDENTITY)}},
+    {"dynamic_stitch_tad", {dim3(GRID_SIZE_DYNAMIC_STITCH_TAD, BLOCK_SIZE_DYNAMIC_STITCH_TAD, SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD)}},
+    {"dynamic_partition_tad", {dim3(GRID_SIZE_DYNAMIC_PARTITION_TAD, BLOCK_SIZE_DYNAMIC_PARTITION_TAD, SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD)}},
 
 
 };
@@ -332,8 +334,25 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"fill_tri", {"GRID_SIZE_FILL_TRI", "BLOCK_SIZE_FILL_TRI", "SHARED_MEM_SIZE_FILL_TRI"}},
     {"repeat", {"GRID_SIZE_FILL_REPEAT", "BLOCK_SIZE_FILL_REPEAT", "SHARED_MEM_SIZE_FILL_REPEAT"}},
     {"identity", {"GRID_SIZE_FILL_IDENTITY", "BLOCK_SIZE_FILL_IDENTITY", "SHARED_MEM_SIZE_FILL_IDENTITY"}},
+    {"dynamic_stitch_tad", {"GRID_SIZE_DYNAMIC_STITCH_TAD", "BLOCK_SIZE_DYNAMIC_STITCH_TAD", "SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD"}},
+    {"dynamic_partition_tad", {"GRID_SIZE_DYNAMIC_PARTITION_TAD", "BLOCK_SIZE_DYNAMIC_PARTITION_TAD", "SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD"}},
+
 
 };
+
+
+dim3 getDynamicPartitionDims(int numThreads,int yDTypeSize) {
+  auto shmemSize = numThreads *yDTypeSize * 2 + 1024;
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
+  int blocksPerGrid = 256;
+  int sharedMem = numThreads * yDTypeSize * 2 + 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_DYNAMIC_PARTITION_TAD",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_DYNAMIC_PARTITION_TAD",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+
+}
+
 
 dim3 getIdentityLaunchDims(int len,int rank) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
@@ -697,6 +716,7 @@ dim3 getGatherLinear(int numSubArrs) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_GATHER", threadsPerBlock);
   numBlocks = getEnvVariable("BLOCK_SIZE_GATHER", numBlocks);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_GATHER", sharedMem);
+  printf("gather linear numBlocks %d threadsPerBlock %d sharedMem %d\n",numBlocks,threadsPerBlock,sharedMem);
   return dim3(threadsPerBlock,numBlocks,sharedMem);
 }
 

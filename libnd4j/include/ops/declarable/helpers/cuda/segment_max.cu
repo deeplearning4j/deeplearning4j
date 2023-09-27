@@ -172,7 +172,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
 
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     dim3 launchDims = segmentDims(numOfClasses,input->lengthOf());
     segmentMaxLinearKernel<T, I><<<launchDims.y,launchDims.x,launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(),
@@ -222,7 +222,7 @@ static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* inpu
   sd::LongType * begins = reinterpret_cast<sd::LongType *>(classesRangesBegs.specialBuffer());
   sd::LongType * lengths = reinterpret_cast<sd::LongType *>(classesRangesLens.specialBuffer());
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     unsortedSegmentMaxLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
@@ -381,7 +381,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
                   context);  //->shapeInfo(), context);
   segmentMaxFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     dim3 segmentBpDims2 = segmentBpDims(1 + gradOut->lengthOf(),input->lengthOf());
@@ -451,7 +451,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
                   context);  //->shapeInfo(), context);
   unsortedSegmentMaxFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
     segmentMaxBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(

@@ -112,7 +112,7 @@ public class OpaqueDataBuffer extends Pointer {
         }
 
         // if MAX_TRIES is over, we'll just throw an exception
-        throw new RuntimeException("Allocation failed: [" + em + "]");
+        throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
     }
 
     /**

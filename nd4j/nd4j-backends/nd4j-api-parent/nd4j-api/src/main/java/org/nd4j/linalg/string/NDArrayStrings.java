@@ -178,7 +178,7 @@ public class NDArrayStrings {
         this.scientificFormat = this.scientificFormat + "E0";
         if (this.scientificFormat.length() + 2  > this.padding) this.padding = this.scientificFormat.length() + 2;
         this.maxToPrintWithoutSwitching = Math.pow(10,this.precision);
-        this.minToPrintWithoutSwitching = 1.0/(this.maxToPrintWithoutSwitching);
+        this.minToPrintWithoutSwitching = 1.0 / (this.maxToPrintWithoutSwitching);
         return format(arr, 0, summarize && arr.length() > localMaxPrintElements);
     }
 
@@ -264,8 +264,9 @@ public class NDArrayStrings {
     private String vectorToString(INDArray arr, boolean summarize) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
-        long l = arr.length();
-        for (int i = 0; i <l; i++) {
+        //this case covers [0] ane ensures the buffer isn't empty (null data)
+        long l = arr.data() != null && arr.size(0) == 0 ? 1 : arr.length();
+        for (int i = 0; i < l; i++) {
             if (summarize && i > 2 && i < l - 3) {
                 sb.append("  ...");
                 // immediately jump to the last elements so we only print ellipsis once

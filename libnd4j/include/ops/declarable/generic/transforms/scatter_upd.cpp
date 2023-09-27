@@ -85,7 +85,6 @@ OP_IMPL(scatter_upd, 3, 1, true) {
                    numOfBadIndx);
     }
 
-    // ScatterHelper<T>::template scatterApply<simdOps::Copy<T>>(output, indices, updates);
     helpers::scatter(block.launchContext(), pairwise::CopyPws, *indices, *updates, *output, lock);
   }
 

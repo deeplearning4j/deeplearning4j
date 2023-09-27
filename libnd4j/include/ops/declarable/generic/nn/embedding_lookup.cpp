@@ -61,10 +61,6 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(indexRank > 0, 0,
                  "embedded_lookup: input array of indexes can't be single scalar, the requirement is: rank > 0 !");
 
-    int inputRank = input->rankOf();
-    int lastIndDim = indices->lengthOf();
-    int partition_mode = INT_ARG(0);  // partition_mode == 0 - i.e. 'mod' , 1 - 'div'
-
     sd::ops::gather op;
 
     auto result2(op.evaluate({input, indices}, {0}));

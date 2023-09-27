@@ -227,6 +227,15 @@ public class TFGraphTestAllHelper {
                 if(maxRelErrorOverride == null) {
                     long[] sTf = tfPred.shape();
                     long[] sNd4j = nd4jPred.shape();
+                    if(!Arrays.equals(sTf,sNd4j)) {
+                        if(sNd4j.length == 0) {
+                            sTf = new long[0];
+                            //omit comparisons for different scalar cases here sometimes
+                            //these shapes can be [0] or []
+                            tfPred = tfPred.reshape(sNd4j);
+                        }
+                    }
+
                     assertArrayEquals(sTf, sNd4j,"Shapes for node \"" + outputNode + "\" are not equal: TF: " + Arrays.toString(sTf) + " vs SD: " + Arrays.toString(sNd4j));
 
                     // TODO: once we add more dtypes files - this should be removed
@@ -251,7 +260,7 @@ public class TFGraphTestAllHelper {
                                 //Already know they are both infinite, only question is whether they are both positive and negative
                                 double d1 = tfPred.getDouble(next);
                                 double d2 = nd4jPred.getDouble(next);
-                                if((d1 > 0) != (d2 > 0)){
+                                if((d1 > 0) != (d2 > 0)) {
                                     eq = false;
                                     break;
                                 }
@@ -279,7 +288,7 @@ public class TFGraphTestAllHelper {
                                 nd4jPred.dataType() + " vs. TF datatype: " + tfPred.dataType());
                     }
 
-                    if(!tfPred.dataType().isFPType()){
+                    if(!tfPred.dataType().isFPType()) {
                         //Can't do relative error on long type...
                         tfPred = tfPred.castTo(DataType.DOUBLE);
                         nd4jPred = nd4jPred.castTo(DataType.DOUBLE);
@@ -424,11 +433,17 @@ public class TFGraphTestAllHelper {
     public static Map<String,INDArray> runTfResults(GraphDef result,Map<String,INDArray> inputs,File modelPath) {
         List<String> inputNames = new ArrayList<>(inputs.keySet());
         List<String> outputNames = new ArrayList<>(result.getNodeList()
-                .stream().map(input -> input.getName()).collect(Collectors.toList()));
+                .stream()
+                .filter(input -> !inputs.containsKey(input.getName()))
+                .filter(input -> !input.getOp().equals("NoOp"))
+                .map(input -> input.getName())
+                .collect(Collectors.toList()));
         for(int i = 0; i < result.getNodeCount(); i++) {
             NodeDef nodeDef = result.getNode(i);
+            if(nodeDef.getOp().equals("NoOp"))
+                continue;
             String nodeName = nodeDef.getName();
-            if(nodeName.contains("Const")) {
+            if(nodeName.contains("Const") ) {
                 outputNames.add(result.getNode(i).getName());
             }
         }
@@ -484,8 +499,8 @@ public class TFGraphTestAllHelper {
             //outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
             outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
-            Map<String,INDArray> differencesCorrect = new HashMap<>();
-            Map<String,INDArray> differencesWrong = new HashMap<>();
+            Map<String,INDArray> differencesCorrect = new LinkedHashMap<>();
+            Map<String,INDArray> differencesWrong = new LinkedHashMap<>();
             for(String s : outMap.keySet()) {
                 INDArray tfValue = tfResults.get(s);
                 INDArray sdValue = outMap.get(s);
@@ -546,7 +561,6 @@ public class TFGraphTestAllHelper {
     }
 
 
-    //return readVars(modelName, base_dir, "**.prediction_inbw", true);
 
     /**
      * Possible for a single node to give multiple outputs
@@ -699,7 +713,7 @@ public class TFGraphTestAllHelper {
         } else {
             ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
             Resource[] r = resolver.getResources("classpath*:" + modelDir + "/" + pattern + ".shape");
-            for(Resource res : r){
+            for(Resource res : r) {
                 String fileName = res.getFilename();
                 String varPath = modelDir + "/" + fileName;
                 Resource r2 = new org.springframework.core.io.ClassPathResource(varPath.replace(".shape", ".csv"));
@@ -784,7 +798,7 @@ public class TFGraphTestAllHelper {
                     boolean isRef = p.getSecond().isFile() && !p.getSecond().exists();
 
                     InputStream stream;
-                    if(isRef){
+                    if(isRef) {
                         //Slight hack for loading strumpf reference files
                         File r = new StrumpfResolver().localCacheRoot();
                         String path = p.getSecond().getFile() + StrumpfResolver.REF;
@@ -798,8 +812,7 @@ public class TFGraphTestAllHelper {
                         content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
                     }
 
-                    if(varShape.length == 1 && varShape[0] == 0)        //Annoyingly, some scalars have shape [0] instead of []
-                        varShape = new int[0];
+                    //note: we used to auto convert [0] to [] here. This affects results and has been removed.
 
                     String[] cLines = content.isEmpty() ? new String[0] : content.split("\n");
                     switch (type) {
@@ -814,7 +827,8 @@ public class TFGraphTestAllHelper {
                                 x++;
                             }
                             INDArray originalArr = Nd4j.createFromArray(dArr);
-                            varValue = originalArr.castTo(type).reshape('c', varShape);
+                            varValue = originalArr.castTo(type);
+                            varValue = varValue.reshape('c', varShape);
                             break;
                         case LONG:
                         case INT:
@@ -980,8 +994,8 @@ public class TFGraphTestAllHelper {
                 double[] sdNums = s.ravel().toDoubleVector();
 
                 Double seen1 = null, seen2 = null;
-                for(int i = 0 ; i < tfNums.length ; i++){
-                    if(!equalsWithEps(tfNums[i], sdNums[i])){
+                for(int i = 0 ; i < tfNums.length ; i++) {
+                    if(!equalsWithEps(tfNums[i], sdNums[i])) {
 
                         // if we have only seen one inequality so far, figure out which is the dropout
                         if(seen1 != null && seen2 != null){

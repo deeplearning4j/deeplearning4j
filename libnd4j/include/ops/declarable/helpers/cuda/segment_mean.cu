@@ -174,7 +174,7 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     dim3 launchDims = segmentDims(numClasses,input->lengthOf());
     segmentMeanLinearKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
@@ -221,7 +221,7 @@ static void unsortedSegmentMeanFunctor_(sd::LaunchContext* context, NDArray* inp
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     unsortedSegmentMeanLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
@@ -344,7 +344,7 @@ sd::Status segmentMeanFunctorBP_(sd::LaunchContext* context, NDArray* input, NDA
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();  // indices->e<sd::LongType>(loop_size - 1);
     dim3 segmentBpDims2 = segmentBpDims(gradOut->lengthOf(),input->lengthOf());
@@ -402,7 +402,7 @@ static sd::Status unsortedSegmentMeanFunctorBP_(sd::LaunchContext* context, NDAr
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
 
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     dim3 segmentBpDims2 = segmentBpDims(gradOut->lengthOf(),input->lengthOf());

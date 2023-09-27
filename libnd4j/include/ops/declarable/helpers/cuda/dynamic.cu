@@ -23,6 +23,8 @@
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/dynamic.h>
 
+#include "execution/cuda/LaunchDims.h"
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -159,15 +161,15 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
     auto dOutTadOffsets = reinterpret_cast<sd::LongType **>(
         pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(sd::LongType *)));
     // run kernel on device
-    dynamicPartitionTadKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+    dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
+
+    dynamicPartitionTadKernel<X, Y><<<launchDims.y,launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(),
         shape::length(packX->primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(),
         indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
 
   } else {  // linear case
-    auto numThreads = 256;
-    auto shmemSize = numThreads * sizeof(Y) * 2 + 1024;
-
+    dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
     std::vector<void *> outBuffers;
     std::vector<const sd::LongType *> outShapes;
 
@@ -181,7 +183,7 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
     auto dOutShapes = reinterpret_cast<sd::LongType **>(
         pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(sd::LongType *)));
 
-    dynamicPartitionScalarKernel<X, Y><<<256, numThreads, shmemSize, *context->getCudaStream()>>>(
+    dynamicPartitionScalarKernel<X, Y><<<launchDims.y,launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         dOutBuffers, dOutShapes, outSize);
   }
@@ -215,35 +217,46 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, sd::LongType **xShape
 template <typename X, typename Y>
 static SD_KERNEL void dynamicStitchTadKernel(void **vx, sd::LongType **xTadShapeInfos, sd::LongType **xTadOffsets,
                                              void **vindices, sd::LongType **iShapeInfos, int inputSize, void *vz,
-                                             const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffsets) {
+                                             const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffsets,
+                                             sd::LongType *numTadsPerInput, sd::LongType numOutputsTad) {
+  //note: this implementation is less than ideal but several forms of parallelization do not seem to work.
+  //for now since this isn't a computationally intensive function this serial implementation that works correctly
+  //will stay.
   auto bz = reinterpret_cast<X *>(vz);
-
-  for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
+  int arrIndex = threadIdx.x;
+  //each input
+  for (int e = arrIndex; e < inputSize; e++) {
     auto indices = reinterpret_cast<Y *>(vindices[e]);
-    auto iShapeInfo = iShapeInfos[e];
 
+    auto iShapeInfo = iShapeInfos[e];
+    auto numTads = numTadsPerInput[e];
     if (shape::isEmpty(iShapeInfo)) continue;
 
     auto iLength = shape::length(iShapeInfo);
     auto zLength = shape::length(zTadShapeInfo);
 
-    auto xShapeInfo = xTadShapeInfos[e];
-    auto xLength = shape::length(xShapeInfo);
+    auto xTadShapeInfo = xTadShapeInfos[e];
+    auto xTadLength = shape::length(xTadShapeInfo);
 
+    // process each index setting values for this tad
     for (int i = 0; i < iLength; i++) {
       auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
 
-      auto z = bz + zTadOffsets[idx];
+      // the input at a given index starting at the offset for the current tad
       auto x = reinterpret_cast<X *>(vx[e]) + xTadOffsets[e][i];
-
-      for (int f = threadIdx.x; f < zLength; f += blockDim.x) {
-        z[shape::getIndexOffset(f, zTadShapeInfo)] = x[shape::getIndexOffset(f, xShapeInfo)];
+      auto zTad = bz + zTadOffsets[idx];
+      for (int j = 0; j < xTadLength; j++) {
+        auto xIdx = shape::getIndexOffset(j, xTadShapeInfo);
+        auto zIdx = shape::getIndexOffset(j, zTadShapeInfo);
+        if (xIdx < xTadLength && xIdx >= 0 && zIdx < zLength && zIdx >= 0) zTad[zIdx] = x[xIdx];
       }
-
-      __syncthreads();
     }
   }
+
+  __syncthreads();
+
 }
+
 
 template <typename X, typename Y>
 static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<NDArray *> const &inputs,
@@ -275,13 +288,20 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
         reinterpret_cast<sd::LongType **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(sd::LongType *)));
     auto dIndicesShapes = reinterpret_cast<sd::LongType **>(
         pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(sd::LongType *)));
+    dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
 
-    dynamicStitchScalarKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+    dynamicStitchScalarKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         dInputBuffers, dInputShapes, dIndicesBuffers, dIndicesShapes, inputSize, output->specialBuffer(),
         output->specialShapeInfo(), output->lengthOf());
   } else {
     std::vector<sd::LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
+    //print dims:
+    printf("rest dims for output\n");
+    for(int i = 0; i < restDims.size(); i++) {
+      printf("%d ",restDims[i]);
+    }
+    printf("\n");
 
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
 
@@ -291,16 +311,18 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
 
     std::vector<const void *> indicesBuffers(inputSize);
     std::vector<const sd::LongType *> indicesShapes(inputSize);
+    std::vector<sd::LongType > inputsNumTads(inputSize);
 
     for (sd::LongType e = 0; e < inputSize; e++) {
       std::vector<sd::LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
       for (sd::LongType  i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
-
+      printf("tad shape info for input %d\n",e);
+      shape::printShapeInfo(packX->primaryShapeInfo());
       indicesBuffers[e] = indices[e]->specialBuffer();
       indicesShapes[e] = indices[e]->specialShapeInfo();
-
+      inputsNumTads[e] = packX->numberOfTads();
       inputBuffers[e] = inputs[e]->specialBuffer();
       inputTadShapes[e] = packX->platformShapeInfo();
       inputTadOffsets[e] = packX->platformOffsets();
@@ -319,9 +341,15 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     auto dIndicesShapes = reinterpret_cast<sd::LongType **>(
         pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(sd::LongType *)));
 
-    dynamicStitchTadKernel<X, Y><<<256, 256, 1024, *context->getCudaStream()>>>(
+    auto dNumTadsInputs = reinterpret_cast<sd::LongType *>(
+        pm.replicatePointer(inputsNumTads.data(), inputSize * sizeof(sd::LongType *)));
+
+
+    dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
+    printf("dynamic stitch tad dimensions: %d %d %d\n", launchDims.x, launchDims.y, launchDims.z);
+    dynamicStitchTadKernel<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         dInputBuffers, dInputTadShapes, dInputTadOffsets, dIndicesBuffers, dIndicesShapes, inputSize,
-        output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets());
+        output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(),dNumTadsInputs, packZ->numberOfTads());
   }
 
   pm.synchronize();

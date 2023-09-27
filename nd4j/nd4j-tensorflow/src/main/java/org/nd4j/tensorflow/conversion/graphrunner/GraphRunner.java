@@ -443,7 +443,7 @@ public class GraphRunner implements Closeable {
      */
 
     public Map<String,INDArray> run(Map<String,INDArray> inputs) {
-        if (!isTfWarmedUp && !isTfWarmingUp){
+        if (!isTfWarmedUp && !isTfWarmingUp) {
             isTfWarmingUp = true;
             run(inputs);
             isTfWarmedUp = true;

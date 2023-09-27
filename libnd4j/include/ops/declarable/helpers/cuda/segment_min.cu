@@ -176,7 +176,7 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     dim3 launchDims = segmentDims(numClasses,input->lengthOf());
     segmentMinLinearKernel<T, I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
@@ -224,7 +224,7 @@ static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* inpu
   sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
   sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
   NDArray::prepareSpecialUse({output}, {input, indices});
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     unsortedSegmentMinLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
@@ -353,7 +353,7 @@ sd::Status segmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
                   context);  //->shapeInfo(), context);
   segmentMinFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
 
@@ -405,7 +405,7 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
                   context);
   unsortedSegmentMinFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  if (input->isVector()) {
+  if (input->isVector()  || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     segmentMinBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(

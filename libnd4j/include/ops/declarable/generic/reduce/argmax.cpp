@@ -60,12 +60,6 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
 
 DECLARE_SHAPE_FN(argmax) {
   auto firstInputShape = inputShape->at(0);
-  if(shape::isEmpty(firstInputShape)) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(DataType::INT64));
-  }
-
-
-
   if(shape::isScalar(firstInputShape)) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
   }
@@ -98,8 +92,8 @@ DECLARE_SHAPE_FN(argmax) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
   }
 
-  return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace()));
+  auto ret = ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace());
+  return SHAPELIST(ret);
 }
 }  // namespace ops
 }  // namespace sd

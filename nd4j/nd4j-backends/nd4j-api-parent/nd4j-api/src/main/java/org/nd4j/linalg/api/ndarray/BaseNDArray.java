@@ -142,7 +142,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public BaseNDArray(LongShapeDescriptor descriptor) {
         this(descriptor.isEmpty() ? null :
-                Nd4j.createBuffer(descriptor.length())
+                        Nd4j.createBuffer(descriptor.length())
                 , descriptor.getShape(), descriptor.getStride(), 0, descriptor.getOrder(), descriptor.dataType());
     }
 
@@ -224,10 +224,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         boolean isEmpty = false;
         if(buffer == null || buffer.length() < 1)
             isEmpty = true;
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] == 0)
-                isEmpty = true;
-        }
+        //scalars can be represented as either [] or [0]
+        if(shape.length > 1)
+            for(int i = 0; i < shape.length; i++) {
+                if(shape[i] == 0)
+                    isEmpty = true;
+            }
         return isEmpty;
     }
 
@@ -3610,7 +3612,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
         Preconditions.checkState(!isEmpty(), "Unable to get value from empty array");
 
-        if (i >= length()) {
+        //every non empty array should have at least element
+        if (i > 0 && i >= length()) {
             throw new IllegalArgumentException("Unable to get linear index " + i + ": values is greater than length (" + length() + ")");
         }
 
@@ -3688,17 +3691,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         //shape doesn't matter just let it through
-        if(hasZeros) {
+        //scalars are not empty
+        if(hasZeros && !Shape.shapeIsScalar(newShape) && newShape.length > 1) {
             return Nd4j.create(dataType(),newShape);
         }
 
 
         // special case for empty reshape
-        if (this.length() <= 1 && (newShape == null || newShape.length == 0)) {
+        if (this.length() <= 1 && (newShape == null || newShape.length == 0) || isScalar() && newShape.length == 1 && newShape[0] == 0) {
             if(data() == null)
-                return Nd4j.empty(dataType());
+                return Nd4j.emptyWithShape(newShape,dataType());
             else //scalar case
-                return Nd4j.create(this.data(), new int[0], new int[0], 0);
+                return Nd4j.create(this.data(),newShape, new long[]{1}, 0);
         }
 
         if (newShape == null || newShape.length < 1)
@@ -3743,7 +3747,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.length()) {
+        //ignore scalars this validation can be shaky
+        if (this.length() > 1 && prod != this.length()) {
             throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
         }
 
@@ -3756,7 +3761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return reshapeAttempt;
         }
 
-        if(enforceView){
+        if(enforceView) {
             throw new ND4JIllegalStateException("Unable to reshape array as view, called with enforceView=true. " +
                     "Use enforceView=false to return a copy instead, or call reshape on a non-strided array. Array shape info: " + this.shapeInfoToString().replaceAll("\n",""));
         }

@@ -1711,7 +1711,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
         if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if(log.isTraceEnabled()){
+            if(log.isTraceEnabled()) {
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
@@ -1735,7 +1735,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
                 inputBuffers.put(cnt, in.data().addressPointer());
-                inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
+                 inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
             }
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());

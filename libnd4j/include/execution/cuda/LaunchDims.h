@@ -718,6 +718,17 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define SHARED_MEM_SIZE_IDENTITY getEnvVariable("SHARED_MEM_SIZE_IDENTITY", 1024)
 
 
+#define GRID_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("GRID_SIZE_DYNAMIC_STITCH_TAD", 512)
+#define BLOCK_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("BLOCK_SIZE_DYNAMIC_STITCH_TAD", 512)
+#define SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD", 1024)
+
+#define GRID_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("GRID_SIZE_DYNAMIC_PARTITION_TAD", 256)
+#define BLOCK_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("BLOCK_SIZE_DYNAMIC_PARTITION_TAD", 256)
+#define SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD", 1024)
+
+
+dim3 getDynamicPartitionDims(int numThreads,int yDTypeSize);
+
 dim3 getIdentityLaunchDims(int len,int rank);
 dim3 getRepeatLaunchDims(int len,int rank);
 

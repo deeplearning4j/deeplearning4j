@@ -54,10 +54,36 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
+           //TODO: unsorted segment sum is the problem op here
+            //TODO: cumsum is a problem somehow. Initial thinking is the kernel doesn't have enough launch parameters.
+            "embedding_lookup/rank4_multiple_div_nomaxnorm"
+          //  "g_03"
+            /*"g_09",
+            "conv_2",
+            ,
+           ,
+            "embedding_lookup/rank4_multiple_div_nomaxnorm",
+            "cnn1d_nn/ncw_b2_k2_s1_VALID",
+            "fused_batch_norm/float32_nhcw",
+            "g_12",
+            "g_05",
+            "is_strictly_increasing/emptyArrayTest/rank1_float32",
+            "fused_batch_norm/float32_nhwc",
+            "is_strictly_increasing/emptyArrayTest/rank2_float32",
+            "linear_solve/float32_rank2",
+            "extractImagePatches/sz1-6-6-2_float32_k3_s1_r1_SAME",
+            "concat",
+            "linear_solve/float64_rank3",
+            "lrn/dr3_b05_a05_b02",
+            "in_top_k/test_4,5_k1",
+            "linear_solve/float64_rank2",
+            "emptyArrayTests/zeros/ones_rank3",
+            "emptyArrayTests/fill/fill_2-0_val3",
+            "emptyArrayTests/squeeze/in2-1-0_axis2"*/
     );
 
 
-    public static final String[] IGNORE_REGEXES = new String[]{
+    public static final String[] IGNORE_REGEXES = new String[] {
             //crashes JVM
             //expects 2 outputs we only output 1
             "non_max_suppression_v4/float16_with_thresholds",

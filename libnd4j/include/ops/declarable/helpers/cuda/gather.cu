@@ -74,12 +74,15 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const s
     if (threadIdx.x == 0) {
       x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo)]];
       z = reinterpret_cast<X*>(vz) + zOffsets[i];
+      printf("gather len is %d processing block %d at i %d\n",len,blockIdx.x,i);
     }
     __syncthreads();
+
 
     for (sd::LongType j = threadIdx.x; j < len; j += blockDim.x) {
       auto zIndex = shape::getIndexOffset(j, zShapeInfo);
       auto xIndex = shape::getIndexOffset(j, xShapeInfo);
+      printf("Setting x index at %d and z index %d at j %d\n",xIndex,zIndex,j);
       z[zIndex] = x[xIndex];
     }
     __syncthreads();
@@ -101,6 +104,7 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
                                        const sd::LongType* xShapeInfo, const sd::LongType* xOffsets, const void* vy,
                                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                        const sd::LongType* zOffsets) {
+  printf("in gather cuda launcher\n");
   dim3 gatherLinear = getGatherLinear(numOfSubArrs);
   gatherCuda<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy,
                                                                         yShapeInfo, vz, zShapeInfo, zOffsets);
@@ -116,18 +120,22 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
   if (axis < 0) axis += inputRank;
 
   if (indices == nullptr && numOfIntArgs == 2) {  // scalar case
+    printf("case 1\n");
     output->assign((*input)(intArgs[1], {axis}));
   } else if (indices != nullptr && indices->isScalar()) {
+    printf("case 2\n");
     if (input->rankOf() <= 1) {  // For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is
                                  // whole array... instead, we want to get a scalar
       auto idx = indices->e<sd::LongType>(0);
       auto scalarNDArray = input->e(idx);
       output->assign(scalarNDArray);
     } else {
+      printf("case 3\n");
       NDArray inSubArr = (*input)(indices->e<sd::LongType>(0), {axis});
       output->assign(inSubArr);
     }
   } else {
+    printf("case 4\n");
     NDArray* pIndices = const_cast<NDArray*>(indices);
     if (indices == nullptr)
       pIndices =
@@ -163,6 +171,7 @@ void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* ind
       NDArray::registerSpecialUse({output}, {input, pIndices});
       manager.synchronize();
     } else {
+      printf("case 5\n");
       NDArray::prepareSpecialUse({output}, {input, pIndices});
       BUILD_DOUBLE_SELECTOR(
           input->dataType(), pIndices->dataType(), gatherCudaLinear,

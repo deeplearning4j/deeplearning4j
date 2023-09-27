@@ -55,12 +55,19 @@ DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(sd::DataTyp
 
 DECLARE_SHAPE_FN(expand_dims) {
   auto inShape = inputShape->at(0);
-
+  auto rank = shape::rank(inShape);
   // 0D scalar edge case
   if (shape::isScalar(inShape)) {
-    sd::LongType x = 1;
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x, -1);
-    return SHAPELIST(newShape);
+    if(rank < 1) {
+      sd::LongType x = 1;
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x, -1);
+      return SHAPELIST(newShape);
+    } else {
+      std::vector<sd::LongType> x = {1, 1};
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, x.data(), -1);
+      return SHAPELIST(newShape);
+    }
+
   }
 
   auto input = INPUT_VARIABLE(0);
@@ -80,6 +87,7 @@ DECLARE_SHAPE_FN(expand_dims) {
                "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1,
                axis);
 
+  printf("New shape case\n");
   std::vector<sd::LongType> shape;
   for (sd::LongType e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
 

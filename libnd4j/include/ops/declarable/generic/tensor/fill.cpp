@@ -68,16 +68,27 @@ DECLARE_TYPES(fill) {
 
 DECLARE_SHAPE_FN(fill) {
   auto shapeArray = INPUT_VARIABLE(0);
-  if(shapeArray->isEmpty())
-    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
+
   const sd::LongType len = shapeArray->lengthOf();
+  if(shapeArray->isEmpty()) {
+    std::vector<sd::LongType> shape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
+  }
   sd::LongType *newShape = nullptr;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
 
   newShape[0] = len;
+  sd::LongType totalLen = 1;
   for (int e = 0; e < shapeArray->lengthOf(); e++) {
     newShape[e + 1] = shapeArray->e<sd::LongType>(e);
+    totalLen *= newShape[e + 1];
   }
+
+  if(totalLen < 1) {
+    std::vector<sd::LongType> shape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shape));
+  }
+
 
   sd::DataType dataType;
 

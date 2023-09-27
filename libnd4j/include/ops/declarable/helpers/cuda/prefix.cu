@@ -147,7 +147,7 @@ void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArra
 
   NDArray::prepareSpecialUse({z}, {x});
   BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher,
-                        (launchDims.y, launchDims.x, launchDims.z, context->getCudaStream(), op, x->specialBuffer(),
+                        (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), op, x->specialBuffer(),
                             packX->platformShapeInfo(), packX->platformOffsets(), z->specialBuffer(),
                             packZ->platformShapeInfo(), packZ->platformOffsets(), numTads, tadLen, exclusive, reverse),
                         SD_NUMERIC_TYPES);
