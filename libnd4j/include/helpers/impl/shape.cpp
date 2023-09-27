@@ -2083,7 +2083,6 @@ void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const sd::LongType *m
                                   sd::LongType *minShapeInfo, sd::LongType &minOffset,
                                   const bool keepUnitiesInShape, const bool isStrided,
                                   const sd::LongType numOfUntiesInMinShape) {
-  printf("calcSubArrShapeInfoAndOffset\n");
   const sd::LongType maxRank = shape::rank(maxShapeInfo);
   minOffset = 0;
   sd::LongType first, last, stride, n(isStrided ? 3 : 2);

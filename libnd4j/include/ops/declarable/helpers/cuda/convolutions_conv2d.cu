@@ -77,6 +77,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   NDArray *col = new NDArray('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
   NDArray *colP = new NDArray(col->permute({0, 5, 3, 4, 1, 2}));  // {bS, iC, kH, kW, oH, oW}
+  col->permute({0, 5, 3, 4, 1, 2}).printIndexedBuffer("Col input after permute");
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
   //----- calculation of output -----//
@@ -93,7 +94,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
     mmulResult.reshapei({bS, oH, oW, oC});
     mmulResult.permutei(permutForOutput);
   }
+
   output->assign(mmulResult);
+
 
   //----- add biases if required -----//
   if (bias)

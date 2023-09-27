@@ -56,13 +56,12 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
            //TODO: unsorted segment sum is the problem op here
             //TODO: cumsum is a problem somehow. Initial thinking is the kernel doesn't have enough launch parameters.
-            "embedding_lookup/rank4_multiple_div_nomaxnorm"
-          //  "g_03"
+            "conv_2"
+            //  "g_03"
             /*"g_09",
-            "conv_2",
+            ,
             ,
            ,
-            "embedding_lookup/rank4_multiple_div_nomaxnorm",
             "cnn1d_nn/ncw_b2_k2_s1_VALID",
             "fused_batch_norm/float32_nhcw",
             "g_12",

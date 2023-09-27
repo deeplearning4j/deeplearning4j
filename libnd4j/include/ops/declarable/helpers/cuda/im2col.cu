@@ -57,7 +57,6 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
 
   const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (colInd >= colLen) return;
 
   auto coords = sharedMem + threadIdx.x * colRank;
 
@@ -96,9 +95,10 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
 
   dim3 im2colDevs = getim2ColLaunchParams(columns);
   NDArray::prepareSpecialUse({&columns}, {&image});
+  printf("im2col launch params x %d y %d z %d\n", im2colDevs.x, im2colDevs.y, im2colDevs.z);
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
-      (im2colDevs.y, im2colDevs.x,im2colDevs.z, context, image.specialBuffer(), columns.specialBuffer(),
+      (im2colDevs.x, im2colDevs.y,im2colDevs.z, context, image.specialBuffer(), columns.specialBuffer(),
           image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&columns}, {&image});
