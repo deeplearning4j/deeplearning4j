@@ -106,7 +106,9 @@ SD_KERNEL static void addBias2DCuda(const void* vx, const void* vy, void* vz, ui
 template <typename X, typename Y>
 static void addBias2DCudaLauncher(const cudaStream_t* stream, const void* vx, const void* vy, void* vz, uint32_t blocks,
                                   uint32_t length) {
-  addBias2DCuda<X, Y><<<256, 1024, 128, *stream>>>(vx, vy, vz, blocks, length);
+  dim3 dims = getAddBiasDims(2, 2);
+
+  addBias2DCuda<X, Y><<<dims.x, dims.y, dims.z, *stream>>>(vx, vy, vz, blocks, length);
 }
 
 //////////////////////////////////////////////////////////////////////////

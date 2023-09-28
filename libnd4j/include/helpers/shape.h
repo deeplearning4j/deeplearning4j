@@ -1104,7 +1104,6 @@ SD_DEVICE SD_INLINE sd::LongType *cuMalloc(sd::LongType *buffer, long size) {
 
     SD_INLINE SD_HOST_DEVICE bool shapeEquals(const int shape1Rank, const sd::LongType *shape1, const int shape2Rank,
                                               const sd::LongType *shape2) {
-      printf("shapeEquals\n");
         if (shape1Rank != shape2Rank) return false;
         // rank not equals
         for (int i = 0; i < shape1Rank; i++) {
@@ -1829,9 +1828,7 @@ SD_DEVICE SD_INLINE sd::LongType *cuMalloc(sd::LongType *buffer, long size) {
 
         if (rank > 2) return 0;
         if (rank == 1) return shape[0] <= 1;
-        if (rank == 2)
-            return shape[0] == 1 &&
-                 shape[1] == 1;
+
 
         return 0;
     }
@@ -2386,7 +2383,7 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
         buffer[3] = 1;
         buffer[4] = 1;
         buffer[6] = 1;
-        buffer[7] = (int)order;
+        buffer[7] = order;
 
         sd::ArrayOptions::setDataType(buffer, dataType);
     }

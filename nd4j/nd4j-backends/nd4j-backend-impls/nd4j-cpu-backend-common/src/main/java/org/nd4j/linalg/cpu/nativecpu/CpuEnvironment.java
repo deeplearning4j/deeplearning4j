@@ -186,4 +186,44 @@ public class CpuEnvironment implements Environment {
     public long getDeviceCounter(int deviceId) {
         return 0;
     }
+
+    @Override
+    public boolean isFuncTracePrintDeallocate() {
+        return false;
+    }
+
+    @Override
+    public boolean isFuncTracePrintAllocate() {
+        return false;
+    }
+
+    @Override
+    public void setFuncTraceForDeallocate(boolean reallyTrace) {
+
+    }
+
+    @Override
+    public void setFuncTraceForAllocate(boolean reallyTrace) {
+
+    }
+
+    @Override
+    public boolean isDeletePrimary() {
+        return false;
+    }
+
+    @Override
+    public boolean isDeleteSpecial() {
+        return false;
+    }
+
+    @Override
+    public void setDeletePrimary(boolean reallyDelete) {
+
+    }
+
+    @Override
+    public void setDeleteSpecial(boolean reallyDelete) {
+
+    }
 }

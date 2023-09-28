@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-cuda-12.1</backend.artifactId>
+        <backend.artifactId>nd4j-native</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
         <lombok.version>1.18.24</lombok.version>
@@ -710,7 +710,7 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
                 <property>
-                    <name>nd4j.backend</name>
+                    <name>backend.artifactId</name>
                     <value>nd4j-native</value>
                 </property>
             </activation>

@@ -23,7 +23,7 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <array/ArrayOptions.hXX>
+#include <array/ArrayOptions.h>
 
 #include "../indexreduce.h"
 #include "../legacy_ops.h"

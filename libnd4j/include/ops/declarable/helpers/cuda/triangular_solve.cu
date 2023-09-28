@@ -32,6 +32,9 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+
+
 /*
  * lower triangular process for system of linear equations
  * x_1 = b_1/a_1,1
@@ -46,27 +49,17 @@ namespace helpers {
  *
  * */
 template <typename T>
-static SD_HOST_DEVICE void lowerTriangularSolve(T const* leftInput, sd::LongType const* leftInputShape,
-                                                T const* rightInput, sd::LongType const* rightInputShape,
-                                                bool const unitOnDiag, T* output, const sd::LongType* outputShape,
-                                                sd::LongType rows, sd::LongType cols) {
-  for (auto r = 0; r < rows; r++) {
-    for (auto j = 0; j < cols; j++) {
-      sd::LongType posY[] = {r, j};
-      sd::LongType posX[] = {r, r};
-      auto xIndex = shape::getOffset(leftInputShape, posX, 0);
-      auto yIndex = shape::getOffset(rightInputShape, posY, 0);
-      auto zIndex = shape::getOffset(outputShape, posY, 0);
-
-      auto sum = rightInput[yIndex];
-      for (auto c = 0; c < r; c++) {
-        sd::LongType posZ[] = {c, j};
-        sd::LongType pos[] = {r, c};
-        auto xcIndex = shape::getOffset(leftInputShape, pos, 0);
-        auto zcIndex = shape::getOffset(outputShape, posZ, 0);
-        sum -= leftInput[xcIndex] * output[zcIndex];
+static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+                                 bool const unitsOnDiag, NDArray* output) {
+  auto rows = leftInput->rows();
+  auto cols = rightInput->columns();
+  for (sd::LongType r = 0; r < rows; r++) {
+    for (sd::LongType j = 0; j < cols; j++) {
+      auto sum = rightInput->t<T>(r, j);
+      for (sd::LongType c = 0; c < r; c++) {
+        sum -= leftInput->t<T>(r, c) * output->t<T>(c, j);
       }
-      output[zIndex] = unitOnDiag ? sum : sum / leftInput[xIndex];
+      output->r<T>(r, j) = unitsOnDiag ? sum : sum / leftInput->t<T>(r, r);
     }
   }
 }
@@ -86,88 +79,71 @@ static SD_HOST_DEVICE void lowerTriangularSolve(T const* leftInput, sd::LongType
  * */
 
 template <typename T>
-static SD_HOST_DEVICE void upperTriangularSolve(T const* leftInput, sd::LongType const* leftInputShape,
-                                                T const* rightInput, sd::LongType const* rightInputShape,
-                                                bool const unitOnDiag, T* output, const sd::LongType* outputShape,
-                                                sd::LongType rows, sd::LongType cols) {
-  for (auto r = rows; r > 0; r--) {
-    for (auto j = 0; j < cols; j++) {
-      sd::LongType posY[] = {r - 1, j};
-      sd::LongType posX[] = {r - 1, r - 1};
-      auto xIndex = shape::getOffset(leftInputShape, posX, 0);
-      auto yIndex = shape::getOffset(rightInputShape, posY, 0);
-      auto zIndex = shape::getOffset(outputShape, posY, 0);
-      auto sum = rightInput[yIndex];
-      for (auto c = r; c < rows; c++) {
-        sd::LongType posZ[] = {c, j};
-        sd::LongType pos[] = {r - 1, c};
-        auto zcIndex = shape::getOffset(outputShape, posZ, 0);
-        auto xcIndex = shape::getOffset(leftInputShape, pos, 0);
-        sum -= leftInput[xcIndex] * output[zcIndex];
+static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+                                 bool const unitsOnDiag, NDArray* output) {
+  auto rows = leftInput->rows();
+  auto cols = rightInput->columns();
+  for (sd::LongType r = rows; r >= 0; r--) {
+    for (sd::LongType j = 0; j < cols; j++) {
+      auto sum = rightInput->t<T>(r - 1, j);
+      for (sd::LongType c = r; c < rows; c++) {
+        sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
       }
-      output[zIndex] = unitOnDiag ? sum : sum / leftInput[xIndex];
-    }
-  }
-}
-
-template <typename T>
-static SD_KERNEL void triangularSolveKernel(T const* leftInput, sd::LongType const* leftPartShape, T const* rightInput,
-                                            sd::LongType const* rightPartShape, bool const lower,
-                                            bool const unitsOnDiag, T* output, const sd::LongType* outputShape,
-                                            const sd::LongType* tadLeftShape, const sd::LongType* tadLeftOffset,
-                                            const sd::LongType* tadRightShape, const sd::LongType* tadRightOffset,
-                                            const sd::LongType* tadOutputShape, const sd::LongType* tadOutputOffset,
-                                            sd::LongType batchNum) {
-  __shared__ sd::LongType rows;
-  __shared__ sd::LongType cols;
-
-  if (threadIdx.x == 0) {
-    rows = shape::sizeAt(leftPartShape, -2);
-    cols = shape::sizeAt(rightPartShape, -1);
-  }
-  __syncthreads();
-
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto stop = batchNum;
-  auto increment = blockDim.x * gridDim.x;
-
-  for (auto i = start; i < stop; i += increment) {
-    auto pLeftPart = leftInput + tadLeftOffset[i];
-    auto pRightPart = rightInput + tadRightOffset[i];
-    auto pOutputPart = output + tadOutputOffset[i];
-    if (lower) {
-      lowerTriangularSolve<T>(pLeftPart, tadLeftShape, pRightPart, tadRightShape, unitsOnDiag, pOutputPart,
-                              tadOutputShape, rows, cols);
-    } else {
-      upperTriangularSolve<T>(pLeftPart, tadLeftShape, pRightPart, tadRightShape, unitsOnDiag, pOutputPart,
-                              tadOutputShape, rows, cols);
+      output->p(r - 1, j, unitsOnDiag ? sum : sum / leftInput->t<T>(r - 1, r - 1));
     }
   }
 }
 
 template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
-                                          bool lower, bool unitsOnDiag, NDArray* output) {
-  NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
+                                          bool lower, bool adjoint, NDArray* output) {
 
-  std::vector<sd::LongType> dims = {-2, -1};
-  auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), &dims);
-  auto rightTads = ConstantTadHelper::getInstance().tadForDimensions(rightInput->shapeInfo(), &dims);
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dims);
 
-  auto stream = context->getCudaStream();
-  T const* leftBuf = reinterpret_cast<T const*>(leftInput->specialBuffer());
-  T const* rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
-  T* outputBuf = reinterpret_cast<T*>(output->specialBuffer());
-  dim3 triangularSolveDims = getLaunchDims("triangular_solve");
-  triangularSolveKernel<T><<<triangularSolveDims.y, triangularSolveDims.x, triangularSolveDims.z, *stream>>>(
-      leftBuf, leftInput->specialShapeInfo(), rightBuf, rightInput->specialShapeInfo(), lower, unitsOnDiag, outputBuf,
-      output->specialShapeInfo(), leftTads->specialShapeInfo(), leftTads->specialOffsets(), rightTads->specialShapeInfo(),
-      rightTads->specialOffsets(), outputTads->specialShapeInfo(), outputTads->specialOffsets(), leftTads->numberOfTads());
+  auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
+  auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
+  auto outputPart = output->allTensorsAlongDimension({-2, -1});
+  auto batchLoop = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      if(i >= rightPart.size() || i > outputPart.size())
+        break;
+      if (lower) {
+        lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
+      } else {
+        upperTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
+      }
+    }
+  };
 
-  NDArray::registerSpecialUse({output}, {leftInput, rightInput});
+  samediff::Threads::parallel_tad(batchLoop, 0, leftPart.size(), 1);
 
   return sd::Status::OK;
+}
+template <typename T>
+static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
+                                     NDArray* output) {
+  auto inputPart = input->allTensorsAlongDimension({-2, -1});
+  auto outputPart = output->allTensorsAlongDimension({-2, -1});
+  auto cols = input->sizeAt(-1);
+  auto rows = input->sizeAt(-2);
+
+  auto batchLoop = PRAGMA_THREADS_FOR {
+    for (auto batch = start; batch < stop; batch++) {
+      if (!lower) {
+        for (sd::LongType r = 0; r < rows; r++) {
+          for (sd::LongType c = 0; c <= r; c++) {
+            outputPart[batch]->r<T>(r, c) = inputPart[batch]->t<T>(c, r);
+          }
+        }
+      } else {
+        for (sd::LongType r = 0; r < rows; r++) {
+          for (sd::LongType c = r; c < cols; c++) {
+            outputPart[batch]->r<T>(r, c) = inputPart[batch]->t<T>(c, r);
+          }
+        }
+      }
+    }
+  };
+  samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
 }
 
 ///  triangularSolve2D - 2D implementation of triangularSolveFunctor
@@ -238,28 +214,7 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, sd::LongType
   }
 }
 
-template <typename T>
-static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
-                                     NDArray* output) {
-  std::vector<sd::LongType> dims = {-2, -1};
-  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims);
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
-  auto stream = context->getCudaStream();
-  auto inputBuf = reinterpret_cast<T const*>(input->specialBuffer());
-  auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
-  auto rows = input->sizeAt(-2);
-  auto columns = input->sizeAt(-1);
-  dim3 launchDims = getLaunchDims("triangular_solve");
-  if (lower) {
-    lowerAdjointKernel<T><<<launchDims.y, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
-                                                      inputTads->specialShapeInfo(), inputTads->specialOffsets(),
-                                                      outputTads->specialShapeInfo(), outputTads->specialOffsets());
-  } else {
-    upperAdjointKernel<T><<<launchDims.y, launchDims.x,launchDims.z, *stream>>>(inputBuf, outputBuf, outputTads->numberOfTads(), rows, columns,
-                                                      inputTads->specialShapeInfo(), inputTads->specialOffsets(),
-                                                      outputTads->specialShapeInfo(), outputTads->specialOffsets());
-  }
-}
+
 
 void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), SD_FLOAT_NATIVE);

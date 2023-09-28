@@ -1932,54 +1932,6 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 }
 
 
-sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueDataBuffer **inputBuffers,
-                                            sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                            sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                            int numDArgs) {
-
-  sd::graph::VariableSpace varSpace;
-  Context block(2, &varSpace);
-  sd::ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
-
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
-
-  for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-    if(shape_ == nullptr) {
-      THROW_EXCEPTION("Input shape was null!");
-    }
-
-    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
-    }
-
-    // we shouldn't copy buffer if that's empty array
-    InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
-    auto array = new sd::NDArray(buff->primary(), shape_, varSpace.launchContext(),false);
-
-    // block should contain references to proper variable
-    varSpace.putVariable(1, e, array);
-    block.pickInput(1, e);
-
-    inShapes.push_back(shape_);
-  }
-
-  auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  if (varSpace.launchContext() != nullptr) shapeList->detach();
-
-  return shapeList;
-}
 
 sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
@@ -2692,6 +2644,11 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer hX, sd::LongType
 
 
 void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
+  if(inputShapeData == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: inputShapeData is null");
+
+  if(bufferToSet == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: bufferToSet is null");
   sd::LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     THROW_EXCEPTION("Invalid rank for shape buffer.");
@@ -2708,10 +2665,7 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto descriptor = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride);
-  if(isEmpty) {
-    descriptor._extraProperties = ARRAY_EMPTY;
-  }
+  auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,isEmpty ? ARRAY_EMPTY : 0);
 
   auto buffer = descriptor.toShapeInfo();
   for(sd::LongType i = 0; i < len; i++) {
@@ -2853,18 +2807,13 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
                                          char order, sd::LongType ews, sd::LongType extras) {
   try {
 
-    if(rank < 1) {
-      return sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
-    }
-    auto desc = new  ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
-    auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
-        desc);
-    delete desc;
+    auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, extras);
+    auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    THROW_EXCEPTION(e.what());
+    return nullptr;
   }
 }
 

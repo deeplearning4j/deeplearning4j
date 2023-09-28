@@ -46,6 +46,11 @@ void DataBuffer::expand(const uint64_t size) {
   }
 }
 
+void DataBuffer::printSpecialAllocationTraces() {
+   //no op on purpose
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate primary buffer only (cpu case)
   allocatePrimary();

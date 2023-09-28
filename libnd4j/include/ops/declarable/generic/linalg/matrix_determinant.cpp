@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(matrix_determinant, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0,
                "matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
-               "matrix_determinant: The last two dimmensions should be equal, but %i and %i are given",
+               "matrix_determinant: The last two dimensions should be equal, but %i and %i are given",
                input->sizeAt(-1), input->sizeAt(-2));
 
   return helpers::determinant(block.launchContext(), input, output);
@@ -122,7 +122,7 @@ CUSTOM_OP_IMPL(logdet, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "logdet: The rank of input array should not less than 2, but %i is given",
                input->rankOf());
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
-               "logdet: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1),
+               "logdet: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1),
                input->sizeAt(-2));
   REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0,
                "logdet: The input tensor should be positive-defined hermitian.");

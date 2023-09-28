@@ -2041,7 +2041,6 @@ SD_HOST void calcSubArrsShapeInfoAndOffsets(const sd::LongType *wholeShapeInfo,
     return;
   }
 
-  printf("calcSubArrsShapeInfoAndOffsets\n");
 
   const sd::LongType subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
 

@@ -39,11 +39,11 @@ CUSTOM_OP_IMPL(qr, 1, 2, false, 0, 0) {
                input->rankOf());
   REQUIRE_TRUE(
       (fullMatricies && outputQ->sizeAt(-1) == input->sizeAt(-2)) || (!fullMatricies && outputQ->isSameShape(input)), 0,
-      "qr: The last dimmensions should be equal to result Q, but %i and %i are given", outputQ->sizeAt(-1),
+      "qr: The last dimensions should be equal to result Q, but %i and %i are given", outputQ->sizeAt(-1),
       input->sizeAt(-2));
   REQUIRE_TRUE((fullMatricies && outputR->sizeAt(-1) == input->sizeAt(-1)) ||
                    (!fullMatricies && outputR->sizeAt(-1) == outputR->sizeAt(-2)),
-               0, "qr: The last dimmensions should be equal to result R, but %i and %i are given", outputR->sizeAt(-1),
+               0, "qr: The last dimensions should be equal to result R, but %i and %i are given", outputR->sizeAt(-1),
                input->sizeAt(-1));
   if (!input->isEmpty() && !outputQ->isEmpty() && !outputR->isEmpty())
     helpers::qr(block.launchContext(), input, outputQ, outputR, fullMatricies);

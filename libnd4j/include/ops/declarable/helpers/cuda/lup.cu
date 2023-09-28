@@ -323,7 +323,7 @@ static SD_KERNEL void fillUpPermutation(void *output, const sd::LongType *shape,
 // ------------------------------------------------------------------------------------------------------------------ //
 // LUP decomposition runner - using CUBLAS SOLVER
 // if permutation is given, then using LUP decomposition, LU decomposition otherwise
-// L - lower triangular, U - upper triangular, P - permutation matricies
+// L - lower triangular, U - upper triangular, P - permutation matrices
 // PA = LU
 //
 // input - A matrix nxn

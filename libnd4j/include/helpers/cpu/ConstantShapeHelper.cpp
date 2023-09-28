@@ -103,16 +103,25 @@ bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *desc
 }
 
 const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order, const int rank,
-                                                         const sd::LongType* shape) {
-  auto descriptor = new ShapeDescriptor(dataType, order, shape, rank);
-  auto ret =  bufferForShapeInfo(descriptor)->primary();
-  delete descriptor;
+                                                         const sd::LongType* shape, LongType extraProperties = -1) {
+
+  if(extraProperties < 0) {
+    extraProperties = ArrayOptions::flagForDataType(dataType);
+  }
+
+
+
+
+  ShapeDescriptor *descriptor =
+      new ShapeDescriptor(dataType, order, shape, (sd::LongType*)nullptr, rank, extraProperties);
+  auto ret = bufferForShapeInfo(descriptor)->primary();
+  //delete descriptor;
   return ret;
 }
 
-const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const sd::LongType* shapeInfo) {
+const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const sd::LongType* shapeInfo) {
   return ConstantShapeHelper::createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
-                                              shape::shapeOf(const_cast<sd::LongType*>(shapeInfo)));
+                                              shape::shapeOf(const_cast<sd::LongType*>(shapeInfo)), -1);
 }
 
 const sd::LongType* ConstantShapeHelper::emptyShapeInfo(const sd::DataType dataType) {
@@ -192,7 +201,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
   newShapeInfo[2 * shape::rank(maxShapeInfo) + 1] = 0;
   sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                      // type
   newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo);  // ews
-  newShapeInfo[2 * newShapeInfao[0] + 3] = shape::order(minShapeInfo);              // order
+  newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);              // order
 
   if (!dimensions.empty()) {
     for (sd::LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {

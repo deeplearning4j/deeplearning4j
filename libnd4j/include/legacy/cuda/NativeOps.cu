@@ -2805,54 +2805,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 }
 
 
-sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueDataBuffer **inputBuffers,
-                                            OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                            sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                            int numDArgs) {
 
-  sd::graph::VariableSpace varSpace;
-  Context block(2, &varSpace);
-  sd::ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
-
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
-
-  for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]->primary());
-    if(shape_ == nullptr) {
-      THROW_EXCEPTION("Input shape was null!");
-    }
-
-    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
-    }
-
-    // we shouldn't copy buffer if that's empty array
-    InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
-    auto array = new sd::NDArray(buff,shape_);
-
-    // block should contain references to proper variable
-    varSpace.putVariable(1, e, array);
-    block.pickInput(1, e);
-
-    inShapes.push_back(shape_);
-  }
-
-  auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  if (varSpace.launchContext() != nullptr) shapeList->detach();
-
-  return shapeList;
-}
 sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
                                       sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
                                       sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,

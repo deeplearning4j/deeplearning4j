@@ -78,12 +78,18 @@ DECLARE_SHAPE_FN(fill) {
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
 
   newShape[0] = len;
+  bool hasZeros = false;
   sd::LongType totalLen = 1;
   for (int e = 0; e < shapeArray->lengthOf(); e++) {
     newShape[e + 1] = shapeArray->e<sd::LongType>(e);
+    if(newShape[e + 1] == 0)
+      hasZeros = true;
     totalLen *= newShape[e + 1];
   }
-
+  if(len > 1 && hasZeros) {
+    std::vector<sd::LongType> shapeOnly = shapeArray->asVectorT<sd::LongType>();
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shapeOnly));
+  }
   if(totalLen < 1) {
     std::vector<sd::LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shape));

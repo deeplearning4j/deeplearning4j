@@ -77,7 +77,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   NDArray *col = new NDArray('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
   NDArray *colP = new NDArray(col->permute({0, 5, 3, 4, 1, 2}));  // {bS, iC, kH, kW, oH, oW}
-  col->permute({0, 5, 3, 4, 1, 2}).printIndexedBuffer("Col input after permute");
+  printf("mmuLResult shape is: bS * oH * oW %d oC %d\n", bS, oH, oW, oC, bS * oH * oW,oC);
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
   //----- calculation of output -----//

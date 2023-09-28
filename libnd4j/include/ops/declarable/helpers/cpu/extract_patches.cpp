@@ -32,22 +32,17 @@ static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int s
   std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
   ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
   ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
-  // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
+  // 3D matrices - 2D matrices of vectors (if last dim is greater than 1)
   // int e = 0;
-  const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
-  const int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
-  const int ksize = ksizeRowsEffective * ksizeColsEffective;
-  int batchCount = listOfMatricies.size();  // lengthOf() / ksize;
+
+  int batchCount = listOfMatricies.size();
   sd::LongType lastDim = images->sizeAt(3);
-  sd::LongType outLastDim = output->sizeAt(3);
   sd::LongType rowDim = images->sizeAt(1);
   sd::LongType colDim = images->sizeAt(2);
   sd::LongType outRowDim = output->sizeAt(1);
   sd::LongType outColDim = output->sizeAt(2);
-  auto rowCast = 1;  //(sizeRow - 1)*rateRow < outRowDim/sizeRow  ?0:1;///(ksize * lastDim > rowDim * ksizeColsEffective
-                     //+ lastDim?1:0);
-  auto colCast = 1;  // colDim / ksizeColsEffective +2 <= sizeCol?0:1;//(ksize * lastDim > ksizeRowsEffective * colDim +
-                     // lastDim?1:0);
+  auto rowCast = 1;
+  auto colCast = 1;
   if (sizeRow * rateRow < 3) rowCast = 0;
   if (sizeCol * rateCol < 3) colCast = 0;
 
@@ -59,7 +54,6 @@ static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int s
       for (sd::LongType i = 0; i < outRowDim; i++) {
         for (sd::LongType j = 0; j < outColDim; j++) {
           sd::LongType pos = 0;
-          // for (sd::LongType k = 0; k < outputLastDim; k++) {
           auto rowStart = i * strideRow - (theSame ? rowCast : 0);
           auto colStart = j * strideCol - (theSame ? colCast : 0);
           auto rowEnd = rowStart + sizeRow * rateRow;
@@ -68,11 +62,14 @@ static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int s
             rowEnd = math::sd_min(rowStart + sizeRow * rateRow, rowDim);
             colEnd = math::sd_min(colStart + sizeCol * rateCol, colDim);
           }
-          // auto pixel = 0LL;
           for (auto row = rowStart; row < rowEnd; row += rateRow)
             for (auto col = colStart; col < colEnd; col += rateCol)
               for (auto pixel = 0; pixel < lastDim; pixel++) {
-                bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
+                bool setUp = (theSame && row >= 0
+                              && col >= 0 && row < rowDim
+                              && col < colDim)
+
+                             || (!theSame);
                 if (setUp) {
                   outMatrix->r<T>(i, j, pos) = patch->e<T>(row, col, pixel);
                 }

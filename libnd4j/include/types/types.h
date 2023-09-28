@@ -33,7 +33,7 @@
 #include <types/uint8.h>
 #include <types/utf8string.h>
 /**
- * @brief type related Macrosses to help with template instantiations.
+ * @brief type related Macros to help with template instantiations.
  *
  *  To restrict certain types one should define SD_SELECTIVE_TYPES and desired types using HAS_${TYPENAME}
  *  where ${TYPENAME} is a type name written in capital letters:

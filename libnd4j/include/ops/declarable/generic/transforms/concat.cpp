@@ -177,7 +177,6 @@ DECLARE_SHAPE_FN(concat) {
       }
 
     } else {
-
       if(!shape::isEmpty(inputShape->at(i))) {
         numOfNonEmptyArrs++;
         if(firstNonEmptyShapeIdx < 0)
@@ -227,8 +226,6 @@ DECLARE_SHAPE_FN(concat) {
 
   // ******** end of input validation ******** //
 
-  printf("evaluating arr shape at first non empty shape idx %d scalar at this idx: %d empty at this idx %d\n",firstNonEmptyShapeIdx,shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx)),
-         shape::isEmpty(arrShapes.at(firstNonEmptyShapeIdx)));
   if(shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx))) {
     //concat of scalar should be  a 1d vector
     auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(newDim, INPUT_VARIABLE(0)->dataType());
@@ -249,11 +246,14 @@ DECLARE_SHAPE_FN(concat) {
 
 
 
+    /*
+     * TODO: handle case with [1,1]
+     * concatneated to n x 1
+     * test case is already entered.
+     */
     auto currShape = shape::shapeOf(outShapeInfo);
     currShape[axis] = newDim;
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
-    printf("Final shape is:");
-    shape::printShapeInfo(outShapeInfo);
 
     auto desc = new ShapeDescriptor(outShapeInfo);
     auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);

@@ -103,14 +103,6 @@
       const sd::LongType *tadOffsets) {}
 
 #else
-// hacky fix for isnan/being being out of scope
-//#ifdef IOS
-//#define isinf(x) 0 // this isn't right. But std::isinf fails
-//#define isnan(x) 0
-//#else
-//#define isnan std::isnan
-//#define isinf std::isinf
-//#endif
 
 #define no_op_exec_special_cuda
 #define no_op_exec_special_accumulation_cuda
@@ -146,7 +138,7 @@ namespace simdOps {
 template <typename X, typename Y, typename Z>
 class Add {
  public:
-  SD_OP_DEF static Z op(X d1, Y d2) { return static_cast<Z>(d1 + d2); }
+  SD_OP_DEF static Z op(X d1, Y d2) { return d1 + d2; }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) { return static_cast<Z>(d1 + d2); }
 

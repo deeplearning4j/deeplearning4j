@@ -69,7 +69,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto permutations = NDArrayFactory::create<int>('c', permuShape, context);
   helpers::lu(context, leftInput, &leftOutput, &permutations);
   auto P = leftInput->ulike();  // permutations batched matrix
-  P.nullify();                  // to fill up matricies with zeros
+  P.nullify();                  // to fill up matrices with zeros
   auto PPart = P.allTensorsAlongDimension({-2, -1});
   auto permutationsPart = permutations.allTensorsAlongDimension({-1});
 

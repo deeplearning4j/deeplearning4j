@@ -128,18 +128,6 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType data
 
 
 
-  /*
-   * TODO: we found this issue with identity. We don't handle empty here.
-   * We need to propagate flags here. This can happen either with _extraProperties
-   * or manualy checking for certain flags like empty. Probabbly better just to add a
-   * new flag parameter to handle this case. Look in OP_IMPL for the test case.
-   */
-  /* *
-   *
-   * ShapeDescriptor(const DataType type, const char order, const sd::LongType *shape,
-const sd::LongType *strides, const LongType rank, sd::LongType ews, sd::LongType extras)
-   * /
-   */
 
   ShapeDescriptor *descriptor =
       new ShapeDescriptor(dataType, order, shape, (sd::LongType*)nullptr, rank, extraProperties);

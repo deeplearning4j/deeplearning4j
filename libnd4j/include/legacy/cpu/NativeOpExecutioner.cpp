@@ -44,6 +44,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <types/types.h>
+#include <array/DataTypeUtils.h>
 
 #include <vector>
 
@@ -1128,7 +1129,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if(DataTypeUtils::isS(xType)) {
+  if(sd::DataTypeUtils::isS(xType)) {
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                             ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),

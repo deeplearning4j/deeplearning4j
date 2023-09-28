@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(lu, 1, 2, false, 0, 0) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "lu: The rank of input array should not less than 2, but %i is given",
                input->rankOf());
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
-               "lu: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1),
+               "lu: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1),
                input->sizeAt(-2));
 
   helpers::lu(block.launchContext(), input, z, p);
