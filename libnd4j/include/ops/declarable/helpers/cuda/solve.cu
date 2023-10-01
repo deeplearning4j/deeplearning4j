@@ -75,24 +75,18 @@ static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PSh
 template <typename T>
 static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
                                 NDArray* output) {
-  leftInput->printBuffer("left input in solveFunctor_");
-  rightInput->printBuffer("right input in solveFunctor_");
+
   NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
-  leftOutput.syncToHost();
-  rightInput->syncToHost();
-  rightInput->printBuffer("rightInput before cuda:");
 
   auto permuShape = rightInput->getShapeAsVector();
   permuShape.pop_back();
   auto permutations = NDArrayFactory::create<sd::LongType>('c', permuShape, context);
   helpers::lu(context, leftInput, &leftOutput, &permutations);
-  leftOutput.printBuffer("leftOutput before cuda:");
 
   auto leftLower = leftOutput.dup();
   auto rightOutput = rightInput->ulike();
-  rightOutput.printBuffer("rightOutput before cuda:");
 
   const std::vector<sd::LongType> dims1 = {-2, -1};
   const bool isOwner = false;
@@ -108,30 +102,23 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), const_cast<sd::LongType *>(dims1.data()),
                                                                 dims1.size(),isOwner);
   auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
-  restorePermutationsKernel<T><<<128, 256, 256, *stream>>>(
+  dim3 solveDims = getLaunchDims("solve");
+  restorePermutationsKernel<T><<<solveDims.x, solveDims.y, solveDims.z, *stream>>>(
       P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<sd::LongType>(),
       PTad->specialShapeInfo(), PTad->specialOffsets(), permutationsTad->specialShapeInfo(),
       permutationsTad->specialOffsets(), permutationsTad->numberOfTads(), permutations.sizeAt(-1));
 
-  P.printBuffer("P matrix");
   P.tickWriteDevice();
   auto rightPart = rightInput->ulike();
 
-  leftLower.printBuffer("left lower cuda:");
-  rightOutput.printBuffer("right output cuda:");
-  rightPart.printBuffer("right permutedcuda:");
 
   MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0);
 
-  leftLower.printBuffer("left lower first input\n");
-  rightPart.printBuffer("right permuted first input\n");
 
   // stage 2: triangularSolveFunctor for Lower with given b
   helpers::triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
   // stage 3: triangularSolveFunctor for Upper with output of previous stage
-  leftOutput.printBuffer("leftOutput lower second input\n");
-  rightOutput.printBuffer("rightOutput permuted second input\n");
-  helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
+   helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
   NDArray::registerSpecialUse({output}, {leftInput, rightInput});
 
   return sd::Status::OK;
@@ -171,7 +158,9 @@ static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDA
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
   output->assign(input);
-  adjointKernel<T><<<128, 256, 256, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
+  dim3 solveDims = getLaunchDims("solve");
+
+  adjointKernel<T><<<solveDims.x,solveDims.y, solveDims.z, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
                                                outputTads->specialShapeInfo(), outputTads->specialOffsets());
   NDArray::registerSpecialUse({output}, {input});
 }

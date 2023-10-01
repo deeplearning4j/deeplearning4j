@@ -169,6 +169,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"identity", {dim3(GRID_SIZE_IDENTITY, BLOCK_SIZE_IDENTITY, SHARED_MEM_SIZE_IDENTITY)}},
     {"dynamic_stitch_tad", {dim3(GRID_SIZE_DYNAMIC_STITCH_TAD, BLOCK_SIZE_DYNAMIC_STITCH_TAD, SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD)}},
     {"dynamic_partition_tad", {dim3(GRID_SIZE_DYNAMIC_PARTITION_TAD, BLOCK_SIZE_DYNAMIC_PARTITION_TAD, SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD)}},
+    {"solve", {dim3(GRID_SIZE_SOLVE, BLOCK_SIZE_SOLVE, SHARED_MEM_SIZE_SOLVE)}},
 
 
 };
@@ -336,10 +337,23 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"identity", {"GRID_SIZE_FILL_IDENTITY", "BLOCK_SIZE_FILL_IDENTITY", "SHARED_MEM_SIZE_FILL_IDENTITY"}},
     {"dynamic_stitch_tad", {"GRID_SIZE_DYNAMIC_STITCH_TAD", "BLOCK_SIZE_DYNAMIC_STITCH_TAD", "SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD"}},
     {"dynamic_partition_tad", {"GRID_SIZE_DYNAMIC_PARTITION_TAD", "BLOCK_SIZE_DYNAMIC_PARTITION_TAD", "SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD"}},
+    {"solve", {"GRID_SIZE_SOLVE", "BLOCK_SIZE_SOLVE", "SHARED_MEM_SIZE_SOLVE"}},
+    {"lup", {"GRID_SIZE_LUP", "BLOCK_SIZE_LUP", "SHARED_MEM_SIZE_LUP"}},
 
 
 };
 
+
+dim3 getLupDims(int batchSize) {
+  int threadsPerBlock = 128;
+  int blocksPerGrid = batchSize;
+  int sharedMem = 256;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_LUP",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_LUP",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_LUP",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+
+}
 
 dim3 getDynamicPartitionDims(int numThreads,int yDTypeSize) {
   auto shmemSize = numThreads *yDTypeSize * 2 + 1024;

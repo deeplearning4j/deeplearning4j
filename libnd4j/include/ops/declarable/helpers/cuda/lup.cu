@@ -471,7 +471,7 @@ static SD_DEVICE void processColumns(sd::LongType currentRow, sd::LongType rowNu
   for (auto j = currentRow + 1; j < rowNum; j++) {
     sd::LongType xRow[] = {j, currentRow};
     auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
-    compoundBuf[rowIndex] /= compoundBuf[diagIndex];  
+    compoundBuf[rowIndex] /= compoundBuf[diagIndex];
     for (auto k = currentRow + 1; k < rowNum; k++) {
       sd::LongType yRow[] = {j, k};
       sd::LongType yCol[] = {currentRow, k};
@@ -546,7 +546,8 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   auto tads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
   auto permutationTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDim);
   auto batchNum = input->sizeAt(-1);
-  luBatchedKernel<T, I><<<batchNum, 256, 1024, *stream>>>(
+  dim3 lupDims = getLupDims(batchNum);
+  luBatchedKernel<T, I><<<lupDims.x, lupDims.y, lupDims.z, *stream>>>(
       reinterpret_cast<T *>(output->platformBuffer()),
       output->specialShapeInfo(),
       reinterpret_cast<I *>(permutationVectors->platformBuffer()),
