@@ -1226,11 +1226,6 @@ public interface NativeOps {
 
 
 
-    org.nd4j.nativeblas.OpaqueShapeList calculateOutputShapes3(PointerPointer extraPointers,  long hash,
-                                                               PointerPointer inputBuffers,
-                                                               PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,
-                                                               LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs, IntPointer dArgs,
-                                                               int numDArgs);
 
     long getShapeListSize(OpaqueShapeList list);
     LongPointer getShape(OpaqueShapeList list, long i);

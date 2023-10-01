@@ -2822,21 +2822,7 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
 }
 
 
-OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                        OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                        sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                        int numDArgs) {
-  try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
-    return _calculateOutputShapesBuffer(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                        numIArgs, bArgs, numBArgs, dArgs, numDArgs);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    THROW_EXCEPTION(e.what());
-  }
-}
 
 
 sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputShapes,

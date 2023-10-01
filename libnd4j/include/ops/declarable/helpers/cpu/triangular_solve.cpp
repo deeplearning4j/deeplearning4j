@@ -117,6 +117,8 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
                                           bool lower, bool adjoint, NDArray* output) {
 
 
+    leftInput->printBuffer("leftInput before");
+    rightInput->printBuffer("rightInput before");
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
@@ -133,6 +135,22 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
   };
 
   samediff::Threads::parallel_tad(batchLoop, 0, leftPart.size(), 1);
+
+  printf("leftInput:\n");
+  leftInput->printBuffer("leftInput");
+  printf("rightInput:\n");
+
+
+
+  printf("leftInput:");
+  leftInput->printBuffer("leftInput");
+  printf("rightInput:");
+  rightInput->printBuffer("rightInput");
+
+
+
+  printf("output:\n");
+  output->printBuffer("output:");
 
   return sd::Status::OK;
 }
@@ -162,6 +180,11 @@ static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* 
     }
   };
   samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
+
+
+  printf("adjoint triangular matrix: lower %d\n",lower);
+  input->printBuffer("Input:");
+  output->printBuffer("Final output:");
 }
 
 sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower,

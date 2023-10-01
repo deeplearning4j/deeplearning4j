@@ -625,7 +625,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
             if(oc == null) {
                 op2.addInputArgument(op.x());
-                op2.addOutputArgument(op.y());
+                if(op.y() != null)
+                    op2.addOutputArgument(op.y());
+                else
+                    op2.addInputArgument(op.x());
                 op2.addOutputArgument(op.z());
                 exec(op2);
             } else {
@@ -1388,9 +1391,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int numProcessed = 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().opaqueBuffer());
+                inputBuffers.put(cnt, in.data().addressPointer());
 
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
             numProcessed++;
         }
 
@@ -1469,19 +1472,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         OpaqueShapeList ptrptr;
         try {
-            ptrptr = loop.calculateOutputShapes3(null,
-                    hash, inputBuffers, inputShapes, nIn, tArgs,
-                    nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
+             ptrptr = loop.calculateOutputShapes2(null,
+                    hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
+                    iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
             if (loop.lastErrorCode() != 0) {
-                DifferentialFunction differentialFunction = (DifferentialFunction) op;
-                if(opContext != null)
-                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute." +  " Here is the error from c++: " + loop.lastErrorMessage());
-                else {
-                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute. Here is the error from c++: " + loop.lastErrorMessage());
-
-                }
+                //used with debuggers mainly
+                String errorMessage = loop.lastErrorMessage();
+                throw new RuntimeException(errorMessage);
             }
+            if (ptrptr == null)
+                throw new RuntimeException();
+
         } catch (Throwable t) {
             StringBuilder sb = new StringBuilder();
             sb.append("Inputs: [(");

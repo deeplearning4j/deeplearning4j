@@ -471,7 +471,7 @@ static SD_DEVICE void processColumns(sd::LongType currentRow, sd::LongType rowNu
   for (auto j = currentRow + 1; j < rowNum; j++) {
     sd::LongType xRow[] = {j, currentRow};
     auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
-    compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
+    compoundBuf[rowIndex] /= compoundBuf[diagIndex];  
     for (auto k = currentRow + 1; k < rowNum; k++) {
       sd::LongType yRow[] = {j, k};
       sd::LongType yCol[] = {currentRow, k};
@@ -485,9 +485,7 @@ static SD_DEVICE void processColumns(sd::LongType currentRow, sd::LongType rowNu
 template <typename T>
 SD_DEVICE sd::LongType argmaxCol(sd::LongType column, T *compoundBuffer, const sd::LongType *compoundShape) {
   auto rowNum = shape::sizeAt(compoundShape, 0);
-  sd::LongType xInitial[] = {column, column};
-  auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
-  auto maxValue = T(0);  // sd::math::sd_abs(compoundBuffer[xInitialIndex]);
+  auto maxValue = T(0);
   auto result = -1LL;
 
   for (auto rowCounter = column; rowCounter < rowNum; rowCounter++) {
@@ -498,25 +496,12 @@ SD_DEVICE sd::LongType argmaxCol(sd::LongType column, T *compoundBuffer, const s
       result = rowCounter;
     }
   }
+
+
   return result;
 }
 
-template <typename T, typename I>
-static SD_DEVICE int luNN(T *matrix, const sd::LongType *shape, I *permutation, const sd::LongType *permuShape,
-                          sd::LongType n) {
-  for (auto i = 0; i < n - 1; i++) {
-    auto pivotIndex = argmaxCol(i, matrix, shape);
-    if (pivotIndex < 0) {
-      return -1;
-    }
-    math::sd_swap(permutation[shape::getIndexOffset(i, permuShape)],
-                  permutation[shape::getIndexOffset(pivotIndex, permuShape)]);
-    swapRows(matrix, shape, (sd::LongType)i, pivotIndex, n);
 
-    processColumns(i, n, matrix, shape);
-  }
-  return 0;
-}
 
 template <typename T, typename I>
 static SD_KERNEL void luBatchedKernel(T *outputBuf, const sd::LongType *outputShape, I *permutations,
@@ -529,8 +514,19 @@ static SD_KERNEL void luBatchedKernel(T *outputBuf, const sd::LongType *outputSh
   for (auto b = start; b < batchNum; b += step) {
     T *matrix = outputBuf + outputTadOffsets[b];
     I *permutation = permutations + permuTadOffsets[b];
+    for (auto i = 0; i < batchNum - 1; i++) {
+      auto pivotIndex = argmaxCol(i, matrix, outputTadShape);
+      if (pivotIndex < 0) {
+        continue;
+      }
+      math::sd_swap(permutation[shape::getIndexOffset(i, permuShape)],
+                    permutation[shape::getIndexOffset(pivotIndex, permuShape)]);
+      swapRows(matrix, permuTadShape, (sd::LongType)i, pivotIndex, batchNum);
 
-    if (0 != luNN(matrix, outputTadShape, permutation, permuTadShape, shape::length(permuTadShape))) break;
+      processColumns(i, batchNum, matrix, permuTadShape);
+    }
+
+
   }
 }
 
@@ -542,19 +538,24 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
   iota.linspace(0);
   iota.syncToDevice();
 
-  output->assign(input);  // fill up output tensor with zeros
-  permutationVectors->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
+   permutationVectors->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
+
 
   std::vector<sd::LongType> dims = {-2, -1};
   std::vector<sd::LongType> lastDim = {-1};
   auto tads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
-  auto permutaionTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDim);
-  auto batchNum = tads->numberOfTads();
+  auto permutationTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDim);
+  auto batchNum = input->sizeAt(-1);
   luBatchedKernel<T, I><<<batchNum, 256, 1024, *stream>>>(
-      reinterpret_cast<T *>(output->platformBuffer()), output->specialShapeInfo(),
-      reinterpret_cast<I *>(permutationVectors->platformBuffer()), permutationVectors->specialShapeInfo(),
-      tads->specialShapeInfo(), tads->specialOffsets(), permutaionTads->specialShapeInfo(),
-      permutaionTads->specialOffsets(), batchNum);
+      reinterpret_cast<T *>(output->platformBuffer()),
+      output->specialShapeInfo(),
+      reinterpret_cast<I *>(permutationVectors->platformBuffer()),
+      permutationVectors->specialShapeInfo(),
+      tads->specialShapeInfo(), tads->specialOffsets(), permutationTads->specialShapeInfo(),
+      permutationTads->specialOffsets(), batchNum);
+
+
+
 }
 
 void lu(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutations) {
@@ -570,8 +571,7 @@ static sd::Status determinant_(sd::LaunchContext *context, NDArray *input, NDArr
   sd::LongType n2 = n * n;
   std::vector<sd::LongType> dims();
   std::vector<sd::LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
-  auto packX =
-      ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims2);
+
   auto matrix =
       NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);  //, block.getWorkspace());
   auto det = NDArrayFactory::create<T>(1, context);
@@ -607,8 +607,6 @@ sd::Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *o
   sd::LongType n2 = n * n;
   std::vector<sd::LongType> dims();
   std::vector<sd::LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
-  auto packX =
-      ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims2);
   DataType dtype = input->dataType();
   if (dtype != DataType::DOUBLE) dtype = DataType::FLOAT32;
 
@@ -687,8 +685,7 @@ static sd::Status inverse_(sd::LaunchContext *context, NDArray *input, NDArray *
 
   auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
                                                                      &dims2);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),
-                                                                    &dims3);
+
   auto stream = context->getCudaStream();
 
   for (auto i = 0LL; i < packX->numberOfTads(); i++) {

@@ -187,8 +187,16 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
   }
 
   int len = isScalar() ? 1 : lengthOf();
-  if (!isEmpty())
+ //TODO: figure out why this breaks cpu
+  //TODO: figure out if this is the correct copy constructor
+  if (!isEmpty()) {
     _buffer = std::make_shared<DataBuffer>(len * sizeOfT(), dataType(), getContext()->getWorkspace());
+  /*  _buffer = std::make_shared<DataBuffer>(other->getDataBuffer()->primary(),
+                                          other->getDataBuffer()->special()
+                                          , len * DataTypeUtils::sizeOf(other->dataType()), other->dataType(),
+                                          false,false,
+                                          getContext()->getWorkspace());*/
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

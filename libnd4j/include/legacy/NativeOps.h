@@ -1493,12 +1493,6 @@ SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers
                                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                       int* dArgs, int numDArgs);
 
-SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                                                      OpaqueDataBuffer **inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                                                      int numDArgs);
-
-
 #ifdef __NEC__
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesFromContext(OpaqueContext* ctx, sd::LongType hash);
 SD_LIB_EXPORT int calculateOutputShapesAndFill(OpaqueContext *ctx, sd::LongType hash, void **handleState, int outBufferSizeInBytes, sd::LongType *outConcatenatedShapesBuffer);

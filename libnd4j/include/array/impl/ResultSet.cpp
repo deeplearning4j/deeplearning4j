@@ -120,6 +120,14 @@ void ResultSet::delContent() {
 
 ResultSet::~ResultSet() { delContent(); }
 
+void ResultSet::printIndexedBuffers() {
+  for (int e = 0; e < _content.size(); e++) {
+    auto array = _content.at(e);
+    auto strVal = "Array e: " + std::to_string(e) + " is: ";
+    array->printIndexedBuffer(strVal.c_str());
+  }
+
+}
 void ResultSet::setNonRemovable() { _removable = false; }
 
 int ResultSet::size() { return (int)_content.size(); }

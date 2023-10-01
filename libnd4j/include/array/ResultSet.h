@@ -71,6 +71,7 @@ class SD_LIB_EXPORT ResultSet {
   void setStatus(sd::Status status);
   void purge();
   void setNonRemovable();
+  void printIndexedBuffers();
 };
 }  // namespace sd
 

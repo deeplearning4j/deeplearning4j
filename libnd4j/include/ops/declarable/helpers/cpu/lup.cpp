@@ -89,7 +89,7 @@ static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
 }
 
 BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray * inputMatrix, NDArray* invertedMatrix);
-                      , SD_FLOAT_TYPES);
+, SD_FLOAT_TYPES);
 
 void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
   BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), invertLowerMatrix_, (inputMatrix, invertedMatrix), SD_FLOAT_TYPES);
@@ -127,7 +127,7 @@ static void _invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
 }
 
 BUILD_SINGLE_TEMPLATE(template void _invertUpperMatrix, (NDArray * inputMatrix, NDArray* invertedMatrix);
-                      , SD_FLOAT_TYPES);
+, SD_FLOAT_TYPES);
 
 void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
   BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), _invertUpperMatrix, (inputMatrix, invertedMatrix), SD_FLOAT_TYPES);
@@ -213,6 +213,8 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
   for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
     sd::LongType xPos[] = {rowCounter, column};
     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
+    printf("Comparing xIndex %d compound buffer value %f maxValue %f\n", xIndex,sd::math::sd_abs(compoundBuffer[xIndex]),maxValue);
+
     if (sd::math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
       maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs(compoundBuffer[xIndex]));
       result = rowCounter;
@@ -303,9 +305,9 @@ static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray
 
   output->assign(input);  // fill up output tensor with zeros
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
+  outputs.printIndexedBuffers();
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});
-
   auto loop = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       luNN_<T, I>(context, outputs.at(i), permutationVectors ? permutations.at(i) : nullptr, n);
