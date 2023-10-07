@@ -39,17 +39,25 @@ class BroadcastHelper {
       return z;
     }
 
-    std::unique_ptr<NDArray> ptr;
-    if (!Environment::getInstance().isExperimentalBuild()) {
-      if (y->dataType() != x->dataType()) {
-        y = new NDArray(y->cast(x->dataType()));
-        std::unique_ptr<NDArray> ptr2(y);
-        ptr.swap(ptr2);
-      }
-    }
+
 
     if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
-      x->applyPairwiseTransform(op.p, *y, *z);
+      printf("running pairwise transform: !x->isScalar() && !y->isScalar() && x->isSameShape(y)\n");
+      /*
+       * TODO: figure out why x is being modified here.
+       */
+
+      if(op.p == sd::pairwise::CopyPws) {
+        printf("running pairwise assign:\n");
+        x->printIndexedBuffer("x buffer before pairwise transform:");
+        z->printIndexedBuffer("z buffer before pairwise transform:");
+
+        x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
+        x->printIndexedBuffer("x buffer after pairwise transform:");
+        z->printIndexedBuffer("z buffer after pairwise transform:");
+      } else {
+        x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
+      }
     } else if (!x->isScalar() && y->isScalar()) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (x->isScalar() && !y->isScalar()) {
@@ -125,13 +133,11 @@ class BroadcastHelper {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (x->isScalar() && !y->isScalar()) {
       if (z->isSameShape(y)) {
-        // z->assign(x);
         x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
         return z;
       } else {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-        // tZ->applyPairwiseTransform(op.p, *y, extraArgs);
         return tZ;
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()

@@ -33,7 +33,7 @@ BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
 ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
-  auto y = inputShape->at(1);
+  auto y = inputShape->size() > 1  ? inputShape->at(1) : x;
   auto outputs = _descriptor->getOutputTypesForOutput(0);
   sd::DataType dtype = block.dataType(0);
   if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {

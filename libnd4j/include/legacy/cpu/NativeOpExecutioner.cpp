@@ -428,7 +428,12 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
+  if(hX == hZ) {
+    printf("hx == hz\n");
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform requires hX == hZ");
+  }
 
+  printf("hx: %p hz %p\n",hX,hZ);
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams),
@@ -905,7 +910,7 @@ void NativeOpExecutioner::execScalarBool(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                         long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
+    long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -969,7 +974,7 @@ void NativeOpExecutioner::execScalarInt(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-                                        long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
+    long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);

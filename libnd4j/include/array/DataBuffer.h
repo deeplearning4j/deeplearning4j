@@ -170,8 +170,10 @@ class SD_LIB_EXPORT DataBuffer {
   void close();
   void printPrimaryAllocationStackTraces();
   void printSpecialAllocationTraces();
+  DataBuffer  dup();
+  void printHostDevice();
 };
-///// IMLEMENTATION OF INLINE METHODS /////
+///// IMPLEMENTATION OF INLINE METHODS /////
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

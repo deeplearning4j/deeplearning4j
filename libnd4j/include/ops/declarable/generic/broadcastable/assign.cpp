@@ -31,7 +31,22 @@ namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = block.width() > 1 ? x : INPUT_VARIABLE(1);
+ /*  auto xInput =  new NDArray(std::make_shared<DataBuffer>(x->dataBuffer()->dup()),
+                            x->ordering(),x->getShapeAsVector(),x->dataType(),block.launchContext(),false,false,0);
+  */
+  auto xInput = x;
+  x->printIndexedBuffer("x before assign execution:");
+  printf("x full buffer before:\n");
+  x->dataBuffer()->printHostDevice();
+  /*
+   * TODO: this is still failing but with 1 more op now.
+   * Not quite sure why. The toString() bug still stands.
+   */
+
+  auto y = block.width() < 2 ?
+           new NDArray(std::make_shared<DataBuffer>(x->dataBuffer()->dup()),
+                       x->ordering(),x->getShapeAsVector(),x->dataType(),block.launchContext(),false,false,0)
+                             : INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
 
@@ -42,22 +57,28 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  auto castedX = x->dataType() == z->dataType() ? *x : x->cast(z->dataType());
+  auto castedX = x->dataType() == z->dataType() ? *xInput : xInput->cast(z->dataType());
   auto castedY = y->dataType() == z->dataType() ? *y : y->cast(z->dataType());
-
+  if(x->dataBuffer()->primary() == z->dataBuffer()->primary()) {
+    printf("hx == hz 2\n");
+  }
 
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
 
-  if(tZ->isActualOnDeviceSide())
-    tZ->syncToHost();
-  if(tZ->isActualOnHostSide())
-    tZ->syncToDevice();
+
+  if(block.width() < 2) {
+    //deallocate  dup array
+    delete y;
+  }
   if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
+  x->printIndexedBuffer("x after assign execution:");
 
 
+  printf("x full buffer after:\n");
+  x->dataBuffer()->printHostDevice();
 
 
   return sd::Status::OK;
@@ -78,7 +99,7 @@ DECLARE_TYPES(assign_bp) {
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
+  auto y = block.width() < 2 ? new NDArray(x->dup(x->ordering())) : INPUT_VARIABLE(1);
   auto epsNext = INPUT_VARIABLE(2);
 
   auto gradX = OUTPUT_VARIABLE(0);

@@ -64,6 +64,61 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   std::vector<sd::LongType> permutForOutput;
 
+  /*
+   * node {
+name: "conv1d/Conv2D"
+op: "Conv2D"
+input: "conv1d/ExpandDims"
+input: "conv1d/ExpandDims_1"
+attr {
+  key: "T"
+  value {
+    type: DT_FLOAT
+  }
+}
+attr {
+  key: "data_format"
+  value {
+    s: "NCHW"
+  }
+}
+attr {
+  key: "dilations"
+  value {
+    list {
+      i: 1
+      i: 1
+      i: 1
+      i: 1
+    }
+  }
+}
+attr {
+  key: "padding"
+  value {
+    s: "VALID"
+  }
+}
+attr {
+  key: "strides"
+  value {
+    list {
+      i: 1
+      i: 1
+      i: 1
+      i: 1
+    }
+  }
+}
+attr {
+  key: "use_cudnn_on_gpu"
+  value {
+    b: true
+  }
+}
+}
+   */
+  printf("isNCHW: %d\n", isNCHW);
   if (isNCHW)
     permutForOutput = {0, 3, 1, 2};  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   else
@@ -86,20 +141,44 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   helpers::im2col(
       *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  printf("Running tensor dot:");
+  col.printShapeInfo("col shape:");
+  col.printIndexedBuffer("col buffer:");
+
+  weights->printShapeInfo("weights shape:");
+  weights->printIndexedBuffer("weights buffer:");
+  //print wAxes
+  for (int i = 0; i < wAxes.size(); i++) {
+    printf("wAxes[%d]: %d\n", i, wAxes[i]);
+  }
   MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
                         {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
+
+  mmulResult.printIndexedBuffer("mmulResult:");
+
+  /**
+   * TODO: potential troubleshooting.
+   * 1. look in to openblas debugging
+   * 2. look int o the fact that answers are correct here the first
+   * time and wrong the second time (eager mode is first time output is second)
+   * 3. Note this is a cross cutting problem with cuda so underlying libraries
+   * may not be relevant. compare the 2 if necessary.
+   */
   //----- assign outTemp to output  -----//
   if (isNCHW) {
     mmulResult.reshapei({bS, oH, oW, oC});
     mmulResult.permutei(permutForOutput);
   }
+
+  mmulResult.printIndexedBuffer("mmulResult after reshape and permute:");
   output->assign(mmulResult);
+  output->printIndexedBuffer("output buffer from assign:");
 
   //----- add biases if required -----//
-  if (bias)
+  if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
-
+  }
   if (!isNCHW) delete input;
 }
 

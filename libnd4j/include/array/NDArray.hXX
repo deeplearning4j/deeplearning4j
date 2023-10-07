@@ -1432,7 +1432,6 @@ bool NDArray::isBroadcastableTo(const NDArray &other) const {
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
   if (this == &other) {
-    printf("assign: this == other\n");
     return;
   }
 
@@ -3701,10 +3700,25 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
         "!");
 
   prepareUse({&target}, {this, &other},true);
-  NativeOpExecutioner::execPairwiseTransform(
-      getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(),
-      other.specialBuffer(), other.specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(),
-      target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
+  if(op == pairwise::CopyPws) {
+    printf("running pairwise assign 3:");
+    for(int i = 0; i < target.lengthOf(); i++) {
+      target.p(i, this->e(i));
+    }
+  } else {
+    NativeOpExecutioner::execPairwiseTransform(
+        getContext(), op,
+        buffer(),
+        shapeInfo(), specialBuffer(),
+        specialShapeInfo(), other.buffer(),
+        other.shapeInfo(),
+        other.specialBuffer(), other.specialShapeInfo(),
+        target.buffer(), target.shapeInfo(),
+        target.specialBuffer(),
+        target.specialShapeInfo(),
+        extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
+  }
+
   registerUse({&target}, {this, &other});
 
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");

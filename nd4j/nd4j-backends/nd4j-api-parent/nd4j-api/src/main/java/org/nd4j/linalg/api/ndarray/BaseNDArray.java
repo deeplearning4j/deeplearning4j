@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -104,6 +105,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Setter
     protected transient boolean closeable = true;
     protected transient boolean released = false;
+
+
+    protected String allocationTrace = Nd4j.getEnvironment().isFuncTracePrintAllocate() ?
+            StackTraceUtils.currentStackTraceString() : null;
+
 
     // this field holds jvm copy of shapeInfo
     protected transient JvmShapeInfo jvmShapeInfo;
@@ -1658,7 +1664,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray dup(char order) {
-        System.err.println("Dupping array of shape " + shapeInfoToString());
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
 
         if (this.isCompressed() && this.ordering() == order) {
@@ -2908,7 +2913,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1){
+        if(isView() || elementWiseStride() != 1) {
             return dup().data().asInt();
         }
         return data().asInt();

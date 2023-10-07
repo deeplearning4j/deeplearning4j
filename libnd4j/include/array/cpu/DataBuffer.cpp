@@ -22,6 +22,9 @@
 //
 #include <array/DataBuffer.h>
 #include <array/DataTypeUtils.h>
+#include <types/types.h>
+#include <system/type_boilerplate.h>
+
 #if defined(HAVE_VEDA)
 #include <ops/declarable/platform/vednn/veda_helper.h>
 #endif
@@ -47,7 +50,7 @@ void DataBuffer::expand(const uint64_t size) {
 }
 
 void DataBuffer::printSpecialAllocationTraces() {
-   //no op on purpose
+  //no op on purpose
 }
 
 
@@ -238,10 +241,26 @@ void DataBuffer::readSpecial() const {}
 bool DataBuffer::isPrimaryActual() const { return true; }
 bool DataBuffer::isSpecialActual() const { return false; }
 void DataBuffer::showBufferLimited() {}
+
 #endif
 
+
+DataBuffer DataBuffer::dup() {
+  DataBuffer result;
+  result._dataType = _dataType;
+  result._lenInBytes = _lenInBytes;
+  result._primaryBuffer = _primaryBuffer;
+  result._specialBuffer = _specialBuffer;
+  result._isOwnerPrimary = _isOwnerPrimary;
+  result._isOwnerSpecial = _isOwnerSpecial;
+  result.allocateBuffers(true);
+  result.copyCounters(*this);
+  result.copyBufferFrom(*this);
+  return result;
+}
+
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::setSpecial(void* special, const bool isOwnerSpecail) {}
+void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setToZeroBuffers(const bool both) { memset(primary(), 0, getLenInBytes()); }
@@ -254,6 +273,29 @@ void DataBuffer::allocateSpecial() {}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {}
+
+
+template <typename T>
+void _printHostBuffer(DataBuffer *buffer) {
+  sd::LongType len = buffer->getNumElements();
+  auto buff = buffer->template primaryAsT<T>();
+  sd_printf("Host buffer: address %p ",buffer->primary());
+  for(int i = 0; i < len; i++) {
+    sd_printf("%f ",(double) buff[i]);
+  }
+
+  sd_printf("\n",0);
+}
+
+
+
+
+void DataBuffer::printHostDevice() {
+  auto xType = getDataType();
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this),SD_COMMON_TYPES_ALL);
+
+}
+
 
 void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 #if defined(HAVE_VEDA) && defined(DEBUG_VEDA_LOGS)

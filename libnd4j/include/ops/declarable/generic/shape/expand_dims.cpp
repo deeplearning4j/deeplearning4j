@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(expand_dims) {
                "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1,
                axis);
 
-  printf("New shape case\n");
+  printf("New shape case with axis %d\n",axis);
   std::vector<sd::LongType> shape;
   for (sd::LongType e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
 

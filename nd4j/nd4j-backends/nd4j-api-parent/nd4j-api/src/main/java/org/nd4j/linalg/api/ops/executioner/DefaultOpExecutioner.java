@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -63,6 +64,44 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     public DefaultOpExecutioner() {}
 
+    /**
+     * Execute a redirected {@link org.nd4j.linalg.api.ops.impl.transforms.custom.Assign} op
+     * from the old {@link TransformOp} based {@link Assign}
+     * based Assign op
+     * @param op the input op
+     * @param oc the op context
+     * @param executioner the op executioner
+     */
+    public static void execAssign(TransformOp op, OpContext oc, OpExecutioner executioner) {
+        org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        op2.setSameDiff(differentialFunction.getSameDiff());
+        if(oc == null) {
+            if(Nd4j.getEnvironment().isDebugAndVerbose() && op.x().isView()) {
+                log.warn("Assign op running on a view. This may cause issues with the underlying buffer being modified and the view not seeing these changes");
+            }
+            op2.addInputArgument(op.x());
+            if(op.y() != null)
+                op2.addInputArgument(op.y());
+
+            op2.addOutputArgument(op.z());
+            INDArray[] result = executioner.exec(op2);
+            System.out.println();
+        } else {
+            executioner.exec(op2, oc);
+
+        }
+
+
+    }
+
+
+    /**
+     *
+     * @param op
+     * @param shapeOverride
+     * @param context
+     */
     public static void initOpContext(CustomOp op, boolean shapeOverride, OpContext context) {
         // optionally skip shape validation on op execution
         if (shapeOverride)
@@ -452,7 +491,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
         for (val arr: inArgs) {
             if(arr == null)
-                continue;;
+                continue;
 
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");

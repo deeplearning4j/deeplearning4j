@@ -1824,12 +1824,6 @@ SD_DEVICE SD_INLINE sd::LongType *cuMalloc(sd::LongType *buffer, long size) {
             return 0;
         const sd::LongType rank = shape::rank(info);
         if(rank == 0) return 1;
-        auto shape = shape::shapeOf(info);
-
-        if (rank > 2) return 0;
-        if (rank == 1) return shape[0] <= 1;
-
-
         return 0;
     }
 

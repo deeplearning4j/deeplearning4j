@@ -419,21 +419,6 @@ void DataBuffer::deleteBuffers() {
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
-#if defined(SD_GCC_FUNCTRACE)
-  if(allocationStackTracePrimary != nullptr) {
-    Printer p;
-    sd_print("Begin printing allocation stack trace for primary");
-    p.print(*allocationStackTracePrimary);
-    delete allocationStackTracePrimary;
-    allocationStackTracePrimary = nullptr;
-  }
-  if(allocationStackTraceSpecial != nullptr) {
-    Printer p;
-    p.print(*allocationStackTraceSpecial);
-    delete allocationStackTraceSpecial;
-    allocationStackTraceSpecial = nullptr;
-  }
-#endif
   closed = true;
   _lenInBytes = 0;
 }

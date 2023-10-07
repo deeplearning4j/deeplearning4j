@@ -68,14 +68,6 @@ ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *d
     THROW_EXCEPTION("Cache is empty!");
   }
 
-  auto currValidate = descriptor->validate();
-  if(currValidate != 0) {
-    std::string errorMessage;
-    errorMessage += "Invalid shape descriptor attempting to be set for shape info. Error code: ";
-    errorMessage += ShapeDescriptor::messageForShapeDescriptorError(currValidate);
-    errorMessage += descriptor->toString();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
 
   if (_cache[deviceId].count(*descriptor) == 0) {
     auto hPtr =

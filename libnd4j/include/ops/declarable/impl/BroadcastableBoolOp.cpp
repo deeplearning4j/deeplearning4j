@@ -33,7 +33,7 @@ BroadcastableBoolOp::BroadcastableBoolOp(const char *name, int numTArgs, int num
 ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
-  auto y = inputShape->at(1);
+  auto y = inputShape->size() > 1 ? inputShape->at(1) : x;
   sd::DataType dtype = sd::DataType::BOOL;
 
   if (shape::isEmpty(x) || shape::isEmpty(y)) {

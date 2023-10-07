@@ -384,4 +384,57 @@ bool DataBuffer::isSpecialActual() const {
   return (_writeSpecial.load() > _writePrimary.load() || _readSpecial.load() > _writePrimary.load());
 }
 
+template <typename T>
+void _printHostBuffer(DataBuffer *buffer) {
+  sd::LongType len = buffer->getNumElements();
+  auto buff = buffer->template primaryAsT<T>();
+  sd_printf("Host buffer: ",0);
+  for(int i = 0; i < len; i++) {
+    sd_printf("%f ",(double) buff[i]);
+  }
+
+  sd_printf("\n",0);
+
+
+  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
+  cudaDeviceSynchronize();
+
+}
+
+
+template <typename T>
+SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
+  T * inputBuffer = reinterpret_cast<T *>(buffer);
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if(tid == 0) {
+    printf("DEVICE buffer: ");
+  }
+  const auto step = gridDim.x * blockDim.x;
+  for (int t = tid; t < bufferLength; t += step) {
+    if(t == 0) {
+      printf("DEVICE buffer: ");
+    }
+    printf(" %f ",(double) inputBuffer[t]);
+    if(t == bufferLength - 1) {
+      printf("\n");
+    }
+  }
+
+
+
+}
+
+
+
+
+
+void DataBuffer::printHostDevice() {
+  auto xType = getDataType();
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(*this),SD_COMMON_TYPES_ALL);
+
+
+}
+
+
 }  // namespace sd

@@ -622,186 +622,175 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op,oc);
         //redirect assign so we support more ops cases lke strings
         if(op instanceof Assign) {
-            org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
-            if(oc == null) {
-                op2.addInputArgument(op.x());
-                if(op.y() != null)
-                    op2.addOutputArgument(op.y());
-                else
-                    op2.addInputArgument(op.x());
-                op2.addOutputArgument(op.z());
-                exec(op2);
-            } else {
-                exec(op2, oc);
+            DefaultOpExecutioner.execAssign(op, oc,this);
+        } else {
+            if (extraz.get() == null)
+                extraz.set(new PointerPointer(32));
 
+            PointerPointer dummy = extraz.get();
+
+            // Pow operations might be special
+            if (op.opNum() == 31) {
+                if (y != null && y.isScalar()) {
+                    setY(Nd4j.valueArrayOf(x.shape(), y.getDouble(0)), op, oc);
+                }
             }
-
-        }
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        PointerPointer dummy = extraz.get();
-
-        // Pow operations might be special
-        if (op.opNum() == 31) {
-            if (y != null && y.isScalar()) {
-                setY(Nd4j.valueArrayOf(x.shape(), y.getDouble(0)), op, oc);
-            }
-        }
-
-        /**
-         * This is the {@link IsMax}
-         * operation.
-         *
-         * @see {@link Op#extraArgs()}
-         * for what an extra argument is in an op.
-         *
-         * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
-         * dimension to do the ismax along
-         */
-        if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
-            long[] dimension = new long[(int) op.extraArgs()[0]];
-
-            for (int i = 0; i < dimension.length; i++) {
-                dimension[i] = (int) op.extraArgs()[i + 1];
-            }
-
 
             /**
-             * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
-             * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
-             * The first item is the shape information. The second one is the offsets.
+             * This is the {@link IsMax}
+             * operation.
+             *
+             * @see {@link Op#extraArgs()}
+             * for what an extra argument is in an op.
+             *
+             * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
+             * dimension to do the ismax along
              */
-            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+            if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
+                long[] dimension = new long[(int) op.extraArgs()[0]];
+
+                for (int i = 0; i < dimension.length; i++) {
+                    dimension[i] = (int) op.extraArgs()[i + 1];
+                }
 
 
-            Pointer tad = tadBuffers.getFirst().addressPointer();
+                /**
+                 * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
+                 * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
+                 * The first item is the shape information. The second one is the offsets.
+                 */
+                Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
-            DataBuffer offsets = tadBuffers.getSecond();
-            Pointer off = offsets == null ? null : offsets.addressPointer();
-            dummy.put(0, tad);
-            dummy.put(1, off);
 
-            st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
-        } else
-            st = profilingConfigurableHookIn(op);
+                Pointer tad = tadBuffers.getFirst().addressPointer();
 
-        if (y != null) {
+                DataBuffer offsets = tadBuffers.getSecond();
+                Pointer off = offsets == null ? null : offsets.addressPointer();
+                dummy.put(0, tad);
+                dummy.put(1, off);
 
-            if (z == null) {
-                setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
-                z = getZ(op, oc);
+                st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
+            } else
+                st = profilingConfigurableHookIn(op);
+
+            if (y != null) {
+
+                if (z == null) {
+                    setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
+
+
+                op.validateDataTypes(oc, experimentalMode.get());
+
+
+
+                val xb =  x.data().opaqueBuffer();
+                val yb = y.data().opaqueBuffer();
+                val zb = z.data().opaqueBuffer();
+                ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
+                ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
+                switch (op.getOpType()) {
+                    case TRANSFORM_ANY:
+                    case TRANSFORM_FLOAT:
+                    case TRANSFORM_STRICT:
+                    case TRANSFORM_SAME:
+                        if (!experimentalMode.get())
+                            Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL,
+                                    "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
+
+                        loop.execPairwiseTransform(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, z.dataType()));
+                        break;
+                    case TRANSFORM_BOOL:
+                        loop.execTransformBool(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, x.dataType()));
+                        break;
+                    case PAIRWISE_BOOL:
+                        loop.execPairwiseTransformBool(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, x.dataType()));
+                        break;
+                }
+            } else {
+
+                if (z == null) {
+                    setZ(Nd4j.createUninitialized((oc != null ? op.resultType(oc) : op.resultType()), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
+
+                op.validateDataTypes(oc, experimentalMode.get());
+
+                val xb = x.data().opaqueBuffer();
+                val zb = z.data().opaqueBuffer();
+
+                switch (op.getOpType()) {
+                    case TRANSFORM_FLOAT: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+
+
+                        loop.execTransformFloat(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
+                                null, xtraz);
+                        break;
+                    }
+                    case TRANSFORM_STRICT: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+                        loop.execTransformStrict(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_SAME: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+                        loop.execTransformSame(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_ANY: {
+                        val xtraz = getPointerForExtraArgs(op, x.dataType());
+                        val opNum = op.opNum();
+                        loop.execTransformAny(dummy, opNum,
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_BOOL: {
+                        val xtraz = getPointerForExtraArgs(op, x.dataType());
+                        val opNum = op.opNum();
+
+                        loop.execTransformBool(dummy, opNum,
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    default:
+                        throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
+                }
+
             }
 
-
-            op.validateDataTypes(oc, experimentalMode.get());
-
-
-
-            val xb =  x.data().opaqueBuffer();
-            val yb = y.data().opaqueBuffer();
-            val zb = z.data().opaqueBuffer();
-            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
-            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
-            switch (op.getOpType()) {
-                case TRANSFORM_ANY:
-                case TRANSFORM_FLOAT:
-                case TRANSFORM_STRICT:
-                case TRANSFORM_SAME:
-                    if (!experimentalMode.get())
-                        Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL,
-                                "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
-
-                    loop.execPairwiseTransform(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, z.dataType()));
-                    break;
-                case TRANSFORM_BOOL:
-                    loop.execTransformBool(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, x.dataType()));
-                    break;
-                case PAIRWISE_BOOL:
-                    loop.execPairwiseTransformBool(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, x.dataType()));
-                    break;
-            }
-        } else {
-
-            if (z == null) {
-                setZ(Nd4j.createUninitialized((oc != null ? op.resultType(oc) : op.resultType()), x.shape()), op, oc);
-                z = getZ(op, oc);
-            }
-
-            op.validateDataTypes(oc, experimentalMode.get());
-
-            val xb = x.data().opaqueBuffer();
-            val zb = z.data().opaqueBuffer();
-
-            switch (op.getOpType()) {
-                case TRANSFORM_FLOAT: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-
-
-                    loop.execTransformFloat(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
-                            null, xtraz);
-                    break;
-                }
-                case TRANSFORM_STRICT: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-                    loop.execTransformStrict(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_SAME: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-                    loop.execTransformSame(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_ANY: {
-                    val xtraz = getPointerForExtraArgs(op, x.dataType());
-                    val opNum = op.opNum();
-                    loop.execTransformAny(dummy, opNum,
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_BOOL: {
-                    val xtraz = getPointerForExtraArgs(op, x.dataType());
-                    val opNum = op.opNum();
-
-                    loop.execTransformBool(dummy, opNum,
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                default:
-                    throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
-            }
-
+            if (loop.lastErrorCode() != 0)
+                throw new RuntimeException(loop.lastErrorMessage());
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+
         profilingConfigurableHookOut(op, oc, st);
     }
 
@@ -1472,7 +1461,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         OpaqueShapeList ptrptr;
         try {
-             ptrptr = loop.calculateOutputShapes2(null,
+            ptrptr = loop.calculateOutputShapes2(null,
                     hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
                     iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
@@ -1708,7 +1697,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (status != 0) {
                 DifferentialFunction differentialFunction = (DifferentialFunction)  op;
-                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed with message " + loop.lastErrorMessage());
+                //mainly for use with the debugger
+                String errorMessage = loop.lastErrorMessage();
+                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed with message " + errorMessage);
             }
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
