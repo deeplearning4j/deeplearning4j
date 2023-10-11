@@ -526,7 +526,6 @@ public class TFGraphTestAllHelper {
             val string = graph.asFlatPrint();
             log.info("Graph structure: \n{}", string);
         }
-
         return new Pair<>(graph, outMap);
     }
 

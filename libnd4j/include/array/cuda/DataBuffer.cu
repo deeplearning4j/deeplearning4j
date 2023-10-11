@@ -26,6 +26,8 @@
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <system/op_boilerplate.h>
+#include <system/type_boilerplate.h>
+#include <types/types.h>
 
 #include "../DataBuffer.h"
 
@@ -385,25 +387,6 @@ bool DataBuffer::isSpecialActual() const {
 }
 
 template <typename T>
-void _printHostBuffer(DataBuffer *buffer) {
-  sd::LongType len = buffer->getNumElements();
-  auto buff = buffer->template primaryAsT<T>();
-  sd_printf("Host buffer: ",0);
-  for(int i = 0; i < len; i++) {
-    sd_printf("%f ",(double) buff[i]);
-  }
-
-  sd_printf("\n",0);
-
-
-  sd::LongType len = buffer->dataBuffer()->getNumElements();
-  _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
-  cudaDeviceSynchronize();
-
-}
-
-
-template <typename T>
 SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
   T * inputBuffer = reinterpret_cast<T *>(buffer);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -426,14 +409,44 @@ SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
 }
 
 
+DataBuffer DataBuffer::dup() {
+  DataBuffer result;
+  result._dataType = _dataType;
+  result._lenInBytes = _lenInBytes;
+  result._primaryBuffer = _primaryBuffer;
+  result._specialBuffer = _specialBuffer;
+  result._isOwnerPrimary = _isOwnerPrimary;
+  result._isOwnerSpecial = _isOwnerSpecial;
+  result.allocateBuffers(true);
+  result.copyCounters(*this);
+  result.copyBufferFrom(*this);
+  return result;
+}
+
+
+template <typename T>
+void _printHostBuffer(DataBuffer *buffer) {
+  sd::LongType len = buffer->getNumElements();
+  auto buff = buffer->template primaryAsT<T>();
+  sd_printf("Host buffer: ",0);
+  for(int i = 0; i < len; i++) {
+    sd_printf("%f ",(double) buff[i]);
+  }
+
+  sd_printf("\n",0);
+
+
+  _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
+  cudaDeviceSynchronize();
+
+}
+
 
 
 
 void DataBuffer::printHostDevice() {
   auto xType = getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(*this),SD_COMMON_TYPES_ALL);
-
-
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this),SD_COMMON_TYPES);
 }
 
 

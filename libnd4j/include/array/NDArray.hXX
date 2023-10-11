@@ -80,7 +80,7 @@ NDArray::NDArray(const NDArray &other) {
 
   //scalar can be length 0
   if (!isEmpty() && other.isScalar() || other.lengthOf() > 0) {
-    _buffer = other._buffer;
+    _buffer = std::make_shared<DataBuffer>(other._buffer->dup());
     this->assign(&other);
   } else {
     _buffer = std::make_shared<DataBuffer>();
@@ -109,7 +109,6 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
     delete desc;
 
   } else {
-    printf("Creating normal array \n");
     auto desc = ShapeBuilders::createShapeInfo(dtype,order,shape);
     auto desc2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(desc2);
@@ -2519,9 +2518,17 @@ NDArray NDArray::asT() const {
                            : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareUse({&result}, {this});
-  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                        result.specialShapeInfo(), nullptr, nullptr, nullptr);
+  NativeOpExecutioner::execTransformAny(getContext(),
+                                        transform::AnyOps::Assign,
+                                        buffer(), shapeInfo(),
+                                        specialBuffer(),
+                                        specialShapeInfo(),
+                                        result.buffer(),
+                                        result.shapeInfo(),
+                                        result.specialBuffer(),
+                                        result.specialShapeInfo(),
+                                        nullptr,
+                                        nullptr, nullptr);
   registerUse({&result}, {this});
 
   return result;
@@ -3700,27 +3707,19 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
         "!");
 
   prepareUse({&target}, {this, &other},true);
-  if(op == pairwise::CopyPws) {
-    printf("running pairwise assign 3:");
-    for(int i = 0; i < target.lengthOf(); i++) {
-      target.p(i, this->e(i));
-    }
-  } else {
-    NativeOpExecutioner::execPairwiseTransform(
-        getContext(), op,
-        buffer(),
-        shapeInfo(), specialBuffer(),
-        specialShapeInfo(), other.buffer(),
-        other.shapeInfo(),
-        other.specialBuffer(), other.specialShapeInfo(),
-        target.buffer(), target.shapeInfo(),
-        target.specialBuffer(),
-        target.specialShapeInfo(),
-        extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
-  }
+  NativeOpExecutioner::execPairwiseTransform(
+      getContext(), op,
+      buffer(),
+      shapeInfo(), specialBuffer(),
+      specialShapeInfo(), other.buffer(),
+      other.shapeInfo(),
+      other.specialBuffer(), other.specialShapeInfo(),
+      target.buffer(), target.shapeInfo(),
+      target.specialBuffer(),
+      target.specialShapeInfo(),
+      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
 
   registerUse({&target}, {this, &other});
-
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");
 }
 

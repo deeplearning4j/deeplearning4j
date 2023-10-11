@@ -735,7 +735,12 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_LUP getEnvVariable("BLOCK_SIZE_LUP", 256)
 #define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 1024)
 
+#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 128)
+#define BLOCK_SIZE_SOFTMAX getEnvVariable("BLOCK_SIZE_SOFTMAX", 256)
+#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 1024)
 
+
+dim3 getSoftmaxDims(int numTads);
 
 dim3 getLupDims(int batchSize);
 

@@ -405,6 +405,16 @@ void NativeOpExecutioner::execInverseBroadcastInt(
 }
 
 ////////////////////////////////////////////////////////////////////////
+bool isViewOf(const void* ptr1, size_t size1, const void* ptr2, size_t size2) {
+  uintptr_t start1 = reinterpret_cast<uintptr_t>(ptr1);
+  uintptr_t end1 = start1 + size1;
+
+  uintptr_t start2 = reinterpret_cast<uintptr_t>(ptr2);
+  uintptr_t end2 = start2 + size2;
+
+  return (start1 >= start2 && start1 < end2) || (end1 > start2 && end1 <= end2) ||
+         (start2 >= start1 && start2 < end1) || (end2 > start1 && end2 <= end1);
+}
 /**
  *
  * @param opNum
@@ -427,13 +437,6 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-  if(hX == hZ) {
-    printf("hx == hz\n");
-    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform requires hX == hZ");
-  }
-
-  printf("hx: %p hz %p\n",hX,hZ);
 #ifdef SD_EXPERIMENTAL_ENABLED
   BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams),
@@ -445,12 +448,17 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
         ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop), SD_COMMON_TYPES);
   };
 
+
+
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
+
+
 #endif
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1147,8 +1155,14 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   } else {
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                            SD_COMMON_TYPES_ALL, SD_COMMON_TYPES);
+                            ::exec(opNum,
+                                   hX,
+                                   hXShapeInfo,
+                                   hZ, hZShapeInfo,
+                                   extraParams,
+                                   thread_id,
+                                   numThreads),
+                            SD_COMMON_TYPES, SD_COMMON_TYPES);
     };
 
     samediff::Threads::parallel_do(

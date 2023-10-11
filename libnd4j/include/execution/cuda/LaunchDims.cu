@@ -170,6 +170,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"dynamic_stitch_tad", {dim3(GRID_SIZE_DYNAMIC_STITCH_TAD, BLOCK_SIZE_DYNAMIC_STITCH_TAD, SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD)}},
     {"dynamic_partition_tad", {dim3(GRID_SIZE_DYNAMIC_PARTITION_TAD, BLOCK_SIZE_DYNAMIC_PARTITION_TAD, SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD)}},
     {"solve", {dim3(GRID_SIZE_SOLVE, BLOCK_SIZE_SOLVE, SHARED_MEM_SIZE_SOLVE)}},
+    {"softmax", {dim3(GRID_SIZE_SOFTMAX, BLOCK_SIZE_SOFTMAX, SHARED_MEM_SIZE_SOFTMAX)}},
 
 
 };
@@ -339,10 +340,21 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"dynamic_partition_tad", {"GRID_SIZE_DYNAMIC_PARTITION_TAD", "BLOCK_SIZE_DYNAMIC_PARTITION_TAD", "SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD"}},
     {"solve", {"GRID_SIZE_SOLVE", "BLOCK_SIZE_SOLVE", "SHARED_MEM_SIZE_SOLVE"}},
     {"lup", {"GRID_SIZE_LUP", "BLOCK_SIZE_LUP", "SHARED_MEM_SIZE_LUP"}},
+    {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
 
 
 };
 
+dim3 getSoftmaxDims(int numTads) {
+  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
+  int blocksPerGrid = numTads;
+  int sharedMem = 1024;
+  threadsPerBlock = getEnvVariable("GRID_SIZE_SOFTMAX",threadsPerBlock);
+  blocksPerGrid = getEnvVariable("BLOCK_SIZE_SOFTMAX",blocksPerGrid);
+  sharedMem = getEnvVariable("SHARED_MEM_SIZE_SOFTMAX",sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
+
+}
 
 dim3 getLupDims(int batchSize) {
   int threadsPerBlock = 128;

@@ -39,25 +39,8 @@ class BroadcastHelper {
       return z;
     }
 
-
-
     if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
-      printf("running pairwise transform: !x->isScalar() && !y->isScalar() && x->isSameShape(y)\n");
-      /*
-       * TODO: figure out why x is being modified here.
-       */
-
-      if(op.p == sd::pairwise::CopyPws) {
-        printf("running pairwise assign:\n");
-        x->printIndexedBuffer("x buffer before pairwise transform:");
-        z->printIndexedBuffer("z buffer before pairwise transform:");
-
-        x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
-        x->printIndexedBuffer("x buffer after pairwise transform:");
-        z->printIndexedBuffer("z buffer after pairwise transform:");
-      } else {
-        x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
-      }
+      x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
     } else if (!x->isScalar() && y->isScalar()) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (x->isScalar() && !y->isScalar()) {

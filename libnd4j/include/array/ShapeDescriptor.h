@@ -177,14 +177,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
           _strides[i] = 0;
         }
       }
-
-      //print strides
-      printf("Shape strides: ");
-      for (int i = 0; i < _rank; i++) {
-        printf("%lld ", _strides[i]);
-      }
-      printf("\n");
-
     }
 
   }

@@ -35,9 +35,17 @@ namespace functions {
 namespace pairwise_transforms {
 
 template <typename X, typename Y, typename Z>
-void PairWiseTransform<X, Y, Z>::exec(int opNum, const void *x, sd::LongType xEws, const void *y,
-                                      sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
-                                      sd::LongType start, sd::LongType stop) {
+void PairWiseTransform<X, Y, Z>::exec(int opNum,
+                                      const void *x,
+                                      sd::LongType xEws,
+                                      const void *y,
+                                      sd::LongType yEws,
+                                      void *z,
+                                      sd::LongType zEws,
+                                      void *extraParams,
+                                      sd::LongType n,
+                                      sd::LongType start,
+                                      sd::LongType stop) {
   DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_TRANSFORM_OPS);
 };
 
@@ -49,20 +57,16 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const v
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
-  printf("x address: %p z address %p\n", vx,vz);
+
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
   if (xEws == 1 && yEws == 1 && zEws == 1) {
-    printf("execOpType xEws == 1 && yEws == 1 && zEws == 1\n");
-   // PRAGMA_OMP_SIMD
+    PRAGMA_OMP_SIMD
     for (sd::LongType i = start; i < stop; i++) {
-      printf("Setting value at index %d with z value before %f now at value %f\n",i,z[i],x[i]);
       z[i] = OpType::op(x[i], y[i], extraParams);
-      printf("Setting value at index %d with z value after %f now at value %f\n",i,z[i],x[i]);
-
     }
+
   } else {
-    printf("execOpType else\n");
     PRAGMA_OMP_SIMD
     for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
   }
@@ -121,18 +125,14 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
   if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
-    printf("execOpType (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY\n");
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
              !sameShapesXY) {  // not same shape
-    printf("execOpType (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && !sameShapesXY\n");
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
   } else {
 
-    printf("execOpType else\n");
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
         shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-      printf("execOpType shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)\n");
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
@@ -142,7 +142,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[offset] = OpType::op(x[offset], y[offset], extraParams);
       }
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-      printf("execOpType shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)\n");
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType zShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -155,7 +154,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-      printf("execOpType shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)\n");
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -168,7 +166,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-      printf("execOpType shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)\n");
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -181,7 +178,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
       };
     } else {
-      printf("execOpType else 2\n");
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       sd::LongType zShapeInfoCast[SD_MAX_RANK];
