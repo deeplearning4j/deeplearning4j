@@ -1701,7 +1701,7 @@ SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeIn
   if (shape::length(oldShapeInfo) <= 1) {
     for (sd::LongType i = 0; i < newRank; ++i) shape::stride(newShapeInfo)[i] = 1;
     sd::ArrayOptions::setDataType(newShapeInfo, sd::ArrayOptions::dataType(oldShapeInfo));
-    *shape::ews(newShapeInfo) = 1;
+    shape::setElementWiseStride(newShapeInfo, 1);
     return true;
   }
 
@@ -1760,7 +1760,7 @@ SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeIn
                                    newStrides);  // set ews and order
   else {
     newShapeInfo[2 * newRank + 3] = oldOrder;  // order
-    *shape::ews(newShapeInfo) = oldEws;        // ews
+    shape::setElementWiseStride(newShapeInfo, oldEws);  // ews
   }
 
   sd::ArrayOptions::setExtra(newShapeInfo, sd::ArrayOptions::extra(oldShapeInfo));
@@ -1980,13 +1980,13 @@ void SD_HOST checkStridesEwsAndOrder(sd::LongType *shapeInfo, const char propose
   const sd::LongType rank = shape::rank(shapeInfo);
 
   if (shape::length(shapeInfo) == 1) {
-    *shape::ews(shapeInfo) = 1;
+    shape::setElementWiseStride(shapeInfo, 1);
     shapeInfo[rank * 2 + 3] = (sd::LongType)proposedOrder;
     return;
   }
 
   if (numOfNonUnities == 1) {  // case of common vector
-    *shape::ews(shapeInfo) = *stridesNoUnities;
+    shape::setElementWiseStride(shapeInfo, stridesNoUnities[0]);
     shapeInfo[rank * 2 + 3] = (sd::LongType)proposedOrder;
     return;
   }
@@ -2002,7 +2002,7 @@ void SD_HOST checkStridesEwsAndOrder(sd::LongType *shapeInfo, const char propose
   }
 
   if (contiguous) {
-    *shape::ews(shapeInfo) = stridesNoUnities[numOfNonUnities - 1];
+    shape::setElementWiseStride(shapeInfo, stridesNoUnities[numOfNonUnities - 1]);
     shapeInfo[rank * 2 + 3] = 99;
     return;
   }
@@ -2018,12 +2018,13 @@ void SD_HOST checkStridesEwsAndOrder(sd::LongType *shapeInfo, const char propose
   }
 
   if (contiguous) {
-    *shape::ews(shapeInfo) = stridesNoUnities[0];
+    shape::setElementWiseStride(shapeInfo, stridesNoUnities[0]);
     shapeInfo[rank * 2 + 3] = 102;
     return;
   }
 
-  *shape::ews(shapeInfo) = 0;
+  shape::setElementWiseStride(shapeInfo,0);
+
   shapeInfo[rank * 2 + 3] = (sd::LongType)proposedOrder;
 }
 
@@ -2164,7 +2165,7 @@ SD_HOST void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const 
   }
   outShapeInfo[2 * outShapeInfo[0] + 1] = 0;
   sd::ArrayOptions::copyDataType(outShapeInfo, inShapeInfo);          // type
-  *shape::ews(outShapeInfo) = shape::elementWiseStride(inShapeInfo);  // ews
+  shape::setElementWiseStride(outShapeInfo, shape::elementWiseStride(inShapeInfo));  // ews
   outShapeInfo[2 * outShapeInfo[0] + 3] = shape::order(inShapeInfo);  // order
 }
 

@@ -55,12 +55,23 @@ const sd::LongType* TadPack::platformOffsets() const {
 }
 
 
-void  TadPack::printOffsets(const char* msg) const {
+void  TadPack::print(const char* msg) const {
+  printf("---------------------------\n");
   printf("%s: ", msg);
+  printf("Offsets:\n");
   for (int e = 0; e < _numTads; e++) {
     printf("%lld, ", _tadOffsets.primary()[e]);
   }
   printf("\n");
+
+  printf("tad pack shape info:");
+  shape::printShapeInfo(_tadShape.primary());
+  printf("\n");
+  printf("number of tads: %lld\n", _numTads);
+  printf("shape info length: %lld\n", _shapeInfoLength);
+  printf("---------------------------\n");
+
+
 }
 
 

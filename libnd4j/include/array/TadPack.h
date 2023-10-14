@@ -59,7 +59,7 @@ class SD_LIB_EXPORT TadPack {
   const sd::LongType* platformShapeInfo() const;
   const sd::LongType* platformOffsets() const;
 
-  void printOffsets(const char* msg) const;
+  void print(const char* msg) const;
 };
 }  // namespace sd
 

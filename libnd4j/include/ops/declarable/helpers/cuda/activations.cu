@@ -93,7 +93,7 @@ void prelu(sd::LaunchContext *context, const NDArray &input, const NDArray &alph
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluCudaLauncher,
       (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
-       input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), output.specialBuffer()),
+          input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), output.specialBuffer()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&output}, {&input, &alpha});
 
@@ -179,9 +179,9 @@ void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &al
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluBPCudaLauncher,
       (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
-       input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), dLdO.specialBuffer(),
-       dLdO.specialShapeInfo(), dLdI.specialBuffer(), dLdI.specialShapeInfo(), dLdA.specialBuffer(),
-       dLdA.specialShapeInfo()),
+          input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), dLdO.specialBuffer(),
+          dLdO.specialShapeInfo(), dLdI.specialBuffer(), dLdI.specialShapeInfo(), dLdA.specialBuffer(),
+          dLdA.specialShapeInfo()),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
 
@@ -192,125 +192,159 @@ void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &al
 template <typename T>
 SD_DEVICE void softMaxForVectorCuda(const void *vx, const sd::LongType *xShapeInfo, void *vz,
                                     const sd::LongType *zShapeInfo) {
-  // logic of this kernel is based on assumption gridDim = 1
+  auto inBuff = reinterpret_cast<const T *>(vx);
+  auto outBuff = reinterpret_cast<T *>(vz);
 
-  const auto x = reinterpret_cast<const T *>(vx);
-  auto z = reinterpret_cast<T *>(vz);
-
-  __shared__ sd::LongType len;
-  __shared__ int numOfIters;
-  __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
-
+  __shared__ T shmemMax;
+  __shared__ T shmemSum;
+  __shared__ sd::LongType tadLen;
   if (threadIdx.x == 0) {
-    len = shape::length(xShapeInfo);
-    numOfIters = (len + blockDim.x - 1) / blockDim.x;  // ceil (len / blockDim.x)
+    tadLen = shape::length(xShapeInfo);
+    shmemMax = -DataTypeUtils::max<T>();
+    shmemSum = 0.f;
   }
   __syncthreads();
 
-  T temp =
-      -DataTypeUtils::max<T>();  // set start value to compare with at first iteration, FIXME: what if T is unsigned ??
+  T max = -DataTypeUtils::max<T>();
+  T sum = 0.f;
 
-  // ************ evaluate max element in input array x ************ //
-  for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
-    if (elemIdx < len) {
-      const sd::LongType xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
-      shmem[threadIdx.x] =
-          (threadIdx.x != 0)
-              ? x[xOffset]
-              : sd::math::sd_max<T>(
-                    x[xOffset],
-                    temp);  // take into account max element evaluated on previous iteration and stored in temp
-    } else
-      shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
-
-    __syncthreads();
-
-    for (int s = blockDim.x / 2; s > 0; s /= 2) {
-      if (threadIdx.x < s) shmem[threadIdx.x] = sd::math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
-      __syncthreads();
-    }
-
-    temp = shmem[0];  // save max value calculated at current iteration
+  // Calculate max
+  for (sd::LongType j = 0; j < tadLen; ++j) {
+    sd::LongType offset = shape::getIndexOffset(j, xShapeInfo);
+    max = sd::math::sd_max<T>(max, inBuff[offset]);
   }
 
-  const T max = temp;
-  temp = 0;
+  printf("final sum for tad %d is %f max is %d\n", blockIdx.x, sum);
 
-  // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
-  // // at the same evaluate sum of exponents, sum will be stored in shmem[0]
-  for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
-    if (elemIdx < len) {
-      const sd::LongType xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
-      const sd::LongType zOffset = shape::getIndexOffset(elemIdx, zShapeInfo);
-      z[zOffset] = sd::math::sd_exp<T, T>(x[xOffset] - max);
-      shmem[threadIdx.x] =
-          (threadIdx.x != 0)
-              ? z[zOffset]
-              : (z[zOffset] +
-                 temp);  // take into account sum element evaluated on previous iteration and stored in temp
-    } else
-      shmem[threadIdx.x] = 0;
-
-    __syncthreads();
-
-    for (int s = blockDim.x / 2; s > 0; s /= 2) {
-      if (threadIdx.x < s) shmem[threadIdx.x] += shmem[threadIdx.x + s];
-      __syncthreads();
-    }
-
-    temp = shmem[0];  // save sum calculated at current iteration
+  // Calculate exp(x - max) and sum
+  for (sd::LongType j = 0; j < tadLen; ++j) {
+    sd::LongType offset = shape::getIndexOffset(j, xShapeInfo);
+    T temp = sd::math::sd_exp<T, T>(inBuff[offset] - max);
+    outBuff[offset] = temp;
+    sum += temp;
   }
 
-  // ************ evaluate z[offset] / sum  ************ //
-  for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
-    if (elemIdx >= len) continue;
-    const sd::LongType zOffset = shape::getIndexOffset(elemIdx, zShapeInfo);
-    z[zOffset] /= shmem[0];
+  // Final division step
+  for (sd::LongType j = 0; j < tadLen; ++j) {
+    sd::LongType offset = shape::getIndexOffset(j, zShapeInfo);
+    outBuff[offset] /= sum;
   }
 }
 
 template <typename T>
 void SD_KERNEL softMaxForVectorCudaGlobal(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                          const sd::LongType *zShapeInfo) {
+                                          const sd::LongType *zShapeInfo, sd::LongType numOfSubArrs) {
+  printf("softmax for vector cuda 3\n");
   softMaxForVectorCuda<T>(vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void softMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                  const sd::LongType *zShapeInfo) {
-  softMaxForVectorCudaGlobal<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+                                  const sd::LongType *zShapeInfo, sd::LongType numTads) {
+  printf("softmax for vector cuda 2\n");
+
+  softMaxForVectorCudaGlobal<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, numTads);
 }
 
 ///////////////////////////////////////////////////////////////////
+
+template <typename T>
+SD_KERNEL void softmaxEws1Kernel(const T *input, const sd::LongType *inputOffsets, T *output,
+                                 const sd::LongType *outputOffsets, sd::LongType numOfSubArrs, sd::LongType tadLen) {
+  int i = blockIdx.x;  // Each block handles one TAD
+
+  if (i >= numOfSubArrs) return;  // Out-of-bounds check for TADs
+
+  auto inBuff = input + inputOffsets[i];
+  auto outBuff = output + outputOffsets[i];
+
+  __shared__ T shmemMax;
+  __shared__ T shmemSum;
+
+  if (threadIdx.x == 0) {
+    shmemMax = -DataTypeUtils::max<T>();
+    shmemSum = 0.f;
+  }
+  __syncthreads();
+
+
+  // Calculate max
+  for (sd::LongType j = threadIdx.x; j < tadLen; j+= gridDim.x) {
+    sd::math::atomics::sd_atomicMax(&shmemMax, inBuff[j]);
+  }
+  __syncthreads();
+
+  // Calculate exp(x - max) and sum
+  for (sd::LongType j = threadIdx.x; j < tadLen; j += gridDim.x) {
+    T temp = sd::math::sd_exp<T, T>(inBuff[j] - shmemMax);
+    outBuff[j] = temp;
+    sd::math::atomics::sd_atomicAdd(&shmemSum, temp);
+  }
+  __syncthreads();
+
+  // Final division step
+  for (sd::LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+    outBuff[j] /= shmemSum;
+  }
+
+
+}
 template <typename T>
 SD_KERNEL static void softMaxCuda(const void *vx, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
-                                  void *vz, const sd::LongType *zTadShapeInfo, const sd::LongType *zOffsets) {
+                                  void *vz, const sd::LongType *zTadShapeInfo, const sd::LongType *zOffsets,
+                                  sd::LongType numTads) {
+  int i = blockIdx.x;
+  if(i >= numTads) return;
+
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
   const auto *xTad = x + xOffsets[blockIdx.x];
   auto *zTad = z + zOffsets[blockIdx.x];
-
+  printf("softmax for vector cuda 1\n");
   softMaxForVectorCuda<T>(xTad, xTadShapeInfo, zTad, zTadShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
+
+template <typename T>
+static void softMaxEws1CudaLauncher(const int blocksPerGrid,
+                                    const int threadsPerBlock,
+                                    const int sharedMem,
+                                    const cudaStream_t *stream,
+                                    const void *vx, const sd::LongType *xOffsets, void *vz,
+                                    const sd::LongType *zOffsets,
+                                    sd::LongType numTads,
+                                    sd::LongType tadLength) {
+
+
+
+  printf("running softmaxews1 kernel\n");
+  auto reCastInputs = reinterpret_cast<const T *>(vx);
+  auto reCastOutputs = reinterpret_cast<T *>(vz);
+  softmaxEws1Kernel<T>
+  <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(reCastInputs,
+                                                           xOffsets,
+                                                           reCastOutputs,
+                                                           zOffsets,
+                                                           numTads,
+                                                           tadLength);
+}
+
 template <typename T>
 static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                 const cudaStream_t *stream, const void *vx, const sd::LongType *xTadShapeInfo,
                                 const sd::LongType *xOffsets, void *vz, const sd::LongType *zTadShapeInfo,
-                                const sd::LongType *zOffsets) {
+                                const sd::LongType *zOffsets, sd::LongType numTads) {
+
+
   softMaxCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xTadShapeInfo, xOffsets, vz, zTadShapeInfo,
-                                                                         zOffsets);
+                                                                         zOffsets ,numTads);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
-  if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
 
   PointersManager manager(context, "helpers::softmax");
@@ -320,12 +354,46 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
       NDArray::prepareSpecialUse({&output}, {&input});
       BUILD_SINGLE_SELECTOR(input.dataType(), softMaxForVectorCudaLauncher,
                             (context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(),
-                             output.specialBuffer(), output.specialShapeInfo()),
+                                output.specialBuffer(), output.specialShapeInfo(),1),
                             SD_FLOAT_TYPES);
       NDArray::registerSpecialUse({&output}, {&input});
     } else
       output = 1.;
-  } else {
+  } else if(shape::ews(input.shapeInfo()) == 1) {
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
+    packX->print("packX shape info for softmax:");
+    packZ->print("packZ shape info for softmax:");
+    input.printIndexedBuffer("softmax ews1 Input:");
+    input.printCurrentBuffer<double>(true, "softmax ews1 host buffer:");
+    input.printCurrentBuffer<double>(false, "softmax ews1 device buffer:");
+    dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
+    printf("softmax ews 1 dim: %d\n",dimension);
+    printf("tad input shape info:\n");
+    shape::printShapeInfo(packX->primaryShapeInfo());
+    printf("tad output shapeinfo:\n");
+    shape::printShapeInfo(packZ->primaryShapeInfo());
+    manager.synchronize();
+    NDArray::prepareSpecialUse({&output}, {&input});
+    //TODO: look in to why TAD shape info for cuda is 100 but it's 10 on cpu
+    auto tadLength = shape::length(packX->primaryShapeInfo());
+    printf("softmax ews 1 dim: %d tad length %lld\n",dimension,tadLength);
+
+    BUILD_SINGLE_SELECTOR(input.dataType(), softMaxEws1CudaLauncher,
+                          (softmaxDims.x, softmaxDims.y,
+                              softmaxDims.z,
+                              context->getCudaStream(),
+                              input.specialBuffer(),
+                              packX->specialOffsets(),
+                              output.specialBuffer(),
+                              packZ->specialOffsets(),
+                              packX->numberOfTads(),
+                              tadLength),
+                          SD_FLOAT_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input});
+  }
+
+  else {
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
@@ -334,9 +402,14 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
 
     NDArray::prepareSpecialUse({&output}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher,
-                          (softmaxDims.x, softmaxDims.y, softmaxDims.z, context->getCudaStream(), input.specialBuffer(),
-                           packX->specialShapeInfo(), packX->specialOffsets(), output.specialBuffer(),
-                           packZ->specialShapeInfo(), packZ->specialOffsets()),
+                          (softmaxDims.x, softmaxDims.y,
+                              softmaxDims.z,
+                              context->getCudaStream(),
+                              input.specialBuffer(),
+                              packX->specialShapeInfo(),
+                              packX->specialOffsets(), output.specialBuffer(),
+                              packZ->specialShapeInfo(),
+                              packZ->specialOffsets(),packX->numberOfTads()),
                           SD_FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
@@ -375,10 +448,10 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
       const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
-              ? x[offset]
-              : sd::math::sd_max<T>(
-                    x[offset],
-                    temp);  // take into account max element evaluated on previous iteration and stored in temp
+          ? x[offset]
+          : sd::math::sd_max<T>(
+              x[offset],
+              temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
 
@@ -404,8 +477,8 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
       z[offset] = sd::math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
-              ? z[offset]
-              : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
+          ? z[offset]
+          : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else
       shmem[threadIdx.x] = 0;
 
@@ -422,7 +495,6 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
   // ************ evaluate log(z[offset] / sum)  ************ //
   for (int i = 0; i < numOfIters; ++i) {
     const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
-    if (elemIdx >= len) continue;
     const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
     z[offset] = sd::math::sd_log<T, T>(z[offset] / shmem[0]);
   }
@@ -493,10 +565,10 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
       const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
-              ? x[offset]
-              : sd::math::sd_max<T>(
-                    x[offset],
-                    temp);  // take into account max element evaluated on previous iteration and stored in temp
+          ? x[offset]
+          : sd::math::sd_max<T>(
+              x[offset],
+              temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
 
@@ -522,8 +594,8 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
       z[offset] = sd::math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
-              ? z[offset]
-              : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
+          ? z[offset]
+          : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else
       shmem[threadIdx.x] = 0;
 

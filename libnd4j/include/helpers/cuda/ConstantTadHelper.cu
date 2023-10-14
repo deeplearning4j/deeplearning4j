@@ -67,30 +67,36 @@ TadPack * ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::
   return tadForDimensions(tadDescriptor);
 }
 
-TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
+TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
   const int deviceId = AffinityManager::currentDeviceId();
-
+  if(descriptor == nullptr)
+    THROW_EXCEPTION("ConstantTadHelper::tadForDimensions: descriptor is nullptr!");
   std::lock_guard<std::mutex> lock(_mutex);
-
   if (_cache[deviceId].count(descriptor) == 0) {
-    auto toShapeInfo = descriptor->originalShape();
+    // if there's no TadPack matching this descriptor - create one
     const auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo());
+    printf("shape info original created for TAD:\n");
+    descriptor->originalShape().print();
+    printf("created shape info afterwards:\n");
+    shape::printShapeInfo(descriptor->originalShape().toShapeInfo());
     const sd::LongType rank = shape::rank(shapeInfo);
-    auto descAxis = descriptor->axis();
-    const std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(rank,descAxis.size(), descAxis.data());
+    const std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor->axis().size(),descriptor->axis().data());
+
     const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, *dimsToExclude);
     const sd::LongType subArrRank =
         (rank == dimsToExclude->size() || descriptor->areUnitiesinShape()) ? rank : rank - dimsToExclude->size();
 
-    auto sPtr = std::make_shared<PointerWrapper>(new sd::LongType[shape::shapeInfoLength(subArrRank)],
-                                                 std::make_shared<PrimaryPointerDeallocator>());
+    auto sPtr = std::make_shared<PointerWrapper>(
+        new sd::LongType[shape::shapeInfoLength(subArrRank)]);  // shape of sub-arrays (same for all for them)
     auto oPtr =
-        std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
+        std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs]);
 
     if (numOfSubArrs > 0)
       shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude->size(), dimsToExclude->data(),
                                             sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
                                             descriptor->areUnitiesinShape());
+   printf("final shape info for TAD :\n");
+    shape::printShapeInfo(sPtr->pointerAsT<sd::LongType>());
 
     sd::Pointer soPtr;
     auto res = cudaMalloc(reinterpret_cast<void **>(&soPtr), numOfSubArrs * sizeof(sd::LongType));
@@ -105,18 +111,20 @@ TadPack * ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
     ConstantOffsetsBuffer *offsetsBuffer = new ConstantOffsetsBuffer(
         oPtr, std::make_shared<PointerWrapper>(soPtr, std::make_shared<CudaPointerDeallocator>()));
 
-    auto shapesBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(&toShapeInfo);
+    auto shapesBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(sPtr->pointerAsT<sd::LongType>());
+    printf("shapes buffer primary tad after final:\n");
+    shape::printShapeInfo(shapesBuffer->primary());
+
     TadPack *t = new TadPack(*shapesBuffer, *offsetsBuffer, numOfSubArrs);
     _cache[deviceId][descriptor] = t;
-
-    TadPack *r = _cache[deviceId][descriptor];
     delete dimsToExclude;
 
-    return r;
-  } else {
-    TadPack *r = _cache[deviceId][descriptor];
-
-    return r;
   }
+
+
+  return _cache[deviceId][descriptor];
+
+  // if there's no TadPack matching this descriptor - create one
+
 }
 }  // namespace sd

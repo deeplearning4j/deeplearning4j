@@ -346,7 +346,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
 };
 
 dim3 getSoftmaxDims(int numTads) {
-  int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
+  int threadsPerBlock = 256;
   int blocksPerGrid = numTads;
   int sharedMem = 1024;
   threadsPerBlock = getEnvVariable("GRID_SIZE_SOFTMAX",threadsPerBlock);

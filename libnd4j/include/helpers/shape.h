@@ -454,7 +454,7 @@ namespace shape {
 /**
  *  returns pointer on elementWiseStride
  */
-    SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *ews(sd::LongType *shapeInfo);
+    SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType ews(const long long int *shapeInfo);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -1615,7 +1615,7 @@ SD_DEVICE SD_INLINE sd::LongType *cuMalloc(sd::LongType *buffer, long size) {
 
 
 
-    SD_INLINE SD_HOST_DEVICE sd::LongType *ews(sd::LongType *shapeInfo) { return shapeInfo + 2 * shapeInfo[0] + 2; }
+    SD_INLINE SD_HOST_DEVICE sd::LongType ews(const long long int *shapeInfo) { return shapeInfo[2 * shapeInfo[0] + 2]; }
 
 /**
  * Converts a raw int buffer of the layout:
