@@ -88,9 +88,9 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
                                             sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
                                             descriptor->areUnitiesinShape());
 
-    ConstantShapeBuffer shapeBuffer(sPtr);
-    ConstantOffsetsBuffer offsetsBuffer(oPtr);
-    TadPack *t = new TadPack(shapeBuffer, offsetsBuffer, numOfSubArrs);
+    const ConstantShapeBuffer shapeBuffer(sPtr);
+    const ConstantOffsetsBuffer offsetsBuffer(oPtr);
+    TadPack *t = new TadPack(shapeBuffer, offsetsBuffer, numOfSubArrs, descriptor->axis().data(), descriptor->axis().size());
 
     _cache[deviceId][descriptor] = t;
     delete dimsToExclude;

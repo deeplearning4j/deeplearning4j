@@ -2194,8 +2194,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo(new LongPointer(array.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer()),
-                new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
+        LongPointer dimPointer = new LongPointer(dimension);
+        dimPointer.retainReference();
+        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo(
+                new LongPointer(array.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer()),
+                dimPointer, dimension.length);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -2204,6 +2207,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val tadOffsets = new CudaLongDataBuffer(nativeOps.getPrimaryOffsets(pack), nativeOps.getSpecialOffsets(pack), nativeOps.getNumberOfTads(pack));
 
 
+        dimPointer.deallocate();
         return new TadPack(tadShape, tadOffsets);
     }
 

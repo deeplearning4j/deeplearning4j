@@ -2201,8 +2201,11 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
                                                     sd::LongType baseOffset) {
         sd::LongType offset = baseOffset;
 
-        for (sd::LongType i = 1; i <= shapeInfo[0]; ++i)
-            if (shapeInfo[i] != 1) offset += indices[i - 1] * shapeInfo[shapeInfo[0] + i];
+        for (sd::LongType i = 1; i <= shapeInfo[0]; i++) {
+          if (shapeInfo[i] != 1) {
+            offset += indices[i - 1] * shapeInfo[shapeInfo[0] + i];
+          }
+        }
 
         return offset;
     }
@@ -2402,6 +2405,8 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
     }
 
 
+
+
     template <typename T>
     SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *message) {
         auto arr = reinterpret_cast<T *>(varr);
@@ -2420,6 +2425,31 @@ SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
         fflush(stdout);
 #endif
     }
+
+    template <typename T>
+    SD_INLINE SD_HOST_DEVICE void printTadContents(void *varr, sd::LongType *tadOffsets, int numTads, const sd::LongType *tadShapeInfo, const char *message) {
+      T *arr = reinterpret_cast<T *>(varr);
+
+      // Extracting TAD's length and element-wise stride from the shape info
+      int tadLength = shape::length(tadShapeInfo);
+      int tadEws = shape::elementWiseStride(tadShapeInfo);
+
+      for (int tadIdx = 0; tadIdx < numTads; tadIdx++) {
+        T *tadStart = arr + tadOffsets[tadIdx];
+
+        printf("%s TAD %d: [", message ? message : "Array", tadIdx);
+        for (int i = 0; i < tadLength; i++) {
+          printf("%f", (float)tadStart[i * tadEws]);
+          if (i + 1 < tadLength) printf(", ");
+        }
+        printf("]\n");
+      }
+
+#ifndef __CUDACC__
+      fflush(stdout);
+#endif
+    }
+
 
 // host device codes which were duplicated in shape.cpp but guarded from inclusion
 #if defined(SD_CUDA)

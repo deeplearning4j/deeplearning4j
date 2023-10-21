@@ -1616,9 +1616,13 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
+sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo,
+                              sd::LongType *dimension,
+                              sd::LongType dimensionLength) {
   try {
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
+                                                                      dimension,
+                                                                      dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

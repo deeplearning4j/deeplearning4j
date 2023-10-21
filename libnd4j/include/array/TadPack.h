@@ -36,9 +36,14 @@ class SD_LIB_EXPORT TadPack {
   ConstantOffsetsBuffer _tadOffsets;
   sd::LongType _numTads = 0;
   sd::LongType _shapeInfoLength = 0;
-
+  sd::LongType *_dimensions = nullptr;
+  sd::LongType _dimensionsLength = 0;
  public:
-  explicit TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads);
+  explicit TadPack(const ConstantShapeBuffer& shapes,
+                   const ConstantOffsetsBuffer& offets,
+                   sd::LongType numTads,
+                   sd::LongType* dimensions = nullptr,
+                   sd::LongType dimLength = 0);
   TadPack() = default;
   ~TadPack() {};
 

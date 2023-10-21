@@ -61,10 +61,8 @@ sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
     lastNode = v->id();
   }
 
-  // now we should take result of the Scope run, and evaluate it
-  // sd_debug("", "");
+
   auto result = __variableSpace->getVariable(lastNode)->getNDArray();
-  // result->printBuffer("Result of the last node:");
 
   bool isReturn = false;
 

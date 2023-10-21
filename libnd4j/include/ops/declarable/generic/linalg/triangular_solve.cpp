@@ -67,9 +67,6 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
     isLower = !isLower;
   };
 
-  input->printBuffer("input before triangular_solve");
-  b->printBuffer("b before triangular_solve");
-
   auto res = helpers::triangularSolveFunctor(block.launchContext(), input, b, isLower, false, z);
   if (input != a) delete input;
 

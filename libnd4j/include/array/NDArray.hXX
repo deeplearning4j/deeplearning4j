@@ -186,15 +186,15 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
   }
 
   int len = isScalar() ? 1 : lengthOf();
- //TODO: figure out why this breaks cpu
+  //TODO: figure out why this breaks cpu
   //TODO: figure out if this is the correct copy constructor
   if (!isEmpty()) {
     _buffer = std::make_shared<DataBuffer>(len * sizeOfT(), dataType(), getContext()->getWorkspace());
-  /*  _buffer = std::make_shared<DataBuffer>(other->getDataBuffer()->primary(),
-                                          other->getDataBuffer()->special()
-                                          , len * DataTypeUtils::sizeOf(other->dataType()), other->dataType(),
-                                          false,false,
-                                          getContext()->getWorkspace());*/
+    /*  _buffer = std::make_shared<DataBuffer>(other->getDataBuffer()->primary(),
+                                            other->getDataBuffer()->special()
+                                            , len * DataTypeUtils::sizeOf(other->dataType()), other->dataType(),
+                                            false,false,
+                                            getContext()->getWorkspace());*/
   }
 }
 
@@ -5535,10 +5535,16 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
       _shapeInfo, const_cast<sd::LongType *>(dimensions.data()), dimensions.size());
   auto numTads = pack->numberOfTads();
   auto newShapeInfoCast = const_cast<sd::LongType *>(pack->primaryShapeInfo());
+//print shape info and dimensions being created
+  if(Environment::getInstance().isDebug() && Environment::getInstance().isVerbose())
+    pack->print("allTensorsAlongDimension");
+
 
   for (sd::LongType idx = 0; idx < numTads; idx++) {
     auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + bufferOffset());
     array->_isView = true;
+    if(Environment::getInstance().isDebug() && Environment::getInstance().isVerbose())
+      printf("TAD %lld has primary offsets at %lld\n",idx, pack->primaryOffsets()[idx]);
     result.push_back(array);
   }
 

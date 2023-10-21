@@ -69,18 +69,11 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   if (block.getIArguments()->size() > 0) N = INT_ARG(0);
   auto dataType = rowP->dataType();  // ArrayOptions::dataType(inputShape->at(0));
   NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}, block.launchContext());  // rowP->dup();
-  // srowCounts->assign(0);
   sd::LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
   rowCounts->syncToHost();
-  //            rowCounts->printBuffer("Row Counts");
   if (len <= 0) THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");
   rowCountsPtr = rowCounts;
-  // ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), sd::LongType);
-  //            outShapeInfo[1] = 1;
-  //            outShapeInfo[2] = len;
-  // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
-  // outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
-  outShapeInfo =
+   outShapeInfo =
       sd::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
   auto outColsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
   auto outRowsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());

@@ -32,6 +32,7 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,19 +56,19 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
            //TODO: unsorted segment sum is the problem op here
-            "g_09"
+            "linear_solve/float32_rank2"
+
             /*,
             ,
             ,
            ,
 
-            "fused_batch_norm/float32_nhcw",
-            "g_12",
-            "g_05",
-            "is_strictly_increasing/emptyArrayTest/rank1_float32",
-            "fused_batch_norm/float32_nhwc",
+           ,
+
+           ,
+          ,
+
             "is_strictly_increasing/emptyArrayTest/rank2_float32",
-            "linear_solve/float32_rank2",
             "extractImagePatches/sz1-6-6-2_float32_k3_s1_r1_SAME",
             "linear_solve/float64_rank3",
             "lrn/dr3_b05_a05_b02",
@@ -78,6 +79,9 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
     public static final String[] IGNORE_REGEXES = new String[] {
+             //ignore this one. when running with tf java we get the same results
+            "fused_batch_norm/float32_nhcw",
+
             //crashes JVM
             //expects 2 outputs we only output 1
             "non_max_suppression_v4/float16_with_thresholds",
@@ -185,6 +189,9 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             assumeFalse(true);
         }
 
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                        .checkForNAN(true)
+                .build());
 
 
         System.out.println("Testing with test name " + System.getProperty(DeallocationExtension.CURRENT_TEST_DISPLAY_NAME));

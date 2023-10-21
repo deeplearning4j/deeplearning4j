@@ -53,27 +53,74 @@ static SD_HOST_DEVICE void lowerTriangularSolve(T const* leftInput, sd::LongType
                                                 T const* rightInput, sd::LongType const* rightInputShape,
                                                 bool const unitOnDiag, T* output, const sd::LongType* outputShape,
                                                 sd::LongType rows, sd::LongType cols) {
+
+  printf("Entering lowerTriangularSolve\n");
+
+  printf("Initial rows: %ld\n", rows);
+  printf("Initial cols: %ld\n", cols);
+
   for (auto r = 0; r < rows; r++) {
+    printf("Current row index: %d\n", r);
+
     for (auto j = 0; j < cols; j++) {
+      printf("Current col index: %d\n", j);
+
       sd::LongType posY[] = {r, j};
       sd::LongType posX[] = {r, r};
+
+      printf("posY array: [%ld, %ld]\n", posY[0], posY[1]);
+      printf("posX array: [%ld, %ld]\n", posX[0], posX[1]);
+
       auto xIndex = shape::getOffset(leftInputShape, posX, 0);
       auto yIndex = shape::getOffset(rightInputShape, posY, 0);
-      auto zIndex = shape::getOffset(outputShape, posY, 0);
+
+      printf("Calculating xIndex: %ld\n", xIndex);
+      printf("Calculating yIndex: %ld\n", yIndex);
+
+      printf("lowerTriangularSolve CUDA: At (row: %d, col: %d), xIndex: %ld, yIndex: %ld\n", r, j, xIndex, yIndex);
 
       auto sum = rightInput[yIndex];
+      printf("Fetching initial sum from rightInput: %f\n", (float)sum);
+
+      printf("lowerTriangularSolve CUDA: Initial sum: %f\n", (float)sum);
+
       for (auto c = 0; c < r; c++) {
-        sd::LongType posZ[] = {c, j};
+        printf("Current inner loop index: %d\n", c);
+
         sd::LongType pos[] = {r, c};
+        sd::LongType posZCIndex[] = {c,j};
+
+        printf("pos array for inner loop: [%ld, %ld]\n", pos[0], pos[1]);
+
         auto xcIndex = shape::getOffset(leftInputShape, pos, 0);
-        auto zcIndex = shape::getOffset(outputShape, posZ, 0);
-        sum -= leftInput[xcIndex] * output[zcIndex];
+        auto zIndex = shape::getOffset(outputShape, posZCIndex, 0);
+
+        printf("Calculating xcIndex: %ld\n", xcIndex);
+        printf("Calculating zIndex: %ld\n", zIndex);
+
+        printf("Fetching leftInput at xcIndex: %f\n", (float)leftInput[xcIndex]);
+        printf("Fetching output at zIndex: %f\n", (float)output[zIndex]);
+
+        sum -= leftInput[xcIndex] * output[zIndex];
+        printf("Updated sum: %f\n", (float)sum);
+
+        printf("lowerTriangularSolve CUDA: After iteration %d in inner loop, sum: %f\n", c, (float)sum);
       }
+
+      auto zIndex = shape::getOffset(outputShape, posY, 0);
+      printf("Calculating zIndex after inner loop: %ld\n", zIndex);
+
+      printf("Fetching leftInput at xIndex: %f\n", (float)leftInput[xIndex]);
+
       output[zIndex] = unitOnDiag ? sum : sum / leftInput[xIndex];
+      printf("Updating output at zIndex: %f\n", (float)output[zIndex]);
+
+      printf("lowerTriangularSolve CUDA: Output after processing (row: %d, col: %d): %f\n", r, j, (float)output[zIndex]);
     }
   }
-}
 
+  printf("Exiting lowerTriangularSolve\n");
+}
 /*
  * upper triangular process for system of linear equations
  * x_M = b_M/a_M,M
@@ -89,44 +136,90 @@ static SD_HOST_DEVICE void lowerTriangularSolve(T const* leftInput, sd::LongType
  * */
 
 template <typename T>
-static SD_HOST_DEVICE void upperTriangularSolve(T const* leftInput, sd::LongType const* leftInputShape,
-                                                T const* rightInput, sd::LongType const* rightInputShape,
-                                                bool const unitOnDiag, T* output, const sd::LongType* outputShape,
-                                                sd::LongType rows, sd::LongType cols) {
-  for (auto r = rows; r > 0; r--) {
-    for (auto j = 0; j < cols; j++) {
-      sd::LongType posY[] = {r - 1, j};
-      sd::LongType posX[] = {r - 1, r - 1};
-      auto xIndex = shape::getOffset(leftInputShape, posX, 0);
-      auto yIndex = shape::getOffset(rightInputShape, posY, 0);
-      auto zIndex = shape::getOffset(outputShape, posY, 0);
-      auto sum = rightInput[yIndex];
+static SD_HOST_DEVICE void upperTriangularSolve(T const* leftInput,
+                                                sd::LongType const* leftInputShape,
+                                                T const* rightInput,
+                                                sd::LongType const* rightInputShape,
+                                                bool const unitOnDiag,
+                                                T* output, const sd::LongType* outputShape,
+                                                sd::LongType rows, sd::LongType cols, sd::LongType totalXLength,
+                                                sd::LongType totalYLength) {
+
+  printf("Entering upperTriangularSolve CUDA function\n");
+
+  for (sd::LongType r = rows; r > 0; r--) {
+    for (sd::LongType j = 0; j < cols; j++) {
+      sd::LongType rightInputIndices[] = {r - 1, j};
+      sd::LongType leftInputIndices[] = {r - 1, r - 1};
+
+      auto xIndex = shape::getOffset(leftInputShape, leftInputIndices, 0);
+      auto yIndex = shape::getOffset(rightInputShape, rightInputIndices, 0);
+
+      auto sumBefore = rightInput[yIndex];
+      printf("Initial sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sumBefore));
+
+      auto sum = sumBefore;
       for (auto c = r; c < rows; c++) {
-        sd::LongType posZ[] = {c, j};
         sd::LongType pos[] = {r - 1, c};
-        auto zcIndex = shape::getOffset(outputShape, posZ, 0);
+        sd::LongType pos2[] = {c,j};
+
         auto xcIndex = shape::getOffset(leftInputShape, pos, 0);
-        sum -= leftInput[xcIndex] * output[zcIndex];
+        auto zCIndex = shape::getOffset(outputShape, pos2, 0);
+
+        auto left_val = leftInput[xcIndex];
+        auto output_val = output[zCIndex];
+
+        sum -= left_val * output_val;
       }
+      printf("Updated sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sum));
+
+      auto zIndex = shape::getOffset(outputShape, rightInputIndices, 0);
+      auto output_before = output[zIndex];
+      printf("Output value before update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(output_before));
+
       output[zIndex] = unitOnDiag ? sum : sum / leftInput[xIndex];
+
+      auto output_after = output[zIndex];
+      printf("Output value after update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(output_after));
     }
   }
+
+  printf("Exiting upperTriangularSolve CUDA function\n");
 }
 
-template <typename T>
-static SD_KERNEL void triangularSolveKernel(T const* leftInput, sd::LongType const* leftPartShape, T const* rightInput,
-                                            sd::LongType const* rightPartShape, bool const lower,
-                                            bool const unitsOnDiag, T* output, const sd::LongType* outputShape,
-                                            const sd::LongType* tadLeftShape, const sd::LongType* tadLeftOffset,
-                                            const sd::LongType* tadRightShape, const sd::LongType* tadRightOffset,
-                                            const sd::LongType* tadOutputShape, const sd::LongType* tadOutputOffset,
+
+
+
+
+
+
+
+
+                                                                                                                                            template <typename T>
+static SD_KERNEL void triangularSolveKernel(T const* leftInput,
+                                            sd::LongType const* leftPartShape,
+                                            T const* rightInput,
+                                            sd::LongType const* rightPartShape,
+                                            bool const lower,
+                                            bool const unitsOnDiag,
+                                            T* output, const sd::LongType* outputShape,
+                                            const sd::LongType* tadLeftShape,
+                                            const sd::LongType* tadLeftOffset,
+                                            const sd::LongType* tadRightShape,
+                                            const sd::LongType* tadRightOffset,
+                                            const sd::LongType* tadOutputShape,
+                                            const sd::LongType* tadOutputOffset,
                                             sd::LongType batchNum) {
   __shared__ sd::LongType rows;
   __shared__ sd::LongType cols;
-
+  __shared__ sd::LongType xTotalLen;
+  __shared__ sd::LongType yTotalLen;
   if (threadIdx.x == 0) {
     rows = shape::sizeAt(leftPartShape, -2);
     cols = shape::sizeAt(rightPartShape, -1);
+    xTotalLen = shape::length(leftPartShape);
+    yTotalLen = shape::length(rightPartShape);
+
   }
   __syncthreads();
 
@@ -143,7 +236,7 @@ static SD_KERNEL void triangularSolveKernel(T const* leftInput, sd::LongType con
                               tadOutputShape, rows, cols);
     } else {
       upperTriangularSolve<T>(pLeftPart, tadLeftShape, pRightPart, tadRightShape, unitsOnDiag, pOutputPart,
-                              tadOutputShape, rows, cols);
+                              tadOutputShape, rows, cols, xTotalLen, yTotalLen);
     }
   }
 }
@@ -151,42 +244,55 @@ static SD_KERNEL void triangularSolveKernel(T const* leftInput, sd::LongType con
 template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool unitsOnDiag, NDArray* output) {
-  NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
 
+  printf("CUDA: Entering triangularSolveFunctor_\n");
+
+  NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
   leftInput->printBuffer("leftInput before");
   rightInput->printBuffer("rightInput before");
-
   std::vector<sd::LongType> dims = {-2, -1};
   auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), &dims);
+  leftTads->print("left tad:");
   auto rightTads = ConstantTadHelper::getInstance().tadForDimensions(rightInput->shapeInfo(), &dims);
+
+  rightTads->print("right tad:");
+  printf("left shape info:\n");
+  shape::printShapeInfo(leftTads->primaryShapeInfo());
+  printf("right shape info:\n");
+  shape::printShapeInfo(rightTads->primaryShapeInfo());
+
   auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dims);
+  printf("output shape info:\n");
+  shape::printShapeInfo(outputTads->primaryShapeInfo());
+
+
 
   auto stream = context->getCudaStream();
   T const* leftBuf = reinterpret_cast<T const*>(leftInput->specialBuffer());
   T const* rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
   T* outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   dim3 triangularSolveDims = getLaunchDims("triangular_solve");
-  triangularSolveKernel<T><<<triangularSolveDims.y, triangularSolveDims.x, triangularSolveDims.z, *stream>>>(
-      leftBuf, leftInput->specialShapeInfo(), rightBuf, rightInput->specialShapeInfo(), lower, unitsOnDiag, outputBuf,
-      output->specialShapeInfo(), leftTads->specialShapeInfo(), leftTads->specialOffsets(), rightTads->specialShapeInfo(),
-      rightTads->specialOffsets(), outputTads->specialShapeInfo(), outputTads->specialOffsets(), leftTads->numberOfTads());
+
+  printf("CUDA: Launching triangularSolveKernel\n");
+  triangularSolveKernel<T><<<triangularSolveDims.y,
+  triangularSolveDims.x,
+  triangularSolveDims.z, *stream>>>(
+      leftBuf, leftInput->specialShapeInfo(),
+      rightBuf, rightInput->specialShapeInfo(),
+      lower, unitsOnDiag, outputBuf,
+      output->specialShapeInfo(),
+      leftTads->specialShapeInfo(),
+      leftTads->specialOffsets(),
+      rightTads->specialShapeInfo(),
+      rightTads->specialOffsets(),
+      outputTads->specialShapeInfo(),
+      outputTads->specialOffsets(),
+      leftTads->numberOfTads());
 
   NDArray::registerSpecialUse({output}, {leftInput, rightInput});
 
-  printf("leftInput:\n");
-  leftInput->printBuffer("leftInput");
-  printf("rightInput:\n");
+  printf("CUDA: Exiting triangularSolveFunctor_\n");
 
-
-
-  printf("leftInput:");
-  leftInput->printBuffer("leftInput");
-  printf("rightInput:");
-  rightInput->printBuffer("rightInput");
-
-
-  printf("output:\n");
-  output->printBuffer("output:");
   return sd::Status::OK;
 }
 
@@ -282,9 +388,6 @@ static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* 
   }
 
   NDArray::registerSpecialUse({input}, {output});
-  printf("adjoint triangular matrix: lower %d\n",lower);
-  input->printBuffer("Input:");
-  output->printBuffer("Final output:");
 }
 
 void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {

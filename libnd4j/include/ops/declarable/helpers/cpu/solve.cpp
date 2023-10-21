@@ -62,13 +62,6 @@ static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDA
 template <typename T>
 static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool const adjoint,
                                 NDArray* output) {
-  /*
-   * TODO: see if constructor fix (ndarray copy constructor)
-   * now fixes the issue with the  input data being the same.
-   * Check this across backends.
-   */
-  leftInput->printBuffer("left input in solveFunctor_");
-  rightInput->printBuffer("right input in solveFunctor_");
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
   auto permuShape = rightInput->getShapeAsVector();
@@ -79,41 +72,26 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   P.nullify();                  // to fill up matrices with zeros
   auto PPart = P.allTensorsAlongDimension({-2, -1});
   auto permutationsPart = permutations.allTensorsAlongDimension({-1});
-
-  for (auto batch = 0; batch < permutationsPart.size(); ++batch) {
-    for (sd::LongType row = 0; row < PPart[batch]->rows(); ++row) {
+  for (auto batch = 0; batch < permutationsPart.size(); batch++) {
+    for (sd::LongType row = 0; row < PPart[batch]->rows(); row++) {
+      std::vector<sd::LongType> vec = {row,permutationsPart[batch]->t<sd::LongType>(row)};
       PPart[batch]->r<T>(row, permutationsPart[batch]->t<sd::LongType>(row)) = T(1.f);
     }
   }
 
-  P.printBuffer("P matrix");
-
-  leftOutput.printBuffer("leftOutput before cpu:");
-  rightInput->printBuffer("rightInput before cpu:");
-
   auto leftLower = leftOutput.dup();
   auto rightOutput = rightInput->ulike();
-  rightOutput.printBuffer("rightOutput before cpu:");
-  auto rightPermuted = rightOutput.ulike();
-  leftLower.printBuffer("left lower cpu:");
-  rightOutput.printBuffer("right output cpu:");
-  rightPermuted.printBuffer("right permuted cpu:");
+  auto rightPart = rightInput->ulike();
+  MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0);
 
-  MmulHelper::matmul(&P, rightInput, &rightPermuted, 0, 0);
   ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (sd::LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
   }
-
-  leftLower.printBuffer("left lower first input cpu\n");
-  rightPermuted.printBuffer("right permuted first input cpu\n");
   // stage 2: triangularSolveFunctor for Lower with given b
-  helpers::triangularSolveFunctor(context, &leftLower, &rightPermuted, true, false, &rightOutput);
+  helpers::triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
   // stage 3: triangularSolveFunctor for Upper with output of previous stage
-  leftLower.printBuffer("leftOutput lower first input cpu\n");
-  rightPermuted.printBuffer("rightOutput permuted first input cpu\n");
-  helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
-
+   helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
   return sd::Status::OK;
 }
 

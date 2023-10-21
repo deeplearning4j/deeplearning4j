@@ -46,18 +46,55 @@ namespace helpers {
 template <typename T>
 static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
+
+  printf("Entering lowerTriangularSolve\n");
+
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
+
+  printf("Initial rows: %ld\n", rows);
+  printf("Initial cols: %ld\n", cols);
+
   for (sd::LongType r = 0; r < rows; r++) {
+    printf("Current row index: %lld\n", r);
+
     for (sd::LongType j = 0; j < cols; j++) {
+      printf("Current col index: %lld\n", j);
+
+      printf("Fetching initial sum from rightInput at (r: %lld, j: %lld)\n", r, j);
+
       auto sum = rightInput->t<T>(r, j);
+      printf("Initial sum: %f\n", static_cast<float>(sum));
+
       for (sd::LongType c = 0; c < r; c++) {
-        sum -= leftInput->t<T>(r, c) * output->t<T>(c, j);
+        printf("Current inner loop index: %lld\n", c);
+
+        printf("Fetching leftInput at (r: %lld, c: %lld)\n", r, c);
+        printf("Fetching output at (c: %lld, j: %lld)\n", c, j);
+
+        auto left_val = leftInput->t<T>(r, c);
+        auto output_val = output->t<T>(c, j);
+
+        printf("leftInput value: %f\n", static_cast<float>(left_val));
+        printf("Output value: %f\n", static_cast<float>(output_val));
+
+        sum -= left_val * output_val;
+        printf("Updated sum: %f\n", static_cast<float>(sum));
       }
-      output->r<T>(r, j) = unitsOnDiag ? sum : sum / leftInput->t<T>(r, r);
+
+      printf("Fetching leftInput at (r: %lld, r: %lld)\n", r, r);
+      auto divisor = leftInput->t<T>(r, r);
+      printf("Divisor value: %f\n", static_cast<float>(divisor));
+
+      output->r<T>(r, j) = unitsOnDiag ? sum : sum / divisor;
+      printf("Updated output at (r: %lld, j: %lld): %f\n", r, j, static_cast<float>(output->t<T>(r, j)));
+
     }
   }
+
+  printf("Exiting lowerTriangularSolve\n");
 }
+
 
 /*
  * upper triangular process for system of linear equations
@@ -76,18 +113,34 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
 template <typename T>
 static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
+  printf("Entering upperTriangularSolve CPU function\n");
+
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
+
   for (sd::LongType r = rows; r > 0; r--) {
     for (sd::LongType j = 0; j < cols; j++) {
       auto sum = rightInput->t<T>(r - 1, j);
+      printf("Initial sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sum));
+
       for (sd::LongType c = r; c < rows; c++) {
         sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
       }
+      printf("Updated sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sum));
+
+      auto before_output = output->t<T>(r - 1, j);
+      printf("Output value before update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(before_output));
+
       output->r<T>(r - 1, j) = unitsOnDiag ? sum : sum / leftInput->t<T>(r - 1, r - 1);
+
+      auto after_output = output->t<T>(r - 1, j);
+      printf("Output value after update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(after_output));
     }
   }
+
+  printf("Exiting upperTriangularSolve CPU function\n");
 }
+
 
 ///  triangularSolve2D - 2D implementation of triangularSolveFunctor
 /// \tparam T - type of NDArray output
@@ -117,15 +170,16 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
                                           bool lower, bool adjoint, NDArray* output) {
 
 
-    leftInput->printBuffer("leftInput before");
-    rightInput->printBuffer("rightInput before");
+  printf("CPU: Entering triangularSolveFunctor_\n");
+  leftInput->printBuffer("leftInput before");
+  rightInput->printBuffer("rightInput before");
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-     if(i >= rightPart.size() || i > outputPart.size())
-       break;
+      if(i >= rightPart.size() || i > outputPart.size())
+        break;
       if (lower) {
         lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
       } else {

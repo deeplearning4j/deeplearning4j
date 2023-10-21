@@ -1916,6 +1916,13 @@ T &NDArray::r(const sd::LongType i, const sd::LongType j) {
   syncToHost();
   tickWriteHost();
 
+  printf("arr at offset: i %lld strideAt(0) %lld j %lld stride(1) %lld with final offset %lld\n",
+         i,
+         strideAt(0),
+         j,
+         strideAt(1),
+         i * strideAt(0) + j * strideAt(1));
+
   return *(reinterpret_cast<T *>(bufferWithOffset(i * strideAt(0) + j * strideAt(1))));
 }
 

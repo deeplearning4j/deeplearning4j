@@ -306,7 +306,6 @@ TEST_F(ConvolutionTests1, conv2d_8) {
   auto results = op.evaluate({&input, &weights, &bias}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
 
-  // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
 

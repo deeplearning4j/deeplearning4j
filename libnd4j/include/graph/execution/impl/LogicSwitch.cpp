@@ -47,7 +47,6 @@ sd::Status LogicSwitch::processNode(Graph* graph, Node* node) {
 
     // now we should take result of the Scope run, and evaluate it
     auto result = __variableSpace->getVariable(lastNode)->getNDArray();
-    // result->printBuffer("Result of the last node");
 
     std::pair<int, int> pair0(node->id(), 0);
     std::pair<int, int> pair1(node->id(), 1);

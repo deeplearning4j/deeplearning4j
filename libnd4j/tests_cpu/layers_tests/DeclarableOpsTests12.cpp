@@ -657,7 +657,6 @@ TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
   auto result = op.evaluate({&x, &gradO}, {}, {0});
   auto output = result.at(0);
   auto result2 = op.evaluate({&x, &gradO}, {1.0}, {0});
-  result2.at(0)->printBuffer();
   ASSERT_EQ(exp,*output);
 }
 

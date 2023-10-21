@@ -306,7 +306,6 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
 
   array->p(4, 1.0f);
   ASSERT_EQ(1.0f, array->e<float>(4));
-  // array->printBuffer();
 
   delete array;
 }
@@ -884,12 +883,9 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
   auto expBuffer = new float[5]{28.00f, 64.00f, 100.00f, 136.00f, 172.00f};
   auto exp = new NDArray(expBuffer, z->shapeInfo(), sd::LaunchContext ::defaultContext(), true);
 
-  // sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1, 0.0,
-  // z->buffer(), 1);
 
   MmulHelper::mmul(x, y, z);
 
-  // z->printBuffer();
 
   ASSERT_TRUE(z->equalsTo(exp));
 
@@ -914,12 +910,10 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
   auto expBuffer = new float[5]{92.00f, 104.00f, 116.00f, 128.00f, 140.00f};
   auto exp = new NDArray(expBuffer, z->shapeInfo());
 
-  // sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1, 0.0,
-  // z->buffer(), 1);
+
 
   MmulHelper::mmul(x, y, z);
 
-  // z->printBuffer();
 
   ASSERT_TRUE(z->equalsTo(exp));
 
@@ -1042,7 +1036,6 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
 
   MmulHelper::mmul(y, x, z);
 
-  // z->printBuffer();
   ASSERT_TRUE(z->equalsTo(exp));
 
   delete[] expBuffer;

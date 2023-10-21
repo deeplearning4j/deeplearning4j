@@ -341,6 +341,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"solve", {"GRID_SIZE_SOLVE", "BLOCK_SIZE_SOLVE", "SHARED_MEM_SIZE_SOLVE"}},
     {"lup", {"GRID_SIZE_LUP", "BLOCK_SIZE_LUP", "SHARED_MEM_SIZE_LUP"}},
     {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
+    {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
 
 
 };

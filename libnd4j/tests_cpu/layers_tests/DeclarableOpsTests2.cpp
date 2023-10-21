@@ -1287,7 +1287,6 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto *result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));

@@ -301,7 +301,6 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test8) {
   auto output = result.at(0);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  // output->printBuffer("Reduced STDDEV");
   ASSERT_EQ(exp,*output);
 }
 
@@ -317,7 +316,6 @@ TEST_F(DeclarableOpsTests8, reduceStDev_test08) {
   auto output = result.at(0);
 
   ASSERT_EQ(sd::Status::OK, result.status());
-  // output->printBuffer("Reduced STDDEV08");
   ASSERT_EQ(exp,*output);
 }
 
