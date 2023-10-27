@@ -907,7 +907,6 @@
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>true</testFailureIgnore>
                     <environmentVariables>
-                        <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>

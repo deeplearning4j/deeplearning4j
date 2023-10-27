@@ -444,7 +444,7 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, sd::LongType* newShap
   bool isString = ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF8
                   || ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF16 ||
                   ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF32;
-  if(isString || dataBuffer->getDataBuffer()->getDataType() == DataType::INT8) return;
+  if(isString || shape::isEmpty(newShapeInfoCast) || dataBuffer->getDataBuffer()->getDataType() == DataType::INT8) return;
   if (dataBuffer != nullptr) {
     if (!shape::isEmpty(newShapeInfoCast)) {
       if (dataBuffer->dataBuffer() != nullptr) {

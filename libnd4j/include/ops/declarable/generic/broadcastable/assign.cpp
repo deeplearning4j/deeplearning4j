@@ -43,26 +43,26 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  NDArray castedX;
+  NDArray *castedX;
   if(x->dataType() == z->dataType()) {
-    castedX = *xInput;
+    castedX = xInput;
   } else {
     auto originalCastedX = xInput->cast(z->dataType());
-    castedX = xInput->cast(z->dataType());
+    castedX = new NDArray(xInput->cast(z->dataType()));
   }
 
-  NDArray castedY;
+  NDArray *castedY;
   if(y->dataType() == z->dataType()) {
-    castedY = *y;
+    castedY = y;
   } else {
     auto originalCastedY = y->cast(z->dataType());
-    castedY = y->cast(z->dataType());
+    castedY = new NDArray(y->cast(z->dataType()));
   }
 
-  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX.shapeInfo()));
-  ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY.shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
 
-  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
+  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), castedX, castedY, z);
 
   if (tZ != z) {
     OVERWRITE_RESULT(tZ);
