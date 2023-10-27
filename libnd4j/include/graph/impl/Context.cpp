@@ -434,10 +434,74 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
   if (_context != nullptr) array->setContext(_context);
 }
 
+
+void validateBufferAndShape(InteropDataBuffer* dataBuffer, sd::LongType* newShapeInfoCast, int index) {
+  bool errorFound = false;
+  std::string errorMessage;
+  //opaque/interop data buffers are created with int8 on purpose and therefore will be excluded from validation here.
+  //see more here: https://github.com/deeplearning4j/deeplearning4j/blob/8aa0ef12794ca40a2d00c5c80206a24a3bd6529c/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java/org/nd4j/linalg/cpu/nativecpu/buffer/BaseCpuDataBuffer.java#L386
+
+  bool isString = ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF8
+                  || ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF16 ||
+                  ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF32;
+  if(isString || dataBuffer->getDataBuffer()->getDataType() == DataType::INT8) return;
+  if (dataBuffer != nullptr) {
+    if (!shape::isEmpty(newShapeInfoCast)) {
+      if (dataBuffer->dataBuffer() != nullptr) {
+
+        //opaque/interop data buffers are created with int8 on purpose and therefore will be excluded from validation here.
+        //see more here: https://github.com/deeplearning4j/deeplearning4j/blob/8aa0ef12794ca40a2d00c5c80206a24a3bd6529c/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java/org/nd4j/linalg/cpu/nativecpu/buffer/BaseCpuDataBuffer.java#L386
+        if (!isString && dataBuffer->getDataBuffer()->getDataType() != ArrayOptions::dataType(newShapeInfoCast)) {
+          errorMessage += "Data type mismatch between data buffer and shape buffer. ";
+          errorMessage += "Data buffer data type: " + DataTypeUtils::asString(dataBuffer->dataBuffer()->getDataType()) + ". ";
+          errorMessage += "Shape buffer data type: " + DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast)) + ". ";
+          errorFound = true;
+        }
+        if (!DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())) {
+          errorMessage += "Invalid data type in data buffer. ";
+          errorFound = true;
+        }
+      } else {
+        errorMessage += "Data buffer is null. ";
+        errorFound = true;
+      }
+
+      if (!DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast))) {
+        errorMessage += "Invalid data type in shape buffer. ";
+        errorFound = true;
+      }
+    } else if (dataBuffer->dataBuffer() != nullptr && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
+      errorMessage += "Shape Buffer at index " + std::to_string(index) + " is marked as empty but data buffer is not null! ";
+      errorFound = true;
+    }
+  }
+
+  if (errorFound) {
+    errorMessage += "Shape info: " + ShapeUtils::shapeAsString(newShapeInfoCast) + ". ";
+    errorMessage += "Data type: " + DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast)) + ". ";
+    if (dataBuffer->dataBuffer() != nullptr) {
+      errorMessage += "Data buffer: " + std::string(dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null") + ". ";
+      errorMessage += "Special buffer: " + std::string(dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null") + ". ";
+    }
+    errorMessage += "Offset: " + std::to_string(dataBuffer->offset()) + ". ";
+    errorMessage += "Elements: ";
+    for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
+      errorMessage += std::to_string(newShapeInfoCast[i]) + ", ";
+    }
+    errorMessage += "\n";
+
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+}
+
+
+
 void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
   auto shapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
   auto newShapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfoCast->primary());
+
+  validateBufferAndShape(dataBuffer,newShapeInfoCast,index);
   if(shape::rank(newShapeInfoCast) > SD_MAX_RANK || shape::rank(newShapeInfoCast) < 0) {
     std::string error;
     error += std::string("Shape Buffer at index ");
@@ -446,32 +510,6 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
     THROW_EXCEPTION(error.c_str());
   }
 
-  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmpty(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
-    std::string errorMessage;
-    errorMessage += std::string("Shape Buffer at index ");
-    errorMessage += std::to_string(index);
-    errorMessage += std::string(" is marked as empty but data buffer is not null!");
-    //add the shape info as a string to the error message
-    errorMessage += std::string(" Shape info: ");
-    errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
-    errorMessage += std::string(" Data type: ");
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
-    errorMessage += std::string(" Data buffer: ");
-    errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Special buffer: ");
-    errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Offset: ");
-    errorMessage += std::to_string(dataBuffer->offset());
-    //print the elements. we know these are longs
-    errorMessage += std::string(" Elements: ");
-    for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
-      errorMessage += std::to_string(newShapeInfoCast[i]);
-      errorMessage += std::string(", ");
-    }
-    errorMessage += std::string("\n");
-
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
 
 
 
@@ -479,34 +517,6 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
-    if(dataBuffer->dataBuffer() != nullptr && dataBuffer->getDataBuffer()->getDataType() != ArrayOptions::dataType(newShapeInfoCast)
-       || !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())
-       || !DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast))) {
-      std::string errorMessage;
-      errorMessage += std::string("Data buffer at index ");
-      errorMessage += std::to_string(index);
-      errorMessage += std::string(" has a different data type than the shape buffer!");
-      //add the shape info as a string to the error message
-      errorMessage += std::string(" Shape info: ");
-      errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
-      errorMessage += std::string(" Data type: ");
-      errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
-      errorMessage += std::string(" Data buffer: ");
-      errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
-      errorMessage += std::string(" Special buffer: ");
-      errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
-      errorMessage += std::string(" Offset: ");
-      errorMessage += std::to_string(dataBuffer->offset());
-
-      //print the elements. we know these are longs
-      errorMessage += std::string(" Elements: ");
-      for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
-        errorMessage += std::to_string(newShapeInfoCast[i]);
-        errorMessage += std::string(", ");
-      }
-
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
     auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
     if(!DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast)) && !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())) {
       THROW_EXCEPTION("Invalid data type for new shape info");

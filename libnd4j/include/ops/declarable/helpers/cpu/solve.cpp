@@ -79,6 +79,8 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
     }
   }
 
+
+
   auto leftLower = leftOutput.dup();
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
@@ -91,7 +93,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   // stage 2: triangularSolveFunctor for Lower with given b
   helpers::triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
   // stage 3: triangularSolveFunctor for Upper with output of previous stage
-   helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
+  helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
   return sd::Status::OK;
 }
 

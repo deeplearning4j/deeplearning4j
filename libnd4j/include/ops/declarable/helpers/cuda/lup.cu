@@ -478,8 +478,6 @@ namespace sd {
 
                 sd::LongType xDiag[] = {currentRow, currentRow};
                 auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
-                printf("Diagonal value before operation: %f\n", compoundBuf[diagIndex]);
-
                 // Guard against zero division
                 for (auto j = currentRow + 1; j < rowNum; j++) {
                     sd::LongType xRow[] = {j, currentRow};
@@ -541,13 +539,9 @@ namespace sd {
                   if (pivotIndex < 0) {
                     continue;
                   }
-                  printf("Before swapping rows: Permutation at i: %d, at pivotIndex: %d\n", permutation[i], permutation[pivotIndex]);
-                  swapRows(matrix, outputTadShape,i, pivotIndex, batchNum);
-                  printf("After swapping rows: Permutation at i: %d, at pivotIndex: %d\n", permutation[i], permutation[pivotIndex]);
 
-                  printf("Before processColumns: matrix[%d] = %f\n", i, matrix[i]);
+                  swapRows(matrix, outputTadShape,i, pivotIndex, batchNum);
                   processColumns(i, batchNum, matrix, outputTadShape);
-                  printf("After processColumns: matrix[%d] = %f\n", i, matrix[i]);
                 }
               }
             }

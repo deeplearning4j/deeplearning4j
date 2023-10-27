@@ -53,7 +53,7 @@ SD_HOST void TransformStrict<X>::executeTransformShaped(dim3 launchDims, cudaStr
                              reductionPointer, tadShapeInfo, tadOffsets),
                       TRANSFORM_STRICT_OPS);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 }
 
 template <typename X>

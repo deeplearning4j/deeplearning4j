@@ -257,6 +257,10 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
     simpleReduce<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
         reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+
+
+    sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateXD(...) failed");
+
   }
 }
 
@@ -282,6 +286,10 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStre
     simpleScalar<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
   }
+
+
+  sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateScalar(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////

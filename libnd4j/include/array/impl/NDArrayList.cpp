@@ -166,9 +166,6 @@ NDArray* NDArrayList::stack() {
   for (int e = 0; e < numElements; e++) {
     if(!_chunks[e]->isEmpty())
       _chunks[e]->syncToDevice();
-    printf("Chunk %d\n",e);
-    _chunks[e]->printIndexedBuffer("CHunk array:");
-    printf("chunk is empty %d\n",_chunks[e]->isEmpty());
     inputs[e] = _chunks[e];
   }
 

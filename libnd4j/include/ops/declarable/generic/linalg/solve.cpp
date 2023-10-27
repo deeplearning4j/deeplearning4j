@@ -59,8 +59,6 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
   auto input = a;
   if (useAdjoint) {
     auto adjointA = a->ulike();
-    printf("adjointA:");
-    adjointA.printIndexedBuffer("adjointA");
     helpers::adjointMatrix(block.launchContext(), a, &adjointA);
     input = new NDArray(adjointA);
   }

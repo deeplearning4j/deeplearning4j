@@ -394,7 +394,7 @@ dim3 getIdentityLaunchDims(int len,int rank) {
 dim3 getRepeatLaunchDims(int len,int rank) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   int blocksPerGrid = (len + threadsPerBlock - 1) / threadsPerBlock;
-  int sharedMem = threadsPerBlock * sizeof(int) *rank + 128;
+  int sharedMem = threadsPerBlock * sizeof(sd::LongType) *rank + 128;
   threadsPerBlock = getEnvVariable("GRID_SIZE_REPEAT",threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_FILL_REPEAT",blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_FILL_REPEAT",sharedMem);

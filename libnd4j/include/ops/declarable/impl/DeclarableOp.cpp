@@ -580,8 +580,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         inputTypes[inT++] = array->dataType();
         if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
           auto ctype = DataTypeUtils::asString(array->dataType());
-          sd_printf("Op [%s] failed check for input [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), cnt,
-                    ctype.c_str());
+          std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                     "] failed check for input [" + std::to_string(cnt) +
+                                     "], DataType: [" + ctype + "]\n";
+          THROW_EXCEPTION(errorMessage.c_str());
           return sd::Status::BAD_ARGUMENTS;
         }
       }
@@ -605,8 +607,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
           if (ia->dataType() != cType) {
             auto t = DataTypeUtils::asString(cType);
-            sd_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), index,
-                      t.c_str());
+            std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                       "] failed check for output [" + std::to_string(index) +
+                                       "], DataType: [" + t + "]\n";
+            THROW_EXCEPTION(errorMessage.c_str());
             return sd::Status::BAD_ARGUMENTS;
           }
         } else {
@@ -615,8 +619,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
           if (ia->dataType() != cType) {
             auto t = DataTypeUtils::asString(cType);
-            sd_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(), index,
-                      t.c_str());
+            std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                       "] failed check for output [" + std::to_string(index) +
+                                       "], DataType: [" + t + "]\n";
+            THROW_EXCEPTION(errorMessage.c_str());
             return sd::Status::BAD_ARGUMENTS;
           }
         }
@@ -624,15 +630,19 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         // in inherit mode, output type must be the same as one of input types
         if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
           auto t = DataTypeUtils::asString(cType);
-          sd_printf("Op [%s] failed check for output [%i], DataType: [%s].\n", _descriptor->getOpName()->data(), index,
-                    t.c_str());
+          std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                     "] failed check for output [" + std::to_string(index) +
+                                     "], DataType: [" + t + "].\n";
+          THROW_EXCEPTION(errorMessage.c_str());
           return sd::Status::BAD_ARGUMENTS;
         }
 
       } else if (!_descriptor->checkOutputMatch(index, cType)) {
         auto t = DataTypeUtils::asString(cType);
-        sd_printf("Op [%s] failed check for output [%i], DataType: [%s];\n", _descriptor->getOpName()->data(), index,
-                  t.c_str());
+        std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                   "] failed check for output [" + std::to_string(index) +
+                                   "], DataType: [" + t + "];\n";
+        THROW_EXCEPTION(errorMessage.c_str());
         return sd::Status::BAD_ARGUMENTS;
       }
       index++;
@@ -656,8 +666,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
               if (iv->getNDArray()->dataType() != cType) {
                 auto t = DataTypeUtils::asString(cType);
-                sd_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(),
-                          index, t.c_str());
+                std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                           "] failed check for output [" + std::to_string(index) +
+                                           "], DataType: [" + t + "]\n";
+                THROW_EXCEPTION(errorMessage.c_str());
                 return sd::Status::BAD_ARGUMENTS;
               }
             } else {
@@ -667,8 +679,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
               if (iv->getNDArray()->dataType() != cType) {
                 auto t = DataTypeUtils::asString(cType);
-                sd_printf("Op [%s] failed check for output [%i], DataType: [%s]\n", _descriptor->getOpName()->data(),
-                          index, t.c_str());
+                std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                           "] failed check for output [" + std::to_string(index) +
+                                           "], DataType: [" + t + "]\n";
+                THROW_EXCEPTION(errorMessage.c_str());
                 return sd::Status::BAD_ARGUMENTS;
               }
             }
@@ -676,15 +690,19 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
             // in inherit mode, output type must be the same as one of input types
             if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
               auto t = DataTypeUtils::asString(cType);
-              sd_printf("Op [%s] failed check for output [%i], DataType: [%s].\n", _descriptor->getOpName()->data(),
-                        index, t.c_str());
+              std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                         "] failed check for output [" + std::to_string(index) +
+                                         "], DataType: [" + t + "].\n";
+              THROW_EXCEPTION(errorMessage.c_str());
               return sd::Status::BAD_ARGUMENTS;
             }
 
           } else if (!_descriptor->checkOutputMatch(index, cType)) {
             auto t = DataTypeUtils::asString(cType);
-            sd_printf("Op [%s] failed check for output [%i], DataType: [%s];\n", _descriptor->getOpName()->data(),
-                      index, t.c_str());
+            std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
+                                       "] failed check for output [" + std::to_string(index) +
+                                       "], DataType: [" + t + "];\n";
+            THROW_EXCEPTION(errorMessage.c_str());
             return sd::Status::BAD_ARGUMENTS;
           }
         }

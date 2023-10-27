@@ -362,23 +362,11 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
   } else if(shape::ews(input.shapeInfo()) == 1) {
     auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
     auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
-    packX->print("packX shape info for softmax:");
-    packZ->print("packZ shape info for softmax:");
-    input.printIndexedBuffer("softmax ews1 Input:");
-    input.printCurrentBuffer<double>(true, "softmax ews1 host buffer:");
-    input.printCurrentBuffer<double>(false, "softmax ews1 device buffer:");
     dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
-    printf("softmax ews 1 dim: %d\n",dimension);
-    printf("tad input shape info:\n");
-    shape::printShapeInfo(packX->primaryShapeInfo());
-    printf("tad output shapeinfo:\n");
-    shape::printShapeInfo(packZ->primaryShapeInfo());
     manager.synchronize();
     NDArray::prepareSpecialUse({&output}, {&input});
     //TODO: look in to why TAD shape info for cuda is 100 but it's 10 on cpu
     auto tadLength = shape::length(packX->primaryShapeInfo());
-    printf("softmax ews 1 dim: %d tad length %lld\n",dimension,tadLength);
-
     BUILD_SINGLE_SELECTOR(input.dataType(), softMaxEws1CudaLauncher,
                           (softmaxDims.x, softmaxDims.y,
                               softmaxDims.z,

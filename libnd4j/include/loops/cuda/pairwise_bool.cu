@@ -91,6 +91,8 @@ void SD_HOST PairWiseBoolTransform<X, Z>::intermediateShaped(dim3& launchDims, c
                                                              sd::LongType const* zShapeInfo, void* vextraParams) {
   pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
+  sd::DebugHelper::checkErrorCode(stream, "PairWiseBoolTransform intermediateShaped(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

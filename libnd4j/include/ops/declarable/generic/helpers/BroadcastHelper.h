@@ -39,11 +39,11 @@ class BroadcastHelper {
       return z;
     }
 
-    if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
+    if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
       x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
-    } else if (!x->isScalar() && y->isScalar()) {
+    } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
-    } else if (x->isScalar() && !y->isScalar()) {
+    } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
           y->applyScalarArr(op.s, *x, *z);
@@ -75,7 +75,7 @@ class BroadcastHelper {
         tZ->applyPairwiseTransform(op.p, *y, extraArgs);
         return tZ;
       }
-    } else if (x->isScalar() && y->isScalar()) {
+    } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);

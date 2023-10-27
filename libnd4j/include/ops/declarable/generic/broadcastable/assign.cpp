@@ -47,6 +47,7 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   if(x->dataType() == z->dataType()) {
     castedX = *xInput;
   } else {
+    auto originalCastedX = xInput->cast(z->dataType());
     castedX = xInput->cast(z->dataType());
   }
 
@@ -54,8 +55,12 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   if(y->dataType() == z->dataType()) {
     castedY = *y;
   } else {
+    auto originalCastedY = y->cast(z->dataType());
     castedY = y->cast(z->dataType());
   }
+
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX.shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY.shapeInfo()));
 
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), &castedX, &castedY, z);
 
@@ -70,13 +75,13 @@ DECLARE_SYN(copy, assign);
 
 DECLARE_TYPES(assign) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::ANY);
+      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL});
 }
 
 DECLARE_TYPES(assign_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_INTS,ALL_STRINGS});
+  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_INTS,ALL_FLOATS,ALL_STRINGS});
 }
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {

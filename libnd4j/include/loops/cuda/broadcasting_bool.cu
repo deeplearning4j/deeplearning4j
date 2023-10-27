@@ -49,6 +49,7 @@ template <typename X, typename Z, typename OpClass>
 static SD_KERNEL void broadcastBoolSimple(const void const* x, const sd::LongType const* xShapeInfo,
                                           const void const* y, const sd::LongType const* yShapeInfo, void* z,
                                           const sd::LongType const* zShapeInfo, void* extraParams) {
+
   functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x, xShapeInfo, y, yShapeInfo, z,
                                                                              zShapeInfo, extraParams);
 }
@@ -76,6 +77,7 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(
     sd::LongType const* yShapeInfo, void* z, sd::LongType const* zShapeInfo, void* extraParams,
     sd::LongType* dimension, sd::LongType dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
     sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
+  printf("broadcast bool simple:\n");
   broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo,
       tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
@@ -89,8 +91,11 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(dim3 launchDims, cudaStr
                                                         const sd::LongType* xShapeInfo, const void* y,
                                                         const sd::LongType* yShapeInfo, void* z,
                                                         const sd::LongType* zShapeInfo, void* extraParams) {
+
+  printf("broadcast bool simple 2 function signature:");
+
   broadcastBoolSimple<X, Z, OpClass>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
+  <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
   sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
 }
 
@@ -104,11 +109,13 @@ SD_HOST void BroadcastBool<X, Y>::execBroadcast(dim3 launchDims, cudaStream_t* s
                                                 sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                                 sd::LongType const* tadOnlyShapeInfoZ,
                                                 sd::LongType const* tadOffsetsZ) {
+  printf("broadcast execBroadcast:\n");
+
   DISPATCH_BY_OPNUM_TT(intermediateBroadcast,
                        PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension,
                               dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
                        OPS_A(BROADCAST_BOOL_OPS))
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -149,7 +156,7 @@ SD_HOST void BroadcastBool<X, Y>::execInverseBroadcast(
                               dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
                        OPS_A(BROADCAST_BOOL_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,6 +188,8 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
   __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
+    printf("broadcast transformInverseCuda \n");
+
     tadLength = shape::length(tadOnlyShapeInfo);
     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
@@ -227,6 +236,7 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
+  printf("broadcast bool kernel invoke 1\n");
 
   // decompose in to several sub tads after
   // moving all dimensions (in sorted order)
@@ -258,9 +268,12 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
     __syncthreads();
 
     if (tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
+      printf("broadcast bool kernel case 1\n");
       for (int i = threadIdx.x; i < tadLength; i += blockDim.x)
         rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS], extraParams);
     } else {
+      printf("broadcast bool kernel case 2\n");
+
       // it is expected that x and z tads and y array all have the same length
       for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
         auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
@@ -276,9 +289,13 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                                  const sd::LongType* yShapeInfo, void* vz,
-                                                  const sd::LongType* zShapeInfo, void* vextraParams) {
+SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
+                                                  const sd::LongType* xShapeInfo,
+                                                  const void* vy,
+                                                  const sd::LongType* yShapeInfo,
+                                                  void* vz,
+                                                  const sd::LongType* zShapeInfo,
+                                                  void* vextraParams) {
   const X* x = reinterpret_cast<const X*>(vx);
   const X* y = reinterpret_cast<const X*>(vy);
   Z* z = reinterpret_cast<Z*>(vz);
@@ -286,13 +303,15 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::Long
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
   __shared__ sd::LongType zLen;
-  __shared__ int rank;
+  __shared__ sd::LongType xRank, yRank, zRank;
   __shared__ bool xzSameOffsets, yzSameOffsets;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
-    rank = shape::rank(zShapeInfo);
-
+    xRank = shape::rank(xShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    printf("sizeof(X): %d sizeof(Z): %d\n", sizeof(X), sizeof(Z));
     xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
   }
@@ -300,16 +319,44 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::Long
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
-    shape::index2coords(i, zShapeInfo, coords);
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
 
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
-    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
-    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
+    printf("tid: %d y at tid: %d\n", i, y[i]);
 
+    shape::index2coords(i,xShapeInfo,xCoords);
+    shape::index2coords(i,yShapeInfo,yCoords);
+    shape::index2coords(i,zShapeInfo,zCoords);
+
+    //print xCoords yCoords zCoords
+
+    const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+    const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
+    const auto yOffset =  shape::getOffset(yShapeInfo, yCoords);
+    //TODO: figure out why y[yoffset] actuallly returns correct offset
+    //but zero for value.
     z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+    printf("tid: %d"
+           " blockidx: %d "
+           "xOffset: %lld "
+           "yOffset %lld "
+           "zOffset %lld "
+           "zLen %lld "
+           "x[xOffset]: %d "
+           "y[yOffset] %d "
+           "z[zOffset] %d\n",
+           threadIdx.x,
+           blockIdx.x,
+           xOffset,
+           yOffset,
+           zOffset,
+           zLen,
+           x[xOffset],
+           y[yOffset],
+           z[zOffset]);
   }
 }
 

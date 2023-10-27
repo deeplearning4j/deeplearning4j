@@ -133,11 +133,7 @@ void SD_HOST ScalarTransform<X, Y, Z>::intermediateShaped(dim3& launchDims, cuda
                                                           sd::LongType const* zShapeInfo,
                                                           sd::LongType const* hzShapeInfo, void const* vscalar,
                                                           void* vextraParams, sd::LongType* allocPointer) {
-  auto xEws = shape::elementWiseStride(hxShapeInfo);
-  auto xOrder = shape::order(hxShapeInfo);
-  auto zEws = shape::elementWiseStride(hzShapeInfo);
-  auto zOrder = shape::order(hzShapeInfo);
-  auto length = shape::length(hxShapeInfo);
+
   scalarSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
   sd::DebugHelper::checkErrorCode(stream, "scalarSimpleShapedA(...) failed");

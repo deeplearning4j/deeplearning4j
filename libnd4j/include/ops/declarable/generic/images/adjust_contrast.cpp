@@ -72,11 +72,8 @@ DECLARE_TYPES(adjust_contrast) {
 
 ////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
-  printf("In op execution\n");
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
-  printf("After output\n");
   // just skip op if input is empty
   if (input->isEmpty()) return sd::Status::OK;
 
@@ -84,32 +81,18 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
                "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
   REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
 
-  printf("Before arrays\n");
   NDArray* factor = nullptr;
   auto size = input->sizeAt(-2) * input->sizeAt(-3);
   auto channels = input->sizeAt(-1);
-  printf("After size at \n");
-  printf("Length of %lld size is %d channels is %d\n",input->lengthOf(),size,channels);
   int sizeChannels = sd::math::sd_max<int>(1,size * channels);
   auto batch = input->lengthOf() / sizeChannels;
-  printf("About to do reshapes\n");
   auto input3D = input->reshape(input->ordering(), {batch, size, channels});
   auto output3D = input->reshape(input->ordering(), {batch, size, channels});
 
   if (block.width() > 1) {
-    sd_print("First factor\n");
-    //TODO: figure out why this value is sometimes corrupted
-    //despite loading correctly
-    //we know that this array is correct right up to execution
-    //1 suspect is context closing?
-    //I do sometimes see odd things like ops being executed twice.
-    //there could be some sort of reuse going on that I'm not seeing yet.
     factor = INPUT_VARIABLE(1);
-    factor->syncToDevice();
-    factor->syncToHost();
   }
   else {
-    sd_print("Factor -> p\n");
     factor = new NDArray(output->dataType(), block.launchContext());
     factor->p(0, T_ARG(0));
   }
@@ -124,15 +107,11 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   temp.applyScalarArr(scalar::Multiply, *factor, temp);
   temp.applyBroadcast(broadcast::Add, &zeroTwo, mean, output3D);
   output->assign(output3D);
-  output->synchronize("");
-
-  sd_print("Assigned output\n");
-
   return sd::Status::OK;
 }
 
 DECLARE_TYPES(adjust_contrast_v2) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
 }  // namespace ops

@@ -1964,6 +1964,9 @@ T NDArray::t(const sd::LongType i) const {
 
   syncToHost();
 
+  printf("Get t with shape info:\n T: %lld Get offset result %lld",i,getOffset(i));
+  shape::printShapeInfo(shapeInfo());
+
   return *(reinterpret_cast<const T *>(bufferWithOffset(getOffset(i))));
 }
 

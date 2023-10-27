@@ -81,6 +81,8 @@ SD_HOST void BroadcastInt<X>::intermediateBroadcast(
   broadcastIntSimple<X, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
       tadOnlyShapeInfoZ, tadOffsetsZ);
+  sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcast(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////

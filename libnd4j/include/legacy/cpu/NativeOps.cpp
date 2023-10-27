@@ -3209,6 +3209,7 @@ void _printHostBuffer(InteropDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
   sd::LongType len = buffer->dataBuffer()->getNumElements();
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
+  sd_printf("Data type %s: ", DataTypeUtils::asString(xType).c_str());
   sd_printf("Host buffer: ",0);
   for(int i = 0; i < len; i++) {
     sd_printf("%f ",(double) buff[i]);

@@ -123,6 +123,8 @@ SD_HOST void bitonicSortStepGeneric(dim3 &launchDims, cudaStream_t *stream, void
                                     int j, int k, int length, bool descending) {
   bitonicSortStepKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, j, k, length, descending);
+  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGeneric  failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////

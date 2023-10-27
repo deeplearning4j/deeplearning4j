@@ -381,7 +381,7 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
       opNum, x, xShapeInfo, shape::rank(hxShapeInfo), extraParams, z, zShapeInfo, shape::rank(hzShapeInfo), dimension,
       dimensionLength, 1, biasCorrected, nullptr, reinterpret_cast<Z*>(reductionBuffer), tadShapeInfo, tadOffsets);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "SummaryStatsReduce execSummaryStatsReduce(...) failed");
 }
 
 BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);

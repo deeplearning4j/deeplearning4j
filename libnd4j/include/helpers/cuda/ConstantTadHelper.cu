@@ -57,9 +57,6 @@ TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape,
 
 TadPack * ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
                                               const bool keepUnitiesInShape) {
-  printf("tad only shape info 2 nullptr is %d with length %lld\n",dimensions == nullptr, dimLength);
-  fflush(stdout);
-
   TadDescriptor *tadDescriptor = new TadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
   return tadForDimensions(tadDescriptor);
 }

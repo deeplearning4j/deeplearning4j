@@ -53,7 +53,7 @@ SD_HOST void TransformBool<X, Y>::executeTransformShaped(dim3 launchDims, cudaSt
                               reductionPointer, tadShapeInfo, tadOffsets),
                        TRANSFORM_BOOL_OPS);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "transformBool(...) failed");
 }
 
 template <typename X, typename Z>

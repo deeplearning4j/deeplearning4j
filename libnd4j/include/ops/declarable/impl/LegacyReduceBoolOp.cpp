@@ -147,16 +147,13 @@ sd::Status LegacyReduceBoolOp::validateAndExecute(Context& block) {
 ShapeList* LegacyReduceBoolOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
   auto inShape = inputShape->at(0);
 
-  sd::LongType* newShape;
 
-  bool allAxes = false;
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
   auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getAxis();
 
-  if (axis.size() == shape::rank(inShape)) allAxes = true;
 
   // in this case we're building proper shape for reduction
   auto info = ShapeUtils::evalReduceShapeInfo(shape::order(inShape), &axis, inShape, DataType::BOOL, keepDims,

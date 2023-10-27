@@ -387,6 +387,7 @@ void _printDeviceBuffer(InteropDataBuffer *buffer) {
 
 void printDeviceBuffer(InteropDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
+  sd_printf("Data type %s: ", DataTypeUtils::asString(xType).c_str());
 
   if(buffer->special() != nullptr) {
     sd_printf("Device pointer address: %d\n", reinterpret_cast<sd::LongType>(buffer->special()));
@@ -1126,17 +1127,22 @@ void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer 
     auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
     auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+    printf("launching execTransformFloat nativeops\n");
+    LaunchContext lc(extraPointers[1],
+                     extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformFloat(
-        &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(), hXShapeInfo,
+        &lc,
+        opNum,
+        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
         shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
         shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
         shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
-        tadShapeInfo, tadOffsets);
+        tadShapeInfo,
+        tadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
@@ -1692,10 +1698,10 @@ void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType co
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
                           (launchDims,
-                           stream,
-                           shape::isEmpty(xShapeInfo) ? nullptr : dbX->special(),
-                           shape::isEmpty(zShapeInfo) ? nullptr :  dbZ->special() ,
-                           n, indexes, tadShapeInfo, tadOffsets,
+                              stream,
+                              shape::isEmpty(xShapeInfo) ? nullptr : dbX->special(),
+                              shape::isEmpty(zShapeInfo) ? nullptr :  dbZ->special() ,
+                              n, indexes, tadShapeInfo, tadOffsets,
                               zTadShapeInfo, zTadOffsets),
                           SD_COMMON_TYPES);
 
@@ -2345,12 +2351,12 @@ void tear(sd::Pointer *extras, OpaqueDataBuffer *dbX, sd::LongType const *xShape
     BUILD_SINGLE_SELECTOR(
         xType, tearKernelGeneric,
         (launchDims, stream,
-         shape::isEmpty(xShapeInfo) ? nullptr :  dbX->special(),
-         dXShapeInfo,
-         targets,
-         zShapeInfo,
-         tadShapeInfo,
-         tadOffsets),
+            shape::isEmpty(xShapeInfo) ? nullptr :  dbX->special(),
+            dXShapeInfo,
+            targets,
+            zShapeInfo,
+            tadShapeInfo,
+            tadOffsets),
         SD_COMMON_TYPES);
 
     sd::DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");

@@ -174,6 +174,8 @@ SD_HOST void ScalarIntTransform<X>::intermediateAlongDimension(
   scalarAlongDimension<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets,
       tadShapeInfoZ, tadOffsetsZ);
+  sd::DebugHelper::checkErrorCode(stream, "ScalarIntTransform intermediateAlongDimension(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////

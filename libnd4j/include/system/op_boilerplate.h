@@ -2471,7 +2471,11 @@
                   for(int i = 0; i < shape::rank(shapeInfo); i++) {                                                   \
                           shape2.push_back(shapeOf[i]);                                                               \
                 }                                                                                                      \
-             }                                                                                                          \
+             }                                                                                                        \
+                                                                                                                      \
+            auto dtString = DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo));                               \
+             printf("CONFIGURABLE_OP_IMPL: Creating empty data type: %s for index %d\n",dtString.c_str(),e);\
+                                                                                                          \
             auto newShape = ConstantShapeHelper::getInstance()                                                        \
                             .emptyShapeInfoWithShape(ArrayOptions::dataType(shapeInfo),shape2);               \
             shapeList->push_back(newShape);                                                                                  \

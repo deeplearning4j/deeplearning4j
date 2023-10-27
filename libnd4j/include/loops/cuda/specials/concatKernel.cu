@@ -152,9 +152,6 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
         resultTAD += baseOffset;
 
         if (zOrder == yOrder && yEWS > 0 && tadEWS > 0) {
-          // if (threadIdx.x == 0 && blockIdx.x == 0)
-          //    printf("Branch A\n");
-
           for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
             resultTAD[i * tadEWS] = dataTAD[i * yEWS];
           }
@@ -213,6 +210,7 @@ SD_KERNEL void execConcatKernel(int numArrays, sd::Pointer *data, sd::Pointer *i
                                 sd::LongType *zShapeInfo, sd::Pointer *tadPointers, sd::Pointer *offsetPointers,
                                 sd::LongType *zTadShape, sd::LongType *zOffsets) {
   concatKernel<T>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
+
 }
 
 ///////////////////////////////////////////////////////////////////////

@@ -57,7 +57,7 @@ SD_HOST void TransformAny<X, Y>::executeTransformShaped(dim3 launchDims, cudaStr
                               reductionPointer, tadShapeInfo, tadOffsets),
                        TRANSFORM_ANY_OPS);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "transformAny executeTransformShaped(...) failed");
 }
 
 template <typename X, typename Z>

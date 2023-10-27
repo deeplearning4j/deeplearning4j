@@ -36,8 +36,7 @@ BOOLEAN_OP_IMPL(lt_scalar, 2, true) {
   else
     return sd::Status::EQ_FALSE;
 }
-// DECLARE_SYN(Less, lt_scalar);
-// DECLARE_SYN(less, lt_scalar);
+
 
 DECLARE_TYPES(lt_scalar) {
   getOpDescriptor()

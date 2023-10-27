@@ -47,52 +47,30 @@ template <typename T>
 static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
 
-  printf("Entering lowerTriangularSolve\n");
 
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
 
-  printf("Initial rows: %ld\n", rows);
-  printf("Initial cols: %ld\n", cols);
 
   for (sd::LongType r = 0; r < rows; r++) {
-    printf("Current row index: %lld\n", r);
 
     for (sd::LongType j = 0; j < cols; j++) {
-      printf("Current col index: %lld\n", j);
 
-      printf("Fetching initial sum from rightInput at (r: %lld, j: %lld)\n", r, j);
 
       auto sum = rightInput->t<T>(r, j);
-      printf("Initial sum: %f\n", static_cast<float>(sum));
 
       for (sd::LongType c = 0; c < r; c++) {
-        printf("Current inner loop index: %lld\n", c);
-
-        printf("Fetching leftInput at (r: %lld, c: %lld)\n", r, c);
-        printf("Fetching output at (c: %lld, j: %lld)\n", c, j);
-
         auto left_val = leftInput->t<T>(r, c);
         auto output_val = output->t<T>(c, j);
-
-        printf("leftInput value: %f\n", static_cast<float>(left_val));
-        printf("Output value: %f\n", static_cast<float>(output_val));
-
         sum -= left_val * output_val;
-        printf("Updated sum: %f\n", static_cast<float>(sum));
       }
 
-      printf("Fetching leftInput at (r: %lld, r: %lld)\n", r, r);
       auto divisor = leftInput->t<T>(r, r);
-      printf("Divisor value: %f\n", static_cast<float>(divisor));
-
       output->r<T>(r, j) = unitsOnDiag ? sum : sum / divisor;
-      printf("Updated output at (r: %lld, j: %lld): %f\n", r, j, static_cast<float>(output->t<T>(r, j)));
 
     }
   }
 
-  printf("Exiting lowerTriangularSolve\n");
 }
 
 
@@ -113,7 +91,6 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
 template <typename T>
 static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
-  printf("Entering upperTriangularSolve CPU function\n");
 
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
@@ -121,24 +98,18 @@ static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* left
   for (sd::LongType r = rows; r > 0; r--) {
     for (sd::LongType j = 0; j < cols; j++) {
       auto sum = rightInput->t<T>(r - 1, j);
-      printf("Initial sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sum));
-
       for (sd::LongType c = r; c < rows; c++) {
         sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
       }
-      printf("Updated sum for indices r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(sum));
 
       auto before_output = output->t<T>(r - 1, j);
-      printf("Output value before update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(before_output));
 
       output->r<T>(r - 1, j) = unitsOnDiag ? sum : sum / leftInput->t<T>(r - 1, r - 1);
 
       auto after_output = output->t<T>(r - 1, j);
-      printf("Output value after update at r-1: %lld, j: %lld is %f\n", r-1, j, static_cast<float>(after_output));
     }
   }
 
-  printf("Exiting upperTriangularSolve CPU function\n");
 }
 
 
@@ -169,10 +140,6 @@ template <typename T>
 static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool adjoint, NDArray* output) {
 
-
-  printf("CPU: Entering triangularSolveFunctor_\n");
-  leftInput->printBuffer("leftInput before");
-  rightInput->printBuffer("rightInput before");
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
@@ -189,23 +156,6 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
   };
 
   samediff::Threads::parallel_tad(batchLoop, 0, leftPart.size(), 1);
-
-  printf("leftInput:\n");
-  leftInput->printBuffer("leftInput");
-  printf("rightInput:\n");
-
-
-
-  printf("leftInput:");
-  leftInput->printBuffer("leftInput");
-  printf("rightInput:");
-  rightInput->printBuffer("rightInput");
-
-
-
-  printf("output:\n");
-  output->printBuffer("output:");
-
   return sd::Status::OK;
 }
 template <typename T>
@@ -235,10 +185,6 @@ static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* 
   };
   samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
 
-
-  printf("adjoint triangular matrix: lower %d\n",lower);
-  input->printBuffer("Input:");
-  output->printBuffer("Final output:");
 }
 
 sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower,

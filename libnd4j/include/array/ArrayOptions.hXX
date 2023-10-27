@@ -1,6 +1,7 @@
 #ifndef ND4J_ARRAY_OPTIONS_HXX
 #define ND4J_ARRAY_OPTIONS_HXX
 #include <array/ArrayOptions.h>
+#include <system/op_boilerplate.h>
 #pragma  once
 
 namespace sd {
@@ -188,53 +189,111 @@ SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
 
 
 
+#define DATA_TYPE_FLAGS { \
+    ARRAY_FLOAT, \
+    ARRAY_DOUBLE, \
+    ARRAY_HALF, \
+    ARRAY_BHALF, \
+    ARRAY_BOOL, \
+    ARRAY_CHAR, \
+    ARRAY_SHORT, \
+    ARRAY_INT, \
+    ARRAY_LONG, \
+    ARRAY_UTF8, \
+    ARRAY_UTF16, \
+    ARRAY_UTF32 \
+}
+
+#define DATA_TYPES { \
+    sd::DataType::FLOAT32, \
+    sd::DataType::DOUBLE, \
+    sd::DataType::HALF, \
+    sd::DataType::BFLOAT16, \
+    sd::DataType::BOOL, \
+    sd::DataType::INT8, \
+    sd::DataType::INT16, \
+    sd::DataType::INT32, \
+    sd::DataType::INT64, \
+    sd::DataType::UTF8, \
+    sd::DataType::UTF16, \
+    sd::DataType::UTF32 \
+}
+
+#define ARRAY_UNSIGNED_TYPES { \
+    ARRAY_CHAR, \
+    ARRAY_SHORT, \
+    ARRAY_INT, \
+    ARRAY_LONG, \
+    ARRAY_UTF8, \
+    ARRAY_UTF16, \
+    ARRAY_UTF32 \
+}
+
+#define UNSIGNED_DATA_TYPES { \
+    sd::DataType::UINT8, \
+    sd::DataType::UINT16, \
+    sd::DataType::UINT32, \
+    sd::DataType::UINT64, \
+    sd::DataType::UTF8, \
+    sd::DataType::UTF16, \
+    sd::DataType::UTF32 \
+}
+
 SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
-  if (hasPropertyBitSetForFlags(property, ARRAY_FLOAT))
-    return sd::DataType::FLOAT32;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_DOUBLE))
-    return sd::DataType::DOUBLE;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_HALF))
-    return sd::DataType::HALF;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_BHALF))
-    return sd::DataType::BFLOAT16;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_BOOL))
-    return sd::DataType ::BOOL;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_UNSIGNED)) {
-    if (hasPropertyBitSetForFlags(property, ARRAY_CHAR))
-      return sd::DataType ::UINT8;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_SHORT))
-      return sd::DataType ::UINT16;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_INT))
-      return sd::DataType ::UINT32;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_LONG))
-      return sd::DataType ::UINT64;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_UTF8))
-      return sd::DataType ::UTF8;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_UTF16))
-      return sd::DataType ::UTF16;
-    else if (hasPropertyBitSetForFlags(property, ARRAY_UTF32))
-      return sd::DataType ::UTF32;
-    else {
-      printf("Unknown 2. Input flag was: %d\n",property);
-      return sd::DataType::UNKNOWN;
+  validateSingleDataType(property);
+  const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
+  const sd::DataType dataTypes[] = DATA_TYPES;
+  const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);
+
+  for (size_t i = 0; i < numTypes; ++i) {
+    if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
+      return dataTypes[i];
     }
-  } else if (hasPropertyBitSetForFlags(property, ARRAY_CHAR))
-    return sd::DataType::INT8;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_SHORT))
-    return sd::DataType::INT16;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_INT))
-    return sd::DataType::INT32;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_LONG))
-    return sd::DataType::INT64;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_UTF8))
-    return sd::DataType::UTF8;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_UTF16))
-    return sd::DataType::UTF16;
-  else if (hasPropertyBitSetForFlags(property, ARRAY_UTF32))
-    return sd::DataType::UTF32;
-  else {
-    printf("Unknown 3. Input flag was: %d\n",property);
-    return sd::DataType::UNKNOWN;
+  }
+
+  if (hasPropertyBitSetForFlags(property, ARRAY_UNSIGNED)) {
+    const sd::LongType unsignedTypeFlags[] = ARRAY_UNSIGNED_TYPES;
+    const sd::DataType unsignedDataTypes[] = UNSIGNED_DATA_TYPES;
+    const size_t numUnsignedTypes = sizeof(unsignedTypeFlags) / sizeof(sd::LongType);
+
+    for (size_t i = 0; i < numUnsignedTypes; ++i) {
+      if (hasPropertyBitSetForFlags(property, unsignedTypeFlags[i])) {
+        return unsignedDataTypes[i];
+      }
+    }
+  }
+
+  return sd::DataType::UNKNOWN;
+}
+
+SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
+  std::vector<size_t> setFlagIndices;
+  for (size_t i = 0; i < numFlags; ++i) {
+    if (hasPropertyBitSetForFlags(property, flags[i])) {
+      setFlagIndices.push_back(i);
+    }
+  }
+
+  if (setFlagIndices.size() > 1) {
+    std::ostringstream errorMsg;
+    errorMsg << "Multiple data types are set for the given property: ";
+    for (size_t index : setFlagIndices) {
+      errorMsg << "Flag index " << index << " (flag value: " << flags[index] << "), ";
+    }
+    errorMsg << "Total: " << setFlagIndices.size() << " data types set.";
+    THROW_EXCEPTION(errorMsg.str().c_str());
+  }
+}
+
+SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
+  const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
+  const size_t numDataTypeFlags = sizeof(dataTypeFlags) / sizeof(sd::LongType);
+  validateFlags(property, dataTypeFlags, numDataTypeFlags);
+
+  if (hasPropertyBitSetForFlags(property, ARRAY_UNSIGNED)) {
+    const sd::LongType unsignedTypeFlags[] = ARRAY_UNSIGNED_TYPES;
+    const size_t numUnsignedTypeFlags = sizeof(unsignedTypeFlags) / sizeof(sd::LongType);
+    validateFlags(property, unsignedTypeFlags, numUnsignedTypeFlags);
   }
 }
 

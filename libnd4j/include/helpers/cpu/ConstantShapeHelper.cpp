@@ -39,6 +39,17 @@ ConstantShapeHelper::ConstantShapeHelper() {
   }
 }
 
+
+
+const sd::LongType * ConstantShapeHelper::emptyShapeInfoWithShape(const sd::DataType dataType,std::vector<sd::LongType> &shape) {
+  auto descriptor = ShapeBuilders::createShapeInfo(dataType,'c', shape, nullptr);
+  ArrayOptions::setPropertyBit(descriptor, ARRAY_EMPTY);
+  auto existing = createFromExisting(descriptor);
+  //delete descriptor;
+  return existing;
+}
+
+
 ConstantShapeHelper& ConstantShapeHelper::getInstance() {
   static ConstantShapeHelper instance;
   return instance;
@@ -70,6 +81,7 @@ ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *d
 
 
   if (_cache[deviceId].count(*descriptor) == 0) {
+
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
@@ -102,11 +114,11 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType data
   }
 
 
-
-
   ShapeDescriptor *descriptor =
       new ShapeDescriptor(dataType, order, shape, (sd::LongType*)nullptr, rank, extraProperties);
   auto ret = bufferForShapeInfo(descriptor)->primary();
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(ret));
+
   //delete descriptor;
   return ret;
 }

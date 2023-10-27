@@ -439,7 +439,7 @@ static void mergeAdd_(sd::LaunchContext* context, const std::vector<const NDArra
 
   dim3 mergeLaunchDims = mergeDims(length);
 
-  mergeAddCudaLauncher<T><<<mergeLaunchDims.y, mergeLaunchDims.x, mergeLaunchDims.z, *context->getCudaStream()>>>(
+  mergeAddCudaLauncher<T><<<mergeLaunchDims.x, mergeLaunchDims.y, mergeLaunchDims.z, *context->getCudaStream()>>>(
       pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
   manager.synchronize();

@@ -242,14 +242,11 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opN
 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+  printf("Datatype x %s z type %s\n",DataTypeUtils::asString(xType).c_str(),DataTypeUtils::asString(zType).c_str());
   if(DataTypeUtils::isS(xType)   || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOPExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
-  dim3 launchDims;
-
-  launchDims.y = SD_MAX_NUM_THREADS / 4;                                          // threadsPerBlock
-  launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
-  launchDims.z = 1024;                                                            // shared memory
+  dim3 launchDims = getLaunchDims("broadcast");
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::broadcast::BroadcastBool,
@@ -913,7 +910,7 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext* lc, int opNum, voi
   auto zType = ArrayOptions::dataType(hZShapeInfo);
 
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOPExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
   dim3 launchDims = getLaunchDims("transformScan");
   if(DataTypeUtils::isS(xType)) {
@@ -956,8 +953,13 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext* lc, int opNum, 
 
   dim3 launchDims = getLaunchDims("transformScan");
   BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
-                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                        ::executeTransformShaped(launchDims,
+                                                 stream, opNum,
+                                                 dX, dXShapeInfo,
+                                                 xRank, extraParams,
+                                                 dZ,
+                                                 dZShapeInfo, zRank,
+                                                 nullptr, nullptr, nullptr, nullptr),
                         SD_FLOAT_TYPES);
 
 }
@@ -970,13 +972,14 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext* lc, int opNum, v
                                              sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
+  printf("launching execTransformFloat NativeOpExecutioner\n");
 
   auto xRank = shape::rank(hXShapeInfo);
   auto zRank = shape::rank(hZShapeInfo);
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOPExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformFloat:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   if (!DataTypeUtils::isR(zType))
@@ -985,10 +988,23 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext* lc, int opNum, v
 
   dim3 launchDims = getLaunchDims("transformScan");
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat,
-                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                        ::executeTransformShaped(launchDims,
+                                                 stream,
+                                                 opNum,
+                                                 dX,
+                                                 dXShapeInfo,
+                                                 xRank,
+                                                 extraParams,
+                                                 dZ,
+                                                 dZShapeInfo,
+                                                 zRank,
+                                                 nullptr,
+                                                 nullptr,
+                                                 nullptr,
+                                                 nullptr),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 
+  fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -104,7 +104,7 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST bool hasPropertyBitSet(const sd::LongType *shapeInfo, LongType property);
   static SD_HOST bool togglePropertyBit(sd::LongType *shapeInfo, LongType property);
   static SD_HOST void unsetPropertyBit(sd::LongType *shapeInfo, LongType property);
-
+  static SD_HOST void validateSingleDataType(sd::LongType property);
   static SD_HOST void setPropertyBit(sd::LongType *shapeInfo, LongType property);
   static SD_HOST void setPropertyBits(sd::LongType *shapeInfo, std::initializer_list<LongType> properties);
 

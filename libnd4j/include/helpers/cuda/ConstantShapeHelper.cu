@@ -132,6 +132,8 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(const sd::DataType data
   ShapeDescriptor *descriptor =
       new ShapeDescriptor(dataType, order, shape, (sd::LongType*)nullptr, rank, extraProperties);
   auto ret = bufferForShapeInfo(descriptor)->primary();
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(ret));
+
   //delete descriptor;
   return ret;
 }
@@ -152,6 +154,14 @@ const sd::LongType * ConstantShapeHelper::emptyShapeInfoWithShape(const sd::Data
 const sd::LongType * ConstantShapeHelper::emptyShapeInfo(const sd::DataType dataType) {
   auto descriptor = ShapeBuilders::emptyShapeInfo(dataType,nullptr);
   auto existing = createFromExisting(descriptor);
+  if(ArrayOptions::dataType(descriptor) != dataType) {
+    std::string errorMessage;
+    errorMessage += "ConstantShapeHelper::emptyShapeInfo: DataType mismatch. Expected ";
+    errorMessage += DataTypeUtils::asString(dataType);
+    errorMessage += " but got ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(descriptor));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   //delete descriptor;
   return existing;
 }
@@ -253,7 +263,6 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
     }
   }
 
-  ArrayOptions::setDataType(newShapeInfo, ArrayOptions::dataType(maxShapeInfo));
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
   //RELEASE(newShapeInfo, workspace);

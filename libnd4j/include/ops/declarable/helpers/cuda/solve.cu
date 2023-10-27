@@ -67,15 +67,18 @@ static SD_KERNEL void restorePermutationsKernel(T* PBuf,
   auto shapeOfP = shape::shapeOf(PTadShapeInfo);
   auto strideOfP = shape::stride(PTadShapeInfo);
   auto strideAtRow = shape::stride(permutationsTadShapeInfo);
-
+  auto permRank = shape::rank(permutationsTadShapeInfo);
+  auto permStride = permRank > 1 ? strideAtRow[permRank - 1] : strideAtRow[0];
   for (auto batch = blockIdx.x; batch < batchNum; batch += blockDim.x) {
     auto permutations = permutationsBuf + permutationsTadOffsets[batch];
 
     for (auto row = threadIdx.x; row < rowNum; row += gridDim.x) {
       auto P = PBuf + PTadSOffsets[row];
       sd::LongType indices1[] = {row};
-      auto permuteIdx2 = permutations[row + strideAtRow[0]];
+      auto permuteIdx2 = shape::getIndexOffset(row,permutationsTadShapeInfo);
       sd::LongType indices[] = {row,permuteIdx2};
+      printf("i,j for %lld,%lld is batch %lld\n", row,permuteIdx2, batch);
+
       auto offset3 = row * strideOfP[0] + permuteIdx2 * strideOfP[1];
       auto zOffset = shape::getOffset(PTadShapeInfo, indices);
       P[zOffset] = T(1.f);
@@ -116,6 +119,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(),
                                                                            -1);
 
+  permutationsTad->print("\npermutations tad:");
   restorePermutationsKernel<T><<<solveDims.x, solveDims.y, solveDims.z, *stream>>>(
       P.dataBuffer()->specialAsT<T>(),
       P.specialShapeInfo(),
@@ -124,10 +128,11 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
       PTad->specialOffsets(),
       permutationsTad->specialShapeInfo(),
       permutationsTad->specialOffsets(),
-
       permutationsTad->numberOfTads(),
       P.sizeAt(-1));
 
+  P.printIndexedBuffer("P after restorePermutations:");
+  P.printBuffer("P straight buffer after restore permutations:");
   P.tickWriteDevice();
 
   auto rightPart = rightInput->ulike();

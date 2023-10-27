@@ -71,10 +71,6 @@ LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char
                                          const sd::LongType* shapeOnly, memory::Workspace* workspace, bool empty) {
   sd::LongType* shapeInfo = nullptr;
 
-  if(empty) {
-    shapeInfo = ShapeBuilders::emptyShapeInfo(dataType, order, rank, shapeOnly, workspace);
-    return shapeInfo;
-  }
 
   if (rank == 0) {  // scalar case
     shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
@@ -92,6 +88,10 @@ LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char
   }
 
   sd::ArrayOptions::setDataType(shapeInfo, dataType);
+
+  if(empty) {
+    ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+  }
 
 
   return shapeInfo;

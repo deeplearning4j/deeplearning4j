@@ -1676,7 +1676,7 @@ class RSqrt {
 
   SD_OP_DEF static Z
   op(X d1, Z *params) {
-    return static_cast<Z>(1) / sd::math::sd_sqrt<X, Z>(d1);
+    return static_cast<Z>(1.0) / sd::math::sd_sqrt<X, Z>(d1);
   }
 };
 
@@ -2577,7 +2577,6 @@ template <typename X, typename Z>
 class All {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType = Z;
-  const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(1); }
 

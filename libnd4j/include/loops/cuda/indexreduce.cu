@@ -56,6 +56,8 @@ SD_HOST void IndexReduce<X, Z>::executeIndexReduceScalar(
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, 0, nullptr, 0, 1, allocationBuffer,
       reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+  sd::DebugHelper::checkErrorCode(stream, "executeIndexReduceScalar(...) failed");
+
 }
 
 template <typename X, typename Z>
@@ -79,6 +81,8 @@ SD_HOST void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims,
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, zRank, dimension, dimensionLength, postProcessOrNot,
       allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+  sd::DebugHelper::checkErrorCode(stream, "executeIndexReduce(...) failed");
+
 }
 
 // This is the un-specialized struct.  Note that we prevent instantiation of this

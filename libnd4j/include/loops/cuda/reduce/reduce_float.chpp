@@ -278,6 +278,10 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
     else {
         simpleScalar<X, Z, OpType> <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, dZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
     }
+
+
+    sd::DebugHelper::checkErrorCode(stream, "ReduceFloatFunction intermediateScalar(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -308,7 +312,7 @@ SD_HOST void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_
     else {
         DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z, dZShapeInfo, hZShapeInfo, dims), OPS_A(REDUCE_FLOAT_OPS));
     }
-    DEBUG_KERNEL(stream, opNum);
+    sd::DebugHelper::checkErrorCode(stream, "ReduceFloatFunction execReduceXD(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

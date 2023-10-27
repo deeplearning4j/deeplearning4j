@@ -952,7 +952,9 @@ namespace shape {
 
 
 //////////////////////////////////////////////////////////////////////
-    SD_INLINE void SD_HOST_DEVICE index2coords(sd::LongType index, const sd::LongType *shapeInfo, sd::LongType *coords) {
+    SD_INLINE void SD_HOST_DEVICE index2coords(sd::LongType index,
+                                               const sd::LongType *shapeInfo,
+                                               sd::LongType *coords) {
         for (sd::LongType i = shapeInfo[0]; i > 1; --i) {
             coords[i - 1] = index % shapeInfo[i];
             index /= shapeInfo[i];
@@ -965,7 +967,9 @@ namespace shape {
 
 
 //////////////////////////////////////////////////////////////////////
-    SD_INLINE void SD_HOST_DEVICE index2coords(sd::LongType index, const sd::LongType rank, const sd::LongType *shape,
+    SD_INLINE void SD_HOST_DEVICE index2coords(sd::LongType index,
+                                               const sd::LongType rank,
+                                               const sd::LongType *shape,
                                                sd::LongType *coords) {
         for (sd::LongType i = rank - 1; i > 0; --i) {
             coords[i] = index % shape[i];
@@ -975,8 +979,11 @@ namespace shape {
     }
 
 //////////////////////////////////////////////////////////////////////
-    SD_INLINE SD_HOST_DEVICE void index2coords(sd::LongType index, const sd::LongType *shapeInfo, const sd::LongType *dims,
-                                               const sd::LongType  dimsLen, sd::LongType *coords) {
+    SD_INLINE SD_HOST_DEVICE void index2coords(sd::LongType index,
+                                               const sd::LongType *shapeInfo,
+                                               const sd::LongType *dims,
+                                               const sd::LongType  dimsLen,
+                                               sd::LongType *coords) {
         for (sd::LongType i = dimsLen - 1; i > 0; --i) {
             const auto ind = dims[i];
             coords[ind] = index % shapeInfo[1 + ind];

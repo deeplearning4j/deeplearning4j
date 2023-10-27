@@ -256,6 +256,9 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
         x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
         reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
   }
+
+  sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction intermediateXD(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -281,6 +284,9 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
     simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
   }
+
+  sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction intermediateScalar(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -295,7 +301,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(dim3 launchDims, cudaStr
                        PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo,
                               dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo),
                        OPS_A(REDUCE_LONG_OPS));
-  sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
+  sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction execReduceScalar(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

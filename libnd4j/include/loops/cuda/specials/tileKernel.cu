@@ -119,6 +119,9 @@ void tileKernelHH(void const* inputBuffer, sd::LongType const* inputShape, void*
   dim3 launchDims = getLaunchDims("tile");
   tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
                                                                                 outputShape, resultLength, ews);
+
+  sd::DebugHelper::checkErrorCode(stream,"templatedSwapUnsafe(...) failed");
+
 }
 
 BUILD_SINGLE_TEMPLATE_TWICE(template void tileKernelHH,

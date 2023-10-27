@@ -77,6 +77,8 @@ void templatedSwapUnsafe(void* theFirstBuffer, sd::LongType const* theFirstShape
                          sd::LongType const* theSecondShape, cudaStream_t* theStream) {
   dim3 launchDims = getLaunchDims("swap_unsafe");
   swapUnsafeKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *theStream>>>(theFirstBuffer, theFirstShape, theSecondBuffer, theSecondShape);
+  sd::DebugHelper::checkGlobalErrorCode("templatedSwapUnsafe(...) failed");
+
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwapUnsafe,
                       (void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,
