@@ -21,7 +21,6 @@
 package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.eclipse.deeplearning4j.tests.extensions.DeallocationExtension;
 import org.junit.jupiter.api.*;
 
@@ -49,32 +48,13 @@ public class TestTFGraphAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     private static final String BASE_DIR = "tf_graphs/examples";
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
-    /**
+    /**1
      * NOTE: If this is empty or the tests names are wrong,
      * all tests will trigger an assumeFalse(..) that indicates
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-           //TODO: unsorted segment sum is the problem op here
-            "linear_solve/float32_rank2"
-
-            /*,
-            ,
-            ,
-           ,
-
-           ,
-
-           ,
-          ,
-
-            "is_strictly_increasing/emptyArrayTest/rank2_float32",
-            "extractImagePatches/sz1-6-6-2_float32_k3_s1_r1_SAME",
-            "linear_solve/float64_rank3",
-            "lrn/dr3_b05_a05_b02",
-            "in_top_k/test_4,5_k1",
-            "linear_solve/float64_rank2",
-          */
+            "assert_positive/rank1_int32"
     );
 
 

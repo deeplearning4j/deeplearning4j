@@ -23,6 +23,8 @@ package org.nd4j.tensorflow.conversion.graphrunner;
 import lombok.*;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
@@ -51,8 +53,8 @@ import static org.bytedeco.tensorflow.global.tensorflow.*;
 @NoArgsConstructor
 public class GraphRunner implements Closeable {
 
-    private static boolean isTfWarmedUp = false;
-    private static boolean isTfWarmingUp = false;
+    private static AtomicBoolean isTfWarmedUp = new AtomicBoolean(false);
+    private static AtomicBoolean isTfWarmingUp = new AtomicBoolean(false);
     private SavedModelConfig savedModelConfig;
     //the in memory representation parsed from protobuf
     private TF_Graph graph;
@@ -443,10 +445,11 @@ public class GraphRunner implements Closeable {
      */
 
     public Map<String,INDArray> run(Map<String,INDArray> inputs) {
-        if (!isTfWarmedUp && !isTfWarmingUp) {
-            isTfWarmingUp = true;
+        inputs.values().forEach(arr -> Nd4j.getAffinityManager().ensureLocation(arr, AffinityManager.Location.HOST));
+        if (!isTfWarmedUp.get() && !isTfWarmingUp.get()) {
+            isTfWarmingUp.set(true);
             run(inputs);
-            isTfWarmedUp = true;
+            isTfWarmedUp.set(true);
         }
         Map<String, TF_Tensor> inputTensors = new LinkedHashMap<>();
         for(Map.Entry<String,INDArray> input : inputs.entrySet()) {

@@ -1891,6 +1891,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             StringBuilder message = new StringBuilder();
             message.append("Op [" + name + "] execution failed with error " + "Cuda last error message: " + cudaGetErrorName(org.bytedeco.cuda.global.cublas.cublasGetError()).getString() + " libnd4j lastErrorMessage: " + nativeOps.lastErrorMessage());
             throw new RuntimeException(message.toString(), e);
+
         }
     }
 

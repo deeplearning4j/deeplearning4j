@@ -324,10 +324,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void computeArrays() {
-        /*
-        TODO: boolean_mask/strided_slice_1
-        should be empty. It's currently a scalar.
-         */
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
             if(inputArguments.isEmpty()) {

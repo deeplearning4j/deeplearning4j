@@ -432,16 +432,23 @@ public class TFGraphTestAllHelper {
 
     public static Map<String,INDArray> runTfResults(GraphDef result,Map<String,INDArray> inputs,File modelPath) {
         List<String> inputNames = new ArrayList<>(inputs.keySet());
+
         List<String> outputNames = new ArrayList<>(result.getNodeList()
                 .stream()
                 .filter(input -> !inputs.containsKey(input.getName()))
-                .filter(input -> !input.getOp().equals("NoOp"))
+                .filter(input ->
+                        !input.getOp().equals("NoOp")
+                                &&
+                                !input.getOp().contains("Switch") &&
+                                !input.getOp().contains("Merge") &&
+                                !input.getOp().contains("Identity") &&
+                                !input.getOp().contains("Assert") &&
+                                !input.getOp().contains("Placeholder"))
                 .map(input -> input.getName())
                 .collect(Collectors.toList()));
+
         for(int i = 0; i < result.getNodeCount(); i++) {
             NodeDef nodeDef = result.getNode(i);
-            if(nodeDef.getOp().equals("NoOp"))
-                continue;
             String nodeName = nodeDef.getName();
             if(nodeName.contains("Const") ) {
                 outputNames.add(result.getNode(i).getName());
@@ -496,7 +503,7 @@ public class TFGraphTestAllHelper {
 
             log.info("Testing inputs with names " + inputs.keySet() + " and shapes " + shapes);
 
-            //outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
+            outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
             outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
             Map<String,INDArray> differencesCorrect = new LinkedHashMap<>();

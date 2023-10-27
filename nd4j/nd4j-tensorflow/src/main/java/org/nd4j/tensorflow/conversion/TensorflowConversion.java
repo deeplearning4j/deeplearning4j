@@ -86,6 +86,7 @@ public class TensorflowConversion {
      * @return the equivalent {@link TF_Tensor}
      */
     public TF_Tensor tensorFromNDArray(INDArray ndArray) {
+        Nd4j.getExecutioner().commit();
        if(ndArray == null) {
            throw new IllegalArgumentException("NDArray must not be null!");
        }
@@ -94,6 +95,9 @@ public class TensorflowConversion {
         if(ndArray.data() == null) {
            throw new IllegalArgumentException("Unable to infer data type from null databuffer");
        }
+
+
+
 
         if(ndArray.isView() || ndArray.ordering() != 'c') {
             ndArray = ndArray.dup('c');
@@ -227,6 +231,7 @@ public class TensorflowConversion {
         //scalars are technically length 1 but of rank 0
         long byteSize = TF_TensorByteSize(tensor);
         int length = (int) byteSize / nd4jType.width();
+        if(length < 0) length = 0;
         INDArray array;
         if (nd4jType == DataType.UTF8) {
             String[] strings = new String[length];
@@ -257,7 +262,7 @@ public class TensorflowConversion {
 
         }
         // we don't need this in this case. Device memory will be updated right in the constructor
-        //Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
+        Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
         return array;
     }
 

@@ -3889,8 +3889,8 @@ public class Nd4j {
      * @return Empty INDArray
      */
     public static INDArray emptyWithShape(long[] shape,DataType type) {
-      LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,new long[shape.length],0 ,'c',type,true);
-      return INSTANCE.create(longShapeDescriptor);
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,new long[shape.length],0 ,'c',type,true);
+        return INSTANCE.create(longShapeDescriptor);
     }
 
     /**
@@ -5982,70 +5982,83 @@ public class Nd4j {
         switch (_dtype) {
             case DOUBLE: {
                 val doubles = new double[prod];
-                val db = bb.order(_order).asDoubleBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = db.get(e);
+                if(bb != null) {
+                    val db = bb.order(_order).asDoubleBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = db.get(e);
+
+                }
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
             }
             case FLOAT: {
                 val doubles = new float[prod];
-                val fb = bb.order(_order).asFloatBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = fb.get(e);
-
+                if(bb != null) {
+                    val fb = bb.order(_order).asFloatBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = fb.get(e);
+                }
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
             }
             case HALF: {
                 val doubles = new float[prod];
-                val sb = bb.order(_order).asShortBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
-
+                if(bb != null) {
+                    val sb = bb.order(_order).asShortBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
+                }
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
             }
             case INT: {
                 val doubles = new int[prod];
-                val sb = bb.order(_order).asIntBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = sb.get(e);
+                if(bb != null) {
+                    val sb = bb.order(_order).asIntBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = sb.get(e);
+
+                }
 
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
             }
             case LONG: {
                 val doubles = new long[prod];
-                val sb = bb.order(_order).asLongBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = sb.get(e);
-
+                if(bb != null) {
+                    val sb = bb.order(_order).asLongBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = sb.get(e);
+                }
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
             }
             case SHORT: {
                 val doubles = new short[prod];
-                val sb = bb.order(_order).asShortBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = sb.get(e);
-
+                if(bb != null) {
+                    val sb = bb.order(_order).asShortBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = sb.get(e);
+                }
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
             }
             case BYTE: {
                 val bytes = new byte[prod];
-                val sb = bb.order(_order).asReadOnlyBuffer();
-                for (int e = 0; e < prod; e++)
-                    bytes[e] = sb.get(e + sb.position());
-
+                if(bb != null) {
+                    val sb = bb.order(_order).asReadOnlyBuffer();
+                    for (int e = 0; e < prod; e++)
+                        bytes[e] = sb.get(e + sb.position());
+                }
                 return Nd4j.create(bytes, shapeOf, stridesOf, ordering, DataType.BYTE);
             }
             case BOOL: {
                 val doubles = new boolean[prod];
-                val sb = bb.order(_order).asReadOnlyBuffer();
-                for (int e = 0; e < prod; e++)
-                    doubles[e] = sb.get(e + sb.position()) == 1;
-
+                if(bb != null) {
+                    val sb = bb.order(_order).asReadOnlyBuffer();
+                    for (int e = 0; e < prod; e++)
+                        doubles[e] = sb.get(e + sb.position()) == 1;
+                }
                 return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
             }
             case UTF8: {
                 try {
+
                     val sb = bb.order(_order);
                     val pos = sb.position();
                     val arr = new byte[sb.limit() - pos];

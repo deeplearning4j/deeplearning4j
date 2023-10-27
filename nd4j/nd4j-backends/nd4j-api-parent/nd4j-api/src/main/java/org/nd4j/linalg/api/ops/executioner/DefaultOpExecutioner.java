@@ -86,7 +86,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
             op2.addOutputArgument(op.z());
             INDArray[] result = executioner.exec(op2);
-            System.out.println();
         } else {
             executioner.exec(op2, oc);
 
@@ -684,7 +683,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         val builder = new StringBuilder("[");
         val limit = (int) Math.min(x, array.length());
         for (int e = 0; e < limit; e++) {
-            builder.append(array.getDouble(e));
+            if(array.isS())
+                builder.append(array.getString(e));
+            else
+                builder.append(array.getDouble(e));
 
             if (e < limit - 1)
                 builder.append(", ");

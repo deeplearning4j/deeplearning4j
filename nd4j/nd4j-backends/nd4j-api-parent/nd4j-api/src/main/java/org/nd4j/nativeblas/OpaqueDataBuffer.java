@@ -86,16 +86,16 @@ public class OpaqueDataBuffer extends Pointer {
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
                 // try to allocate data buffer
-                buffer = NativeOpsHolder.getInstance().getDeviceNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
+                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
                 //when  using func trace we want to print allocation traces when deallocation is called. this is used to debug
                 //potential race condition and crashes. c++ prints the equivalent stack trace when func trace is enabled.
                 //This allows us to check where a deallocated buffer that caused an issue was allocated.
                 if(buffer != null && NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
                     buffer.captureTrace();
                 // check error code
-                ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+                ec = Nd4j.getNativeOps().lastErrorCode();
                 if (ec != 0) {
-                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em = Nd4j.getNativeOps().lastErrorMessage();
 
                     // if allocation failed it might be caused by casual OOM, so we'll try GC
                     System.gc();

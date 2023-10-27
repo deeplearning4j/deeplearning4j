@@ -146,9 +146,7 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
-        if(x.isEmpty()) {
-            return Collections.singletonList(LongShapeDescriptor.empty(DataType.BOOL));
-        }
+
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
         long[] reducedShape = x.rank() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
         return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, DataType.BOOL));

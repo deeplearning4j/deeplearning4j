@@ -3894,7 +3894,7 @@ public class Shape {
                         }
                 }
             } else {
-                if(wholeArray)
+                if(wholeArray || x.isEmpty())
                     return new long[]{};
                 retShape =  ArrayUtil.removeIndex(x.shape(), dimension);
             }

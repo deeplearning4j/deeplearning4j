@@ -61,7 +61,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
     /**
      * This method returns deviceId for current thread.
      *
-     * If no device was assigned to this thread before this call, it'll be assinged here.
+     * If no device was assigned to this thread before this call, it'll be assigned here.
      *
      * @return
      */

@@ -368,7 +368,7 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-std=gnu++</compilerOption>
+                                <compilerOption>-std=gnu</compilerOption>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
                             </compilerOptions>
                         </configuration>
