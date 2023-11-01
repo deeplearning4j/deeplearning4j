@@ -80,19 +80,36 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
     auto sPtr = std::make_shared<PointerWrapper>(
         new sd::LongType[shape::shapeInfoLength(subArrRank)],
         std::make_shared<PrimaryPointerDeallocator>());  // shape of sub-arrays (same for all for them)
-    auto oPtr =
-        std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
 
-    if (numOfSubArrs > 0)
+
+    std::shared_ptr<PointerWrapper>  oPtr;
+    if(numOfSubArrs > 0)
+      oPtr = std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
+    else {
+        oPtr = std::make_shared<PointerWrapper>(new sd::LongType[1], std::make_shared<PrimaryPointerDeallocator>());
+        oPtr->pointerAsT<sd::LongType>()[0] = 0;
+    }
+    if (numOfSubArrs > 0) {
       shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude->size(), dimsToExclude->data(),
                                             sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
                                             descriptor->areUnitiesinShape());
+
+
+    } else {
+      const auto shapeInfo =
+          ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo());
+      const sd::LongType rank = shape::rank(shapeInfo);
+      const sd::LongType subArrRank = rank;
+      shape::copyTo(shape::shapeInfoLength(subArrRank),shapeInfo,sPtr->pointerAsT<sd::LongType>());
+    }
+
 
     const ConstantShapeBuffer shapeBuffer(sPtr);
     const ConstantOffsetsBuffer offsetsBuffer(oPtr);
     TadPack *t = new TadPack(shapeBuffer, offsetsBuffer, numOfSubArrs, descriptor->axis().data(), descriptor->axis().size());
 
     _cache[deviceId][descriptor] = t;
+
     delete dimsToExclude;
 
   }

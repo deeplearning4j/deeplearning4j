@@ -3710,7 +3710,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 return Nd4j.create(this.data(),newShape, new long[]{1}, 0);
         }
 
-        if (newShape == null || newShape.length < 1)
+        if (newShape == null)
             throw new ND4JIllegalStateException(
                     "Can't reshape(long...) without shape arguments. Got empty shape instead.");
 

@@ -184,7 +184,12 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
   int rankVal = shape::rank(shapeInfo);
 
   if(rankVal < 0 || rankVal > SD_MAX_RANK) {
-    THROW_EXCEPTION("ShapeDescriptor constructor: Corrupt shape buffer found. Likely was deallocated. Please ensure proper usage of the buffer\n");
+    std::string errorMessage;
+    errorMessage += "Shape descriptor created with invalid rank: ";
+    errorMessage += std::to_string(rankVal);
+    errorMessage += ". Valid range is 0 to ";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
 

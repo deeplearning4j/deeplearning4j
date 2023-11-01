@@ -3858,7 +3858,7 @@ public class Shape {
      * @param keepDims     If reduced dimensions should be kept as size 1 dimensions
      * @return             Shape of the output array for the reduction
      */
-    public static long[] reductionShape(INDArray x, long[] dimension, boolean newFormat, boolean keepDims){
+    public static long[] reductionShape(INDArray x, long[] dimension, boolean newFormat, boolean keepDims) {
         boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
@@ -3894,7 +3894,7 @@ public class Shape {
                         }
                 }
             } else {
-                if(wholeArray || x.isEmpty())
+                if(wholeArray)
                     return new long[]{};
                 retShape =  ArrayUtil.removeIndex(x.shape(), dimension);
             }

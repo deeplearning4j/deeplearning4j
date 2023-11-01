@@ -296,6 +296,8 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
   } else {
     std::vector<sd::LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
+    printf("dynamic stitch_1\n");
+    shape::printShapeInfo(output->shapeInfo());
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
 
     std::vector<const void *> inputBuffers(inputSize);
