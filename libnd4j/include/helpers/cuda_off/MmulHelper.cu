@@ -223,6 +223,7 @@ SD_HOST static void usualDot(const dim3& launchDims, cudaStream_t* stream,
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha, double beta,
                              const char outOrder) {
+  printf("using cublas mmulMxM\n");
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
   if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
 
@@ -360,6 +361,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
                              const char outOrder) {
   sd::LongType  xLenDim, yLenDim(0);
+  printf("using cublas mmulMxV\n");
 
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))

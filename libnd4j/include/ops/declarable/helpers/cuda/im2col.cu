@@ -82,9 +82,12 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                sd::LaunchContext &context, const void *image, void *columns,
                                const sd::LongType *imShapeInfo, const sd::LongType *colShapeInfo, LongType sH,
                                LongType sW, LongType pH, LongType pW, LongType dH, LongType dW, double zeroPadVal) {
+  printf("invoking im2colcuda\n");
   im2colCuda<T>
   <<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */,
   *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+  sd::DebugHelper::checkErrorCode(context.getCudaStream(), "im2colCuda(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,7 +98,6 @@ void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, 
 
   dim3 im2colDevs = getim2ColLaunchParams(columns);
   NDArray::prepareSpecialUse({&columns}, {&image});
-  printf("im2col launch params x %d y %d z %d\n", im2colDevs.x, im2colDevs.y, im2colDevs.z);
   BUILD_SINGLE_SELECTOR(
       columns.dataType(), im2colCudaLauncher,
       (im2colDevs.x, im2colDevs.y,im2colDevs.z, context, image.specialBuffer(), columns.specialBuffer(),

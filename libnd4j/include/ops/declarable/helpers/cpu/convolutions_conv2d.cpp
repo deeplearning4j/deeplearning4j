@@ -79,6 +79,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
   NDArray colP = col.permute({0, 5, 3, 4, 1, 2});  // {bS, iC, kH, kW, oH, oW}
+  colP.printIndexedBuffer("colP initial:");
+  printf("colP initial end\n");
+
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
   //----- calculation of output -----//
@@ -86,9 +89,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   helpers::im2col(
       *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-
   MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
                         {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
+
 
 
 
@@ -100,9 +103,14 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   output->assign(mmulResult);
 
+
   //----- add biases if required -----//
   if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
+    output->printIndexedBuffer("output post bias");
+    printf("output post bias end\n");
+
+
   }
   if (!isNCHW) delete input;
 }

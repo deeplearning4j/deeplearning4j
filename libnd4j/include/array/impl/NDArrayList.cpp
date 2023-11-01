@@ -35,11 +35,9 @@ NDArrayList::NDArrayList(int height, bool expandable) {
   _id.first = 0;
   _id.second = 0;
   _height = height;
-  sd_debug("\nCreating NDArrayList\n","");
 }
 
 NDArrayList::~NDArrayList() {
-  sd_debug("\nDeleting NDArrayList: [%i]\n", _chunks.size());
   // for (auto const& v : _chunks) delete v.second;
 
   _chunks.clear();
@@ -51,7 +49,6 @@ sd::DataType NDArrayList::dataType() { return _dtype; }
 
 NDArray* NDArrayList::readRaw(int idx) {
   if (_chunks.count(idx) < 1) {
-    sd_debug("Non-existent chunk requested: [%i]\n", idx);
     THROW_EXCEPTION("Bad index");
   }
 
@@ -61,7 +58,6 @@ NDArray* NDArrayList::readRaw(int idx) {
 
 NDArray* NDArrayList::remove(int idx) {
   if(!isWritten(idx)) {
-    sd_debug("Non-existent chunk requested: [%i]\n", idx);
     THROW_EXCEPTION("Bad index");
   }
 
@@ -73,7 +69,6 @@ NDArray* NDArrayList::remove(int idx) {
 
 
 sd::Status NDArrayList::write(int idx, NDArray* array) {
-  printf("list write at index %d with array empty %d\n",idx,array->isEmpty());
   if (_chunks.count(idx) == 0)
     _elements++;
   else {
@@ -156,9 +151,7 @@ void NDArrayList::unstack(NDArray* array, LongType axis) {
 
 NDArray* NDArrayList::stack() {
   int numElements = _elements.load();
-  printf("Stacking list: num elements is %d\n",numElements);
   if(numElements < 1) {
-    printf("Returning empty list for stack\n");
     return  new NDArray(NDArrayFactory::empty<double>());
 
   }
@@ -180,7 +173,6 @@ NDArray* NDArrayList::stack() {
   NDArray* array = nullptr;
 
   if (shape::isEmpty(inShapeInfo)) {
-    printf("empty list\n");
     switch (rank) {
       case 0: {
         if (numElements == 1) {
@@ -193,7 +185,6 @@ NDArray* NDArrayList::stack() {
     }
   } else {
 
-    printf("non empty list\n");
     std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
     outShape.insert(outShape.begin(), (sd::LongType)numElements);
     array =

@@ -22,7 +22,7 @@
 #include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/dropout.h>
-
+#include <helpers/DebugHelper.h>
 #include <memory>
 #include <vector>
 
@@ -69,9 +69,10 @@ static void dropoutSimple(sd::LaunchContext* context, NDArray const* input, NDAr
     throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
   }
 
-  dropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
-                                                      output->specialBuffer(), output->specialShapeInfo(), probValue,
-                                                      inLen, dRandom);
+  dim3 getDims = getLaunchDims("dropout");
+  dropoutSimpleKernel<T><<<getDims.x, getDims.y, getDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
+                                                                       output->specialBuffer(), output->specialShapeInfo(), probValue,
+                                                                       inLen, dRandom);
   err = cudaFree(dRandom);
   if (err) {
     throw cuda_exception::build("helpers::dropoutSimple: Cannot deallocate device memory for random generator.", err);
@@ -167,10 +168,16 @@ static sd::Status dropOutFunctorBP_(sd::graph::Context& context, sd::NDArray* in
 
   NDArray::prepareSpecialUse({output}, {input, gradOut});
 
-  if (sd::Status::OK == res)
-    dropoutBPKernel<T><<<128, 256, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
+
+  if (sd::Status::OK == res) {
+    dim3 launchDims = getLaunchDims("dropout");
+    dropoutBPKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                                     gradOut->specialBuffer(), gradOut->specialShapeInfo(), probValue);
 
+
+    sd::DebugHelper::checkGlobalErrorCode( "dropout_bp(...) failed");
+
+  }
   NDArray::registerSpecialUse({output}, {input, gradOut});
 
   return res;
@@ -211,8 +218,10 @@ static void alphaDropoutSimple(sd::LaunchContext* context, NDArray const* input,
 
   dim3 launchDims = getLaunchDims("dropout");
   alphaDropoutSimpleKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
-                                                           output->specialBuffer(), output->specialShapeInfo(),
-                                                           probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
+                                                                                     output->specialBuffer(), output->specialShapeInfo(),
+                                                                                     probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
+
+  sd::DebugHelper::checkGlobalErrorCode( "alphaDropoutSimpleKernel(...) failed");
 
   err = cudaFree(dRandom);
   if (err) {

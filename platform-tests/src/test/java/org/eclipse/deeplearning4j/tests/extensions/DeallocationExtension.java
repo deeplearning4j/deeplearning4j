@@ -19,7 +19,7 @@
  */
 package org.eclipse.deeplearning4j.tests.extensions;
 
-import org.eclipse.deeplearning4j.frameworkimport.tensorflow.TestTFGraphAllSameDiff;
+import org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitioned0;
 import org.junit.jupiter.api.extension.*;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -55,7 +55,7 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
     public DeallocationExtension() {
         Nd4j.getDeallocatorService().addListener(this);
-        classAllocationHandlers.put(TestTFGraphAllSameDiff.class.getName(), new TFTestAllocationHandler());
+        classAllocationHandlers.put(TestTFGraphAllSameDiffPartitioned0.class.getName(), new TFTestAllocationHandler());
     }
 
     private String currentTestDisplayName() {

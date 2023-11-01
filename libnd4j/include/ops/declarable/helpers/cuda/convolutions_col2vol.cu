@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 #include "execution/cuda/LaunchDims.h"
-
+#include <helpers/DebugHelper.h>
 namespace sd {
 namespace ops {
 
@@ -115,6 +115,8 @@ static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
                                 const LongType dW) {
   col2volCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, volume, volShapeInfo,
                                                                          sD, sH, sW, pD, pH, pW, dD, dH, dW);
+  sd::DebugHelper::checkGlobalErrorCode( "col2vol(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,9 +125,6 @@ void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, ND
                                const LongType dW) {
   PointersManager manager(block.launchContext(), "col2vol");
 
-  const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
-  const int blocksPerGrid = (vol.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
 
   dim3 col2VolDims = getCol2VolDims(vol.lengthOf(), col.rankOf());
 
@@ -138,6 +137,8 @@ void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, ND
   NDArray::registerSpecialUse({&vol}, {&col});
 
   manager.synchronize();
+  sd::DebugHelper::checkGlobalErrorCode( "col2vol(...) failed");
+
 }
 
 }  // namespace ops

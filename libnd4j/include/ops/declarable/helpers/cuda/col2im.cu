@@ -104,6 +104,8 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                const LongType pW, const LongType dH, const LongType dW) {
   col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH,
                                                                         sW, pH, pW, dH, dW);
+  sd::DebugHelper::checkGlobalErrorCode( "col2im(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////

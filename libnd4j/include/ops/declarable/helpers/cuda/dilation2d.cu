@@ -107,6 +107,8 @@ static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPer
                                    const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
   dilation2dCuda<X, Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                zShapeInfo, sH, sW, pH, pW, dH, dW);
+  sd::DebugHelper::checkGlobalErrorCode( "dilation2d(...) failed");
+
 }
 
 void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,

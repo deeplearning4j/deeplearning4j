@@ -245,11 +245,7 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
   const sd::DataType dataTypes[] = DATA_TYPES;
   const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);
 
-  for (size_t i = 0; i < numTypes; ++i) {
-    if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
-      return dataTypes[i];
-    }
-  }
+
 
   if (hasPropertyBitSetForFlags(property, ARRAY_UNSIGNED)) {
     const sd::LongType unsignedTypeFlags[] = ARRAY_UNSIGNED_TYPES;
@@ -259,6 +255,12 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
     for (size_t i = 0; i < numUnsignedTypes; ++i) {
       if (hasPropertyBitSetForFlags(property, unsignedTypeFlags[i])) {
         return unsignedDataTypes[i];
+      }
+    }
+  } else {
+    for (size_t i = 0; i < numTypes; ++i) {
+      if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
+        return dataTypes[i];
       }
     }
   }
@@ -526,7 +528,9 @@ SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, c
   if(ArrayOptions::hasPropertyBitSet(extraStorage, flagForDataType(dataType)))
     return extraStorage;
   sd::LongType  ret = extraStorage;
-  if (dataType == sd::DataType::UINT8 || dataType == sd::DataType::UINT16 || dataType == sd::DataType::UINT32 ||
+  if (dataType == sd::DataType::UINT8
+      || dataType == sd::DataType::UINT16
+      || dataType == sd::DataType::UINT32 ||
       dataType == sd::DataType::UINT64) {
     ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_UNSIGNED);
     extraStorage = ret;

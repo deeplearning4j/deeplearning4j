@@ -22,14 +22,14 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.io.FileUtils;
-import org.eclipse.deeplearning4j.frameworkimport.tensorflow.listener.OpExecOrderListener;
-import org.eclipse.deeplearning4j.frameworkimport.nd4j.serde.listeners.ExecPrintListener;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.eclipse.deeplearning4j.frameworkimport.nd4j.serde.listeners.ExecPrintListener;
+import org.eclipse.deeplearning4j.frameworkimport.tensorflow.listener.OpExecOrderListener;
 import org.eclipse.deeplearning4j.tests.extensions.TFTestAllocationHandler;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
@@ -48,22 +48,17 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.resources.strumpf.ResourceFile;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.transforms.Assert;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph;
 import org.nd4j.shade.guava.io.Files;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.springframework.core.io.FileSystemResource;
@@ -81,18 +76,33 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphsSkipNodes.skipNode;
+import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.EXECUTE_ONLY_MODELS;
+import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.TOTAL_TESTS;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @Slf4j
 public class TFGraphTestAllHelper {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
     public static TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
     public final static String PRINT_GRAPH_PROP = "org.nd4j.imports.tfgraphs.printgraphs";
+    //stop on first failure
+    private static boolean failFast = System.getProperty("org.nd4j.imports.tfgraphs.failfast", "false").equalsIgnoreCase("true");
+    private static boolean shouldStopFailFast = false;
+
+
+
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT
     }
 
+    public static boolean failFastStop() {
+        return shouldStopFailFast;
+    }
+    public static boolean isFailFast() {
+        return failFast;
+    }
 
     @Data
     @AllArgsConstructor
@@ -132,7 +142,11 @@ public class TFGraphTestAllHelper {
                 SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables);
                 return new ModelLoadResult(result, graphDef);
             }catch(Exception e) {
-                throw new RuntimeException(e);
+                if(failFast) {
+                    System.out.println("First failure: " + name);
+                    shouldStopFailFast = true;
+                }
+              throw new RuntimeException(e);
             }
         }
     }
@@ -146,12 +160,23 @@ public class TFGraphTestAllHelper {
             .outputMode(OutputMode.VARIABLE_SPACE)
             .build();
 
-    public static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
+    public static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir, int startIndex, int endIndex) throws IOException {
         String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
+        if(endIndex < 0)
+            endIndex = modelNames.length;
         List<Object[]> modelParams = new ArrayList<>();
+        //load every model specified by user
+        if(!EXECUTE_ONLY_MODELS.isEmpty()) {
+            startIndex = 0;
+            endIndex = modelNames.length;
+        }
+
+        if(endIndex >= TOTAL_TESTS)
+            endIndex = TOTAL_TESTS - 1;
+
         //set the tf allocation handler model for controlling deallocations of these variables later
         //after the test is done
-        for (int i = 0; i < modelNames.length; i++) {
+        for (int i = startIndex; i <  endIndex; i++) {
             System.out.println("Loading model " + modelNames[i] + " - " + (i + 1) + " of " + modelNames.length);
             Object[] currentParams = new Object[4];
             System.setProperty(TFTestAllocationHandler.CURRENT_MODEL_PROPERTY,modelNames[i]);
@@ -189,6 +214,12 @@ public class TFGraphTestAllHelper {
 
         //Collect coverage info about ops
         Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
+        if(p == null) {
+            //for some reason fail fast doesn't happen when it should even before model loading this is a way
+            //of fast failing before we continue.
+            fail("Model " + modelName + " failed to load");
+            return;
+        }
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
 
@@ -268,6 +299,9 @@ public class TFGraphTestAllHelper {
                         }
 
                         if(!eq) {
+                            if(failFast) {
+                                shouldStopFailFast = true;
+                            }
                             System.out.print("TF: ");
                             System.out.println(tfPred.toStringFull());
                             System.out.print("SD: ");
@@ -279,11 +313,21 @@ public class TFGraphTestAllHelper {
                 } else {
 
                     if(!tfPred.equalShapes(nd4jPred)) {
+                        if(failFast) {
+                            shouldStopFailFast = true;
+                            System.out.println("First failure: " + modelName);
+
+                        }
                         fail("Output node \"" + outputNode + "\" SameDiff output shape does not match TF output shape: SameDiff shape: " +
                                 Arrays.toString(nd4jPred.shape()) + " vs. TF shape: " + Arrays.toString(tfPred.shape()));
                     }
 
                     if(tfPred.dataType() != nd4jPred.dataType()) {
+                        if(failFast) {
+                            System.out.println("First failure: " + modelName);
+                            shouldStopFailFast = true;
+                        }
+
                         fail("Output node \"" + outputNode + "\" SameDiff output datatype does not match TF output : SameDiff type: " +
                                 nd4jPred.dataType() + " vs. TF datatype: " + tfPred.dataType());
                     }
@@ -311,7 +355,11 @@ public class TFGraphTestAllHelper {
                     INDArray maxAbs = Transforms.max(Transforms.abs(tfPred.castTo(DataType.DOUBLE), true), Transforms.abs(nd4jPred.castTo(DataType.DOUBLE), true), true);
                     long countMaxAbsGTThreshold = maxAbs.gte(minAbsErrorOverride).castTo(DataType.INT).sumNumber().intValue();
                     long countNotMasked = absErrorMask.sumNumber().intValue();  //Values are 0 or 1... if all 0s -> nothing being tested
-                    if(countNotMasked == 0 && countMaxAbsGTThreshold == 0){
+                    if(countNotMasked == 0 && countMaxAbsGTThreshold == 0) {
+                        if(failFast) {
+                            System.out.println("First failure: " + modelName);
+                            shouldStopFailFast = true;
+                        }
                         fail("All values for node " + outputNode + " are masked out due to minAbsError=" + minAbsErrorOverride +
                                 " and max values are all less than minAbsError - nothing can be tested here");
                     }
@@ -319,7 +367,11 @@ public class TFGraphTestAllHelper {
                     int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
 
                     double maxRE = -1;
-                    if(countExceeds > 0){
+                    if(countExceeds > 0) {
+                        if(failFast) {
+                            System.out.println("First failure: " + modelName);
+                            shouldStopFailFast = true;
+                        }
                         maxRE = relError.maxNumber().doubleValue();
                     }
 
@@ -397,7 +449,7 @@ public class TFGraphTestAllHelper {
                             //Mainly used for analysis in debugger:
                             DifferentialFunction op = null;
                             String[] opInputs = null;
-                            if(countExceeds > 0){
+                            if(countExceeds > 0) {
                                 maxRE = relError.maxNumber().doubleValue();
                                 //Find the op that this variable is produced by
                                 op = graph.getVariableOutputOp(varName);
@@ -441,7 +493,6 @@ public class TFGraphTestAllHelper {
                                 &&
                                 !input.getOp().contains("Switch") &&
                                 !input.getOp().contains("Merge") &&
-                                !input.getOp().contains("Identity") &&
                                 !input.getOp().contains("Assert") &&
                                 !input.getOp().contains("Placeholder"))
                 .map(input -> input.getName())
@@ -466,14 +517,14 @@ public class TFGraphTestAllHelper {
                                                                          ExecuteWith executeWith, BiFunction<File,String,ModelLoadResult> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("RUNNING TEST {}...", modelName);
-     /*   GraphDef graphDef = null;
+        GraphDef graphDef = null;
         try {
             graphDef = GraphDef.parseFrom(Files.toByteArray(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile());
-*/        ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+        ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
 
         SameDiff graph = result.getSameDiff();
         if(listeners != null) {
@@ -503,9 +554,9 @@ public class TFGraphTestAllHelper {
 
             log.info("Testing inputs with names " + inputs.keySet() + " and shapes " + shapes);
 
-            outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
+          //  outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
-          /*  outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
+            outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
             Map<String, INDArray> differencesCorrect = new LinkedHashMap<>();
             Map<String, INDArray> differencesWrong = new LinkedHashMap<>();
             for (String s : outMap.keySet()) {
@@ -515,7 +566,7 @@ public class TFGraphTestAllHelper {
                     differencesCorrect.put(s, tfValue);
                     differencesWrong.put(s, sdValue);
                 }
-            }*/
+            }
             graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
@@ -546,10 +597,10 @@ public class TFGraphTestAllHelper {
         }
 
         //only load models we need
-        if(TestTFGraphAllSameDiff.EXECUTE_ONLY_MODELS.isEmpty())
+        if(EXECUTE_ONLY_MODELS.isEmpty())
             return exampleNames;
         else {
-            return Arrays.stream(exampleNames).filter(s -> TestTFGraphAllSameDiff.EXECUTE_ONLY_MODELS.contains(s)).toArray(String[]::new);
+            return Arrays.stream(exampleNames).filter(s -> EXECUTE_ONLY_MODELS.contains(s)).toArray(String[]::new);
         }
     }
 

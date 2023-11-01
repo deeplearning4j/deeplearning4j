@@ -89,7 +89,7 @@
         TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address
         and preload. The build without -fsanitize=address is where you left off.
         -->
-
+        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options>symbolize=1:strict_init_order=true:verify_asan_link_order=0:protect_shadow_gap=0:replace_intrin=0:detect_leaks=0:alloc_dealloc_mismatch=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
@@ -906,6 +906,9 @@
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>true</testFailureIgnore>
+                    <properties>
+                        <org.nd4j.imports.tfgraphs.failfast>true</org.nd4j.imports.tfgraphs.failfast>
+                    </properties>
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
@@ -916,64 +919,6 @@
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
-
-
-                        <BLOCK_SIZE_SCALAR_SCAN>10</BLOCK_SIZE_SCALAR_SCAN>
-                        <GRID_SIZE_SCALAR_SCAN>10</GRID_SIZE_SCALAR_SCAN>
-                        <GRID_SIZE_TRANSFORM_SCAN>10</GRID_SIZE_TRANSFORM_SCAN>
-                        <BLOCK_SIZE_TRANSFORM_SCAN>10</BLOCK_SIZE_TRANSFORM_SCAN>
-                        <SHARED_MEM_SIZE_TRANSFORM_SCAN>1024</SHARED_MEM_SIZE_TRANSFORM_SCAN>
-                        <GRID_SIZE_COL2IM>256</GRID_SIZE_COL2IM>
-                        <BLOCK_SIZE_COL2IM>256</BLOCK_SIZE_COL2IM>
-                        <SHARED_MEM_SIZE_COL2IM>16000</SHARED_MEM_SIZE_COL2IM>
-                        <GRID_SIZE_IM2COL>256</GRID_SIZE_IM2COL>
-                        <BLOCK_SIZE_IM2COL>256</BLOCK_SIZE_IM2COL>
-                        <SHARED_MEM_SIZE_IM2COL>16000</SHARED_MEM_SIZE_IM2COL>
-                        <BLOCK_SIZE_RANDOM>128</BLOCK_SIZE_RANDOM>
-                        <GRID_SIZE_RANDOM>128</GRID_SIZE_RANDOM>
-                        <GRID_SIZE_POOLING>256</GRID_SIZE_POOLING>
-                        <BLOCK_SIZE_POOLING>256</BLOCK_SIZE_POOLING>
-                        <GRID_SIZE_MERGE>256</GRID_SIZE_MERGE>
-                        <BLOCK_SIZE_MERGE>256</BLOCK_SIZE_MERGE>
-                        <SHARED_MEM_SIZE_MERGE>256</SHARED_MEM_SIZE_MERGE>
-                        <GRID_SIZE_DIAG_PART>128</GRID_SIZE_DIAG_PART>
-                        <BLOCK_SIZE_DIAG_PART>128</BLOCK_SIZE_DIAG_PART>
-                        <GRID_SIZE_SEGMENT_MEAN>128</GRID_SIZE_SEGMENT_MEAN>
-                        <BLOCK_SIZE_SEGMENT_MEAN>128</BLOCK_SIZE_SEGMENT_MEAN>
-                        <GRID_SIZE_CLIP>128</GRID_SIZE_CLIP>
-                        <BLOCK_SIZE_CLIP>128</BLOCK_SIZE_CLIP>
-                        <GRID_SIZE_SWAP_UNSAFE>128</GRID_SIZE_SWAP_UNSAFE>
-                        <BLOCK_SIZE_SWAP_UNSAFE>256</BLOCK_SIZE_SWAP_UNSAFE>
-                        <GRID_SIZE_SEGMENT>128</GRID_SIZE_SEGMENT>
-                        <BLOCK_SIZE_SEGMENT>128</BLOCK_SIZE_SEGMENT>
-                        <GRID_SIZE_SEGMENT_MEAN>128</GRID_SIZE_SEGMENT_MEAN>
-                        <BLOCK_SIZE_SEGMENT_MEAN>128</BLOCK_SIZE_SEGMENT_MEAN>
-                        <GRID_SIZE_GATHER>512</GRID_SIZE_GATHER>
-                        <BLOCK_SIZE_GATHER>512</BLOCK_SIZE_GATHER>
-                        <GRID_SIZE_PREFIX>256</GRID_SIZE_PREFIX>
-                        <BLOCK_SIZE_PREFIX>256</BLOCK_SIZE_PREFIX>
-                        <GRID_SIZE_ADJUST>128</GRID_SIZE_ADJUST>
-                        <BLOCK_SIZE_ADJUST>128</BLOCK_SIZE_ADJUST>
-                        <GRID_SIZE_SEGMENT_TAD>128</GRID_SIZE_SEGMENT_TAD>
-                        <BLOCK_SIZE_SEGMENT_TAD>128</BLOCK_SIZE_SEGMENT_TAD>
-                        <GRID_SIZE_MATRIX_DIAG>128</GRID_SIZE_MATRIX_DIAG>
-                        <BLOCK_SIZE_MATRIX_DIAG>128</BLOCK_SIZE_MATRIX_DIAG>
-                        <GRID_SIZE_SEGMENT_PROD_2_TAD>128</GRID_SIZE_SEGMENT_PROD_2_TAD>
-                        <BLOCK_SIZE_SEGMENT_PROD_2_TAD>128</BLOCK_SIZE_SEGMENT_PROD_2_TAD>
-                        <GRID_SIZE_ZETA>64</GRID_SIZE_ZETA>
-                        <BLOCK_SIZE_ZETA>64</BLOCK_SIZE_ZETA>
-                        <GRID_SIZE_SCATTER_SIMPLE>256</GRID_SIZE_SCATTER_SIMPLE>
-                        <BLOCK_SIZE_SCATTER_SIMPLE>128</BLOCK_SIZE_SCATTER_SIMPLE>
-                        <GRID_SIZE_MIRROR_PAD_LINEAR>128</GRID_SIZE_MIRROR_PAD_LINEAR>
-                        <BLOCK_SIZE_MIRROR_PAD_LINEAR>128</BLOCK_SIZE_MIRROR_PAD_LINEAR>
-                        <GRID_SIZE_POLYGAMMA>64</GRID_SIZE_POLYGAMMA>
-                        <BLOCK_SIZE_POLYGAMMA>64</BLOCK_SIZE_POLYGAMMA>
-                        <GRID_SIZE_DIGAMMA>128</GRID_SIZE_DIGAMMA>
-                        <BLOCK_SIZE_DIGAMMA>128</BLOCK_SIZE_DIGAMMA>
-                        <GRID_SIZE_BETA_INC>128</GRID_SIZE_BETA_INC>
-                        <BLOCK_SIZE_BETA_INC>128</BLOCK_SIZE_BETA_INC>
-                        <GRID_SIZE_INVERT_PERMUTATION>128</GRID_SIZE_INVERT_PERMUTATION>
-                        <BLOCK_SIZE_INVERT_PERMUTATION>128</BLOCK_SIZE_INVERT_PERMUTATION>
 
                     </environmentVariables>
                     <shutdown>kill</shutdown>
@@ -991,9 +936,7 @@
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
-                    <properties>
-                        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
-                    </properties>
+                    <reuseForks>false</reuseForks>
                     <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
                     <jvm>${project.basedir}/bin/java</jvm>
                 </configuration>

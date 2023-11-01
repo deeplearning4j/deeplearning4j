@@ -296,13 +296,6 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
   } else {
     std::vector<sd::LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
-    //print dims:
-    printf("rest dims for output\n");
-    for(int i = 0; i < restDims.size(); i++) {
-      printf("%d ",restDims[i]);
-    }
-    printf("\n");
-
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
 
     std::vector<const void *> inputBuffers(inputSize);
@@ -318,7 +311,6 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
       for (sd::LongType  i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
-      printf("tad shape info for input %d\n",e);
       shape::printShapeInfo(packX->primaryShapeInfo());
       indicesBuffers[e] = indices[e]->specialBuffer();
       indicesShapes[e] = indices[e]->specialShapeInfo();
@@ -346,7 +338,6 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
 
 
     dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
-    printf("dynamic stitch tad dimensions: %d %d %d\n", launchDims.x, launchDims.y, launchDims.z);
     dynamicStitchTadKernel<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         dInputBuffers, dInputTadShapes, dInputTadOffsets, dIndicesBuffers, dIndicesShapes, inputSize,
         output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(),dNumTadsInputs, packZ->numberOfTads());

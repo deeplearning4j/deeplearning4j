@@ -2046,6 +2046,9 @@ namespace sd {
         if (msg) printf("%s: ", msg);
         //uses the << operator instead which is used in gtest as well
         std::cout << *this;
+
+        if (msg) printf("%s end: ", msg);
+
     }
 
 

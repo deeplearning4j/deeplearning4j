@@ -21,21 +21,16 @@
 package org.nd4j.linalg.jcublas.context;
 
 import lombok.*;
-import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
-import org.nd4j.jita.allocator.garbage.GarbageResourceReference;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A higher level class for handling
@@ -72,7 +67,11 @@ public class CudaContext {
 
     private int deviceId = -1;
 
-    private transient final static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private  final static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+    private AtomicReference<PointerPointer> oldStreamRef = new AtomicReference<>();
+    private AtomicReference<PointerPointer> cublasHandleRef = new AtomicReference<>();
+    private AtomicReference<PointerPointer> solverRef = new AtomicReference<>();
 
     @Override
     public String toString() {
@@ -98,20 +97,25 @@ public class CudaContext {
     }
 
     public Pointer getCublasStream() {
-        // FIXME: can we cache this please
-        val lptr = new PointerPointer(this.getOldStream());
-        return lptr.get(0);
+        if(oldStreamRef.getAcquire() == null) {
+            oldStreamRef.set(new PointerPointer(this.getOldStream()));
+        }
+        return oldStreamRef.getAcquire().get(0);
     }
 
     public cublasHandle_t getCublasHandle() {
-        // FIXME: can we cache this please
-        val lptr = new PointerPointer(cublasHandle);
-        return new cublasHandle_t(lptr.get(0));
+        if(cublasHandleRef.getAcquire() == null) {
+            cublasHandleRef.set(new PointerPointer(cublasHandle));
+        }
+
+        return new cublasHandle_t(cublasHandleRef.get().get(0));
     }
 
     public cusolverDnHandle_t getSolverHandle() {
         // FIXME: can we cache this please
-        val lptr = new PointerPointer(solverHandle);
-        return new cusolverDnHandle_t(lptr.get(0));
+        if(solverRef.getAcquire() == null) {
+            solverRef.set(new PointerPointer(solverHandle));
+        }
+        return new cusolverDnHandle_t(solverRef.get().get(0));
     }
 }
