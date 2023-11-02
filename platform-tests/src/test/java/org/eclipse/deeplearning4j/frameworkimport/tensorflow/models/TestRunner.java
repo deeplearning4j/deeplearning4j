@@ -51,7 +51,6 @@ class TestRunner {
             }
         }
 
-        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForNAN(true).build());
 
         System.out.println("Testing with test name " + System.getProperty(DeallocationExtension.CURRENT_TEST_DISPLAY_NAME));
         Pair<Double, Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);

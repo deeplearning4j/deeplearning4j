@@ -45,7 +45,6 @@ public abstract class TestTFGraphAllSameDiffPartitionedBase {
     public static final int TESTS_PER_PARTITION = 50;
 
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "emptyArrayTests/count_nonzero/rank2_axis1"
 
     );
 

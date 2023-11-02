@@ -273,7 +273,7 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
     _shape_strides[1] = 0;
   }
 
-  _dataType = ArrayOptions::dataType(shapeInfo);
+  _dataType = ArrayOptions::dataTypeValue(_extraProperties);
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }

@@ -482,7 +482,17 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static Map<String,INDArray> runTfResults(GraphDef result,Map<String,INDArray> inputs,File modelPath) {
+    /**
+     *
+     * @param result the graph def
+     * @param inputs the inputs to the graph
+     * @param modelPath the path to the model
+     * @param originalResultOutputs the original expected outputs.
+     *                              THis is just in case we are missing something. This is common when
+     *                              some output nodes output more than 1 result but we are testing for it.
+     * @return
+     */
+    public static Map<String,INDArray> runTfResults(GraphDef result, Map<String,INDArray> inputs, File modelPath, Set<String> originalResultOutputs) {
         List<String> inputNames = new ArrayList<>(inputs.keySet());
 
         List<String> outputNames = new ArrayList<>(result.getNodeList()
@@ -497,6 +507,13 @@ public class TFGraphTestAllHelper {
                                 !input.getOp().contains("Placeholder"))
                 .map(input -> input.getName())
                 .collect(Collectors.toList()));
+
+        originalResultOutputs.stream().forEach(outputName -> {
+            if(!outputNames.contains(outputName)) {
+                outputNames.add(outputName);
+            }
+        });
+
 
         for(int i = 0; i < result.getNodeCount(); i++) {
             NodeDef nodeDef = result.getNode(i);
@@ -523,7 +540,7 @@ public class TFGraphTestAllHelper {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile());
+        Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), requiredOutputs);
         ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
 
         SameDiff graph = result.getSameDiff();

@@ -111,7 +111,7 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST bool isSparseArray(sd::LongType *shapeInfo);
   static SD_HOST bool isUnsigned(sd::LongType *shapeInfo);
 
-  static SD_HOST_DEVICE sd::DataType dataType(const sd::LongType *shapeInfo);
+  static SD_HOST sd::DataType dataType(const sd::LongType *shapeInfo);
 
   static SD_HOST SpaceType spaceType(sd::LongType *shapeInfo);
   static SD_HOST_DEVICE SpaceType spaceType(const sd::LongType *shapeInfo);

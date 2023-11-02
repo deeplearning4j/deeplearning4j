@@ -207,7 +207,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
-            if(op.z() != null){
+            if(op.z() != null) {
                 Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
                         " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
                 op.setZ(op.x().dup());

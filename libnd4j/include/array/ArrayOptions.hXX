@@ -17,6 +17,7 @@ SD_HOST sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("Shape info was null!");
   sd::LongType  rank = shapeInfo[0];
+
   sd::LongType  idx = 0;
   //rank takes up 1 element + usual elements
   if(rank == 0)
@@ -24,6 +25,7 @@ SD_HOST sd::LongType ArrayOptions::extraIndex(sd::LongType *shapeInfo) {
   else
     // FIXME magic numbers
     idx = rank + rank + 1;
+
   return idx;
 }
 
@@ -62,7 +64,7 @@ SD_HOST bool ArrayOptions:: hasPropertyBitSet(const sd::LongType *shapeInfo, Lon
 
 
 SD_HOST_DEVICE bool hasPropertyBitSetForFlags(const sd::LongType& flagStorage, LongType property) {
-  return static_cast<int>(flagStorage & static_cast<int>(property)) == static_cast<int>(property);
+  return static_cast<sd::LongType>(flagStorage & (property)) == (property);
 }
 
 SD_HOST void unsetPropertyBitForFlags(sd::LongType& flagStorage, LongType property) {
@@ -246,7 +248,6 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
   const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);
 
 
-
   if (hasPropertyBitSetForFlags(property, ARRAY_UNSIGNED)) {
     const sd::LongType unsignedTypeFlags[] = ARRAY_UNSIGNED_TYPES;
     const sd::DataType unsignedDataTypes[] = UNSIGNED_DATA_TYPES;
@@ -259,6 +260,8 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
     }
   } else {
     for (size_t i = 0; i < numTypes; ++i) {
+      auto testFlagAccess = dataTypeFlags[i];
+      fflush(stdout);
       if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
         return dataTypes[i];
       }
@@ -302,10 +305,11 @@ SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
 
 
 
-SD_HOST_DEVICE sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
+SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("ArrayOptions::dataType(..) shapeInfo can not be null!");
-  return ArrayOptions::dataTypeValue(shape::extra(shapeInfo));
+  auto extra = ArrayOptions::extra(shapeInfo);
+  return ArrayOptions::dataTypeValue(extra);
 }
 
 

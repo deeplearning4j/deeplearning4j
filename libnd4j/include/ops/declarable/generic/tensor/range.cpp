@@ -135,9 +135,9 @@ DECLARE_SHAPE_FN(range) {
       }
 
       if (limit == start) {
-        printf("limit == start range case\n");
         // Return [0] to match TF
-        return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
+        std::vector<sd::LongType> shape = {};
+        return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, shape));
       }
 
       REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
