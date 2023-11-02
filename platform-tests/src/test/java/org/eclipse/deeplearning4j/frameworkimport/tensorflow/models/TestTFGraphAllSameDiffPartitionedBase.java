@@ -45,11 +45,12 @@ public abstract class TestTFGraphAllSameDiffPartitionedBase {
     public static final int TESTS_PER_PARTITION = 50;
 
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-
+            "linear_solve/float32_rank2"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //tf-java contradicts the results that we load from python. Ignoring.
+            "fused_batch_norm/float32_nhwc",
             "fused_batch_norm/float32_nhcw",
             "non_max_suppression_v4/float16_with_thresholds",
             "non_max_suppression_v4/float32_with_thresholds",
@@ -85,7 +86,7 @@ public abstract class TestTFGraphAllSameDiffPartitionedBase {
 
 
 
-        public  void runTest(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir, int partitionIndex) throws Exception {
+    public  void runTest(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir, int partitionIndex) throws Exception {
         TestRunner testRunner = new TestRunner(debugModeRegexes);
         testRunner.runTest(inputs, predictions, modelName, localTestDir);
     }

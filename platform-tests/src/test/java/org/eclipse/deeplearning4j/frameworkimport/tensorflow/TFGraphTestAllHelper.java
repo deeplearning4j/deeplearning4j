@@ -80,7 +80,6 @@ import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphsSkip
 import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.EXECUTE_ONLY_MODELS;
 import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.TOTAL_TESTS;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @Slf4j
 public class TFGraphTestAllHelper {
@@ -541,6 +540,7 @@ public class TFGraphTestAllHelper {
             throw new RuntimeException(e);
         }
         Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), requiredOutputs);
+
         ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
 
         SameDiff graph = result.getSameDiff();
@@ -571,7 +571,7 @@ public class TFGraphTestAllHelper {
 
             log.info("Testing inputs with names " + inputs.keySet() + " and shapes " + shapes);
 
-          //  outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
+           // outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
 
             outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
             Map<String, INDArray> differencesCorrect = new LinkedHashMap<>();

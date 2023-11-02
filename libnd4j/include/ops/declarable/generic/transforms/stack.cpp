@@ -66,10 +66,8 @@ DECLARE_TYPES(stack) {
 }
 
 DECLARE_SHAPE_FN(stack) {
-  sd_print("Stack shape\n");
   // check whether input dimension is within rank range
   auto inShapeInfo = inputShape->at(0);
-  shape::printShapeInfo(inShapeInfo);
 
   int rank = shape::rank(inShapeInfo);
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;

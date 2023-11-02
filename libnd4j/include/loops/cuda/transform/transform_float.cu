@@ -34,7 +34,6 @@ SD_KERNEL void transformFloatSimple(const void *x, const sd::LongType *xShapeInf
                                     long long int *allocationPointer,
                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                     const sd::LongType *tadOffsets) {
-  printf("transform float simple entry 2\n");
   functions::transform::TransformFloat<X, Z>::template transformCuda<OpType>(
       x, xShapeInfo, params, z, zShapeInfo, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 }

@@ -109,8 +109,8 @@ DECLARE_SHAPE_FN(squeeze) {
     }
   else if (block.width() > 1) {
     auto a = INPUT_VARIABLE(1);
-    for (int e = 0; e < a->lengthOf(); e++) {
-      int _a = a->e<int>(e);
+    for (sd::LongType e = 0; e < a->lengthOf(); e++) {
+      sd::LongType _a = a->e<sd::LongType>(e);
 
       if (_a < 0) _a += rank;
 
@@ -123,7 +123,7 @@ DECLARE_SHAPE_FN(squeeze) {
 
   std::vector<sd::LongType> shape;
   if (axis.size() == 0) {
-    for (int d = 0; d < rank; d++)
+    for (sd::LongType d = 0; d < rank; d++)
       if (oldShape[d] > 1) shape.emplace_back(oldShape[d]);
   } else {
     for (int d = 0; d < rank; d++) {
@@ -144,13 +144,9 @@ DECLARE_SHAPE_FN(squeeze) {
       shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(in)));
       return shapeList;
     }
-    std::vector<sd::LongType> inShape;
-    auto inShape2 = shape::shapeOf(in);
-    for(int i = 0; i < shape::rank(in); i++) {
-      inShape.emplace_back(inShape2[i]);
-    }
 
-    shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(in),inShape));
+
+    shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(in),shape));
     return shapeList;
   } else {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);

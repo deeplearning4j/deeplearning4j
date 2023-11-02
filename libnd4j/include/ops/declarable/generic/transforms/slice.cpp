@@ -100,9 +100,15 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   NDArray::prepareSpecialUse({output}, {input});
 
   NativeOpExecutioner::execTransformAny(
-      block.launchContext(), sd::transform::Assign, input->bufferWithOffset(offset), subArrShapeInfoPack->primary(),
-      input->specialBufferWithOffset(offset), subArrShapeInfoPack->special(), output->buffer(), output->shapeInfo(),
-      output->specialBuffer(), output->specialShapeInfo(), nullptr, nullptr, nullptr, true);
+      block.launchContext(),
+      sd::transform::Assign,
+      input->bufferWithOffset(offset),
+      subArrShapeInfoPack->primary(),
+      input->specialBufferWithOffset(offset),
+      subArrShapeInfoPack->special(), output->buffer(),
+      output->shapeInfo(),
+      output->specialBuffer(), output->specialShapeInfo(),
+      nullptr, nullptr, nullptr, true);
 
   NDArray::registerSpecialUse({output}, {input});
 
@@ -119,7 +125,8 @@ DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
   if(shape::isEmpty(inShape)) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
+    std::vector<sd::LongType> emptyShape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), emptyShape));
   }
   auto x_rank = shape::rank(inShape);
 
@@ -177,7 +184,8 @@ DECLARE_SHAPE_FN(slice) {
   }
 
   if(shape.size() == 1 && shape[0] == 0) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
+    std::vector<sd::LongType> emptyShape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), emptyShape));
   }
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
