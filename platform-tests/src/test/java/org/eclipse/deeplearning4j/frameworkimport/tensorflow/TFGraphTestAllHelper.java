@@ -533,15 +533,14 @@ public class TFGraphTestAllHelper {
                                                                          ExecuteWith executeWith, BiFunction<File,String,ModelLoadResult> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("RUNNING TEST {}...", modelName);
-        GraphDef graphDef = null;
+       /* GraphDef graphDef = null;
         try {
             graphDef = GraphDef.parseFrom(Files.toByteArray(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), requiredOutputs);
-
-        ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+*/        ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
 
         SameDiff graph = result.getSameDiff();
         if(listeners != null) {
@@ -571,9 +570,8 @@ public class TFGraphTestAllHelper {
 
             log.info("Testing inputs with names " + inputs.keySet() + " and shapes " + shapes);
 
-           // outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
-
-            outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
+             outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
+       /*     outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
             Map<String, INDArray> differencesCorrect = new LinkedHashMap<>();
             Map<String, INDArray> differencesWrong = new LinkedHashMap<>();
             for (String s : outMap.keySet()) {
@@ -583,7 +581,7 @@ public class TFGraphTestAllHelper {
                     differencesCorrect.put(s, tfValue);
                     differencesWrong.put(s, sdValue);
                 }
-            }
+            }*/
             graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {

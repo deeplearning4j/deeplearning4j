@@ -32,20 +32,11 @@ BROADCASTABLE_BOOL_OP_IMPL(less, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  x->printIndexedBuffer("less: x");
-  y->printIndexedBuffer("less: y");
-  y->printCurrentBuffer<int>(false,"Y current buffer:");
-  z->printIndexedBuffer("less: z");
 
-  /**
-   * TODO: the buffer seems to be fine on Y.
-   * THere's soemthing else going on in the kernel it seems?
-   */
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(LessThan), x, y, z);
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;
-  else if (tZ
-           != z) {
+  else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 

@@ -51,7 +51,10 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
 
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
+    if ((shape::isEmpty(x) && shape::rank(x) == 0)
+        || (shape::isEmpty(y) && shape::rank(y) == 0)
+        || (shape::isEmpty(x) && shape::rank(x) == 1 && shape::shapeOf(x)[0] == 0)
+        ||  (shape::isEmpty(y) && shape::rank(y) == 1 && shape::shapeOf(y)[0] == 0)) {
       std::vector<sd::LongType> vecShape;
       auto xShape = shape::shapeOf(x);
       for(int i = 0; i < shape::rank(x); i++)
@@ -98,6 +101,8 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
+    printf("BroadcastableOp: x data type: %s scalar y dtype: %s dtype %s\n",DataTypeUtils::asString(ArrayOptions::dataType(x)).c_str()
+        , DataTypeUtils::asString(ArrayOptions::dataType(y)).c_str(), DataTypeUtils::asString(dtype).c_str());
     auto desc = new ShapeDescriptor(x, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;

@@ -823,8 +823,18 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
                           SD_COMMON_TYPES_ALL);
 
 #else
-  if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
 
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
@@ -862,9 +872,18 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
                                       dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
-  if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
 
+  }
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
@@ -892,8 +911,18 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (xType != yType) throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarBool requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
 
+  }
   if (zType != sd::DataType::BOOL)
     throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", sd::DataType::BOOL, zType);
 
@@ -918,17 +947,35 @@ void NativeOpExecutioner::execScalarBool(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-    long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
+    sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (xType != yType) throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", xType, yType);
+  if (xType != yType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
 
-  if (zType != sd::DataType::BOOL)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalarBool", sd::DataType::BOOL, zType);
-
+  }
+  if (zType != sd::DataType::BOOL) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarBool requires Z to have bool data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::scalar::ScalarBoolTransform,
@@ -955,12 +1002,33 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext *lc, int opNum, const 
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
-
-  if (!sd::DataTypeUtils::isZ(zType))
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt", sd::DataType::INT32, zType);
-
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarInt requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+    
+  }
+  
+  if (!sd::DataTypeUtils::isZ(zType)) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarInt requires result type to be an integer type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+    
+  }
+  
+ 
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform,
                           ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop),
@@ -982,19 +1050,39 @@ void NativeOpExecutioner::execScalarInt(
     const sd::LongType *dXShapeInfo, void *extraParams, void *hZ, const sd::LongType *hZShapeInfo, void *dZ,
     const sd::LongType *dZShapeInfo, const void *hScalars, const sd::LongType *hScalarShapeInfo, const void *dScalars,
     const sd::LongType *dScalarShapeInfo,
-    long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
+    sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
     const sd::LongType *tadOffsets, const sd::LongType *tadShapeInfoZ, const sd::LongType *tadOffsetsZ) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-  if (xType != yType || xType != zType)
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
 
-  if (!sd::DataTypeUtils::isZ(zType))
-    throw sd::datatype_exception::build("NativeOpExecutioner::execScalarInt requires integer data type", zType);
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarInt requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
 
+  }
+
+  if (!sd::DataTypeUtils::isZ(zType)) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalarInt requires result type to be an integer type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR(
         xType, functions::scalar::ScalarIntTransform,

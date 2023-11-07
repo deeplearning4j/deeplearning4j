@@ -31,17 +31,6 @@ namespace ops {
 CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
   // normal distribution
   auto rng = block.randomGenerator();
-  // FIXME: to be implemented
-  /*
-              REQUIRE_TRUE(rng != nullptr, 0, "RNG isn't defined for this Graph instance");
-
-              auto x = INPUT_VARIABLE(0);
-              auto z = OUTPUT_VARIABLE(0);
-
-              functions::random::RandomFunction<T>::template
-     execTransform<randomOps::GaussianDistribution<T>>(block.getRNG(), z->buffer(), z->shapeInfo(), z->buffer(),
-     z->shapeInfo(), z->buffer(), z->shapeInfo(), block.getTArguments()->data());
-  */
 
   RandomLauncher::fillGaussian(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
 
@@ -51,9 +40,14 @@ CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
 DECLARE_SHAPE_FN(random_normal) {
   auto in = INPUT_VARIABLE(0);
   auto shape = in->template asVectorT<sd::LongType>();
+  if(block.getDArguments()->size() > 0) {
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(D_ARG(0), 'c', shape);
+    return SHAPELIST(newShape);
+  } else {
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
+    return SHAPELIST(newShape);
+  }
 
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
-  return SHAPELIST(newShape);
 }
 
 DECLARE_SYN(randomnormal, random_normal);

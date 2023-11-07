@@ -68,6 +68,8 @@ DECLARE_SHAPE_FN(top_k) {
     k = INT_ARG(0);
   }
 
+  printf("Data type: %s\n", DataTypeUtils::asString(ArrayOptions::dataType(in)).c_str());
+
   REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
   for (int e = 0; e < 2; e++) {  // 2 element tuple at output

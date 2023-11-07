@@ -20,13 +20,15 @@
 //  @author raver119@gmail.com
 //
 #include <array/NDArrayFactory.h>
+#include <cusolverDn.h>
+#include <exceptions/cuda_exception.h>
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/top_k.h>
-#include <cusolverDn.h>
-#include <exceptions/cuda_exception.h>
-#include <execution/cuda/LaunchDims.h>
+
+#include "execution/Threads.h"
 
 namespace sd {
     namespace ops {
@@ -450,62 +452,75 @@ namespace sd {
                                   SD_INDEXING_TYPES);
 
             template <typename T>
-            static SD_DEVICE void swapRows(T *matrix, const sd::LongType *shape, sd::LongType theFirst, sd::LongType theSecond, sd::LongType n) {
-                if (theFirst != theSecond) {
-                    for (auto i = 0; i < n; i++) {
-                        sd::LongType theFirstPos[] = {theFirst, i};
-                        sd::LongType theSecondPos[] = {theSecond, i};
-                        auto theFirstIndex = shape::getOffset(shape, theFirstPos, 0);
-                        auto theSecondIndex = shape::getOffset(shape, theSecondPos, 0);
-                        math::sd_swap(matrix[theFirstIndex], matrix[theSecondIndex]);
+            static void swapRows_(NDArray* matrix, sd::LongType theFirst, sd::LongType theSecond) {
+                if (theFirst != theSecond)
+                    for (sd::LongType i = 0; i < matrix->columns(); i++) {
+                        math::sd_swap(matrix->r<T>(theFirst, i), matrix->r<T>(theSecond, i));
                     }
+            }
+            BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond), SD_FLOAT_TYPES);
+
+            template <typename T>
+            static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType theFirst, sd::LongType theSecond) {
+                if (theFirst != theSecond) {
+                    auto n = shape::sizeAt(matrixShape, static_cast<sd::LongType>(-1));
+
+                    auto loop = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i++) {
+                            sd::LongType theFirstPos[] = {theFirst, i};
+                            sd::LongType theSecondPos[] = {theSecond, i};
+                            auto theFirstIndex = shape::getOffset(matrixShape, theFirstPos, 0);
+                            auto theSecondIndex = shape::getOffset(matrixShape, theSecondPos, 0);
+                            math::sd_swap(matrixBuf[theFirstIndex], matrixBuf[theSecondIndex]);
+
+                        }
+                    };
+
+                    samediff::Threads::parallel_tad(loop, 0, n, 1);
                 }
+            }
 
-                __syncthreads();
-
-
+            void swapRows(NDArray* matrix, sd::LongType theFirst, sd::LongType theSecond) {
+                BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), SD_FLOAT_TYPES);
             }
 
 
 
             template <typename T>
-            static SD_DEVICE void processColumns(
-                    sd::LongType currentRow,
-                    sd::LongType rowNum,
-                    T *compoundBuf,
-                    const sd::LongType *compoundShape) {
-
-
+            void processColumns(sd::LongType currentRow, sd::LongType rowNum, T* compoundBuf, sd::LongType const* compoundShape) {
                 sd::LongType xDiag[] = {currentRow, currentRow};
                 auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
-                // Guard against zero division
-                for (auto j = currentRow + 1; j < rowNum; j++) {
-                    sd::LongType xRow[] = {j, currentRow};
-                    auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
+                auto loop = PRAGMA_THREADS_FOR {
+                    for (auto j = start; j < stop; j++) {
+                        sd::LongType xRow[] = {j, currentRow};
+                        auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
+                        compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
 
-                    compoundBuf[rowIndex] /= compoundBuf[diagIndex];
-
-                    for (auto k = currentRow + 1; k < rowNum; k++) {
-                        sd::LongType yRow[] = {j, k};
-                        sd::LongType yCol[] = {currentRow, k};
-                        auto rowIndexY = shape::getOffset(compoundShape, yRow, 0);
-                        auto colIndex = shape::getOffset(compoundShape, yCol, 0);
-                        compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
+                        for (sd::LongType k = currentRow + 1; k < rowNum; k++) {
+                            sd::LongType yRow[] = {j, k};
+                            sd::LongType yCol[] = {currentRow, k};
+                            auto rowIndexY = shape::getOffset(compoundShape, yRow, 0);
+                            auto colIndex = shape::getOffset(compoundShape, yCol, 0);
+                            compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
+                        }
                     }
-                }
-
+                };
+                samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
             }
 
-
-            template <typename T>
-            SD_DEVICE sd::LongType argmaxCol(sd::LongType column, T *compoundBuffer, const sd::LongType *compoundShape) {
-                auto rowNum = shape::sizeAt(compoundShape, 0);
+            template <typename T, typename I>
+            static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShape) {
+                auto rowNum = shape::sizeAt(compoundShape, static_cast<sd::LongType>(0));
+                sd::LongType xInitial[] = {column, column};
                 auto maxValue = T(0);
-                auto result = -1LL;
-
-                for (auto rowCounter = column; rowCounter < rowNum; rowCounter++) {
+                auto result = -1;
+                auto start = column;
+                auto stop = rowNum;
+                auto increment = 1;
+                for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
                     sd::LongType xPos[] = {rowCounter, column};
                     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
+
                     if (sd::math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
                         maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs(compoundBuffer[xIndex]));
                         result = rowCounter;
@@ -516,73 +531,94 @@ namespace sd {
             }
 
 
-            template <typename T, typename I>
-            static SD_KERNEL void luNN_(
-                T *outputBuf,
-                const sd::LongType *outputShape,
-                I *permutations,
-                const sd::LongType *permuShape,
-                const sd::LongType *outputTadShape,
-                const sd::LongType *outputTadOffsets,
-                const sd::LongType *permuTadShape,
-                const sd::LongType *permuTadOffsets,
-                sd::LongType batchNum) {
+            template <typename T>
+            static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType rowNum) {
+                auto input = compound->dup();
+                compound->nullify();
 
-              auto start = blockIdx.x * blockDim.x + threadIdx.x;
-              auto step = blockDim.x * gridDim.x;
+                // Decomposing matrix into Upper and Lower
+                // triangular matrix
+                for (auto i = 0; i < rowNum; i++) {
+                    // Upper Triangular
+                    for (auto k = i; k < rowNum; k++) {
+                        // Summation of L(i, j) * U(j, k)
+                        sd::LongType sum = 0;
+                        for (sd::LongType j = 0; j < i; j++) sum += compound->t<T>(i, j) * compound->t<T>(j, k);
 
-              for (auto b = start; b < batchNum; b += step) {
-                T *matrix = outputBuf + outputTadOffsets[b];
-                I *permutation = permutations + permuTadOffsets[b];
-                for (auto i = 0; i < batchNum - 1; i++) {
-                  auto pivotIndex = argmaxCol(i, matrix, outputTadShape);
-                  if (pivotIndex < 0) {
-                    continue;
-                  }
+                        // Evaluating U(i, k)
+                        compound->r<T>(i, k) = input.t<T>(i, k) - sum;
+                    }
 
-                  swapRows(matrix, outputTadShape,i, pivotIndex, batchNum);
-                  processColumns(i, batchNum, matrix, outputTadShape);
+                    // Lower Triangular
+                    for (sd::LongType k = i + 1; k < rowNum; k++) {
+                        // Summation of L(k, j) * U(j, i)
+                        sd::LongType sum = 0;
+                        for (sd::LongType j = 0; j < i; j++) sum += compound->t<T>(k, j) * compound->t<T>(j, i);
+
+                        // Evaluating L(k, i)
+                        compound->r<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i, i);
+                    }
                 }
-              }
             }
 
+            template <typename T, typename I>
+            static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutation, sd::LongType rowNum) {
+                NDArray::preparePrimaryUse({compound}, {permutation});
+                if (permutation) {  // LUP algorithm
+                    //TODO: note: this is the cpu implementation.
+                    //cuda has enough edge cases that this will need to be revisited.
+                    permutation->linspace(0);
+                    auto permutationBuf = permutation->bufferAsT<I>();
+                    auto compoundBuf = compound->bufferAsT<T>();
+                    auto compoundShape = compound->shapeInfo();
+                    auto permutationShape = permutation->shapeInfo();
+                    for (sd::LongType i = 0; i < rowNum - 1; i++) {
 
+                        auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
+                        if (pivotIndex < 0) {
+                            THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
+                        }
+
+                        math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
+                                      permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+
+
+                        swapRows(compoundBuf, compoundShape, i, pivotIndex);
+
+                        processColumns(i, rowNum, compoundBuf, compoundShape);
+                    }
+                } else {  // Doolitle algorithm with LU decomposition
+                    doolitleLU<T>(context, compound, rowNum);
+                }
+
+                NDArray::registerPrimaryUse({compound}, {permutation});
+
+            }
 
             template <typename T, typename I>
-            static void lu_(LaunchContext *context,
-                            NDArray *compound,
-                            NDArray *output,
-                            NDArray *permutationVectors) {
-                auto n = compound->sizeAt(-1);
-                auto stream = context->getCudaStream();
-                permutationVectors->linspace(0);
-                permutationVectors->syncToDevice();
-                output->assign(compound);
-                std::vector<sd::LongType> dims = {-2, -1};
-                std::vector<sd::LongType> lastDim = {-1};
-                auto tads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
-                auto permutationTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDim);
-                auto batchNum = compound->sizeAt(-1);
-                dim3 lupDims = getLupDims(batchNum);
-                luNN_<T, I><<<lupDims.x, lupDims.y, lupDims.z, *stream>>>(
-                        reinterpret_cast<T *>(output->platformBuffer()),
-                        output->specialShapeInfo(),
-                        reinterpret_cast<I *>(permutationVectors->platformBuffer()), permutationVectors->specialShapeInfo(),
-                        tads->specialShapeInfo(),
-                        tads->specialOffsets(),
-                        permutationTads->specialShapeInfo(),
-                        permutationTads->specialOffsets(), batchNum);
+            static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
 
+                NDArray::preparePrimaryUse({output}, {input, permutationVectors});
 
+                auto n = input->sizeAt(-1);
 
+                output->assign(input);  // fill up output tensor with zeros
+                ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
+                ResultSet permutations;
+                if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});
+                auto loop = PRAGMA_THREADS_FOR {
+                    for (auto i = start; i < stop; i++) {
+                        luNN_<T, I>(context, outputs.at(i), permutationVectors ? permutations.at(i) : nullptr, n);
+                    }
+                };
+                samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
+                NDArray::registerPrimaryUse({output}, {input, permutationVectors});
             }
 
             void lu(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutations) {
-                NDArray::prepareSpecialUse({output}, {input, permutations});
                 BUILD_DOUBLE_SELECTOR(input->dataType(), permutations->dataType(),
                                       lu_, (context, input, output, permutations),
                                       SD_FLOAT_NATIVE, SD_INDEXING_TYPES);
-                NDArray::registerSpecialUse({output}, {input, permutations});
             }
 // ------------------------------------------------------------------------------------------------------------------ //
             template <typename T>

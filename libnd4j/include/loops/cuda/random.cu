@@ -48,7 +48,6 @@ static SD_INLINE SD_DEVICE void randomTripleGeneric(sd::Pointer state, void cons
                                                                             zShapeBuffer, extraArguments);
 }
 
-#ifndef __CLION_IDE__
 // here we generate kernels for target operations
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float,
                        INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
@@ -105,7 +104,6 @@ DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16,
                        PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                        OPS_A(RANDOM_OPS))
 
-#endif
 
 namespace functions {
 namespace random {

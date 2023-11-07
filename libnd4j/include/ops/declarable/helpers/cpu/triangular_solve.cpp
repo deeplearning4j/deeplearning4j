@@ -50,6 +50,9 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
 
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
+  leftInput->printIndexedBuffer("Left input on lower solve");
+  rightInput->printIndexedBuffer("Right input on lower solve");
+  output->printIndexedBuffer("output before lowerTriangularSolve\n");
 
 
   for (sd::LongType r = 0; r < rows; r++) {
@@ -63,13 +66,19 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
         auto left_val = leftInput->t<T>(r, c);
         auto output_val = output->t<T>(c, j);
         sum -= left_val * output_val;
+        printf("lower triangular solve sum: %f row %lld col %lld \n", sum,r,c);
       }
+
+      printf("lower triangular solve sum: %f row %lld \n", sum,r);
 
       auto divisor = leftInput->t<T>(r, r);
       output->r<T>(r, j) = unitsOnDiag ? sum : sum / divisor;
 
     }
   }
+
+  output->printIndexedBuffer("output after lowerTriangularSolve\n");
+
 
 }
 
@@ -102,13 +111,10 @@ static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* left
         sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
       }
 
-      auto before_output = output->t<T>(r - 1, j);
-
       output->r<T>(r - 1, j) = unitsOnDiag ? sum : sum / leftInput->t<T>(r - 1, r - 1);
-
-      auto after_output = output->t<T>(r - 1, j);
     }
   }
+  output->printIndexedBuffer("output after upperTriangularSolve\n");
 
 }
 

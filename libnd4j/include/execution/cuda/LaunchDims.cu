@@ -359,7 +359,7 @@ dim3 getSoftmaxDims(int numTads) {
 
 dim3 getLupDims(int batchSize) {
   int threadsPerBlock = 128;
-  int blocksPerGrid = batchSize;
+  int blocksPerGrid = 1;
   int sharedMem = 256;
   threadsPerBlock = getEnvVariable("GRID_SIZE_LUP",threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_LUP",blocksPerGrid);

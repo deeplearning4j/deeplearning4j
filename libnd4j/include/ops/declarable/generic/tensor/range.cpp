@@ -270,8 +270,9 @@ DECLARE_SHAPE_FN(range) {
 
     if (limit == start) {
       // Return [0] to match TF
+      std::vector<sd::LongType> shape = {0};
       return SHAPELIST(
-          ConstantShapeHelper::getInstance().emptyShapeInfo(Environment::getInstance().defaultFloatDataType()));
+          ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(Environment::getInstance().defaultFloatDataType(),shape));
     }
 
     REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");

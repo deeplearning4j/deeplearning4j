@@ -12,6 +12,7 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
+
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -49,7 +50,6 @@ template <typename X, typename Z, typename OpClass>
 static SD_KERNEL void broadcastBoolSimple(const void const* x, const sd::LongType const* xShapeInfo,
                                           const void const* y, const sd::LongType const* yShapeInfo, void* z,
                                           const sd::LongType const* zShapeInfo, void* extraParams) {
-
   functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x, xShapeInfo, y, yShapeInfo, z,
                                                                              zShapeInfo, extraParams);
 }
@@ -90,6 +90,7 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(dim3 launchDims, cudaStr
                                                         const sd::LongType* xShapeInfo, const void* y,
                                                         const sd::LongType* yShapeInfo, void* z,
                                                         const sd::LongType* zShapeInfo, void* extraParams) {
+
 
 
   broadcastBoolSimple<X, Z, OpClass>
@@ -232,7 +233,6 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
-  printf("broadcast bool kernel invoke 1\n");
 
   // decompose in to several sub tads after
   // moving all dimensions (in sorted order)
@@ -293,7 +293,6 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
   const X* x = reinterpret_cast<const X*>(vx);
   const X* y = reinterpret_cast<const X*>(vy);
   Z* z = reinterpret_cast<Z*>(vz);
-
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
   __shared__ sd::LongType zLen;
@@ -314,20 +313,13 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
 
 
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
-    sd::LongType xCoords[SD_MAX_RANK];
-    sd::LongType yCoords[SD_MAX_RANK];
-    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType coords[SD_MAX_RANK];
+    shape::index2coords(i, zShapeInfo, coords);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
+    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
+    z[zOffset] = OpType::op(x[xOffset], y[yOffset],extraParams);
 
-
-    shape::index2coords(i,xShapeInfo,xCoords);
-    shape::index2coords(i,yShapeInfo,yCoords);
-    shape::index2coords(i,zShapeInfo,zCoords);
-
-
-    const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
-    const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
-    const auto yOffset =  shape::getOffset(yShapeInfo, yCoords);
-    z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }
 }
 

@@ -78,21 +78,24 @@ DECLARE_SYN(Cast, cast);
 DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
-    printf("Casting to new type: %s\n",
-           DataTypeUtils::asString(static_cast<sd::DataType>(D_ARG(0))).c_str());
-    DataType newType = block.dataType(0);
+    DataType newType = D_ARG(0);
     auto desc = new ShapeDescriptor(inShape, newType);
     if(desc->dataType() != newType) {
-      THROW_EXCEPTION("New data type is not reflected in the created descriptor");
+      std::string errorMessage;
+      errorMessage += "New data type is not reflected in the created descriptor: ";
+      errorMessage += DataTypeUtils::asString(desc->dataType());
+      errorMessage += " != ";
+      errorMessage += DataTypeUtils::asString(newType);
+      errorMessage += " for input shape info: ";
+      errorMessage += ShapeUtils::shapeAsString(inShape);
+      THROW_EXCEPTION(errorMessage.c_str());
     }
-    desc->print();
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     REQUIRE_TRUE(desc->dataType() == ArrayOptions::dataType(ret->at(0)),0,"Data types for cast did not equal!");
     delete desc;
     return ret;
 
   } else {
-    printf("int arguments\n");
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
     auto desc = new ShapeDescriptor(inShape, newType);

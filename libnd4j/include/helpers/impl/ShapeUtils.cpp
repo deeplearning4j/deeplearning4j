@@ -232,7 +232,7 @@ const sd::LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vecto
       ArrayOptions::setDataType(newShapeInfo, dataType);
 
       ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, dataType);
-     // RELEASE(newShapeInfo, workspace);
+      // RELEASE(newShapeInfo, workspace);
       auto ret =  ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       delete descriptor;
       return ret;
@@ -352,7 +352,7 @@ std::vector<sd::LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
 LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, const LongType rank, const NDArray& arr,
-                                                  sd::memory::Workspace* workspace, const bool setContigStrides) {
+                                        sd::memory::Workspace* workspace, const bool setContigStrides) {
 
   if (rank != arr.rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
@@ -984,17 +984,20 @@ std::vector<sd::LongType> ShapeUtils::evalShapeForMatmul(const sd::LongType* xSh
   }
 
   if (x1Dim != y0Dim) {
-    sd_printf("ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xDim %i != yDim %i \n",
-              x1Dim, y0Dim);
-    THROW_EXCEPTION("");
+    std::string errorMessage;
+    errorMessage += "ShapeUtils::evalShapeForMatmul static method: the dimensions of arrays are inconsistent: ";
+    errorMessage += "xShape = " + ShapeUtils::shapeAsString(xShapeInfo) + ", ";
+    errorMessage += "yShape = " + ShapeUtils::shapeAsString(yShapeInfo) + " ! \n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   for (sd::LongType i = 0; i < xRank - 2; ++i)
     if (xShapeInfo[i + 1] != yShapeInfo[i + 1]) {
-      sd_printf(
-          "ShapeUtils::evalShapeForMatmul static method: input shapes are inconsistent: xShape = %s, yShape = %s ! \n",
-          ShapeUtils::shapeAsString(xShapeInfo).c_str(), ShapeUtils::shapeAsString(yShapeInfo).c_str());
-      THROW_EXCEPTION("");
+      std::string errorMessage;
+        errorMessage += "ShapeUtils::evalShapeForMatmul static method: the dimensions of arrays are inconsistent: ";
+        errorMessage += "xShape = " + ShapeUtils::shapeAsString(xShapeInfo) + ", ";
+        errorMessage += "yShape = " + ShapeUtils::shapeAsString(yShapeInfo) + " ! \n";
+        THROW_EXCEPTION(errorMessage.c_str());
     }
 
   std::vector<sd::LongType> cShape(xRank);

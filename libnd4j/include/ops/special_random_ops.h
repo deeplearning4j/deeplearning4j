@@ -36,7 +36,7 @@ class Choice {
  public:
   method_idx method_X method_XY
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -51,6 +51,7 @@ class Choice {
     // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities,
     // i.e. should sum to 1.0
     // T probSum = extraArguments[0];
+    printf("normal random specialOpCuda 5\n");
 
     __shared__ sd::LongType xLength;
     __shared__ sd::LongType yLength;
@@ -204,14 +205,14 @@ class Choice {
 
 //////////////////////////////////////////////////////////////////////
 /**
- * This Op produces random values within specified boundaries. Distribuion is Gaussian
+ * This Op produces random values within specified boundaries. Distribution is Gaussian
  */
 template <typename T>
 class GaussianDistribution {
  public:
   method_XY method_X method_idx
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -219,6 +220,7 @@ class GaussianDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     __shared__ T epsilon;
     __shared__ T two_pi;
+    __shared__ sd::LongType middle;
 
     __shared__ sd::LongType zLength;
     __shared__ sd::LongType zEWS;
@@ -244,6 +246,7 @@ class GaussianDistribution {
       tZ = reinterpret_cast<T *>(shmem + sizeof(sd::graph::RandomGenerator));
 
       zLength = shape::length(zShapeBuffer);
+      middle = (zLength % 2) == 0 ? (zLength / 2) : (zLength / 2) + 1;
       zEWS = shape::elementWiseStride(zShapeBuffer);
       yEWS = shape::elementWiseStride(yShapeBuffer);
 
@@ -254,36 +257,44 @@ class GaussianDistribution {
       stddev = extraArguments[1];
 
       step = (blockDim.x * gridDim.x);
+
     }
     __syncthreads();
 
     // using this loop instead of memcpy
-    for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e += blockDim.x) cB[e] = dB[e];
+    for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e += blockDim.x) {
+        cB[e] = dB[e];
+    }
 
     __syncthreads();
 
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    sd::LongType tid = static_cast<sd::LongType>(blockIdx.x * blockDim.x + threadIdx.x);
 
-    int middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
-    T t(-2.0f);
-
-    for (int e = tid; e < middle; e += step) {
+     T t(-2.0f);
+if(tid < middle)
+    for (sd::LongType e = tid; e < middle; e += step) {
       auto epm = e + middle;
+      printf("epm + middle %lld\n",epm + middle);
       // we need to get random values
       T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
       T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
       T realMean0 = y == z ? mean : y[e * yEWS];
-
+      printf("before z[%d] = %f\n",e,z[e * zEWS]);
       z[e * zEWS] =
           (sd::math::sd_sqrt<T, T>(t * sd::math::sd_log<T, T>(r0)) * sd::math::sd_cos<T, T>(two_pi * r1)) * stddev +
           realMean0;
+      printf("after z[%d] = %f\n",e,z[e * zEWS]);
 
       if (epm < zLength) {
+        printf("epm before z[%d] = %f\n",epm,z[epm * zEWS]);
+
         T realMean1 = y == z ? mean : y[epm * yEWS];
         z[epm * zEWS] =
             (sd::math::sd_sqrt<T, T>(t * sd::math::sd_log<T, T>(r0)) * sd::math::sd_sin<T, T>(two_pi * r1)) * stddev +
             realMean1;
+        printf("epm after  z[%d] = %f\n",epm,z[epm * zEWS]);
+
       }
     }
   }
@@ -309,7 +320,6 @@ class GaussianDistribution {
     // we're enforcing even chunks, since it's mandatory for this algorithm
     span -= span % 2;
 
-    // sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     const T mean = extraArguments[0];
     const T stddev = extraArguments[1];
@@ -328,7 +338,7 @@ class GaussianDistribution {
 
         auto z0 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                    sd::math::sd_cos<T, T>(two_pi * r1)) *
-                      stddev +
+                  stddev +
                   realMean0;
         z[e * zEWS] = z0;
 
@@ -336,7 +346,7 @@ class GaussianDistribution {
           T realMean1 = y == z ? mean : y[epm * yEWS];
           auto z1 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                      sd::math::sd_sin<T, T>(two_pi * r1)) *
-                        stddev +
+                    stddev +
                     realMean1;
           z[epm * zEWS] = z1;
         }
@@ -349,14 +359,14 @@ class GaussianDistribution {
 
 //////////////////////////////////////////////////////////////////////
 /**
- * This Op produces random values within [0..N], Distribuion is binomial
+ * This Op produces random values within [0..N], Distribution is binomial
  */
 template <typename T>
 class BinomialDistribution {
  public:
   method_XY method_X method_idx
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -364,10 +374,11 @@ class BinomialDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     int trials = (int)extraArguments[0];
     T prob = extraArguments[1];
-
+    printf("normal random specialOpCuda\n");
     __shared__ sd::LongType zLength;
     __shared__ int yEWS;
     __shared__ int zEWS;
+    printf("normal random specialOpCuda 7\n");
 
     __shared__ sd::graph::RandomGenerator *rng;
     __shared__ unsigned char *cB;
@@ -458,7 +469,7 @@ class BinomialDistributionEx {
  public:
   method_XY method_X method_idx
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -466,6 +477,7 @@ class BinomialDistributionEx {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     int trials = (int)extraArguments[0];
     T prob = extraArguments[1];
+    printf("normal random specialOpCuda 2\n");
 
     __shared__ sd::LongType zLength;
     __shared__ int yEWS;
@@ -570,14 +582,14 @@ class TruncatedNormalDistribution {
 
     auto z0 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                sd::math::sd_cos<T, T>(two_pi * r1)) *
-                  stddev +
+              stddev +
               realMean0;
     z = z0;
     if (epm < middle) {
       T realMean1 = mean;
       auto z1 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                  sd::math::sd_sin<T, T>(two_pi * r1)) *
-                    stddev +
+                stddev +
                 realMean1;
       z = z1;
     }
@@ -587,7 +599,7 @@ class TruncatedNormalDistribution {
  public:
   method_XY method_X method_idx
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -595,6 +607,7 @@ class TruncatedNormalDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     __shared__ T epsilon;
     __shared__ T two_pi;
+    printf("normal random specialOpCuda 3\n");
 
     __shared__ sd::LongType zLength;
     __shared__ sd::LongType zEWS;
@@ -695,7 +708,7 @@ class LogNormalDistribution {
  public:
   method_XY method_X method_idx
 
-      static const bool requiresSpecial = true;
+  static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -703,6 +716,7 @@ class LogNormalDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     __shared__ T epsilon;
     __shared__ T two_pi;
+    printf("normal random specialOpCuda 4\n");
 
     __shared__ sd::LongType zLength;
     __shared__ sd::LongType zEWS;
@@ -818,7 +832,7 @@ class LogNormalDistribution {
         z[e * zEWS] =
             sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                     sd::math::sd_cos<T, T>(two_pi * r1)) *
-                                       stddev +
+                                   stddev +
                                    realMean);
 
         if (epm < zLength) {
@@ -826,7 +840,7 @@ class LogNormalDistribution {
           z[epm * zEWS] =
               sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                       sd::math::sd_sin<T, T>(two_pi * r1)) *
-                                         stddev +
+                                     stddev +
                                      realMean);
         }
       }

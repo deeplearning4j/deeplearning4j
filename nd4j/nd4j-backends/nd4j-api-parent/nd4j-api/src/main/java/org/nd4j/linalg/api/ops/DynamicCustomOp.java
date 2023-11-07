@@ -377,10 +377,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             //not yet computed
                             long[] shape = longShapeDescriptors.get(i).getShape();
 
-                            DataType defaultType = DataType.FLOAT;
-                            if(outputVariables[i].dataType() != null) {
-                                defaultType = outputVariables[i].dataType();
-                            }
+                            DataType defaultType = longShapeDescriptors.get(i).dataType();
 
                             INDArray arr = longShapeDescriptors.get(i).isEmpty() ? Nd4j.create(longShapeDescriptors.get(i)) : Nd4j.create(defaultType,shape);
                             addOutputArgument(arr);

@@ -24,6 +24,8 @@
 #include <helpers/ShapeBuilders.h>
 #include <helpers/shape.h>
 
+#include "helpers/ShapeUtils.h"
+
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
@@ -273,10 +275,8 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
     _shape_strides[1] = 0;
   }
 
-  _dataType = ArrayOptions::dataTypeValue(_extraProperties);
-  if(!DataTypeUtils::validDataType(_dataType)) {
-    THROW_EXCEPTION("Shape descriptor created with invalid data type");
-  }
+  _dataType = ArrayOptions::dataType(shapeInfo);
+
 
 }
 
@@ -284,6 +284,7 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
+  printf("Data type override is %s\n", DataTypeUtils::asString(dtypeOverride).c_str());
   _dataType = dtypeOverride;
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
@@ -292,6 +293,10 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataTy
   //to reflect the new data type. This is effectively a cast.
   _extraProperties = ArrayOptions::propertyWithoutDataTypeValue(_extraProperties);
   _extraProperties = ArrayOptions::setDataTypeValue(_extraProperties, dtypeOverride);
+  printf("shape descriptor data type override creation: %s extra properties data type %s\n",
+         DataTypeUtils::asString(dtypeOverride).c_str(),
+         DataTypeUtils::asString(ArrayOptions::dataTypeValue(_extraProperties)).c_str());
+
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }

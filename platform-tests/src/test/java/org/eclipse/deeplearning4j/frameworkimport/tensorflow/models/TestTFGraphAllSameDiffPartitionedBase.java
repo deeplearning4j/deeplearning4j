@@ -45,10 +45,28 @@ public abstract class TestTFGraphAllSameDiffPartitionedBase {
     public static final int TESTS_PER_PARTITION = 50;
 
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "linear_solve/float32_rank2"
     );
 
-    public static final String[] IGNORE_REGEXES = new String[]{
+    public static final String[] IGNORE_REGEXES = new String[] {
+            //inputs don't even run with tf-java
+            "simplewhile_0",
+            "simplewhile_1",
+            "simplewhile_0_alt",
+            "simpleif_0",
+            "simple_while",
+            "simpleif_0_alt",
+            "simplewhile_nested",
+            "simple_cond",
+            //doesn't execute in tf java or nd4j, ignoring
+           "ragged/identity/2d",
+            "ragged/add/2d",
+           //same as below: when running in tf java, the results are actually equal. The python execution saved results look to be wrong.
+            "norm_tests/norm_7",
+            //when running in tf java, the results are actually equal. The python execution saved results look to be wrong.
+            "non2d_0",
+            //invalid graph: tries to multiply 2 invalid shapes
+            "non2d_1",
+            "non2d_0A",
             //tf-java contradicts the results that we load from python. Ignoring.
             "fused_batch_norm/float32_nhwc",
             "fused_batch_norm/float32_nhcw",

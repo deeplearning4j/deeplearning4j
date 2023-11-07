@@ -3685,7 +3685,6 @@ public class SameDiff extends SDBaseOps {
         if (variables.containsKey(name) && variables.get(name).getVariable().getArr() != null)
             throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
 
-        Preconditions.checkArgument(!arr.isEmpty(), "Empty arrays cannot be used when creating variables. Array shape: %ndShape", arr);
 
         if (name == null || name.length() < 1)
             name = getNewVarName();

@@ -72,7 +72,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext* lc, int opNum
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseTransform:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   if (xType != zType && yType != zType)
@@ -114,7 +114,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext* lc, int o
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseBoolTransform:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   if (!DataTypeUtils::isB(zType))
@@ -149,7 +149,7 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext* lc, int op
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execPairwiseIntTransform:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   if (!DataTypeUtils::isZ(zType))
@@ -184,7 +184,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType)  || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execSummaryStatsScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
@@ -210,7 +210,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, int opNum, vo
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
   if (!DataTypeUtils::isB(zType))
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
@@ -267,7 +267,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execInverseBroadcastBool:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
   if (!DataTypeUtils::isB(zType))
     THROW_EXCEPTION("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
@@ -443,7 +443,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execBroadcast:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   dim3 launchDims = getLaunchDims("broadcast");
@@ -474,7 +474,7 @@ void NativeOpExecutioner::execInverseBroadcast(
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
-    THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
+    THROW_EXCEPTION("NativeOpExecutioner::execInverseBroadcast:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
   }
 
   dim3 launchDims = getLaunchDims("broadcast");
@@ -1318,7 +1318,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-  printf("About to setup scalar transform for input type %s and output type %s\n", DataTypeUtils::asString(xType).c_str(), DataTypeUtils::asString(zType).c_str());
 
   if(DataTypeUtils::isS(xType) || DataTypeUtils::isS(yType) || DataTypeUtils::isS(zType)) {
     THROW_EXCEPTION("NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op for the string data type.")
@@ -1358,6 +1357,19 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
                                   dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES, SD_COMMON_TYPES);
 #else
+
+  if (xType != yType || xType != zType) {
+    std::string errorMessage;
+    errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
+    errorMessage += "X data type: ";
+    errorMessage += sd::DataTypeUtils::asString(xType);
+    errorMessage += ", Y data type: ";
+    errorMessage += sd::DataTypeUtils::asString(yType);
+    errorMessage += ", Z data type: ";
+    errorMessage += sd::DataTypeUtils::asString(zType);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
 
   if(DataTypeUtils::isS(xType)) {
     BUILD_SINGLE_SELECTOR_THRICE(

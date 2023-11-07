@@ -39,9 +39,9 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)
     return sd::Status::KERNEL_FAILURE;
-  else if (tZ != z)
-    THROW_EXCEPTION("add: result was replaced");
-
+  else if (tZ != z && !tZ->isEmpty()) {
+    OVERWRITE_RESULT(tZ);
+  }
   return sd::Status::OK;
 }
 

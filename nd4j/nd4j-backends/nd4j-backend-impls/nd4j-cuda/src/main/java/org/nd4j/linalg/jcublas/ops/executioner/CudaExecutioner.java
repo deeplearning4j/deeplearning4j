@@ -1826,13 +1826,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return result;
     }
 
-    /**
-     * This method executes given CustomOp
-     *
-     * PLEASE NOTE: You're responsible for input/output validation
-     * PLEASE NOTE: right now this operations are executing on CPU
-     * @param op
-     */
+
     @Override
     public INDArray[] exec(CustomOp op) {
 

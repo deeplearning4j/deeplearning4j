@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
 DECLARE_SHAPE_FN(randomuniform) {
   auto in = INPUT_VARIABLE(0);
   auto shape = in->template asVectorT<sd::LongType>();
-  auto dtype = DataType::FLOAT32;
+  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : DataType::FLOAT32;
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)

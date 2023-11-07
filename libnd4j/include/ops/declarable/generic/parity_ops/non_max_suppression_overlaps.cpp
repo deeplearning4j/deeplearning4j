@@ -61,6 +61,7 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
+  auto in = inputShape->at(0);
 
   int maxOutputSize;
   if (block.width() > 2)
@@ -78,6 +79,11 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
                                         overlapThreshold, scoreThreshold, nullptr);
   if (boxSize < maxOutputSize) {
     maxOutputSize = boxSize;
+  }
+
+  if(shape::isEmpty(in)) {
+    std::vector<sd::LongType> shape = {maxOutputSize};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }
 
   auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT64);

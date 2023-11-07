@@ -727,8 +727,8 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD", 1024)
 
 
-#define GRID_SIZE_SOLVE getEnvVariable("GRID_SIZE_SOLVE", 128)
-#define BLOCK_SIZE_SOLVE getEnvVariable("BLOCK_SIZE_SOLVE", 256)
+#define GRID_SIZE_SOLVE getEnvVariable("GRID_SIZE_SOLVE", 100)
+#define BLOCK_SIZE_SOLVE getEnvVariable("BLOCK_SIZE_SOLVE", 1)
 #define SHARED_MEM_SIZE_SOLVE getEnvVariable("SHARED_MEM_SIZE_SOLVE", 256)
 
 #define GRID_SIZE_LUP getEnvVariable("GRID_SIZE_LUP", 128)

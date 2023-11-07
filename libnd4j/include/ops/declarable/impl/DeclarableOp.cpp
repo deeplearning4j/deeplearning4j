@@ -958,13 +958,13 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
   block.pushNDArrayToVariableSpace(block.nodeId(), outputIdx, array);
   auto varSpace = block.getVariableSpace();
-  if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
+  if (varSpace != nullptr && varSpace->hasVariable(block.getNodeId(), outputIdx)) {
     auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
     if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
     var->setNDArray(array);
     var->markRemovable(true);
-  } else {
+  } else if(varSpace != nullptr) {
     auto var = new Variable(array, nullptr, block.getNodeId(), outputIdx);
     varSpace->putVariable(block.getNodeId(), outputIdx, var);
   }

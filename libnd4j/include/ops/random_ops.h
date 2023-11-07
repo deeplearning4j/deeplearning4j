@@ -50,7 +50,7 @@
 #define no_exec_special_cuda                                                                                     \
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer, \
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,              \
-                                                sd::LongType const *zShapeBuffer, T *extraArguments) {}
+                                                sd::LongType const *zShapeBuffer, T *extraArguments) { printf("No special op for this method\n"); }
 #else
 #define no_exec_special_cuda
 #endif
