@@ -209,7 +209,7 @@ void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArra
 }
 BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_,
                       (LaunchContext * context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
-                       NDArray* output),
+                          NDArray* output),
                       SD_FLOAT_NATIVE);
 
 /*
@@ -234,7 +234,7 @@ static SD_KERNEL void fillPoissonKernel(T* uList, sd::LongType uLength, T* lambd
   }
   __syncthreads();
 
-  for (auto k = blockIdx.x; k < (int)uLength; k += gridDim.x) {
+  for (auto k = blockIdx.x; k < uLength; k += gridDim.x) {
     auto pos = k * step;
     auto u = uList[k];
     for (auto e = threadIdx.x; e < step; e += blockDim.x) {
@@ -256,14 +256,26 @@ static SD_KERNEL void fillPoissonKernel(T* uList, sd::LongType uLength, T* lambd
 template <typename T>
 static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
   auto shift = output->lengthOf() / lambda->lengthOf();
-  NDArray uniform('c', {shift}, output->dataType());
+  NDArray uniform('c', {shift}, DataType::DOUBLE);
+  PointersManager manager(context, "fillRandomPoisson");
   auto stream = context->getCudaStream();
   // fill up uniform with given length
+  NDArray tempOutput = output->cast(DataType::DOUBLE);
   RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
+
+  NDArray tempLambda = lambda->cast(DataType::DOUBLE);
+  NDArray::prepareSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
+
   dim3 launchDims = getLaunchDims("random_poisson");
   fillPoissonKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(uniform.dataBuffer()->specialAsT<T>(), uniform.lengthOf(),
-                                                   lambda->dataBuffer()->specialAsT<T>(), lambda->specialShapeInfo(),
-                                                   output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
+                                                                              tempLambda.dataBuffer()->specialAsT<T>(), tempLambda.specialShapeInfo(),
+                                                                              tempOutput.dataBuffer()->specialAsT<T>(), tempOutput.specialShapeInfo());
+
+
+  output->assign(tempOutput.cast(output->dataType()));
+  NDArray::registerSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
+
+  manager.synchronize();
 }
 
 void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
@@ -434,8 +446,8 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
   NDArray::prepareSpecialUse({&output}, {&input});
   BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), fillMultiNomialCudaLauncher,
                         (blocksPerGrid, threadsPerBlock, context->getCudaStream(), devRng, input.specialBuffer(),
-                         input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), batchValue,
-                         numOfSamples, numOfClassX, dimA),
+                            input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), batchValue,
+                            numOfSamples, numOfClassX, dimA),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   NDArray::registerSpecialUse({&output}, {&input});
   manager.synchronize();

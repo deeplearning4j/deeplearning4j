@@ -102,7 +102,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-      PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         z[offset] = OpType::op(x[offset], y[0], extraParams);

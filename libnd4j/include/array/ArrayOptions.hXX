@@ -260,8 +260,6 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
     }
   } else {
     for (size_t i = 0; i < numTypes; ++i) {
-      auto testFlagAccess = dataTypeFlags[i];
-      fflush(stdout);
       if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
         return dataTypes[i];
       }
@@ -468,51 +466,67 @@ SD_HOST LongType ArrayOptions::flagForDataType(const sd::DataType dataType) {
 SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataType dataType) {
   switch (dataType) {
     case sd::DataType::BOOL:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_BOOL);
       break;
     case sd::DataType::HALF:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_HALF);
       break;
     case sd::DataType::BFLOAT16:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_BHALF);
       break;
     case sd::DataType::FLOAT32:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_FLOAT);
       break;
     case sd::DataType::DOUBLE:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_DOUBLE);
       break;
     case sd::DataType::INT8:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_CHAR);
       break;
     case sd::DataType::INT16:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_SHORT);
       break;
     case sd::DataType::INT32:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_INT);
       break;
     case sd::DataType::INT64:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_LONG);
       break;
     case sd::DataType::UINT8:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_CHAR | ARRAY_UNSIGNED);
       break;
     case sd::DataType::UINT16:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_SHORT | ARRAY_UNSIGNED);
       break;
     case sd::DataType::UINT32:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_INT | ARRAY_UNSIGNED);
       break;
     case sd::DataType::UINT64:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_LONG | ARRAY_UNSIGNED);
       break;
     case sd::DataType::UTF8:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_UTF8);
       break;
     case sd::DataType::UTF16:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_UTF16);
       break;
     case sd::DataType::UTF32:
+      ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_UTF32);
       break;
     default:
@@ -524,7 +538,24 @@ SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataTy
 #else
       printf("Can't set unknown data type");
 #endif
+
+
   }
+
+#ifndef __CUDA_ARCH__
+  if(ArrayOptions::dataType(shapeInfo) != dataType) {
+    std::string errorMessage;
+    errorMessage += "setDataType:  Data type set was not correct one. Expected ";
+    errorMessage += DataTypeUtils::asString(dataType);
+    errorMessage += " but got ";
+    errorMessage += DataTypeUtils::asString(dataType);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+#else
+  printf("setDataType: Data type set was incorrect.");
+#endif
+
 }
 
 SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {

@@ -181,7 +181,8 @@ sd::LongType* ShapeBuilders::copyShapeInfo(const sd::LongType* inShapeInfo, cons
 sd::LongType* ShapeBuilders::copyShapeInfoAndType(const sd::LongType* inShapeInfo, const DataType dtype,
                                                   const bool copyStrides, memory::Workspace* workspace) {
   sd::LongType* outShapeInfo = ShapeBuilders::copyShapeInfo(inShapeInfo, copyStrides, workspace);
-
+  ArrayOptions::setExtra(outShapeInfo, ArrayOptions::propertyWithoutDataTypeValue(ArrayOptions::extra(inShapeInfo)));  // set extra value to 0 (like in DataTypeEx::TypeEx
+  ArrayOptions::setDataType(outShapeInfo, dtype);
   return outShapeInfo;
 }
 

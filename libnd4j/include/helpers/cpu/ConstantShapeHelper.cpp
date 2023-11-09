@@ -72,16 +72,29 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::DataType 
   return ret;
 }
 
-ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *descriptor) {
-  int deviceId = 0;
+ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(LongType* buffer, ShapeDescriptor* descriptor) {
+  int deviceId = AffinityManager::currentDeviceId();
+
   std::lock_guard<std::mutex> lock(_mutex);
-  if(_cache.empty()) {
-    THROW_EXCEPTION("Cache is empty!");
+
+  if(descriptor == nullptr)
+    descriptor = new ShapeDescriptor(buffer);
+
+  if(descriptor->dataType() == sd::DataType::UNKNOWN) {
+    THROW_EXCEPTION("Unable to create array with unknown data type.");
+  }
+
+  if(buffer == nullptr) {
+    THROW_EXCEPTION("Unable to create and store a shape buffer with null buffer.");
+  }
+
+
+  if(ArrayOptions::dataType(buffer) == sd::DataType::UNKNOWN) {
+    THROW_EXCEPTION("Unable to create and store a shape buffer with unknown data type.");
   }
 
 
   if (_cache[deviceId].count(*descriptor) == 0) {
-
     auto hPtr =
         std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
@@ -91,6 +104,13 @@ ConstantShapeBuffer * ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *d
     return _cache[deviceId].at(*descriptor);
   }
 }
+
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *descriptor) {
+  return storeAndWrapBuffer(descriptor->toShapeInfo(), descriptor);
+}
+
+
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
   auto descriptor = new ShapeDescriptor(shapeInfo);
@@ -171,6 +191,8 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  printf("Shape descriptor creating from existing creating from:\n");
+  descriptor->print();
   auto result = createShapeInfo(descriptor);
 
   //RELEASE(shapeInfo, workspace);

@@ -84,6 +84,8 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const sd
                                  const sd::LongType *strides, const LongType rank, sd::LongType extras = -1) {
   if(shape == nullptr)
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape can not be null!");
+  if(type  == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
 
   //note this used to operate directly on the vector buffer
   //it now does manual copies with more checks.
@@ -274,8 +276,10 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
     _shape_strides[0] = 0;
     _shape_strides[1] = 0;
   }
-
+  _order = shape::order(shapeInfo);
   _dataType = ArrayOptions::dataType(shapeInfo);
+  if(_dataType  == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
 
 
 }
@@ -284,7 +288,8 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
 
 ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride)
     : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
-  printf("Data type override is %s\n", DataTypeUtils::asString(dtypeOverride).c_str());
+  if(dtypeOverride == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
   _dataType = dtypeOverride;
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
@@ -441,7 +446,10 @@ char ShapeDescriptor::order() const { return _order; }
 
 DataType ShapeDescriptor::dataType() const {
   if(!DataTypeUtils::validDataType(_dataType)) {
-    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+    std::string errorMessage;
+    errorMessage += "Shape descriptor created with invalid data type";
+    errorMessage += DataTypeUtils::asString(_dataType);
+    THROW_EXCEPTION(errorMessage.c_str());
   }
   return _dataType;
 }
@@ -459,6 +467,8 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
   _rank = other._rank;
   _ews = other._ews;
   _extraProperties = other._extraProperties;
+  if(other._dataType == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
   _dataType = other._dataType;
   _order = other._order;
   _shape_strides = other._shape_strides;
@@ -490,6 +500,8 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 
 ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
+  if(type == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
   descriptor->_dataType = type;
   descriptor->_extraProperties = ARRAY_EMPTY | ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
@@ -501,6 +513,8 @@ ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
 
 ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
+  if(type  == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
   descriptor->_dataType = type;
   descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
@@ -512,6 +526,9 @@ ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
 
 ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const sd::LongType length, const DataType type) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
+  if(type  == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+
   descriptor->_dataType = type;
   descriptor->_shape_strides = {length, 0};
 
@@ -537,6 +554,9 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
                                                            const std::vector<sd::LongType> &shape,
                                                            const std::vector<sd::LongType> &paddings) {
   ShapeDescriptor *descriptor = new ShapeDescriptor();
+  if(type  == DataType::UNKNOWN)
+    THROW_EXCEPTION("Shape descriptor created with invalid data type");
+
   descriptor->_dataType = type;
   descriptor->_order = order;
   descriptor->_rank = shape.size();

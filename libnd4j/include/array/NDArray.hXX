@@ -5715,6 +5715,8 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                             const bool isStrided) const {
+  printf("Array operator 1: ()]\n");
+  fflush(stdout);
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
   sd::LongType numOfUntiesInSubArrShape = 0;
@@ -5738,13 +5740,19 @@ NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool kee
            sd::LongType);
 
   sd::LongType offset = -1;
-
+  auto inOrder = shape::order(shapeInfo());
+  if(inOrder != 'c' && inOrder != 'f')
+    THROW_EXCEPTION("Invalid in order for deriving order for view!");
+  printf("Array operator: ()] calc sub arr shape info and offset\n");
+  fflush(stdout);
   shape::calcSubArrShapeInfoAndOffset(idx.data(), shapeInfo(), subArrShapeInfo, offset, keepUnitiesInShape, isStrided,
                                       numOfUntiesInSubArrShape);
 
   auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
   NDArray result(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + bufferOffset());
   result._isView = true;
+  ShapeDescriptor descriptor(newShapeInfo);
+  descriptor.validate();
 
   return result;
 }
@@ -5754,6 +5762,7 @@ NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::
                             bool keepUnitiesInShape) const {
   std::vector<sd::LongType> idxRanges(2 * rankOf());
 
+  printf("operator() 2\n");
   const sd::LongType rank = rankOf();
   const sd::LongType subArrRank = static_cast<sd::LongType>(dimsToExclude.size());
 
@@ -5785,6 +5794,7 @@ NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::
 void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, sd::LongType *&subArrShapeInfo,
                                        sd::LongType *&subArrOffsets, bool keepUnitiesInShape) const {
   if (isEmpty()) THROW_EXCEPTION("NDArray::getSubArrShapeAndOffsets: array is empty !");
+  printf("getSubArrShapeAndOffsets arr sub shape info and offsets\n");
 
   const sd::LongType rank = rankOf();
   const sd::LongType subArrRank =

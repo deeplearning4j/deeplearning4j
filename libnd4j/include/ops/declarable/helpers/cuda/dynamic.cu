@@ -313,7 +313,6 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
       for (sd::LongType  i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
-      shape::printShapeInfo(packX->primaryShapeInfo());
       indicesBuffers[e] = indices[e]->specialBuffer();
       indicesShapes[e] = indices[e]->specialShapeInfo();
       inputsNumTads[e] = packX->numberOfTads();

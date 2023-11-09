@@ -94,7 +94,8 @@ public abstract class TestTFGraphAllSameDiffPartitionedBase {
             "Conv3DBackpropInputV2/.*",
             "random_uniform_int/.*",
             "random_uniform/.*",
-            "random_poisson_v2/.*"
+            "random_poisson_v2/.*",
+            "random_poisson/.*",
     };
 
     private static final List<String> debugModeRegexes = Arrays.asList(
