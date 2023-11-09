@@ -55,7 +55,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
 #ifndef __JAVACPP_HACK__
   ShapeDescriptor(const DataType type, const char order, const std::vector<sd::LongType> &shape, LongType extras);
   ShapeDescriptor(const ShapeDescriptor &other);
-  ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype = true);
+  ShapeDescriptor(const sd::LongType *shapeInfo, bool validateDataType = true);
   explicit ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataType dtypeOverride);
   explicit ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride);
   explicit ShapeDescriptor(const sd::LongType *shapeInfo, const sd::LongType *dtypeOverride,

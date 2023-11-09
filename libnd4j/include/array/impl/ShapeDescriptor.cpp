@@ -180,7 +180,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const sd::LongType length)
   }
 }
 
-ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtype) {
+ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool validateDataType) {
   if(shapeInfo == nullptr) {
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape info cannot be null!");
   }
@@ -278,9 +278,14 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, bool inheritDtyp
   }
   _order = shape::order(shapeInfo);
   _dataType = ArrayOptions::dataType(shapeInfo);
-  if(_dataType  == DataType::UNKNOWN)
-    THROW_EXCEPTION("Shape descriptor created with invalid data type");
-
+  if(validateDataType && _dataType  == DataType::UNKNOWN) {
+    std::string errorMessage;
+    errorMessage += "Shape descriptor created with invalid data type ";
+    errorMessage += DataTypeUtils::asString(_dataType);
+    errorMessage += " extra properties for data type was ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataTypeValue(_extraProperties));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
 }
 
@@ -298,9 +303,6 @@ ShapeDescriptor::ShapeDescriptor(const sd::LongType *shapeInfo, const sd::DataTy
   //to reflect the new data type. This is effectively a cast.
   _extraProperties = ArrayOptions::propertyWithoutDataTypeValue(_extraProperties);
   _extraProperties = ArrayOptions::setDataTypeValue(_extraProperties, dtypeOverride);
-  printf("shape descriptor data type override creation: %s extra properties data type %s\n",
-         DataTypeUtils::asString(dtypeOverride).c_str(),
-         DataTypeUtils::asString(ArrayOptions::dataTypeValue(_extraProperties)).c_str());
 
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
