@@ -20,9 +20,10 @@
 // Created by GS <sgazeos@gmail.com> on 4/6/2018.
 //
 #include <array/ResultSet.h>
+#include <execution/cuda/LaunchDims.h>
 #include <ops/declarable/helpers/diag.h>
 
-#include <execution/cuda/LaunchDims.h>
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -36,11 +37,11 @@ namespace helpers {
 // inputLength - length for input tensor
 //
 template <typename T>
-static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const sd::LongType* outputShape, void const* inputBuffer,
-                                        const sd::LongType* inputShape, sd::LongType inputLength) {
+static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const LongType* outputShape, void const* inputBuffer,
+                                        const LongType* inputShape, LongType inputLength) {
   __shared__ T* z;
   __shared__ T const* x;
-  __shared__ sd::LongType outputLength;
+  __shared__ LongType outputLength;
 
   if (threadIdx.x == 0) {
     z = reinterpret_cast<T*>(outputBuffer);
@@ -68,9 +69,8 @@ static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const sd::LongType* 
 // inputLength - given length for input tensor
 //
 template <typename T>
-static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const sd::LongType* outputShape,
-                                            void const* inputBuffer, const sd::LongType* inputShape,
-                                            sd::LongType outputLength, sd::LongType inputLength) {
+static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const LongType* outputShape,
+                                            void const* inputBuffer, const LongType* inputShape, LongType outputLength, LongType inputLength) {
   __shared__ T* z;
   __shared__ T const* x;
 
@@ -82,7 +82,7 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const sd::LongTy
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
-  sd::LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
+  LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
   for (int t = tid; t < outputLength && i < inputLength;
        t += step) {  // loop by output, but input matrix may not be square
     // put diagonal val from input onto output
@@ -96,7 +96,7 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const sd::LongTy
 // for detailed explanations please take a look on web page:
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-static void _diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+static void _diagFunctor(LaunchContext* context, const NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
   auto inputLength = input->isScalar() ? 1 : input->lengthOf();
   dim3 launchDims = getLaunchDims("diagPart");
@@ -104,11 +104,13 @@ static void _diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArr
   diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       output->specialBuffer(), output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
       inputLength);
+  DebugHelper::checkErrorCode(stream,"diagFunctorKernel failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagFunctor - caller for diag functor processor
-void diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+void diagFunctor(LaunchContext* context, const NDArray* input, NDArray* output) {
   auto xType = input->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (context, input, output), SD_COMMON_TYPES);
@@ -120,7 +122,7 @@ BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor kernel
 template <typename T>
-void _diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+void _diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* output) {
   const int outLen = output->lengthOf();
   const int inLen = input->isScalar() ? 1 : input->lengthOf();
   auto stream = context->getCudaStream();
@@ -131,11 +133,13 @@ void _diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray*
   diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       output->specialBuffer(), output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), outLen,
       inLen);
+  DebugHelper::checkErrorCode(stream,"diagFunctorKernel failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor processor
-void diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+void diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* output) {
   auto zType = output->dataType();
   BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), SD_NUMERIC_TYPES);
 }

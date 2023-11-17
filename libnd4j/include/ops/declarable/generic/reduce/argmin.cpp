@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
 
   // axis might be dynamic (i.e. tf mode)
   if (block.width() > 1 && axis.size() == 0) {
@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(argmin) {
@@ -63,19 +63,19 @@ DECLARE_SHAPE_FN(argmin) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
   }
 
-  std::vector<sd::LongType> dims;
+  std::vector<LongType> dims;
 
   if (block.width() == 1) {
     dims = *block.getIArguments();
   } else {
     auto y = INPUT_VARIABLE(1);
-    dims = y->template asVectorT<sd::LongType>();
+    dims = y->template asVectorT<LongType>();
   }
 
 
 
   auto keepDims = block.numB() ? B_ARG(0) : false;
-  auto dtype = block.numD() ? D_ARG(0) : DataType::INT64;
+  auto dtype = block.numD() ? D_ARG(0) : INT64;
 
   // we're resolving negative axis here
   helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
@@ -86,14 +86,14 @@ DECLARE_SHAPE_FN(argmin) {
 
   for (auto d : dims) {
     // we have special case here
-    if (d == sd::DataTypeUtils::max<int>()) continue;
+    if (d == DataTypeUtils::max<int>()) continue;
 
     REQUIRE_TRUE(d < shape::rank(in), 0, "ArgMin: axis can't be above rank")
     REQUIRE_TRUE(in[d + 1] != 0, 0, "ArgMin: you can't reduce along axis with 0 in shape");
   }
 
   // special case - output is scalar
-  if (dims.empty() || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
+  if (dims.empty() || (dims.size() == 1 && dims.at(0) == DataTypeUtils::max<int>())) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
   }
 

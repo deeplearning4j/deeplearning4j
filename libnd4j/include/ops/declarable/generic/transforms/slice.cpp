@@ -35,15 +35,15 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
 
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> sz;
+  std::vector<LongType> begin;
+  std::vector<LongType> sz;
 
   if (block.width() == 3) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<sd::LongType>();
-    sz = e->template asVectorT<sd::LongType>();
+    begin = b->template asVectorT<LongType>();
+    sz = e->template asVectorT<LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
                begin.size());
   REQUIRE_TRUE(sz.size() == x_rank, 0, "size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
 
-  std::vector<sd::LongType> indices(2 * x_rank);
+  std::vector<LongType> indices(2 * x_rank);
   auto empty = false;
   for (int e = 0; e < x_rank; e++) {
     int size = sz[e];
@@ -85,13 +85,13 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   if (empty) {
     REQUIRE_TRUE(output->isEmpty(), 0, "Slice: empty array indices requested, but output array is not empty");
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  sd::LongType* subArrShapeInfo = nullptr;
+  LongType* subArrShapeInfo = nullptr;
   ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(input->rankOf()), sd::LongType);
 
-  sd::LongType offset;
+  LongType offset;
 
   shape::calcSubArrShapeInfoAndOffset(indices.data(), input->shapeInfo(), subArrShapeInfo, offset, true);
 
@@ -100,8 +100,7 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
   NDArray::prepareSpecialUse({output}, {input});
 
   NativeOpExecutioner::execTransformAny(
-      block.launchContext(),
-      sd::transform::Assign,
+      block.launchContext(), transform::Assign,
       input->bufferWithOffset(offset),
       subArrShapeInfoPack->primary(),
       input->specialBufferWithOffset(offset),
@@ -117,28 +116,28 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
   if(shape::isEmpty(inShape)) {
-    std::vector<sd::LongType> emptyShape = {0};
+    std::vector<LongType> emptyShape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), emptyShape));
   }
   auto x_rank = shape::rank(inShape);
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> sz;
+  std::vector<LongType> begin;
+  std::vector<LongType> sz;
 
   if (block.width() == 3) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<sd::LongType>();
-    sz = e->template asVectorT<sd::LongType>();
+    begin = b->template asVectorT<LongType>();
+    sz = e->template asVectorT<LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
@@ -151,7 +150,7 @@ DECLARE_SHAPE_FN(slice) {
                begin.size());
   REQUIRE_TRUE(sz.size() == x_rank, 0, "Size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
 
-  std::vector<sd::LongType> shape;
+  std::vector<LongType> shape;
   auto empty = false;
   for (int e = 0; e < x_rank; e++) {
     auto size = sz[e];
@@ -184,7 +183,7 @@ DECLARE_SHAPE_FN(slice) {
   }
 
   if(shape.size() == 1 && shape[0] == 0) {
-    std::vector<sd::LongType> emptyShape = {0};
+    std::vector<LongType> emptyShape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), emptyShape));
   }
 
@@ -193,7 +192,7 @@ DECLARE_SHAPE_FN(slice) {
 }
 
 DECLARE_TYPES(slice_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
@@ -204,15 +203,15 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
   output->assign(0.);
   int x_rank = input->rankOf();
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> end;
+  std::vector<LongType> begin;
+  std::vector<LongType> end;
 
   if (block.width() == 4) {
     auto b = INPUT_VARIABLE(1);
     auto e = INPUT_VARIABLE(2);
 
-    begin = b->template asVectorT<sd::LongType>();
-    end = e->template asVectorT<sd::LongType>();
+    begin = b->template asVectorT<LongType>();
+    end = e->template asVectorT<LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
@@ -226,7 +225,7 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
   REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank,
                end.size());
 
-  std::vector<sd::LongType> indices(2 * x_rank);
+  std::vector<LongType> indices(2 * x_rank);
   for (int e = 0; e < x_rank; e++) {
     int size = end[e];
     int start = begin[e];
@@ -242,12 +241,12 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
   auto sub = (*output)(indices, true);
   sub.assign(epsNext);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(slice_bp) {
   auto inShape = inputShape->at(0);
-  sd::LongType* newShape;
+  LongType* newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));

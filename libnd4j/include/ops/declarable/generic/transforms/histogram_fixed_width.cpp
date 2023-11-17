@@ -50,18 +50,18 @@ CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
 
   helpers::histogramFixedWidth(block.launchContext(), *input, *range, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(histogram_fixed_width) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(histogram_fixed_width) {
   const int nbins =
       block.width() == 3 ? INPUT_VARIABLE(2)->e<int>(0) : block.getIArguments()->empty() ? 100 : INT_ARG(0);
-  auto outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(nbins, DataType::INT64);
+  auto outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(nbins, INT64);
   return SHAPELIST(outShapeInfo);
 }
 

@@ -85,13 +85,13 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
 
-  std::vector<sd::LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(weightsDepth->isSameShape(expectedWeightsDShape), 0,
                " SCONV2D OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsDShape).c_str(),
                ShapeUtils::shapeAsString(weightsDepth).c_str());
   if (weightsPoint) {
-    std::vector<sd::LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
+    std::vector<LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
     REQUIRE_TRUE(weightsPoint->isSameShape(expectedWeightsPShape), 0,
                  " SCONV2D OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedWeightsPShape).c_str(),
@@ -106,24 +106,24 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
     sd_debug("SCONV2D OP: for input_channels = 1 this op is equivalent to standard conv2d\n", "");
     ConvolutionUtils::conv2d(block, input, weightsDepth, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode,
                              isNCHW, wFormat);
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   ConvolutionUtils::sconv2d(block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
                             isSameMode, isNCHW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sconv2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(sconv2d) {
   auto inputShapeInfo = inputShape->at(0);          // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
   auto weightsDShapeInfo = inputShape->at(1);       // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
-  sd::LongType const *weightsPShapeInfo = nullptr;  // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
-  sd::LongType const *biasShapeInfo = nullptr;      // [oC], oC = iC*mC if weightsPoint=nullptr
+  LongType const *weightsPShapeInfo = nullptr;  // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
+  LongType const *biasShapeInfo = nullptr;      // [oC], oC = iC*mC if weightsPoint=nullptr
 
   if (block.width() == 3)
     if (inputShape->at(2)[0] == 4)
@@ -180,13 +180,13 @@ DECLARE_SHAPE_FN(sconv2d) {
   const LongType mC = weightsDShapeInfo[indWmC + 1];                                // channel multiplier
   const LongType oC = weightsPShapeInfo ? weightsPShapeInfo[indWmC + 1] : iC * mC;  // output channels (oC or iC*mC)
 
-  std::vector<sd::LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsDShapeInfo, expectedWeightsDShape), 0,
                "SCONV2D OP: wrong shape of depth weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsDShape).c_str(),
                ShapeUtils::shapeAsString(weightsDShapeInfo).c_str());
   if (weightsPShapeInfo) {
-    std::vector<sd::LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
+    std::vector<LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsPShapeInfo, expectedWeightsPShape), 0,
                  "SCONV2D OP: wrong shape of point array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedWeightsPShape).c_str(),
@@ -201,7 +201,7 @@ DECLARE_SHAPE_FN(sconv2d) {
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  sd::LongType *outputShapeInfo = nullptr;
+  LongType *outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), sd::LongType);
 
   outputShapeInfo[0] = 4;
@@ -223,7 +223,7 @@ DECLARE_SHAPE_FN(sconv2d) {
 }
 
 DECLARE_TYPES(sconv2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -299,7 +299,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
 
-  std::vector<sd::LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(weightsDepth->isSameShape(expectedWeightsDShape), 0,
                " SCONV2D_BP OP: wrong shape of weightsDepth array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsDShape).c_str(),
@@ -308,7 +308,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
                " SCONV2D_BP OP: wrong shape of gradWD array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsDShape).c_str(), ShapeUtils::shapeAsString(gradWD).c_str());
   if (weightsPoint) {
-    std::vector<sd::LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
+    std::vector<LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
     REQUIRE_TRUE(weightsPoint->isSameShape(expectedWeightsPShape), 0,
                  " SCONV2D_BP OP: wrong shape of weightsPoint array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedWeightsPShape).c_str(),
@@ -331,7 +331,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
   // ----- if weightsPoint is present, perform pointwise backprop first and calculate gradWP at this step ----- //
   if (weightsPoint) {
     auto resultFFShape =
-        isNCHW ? std::vector<sd::LongType>({bS, mC * iC, oH, oW}) : std::vector<sd::LongType>({bS, oH, oW, mC * iC});
+        isNCHW ? std::vector<LongType>({bS, mC * iC, oH, oW}) : std::vector<LongType>({bS, oH, oW, mC * iC});
     auto resultFF = NDArrayFactory::create_(input->ordering(), resultFFShape, input->dataType(), block.launchContext());
     ConvolutionUtils::sconv2d(block, input, weightsDepth, nullptr, nullptr, resultFF, kH, kW, sH, sW, pH, pW, dH, dW,
                               isSameMode, isNCHW, wFormat);
@@ -357,15 +357,15 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
   if (weightsPoint) delete gradO;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(sconv2d_bp) {
   auto inputShapeInfo = inputShape->at(0);          // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
   auto gradOShapeInfo = inputShape->at(1);          // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto weightsDShapeInfo = inputShape->at(2);       // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
-  sd::LongType const *weightsPShapeInfo = nullptr;  // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
-  sd::LongType const *biasShapeInfo = nullptr;      // [oC], oC = iC*mC if weightsPoint=nullptr
+  LongType const *weightsPShapeInfo = nullptr;  // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
+  LongType const *biasShapeInfo = nullptr;      // [oC], oC = iC*mC if weightsPoint=nullptr
 
   if (block.width() == 4) {
     if (inputShape->at(3)[0] == 4)
@@ -430,19 +430,19 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShapeInfo =
+  std::vector<LongType> expectedGradOShapeInfo =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indIiH, indIiH + 1});
   REQUIRE_TRUE(
       ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShapeInfo), 0,
       "SCONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
       ShapeUtils::shapeAsString(expectedGradOShapeInfo).c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
-  std::vector<sd::LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsDShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsDShapeInfo, expectedWeightsDShape), 0,
                "SCONV2D_BP OP: wrong shape of depth weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsDShape).c_str(),
                ShapeUtils::shapeAsString(weightsDShapeInfo).c_str());
   if (weightsPShapeInfo) {
-    std::vector<sd::LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
+    std::vector<LongType> expectedWeightsPShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC * mC, oC);
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsPShapeInfo, expectedWeightsPShape), 0,
                  "SCONV2D_BP OP: wrong shape of point array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedWeightsPShape).c_str(),
@@ -459,7 +459,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
   auto gradWDshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(weightsDShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
-  sd::LongType *gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
+  LongType *gradWPshapeInfo(nullptr), *gradBshapeInfo(nullptr);
 
   if (weightsPShapeInfo && biasShapeInfo) {
     gradWPshapeInfo =

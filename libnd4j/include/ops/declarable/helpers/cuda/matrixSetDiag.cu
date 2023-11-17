@@ -31,8 +31,8 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+SD_KERNEL static void matrixSetDiagCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+                                        const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                         const bool zeroPad) {
   // x - input,    shape [A,B,C]
   // y - diagonal, shape [A,B]
@@ -43,13 +43,13 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xSha
   const auto y = reinterpret_cast<const T*>(vy);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ sd::LongType xRank, *sharedMem;  // xRank = zRank, xRank = yRank + 1
-  __shared__ sd::LongType xLen;      // xLen = zLen
+  __shared__ LongType xRank, *sharedMem;  // xRank = zRank, xRank = yRank + 1
+  __shared__ LongType xLen;      // xLen = zLen
   __shared__ bool areSameOffsets;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     areSameOffsets = shape::haveSameShapeAndStrides(
         xShapeInfo, zShapeInfo);  // shapes are definitely the same, but strides might not
@@ -65,7 +65,7 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xSha
       threadIdx.x * xRank;  // we provide (xRank * sizeof(sd::LongType) * threadIdx.x) amount of shared memory per each thread
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
+  for (LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
     shape::index2coords(i, xShapeInfo, coords);
 
     const auto xOffset = shape::getOffset(xShapeInfo, coords);
@@ -82,19 +82,21 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const sd::LongType* xSha
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                      const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                      const sd::LongType* zShapeInfo, const bool zeroPad) {
+                                      const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                      const void* vy, const LongType* yShapeInfo, void* vz,
+                                      const LongType* zShapeInfo, const bool zeroPad) {
   matrixSetDiagCuda<T>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, zeroPad);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "matrixSetDiagCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output,
+void matrixSetDiag(LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output,
                    const bool zeroPad) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * input.rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(LongType) * input.rankOf() + 128;
 
   dim3 launchDims = matrixSetDiagDims(input.lengthOf(),input.rankOf());
   PointersManager manager(context, "matrixSetDiag");

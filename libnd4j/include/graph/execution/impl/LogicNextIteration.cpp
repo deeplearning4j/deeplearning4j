@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicNextIeration::processNode(Graph *graph, Node *node) {
+Status LogicNextIeration::processNode(Graph *graph, Node *node) {
   auto __variableSpace = graph->getVariableSpace();
   auto __flowPath = __variableSpace->flowPath();
 
@@ -44,7 +44,7 @@ sd::Status LogicNextIeration::processNode(Graph *graph, Node *node) {
   lvar->setNDArray(array);
   lvar->markReadOnly(true);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

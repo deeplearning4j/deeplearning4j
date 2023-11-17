@@ -34,7 +34,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> dimensions = *block.getIArguments();
+  std::vector<LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::Min, *output, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_min) {
@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(reduce_min) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(reduce_min) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_min) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> dimensions = *block.getIArguments();
+  std::vector<LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -123,10 +123,10 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   *gradI = 0;
 
   if (gradO->lengthOf() == 1) {
-    auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMin);
-    gradI->p(indOfMaxElem.e<sd::LongType>(0), gradO->e(0));
+    auto indOfMaxElem = input->indexReduceNumber(indexreduce::IndexMin);
+    gradI->p(indOfMaxElem.e<LongType>(0), gradO->e(0));
   } else {
-    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, &dimensions);
+    auto indicesArr = input->applyIndexReduce(indexreduce::IndexMin, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, indicesArr,
@@ -134,11 +134,11 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
     delete vec;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_min_bp) {
-  std::vector<sd::LongType> dimensions = *block.getIArguments();
+  std::vector<LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -156,14 +156,14 @@ DECLARE_SHAPE_FN(reduce_min_bp) {
         "REDUCE_MIN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
+  LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_min_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 

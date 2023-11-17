@@ -79,8 +79,6 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
   NDArray colP = col.permute({0, 5, 3, 4, 1, 2});  // {bS, iC, kH, kW, oH, oW}
-  colP.printIndexedBuffer("colP initial:");
-  printf("colP initial end\n");
 
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
@@ -107,9 +105,6 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   //----- add biases if required -----//
   if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
-    output->printIndexedBuffer("output post bias");
-    printf("output post bias end\n");
-
 
   }
   if (!isNCHW) delete input;

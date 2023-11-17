@@ -81,7 +81,7 @@ bool VariableProxy::hasVariable(std::string *symbol) {
   return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
 }
 
-sd::graph::Variable *VariableProxy::getVariable(int id) {
+Variable *VariableProxy::getVariable(int id) {
   if (_current->hasVariable(id)) return _current->getVariable(id);
 
   if (_backed->hasVariable(id)) return _backed->getVariable(id);
@@ -90,7 +90,7 @@ sd::graph::Variable *VariableProxy::getVariable(int id) {
   THROW_EXCEPTION("Bad arguments");
 }
 
-sd::graph::Variable *VariableProxy::getVariable(int id, int idx) {
+Variable *VariableProxy::getVariable(int id, int idx) {
   if (_current->hasVariable(id, idx)) return _current->getVariable(id, idx);
 
   if (_backed->hasVariable(id, idx)) return _backed->getVariable(id, idx);
@@ -99,7 +99,7 @@ sd::graph::Variable *VariableProxy::getVariable(int id, int idx) {
   THROW_EXCEPTION("Bad arguments");
 }
 
-sd::graph::Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
+Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
   if (_current->hasVariable(pair)) return _current->getVariable(pair);
 
   if (_backed->hasVariable(pair)) return _backed->getVariable(pair);
@@ -108,7 +108,7 @@ sd::graph::Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
   THROW_EXCEPTION("Bad arguments");
 }
 
-sd::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
+Variable *VariableProxy::getVariable(std::string *symbol) {
   if (_current->hasVariable(symbol)) return _current->getVariable(symbol);
 
   if (_backed->hasVariable(symbol)) return _backed->getVariable(symbol);
@@ -142,15 +142,15 @@ void VariableProxy::putVariable(int id, Variable *variable) { _current->putVaria
 
 void VariableProxy::putVariable(int id, NDArray *array) { _current->putVariable(id, array); }
 
-void sd::graph::VariableProxy::putVariable(int id, int idx, NDArray &array) { _current->putVariable(id, idx, array); }
+void VariableProxy::putVariable(int id, int idx, NDArray &array) { _current->putVariable(id, idx, array); }
 
 Variable *VariableProxy::putVariable(int id, int idx, NDArray *array) { return _current->putVariable(id, idx, array); }
 
 void VariableProxy::putVariable(int id, int idx, Variable *array) { _current->putVariable(id, idx, array); }
 
-void VariableProxy::trackList(sd::NDArrayList *list) { _current->trackList(list); }
+void VariableProxy::trackList(NDArrayList *list) { _current->trackList(list); }
 
-sd::graph::Stash *VariableProxy::getStash() { return _current->getStash(); }
+Stash *VariableProxy::getStash() { return _current->getStash(); }
 
 void VariableProxy::setFlowPath(FlowPath *timers) { _current->setFlowPath(timers); }
 
@@ -158,11 +158,11 @@ FlowPath *VariableProxy::flowPath() { return _current->flowPath(); }
 
 void VariableProxy::putOutputVariable(Variable *variable) { _current->putOutputVariable(variable); }
 
-sd::LongType VariableProxy::externalMemory() { return _backed->externalMemory() + _current->externalMemory(); }
+LongType VariableProxy::externalMemory() { return _backed->externalMemory() + _current->externalMemory(); }
 
-sd::LongType VariableProxy::internalMemory() { return _backed->internalMemory() + _current->internalMemory(); }
+LongType VariableProxy::internalMemory() { return _backed->internalMemory() + _current->internalMemory(); }
 
-sd::LongType VariableProxy::totalMemory() { return _backed->totalMemory() + _current->totalMemory(); }
+LongType VariableProxy::totalMemory() { return _backed->totalMemory() + _current->totalMemory(); }
 
 int VariableProxy::externalEntries() { return _backed->externalEntries() + _current->externalEntries(); }
 
@@ -170,7 +170,7 @@ int VariableProxy::internalEntries() { return _backed->internalEntries() + _curr
 
 int VariableProxy::totalEntries() { return _backed->totalEntries() + _current->totalEntries(); }
 
-sd::graph::VariableSpace *VariableProxy::clone() {
+VariableSpace *VariableProxy::clone() {
   auto clone = new VariableProxy(_backed);
 
   delete clone->_current;
@@ -187,6 +187,6 @@ VariableSpace &VariableProxy::operator=(const VariableSpace &other) {
   return *this;
 }
 
-sd::memory::Workspace *sd::graph::VariableProxy::workspace() { return _workspace; }
+memory::Workspace *VariableProxy::workspace() { return _workspace; }
 }  // namespace graph
 }  // namespace sd

@@ -51,7 +51,7 @@ union u64 {
   // float16 _half = 0.0f;
   float _float;
   double _double;
-  sd::LongType _long;
+  LongType _long;
   uint64_t _ulong;
   di32 _di32;
   du32 _du32;

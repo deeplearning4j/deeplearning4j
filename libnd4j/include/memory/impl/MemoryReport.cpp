@@ -21,34 +21,34 @@
 //
 #include "memory/MemoryReport.h"
 
-bool sd::memory::MemoryReport::operator<(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator<(const MemoryReport &other) const {
   return this->_rss < other._rss;
 }
 
-bool sd::memory::MemoryReport::operator>(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator>(const MemoryReport &other) const {
   return this->_rss > other._rss;
 }
 
-bool sd::memory::MemoryReport::operator==(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator==(const MemoryReport &other) const {
   return this->_rss == other._rss;
 }
 
-bool sd::memory::MemoryReport::operator!=(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator!=(const MemoryReport &other) const {
   return this->_rss != other._rss;
 }
 
-bool sd::memory::MemoryReport::operator<=(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator<=(const MemoryReport &other) const {
   return this->_rss <= other._rss;
 }
 
-bool sd::memory::MemoryReport::operator>=(const sd::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator>=(const MemoryReport &other) const {
   return this->_rss >= other._rss;
 }
 
 sd::LongType sd::memory::MemoryReport::getVM() const { return _vm; }
 
-void sd::memory::MemoryReport::setVM(sd::LongType _vm) { MemoryReport::_vm = _vm; }
+void sd::memory::MemoryReport::setVM(LongType _vm) { MemoryReport::_vm = _vm; }
 
 sd::LongType sd::memory::MemoryReport::getRSS() const { return _rss; }
 
-void sd::memory::MemoryReport::setRSS(sd::LongType _rss) { MemoryReport::_rss = _rss; }
+void sd::memory::MemoryReport::setRSS(LongType _rss) { MemoryReport::_rss = _rss; }

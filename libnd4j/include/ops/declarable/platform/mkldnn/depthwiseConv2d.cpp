@@ -180,7 +180,6 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
   stream.wait();
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -372,7 +371,6 @@ static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////

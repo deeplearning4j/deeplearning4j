@@ -82,7 +82,7 @@ class ExecutionResult {
    * This method returns number of elements stored in this entity
    * @return
    */
-  sd::LongType size();
+  LongType size();
 
 #ifndef __JAVACPP_HACK__
   /**

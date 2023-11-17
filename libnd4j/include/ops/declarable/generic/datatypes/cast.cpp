@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
   if (input->isEmpty()) {
     printf("cast: input was empty\n");
     REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   printf("Assigning new input: %s to data type %s with shape info for input data type being %s and output data type shape info being %s\n",
@@ -71,7 +71,7 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
   if (!block.isInplace()) output->assign(input);
 
   STORE_RESULT(output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(Cast, cast);
 
@@ -106,7 +106,7 @@ DECLARE_SHAPE_FN(cast) {
 }
 
 DECLARE_TYPES(cast) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

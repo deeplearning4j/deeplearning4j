@@ -35,7 +35,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   // just skip op if input is empty
-  if (input->isEmpty()) return sd::Status::OK;
+  if (input->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST: Scale factor required");
   REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead",
@@ -63,11 +63,11 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   output->assign(part3);
 
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(adjust_contrast) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -75,7 +75,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   // just skip op if input is empty
-  if (input->isEmpty()) return sd::Status::OK;
+  if (input->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(input->rankOf() > 2, 0,
                "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
@@ -102,12 +102,12 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   auto mean = input3D.reduceAlongDimension(reduce::Mean, &axes);
   // result as (x - mean) * factor + mean
   auto temp = input3D.ulike();
-  std::vector<sd::LongType> zeroTwo = {0, 2};
+  std::vector<LongType> zeroTwo = {0, 2};
   input3D.applyBroadcast(broadcast::Subtract,&zeroTwo, mean, temp);
   temp.applyScalarArr(scalar::Multiply, *factor, temp);
   temp.applyBroadcast(broadcast::Add, &zeroTwo, mean, output3D);
   output->assign(output3D);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(adjust_contrast_v2) {

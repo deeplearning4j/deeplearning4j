@@ -30,6 +30,7 @@
 #include <types/types.h>
 
 #include "../DataBuffer.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 void DataBuffer::expand(const uint64_t size) {
@@ -56,10 +57,10 @@ void DataBuffer::expand(const uint64_t size) {
 
     cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
 
- /*   if (_isOwnerSpecial) {
+    if (_isOwnerSpecial) {
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
       RELEASE_SPECIAL(isb, _workspace);
-    }*/
+    }
 
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
@@ -80,19 +81,19 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 void DataBuffer::allocateSpecial() {
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    allocationStackTraceSpecial = new backward::StackTrace();
+    allocationStackTraceSpecial = new StackTrace();
     allocationStackTraceSpecial->load_here();
   }
 
 #endif
 
   if (_specialBuffer == nullptr) {
-    auto deviceId = sd::AffinityManager::currentDeviceId();
+    auto deviceId = AffinityManager::currentDeviceId();
 
     if (_workspace == nullptr) {
-      if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-        throw sd::allocation_exception::build("Requested amount exceeds device limits",
-                                              sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
+      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
+        throw allocation_exception::build("Requested amount exceeds device limits",
+                                          memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                               getLenInBytes());
     }
 
@@ -100,8 +101,8 @@ void DataBuffer::allocateSpecial() {
     _isOwnerSpecial = true;
 
     if (_workspace == nullptr) {
-      sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
-      sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
 
     }
   } else if(getLenInBytes() == 0) {
@@ -216,8 +217,8 @@ void DataBuffer::deleteSpecial() {
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
-      sd::memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
-      sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
+      memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+      memory::MemoryCounter::getInstance().countOut(memory::MemoryType::DEVICE, getLenInBytes());
     }
   }
 }
@@ -241,8 +242,8 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
-                                const sd::LongType offsetOther) {  // copies only to special buffer
+void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const LongType offsetThis,
+                                const LongType offsetOther) {  // copies only to special buffer
 
   if (other._primaryBuffer == nullptr && other._specialBuffer == nullptr) {
     return;
@@ -288,8 +289,8 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
-                                    const sd::LongType offsetHostBuffer) {  // copies only to special buffer
+void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinBytes, const LongType offsetThis,
+                                    const LongType offsetHostBuffer) {  // copies only to special buffer
 
   if (hostBuffer == nullptr) return;
 
@@ -387,7 +388,7 @@ bool DataBuffer::isSpecialActual() const {
 }
 
 template <typename T>
-SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
+SD_KERNEL  void _printBuffers(void* buffer, LongType bufferLength) {
   T * inputBuffer = reinterpret_cast<T *>(buffer);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if(tid == 0) {
@@ -426,7 +427,7 @@ DataBuffer DataBuffer::dup() {
 
 template <typename T>
 void _printHostBuffer(DataBuffer *buffer) {
-  sd::LongType len = buffer->getNumElements();
+  LongType len = buffer->getNumElements();
   auto buff = buffer->template primaryAsT<T>();
   sd_printf("Host buffer: ",0);
   for(int i = 0; i < len; i++) {
@@ -437,6 +438,8 @@ void _printHostBuffer(DataBuffer *buffer) {
 
 
   _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
+  sd::DebugHelper::checkGlobalErrorCode("printBuffers  failed");
+
   cudaDeviceSynchronize();
 
 }

@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(bits_hamming_distance, 2, 1, true, 0, 0) {
 
   helpers::hamming(block.launchContext(), *x, *y, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(bits_hamming_distance) {

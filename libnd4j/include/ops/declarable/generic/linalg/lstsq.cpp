@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(lstsq, 2, 1, false, 0, 0) {
       "lstsq: The last dimmension of left part should be equal to prelast of right part, but %i and %i are given",
       a->sizeAt(-1), b->sizeAt(-2));
 
-  if (a->isEmpty() || b->isEmpty() || z->isEmpty()) return sd::Status::OK;
+  if (a->isEmpty() || b->isEmpty() || z->isEmpty()) return Status::OK;
 
   auto res = helpers::leastSquaresSolveFunctor(block.launchContext(), a, b, l2_factor, fastFlag, z);
 
@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(solve_ls, 2, 1, false, 0, 0) {
       a->sizeAt(-1), b->sizeAt(-2));
   // REQUIRE_TRUE(l2_factor == 0., 0, "lstsq: Implementation of operation is not finished for factor difference from
   // 0.");
-  auto res = sd::Status::OK;
+  auto res = Status::OK;
   if (a->isEmpty() || b->isEmpty() || z->isEmpty()) return res;
 
   res = helpers::leastSquaresSolveFunctor(block.launchContext(), a, b, l2_factor, fastFlag, z);
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(lstsq) {
   auto in1 = inputShape->at(1);
   auto shapeOf = ShapeUtils::shapeAsVector(in1);
   auto rank = shapeOf.size();
-  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<sd::LongType>(-1));
+  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<LongType>(-1));
 
   if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty
@@ -123,7 +123,7 @@ DECLARE_SHAPE_FN(solve_ls) {
   auto in1 = inputShape->at(1);
   auto shapeOf = ShapeUtils::shapeAsVector(in1);
   auto rank = shapeOf.size();
-  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<sd::LongType>(-1));
+  shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<LongType>(-1));
 
   if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty

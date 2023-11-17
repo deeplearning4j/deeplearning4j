@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
   if (!weights->isScalar() && !weights->isSameShape(predictions))
     weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
-  NDArray E = (*predictions - *labels).transform(sd::transform::Abs);
+  NDArray E = (*predictions - *labels).transform(transform::Abs);
   E *= *weightsBroad;
 
   switch (reductionMode) {
@@ -92,11 +92,11 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else {
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
       }
 
       if (numOfNonZeroWeights == 0)
@@ -109,11 +109,11 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(absolute_difference_loss) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(absolute_difference_loss) {
@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
 
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-  sd::LongType const* outShapeInfo = nullptr;
+  LongType const* outShapeInfo = nullptr;
 
   if (INT_ARG(0) != 0) {  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
@@ -201,10 +201,10 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
   NDArray E = *predictions - *labels;
 
   // dE_i/dp_i = sign(p_i - y_i)
-  E.applyTransform(sd::transform::Sign, *dLdp);  // dE/dp
+  E.applyTransform(transform::Sign, *dLdp);  // dE/dp
   // dE_i/dy_i = -sign(p_i - y_i)
 
-  E.applyTransform(sd::transform::Abs, E);
+  E.applyTransform(transform::Abs, E);
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -251,11 +251,11 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
 
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
@@ -285,11 +285,11 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(absolute_difference_loss_grad) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(absolute_difference_loss_grad) {

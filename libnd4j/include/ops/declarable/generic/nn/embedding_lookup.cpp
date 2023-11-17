@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
 
   if (block.width() > 2) {  // multiple input
     indices = INPUT_VARIABLE(block.width() - 1);
-    std::vector<sd::LongType> dims(input->rankOf());
+    std::vector<LongType> dims(input->rankOf());
     int i = output->rankOf() - input->rankOf();
     for (auto& v : dims) {
       v = i++;
@@ -50,8 +50,8 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(block.width() > output->sizeAt(0), 0,
                  "embedding_lookup: input list should be greater then %i, but %i given.", output->sizeAt(0),
                  block.width());
-    for (sd::LongType e = 0; e < indices->lengthOf(); ++e) {
-      sd::LongType thisIndex = (*indices).e<sd::LongType>(e);
+    for (LongType e = 0; e < indices->lengthOf(); ++e) {
+      LongType thisIndex = (*indices).e<LongType>(e);
       input = INPUT_VARIABLE(thisIndex);  // lookup param
 
       outputView.at(e)->assign(input);
@@ -61,18 +61,18 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(indexRank > 0, 0,
                  "embedded_lookup: input array of indexes can't be single scalar, the requirement is: rank > 0 !");
 
-    sd::ops::gather op;
+    gather op;
 
     auto result2(op.evaluate({input, indices}, {0}));
     REQUIRE_TRUE(result2.status() == sd::Status::OK, 0, "embedding_lookup: cannot retrieve results from gather op.");
     REQUIRE_TRUE(result2.at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
     output->assign(result2.at(0));
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(embedding_lookup) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 
 DECLARE_SHAPE_FN(embedding_lookup) {
@@ -82,10 +82,10 @@ DECLARE_SHAPE_FN(embedding_lookup) {
   if (inputShape->size() == 2u) {
     int outRank = inRank;
 
-    std::vector<sd::LongType> shapeInfo(outRank);
+    std::vector<LongType> shapeInfo(outRank);
 
     shapeInfo[0] = indicesShapeInfo[1];  // vector - how many elements
-    for (sd::LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
+    for (LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
     auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                            shape::order(inShapeInfo), shapeInfo);
@@ -93,10 +93,10 @@ DECLARE_SHAPE_FN(embedding_lookup) {
   }
 
   int outRank = inRank + 1;
-  std::vector<sd::LongType> shapeInfo(outRank);
+  std::vector<LongType> shapeInfo(outRank);
   auto indices = INPUT_VARIABLE(block.width() - 1);
   shapeInfo[0] = indices->lengthOf();  // vector - how many elements
-  for (sd::LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
+  for (LongType e = 1; e < outRank; e++) shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
   auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo),
                                                                          shape::order(inShapeInfo), shapeInfo);

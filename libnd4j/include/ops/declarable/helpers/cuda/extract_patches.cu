@@ -61,19 +61,19 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount,
                                                  int rowCast,
                                                  int colCast, int lastDim,
                                                  const T* input,
-                                                 const sd::LongType* patchShape,
-                                                 const sd::LongType* inputOffsets,
+                                                 const LongType* patchShape,
+                                                 const LongType* inputOffsets,
                                                  T* output,
-                                                 const sd::LongType* outTadShape,
-                                                 const sd::LongType* outputOffsets) {
+                                                 const LongType* outTadShape,
+                                                 const LongType* outputOffsets) {
 
   for (auto batch = threadIdx.x; batch < batchCount; batch+= gridDim.x) {
     auto patch = input + inputOffsets[batch];
     auto outMatrix = output + outputOffsets[batch];
 
-    for (sd::LongType i = 0; i < outRowDim; i++) {
-      for (sd::LongType j = 0; j < outColDim; j++) {
-        sd::LongType pos = 0;
+    for (LongType i = 0; i < outRowDim; i++) {
+      for (LongType j = 0; j < outColDim; j++) {
+        LongType pos = 0;
         auto rowStart = i * strideRow - (theSame ? rowCast : 0);
         auto colStart = j * strideCol - (theSame ? colCast : 0);
         auto rowEnd = rowStart + sizeRow * rateRow;
@@ -85,8 +85,8 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount,
         for (auto row = rowStart; row < rowEnd; row += rateRow)
           for (auto col = colStart; col < colEnd; col += rateCol)
             for (auto pixel = 0; pixel < lastDim; pixel++) {
-              sd::LongType zPos[] = {i, j, pos};
-              sd::LongType xPos[] = {row, col, pixel};
+              LongType zPos[] = {i, j, pos};
+              LongType xPos[] = {row, col, pixel};
               bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
 
               if (setUp) {  // VALID or SAME cases
@@ -102,20 +102,20 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
+static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
                             int strideRow, int strideCol, int rateRow, int rateCol, bool theSame) {
-  std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
+  std::vector<LongType> restDims({1, 2, 3});  // the first and the last dims
   ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
   ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
   // 3D matrices - 2D matrices of vectors (if last dim is greater than 1)
   // int e = 0;
 
   int batchCount = listOfMatricies.size();
-  sd::LongType lastDim = images->sizeAt(3);
-  sd::LongType rowDim = images->sizeAt(1);
-  sd::LongType colDim = images->sizeAt(2);
-  sd::LongType outRowDim = output->sizeAt(1);
-  sd::LongType outColDim = output->sizeAt(2);
+  LongType lastDim = images->sizeAt(3);
+  LongType rowDim = images->sizeAt(1);
+  LongType colDim = images->sizeAt(2);
+  LongType outRowDim = output->sizeAt(1);
+  LongType outColDim = output->sizeAt(2);
   auto rowCast = 1;
   auto colCast = 1;
   if (sizeRow * rateRow < 3) rowCast = 0;
@@ -127,9 +127,9 @@ static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray
       auto inPatch = patch->rankOf() > 3 && patch->sizeAt(0) == 1 ? new NDArray(patch->reshape('c',{patch->sizeAt(1),patch->sizeAt(2),patch->sizeAt(3)})) : patch;
       auto outMatrix = listOfOutputs.at(batch);
       auto outReshape = outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1 ? new NDArray(outMatrix->reshape('c',{outMatrix->sizeAt(1),outMatrix->sizeAt(2),outMatrix->sizeAt(3)})) : outMatrix;
-      for (sd::LongType i = 0; i < outRowDim; i++) {
-        for (sd::LongType j = 0; j < outColDim; j++) {
-          sd::LongType pos = 0;
+      for (LongType i = 0; i < outRowDim; i++) {
+        for (LongType j = 0; j < outColDim; j++) {
+          LongType pos = 0;
           auto rowStart = i * strideRow - (theSame ? rowCast : 0);
           auto colStart = j * strideCol - (theSame ? colCast : 0);
           auto rowEnd = rowStart + sizeRow * rateRow;
@@ -162,7 +162,7 @@ BUILD_SINGLE_TEMPLATE(template void _extractPatches,
                           int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame),
                       SD_COMMON_TYPES);
 
-void extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
+void extractPatches(LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
                     int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame) {
   auto xType = images->dataType();
 

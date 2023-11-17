@@ -31,16 +31,16 @@ GraphHolder& GraphHolder::getInstance() {
   return instance;
 };
 
-void GraphHolder::registerGraph(sd::LongType graphId, Graph* graph) {
+void GraphHolder::registerGraph(LongType graphId, Graph* graph) {
   if (hasGraphAny(graphId)) throw graph_exists_exception(graphId);
 
   _graphF[graphId] = graph;
 
-  sd::SimpleReadWriteLock lock;
+  SimpleReadWriteLock lock;
   _locks[graphId] = lock;
 }
 
-Graph* GraphHolder::cloneGraph(sd::LongType graphId) {
+Graph* GraphHolder::cloneGraph(LongType graphId) {
   if (!this->hasGraph(graphId)) {
     sd_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
     THROW_EXCEPTION("Bad argument");
@@ -51,7 +51,7 @@ Graph* GraphHolder::cloneGraph(sd::LongType graphId) {
   return graph;
 }
 
-Graph* GraphHolder::pullGraph(sd::LongType graphId) {
+Graph* GraphHolder::pullGraph(LongType graphId) {
   if (!this->hasGraph(graphId)) {
     sd_printf("GraphHolder doesn't have graph stored for [%lld]\n", graphId);
     THROW_EXCEPTION("Bad argument");
@@ -62,11 +62,11 @@ Graph* GraphHolder::pullGraph(sd::LongType graphId) {
   return graph;
 }
 
-void GraphHolder::forgetGraph(sd::LongType graphId) {
+void GraphHolder::forgetGraph(LongType graphId) {
   if (this->hasGraph(graphId)) _graphF.erase(graphId);
 }
 
-void GraphHolder::dropGraph(sd::LongType graphId) {
+void GraphHolder::dropGraph(LongType graphId) {
   if (this->hasGraph(graphId)) {
     auto g = _graphF[graphId];
     forgetGraph(graphId);
@@ -74,7 +74,7 @@ void GraphHolder::dropGraph(sd::LongType graphId) {
   }
 }
 
-void GraphHolder::dropGraphAny(sd::LongType graphId) {
+void GraphHolder::dropGraphAny(LongType graphId) {
   if (!hasGraphAny(graphId)) return;
 
   this->lockWrite(graphId);
@@ -84,11 +84,11 @@ void GraphHolder::dropGraphAny(sd::LongType graphId) {
   this->unlockWrite(graphId);
 }
 
-bool GraphHolder::hasGraphAny(sd::LongType graphId) { return this->hasGraph(graphId); }
+bool GraphHolder::hasGraphAny(LongType graphId) { return this->hasGraph(graphId); }
 
-bool GraphHolder::hasGraph(sd::LongType graphId) { return _graphF.count(graphId) > 0; }
+bool GraphHolder::hasGraph(LongType graphId) { return _graphF.count(graphId) > 0; }
 
-void GraphHolder::replaceGraph(sd::LongType graphId, Graph* graph) {
+void GraphHolder::replaceGraph(LongType graphId, Graph* graph) {
   if (!hasGraph(graphId)) {
     registerGraph(graphId, graph);
     return;
@@ -101,7 +101,7 @@ void GraphHolder::replaceGraph(sd::LongType graphId, Graph* graph) {
   this->unlockWrite(graphId);
 }
 
-flatbuffers::Offset<FlatResult> GraphHolder::execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
+flatbuffers::Offset<FlatResult> GraphHolder::execute(LongType graphId, flatbuffers::FlatBufferBuilder& builder,
                                                      const FlatInferenceRequest* request) {
   if (!hasGraph(graphId)) throw unknown_graph_exception(graphId);
 

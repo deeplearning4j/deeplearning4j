@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicMerge::processNode(Graph *graph, Node *node) {
+Status LogicMerge::processNode(Graph *graph, Node *node) {
   // at merge node only one of inputs exist if that's just switch and other node isn't LogicNextItration
   auto __variableSpace = graph->getVariableSpace();
   auto __flowPath = __variableSpace->flowPath();
@@ -116,7 +116,7 @@ sd::Status LogicMerge::processNode(Graph *graph, Node *node) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

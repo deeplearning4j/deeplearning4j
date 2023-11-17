@@ -50,27 +50,27 @@ class SD_LIB_EXPORT LoopKind {
     BROADCAST_5D
   };
 
-  static SD_INLINE Kind deduceKindOfLoopXZ(const sd::LongType* xShapeInfo, const sd::LongType* zShapeInfo);
-  static SD_INLINE Kind deduceKindOfLoopXYZ(const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
-                                            const sd::LongType* zShapeInfo);
-  static SD_INLINE Kind deduceKindOfLoopTadXZ(const sd::LongType* xShapeInfo, const sd::LongType* zShapeInfo,
-                                              const sd::LongType* tadShapeInfo);
-  static SD_INLINE Kind deduceKindOfLoopTadXYZ(const sd::LongType* xTadShapeInfo, const sd::LongType* yTadShapeInfo,
-                                               const sd::LongType* zShapeInfo);
-  static SD_INLINE Kind deduceKindOfLoopBroadcast(const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
-                                                  const sd::LongType* zShapeInfo);
+  static SD_INLINE Kind deduceKindOfLoopXZ(const LongType* xShapeInfo, const LongType* zShapeInfo);
+  static SD_INLINE Kind deduceKindOfLoopXYZ(const LongType* xShapeInfo, const LongType* yShapeInfo,
+                                            const LongType* zShapeInfo);
+  static SD_INLINE Kind deduceKindOfLoopTadXZ(const LongType* xShapeInfo, const LongType* zShapeInfo,
+                                              const LongType* tadShapeInfo);
+  static SD_INLINE Kind deduceKindOfLoopTadXYZ(const LongType* xTadShapeInfo, const LongType* yTadShapeInfo,
+                                               const LongType* zShapeInfo);
+  static SD_INLINE Kind deduceKindOfLoopBroadcast(const LongType* xShapeInfo, const LongType* yShapeInfo,
+                                                  const LongType* zShapeInfo);
 };
 
 //////////////////////////////////////////////////////////////////////////////
-LoopKind::Kind LoopKind::deduceKindOfLoopXZ(const sd::LongType* xShapeInfo, const sd::LongType* zShapeInfo) {
+LoopKind::Kind LoopKind::deduceKindOfLoopXZ(const LongType* xShapeInfo, const LongType* zShapeInfo) {
   const int xRank = shape::rank(xShapeInfo);
-  const sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
-  const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+  const LongType xEws = shape::elementWiseStride(xShapeInfo);
+  const LongType zEws = shape::elementWiseStride(zShapeInfo);
 
   const char xOrder = shape::order(xShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  sd::LongType temp;
+  LongType temp;
   const bool xVectorOrC = shape::isCommonVector(xShapeInfo, temp) || xOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
   const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
@@ -88,8 +88,8 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXZ(const sd::LongType* xShapeInfo, cons
   return COMMON;
 }
 
-LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
-                                                   const sd::LongType* zShapeInfo) {
+LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, const LongType* yShapeInfo,
+                                                   const LongType* zShapeInfo) {
   auto xRank = shape::rank(xShapeInfo);
   auto yRank = shape::rank(yShapeInfo);
   auto zRank = shape::rank(zShapeInfo);
@@ -105,7 +105,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInf
   bool bNDLoopsRanks = (xRank == zRank && yRank <= xRank && yRank >= 2);
 
   int countUnityDimsInY = 0, countUnityDimsInX = 0;
-  for (sd::LongType i = 0; i < xRank; i++) {
+  for (LongType i = 0; i < xRank; i++) {
     if (i < yRank) countUnityDimsInY += (1 == shape::sizeAt(yShapeInfo, i)) ? 1 : 0;
     countUnityDimsInX += (1 == shape::sizeAt(xShapeInfo, i)) ? 1 : 0;
   }
@@ -114,14 +114,14 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInf
 
   if (bNDLoopsRanks && bNotCommonVectorCase) {
     // case x[3,4,5] * y[1,4,5] = z[3,4,5] or reverse x[1,4,5] + y[3,4,5] = z[3,4,5]
-    if (sd::LoopKind::EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo) &&
-        (1 == shape::sizeAt(yShapeInfo, static_cast<sd::LongType>(0)) || 1 == shape::sizeAt(xShapeInfo, static_cast<sd::LongType>(0)))) {
+    if (EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo) &&
+        (1 == shape::sizeAt(yShapeInfo, static_cast<LongType>(0)) || 1 == shape::sizeAt(xShapeInfo, static_cast<LongType>(0)))) {
       return EWS1;
     }
 
-    if (3 == xRank) return sd::LoopKind::BROADCAST_3D;
-    if (4 == xRank) return sd::LoopKind::BROADCAST_4D;
-    if (5 == xRank) return sd::LoopKind::BROADCAST_5D;
+    if (3 == xRank) return BROADCAST_3D;
+    if (4 == xRank) return BROADCAST_4D;
+    if (5 == xRank) return BROADCAST_5D;
   }
 
   if (xRank == yRank && xRank == zRank && xOrder == 'c' && yOrder == 'c' && zOrder == 'c' && xEws == 1 && yEws == 1 &&
@@ -135,27 +135,27 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const sd::LongType* xShapeInf
     auto detect = xShapeInfo[xRank] == 1 ? -1 : (yShapeInfo[xRank] == 1) ? 1 : 0;
 
     if (detect == 1)
-      return sd::LoopKind::BROADCAST_SCALAR_Y;
+      return BROADCAST_SCALAR_Y;
     else if (detect == -1)
-      return sd::LoopKind::BROADCAST_SCALAR_X;
+      return BROADCAST_SCALAR_X;
   }
 
-  return sd::LoopKind::COMMON;
+  return COMMON;
 }
 
 //////////////////////////////////////////////////////////////////////////////
-LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const sd::LongType* xShapeInfo, const sd::LongType* yShapeInfo,
-                                             const sd::LongType* zShapeInfo) {
+LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const LongType* xShapeInfo, const LongType* yShapeInfo,
+                                             const LongType* zShapeInfo) {
   const int xRank = shape::rank(xShapeInfo);
-  const sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
-  const sd::LongType yEws = shape::elementWiseStride(yShapeInfo);
-  const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+  const LongType xEws = shape::elementWiseStride(xShapeInfo);
+  const LongType yEws = shape::elementWiseStride(yShapeInfo);
+  const LongType zEws = shape::elementWiseStride(zShapeInfo);
 
   const char xOrder = shape::order(xShapeInfo);
   const char yOrder = shape::order(yShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  sd::LongType temp;
+  LongType temp;
   const bool xVectorOrC = shape::isCommonVector(xShapeInfo, temp) || xOrder == 'c';
   const bool yVectorOrC = shape::isCommonVector(yShapeInfo, temp) || yOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
@@ -179,14 +179,14 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const sd::LongType* xShapeInfo, con
 }
 
 //////////////////////////////////////////////////////////////////////////////
-LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const sd::LongType* xShapeInfo, const sd::LongType* zShapeInfo,
-                                               const sd::LongType* tadShapeInfo) {
+LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const LongType* xShapeInfo, const LongType* zShapeInfo,
+                                               const LongType* tadShapeInfo) {
   const int xRank = shape::rank(xShapeInfo);
   const int tRank = shape::rank(tadShapeInfo);
 
-  const sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
-  const sd::LongType tEws = shape::elementWiseStride(tadShapeInfo);
-  const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+  const LongType xEws = shape::elementWiseStride(xShapeInfo);
+  const LongType tEws = shape::elementWiseStride(tadShapeInfo);
+  const LongType zEws = shape::elementWiseStride(zShapeInfo);
 
   const char xOrder = shape::order(xShapeInfo);
   const char tOrder = shape::order(tadShapeInfo);
@@ -194,7 +194,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const sd::LongType* xShapeInfo, c
 
   const bool allC = (tOrder == zOrder && zOrder == 'c');
 
-  sd::LongType temp;
+  LongType temp;
   const bool tVectorOrC = shape::isCommonVector(tadShapeInfo, temp) || tOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
 
@@ -215,21 +215,21 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const sd::LongType* xShapeInfo, c
 }
 
 //////////////////////////////////////////////////////////////////////////////
-LoopKind::Kind LoopKind::deduceKindOfLoopTadXYZ(const sd::LongType* xTadShapeInfo, const sd::LongType* yTadShapeInfo,
-                                                const sd::LongType* zShapeInfo) {
+LoopKind::Kind LoopKind::deduceKindOfLoopTadXYZ(const LongType* xTadShapeInfo, const LongType* yTadShapeInfo,
+                                                const LongType* zShapeInfo) {
   // both tad shapes are the same, but strides and ews may be different
 
   const int tadRank = shape::rank(xTadShapeInfo);
 
-  const sd::LongType xTadEws = shape::elementWiseStride(xTadShapeInfo);
-  const sd::LongType yTadEws = shape::elementWiseStride(yTadShapeInfo);
-  const sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+  const LongType xTadEws = shape::elementWiseStride(xTadShapeInfo);
+  const LongType yTadEws = shape::elementWiseStride(yTadShapeInfo);
+  const LongType zEws = shape::elementWiseStride(zShapeInfo);
 
   const char xTadOrder = shape::order(xTadShapeInfo);
   const char yTadOrder = shape::order(xTadShapeInfo);
   const char zOrder = shape::order(zShapeInfo);
 
-  sd::LongType position;
+  LongType position;
   const bool xTadVectorOrC = shape::isCommonVector(xTadShapeInfo, position) || xTadOrder == 'c';
   const bool yTadVectorOrC = shape::isCommonVector(yTadShapeInfo, position) || yTadOrder == 'c';
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, position) || zOrder == 'c';

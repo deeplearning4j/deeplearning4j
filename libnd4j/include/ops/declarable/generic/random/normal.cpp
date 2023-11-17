@@ -34,12 +34,12 @@ CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
 
   RandomLauncher::fillGaussian(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(random_normal) {
   auto in = INPUT_VARIABLE(0);
-  auto shape = in->template asVectorT<sd::LongType>();
+  auto shape = in->template asVectorT<LongType>();
   if(block.getDArguments()->size() > 0) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(D_ARG(0), 'c', shape);
     return SHAPELIST(newShape);
@@ -53,7 +53,7 @@ DECLARE_SHAPE_FN(random_normal) {
 DECLARE_SYN(randomnormal, random_normal);
 
 DECLARE_TYPES(random_normal) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

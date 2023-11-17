@@ -44,12 +44,12 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
   auto weights = registerArr(NDArrayFactory::create<float>('c', {2, 2, 2, 3}));
   auto exp = registerArr(NDArrayFactory::create<float>('c', {1, 3, 5, 4}));
 
-  sd::ops::conv2d op;
+  conv2d op;
 
   std::vector<double> tArgs({});
-  std::vector<sd::LongType> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
+  std::vector<LongType> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::Pointer ptrs[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)weights->shapeInfo()};
+  Pointer ptrs[] = {(Pointer)input->shapeInfo(), (Pointer)weights->shapeInfo()};
 
   auto shapeList =
       calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 2, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
@@ -63,7 +63,7 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
   ASSERT_EQ(exp->sizeAt(3), shape::shapeOf((sd::LongType *)shapeList->at(0))[3]);
 
 
-  deleteShapeList((sd::Pointer)shapeList);
+  deleteShapeList((Pointer)shapeList);
 }
 
 TEST_F(JavaInteropTests, TestShapeExposure2) {
@@ -72,12 +72,12 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
   auto input = registerArr(NDArrayFactory::create<float>('c', {1, 2, 5, 4}));
   auto exp = registerArr(NDArrayFactory::create<float>('c', {4}, {1, 2, 5, 4}));
 
-  sd::ops::shape_of op;
+  shape_of op;
 
   std::vector<double> tArgs({});
-  std::vector<sd::LongType> iArgs({});
+  std::vector<LongType> iArgs({});
 
-  sd::Pointer ptrs[] = {(sd::Pointer)input->shapeInfo()};
+  Pointer ptrs[] = {(Pointer)input->shapeInfo()};
 
   auto shapeList =
       calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 1, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
@@ -87,7 +87,7 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
   ASSERT_EQ(exp->rankOf(), shape::rank((sd::LongType *)shapeList->at(0)));
   ASSERT_EQ(exp->sizeAt(0), shape::shapeOf((sd::LongType *)shapeList->at(0))[0]);
 
-  deleteShapeList((sd::Pointer)shapeList);
+  deleteShapeList((Pointer)shapeList);
 }
 
 TEST_F(JavaInteropTests, TestShapeExposure3) {
@@ -96,9 +96,9 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
   auto x = registerArr(NDArrayFactory::create<float>('c', {5, 30}));
   auto sizes = registerArr(NDArrayFactory::create<int>('c', {3}, {4, 15, 11}));
 
-  std::vector<sd::LongType> list0 = {0, 0, 0, 4};
-  std::vector<sd::LongType> list1 = {0, 0, 4, 19};
-  std::vector<sd::LongType> list2 = {0, 0, 19, 30};
+  std::vector<LongType> list0 = {0, 0, 0, 4};
+  std::vector<LongType> list1 = {0, 0, 4, 19};
+  std::vector<LongType> list2 = {0, 0, 19, 30};
 
   auto sub0 = (*x)(list0, true);
   auto sub1 = (*x)(list1, true);
@@ -108,13 +108,13 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
   sub1.assign(1.0f);
   sub2.assign(2.0f);
 
-  sd::Pointer inputBuffers[] = {x->buffer(), sizes->buffer(), x->specialBuffer(), sizes->specialBuffer()};
-  sd::Pointer inputShapes[] = {(sd::Pointer)x->shapeInfo(), (sd::Pointer)sizes->shapeInfo(),
-                               (sd::Pointer)x->specialShapeInfo(), (sd::Pointer)sizes->specialShapeInfo()};
+  Pointer inputBuffers[] = {x->buffer(), sizes->buffer(), x->specialBuffer(), sizes->specialBuffer()};
+  Pointer inputShapes[] = {(Pointer)x->shapeInfo(), (Pointer)sizes->shapeInfo(), (Pointer)x->specialShapeInfo(),
+                           (Pointer)sizes->specialShapeInfo()};
 
-  sd::ops::split_v op;
+  split_v op;
 
-  sd::LongType iArgs[] = {1};
+  LongType iArgs[] = {1};
   auto hash = op.getOpHash();
 
   auto shapeList =
@@ -126,7 +126,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
   ASSERT_TRUE(shape::equalsSoft(sub1.shapeInfo(), shapeList->at(1)));
   ASSERT_TRUE(shape::equalsSoft(sub2.shapeInfo(), shapeList->at(2)));
 
-  deleteShapeList((sd::Pointer)shapeList);
+  deleteShapeList((Pointer)shapeList);
 }
 
 TEST_F(JavaInteropTests, Test_Squeeze_1) {
@@ -136,13 +136,13 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
   auto z = registerArr(NDArrayFactory::create<float>('c', {6}));
   auto e = registerArr(NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f}));
 
-  sd::ops::squeeze op;
+  squeeze op;
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x->buffer(), x->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x->shapeInfo(), (sd::Pointer)x->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x->buffer(), x->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x->shapeInfo(), (Pointer)x->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)z->buffer(), z->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z->shapeInfo(), (sd::Pointer)z->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)z->buffer(), z->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z->shapeInfo(), (Pointer)z->specialShapeInfo()};
   auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1,
                              nullptr, 0, nullptr, 0, nullptr, 0, false);
   ASSERT_EQ(sd::Status::OK, status);
@@ -158,14 +158,14 @@ TEST_F(JavaInteropTests, Test_RDiv_1) {
 
   NDArray::prepareSpecialUse({z}, {x, y});
 
-  sd::ops::reversedivide op;
+  reversedivide op;
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x->buffer(), (sd::Pointer)y->buffer(), x->specialBuffer(), y->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x->shapeInfo(), (sd::Pointer)y->shapeInfo(),
-                                (sd::Pointer)x->specialShapeInfo(), (sd::Pointer)y->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x->buffer(), (Pointer)y->buffer(), x->specialBuffer(), y->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x->shapeInfo(), (Pointer)y->shapeInfo(), (Pointer)x->specialShapeInfo(),
+                            (Pointer)y->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)z->buffer(), (sd::Pointer)z->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z->shapeInfo(), (sd::Pointer)z->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)z->buffer(), (Pointer)z->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z->shapeInfo(), (Pointer)z->specialShapeInfo()};
   auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1,
                              nullptr, 0, nullptr, 0, nullptr, 0, false);
 
@@ -198,23 +198,23 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
   auto expOutput = registerArr(NDArrayFactory::create<float>('c', {3, 2, 8, 8}));
 
-  sd::ops::sconv2d op;
+  sconv2d op;
 
   NDArray::prepareSpecialUse({output}, {input, weightsD, weightsP, bias});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(),           (sd::Pointer)weightsD->buffer(),
-                                (sd::Pointer)weightsP->buffer(),        (sd::Pointer)bias->buffer(),
-                                (sd::Pointer)input->specialBuffer(),    (sd::Pointer)weightsD->specialBuffer(),
-                                (sd::Pointer)weightsP->specialBuffer(), (sd::Pointer)bias->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(),           (sd::Pointer)weightsD->shapeInfo(),
-                                (sd::Pointer)weightsP->shapeInfo(),        (sd::Pointer)bias->shapeInfo(),
-                                (sd::Pointer)input->specialShapeInfo(),    (sd::Pointer)weightsD->specialShapeInfo(),
-                                (sd::Pointer)weightsP->specialShapeInfo(), (sd::Pointer)bias->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(),           (Pointer)weightsD->buffer(),
+                            (Pointer)weightsP->buffer(),        (Pointer)bias->buffer(),
+                            (Pointer)input->specialBuffer(),    (Pointer)weightsD->specialBuffer(),
+                            (Pointer)weightsP->specialBuffer(), (Pointer)bias->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(),           (Pointer)weightsD->shapeInfo(),
+                            (Pointer)weightsP->shapeInfo(),        (Pointer)bias->shapeInfo(),
+                            (Pointer)input->specialShapeInfo(),    (Pointer)weightsD->specialShapeInfo(),
+                            (Pointer)weightsP->specialShapeInfo(), (Pointer)bias->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output->buffer(), (sd::Pointer)output->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output->shapeInfo(), (sd::Pointer)output->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output->buffer(), (Pointer)output->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output->shapeInfo(), (Pointer)output->specialShapeInfo()};
 
-  sd::LongType exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
+  LongType exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                exp, 9, nullptr, 0, false);
@@ -236,20 +236,19 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
   weightsD->linspace(1);
   weightsD->permutei({2, 3, 1, 0});
 
-
-  sd::ops::sconv2d op;
+  sconv2d op;
 
   NDArray::prepareSpecialUse({output}, {input, weightsD});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(), (sd::Pointer)weightsD->buffer(), input->specialBuffer(),
-                                weightsD->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)weightsD->shapeInfo(),
-                                (sd::Pointer)input->specialShapeInfo(), (sd::Pointer)weightsD->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(), (Pointer)weightsD->buffer(), input->specialBuffer(),
+                            weightsD->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(), (Pointer)weightsD->shapeInfo(),
+                            (Pointer)input->specialShapeInfo(), (Pointer)weightsD->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output->buffer(), output->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output->shapeInfo(), (sd::Pointer)output->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output->buffer(), output->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output->shapeInfo(), (Pointer)output->specialShapeInfo()};
 
-  sd::LongType exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+  LongType exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                exp, 9, nullptr, 0, false);
@@ -268,17 +267,17 @@ TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
 
   NDArray::prepareSpecialUse({output}, {input});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(), input->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)input->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(), input->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(), (Pointer)input->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output->buffer(), output->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output->shapeInfo(), (sd::Pointer)output->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output->buffer(), output->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output->shapeInfo(), (Pointer)output->specialShapeInfo()};
 
-  std::vector<sd::LongType> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
+  std::vector<LongType> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::maxpool2d op;
+  maxpool2d op;
 
-  sd::Status status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers,
+  Status status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers,
                                    ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, nullptr, 0, false);
 
   NDArray::registerSpecialUse({output}, {input});
@@ -293,15 +292,15 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
 
   NDArray::prepareSpecialUse({output}, {input});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(), input->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)input->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(), input->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(), (Pointer)input->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output->buffer(), output->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output->shapeInfo(), (sd::Pointer)output->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output->buffer(), output->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output->shapeInfo(), (Pointer)output->specialShapeInfo()};
 
-  sd::ops::col2im op;
+  col2im op;
 
-  sd::LongType exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
+  LongType exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
 
   auto hash = op.getOpHash();
 
@@ -322,15 +321,15 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 
   NDArray::prepareSpecialUse({&output}, {&input});
 
-  sd::ops::pnormpool2d op;
+  pnormpool2d op;
 
-  sd::LongType exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
+  LongType exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input.buffer(), input.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input.shapeInfo(), (sd::Pointer)input.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input.buffer(), input.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input.shapeInfo(), (Pointer)input.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output.buffer(), output.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output.shapeInfo(), (sd::Pointer)output.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output.buffer(), output.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output.shapeInfo(), (Pointer)output.specialShapeInfo()};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                exp, 11, nullptr, 0, false);
@@ -348,14 +347,14 @@ TEST_F(JavaInteropTests, TestInplace_1) {
 
   NDArray::prepareSpecialUse({}, {input});
 
-  sd::ops::clipbyvalue op;
+  clipbyvalue op;
 
   double extras[] = {-1.0f, 1.0f};
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(), input->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)input->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(), input->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(), (Pointer)input->specialShapeInfo()};
 
-  sd::Status result = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras,
+  Status result = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras,
                                    2, nullptr, 0, nullptr, 0, true);
 
   NDArray::registerSpecialUse({}, {input});
@@ -426,7 +425,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_1) {
   ctx.setInputArray(0, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo());
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 
-  sd::ops::softmax op;
+  softmax op;
   auto status = op.execute(&ctx);
   ASSERT_NE(sd::Status::OK, status);
 }
@@ -441,7 +440,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_2) {
   ctx.setInputArray(0, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo());
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 
-  sd::ops::softmax op;
+  softmax op;
   auto status = op.execute(&ctx);
   ASSERT_NE(sd::Status::OK, status);
 }
@@ -464,7 +463,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_3) {
   ctx.setInputArray(2, max->buffer(), max->shapeInfo(), max->specialBuffer(), max->specialShapeInfo());
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 
-  sd::ops::fake_quant_with_min_max_vars_per_channel op;
+  fake_quant_with_min_max_vars_per_channel op;
   ASSERT_ANY_THROW(op.execute(&ctx));
 }
 
@@ -472,17 +471,17 @@ TEST_F(JavaInteropTests, Test_empty_cast_1) {
   GTEST_SKIP() << "Skipping Test_empty_cast_1";
 
   auto x = NDArrayFactory::create<bool>('c', {1, 0, 2});
-  auto z = NDArrayFactory::create<sd::LongType>('c', {1, 0, 2});
-  auto e = NDArrayFactory::create<sd::LongType>('c', {1, 0, 2});
+  auto z = NDArrayFactory::create<LongType>('c', {1, 0, 2});
+  auto e = NDArrayFactory::create<LongType>('c', {1, 0, 2});
 
-  sd::LongType iArgs[] = {10};
+  LongType iArgs[] = {10};
 
   Context ctx(1);
   ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
   ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
   ctx.setIArguments(iArgs, 1);
 
-  sd::ops::cast op;
+  cast op;
   auto result = op.execute(&ctx);
   ASSERT_EQ(sd::Status::OK, result);
   ASSERT_EQ(e, z);
@@ -500,14 +499,14 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
 
   NDArray::prepareSpecialUse({&o}, {&x, &y});
 
-  sd::ops::greater op;
+  greater op;
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x.buffer(), (sd::Pointer)y.buffer(), x.specialBuffer(), y.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)y.shapeInfo(),
-                                (sd::Pointer)x.specialShapeInfo(), (sd::Pointer)y.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x.buffer(), (Pointer)y.buffer(), x.specialBuffer(), y.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)y.shapeInfo(), (Pointer)x.specialShapeInfo(),
+                            (Pointer)y.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)o.buffer(), o.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)o.shapeInfo(), (sd::Pointer)o.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)o.buffer(), o.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)o.shapeInfo(), (Pointer)o.specialShapeInfo()};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                nullptr, 0, nullptr, 0, false);
@@ -525,16 +524,16 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
   auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {false, false, true, true});
 
-  sd::ops::greater op;
+  greater op;
 
   NDArray::prepareSpecialUse({&o}, {&x, &y});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x.buffer(), (sd::Pointer)y.buffer(), x.specialBuffer(), y.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)y.shapeInfo(),
-                                (sd::Pointer)x.specialShapeInfo(), (sd::Pointer)y.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x.buffer(), (Pointer)y.buffer(), x.specialBuffer(), y.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)y.shapeInfo(), (Pointer)x.specialShapeInfo(),
+                            (Pointer)y.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)o.buffer(), o.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)o.shapeInfo(), (sd::Pointer)o.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)o.buffer(), o.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)o.shapeInfo(), (Pointer)o.specialShapeInfo()};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                nullptr, 0, nullptr, 0, false);
@@ -547,7 +546,7 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
   GTEST_SKIP() << "Skipping Test_Boolean_Op_1";
 
-  sd::ops::is_non_decreasing op;
+  is_non_decreasing op;
 
   auto x = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
   auto o = NDArrayFactory::create<bool>(false);
@@ -555,11 +554,11 @@ TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
 
   NDArray::prepareSpecialUse({&o}, {&x});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x.buffer(), x.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)x.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x.buffer(), x.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)x.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)o.buffer(), o.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)o.shapeInfo(), (sd::Pointer)o.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)o.buffer(), o.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)o.shapeInfo(), (Pointer)o.specialShapeInfo()};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -578,15 +577,15 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_1) {
   auto exp = registerArr(NDArrayFactory::create<float>('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f}));
   auto z = registerArr(NDArrayFactory::create<float>('c', {2, 3}));
 
-  sd::ops::test_output_reshape op;
+  test_output_reshape op;
 
   NDArray::prepareSpecialUse({z}, {x});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x->buffer(), x->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x->shapeInfo(), (sd::Pointer)x->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x->buffer(), x->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x->shapeInfo(), (Pointer)x->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)z->buffer(), z->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z->shapeInfo(), (sd::Pointer)z->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)z->buffer(), z->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z->shapeInfo(), (Pointer)z->specialShapeInfo()};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -607,16 +606,16 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
   auto z = registerArr(NDArrayFactory::create<float>('f', {2, 3}));
   auto e = registerArr(NDArrayFactory::create<float>('c', {2, 3}, {3.f, 4.f, 5.f, 6.f, 7.f, 8.f}));
 
-  sd::ops::add op;
+  add op;
 
   NDArray::prepareSpecialUse({z}, {x, y});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x->buffer(), (sd::Pointer)y->buffer(), x->specialBuffer(), y->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x->shapeInfo(), (sd::Pointer)y->shapeInfo(),
-                                (sd::Pointer)x->specialShapeInfo(), (sd::Pointer)y->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x->buffer(), (Pointer)y->buffer(), x->specialBuffer(), y->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x->shapeInfo(), (Pointer)y->shapeInfo(), (Pointer)x->specialShapeInfo(),
+                            (Pointer)y->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)z->buffer(), z->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z->shapeInfo(), (sd::Pointer)z->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)z->buffer(), z->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z->shapeInfo(), (Pointer)z->specialShapeInfo()};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -634,26 +633,26 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
 
   auto input = registerArr(NDArrayFactory::create<double>(
       'c', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24}));
-  auto indices = registerArr(NDArrayFactory::create<sd::LongType>('c', {1, 6}, {0, 1, 2, 2, 1, 2}));
+  auto indices = registerArr(NDArrayFactory::create<LongType>('c', {1, 6}, {0, 1, 2, 2, 1, 2}));
   auto output = registerArr(NDArrayFactory::create<double>('f', {2, 1, 6, 4}));
   auto e = registerArr(NDArrayFactory::create<double>(
       'c', {2, 1, 6, 4},
       {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 9,  10, 11, 12, 5,  6,  7,  8,  9,  10, 11, 12,
        13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 21, 22, 23, 24, 17, 18, 19, 20, 21, 22, 23, 24}));
 
-  sd::ops::gather op;
+  gather op;
 
   NDArray::prepareSpecialUse({output}, {input, indices});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)input->buffer(), (sd::Pointer)indices->buffer(), input->specialBuffer(),
-                                indices->specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input->shapeInfo(), (sd::Pointer)indices->shapeInfo(),
-                                (sd::Pointer)input->specialShapeInfo(), (sd::Pointer)input->specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)input->buffer(), (Pointer)indices->buffer(), input->specialBuffer(),
+                            indices->specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input->shapeInfo(), (Pointer)indices->shapeInfo(),
+                            (Pointer)input->specialShapeInfo(), (Pointer)input->specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)output->buffer(), output->specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)output->shapeInfo(), (sd::Pointer)output->specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)output->buffer(), output->specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)output->shapeInfo(), (Pointer)output->specialShapeInfo()};
 
-  sd::LongType iArgs[] = {1};
+  LongType iArgs[] = {1};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -674,20 +673,20 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
   auto y = NDArrayFactory::create<float>('c', {3, 4, 5});
   auto z = NDArrayFactory::create<float>('c', {5});
 
-  auto dims = NDArrayFactory::create<sd::LongType>('c', {2}, {0, 1});
+  auto dims = NDArrayFactory::create<LongType>('c', {2}, {0, 1});
   dims.syncToHost();
 
-  sd::LaunchContext *context = sd::LaunchContext::defaultContext();
+  LaunchContext *context = LaunchContext::defaultContext();
 
-  sd::Pointer *extraPointers = nullptr;
+  Pointer *extraPointers = nullptr;
 #ifdef __CUDABLAS__
-  extraPointers = new sd::Pointer[6]{nullptr, context->getCudaStream(),        context->getScalarPointer(),
+  extraPointers = new Pointer[6]{nullptr, context->getCudaStream(),        context->getScalarPointer(),
                                      nullptr, context->getCudaSpecialStream(), context->getReductionPointer()};
 #endif
 
-  std::vector<sd::LongType> dims2 = {0, 1};
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims2);
-  auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), &dims2);
+  std::vector<LongType> dims2 = {0, 1};
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), &dims2);
+  auto packY = ConstantTadHelper::getInstance().tadForDimensions(y.shapeInfo(), &dims2);
 
   NDArray::prepareSpecialUse({&z}, {&x, &y, &dims});
   OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -888,17 +887,17 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
        3.53798294, -0.08546703, -2.16840744, 6.18733406, -0.17871059, -2.59837723, 5.94218683, -1.02990067, -0.49760687,
        3.76938033, 0.86383581,  -1.91504073});
 
-  sd::ops::avgpool2d op;
+  avgpool2d op;
 
   NDArray::prepareSpecialUse({&z}, {&input});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(input.buffer()), input.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input.shapeInfo(), (sd::Pointer)input.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(input.buffer()), input.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input.shapeInfo(), (Pointer)input.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {reinterpret_cast<sd::Pointer>(z.buffer()), z.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z.shapeInfo(), (sd::Pointer)z.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {reinterpret_cast<Pointer>(z.buffer()), z.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z.shapeInfo(), (Pointer)z.specialShapeInfo()};
 
-  sd::LongType iArgs[] = {3, 3, 3, 3, 0, 0, 1, 1, 1, 0, 1};
+  LongType iArgs[] = {3, 3, 3, 3, 0, 0, 1, 1, 1, 0, 1};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -919,15 +918,15 @@ TEST_F(JavaInteropTests, Test_MaxPool2D_float_1) {
 
   NDArray::prepareSpecialUse({&z}, {&input});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(input.buffer()), input.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input.shapeInfo(), (sd::Pointer)input.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(input.buffer()), input.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input.shapeInfo(), (Pointer)input.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {reinterpret_cast<sd::Pointer>(z.buffer()), z.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z.shapeInfo(), (sd::Pointer)z.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {reinterpret_cast<Pointer>(z.buffer()), z.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z.shapeInfo(), (Pointer)z.specialShapeInfo()};
 
-  sd::LongType iArgs[] = {2, 2, 1, 1, 1, 1, 2, 2, 1, 0, 0};
+  LongType iArgs[] = {2, 2, 1, 1, 1, 1, 2, 2, 1, 0, 0};
 
-  sd::ops::maxpool2d op;
+  maxpool2d op;
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -949,21 +948,21 @@ TEST_F(JavaInteropTests, Test_Unstack_1) {
 
   NDArray::prepareSpecialUse({&z0, &z1, &z2, &z3, &z4}, {&x});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(x.buffer()), x.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)x.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(x.buffer()), x.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)x.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {z0.buffer(),        z1.buffer(),        z2.buffer(),        z3.buffer(),
-                                  z4.buffer(),        z0.specialBuffer(), z1.specialBuffer(), z2.specialBuffer(),
-                                  z3.specialBuffer(), z4.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z0.shapeInfo(),        (sd::Pointer)z1.shapeInfo(),
-                                 (sd::Pointer)z2.shapeInfo(),        (sd::Pointer)z3.shapeInfo(),
-                                 (sd::Pointer)z4.shapeInfo(),        (sd::Pointer)z0.specialShapeInfo(),
-                                 (sd::Pointer)z1.specialShapeInfo(), (sd::Pointer)z2.specialShapeInfo(),
-                                 (sd::Pointer)z3.specialShapeInfo(), (sd::Pointer)z4.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {z0.buffer(),        z1.buffer(),        z2.buffer(),        z3.buffer(),
+                              z4.buffer(),        z0.specialBuffer(), z1.specialBuffer(), z2.specialBuffer(),
+                              z3.specialBuffer(), z4.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z0.shapeInfo(),        (Pointer)z1.shapeInfo(),
+                             (Pointer)z2.shapeInfo(),        (Pointer)z3.shapeInfo(),
+                             (Pointer)z4.shapeInfo(),        (Pointer)z0.specialShapeInfo(),
+                             (Pointer)z1.specialShapeInfo(), (Pointer)z2.specialShapeInfo(),
+                             (Pointer)z3.specialShapeInfo(), (Pointer)z4.specialShapeInfo()};
 
-  sd::LongType iArgs[] = {0};
+  LongType iArgs[] = {0};
 
-  sd::ops::unstack op;
+  unstack op;
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 5, nullptr, 0,
@@ -1156,16 +1155,16 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
        -1.10807717f, 3.30056310f,  -0.43268481f, -0.41470885f, 3.53798294f,  -0.08546703f, -2.16840744f, 6.18733406f,
        -0.17871059f, -2.59837723f, 5.94218683f,  -1.02990067f, -0.49760687f, 3.76938033f,  0.86383581f,  -1.91504073f});
 
-  sd::ops::avgpool2d op;
+  avgpool2d op;
 
   NDArray::prepareSpecialUse({&z}, {&input});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(input.buffer()), input.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)input.shapeInfo(), (sd::Pointer)input.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(input.buffer()), input.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)input.shapeInfo(), (Pointer)input.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {reinterpret_cast<sd::Pointer>(z.buffer()), z.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z.shapeInfo(), (sd::Pointer)z.specialShapeInfo()};
-  sd::LongType iArgs[] = {3, 3, 3, 3, 0, 0, 1, 1, 1, 0, 1};
+  Pointer ptrsOutBuffers[] = {reinterpret_cast<Pointer>(z.buffer()), z.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z.shapeInfo(), (Pointer)z.specialShapeInfo()};
+  LongType iArgs[] = {3, 3, 3, 3, 0, 0, 1, 1, 1, 0, 1};
 
   auto hash = op.getOpHash();
   auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
@@ -1207,14 +1206,14 @@ TEST_F(JavaInteropTests, Test_Add_1) {
 
   NDArray::prepareSpecialUse({&x}, {&x, &y});
 
-  sd::ops::add op;
+  add op;
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x.buffer(), y.buffer(), x.specialBuffer(), y.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)y.shapeInfo(),
-                                (sd::Pointer)x.specialShapeInfo(), (sd::Pointer)y.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x.buffer(), y.buffer(), x.specialBuffer(), y.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)y.shapeInfo(), (Pointer)x.specialShapeInfo(),
+                            (Pointer)y.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)x.buffer(), x.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)x.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)x.buffer(), x.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)x.shapeInfo(), (Pointer)x.specialShapeInfo()};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                nullptr, 0, nullptr, 0, false);
@@ -1233,16 +1232,16 @@ TEST_F(JavaInteropTests, zeta_test10) {
                                           {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048,
                                            2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
 
-  sd::ops::zeta op;
+  zeta op;
 
   NDArray::prepareSpecialUse({&z}, {&x, &q});
 
-  sd::Pointer ptrsInBuffer[] = {(sd::Pointer)x.buffer(), q.buffer(), x.specialBuffer(), q.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)q.shapeInfo(),
-                                (sd::Pointer)x.specialShapeInfo(), (sd::Pointer)q.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {(Pointer)x.buffer(), q.buffer(), x.specialBuffer(), q.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)q.shapeInfo(), (Pointer)x.specialShapeInfo(),
+                            (Pointer)q.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffers[] = {(sd::Pointer)z.buffer(), z.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z.shapeInfo(), (sd::Pointer)z.specialShapeInfo()};
+  Pointer ptrsOutBuffers[] = {(Pointer)z.buffer(), z.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z.shapeInfo(), (Pointer)z.specialShapeInfo()};
 
   execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0,
                nullptr, 0, nullptr, 0, false);
@@ -1255,7 +1254,7 @@ TEST_F(JavaInteropTests, zeta_test10) {
 TEST_F(JavaInteropTests, Test_IAMax_1) {
   auto arrayX = NDArrayFactory::create<float>({-0.24f, -0.26f, -0.07f, -0.01f});
   auto arrayZ = arrayX.indexReduceNumber(indexreduce::IndexAbsoluteMax, nullptr);
-  auto exp = NDArrayFactory::create<sd::LongType>(1);
+  auto exp = NDArrayFactory::create<LongType>(1);
 
   ASSERT_EQ(exp, arrayZ);
 }
@@ -1266,14 +1265,13 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
   auto arrayX = NDArrayFactory::create<double>('c', {10, 10});
   auto arrayY = NDArrayFactory::create<double>('c', {10, 10});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(arrayX.buffer()),
-                                reinterpret_cast<sd::Pointer>(arrayY.buffer()), arrayX.specialBuffer(),
-                                arrayY.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)arrayX.shapeInfo(), (sd::Pointer)arrayY.shapeInfo(),
-                                (sd::Pointer)arrayX.specialShapeInfo(), (sd::Pointer)arrayY.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(arrayX.buffer()), reinterpret_cast<Pointer>(arrayY.buffer()),
+                            arrayX.specialBuffer(), arrayY.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)arrayX.shapeInfo(), (Pointer)arrayY.shapeInfo(),
+                                (Pointer)arrayX.specialShapeInfo(), (Pointer)arrayY.specialShapeInfo()};
 
   NDArray::prepareSpecialUse({}, {&arrayX, &arrayY});
-  sd::ops::greater_equal op;
+  greater_equal op;
   auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr,
                                           0, nullptr, 0, nullptr, 0);
   NDArray::registerSpecialUse({}, {&arrayX, &arrayY});
@@ -1289,13 +1287,13 @@ TEST_F(JavaInteropTests, Test_L2_Loss_3) {
 
   NDArray::prepareSpecialUse({&z}, {&x});
 
-  sd::Pointer ptrsInBuffer[] = {reinterpret_cast<sd::Pointer>(x.buffer()), x.specialBuffer()};
-  sd::Pointer ptrsInShapes[] = {(sd::Pointer)x.shapeInfo(), (sd::Pointer)x.specialShapeInfo()};
+  Pointer ptrsInBuffer[] = {reinterpret_cast<Pointer>(x.buffer()), x.specialBuffer()};
+  Pointer ptrsInShapes[] = {(Pointer)x.shapeInfo(), (Pointer)x.specialShapeInfo()};
 
-  sd::Pointer ptrsOutBuffer[] = {reinterpret_cast<sd::Pointer>(z.buffer()), (sd::Pointer)z.specialBuffer()};
-  sd::Pointer ptrsOutShapes[] = {(sd::Pointer)z.shapeInfo(), (sd::Pointer)z.specialShapeInfo()};
+  Pointer ptrsOutBuffer[] = {reinterpret_cast<Pointer>(z.buffer()), (Pointer)z.specialBuffer()};
+  Pointer ptrsOutShapes[] = {(Pointer)z.shapeInfo(), (Pointer)z.specialShapeInfo()};
 
-  sd::ops::l2_loss op;
+  l2_loss op;
   auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffer, ptrsOutShapes, 1,
                              nullptr, 0, nullptr, 0, nullptr, 0, false);
   ASSERT_EQ(sd::Status::OK, status);
@@ -1333,7 +1331,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_3) {
 #endif
 
   ASSERT_EQ(2, ctx.width());
-  sd::ops::add op;
+  add op;
   execCustomOp2(nullptr, op.getOpHash(), &ctx);
 #if !defined(HAVE_VEDA)
   NDArray::registerSpecialUse({&z}, {&array0, &array1});
@@ -1346,7 +1344,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_4) {
 
   auto exp = registerArr(NDArrayFactory::create<double>('c', {3, 5}, {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1}));
   auto z = registerArr(NDArrayFactory::create<double>('c', {3, 5}));
-  sd::LongType iArgs[] = {3, 5, 2};
+  LongType iArgs[] = {3, 5, 2};
 
   NDArray::prepareSpecialUse({z}, {});
 
@@ -1355,7 +1353,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_4) {
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   ctx.setIArguments(iArgs, 3);
 
-  sd::ops::tri op;
+  tri op;
   execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
   NDArray::registerSpecialUse({z}, {});
@@ -1380,7 +1378,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_5) {
   ctx.setInputArray(1, b->buffer(), b->shapeInfo(), b->specialBuffer(), b->specialShapeInfo());
   ctx.setOutputArray(0, c->buffer(), c->shapeInfo(), c->specialBuffer(), c->specialShapeInfo());
 
-  sd::ops::matmul op;
+  matmul op;
   auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
   NDArray::registerSpecialUse({c}, {b, c});
@@ -1404,7 +1402,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
   NDArray::prepareSpecialUse({gA, gB}, {a, b, gI});
 
   Context ctx(1);
-  sd::LongType iArgs[] = {0L, 0L, 0L};
+  LongType iArgs[] = {0L, 0L, 0L};
 
   ctx.setInputArray(0, a->buffer(), a->shapeInfo(), a->specialBuffer(), a->specialShapeInfo());
   ctx.setInputArray(1, b->buffer(), b->shapeInfo(), b->specialBuffer(), b->specialShapeInfo());
@@ -1415,7 +1413,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
 
   ctx.setIArguments(iArgs, 3);
 
-  sd::ops::matmul_bp op;
+  matmul_bp op;
   auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
   NDArray::registerSpecialUse({gA, gB}, {a, b, gI});
@@ -1431,7 +1429,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
   auto z = registerArr(NDArrayFactory::create<float>('c', {3}));
   auto e = registerArr(NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f}));
   Context ctx(1);
-  sd::LongType iArgs[] = {0L, 0L, 0L};
+  LongType iArgs[] = {0L, 0L, 0L};
 
   ctx.setIArguments(iArgs, 1);
 #if defined(HAVE_VEDA)
@@ -1451,7 +1449,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
 
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 #endif
-  sd::ops::concat op;
+  concat op;
   auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
 #if !defined(HAVE_VEDA)
@@ -1471,7 +1469,7 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
   RandomGenerator rng(119, 323841120L);
   bfloat16 args[2] = {(bfloat16)0.0f, (bfloat16)1.0f};
   OpaqueDataBuffer zBuf(z->dataBuffer());
-  execRandom(nullptr, sd::random::Ops::UniformDistribution, &rng, &zBuf, z->shapeInfo(), z->specialShapeInfo(), args);
+  execRandom(nullptr, random::Ops::UniformDistribution, &rng, &zBuf, z->shapeInfo(), z->specialShapeInfo(), args);
 
   ASSERT_TRUE(z->sumNumber().e<float>(0) > 0);
 }
@@ -1488,13 +1486,13 @@ TEST_F(JavaInteropTests, test_ismax_view) {
 
   auto z = v.ulike();
 
-  sd::LongType iArgs[] = {2L, 0L};
+  LongType iArgs[] = {2L, 0L};
   Context ctx(1);
   ctx.setInputArray(0, v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo());
   ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
   ctx.setIArguments(iArgs, 1);
 
-  sd::ops::ismax op;
+  ismax op;
   op.execute(&ctx);
 
   ASSERT_EQ(e, z);
@@ -1511,7 +1509,7 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
   ctx.setInputArray(0, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo());
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 
-  sd::ops::size op;
+  size op;
   auto status = op.execute(&ctx);
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -1530,9 +1528,9 @@ TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
 
   double buffer[2048];
 
-  InteropDataBuffer ix(0, DataType::DOUBLE, false);
-  InteropDataBuffer iy(0, DataType::DOUBLE, false);
-  InteropDataBuffer iz(0, DataType::DOUBLE, false);
+  InteropDataBuffer ix(0, DOUBLE, false);
+  InteropDataBuffer iy(0, DOUBLE, false);
+  InteropDataBuffer iz(0, DOUBLE, false);
 
   // we're imitating workspace-managed array here
   ix.setPrimary(buffer + 64, x->lengthOf());
@@ -1551,7 +1549,7 @@ TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
 
   ctx.setIArguments({2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0});
 
-  sd::ops::maxpool2d_bp op;
+  maxpool2d_bp op;
   auto status = op.execute(&ctx);
   ASSERT_EQ(sd::Status::OK, status);
 }
@@ -1561,12 +1559,12 @@ TEST_F(JavaInteropTests, test_linspace_shape_1) {
 
   if (!Environment::getInstance().isCPU()) return;
 
-  sd::ops::lin_space op;
+  lin_space op;
   double tArgs[2] = {1.0, 10.0};
-  sd::LongType iArgs = 10L;
-  int dArg = (int)sd::DataType::FLOAT32;
+  LongType iArgs = 10L;
+  int dArg = (int)FLOAT32;
   auto result =
-      ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 2, &iArgs, 1, nullptr, 0, &dArg, 1);
+      calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 2, &iArgs, 1, nullptr, 0, &dArg, 1);
 
   ASSERT_EQ(1, result->size());
   delete result;

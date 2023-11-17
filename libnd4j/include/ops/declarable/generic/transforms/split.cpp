@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
   int num_splits = INT_ARG(0);
 
   // axis is 0 by default
-  sd::LongType axis = 0;
+  LongType axis = 0;
 
   if (block.width() == 1) {
     input = INPUT_VARIABLE(0);
@@ -45,10 +45,10 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
 
     if (a->isScalar()) {
       // axis goes first
-      axis = a->e<sd::LongType>(0);
+      axis = a->e<LongType>(0);
       input = b;
     } else if (b->isScalar()) {
-      axis = b->e<sd::LongType>(0);
+      axis = b->e<LongType>(0);
       input = a;
     }
   }
@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
                    "Split: When input array is empty, all output arrays must be empty");
     }
     // No op
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   if (block.numI() == 2) axis = INT_ARG(1);
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
 
   helpers::split(block.launchContext(), *input, outArrs, axis);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(split) {
@@ -88,7 +88,7 @@ DECLARE_TYPES(split) {
 DECLARE_SHAPE_FN(split) {
   int num_splits = INT_ARG(0);
   auto input = inputShape->at(0);
-  sd::DataType dataType = ArrayOptions::dataType(input);
+  DataType dataType = ArrayOptions::dataType(input);
 
   // axis is 0 by default
   int axis = 0;
@@ -101,13 +101,13 @@ DECLARE_SHAPE_FN(split) {
     if (shape::isScalar(shape0)) {
       input = shape1;
       auto _a = INPUT_VARIABLE(0);
-      axis = _a->e<sd::LongType>(0);
+      axis = _a->e<LongType>(0);
       dataType = ArrayOptions::dataType(shape1);
       inputVar = 1;
     } else if (shape::isScalar(shape1)) {
       input = shape0;
       auto _a = INPUT_VARIABLE(1);
-      axis = _a->e<sd::LongType>(0);
+      axis = _a->e<LongType>(0);
       dataType = ArrayOptions::dataType(shape0);
       inputVar = 0;
     }
@@ -128,9 +128,9 @@ DECLARE_SHAPE_FN(split) {
 
   if (axis < 0) axis += shape::rank(input);
 
-  std::vector<sd::LongType> shape(shape::rank(input));
+  std::vector<LongType> shape(shape::rank(input));
 
-  for (sd::LongType e = 0; e < shape::rank(input); e++)
+  for (LongType e = 0; e < shape::rank(input); e++)
     if (e == axis)
       shape[e] = shape::sizeAt(input, e) / num_splits;
     else

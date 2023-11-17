@@ -27,16 +27,16 @@ ResultSet::ResultSet() {
   //
 }
 
-ResultSet::ResultSet(const sd::graph::FlatResult* result) {
+ResultSet::ResultSet(const graph::FlatResult* result) {
   for (int e = 0; e < result->variables()->size(); e++) {
     auto var = result->variables()->Get(e);
 
     NDArray* array;
 
     if (var->ndarray() != nullptr) {
-      array = sd::graph::FlatUtils::fromFlatArray(var->ndarray());
+      array = graph::FlatUtils::fromFlatArray(var->ndarray());
     } else if (var->shape() != nullptr) {
-      std::vector<sd::LongType> shapeInfo;
+      std::vector<LongType> shapeInfo;
       for (int i = 0; i < var->shape()->size(); i++) {
         shapeInfo.emplace_back(var->shape()->Get(i));
       }
@@ -44,7 +44,7 @@ ResultSet::ResultSet(const sd::graph::FlatResult* result) {
       // we just create empty array here
       int s0 = shapeInfo.at(0);
 
-      std::vector<sd::LongType> shape;
+      std::vector<LongType> shape;
       for (int i = 0; i < s0; i++) {
         shape.emplace_back(shapeInfo.at(i + 1));
       }
@@ -132,15 +132,15 @@ void ResultSet::setNonRemovable() { _removable = false; }
 
 int ResultSet::size() { return (int)_content.size(); }
 
-sd::NDArray* ResultSet::at(const unsigned long idx) const { return _content.at(idx); }
+NDArray* ResultSet::at(const unsigned long idx) const { return _content.at(idx); }
 
-sd::NDArray* ResultSet::operator[](const unsigned long idx) const { return _content[idx]; }
+NDArray* ResultSet::operator[](const unsigned long idx) const { return _content[idx]; }
 
-void ResultSet::push_back(sd::NDArray* array) { _content.emplace_back(array); }
+void ResultSet::push_back(NDArray* array) { _content.emplace_back(array); }
 
-sd::Status ResultSet::status() { return _status; }
+Status ResultSet::status() { return _status; }
 
-void ResultSet::setStatus(sd::Status status) { _status = status; }
+void ResultSet::setStatus(Status status) { _status = status; }
 
 void ResultSet::purge() { _content.clear(); }
 }  // namespace sd

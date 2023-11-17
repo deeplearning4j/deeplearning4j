@@ -76,8 +76,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
 
 
-  std::vector<sd::NDArray*> inputs = {queries,values,keys};
-  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
+  std::vector<NDArray *> inputs = {queries,values,keys};
+  std::vector<NDArray *> masks2 = {qMask,vMask};
 
 
 
@@ -116,7 +116,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dot_product_attention_v2) {
@@ -138,8 +138,8 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
   //inputs: batchSize,Tq,dim batchSize,Tq,Tv
   //outputs: batchSize,Tq, dim batchSize,Tq,Tv
-  std::vector<sd::LongType> outShape;
-  std::vector<sd::LongType> scoresShape1;
+  std::vector<LongType> outShape;
+  std::vector<LongType> scoresShape1;
 
 
   if(queries->rankOf() == 3) {
@@ -243,13 +243,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
 
 
 
-  std::vector<sd::NDArray*> inputs = {queries,values,keys,attentionScoresOut,attentionScoresWeights,attentionScoreLogits,eps};
+  std::vector<NDArray *> inputs = {queries,values,keys,attentionScoresOut,attentionScoresWeights,attentionScoreLogits,eps};
   if(dropoutMask != nullptr) {
     inputs.push_back(dropoutMask);
   }
 
-  std::vector<sd::NDArray *> masks2 = {qMask,vMask};
-  std::vector<sd::NDArray *> outputs = {dLdq,dLdv,dLdk};
+  std::vector<NDArray *> masks2 = {qMask,vMask};
+  std::vector<NDArray *> outputs = {dLdq,dLdv,dLdk};
 
   int seed = block.randomSeed();
   AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
@@ -271,7 +271,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
     eps->reshapei('c', {eps->sizeAt(1), eps->sizeAt(2)});
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dot_product_attention_v2_bp) {
@@ -280,11 +280,11 @@ DECLARE_TYPES(dot_product_attention_v2_bp) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2_bp) {
-  sd::LongType *dLdq_shape;
+  LongType *dLdq_shape;
   COPY_SHAPE(inputShape->at(0), dLdq_shape);
-  sd::LongType *dLdv_shape;
+  LongType *dLdv_shape;
   COPY_SHAPE(inputShape->at(1), dLdv_shape);
-  sd::LongType *dLdk_shape;
+  LongType *dLdk_shape;
   COPY_SHAPE(inputShape->at(2), dLdk_shape);
 
   return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape));

@@ -55,11 +55,11 @@ CUSTOM_OP_IMPL(dynamic_stitch, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(dynamic_stitch) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(dynamic_stitch) {
-  sd::LongType maxValue = 0;
+  LongType maxValue = 0;
   auto numOfData = block.width();
   numOfData /= 2;  // only index part it's needed to review
   auto restShape = inputShape->at(numOfData);
@@ -70,14 +70,14 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
     REQUIRE_TRUE(input->isZ(), 0, "dynamic_stitch: Indices should be integer, but %d type given.",
                  (int)input->dataType());
     auto maxV = input->reduceNumber(reduce::Max);
-    if (maxV.e<sd::LongType>(0) > maxValue) maxValue = maxV.e<sd::LongType>(0);
+    if (maxV.e<LongType>(0) > maxValue) maxValue = maxV.e<LongType>(0);
   }
   // calculate output rank - difference between indices shape and data shape
   int outRank = shape::rank(restShape) - shape::rank(firstShape) + 1;  // at least 1D tensor
-  std::vector<sd::LongType> outShape(outRank);
+  std::vector<LongType> outShape(outRank);
   // fill up output shape template: the first to max index, and rests - to vals from the first data input
   outShape[0] = maxValue + 1;
-  for (sd::LongType i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
+  for (LongType i = 1; i < outRank; ++i) outShape[i] = shape::sizeAt(restShape, i);
 
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));

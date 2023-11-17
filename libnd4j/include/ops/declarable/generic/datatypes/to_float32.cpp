@@ -35,15 +35,15 @@ CUSTOM_OP_IMPL(to_float32, 1, 1, true, 0, 0) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(to_float32) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::FLOAT32);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(FLOAT32);
 }
 
 DECLARE_SHAPE_FN(to_float32) {
-  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::FLOAT32, true, block.workspace());
+  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), FLOAT32, true, block.workspace());
   return SHAPELIST(CONSTANT(outShape));
 }
 

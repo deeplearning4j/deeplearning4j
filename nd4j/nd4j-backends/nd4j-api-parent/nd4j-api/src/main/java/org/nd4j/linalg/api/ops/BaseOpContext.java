@@ -28,6 +28,9 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.profiler.OpContextTracker;
+import org.nd4j.shade.guava.primitives.Booleans;
+import org.nd4j.shade.guava.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.*;
 
@@ -68,6 +71,10 @@ public abstract class BaseOpContext implements OpContext {
 
     }
 
+    @Override
+    public void setBAArguments(List<Boolean> arguments) {
+        setBArguments(Booleans.toArray(arguments));
+    }
 
 
     @Override
@@ -75,6 +82,11 @@ public abstract class BaseOpContext implements OpContext {
         fastpath_i.clear();
         for (val v:arguments)
             fastpath_i.add(v);
+    }
+
+    @Override
+    public void setIArguments(List<Long> iArguments) {
+        setIArguments(Longs.toArray(iArguments));
     }
 
     @Override
@@ -95,6 +107,11 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public void setTArguments(List<Double> tArguments) {
+        setTArguments(Doubles.toArray(tArguments));
+    }
+
+    @Override
     public List<Double> getTArguments(){
         return fastpath_t;
     }
@@ -111,6 +128,8 @@ public abstract class BaseOpContext implements OpContext {
             fastpath_b.add(v);
     }
 
+
+
     @Override
     public List<Boolean> getBArguments(){
         return fastpath_b;
@@ -126,6 +145,11 @@ public abstract class BaseOpContext implements OpContext {
         fastpath_d.clear();
         for (val v:arguments)
             fastpath_d.add(v);
+    }
+
+    @Override
+    public void setDArguments(List<DataType> arguments) {
+        setDArguments(arguments.toArray(new DataType[0]));
     }
 
     @Override
@@ -252,7 +276,7 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void transferTArgs() {
-setTArguments();
+        setTArguments();
     }
 
     @Override

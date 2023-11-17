@@ -60,9 +60,9 @@ CUSTOM_OP_IMPL(reduce_variance, -1, 1, false, 0, 0) {
       "REDUCE_VARIANCE OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
       input->rankOf(), input->rankOf(), item);
 
-  sd::ops::helpers::variance(*input, *output, dimensions, biasCorrected);
+  helpers::variance(*input, *output, dimensions, biasCorrected);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_variance) {
@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
 }
 
 DECLARE_TYPES(reduce_variance) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -140,8 +140,8 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   auto inputLen = input->lengthOf();
   //avoid divide by zero
   auto grad0Length = gradO->isScalar() || gradO->lengthOf() < 1 ? 1  :  gradO->lengthOf();
-  const sd::LongType N = inputLen / grad0Length;
-  const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
+  const LongType N = inputLen / grad0Length;
+  const LongType NminusOne = biasCorrected ? N - 1 : N;
   auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
   gradI->assign((*input - mean) * (2.0f / NminusOne));  // automatic broadcasting happens here
   if (!keepDims) {
@@ -156,7 +156,7 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   } else {
     *gradI *= *gradO;  // automatic broadcasting happens here
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_variance_bp) {
@@ -179,14 +179,14 @@ DECLARE_SHAPE_FN(reduce_variance_bp) {
       "REDUCE_VARIANCE_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
       inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* gradIshapeInfo(nullptr);
+  LongType* gradIshapeInfo(nullptr);
   COPY_SHAPE(in, gradIshapeInfo);
 
   return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_variance_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

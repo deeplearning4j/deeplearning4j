@@ -26,18 +26,18 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConvertHalfs(half *dx, sd::LongType n, void *dz) {
+SD_KERNEL void execConvertHalfs(half *dx, LongType n, void *dz) {
   auto z = reinterpret_cast<T *>(dz);
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  for (sd::LongType i = tid; i < n; i += blockDim.x * gridDim.x) z[i] = static_cast<T>(__half2float(dx[i]));
+  for (LongType i = tid; i < n; i += blockDim.x * gridDim.x) z[i] = static_cast<T>(__half2float(dx[i]));
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void convertHalfsToGeneric(dim3 &launchDims, cudaStream_t *stream, half *dx, sd::LongType n, void *dz) {
+SD_HOST void convertHalfsToGeneric(dim3 &launchDims, cudaStream_t *stream, half *dx, LongType n, void *dz) {
   execConvertHalfs<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, n, dz);
-  sd::DebugHelper::checkErrorCode(stream, "convertHalfsToGeneric(...) failed");
+  DebugHelper::checkErrorCode(stream, "convertHalfsToGeneric(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void convertHalfsToGeneric,

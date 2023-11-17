@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicReturn::processNode(Graph *graph, Node *node) {
+Status LogicReturn::processNode(Graph *graph, Node *node) {
   auto __variableSpace = graph->getVariableSpace();
 
   for (int e = 0; e < node->input()->size(); e++) {
@@ -52,7 +52,7 @@ sd::Status LogicReturn::processNode(Graph *graph, Node *node) {
                varOut->getNDArray()->meanNumber().e<float>(0));
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

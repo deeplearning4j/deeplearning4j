@@ -59,9 +59,9 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
                "BatchToSpaceND: rank of blockShape array must be equal to one, but got %i instead !",
                blockShape->rankOf());
 
-  const sd::LongType numOfSpatialDims = blockShape->sizeAt(0);
+  const LongType numOfSpatialDims = blockShape->sizeAt(0);
 
-  const auto product = blockShape->reduceNumber(sd::reduce::Prod).e<sd::LongType>(0);
+  const auto product = blockShape->reduceNumber(reduce::Prod).e<LongType>(0);
   REQUIRE_TRUE(input->sizeAt(0) % product == 0, 0,
                "BatchToSpaceND: first dimension of input array must be divisible by product of blockShape array "
                "elements (= %lld), but got first dimension equal to %i",
@@ -74,10 +74,10 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
   }
 
   // FIXME - should we use this time-consuming validation ?
-  for (sd::LongType i = 0; i < numOfSpatialDims; ++i) {
-    const auto cropLeft = crop->e<sd::LongType>(i, 0);
-    const auto cropRight = crop->e<sd::LongType>(i, 1);
-    const auto outSpatialDim = input->sizeAt(i + 1) * blockShape->e<sd::LongType>(i) - cropLeft - cropRight;
+  for (LongType i = 0; i < numOfSpatialDims; ++i) {
+    const auto cropLeft = crop->e<LongType>(i, 0);
+    const auto cropRight = crop->e<LongType>(i, 1);
+    const auto outSpatialDim = input->sizeAt(i + 1) * blockShape->e<LongType>(i) - cropLeft - cropRight;
     REQUIRE_TRUE(
         outSpatialDim >= 0, 0,
         "BatchToSpaceND: crop left/right values are too big and cause negative output spatial dimension/dimensions !");
@@ -88,13 +88,13 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
   else
     helpers::batchToSpaceND(block.launchContext(), input->dup(), *blockShape, *crop, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(batch_to_space_nd) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setSameMode(true);
@@ -110,7 +110,7 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
                "BatchToSpaceND: rank of blockShape array must be equal to one, but got %i instead !",
                blockShapeInfo[0]);
 
-  const auto product = INPUT_VARIABLE(1)->reduceNumber(sd::reduce::Prod).e<sd::LongType>(0);
+  const auto product = INPUT_VARIABLE(1)->reduceNumber(reduce::Prod).e<LongType>(0);
   REQUIRE_TRUE(inputShapeInfo[1] % product == 0, 0,
                "BatchToSpaceND: first dimension of input array must be divisible by product of blockShape array "
                "elements (= %lld), but got first dimension equal to %i",
@@ -124,13 +124,13 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
                  expectedCropShape.c_str(), ShapeUtils::shapeAsString(cropShapeInfo).c_str());
   }
 
-  std::vector<sd::LongType> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);
+  std::vector<LongType> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);
 
   outShape[0] /= product;
 
-  for (sd::LongType i = 0; i < numOfSpatialDims; ++i)
-    outShape[i + 1] = outShape[i + 1] * INPUT_VARIABLE(1)->e<sd::LongType>(i) -
-                      INPUT_VARIABLE(2)->e<sd::LongType>(i, 0) - INPUT_VARIABLE(2)->e<sd::LongType>(i, 1);
+  for (LongType i = 0; i < numOfSpatialDims; ++i)
+    outShape[i + 1] = outShape[i + 1] * INPUT_VARIABLE(1)->e<LongType>(i) -
+                      INPUT_VARIABLE(2)->e<LongType>(i, 0) - INPUT_VARIABLE(2)->e<LongType>(i, 1);
 
   return SHAPELIST(
       ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));

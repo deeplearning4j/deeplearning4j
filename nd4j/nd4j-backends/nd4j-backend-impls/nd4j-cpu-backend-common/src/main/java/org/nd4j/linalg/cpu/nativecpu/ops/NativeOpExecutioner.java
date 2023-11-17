@@ -595,9 +595,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException("Op " + op.opName() + " failed with message:" + loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            // the variable is mainly for ease of use with the debugger
+            String errorMessage = loop.lastErrorMessage();
+            throw new RuntimeException("Op " + op.opName() + " failed with message:" + errorMessage);
+        }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }

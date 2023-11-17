@@ -26,20 +26,20 @@
 namespace sd {
 namespace ops {
 BroadcastableBoolOp::BroadcastableBoolOp(const char *name, int numTArgs, int numIArgs)
-    : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
+    : DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
   //
 }
 
-ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
   auto y = inputShape->size() > 1 ? inputShape->at(1) : x;
-  sd::DataType dtype = sd::DataType::BOOL;
+  DataType dtype = BOOL;
 
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
     if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
-      std::vector<sd::LongType> vecShape;
+      std::vector<LongType> vecShape;
       auto xShape = shape::shapeOf(x);
       for(int i = 0; i < shape::rank(x); i++)
         vecShape.emplace_back(xShape[i]);
@@ -47,7 +47,7 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
       return shapeList;
     }
 
-    const sd::LongType *newshape = nullptr;
+    const LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     auto desc = new ShapeDescriptor(newshape, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
@@ -75,7 +75,7 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
-    const sd::LongType *newshape = nullptr;
+    const LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     auto desc = new ShapeDescriptor(newshape, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));

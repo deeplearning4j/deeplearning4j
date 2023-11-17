@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::Status leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* leftInput,
+SD_LIB_HIDDEN Status leastSquaresSolveFunctor(LaunchContext* context, NDArray const* leftInput,
                                                   NDArray const* rightInput, double const l2Regularizer,
                                                   bool const fast, NDArray* output);
 }

@@ -61,14 +61,18 @@ class If : PreImportHook  {
             wrappedThenBranch,
             null,
             null, mutableMapOf(),
-            registryCast)
+            registryCast,
+            false
+        )
 
         sd.putSubFunction("${op.name}_then_branch",thenBranchSubGraph)
         val elseBranchSubGraph = importGraphCast.importGraph(
             wrappedElseBranch,
             null,
             null, mutableMapOf(),
-            registryCast)
+            registryCast,
+            false
+        )
         sd.putSubFunction("${op.name}_else_branch",elseBranchSubGraph)
 
         val outputVarName = outputNames[0]

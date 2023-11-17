@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   }
 
   input->reduceAlongDimension(reduce::Mean, *output, &dimensions, keepDims);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_mean) {
@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(reduce_mean) {
 }
 
 DECLARE_TYPES(reduce_mean) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -143,11 +143,11 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
                                ShapeUtils::pullShapeFromShapeInfo(
                                    gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
     } else {
-      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), *gradO, *gradI);
+      gradI->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), *gradO, *gradI);
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_mean_bp) {
@@ -170,13 +170,13 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
       "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
       rank, item);
 
-  sd::LongType *gradIshapeInfo(nullptr);
+  LongType *gradIshapeInfo(nullptr);
   COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
   return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_mean_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

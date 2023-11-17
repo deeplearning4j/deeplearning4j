@@ -35,7 +35,7 @@ void toggle_bits__(NDArray &in, NDArray &out) {
 }
 BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray & in, NDArray &out), SD_INTEGER_TYPES);
 
-void __toggle_bits(sd::LaunchContext *context, NDArray &in, NDArray &out) {
+void __toggle_bits(LaunchContext *context, NDArray &in, NDArray &out) {
   BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
 }
 }  // namespace helpers

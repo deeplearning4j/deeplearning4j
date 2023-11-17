@@ -52,9 +52,9 @@ CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
   } else if (block.getTArguments()->size() > 1) {
     scoreThreshold = T_ARG(1);
   }
-  if (boxes->isEmpty() || scales->isEmpty()) return sd::Status::OK;
+  if (boxes->isEmpty() || scales->isEmpty()) return Status::OK;
 
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(boxes->rankOf() == 2, 0,
                "image.non_max_suppression: The rank of boxes array should be 2, "
@@ -77,13 +77,13 @@ CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
                DataTypeUtils::asString(boxes->dataType()).c_str(), DataTypeUtils::asString(scales->dataType()).c_str());
   helpers::nonMaxSuppression(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold,
                              output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(non_max_suppression) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
-  const sd::LongType *outputShape = nullptr;
+  const LongType *outputShape = nullptr;
 
   int maxOutputSize;
   if (block.width() > 2)
@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(non_max_suppression) {
   REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
   if (maxOutputSize > 0) {
-    auto actualIndicesCount = shape::sizeAt(in, static_cast<sd::LongType>(0));
+    auto actualIndicesCount = shape::sizeAt(in, static_cast<LongType>(0));
     if (block.getTArguments()->size() > 1 || block.width() > 4) {
       auto scoreThreshold = block.getTArguments()->size() > 1 ? T_ARG(1) : INPUT_VARIABLE(4)->e<double>(0);
       auto scales = INPUT_VARIABLE(1);
@@ -110,20 +110,20 @@ DECLARE_SHAPE_FN(non_max_suppression) {
 
 
   if(shape::isEmpty(in)) {
-    std::vector<sd::LongType> shape = {maxOutputSize};
+    std::vector<LongType> shape = {maxOutputSize};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }
-  outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT32);
+  outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, INT32);
 
   return SHAPELIST(outputShape);
 }
 DECLARE_TYPES(non_max_suppression) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
 }
 #endif
 #if NOT_EXCLUDED(OP_non_max_suppression_v3)
 DECLARE_TYPES(non_max_suppression_v3) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
 }
 
 CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
@@ -152,8 +152,8 @@ CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
   } else if (block.getTArguments()->size() > 1) {
     scoreThreshold = T_ARG(1);
   }
-  if (boxes->isEmpty() || scales->isEmpty()) return sd::Status::OK;
-  if (output->isEmpty()) return sd::Status::OK;
+  if (boxes->isEmpty() || scales->isEmpty()) return Status::OK;
+  if (output->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(boxes->rankOf() == 2, 0,
                "image.non_max_suppression: The rank of boxes array should be 2, but "
@@ -175,13 +175,13 @@ CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
 
   helpers::nonMaxSuppressionV3(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold,
                                output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(non_max_suppression_v3) {
   auto in = inputShape->at(0);
   if(shape::isEmpty(in)) {
-    std::vector<sd::LongType> shape = {0};
+    std::vector<LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }
   int outRank = shape::rank(in);
@@ -217,11 +217,11 @@ DECLARE_SHAPE_FN(non_max_suppression_v3) {
                                        scoreThreshold, nullptr);
 
   if(len == 0) {
-    std::vector<sd::LongType> shape = {0};
+    std::vector<LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }
 
-  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(len, DataType::INT32);
+  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(len, INT32);
   return SHAPELIST(outputShape);
 }
 #endif

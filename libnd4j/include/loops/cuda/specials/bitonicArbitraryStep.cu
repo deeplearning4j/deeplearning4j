@@ -169,6 +169,8 @@ SD_HOST void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream,
                                          bool descending) {
   execBitonicArbitraryStepKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, window, length, reverse, descending);
+  sd::DebugHelper::checkErrorCode(stream, "execBitonicArbitraryStepKernel  failed");
+
 }
 
 template <typename X, typename Y>

@@ -26,6 +26,7 @@
 #include <ops/declarable/helpers/adjust_saturation.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -33,15 +34,15 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void SD_KERNEL adjustSaturationCuda(const void* vx, const sd::LongType* xShapeInfo,
-                                           const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
-                                           const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                           const T factor, const sd::LongType dimC) {
+static void SD_KERNEL adjustSaturationCuda(const void* vx, const LongType* xShapeInfo,
+                                           const LongType* xTadOffsets, void* vz, const LongType* zShapeInfo,
+                                           const LongType* zTadOffsets, const LongType numOfTads,
+                                           const T factor, const LongType dimC) {
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ sd::LongType rank;
-  __shared__ sd::LongType xDimCstride, zDimCstride;
+  __shared__ LongType rank;
+  __shared__ LongType xDimCstride, zDimCstride;
 
   if (threadIdx.x == 0) {
     rank = shape::rank(xShapeInfo);
@@ -52,7 +53,7 @@ static void SD_KERNEL adjustSaturationCuda(const void* vx, const sd::LongType* x
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+  for (LongType i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
     const T* xTad = x + xTadOffsets[i];
     T* zTad = z + zTadOffsets[i];
 
@@ -74,21 +75,23 @@ static void SD_KERNEL adjustSaturationCuda(const void* vx, const sd::LongType* x
 template <typename T>
 static SD_HOST void adjustSaturationCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
                                                  const cudaStream_t* stream, const void* vx,
-                                                 const sd::LongType* xShapeInfo, const sd::LongType* xTadOffsets,
-                                                 void* vz, const sd::LongType* zShapeInfo,
-                                                 const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                                 const NDArray* factorScalarArr, const sd::LongType dimC) {
+                                                 const LongType* xShapeInfo, const LongType* xTadOffsets,
+                                                 void* vz, const LongType* zShapeInfo,
+                                                 const LongType* zTadOffsets, const LongType numOfTads,
+                                                 const NDArray* factorScalarArr, const LongType dimC) {
   adjustSaturationCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, factorScalarArr->e<T>(0), dimC);
+  sd::DebugHelper::checkGlobalErrorCode("adjustSaturation  failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustSaturation(sd::LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr, NDArray* output,
-                      const sd::LongType dimC) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
+void adjustSaturation(LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr, NDArray* output,
+                      const LongType dimC) {
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX->numberOfTads();
+  const LongType numOfTads = packX->numberOfTads();
 
   dim3 adjustDims = getAdjustDims(numOfTads);
 

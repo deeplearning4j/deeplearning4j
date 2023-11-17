@@ -67,13 +67,13 @@ CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
 
   helpers::reverseSequence(block.launchContext(), input, seqLengths, output, seqDim, batchDim);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(reverse_sequence) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS});
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-  getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
+  getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
 }
 
 DECLARE_SHAPE_FN(reverse_sequence) {
@@ -102,7 +102,7 @@ DECLARE_SHAPE_FN(reverse_sequence) {
                "batchDim dimension of input array, but got %i and %i correspondingly !",
                seqLenShapeInfo[1], inShapeInfo[batchDim + 1]);
 
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   COPY_SHAPE(inShapeInfo, outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));

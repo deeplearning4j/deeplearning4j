@@ -10,7 +10,7 @@ public class TFSingleTest {
     @Test
     public void testSingle() {
         TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-        tensorflowFrameworkImporter.runImport("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/frozen-model.pb", Collections.emptyMap(),true );
+        tensorflowFrameworkImporter.runImport("/home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests/frozen-model.pb", Collections.emptyMap(),true, false);
     }
 
 }

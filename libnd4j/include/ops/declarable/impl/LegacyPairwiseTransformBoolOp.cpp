@@ -25,17 +25,17 @@
 
 namespace sd {
 namespace ops {
-LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp::LegacyOp(2) {
+LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp(2) {
   // just a no-op
 }
 
-LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
+LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp(int opNum) : LegacyOp(2, opNum) {
   // just a no-op
 }
 
 LegacyOp *LegacyPairwiseTransformBoolOp::clone() { return new LegacyPairwiseTransformBoolOp(this->_opNum); }
 
-sd::Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
+Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -61,15 +61,15 @@ sd::Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
   STORE_RESULT(*z);
   traceExecIfNeeded(block);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
  *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
  */
-ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape, DataType::BOOL);
+  auto desc = new ShapeDescriptor(inShape, BOOL);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   delete desc;
   return ret;

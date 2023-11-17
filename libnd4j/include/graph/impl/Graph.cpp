@@ -41,12 +41,12 @@ std::vector<Variable *> *Graph::getPlaceholders() { return _variableSpace->getPl
 
 int Graph::numberOfPlaceholders() { return _variableSpace->numberOfPlaceholders(); };
 
-sd::LongType Graph::estimateRequiredMemory() {
-  sd::LongType result = 0L;
-  sd::LongType lastStep = 0L;
+LongType Graph::estimateRequiredMemory() {
+  LongType result = 0L;
+  LongType lastStep = 0L;
 
-  std::vector<sd::LongType const *> shapes;
-  SD_MAP_IMPL<std::pair<int, int>, sd::LongType const *> shapesMap;
+  std::vector<LongType const *> shapes;
+  SD_MAP_IMPL<std::pair<int, int>, LongType const *> shapesMap;
 
   int cntFD = 0;
 
@@ -72,7 +72,7 @@ sd::LongType Graph::estimateRequiredMemory() {
         auto in = node->input()->at(0);
 
         auto block = node->getContextPrototype();
-        std::vector<sd::LongType const *> inputShapes;
+        std::vector<LongType const *> inputShapes;
         int *oldShape;
         for (auto v : *node->input()) {
           sd_debug("     inputs for estimation are: %i:%i\n", v.first, v.second);
@@ -92,7 +92,7 @@ sd::LongType Graph::estimateRequiredMemory() {
         for (int jj = 0; jj < outSha->size(); jj++) {
           auto newShape = outSha->at(jj);
           std::pair<int, int> pairAddr(node->id(), cnt++);
-          std::pair<std::pair<int, int>, sd::LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -111,11 +111,11 @@ sd::LongType Graph::estimateRequiredMemory() {
           auto x = _variableSpace->getVariable(in);
           auto z = _variableSpace->getVariable(node->id());
 
-          auto newShape = new sd::LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo())];
+          auto newShape = new LongType[shape::shapeInfoLength(x->getNDArray()->shapeInfo())];
           memcpy(newShape, x->getNDArray()->shapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->shapeInfo()));
 
           std::pair<int, int> pairAddr(node->id(), 0);
-          std::pair<std::pair<int, int>, sd::LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -125,11 +125,11 @@ sd::LongType Graph::estimateRequiredMemory() {
         } else {
           auto prevShape = shapesMap.at(in);
 
-          auto newShape = new sd::LongType[shape::shapeInfoLength(prevShape)];
+          auto newShape = new LongType[shape::shapeInfoLength(prevShape)];
           memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
 
           std::pair<int, int> pairAddr(node->id(), 0);
-          std::pair<std::pair<int, int>, sd::LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -139,16 +139,16 @@ sd::LongType Graph::estimateRequiredMemory() {
         }
 
       } else if (node->getOpClass() == OpClass_REDUCTION) {
-        sd::LongType const *newShape = nullptr;
+        LongType const *newShape = nullptr;
 
         // if that's scalar output - we don't care about previous node
         if (node->getDimensions()->size() == 0 ||
-            (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == sd::DataTypeUtils::max<int>())) {
-          newShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, 'c', {1, 1});
+            (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == DataTypeUtils::max<int>())) {
+          newShape = ConstantShapeHelper::getInstance().createShapeInfo(FLOAT32, 'c', {1, 1});
         } else {
           auto in = node->input()->at(0);
 
-          sd::LongType const *oldShape = nullptr;
+          LongType const *oldShape = nullptr;
           // calculate tads here
           if (in.first < 0) {
             auto x = _variableSpace->getVariable(in)->getNDArray();
@@ -158,14 +158,15 @@ sd::LongType Graph::estimateRequiredMemory() {
             oldShape = shapesMap.at(in);
           }
 
-          auto numTads = shape::tadLength(oldShape, const_cast<sd::LongType * const>(node->getDimensions()->data()), node->getDimensions()->size());
-          sd::LongType shape[2] = {1, (int)numTads};
+          auto numTads = shape::tadLength(oldShape, const_cast<LongType *const>(node->getDimensions()->data()),
+                                          node->getDimensions()->size());
+          LongType shape[2] = {1, (int)numTads};
           newShape =
               ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape, -1);
         }
 
         std::pair<int, int> pairAddr(node->id(), 0);
-        std::pair<std::pair<int, int>, sd::LongType const *> pairShape(pairAddr, newShape);
+        std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
 
         shapesMap.insert(pairShape);
 
@@ -460,10 +461,10 @@ void Graph::addNode(Node *node) {
   }
 }
 
-sd::Status Graph::buildGraph() {
+Status Graph::buildGraph() {
   if (_built.load()) {
     prepareOutputs();
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   typename SD_MAP_IMPL<int, Node *>::iterator fit;
@@ -631,7 +632,7 @@ sd::Status Graph::buildGraph() {
 
   prepareOutputs();
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 void Graph::tagInplaceNodes() {
@@ -799,7 +800,7 @@ Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
 
   // if memory reqs were set - initialize workspace
   if (_configuration->_footprintForward > 0) {
-    sd::memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
+    memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
     workspace->expandBy(_configuration->_footprintForward);
   }
 
@@ -914,7 +915,7 @@ void Graph::toposortNodes() {
             in.first)) {  // that's probably variable. if not - we'll throw exception later
           // do nothing, maxDepLayer is -1 here, because it's a variable input
         } else {
-          throw graph::unresolved_input_exception::build("Unknown input specified", id, in);
+          throw unresolved_input_exception::build("Unknown input specified", id, in);
         }
       }
 
@@ -955,7 +956,7 @@ int Graph::totalNodes() {
   return _mapped->size();
 }
 
-sd::Status Graph::validate() {
+Status Graph::validate() {
   if (!_built) {
     _mutexPreprocessing.lock();
     if (!_built) {
@@ -964,9 +965,9 @@ sd::Status Graph::validate() {
     _mutexPreprocessing.unlock();
   }
 
-  if (_built.load() != true) return sd::Status::BAD_GRAPH;
+  if (_built.load() != true) return Status::BAD_GRAPH;
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 void Graph::printOutNode(Node *node) {
@@ -1066,14 +1067,14 @@ void Graph::printOut() {
   fflush(stdout);
 }
 
-sd::Status Graph::validateNode(Node *node) {
+Status Graph::validateNode(Node *node) {
   // TODO: to be implemented
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
+std::vector<ops::OpDescriptor> Graph::getOperations() {
   buildGraph();
-  std::vector<sd::ops::OpDescriptor> res;
+  std::vector<ops::OpDescriptor> res;
 
   int opCnt = 0;
   for (int l = 0; l < _onion->size(); l++) {
@@ -1082,7 +1083,7 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
     for (int n = 0; n < layerSize; n++) {
       Node *node = _onion->at(l)->at(n);
       if (node->name() == nullptr) continue;
-      sd::ops::OpDescriptor *pOpDescriptor = nullptr;
+      ops::OpDescriptor *pOpDescriptor = nullptr;
       std::string opNameStr;  // node->name();
       int numInputs = 0;
       int numOutputs = 0;
@@ -1112,7 +1113,7 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
       if (pOpDescriptor)
         res.emplace_back(*pOpDescriptor);
       else
-        res.emplace_back(sd::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+        res.emplace_back(ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
     }
   }
 
@@ -1123,7 +1124,7 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
       Node *node = scope->nodes()->at(n);
       if (node->name() == nullptr) continue;
       std::string opNameStr;  // node->name();
-      sd::ops::OpDescriptor *pOpDescriptor = nullptr;
+      ops::OpDescriptor *pOpDescriptor = nullptr;
       int numInputs = 0;
       int numOutputs = 0;
 
@@ -1148,7 +1149,7 @@ std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
       if (pOpDescriptor != nullptr)
         res.emplace_back(*pOpDescriptor);
       else
-        res.emplace_back(sd::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+        res.emplace_back(ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
     }
   }
 
@@ -1270,10 +1271,10 @@ Node *Graph::nodeById(int id) { return _mapped->at(id); }
 
 bool Graph::hasScope(int id) { return _mappedScopes.count(id) > 0; }
 
-sd::LongType Graph::hashCode() {
+LongType Graph::hashCode() {
   if (!_built.load()) this->buildGraph();
 
-  sd::LongType hash = 0L;
+  LongType hash = 0L;
   std::string localStamp;
   /**
    * Plan is:

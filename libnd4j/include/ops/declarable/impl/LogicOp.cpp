@@ -23,17 +23,17 @@
 
 namespace sd {
 namespace ops {
-LogicOp::LogicOp(const char *name) : DeclarableOp::DeclarableOp(name, true) {
+LogicOp::LogicOp(const char *name) : DeclarableOp(name, true) {
   // just using DeclarableOp constructor
   // this->_descriptor->
 }
 
-sd::Status LogicOp::validateAndExecute(sd::graph::Context &block) {
+Status LogicOp::validateAndExecute(Context &block) {
   sd_logger("WARNING: LogicOps should NOT be ever called\n", "");
-  return sd::Status::BAD_INPUT;
+  return Status::BAD_INPUT;
 }
 
-ShapeList *LogicOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LogicOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   // FIXME: we probably want these ops to evaluate scopes
   return SHAPELIST();
 }

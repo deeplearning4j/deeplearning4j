@@ -41,19 +41,19 @@ CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
 
   helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indices);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(max_pool_with_argmax) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedOutputTypes(1, {ALL_INDICES});
 }
 
 DECLARE_SHAPE_FN(max_pool_with_argmax) {
   auto in = inputShape->at(0);
-  auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
+  auto dtype = block.numD() ? D_ARG(0) : INT64;
   auto desc = new ShapeDescriptor(in);
   auto desc2 = new ShapeDescriptor(in, dtype);
   auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc);

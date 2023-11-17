@@ -32,15 +32,15 @@ CUSTOM_OP_IMPL(compare_and_bitpack, 2, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-  sd::ops::helpers::compareAndBitpack(block, *x, *y, *z);
-  return sd::Status::OK;
+  helpers::compareAndBitpack(block, *x, *y, *z);
+  return Status::OK;
 }
 
 DECLARE_TYPES(compare_and_bitpack) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::UINT8);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, UINT8);
 }
 
 DECLARE_SHAPE_FN(compare_and_bitpack) {
@@ -48,11 +48,11 @@ DECLARE_SHAPE_FN(compare_and_bitpack) {
   auto shapes = shape::shapeOf(inShape);
   const int rank = shape::rank(inShape);
   REQUIRE_TRUE(!shape::isScalar(inShape), 0, "Input should not be a scalar");
-  std::vector<sd::LongType> shapeDims{shapes, shapes + rank};
+  std::vector<LongType> shapeDims{shapes, shapes + rank};
   REQUIRE_TRUE(shapeDims[rank - 1] % 8 == 0, 0, "Last dimension of the input (which is %i) should be divisible by 8 ",
                shapeDims[rank - 1]);
   shapeDims[rank - 1] = shapeDims[rank - 1] / 8;
-  DataType newType = DataType::UINT8;
+  DataType newType = UINT8;
   auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(newType, shape::order(inShape), shapeDims);
   return SHAPELIST(outputShape);
 }

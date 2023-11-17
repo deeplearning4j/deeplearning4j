@@ -46,8 +46,8 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
   const LongType kW = INT_ARG(1);
   const LongType sH = INT_ARG(2);
   const LongType sW = INT_ARG(3);
-  sd::LongType pH = INT_ARG(4);
-  sd::LongType  pW = INT_ARG(5);
+  LongType pH = INT_ARG(4);
+  LongType pW = INT_ARG(5);
   const LongType dH = INT_ARG(6);
   const LongType dW = INT_ARG(7);
   const bool isSameMode = INT_ARG(8);
@@ -72,21 +72,21 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width;
   // poolingMode; 9 - divisor;
-  ConvolutionUtils::pooling2d(block, *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, PoolingType::MAX_POOL, 1);
+  ConvolutionUtils::pooling2d(block, *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, MAX_POOL, 1);
 
   if (!isNCHW) {
     delete input;
     delete output;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(MaxPool2D, maxpool2d);
 DECLARE_SYN(MaxPool, maxpool2d);
 DECLARE_SYN(maxpool, maxpool2d);
 
-DECLARE_TYPES(maxpool2d) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(maxpool2d) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(maxpool2d) {
   // NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -119,7 +119,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   // allocate memory for new shape
-  sd::LongType newShape[4];
+  LongType newShape[4];
 
   newShape[0] = bS;
   if (isNCHW) {
@@ -139,7 +139,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
 }
 
 DECLARE_TYPES(maxpool2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,8 +152,8 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
   LongType kW = INT_ARG(1);                                                 // filter(kernel) width
   LongType sH = INT_ARG(2);                                                 // strides height
   LongType sW = INT_ARG(3);                                                 // strides width
-  sd::LongType  pH = INT_ARG(4);                                                 // paddings height
-  sd::LongType  pW = INT_ARG(5);                                                 // paddings width
+  LongType pH = INT_ARG(4);                                                 // paddings height
+  LongType pW = INT_ARG(5);                                                 // paddings width
   LongType dH = INT_ARG(6);                                                 // dilations height
   LongType dW = INT_ARG(7);                                                 // dilations width
   int isSameMode = INT_ARG(8);                                         // 0-VALID, 1-SAME
@@ -169,9 +169,9 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oH, oW, 0, indIOioC, indIiH, indIiH + 1});
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, iH, iW, 0, indIOioC, indIiH, indIiH + 1});
   REQUIRE_TRUE(
       gradO->isSameShape(expectedGradOShape), 0,
@@ -200,7 +200,7 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
     delete gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(MaxPool2D_bp, maxpool2d_bp);
 DECLARE_SYN(MaxPool_bp, maxpool2d_bp);

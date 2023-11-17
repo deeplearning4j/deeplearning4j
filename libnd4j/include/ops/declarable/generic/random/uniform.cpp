@@ -43,7 +43,7 @@ namespace ops {
 CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   // uniform distribution
   auto rng = block.randomGenerator();
-  auto dtype = DataType::FLOAT32;
+  auto dtype = FLOAT32;
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
 
   if (block.getIArguments()->size() > 1) {
@@ -68,13 +68,13 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(randomuniform) {
   auto in = INPUT_VARIABLE(0);
-  auto shape = in->template asVectorT<sd::LongType>();
-  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : DataType::FLOAT32;
+  auto shape = in->template asVectorT<LongType>();
+  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : FLOAT32;
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)

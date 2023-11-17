@@ -57,14 +57,14 @@ CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {
 
   helpers::cropAndResizeFunctor(block.launchContext(), image, boxes, boxIndexes, newImageSize, method, extrapolationVal,
                                 output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(crop_and_resize) {
   auto in = inputShape->at(0);
   auto boxShape = inputShape->at(1);
 
-  sd::LongType outputShape[4];
+  LongType outputShape[4];
 
   int width;
   int height;

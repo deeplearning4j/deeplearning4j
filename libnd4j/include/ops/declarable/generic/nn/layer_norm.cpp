@@ -37,7 +37,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   auto gain = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> axis = *block.getIArguments();
+  std::vector<LongType> axis = *block.getIArguments();
 
   const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;  // 0-NCHW,  1-NHWC
   const int dimC = isNCHW ? 1 : input->rankOf() - 1;
@@ -54,22 +54,22 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
                  input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
   }
 
-  std::vector<sd::LongType> longAxis = ArrayUtils::toLongVector(axis);
+  std::vector<LongType> longAxis = ArrayUtils::toLongVector(axis);
 
-  sd::ops::standardize standardizeOp;
+  standardize standardizeOp;
   std::vector<NDArray *> inputs = {input};
   std::vector<NDArray *> outputs = {output};
   std::vector<double> targs = {};
   std::vector<bool> bargs = {};
   standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
-  std::vector<sd::LongType> dimcVec = {dimC};
-  output->applyBroadcast(sd::broadcast::Multiply, &dimcVec, *gain, *output);
+  std::vector<LongType> dimcVec = {dimC};
+  output->applyBroadcast(broadcast::Multiply, &dimcVec, *gain, *output);
   if (bias != nullptr) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(layer_norm) {
@@ -94,44 +94,44 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
                "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !",
                input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
 
-  std::vector<sd::LongType> axis = *block.getIArguments();
+  std::vector<LongType> axis = *block.getIArguments();
 
-  std::vector<sd::LongType> longAxis = ArrayUtils::toLongVector(axis);
+  std::vector<LongType> longAxis = ArrayUtils::toLongVector(axis);
 
   if (bias != nullptr) {
     REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0,
                  "LAYER_NORM_BP OP: wrong shape of bias array, expected is {%i}, but got %s instead !",
                  input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
-    std::vector<sd::LongType> dimCVector = {dimC};
+    std::vector<LongType> dimCVector = {dimC};
     auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
-    eps->reduceAlongDimension(sd::reduce::Sum, *dLdb, vec);
+    eps->reduceAlongDimension(reduce::Sum, *dLdb, vec);
   }
 
   NDArray standardized(input->shapeInfo(), false, block.launchContext());
 
-  sd::ops::standardize standardizeOp;
+  standardize standardizeOp;
   std::vector<NDArray *> inputs = {input};
   std::vector<NDArray *> outputs = {&standardized};
   std::vector<double> targs = {};
   std::vector<bool> bargs = {};
 
   standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-  standardized.applyPairwiseTransform(sd::pairwise::Multiply, *eps, standardized);
-  std::vector<sd::LongType> dimCVector = {dimC};
+  standardized.applyPairwiseTransform(pairwise::Multiply, *eps, standardized);
+  std::vector<LongType> dimCVector = {dimC};
   auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
-  standardized.reduceAlongDimension(sd::reduce::Sum, *dLdg, vec);
+  standardized.reduceAlongDimension(reduce::Sum, *dLdg, vec);
 
-  sd::ops::standardize_bp standardizeBp;
-  std::vector<sd::LongType> dimvC = {dimC};
+  standardize_bp standardizeBp;
+  std::vector<LongType> dimvC = {dimC};
   // eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gain, dLdx);
-  eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, *gain, *dLdx);
+  eps->applyBroadcast(broadcast::Multiply, &dimvC, *gain, *dLdx);
 
   auto dLdx_tmp = dLdx->dup();
   std::vector<NDArray *> standardizeBpArgs = {input, &dLdx_tmp};
   std::vector<NDArray *> standardizeBpOut = {dLdx};
   standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(layer_norm_bp) {
@@ -140,12 +140,12 @@ DECLARE_TYPES(layer_norm_bp) {
 }
 
 DECLARE_SHAPE_FN(layer_norm_bp) {
-  sd::LongType *dLdx_shape;
+  LongType *dLdx_shape;
   COPY_SHAPE(inputShape->at(0), dLdx_shape);
-  sd::LongType *dLdg_shape;
+  LongType *dLdg_shape;
   COPY_SHAPE(inputShape->at(1), dLdg_shape);
   if (inputShape->size() > 3) {
-    sd::LongType *dLdb_shape;
+    LongType *dLdb_shape;
     COPY_SHAPE(inputShape->at(2), dLdb_shape);
     return SHAPELIST(CONSTANT(dLdx_shape), CONSTANT(dLdg_shape), CONSTANT(dLdb_shape));
   }

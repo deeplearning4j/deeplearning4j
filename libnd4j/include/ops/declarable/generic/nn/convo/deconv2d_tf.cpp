@@ -65,7 +65,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
                gradIShape->lengthOf());
 
   // create empty conv2d input array
-  NDArray *input = new NDArray(gradO->ordering(), gradIShape->asVectorT<sd::LongType>(), gradO->dataType(), block.launchContext());
+  NDArray *input = new NDArray(gradO->ordering(), gradIShape->asVectorT<LongType>(), gradO->dataType(), block.launchContext());
 
   LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
@@ -76,9 +76,9 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "CUSTOM DECONV2D_TF OP: wrong shape of input array, basing on array with output shape expected is %s, "
                "but got %s instead !",
@@ -92,11 +92,11 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
 
 
   delete input;
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(deconv2d_tf) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(deconv2d_tf) {
@@ -104,9 +104,9 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
   auto weightsShapeInfo = inputShape->at(1);     // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
 
   const LongType kH =
-      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
+      INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
   const LongType kW =
-      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+      INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
   const LongType sH = INT_ARG(2);                                                               // strides height
   const LongType sW = INT_ARG(3);                                                               // strides width
   const LongType pH = INT_ARG(4);                                                               // paddings height
@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     indOoH = 2;
   }
 
-  std::vector<sd::LongType> gradIShape = INPUT_VARIABLE(0)->template asVectorT<sd::LongType>();
+  std::vector<LongType> gradIShape = INPUT_VARIABLE(0)->template asVectorT<LongType>();
 
   const LongType bS = gradIShape[0];                 // batch size
   const LongType iH = gradIShape[indIiH];            // input height
@@ -143,14 +143,14 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
   LongType trueiH, trueiW;  // output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(trueiH, trueiW, kH, kW, sH, sW, pH, pW, dH, dW, oH, oW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, trueiH, trueiW, 0, indIOioC, indIiH, indIiH + 1});
   if(INPUT_VARIABLE(0)->isScalar()) {
 
   }
 
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(expectedGradIShape == gradIShape, 0,
                "CUSTOM DECONV2D_TF OP: wrong shape of array with output shape, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedGradIShape).c_str(), ShapeUtils::shapeAsString(gradIShape).c_str());
@@ -160,7 +160,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
                ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
 
-  sd::LongType shape[4];
+  LongType shape[4];
   shape[0] = bS;
 
   if (isNCHW) {

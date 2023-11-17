@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
 
   if (output->isEmpty()) {
     // Empty output array - no-op
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   if (w > 1) {
@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_TYPES(fill) {
@@ -69,43 +69,42 @@ DECLARE_TYPES(fill) {
 DECLARE_SHAPE_FN(fill) {
   auto shapeArray = INPUT_VARIABLE(0);
 
-  const sd::LongType len = shapeArray->lengthOf();
-  if(shapeArray->isEmpty()) {
-    std::vector<sd::LongType> shape = {0};
+  const LongType len = shapeArray->lengthOf();
+  if (shapeArray->isEmpty()) {
+    std::vector<LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(shapeArray->dataType()));
   }
-  sd::LongType *newShape = nullptr;
+  LongType *newShape = nullptr;
   ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(len), sd::LongType);
 
   newShape[0] = len;
   bool hasZeros = false;
-  sd::LongType totalLen = 1;
+  LongType totalLen = 1;
   for (int e = 0; e < shapeArray->lengthOf(); e++) {
-    newShape[e + 1] = shapeArray->e<sd::LongType>(e);
+    newShape[e + 1] = shapeArray->e<LongType>(e);
     if(newShape[e + 1] == 0)
       hasZeros = true;
     totalLen *= newShape[e + 1];
   }
   if(len > 1 && hasZeros) {
-    std::vector<sd::LongType> shapeOnly = shapeArray->asVectorT<sd::LongType>();
+    std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shapeOnly));
   }
-  if(totalLen < 1) {
-    std::vector<sd::LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(),shape));
+  if (totalLen < 1) {
+    std::vector<LongType> shape = {0};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(shapeArray->dataType(), shape));
   }
 
-
-  sd::DataType dataType;
+  DataType dataType;
 
   if (block.width() > 1) {
     dataType = INPUT_VARIABLE(1)->dataType();
   } else if (block.numT() > 0) {
     dataType = Environment::getInstance().defaultFloatDataType();
   } else if (block.numI() > 0) {
-    dataType = sd::DataType::INT32;
+    dataType = INT32;
   } else if (block.numB() > 0) {
-    dataType = sd::DataType::BOOL;
+    dataType = BOOL;
   } else
     THROW_EXCEPTION("Fill: missing value to fill output array with");
 

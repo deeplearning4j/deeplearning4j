@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
                  "weights = %s and output = %s instead!",
                  ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
   }
-  std::vector<sd::LongType> dims;
+  std::vector<LongType> dims;
   dims.push_back(dim);
   NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum,&dims, true);
 
@@ -106,11 +106,11 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
                // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else
-        numOfNonZeroWeights = E.reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = E.reduceNumber(reduce::CountNonZero).e<LongType>(0);
 
       if (numOfNonZeroWeights == 0)
         *output = 0.;
@@ -125,12 +125,12 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(cosine_distance_loss) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -157,7 +157,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
 
   // evaluate output shapeInfo
-  sd::LongType const* outShapeInfo = nullptr;
+  LongType const* outShapeInfo = nullptr;
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the same shape as labels reduced  by dim axis
@@ -229,7 +229,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
                "COSINE_DISTANCE_LOSS_GRAD OP: input reduction dimension (got %i) must be < labels rank %i!", dim,
                labels->rankOf());
 
-  std::vector<sd::LongType> dims;
+  std::vector<LongType> dims;
   dims.push_back(dim);
   NDArray E = 1. - (*predictions * *labels).reduceAlongDimension(reduce::Sum,&dims, true);
 
@@ -293,11 +293,11 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
                // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
@@ -326,12 +326,12 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(cosine_distance_loss_grad) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -252,7 +252,7 @@ public class TestSessions extends BaseNd4jTestWithBackends {
              * o.n.a.s.i.AbstractSession - Beginning execution step 10: ExecStep(OP,name="while/Switch_1",("while/while_context",0,parent=("main",0)))
              */
             SameDiff sd = SameDiff.importFrozenTF(f);
-            SameDiff sd2 = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap(),true);
+            SameDiff sd2 = tensorflowFrameworkImporter.runImport(f.getAbsolutePath(),Collections.emptyMap(),true, false);
             /**
              * o.n.a.s.i.AbstractSession - Beginning execution step 0: ExecStep(CONSTANT,name="in_0",("main",0))
              * o.n.a.s.i.AbstractSession - Beginning execution step 1: ExecStep(CONSTANT,name="while/Const",("main",0))

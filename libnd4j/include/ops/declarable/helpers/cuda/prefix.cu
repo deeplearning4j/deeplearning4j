@@ -33,8 +33,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeInfo, void* vz,
-                    sd::LongType const* zShapeInfo, bool exclusive, bool reverse) {
+static void prefix_(scalar::Ops op, const void* vx, LongType const* xShapeInfo, void* vz, LongType const* zShapeInfo, bool exclusive, bool reverse) {
   //TODO: note: this is the cpu implementation. The cuda implementation had too many edge cases.
   //this will be addressed at a later date.
   const auto x = reinterpret_cast<const T*>(vx);
@@ -47,7 +46,7 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
   if (reverse) {
     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-      for (sd::LongType e = length - 1; e >= 0; --e) {
+      for (LongType e = length - 1; e >= 0; --e) {
         sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
         if (!exclusive) prevSum = sum;
 
@@ -56,7 +55,7 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
         prevSum = sum;
       }
     } else {
-      for (sd::LongType e = length - 1; e >= 0; --e) {
+      for (LongType e = length - 1; e >= 0; --e) {
         auto xOffset = shape::getIndexOffset(e, xShapeInfo);
         auto zOffset = shape::getIndexOffset(e, zShapeInfo);
         sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
@@ -71,7 +70,7 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
   } else {
     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-      for (sd::LongType e = 0; e < length; e++) {
+      for (LongType e = 0; e < length; e++) {
         sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
 
         if (!exclusive) prevSum = sum;
@@ -81,7 +80,7 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
         prevSum = sum;
       }
     } else {
-      for (sd::LongType e = 0; e < length; e++) {
+      for (LongType e = 0; e < length; e++) {
         auto xOffset = shape::getIndexOffset(e, xShapeInfo);
         auto zOffset = shape::getIndexOffset(e, zShapeInfo);
         sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
@@ -121,11 +120,11 @@ static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive
   prefix_<T>(op, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
 };
 
-void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
   BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, exclusive, reverse), SD_COMMON_TYPES);
 }
 
-void prefix(sd::LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims,
+void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<LongType>& dims,
             bool exclusive, bool reverse) {
   BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), SD_COMMON_TYPES);
 }

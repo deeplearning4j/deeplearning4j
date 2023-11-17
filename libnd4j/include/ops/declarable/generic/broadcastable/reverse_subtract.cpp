@@ -37,20 +37,20 @@ BROADCASTABLE_OP_IMPL(reversesubtract, 0, 0) {
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(ReverseSubtract), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(RSub, reversesubtract);
 
 DECLARE_TYPES(reversesubtract) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, INHERIT);
 }
 
 CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reversesubtract_bp) {
@@ -101,8 +101,8 @@ DECLARE_SHAPE_FN(reversesubtract_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  sd::LongType *shapeE;
-  sd::LongType *shapeG;
+  LongType *shapeE;
+  LongType *shapeG;
 
   COPY_SHAPE(x, shapeE);
   COPY_SHAPE(y, shapeG);
@@ -113,7 +113,7 @@ DECLARE_SHAPE_FN(reversesubtract_bp) {
 }
 
 DECLARE_TYPES(reversesubtract_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

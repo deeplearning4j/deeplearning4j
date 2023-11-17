@@ -40,7 +40,7 @@ OP_IMPL(matrix_inverse, 1, 1, true) {
   return helpers::inverse(block.launchContext(), input, output);
 }
 
-DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

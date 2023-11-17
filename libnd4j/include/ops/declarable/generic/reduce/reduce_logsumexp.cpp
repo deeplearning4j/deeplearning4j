@@ -29,7 +29,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> axes;  // = *block.getIArguments();
+  std::vector<LongType> axes;  // = *block.getIArguments();
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);
@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
         input->rankOf(), input->rankOf(), item);
 
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-  sd::LongType maxI = input->argMax();
+  LongType maxI = input->argMax();
   auto maxVals = input->e(maxI);
   // void* whereMax = (void*)();
   auto internal = (*input);
@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   internal.reduceAlongDimension(reduce::Sum, *output, &axes, keepDims, false);  //, (void*)&maxVals);
   output->applyTransform(transform::Log, *output);
   (*output) += maxVals;
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_TYPES(reduce_logsumexp) {
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(reduce_logsumexp) {
   const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   auto input = INPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> axes;  // = *block.getIArguments();
+  std::vector<LongType> axes;  // = *block.getIArguments();
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);

@@ -26,7 +26,7 @@
 namespace sd {
 DataType DataTypeUtils::fromInt(int val) { return (DataType)val; }
 
-DataType DataTypeUtils::fromFlatDataType(sd::graph::DType dtype) { return (DataType)dtype; }
+DataType DataTypeUtils::fromFlatDataType(graph::DType dtype) { return (DataType)dtype; }
 
 int DataTypeUtils::asInt(DataType type) { return static_cast<int>(type); }
 }  // namespace sd

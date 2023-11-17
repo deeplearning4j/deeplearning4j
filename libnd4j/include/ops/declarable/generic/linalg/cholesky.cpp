@@ -42,7 +42,7 @@ OP_IMPL(cholesky, 1, 1, true) {
   return helpers::cholesky(block.launchContext(), input, output, block.isInplace());
 }
 DECLARE_TYPES(cholesky) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
       a->sizeAt(-1) == b->sizeAt(-2), 0,
       "solve: The last dimension of left part should be equal to prelast of right part, but %i and %i are given",
       a->sizeAt(-1), b->sizeAt(-2));
-  if (a->isEmpty() || b->isEmpty() || z->isEmpty()) return sd::Status::OK;
+  if (a->isEmpty() || b->isEmpty() || z->isEmpty()) return Status::OK;
 
   auto input = a;
   if (useAdjoint) {
@@ -64,12 +64,12 @@ CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
   }
 
   auto res = helpers::solveFunctor(block.launchContext(), input, b, useAdjoint, z);
-  if(res != sd::Status::OK)
+  if(res != Status::OK)
     return res;
 
   if (input != a) delete input;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(solve) {

@@ -41,10 +41,10 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   auto numLockedWords = I_ARG(3);
   //2 for the codes, indices, context, locked words, 4 for the mandatory args such as target
   auto numMin = numIndices + numCodes + numCodes + numLockedWords + 4 + 4;
-  std::vector<sd::LongType> *codes = new std::vector<sd::LongType>();
-  std::vector<sd::LongType> *indices = new std::vector<sd::LongType>();
-  std::vector<sd::LongType> *context = new std::vector<sd::LongType>();
-  std::vector<sd::LongType> *lockedWords = new std::vector<sd::LongType>();
+  std::vector<LongType> *codes = new std::vector<LongType>();
+  std::vector<LongType> *indices = new std::vector<LongType>();
+  std::vector<LongType> *context = new std::vector<LongType>();
+  std::vector<LongType> *lockedWords = new std::vector<LongType>();
 
 
   int currIdx = 4;
@@ -71,40 +71,40 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
 
 
 
-  const std::vector<sd::LongType> *indicesVec = indices;
-  const std::vector<sd::LongType> *codesVec = codes;
-  const std::vector<sd::LongType> *contextVec = context;
-  const std::vector<sd::LongType> *lockedWordsVec = lockedWords;
+  const std::vector<LongType> *indicesVec = indices;
+  const std::vector<LongType> *codesVec = codes;
+  const std::vector<LongType> *contextVec = context;
+  const std::vector<LongType> *lockedWordsVec = lockedWords;
 
-  std::vector<sd::LongType> *indicesSize = new std::vector<sd::LongType>();
+  std::vector<LongType> *indicesSize = new std::vector<LongType>();
   indicesSize->push_back(indices->size());
-  const std::vector<sd::LongType> *indicesShape = indicesSize;
+  const std::vector<LongType> *indicesShape = indicesSize;
 
 
-  std::vector<sd::LongType> *codesSize = new std::vector<sd::LongType>();
+  std::vector<LongType> *codesSize = new std::vector<LongType>();
   codesSize->push_back(codes->size());
-  const std::vector<sd::LongType> *codesShape = codesSize;
+  const std::vector<LongType> *codesShape = codesSize;
 
-  std::vector<sd::LongType> *contextSize = new std::vector<sd::LongType>();
+  std::vector<LongType> *contextSize = new std::vector<LongType>();
   contextSize->push_back(contextSize->size());
-  const std::vector<sd::LongType> *contextShape = contextSize;
+  const std::vector<LongType> *contextShape = contextSize;
 
-  std::vector<sd::LongType> *lockedWordsSize = new std::vector<sd::LongType>();
+  std::vector<LongType> *lockedWordsSize = new std::vector<LongType>();
   lockedWordsSize->push_back(lockedWords->size());
-  const std::vector<sd::LongType> *lockedWordsShape = lockedWordsSize;
+  const std::vector<LongType> *lockedWordsShape = lockedWordsSize;
 
-  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<sd::LongType>();
+  auto indicesArrOne = indicesVec->size() > 0 ? NDArrayFactory::create<LongType>('c',*indicesShape,*indicesVec) : NDArrayFactory::empty<LongType>();
   auto indicesArr = new NDArray(indicesArrOne);
-  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*codesShape,*codesVec) :  NDArrayFactory::empty<sd::LongType>();
+  auto codesArrOne = codesVec->size() > 0 ?  NDArrayFactory::create<LongType>('c',*codesShape,*codesVec) :  NDArrayFactory::empty<LongType>();
   auto codesArr = new NDArray(codesArrOne);
 
 
 
-  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create<sd::LongType>('c',*contextShape,*contextVec) : NDArrayFactory::empty<sd::LongType>();
+  auto contextArrOne = context->size() > 0 ? NDArrayFactory::create<LongType>('c',*contextShape,*contextVec) : NDArrayFactory::empty<LongType>();
   auto contextArr = new NDArray(contextArrOne);
 
 
-  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create<sd::LongType>('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<sd::LongType>();
+  auto lockedWordsOne = lockedWordsVec->size() > 0 ?  NDArrayFactory::create<LongType>('c',*lockedWordsShape,*lockedWordsVec) : NDArrayFactory::empty<LongType>();
   auto lockedWordsArr = new NDArray(lockedWordsOne);
 
   auto target = I_ARG(currIdx++);
@@ -141,9 +141,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
 
-
-
-  sd::ops::helpers::cbowInference(
+  helpers::cbowInference(
       *syn0,
       *syn1,
       *syn1neg,
@@ -163,7 +161,7 @@ CONFIGURABLE_OP_IMPL(cbow_inference, 6, 6, true, -2, -2) {
       trainWords,
       numWorkers,iterations,minLearningRate);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(cbow_inference) {
@@ -174,7 +172,7 @@ DECLARE_TYPES(cbow_inference) {
       ->setAllowedInputTypes(3, {ALL_FLOATS})
       ->setAllowedInputTypes(4, {ALL_FLOATS})
       ->setAllowedInputTypes(5, {ALL_FLOATS})
-      ->setAllowedOutputTypes(sd::DataType::ANY);
+      ->setAllowedOutputTypes(ANY);
 }
 
 
@@ -218,21 +216,19 @@ CONFIGURABLE_OP_IMPL(cbow, 15, 15, true, 0, 0) {
   REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0,
                "CBOW: expTable must have the same data type as syn0 table");
 
-  
-
-  sd::ops::helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context,
+  helpers::cbow(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *context,
                          *lockedWords, *indices, *codes, *alpha, *randomValue, *numLabels, *inferenceVector, trainWords,
                          numWorkers,minLearningRate,iterations);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(cbow) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::INT32)
-      ->setAllowedInputTypes(1, sd::DataType::INT32)
-      ->setAllowedInputTypes(2, sd::DataType::INT32)
-      ->setAllowedInputTypes(3, sd::DataType::INT32)
+      ->setAllowedInputTypes(0, INT32)
+      ->setAllowedInputTypes(1, INT32)
+      ->setAllowedInputTypes(2, INT32)
+      ->setAllowedInputTypes(3, INT32)
       ->setAllowedInputTypes(4, {ALL_INTS})
       ->setAllowedInputTypes(5, {ALL_FLOATS})
       ->setAllowedInputTypes(6, {ALL_FLOATS})
@@ -240,11 +236,11 @@ DECLARE_TYPES(cbow) {
       ->setAllowedInputTypes(8, {ALL_FLOATS})
       ->setAllowedInputTypes(9, {ALL_FLOATS})
       ->setAllowedInputTypes(10, {ALL_FLOATS})
-      ->setAllowedInputTypes(11, sd::DataType::INT64)
-      ->setAllowedInputTypes(12, sd::DataType::INT32)
-      ->setAllowedInputTypes(13, sd::DataType::INT32)
+      ->setAllowedInputTypes(11, INT64)
+      ->setAllowedInputTypes(12, INT32)
+      ->setAllowedInputTypes(13, INT32)
       ->setAllowedInputTypes(14, {ALL_FLOATS})
-      ->setAllowedOutputTypes(sd::DataType::ANY);
+      ->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

@@ -54,12 +54,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
 
   (-(*labels) * logSoftMax).reduceAlongDimension(reduce::Sum, *output, &dimension);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(softmax_cross_entropy_loss_with_logits) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -127,7 +127,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(softmax_cross_entropy_loss_with_logits_grad) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////

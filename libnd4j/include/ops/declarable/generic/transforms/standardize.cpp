@@ -35,10 +35,10 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> axis;
+  std::vector<LongType> axis;
 
   if (block.width() > 1)
-    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 
@@ -49,17 +49,17 @@ CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
   auto means = input->reduceAlongDimension(reduce::Mean, &axis, true);
   auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis) + 1e-12;
   stdev.reshapei(means.getShapeAsVector());
-  input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, *output, false);
-  output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
-  output->applyScalar(sd::scalar::ReplaceNans, 0, *output);
+  input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), means, *output, false);
+  output->applyTrueBroadcast(BroadcastOpsTuple::Divide(), stdev, *output, false);
+  output->applyScalar(scalar::ReplaceNans, 0, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(standardize) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-  getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
+  getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
 }
 
 CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
@@ -67,10 +67,10 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> axis;
+  std::vector<LongType> axis;
 
   if (block.width() == 3)
-    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 
@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, &axis);
   stdev.reshapei(means.getShapeAsVector());
 
-  eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
+  eps->applyTrueBroadcast(BroadcastOpsTuple::Divide(), stdev, *output, false);
 
   NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, &axis, true);
 
@@ -93,16 +93,16 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   std::vector<double> meanBpTArgs = {};
   std::vector<bool> meanBpBArgs = {};
 
-  sd::ops::reduce_mean_bp meanBp;
+  reduce_mean_bp meanBp;
   meanBp.execute(meanBpArgs, meanBpOutput, meanBpTArgs, longAxis, meanBpBArgs);
   *output += dldx_u;
 
   // (eps * (means - input) / (stdev * stdev))
   NDArray tmp(eps->shapeInfo(), false, block.launchContext());
-  means.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), *input, tmp, false);
-  tmp.applyPairwiseTransform(sd::pairwise::Multiply, *eps, tmp);
-  stdev.applyPairwiseTransform(sd::pairwise::Multiply, stdev, stdev);
-  tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, tmp, false);
+  means.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), *input, tmp, false);
+  tmp.applyPairwiseTransform(pairwise::Multiply, *eps, tmp);
+  stdev.applyPairwiseTransform(pairwise::Multiply, stdev, stdev);
+  tmp.applyTrueBroadcast(BroadcastOpsTuple::Divide(), stdev, tmp, false);
 
   auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, &axis, true);
   NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
@@ -110,22 +110,22 @@ CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {
   std::vector<NDArray *> stdevBpOutput = {&dldx_s};
   std::vector<double> stdevBpTArgs = {};
   std::vector<bool> stdevBpBArgs = {};
-  sd::ops::reduce_stdev_bp stdevBp;
+  reduce_stdev_bp stdevBp;
   stdevBp.execute(stdevBpArgs, stdevBpOutput, stdevBpTArgs, longAxis, stdevBpBArgs);
   *output += dldx_s;
 
-  output->applyScalar(sd::scalar::ReplaceNans, 0, *output);
+  output->applyScalar(scalar::ReplaceNans, 0, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(standardize_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(standardize_bp) {
   auto in = inputShape->at(0);
-  sd::LongType *out;
+  LongType *out;
   COPY_SHAPE(in, out);
 
   return SHAPELIST(CONSTANT(out));

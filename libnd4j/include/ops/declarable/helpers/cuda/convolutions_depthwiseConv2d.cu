@@ -33,7 +33,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
+static void depthwiseConv2d_(graph::Context& block, const NDArray* input, const NDArray* weights,
                              const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                              const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                              const int isNCHW, const int wFormat) {
@@ -60,11 +60,11 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
 
-  std::vector<std::vector<sd::LongType>> modifColumns = {
+  std::vector<std::vector<LongType>> modifColumns = {
       {1, 0, 4, 5, 2, 3},
       {iC, bS * oH * oW, kH * kW}};  // [bS,iC,kH,kW,oH,oW] -> [iC,bS,oH,oW,kH,kW] -> [iC,bS*oH*oW,kH*kW]
-  std::vector<std::vector<sd::LongType>> modifOutput, modifWeights;
-  std::vector<sd::LongType> outReShape;
+  std::vector<std::vector<LongType>> modifOutput, modifWeights;
+  std::vector<LongType> outReShape;
 
   if (!isNCHW) {
     outReShape = {bS, oH, oW, iC, mC};  // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
@@ -107,7 +107,7 @@ static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::depthwiseConv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
+void ConvolutionUtils::depthwiseConv2d(graph::Context& block, const NDArray* input, const NDArray* weights,
                                        const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                                        const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                                        const int isNCHW, const int wFormat) {

@@ -36,11 +36,11 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   if (dim < 0) dim += input->rankOf() + 1;
 
   // no-op in case of empty output array
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
 
   // input validation
   // check whether shapes of all input array are the same
-  for (sd::LongType i = 0; i < block.width() - 1; ++i)
+  for (LongType i = 0; i < block.width() - 1; ++i)
   REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
                "STACK op: the shapes of all input arrays must be the same !");
 
@@ -56,13 +56,13 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   if(block.width() >= 1 && !inArrs[0]->isEmpty())
     helpers::stack(block.launchContext(), inArrs, *output, dim);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(pack, stack);
 DECLARE_SYN(Pack, stack);
 
 DECLARE_TYPES(stack) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes(DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 
 DECLARE_SHAPE_FN(stack) {
@@ -80,10 +80,10 @@ DECLARE_SHAPE_FN(stack) {
 
 
   // the rank of output ShapeInfo is larger by one compared to input ShapeInfo
-  std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
+  std::vector<LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
 
   // insert (int) block.width() at dim position of input shape to get output shape
-  outShape.insert(outShape.begin() + sd::LongType(dim), (sd::LongType)block.width());
+  outShape.insert(outShape.begin() + LongType(dim), (LongType)block.width());
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape);
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   delete desc;

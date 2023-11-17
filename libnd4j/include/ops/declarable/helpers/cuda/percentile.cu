@@ -33,10 +33,10 @@ namespace ops {
 namespace helpers {
 
 template <typename X>
-static SD_KERNEL void percentileKernel(void* vx, const sd::LongType* xTadShapeInfo, const sd::LongType* xTadOffsets,
-                                       const sd::LongType numTads, const sd::LongType tadLength, void* vz,
-                                       const sd::LongType* zShapeInfo, const sd::LongType zLength,
-                                       const sd::LongType position) {
+static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, const LongType* xTadOffsets,
+                                       const LongType numTads, const LongType tadLength, void* vz,
+                                       const LongType* zShapeInfo, const LongType zLength,
+                                       const LongType position) {
   for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[t];
     auto z = reinterpret_cast<X*>(vz);
@@ -86,7 +86,7 @@ static SD_KERNEL void percentileKernel(void* vx, const sd::LongType* xTadShapeIn
 }
 
 template <typename T>
-static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axis,
+static void _percentile(LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axis,
                         const float q, const int interpolation) {
   const int inputRank = input.rankOf();
 
@@ -101,30 +101,30 @@ static void _percentile(sd::LaunchContext* context, const NDArray& input, NDArra
   auto tadLength = shape::length(packX->primaryShapeInfo());
 
   const float fraction = 1.f - q / 100.;
-  sd::LongType position = 0;
+  LongType position = 0;
 
   switch (interpolation) {
     case 0:  // lower
-      position = static_cast<sd::LongType>(math::sd_ceil<float, T>((tadLength - 1) * fraction));
+      position = static_cast<LongType>(math::sd_ceil<float, T>((tadLength - 1) * fraction));
       break;
     case 1:  // higher
-      position = static_cast<sd::LongType>(math::sd_floor<float, T>((tadLength - 1) * fraction));
+      position = static_cast<LongType>(math::sd_floor<float, T>((tadLength - 1) * fraction));
       break;
     case 2:  // nearest
-      position = static_cast<sd::LongType>(math::sd_round<float, T>((tadLength - 1) * fraction));
+      position = static_cast<LongType>(math::sd_round<float, T>((tadLength - 1) * fraction));
       break;
   }
   position = tadLength - position - 1;
 
   dim3 launchDims = getLaunchDims("percentile");
-  percentileKernel<T><<<launchDims.y,launchDims.x,launchDims.z, *context->getCudaStream()>>>(
+  percentileKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
       tempArray.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), packX->numberOfTads(), tadLength,
       output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 
-  sd::DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
+  DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
 }
 
-void percentile(sd::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<sd::LongType>& axises,
+void percentile(LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axises,
                 const float q, const int interpolation) {
   NDArray::prepareSpecialUse({&output}, {&input});
 

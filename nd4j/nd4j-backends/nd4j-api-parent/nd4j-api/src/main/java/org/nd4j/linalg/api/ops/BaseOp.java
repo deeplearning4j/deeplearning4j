@@ -26,8 +26,11 @@ import lombok.Setter;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.OpType;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -350,6 +353,36 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                         baseScalarOp.setScalar(baseScalarOp.scalar().castTo(x().dataType()));
                     }
                 }
+            }
+
+
+            try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                if(y == null)
+                    ctx.setInputArrays(x);
+                else if(y != null) {
+                    ctx.setInputArrays(x,y);
+                }
+
+                ctx.setOutputArrays(z);
+
+                SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
+                for(Listener l : sameDiff.getListeners()) {
+                    l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
+                }
+
+                INDArray exec = Nd4j.getExecutioner().exec(this,ctx);
+                for(Listener  l : sameDiff.getListeners()) {
+                    l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,new INDArray[]{exec});
+                }
+
+                for(Listener  l : sameDiff.getListeners()) {
+                    l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariable().name()),z);
+
+                }
+
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             INDArray exec = Nd4j.getExecutioner().exec(this);

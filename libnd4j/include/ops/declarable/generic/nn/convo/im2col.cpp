@@ -51,10 +51,10 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
 
   // FIXME: zeropad value is void
   LaunchContext* ctx = block.launchContext();
-  sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
+  helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
                            NDArrayFactory::create(zeroPadVal, block.launchContext()));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(im2col) {
@@ -69,14 +69,14 @@ DECLARE_SHAPE_FN(im2col) {
   LongType kX = INT_ARG(1);
   LongType sY = INT_ARG(2);
   LongType sX = INT_ARG(3);
-  sd::LongType pY = INT_ARG(4);
-  sd::LongType pX = INT_ARG(5);
+  LongType pY = INT_ARG(4);
+  LongType pX = INT_ARG(5);
   LongType dY = INT_ARG(6);  // Dilation, height/y dimension
   LongType dX = INT_ARG(7);  // Dilation, width/x dimension
   int paddingMode = INT_ARG(8);
   bool isSameMode = INT_ARG(8) == 1;
   // output is always 6d for im2col
-  sd::LongType* zShape;
+  LongType* zShape;
   ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(6), sd::LongType);
 
   LongType oY = 0;
@@ -130,27 +130,27 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
 
   LaunchContext* ctx = block.launchContext();
   // FIXME:: all helpers should accept NDArray
-  ops::helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+  helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(im2col) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedOutputTypes(0, INHERIT)
       ->setSameMode(true);
 }
 
 DECLARE_TYPES(im2col_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedOutputTypes(0, INHERIT)
       ->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(im2col_bp) {
-  sd::LongType* inShape;
+  LongType* inShape;
   COPY_SHAPE(inputShape->at(0), inShape);
 
   return SHAPELIST(CONSTANT(inShape));

@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(reduce_norm1, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(reduce_norm1, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::Norm1, *output, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_norm1) {
@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
 }
 
 DECLARE_TYPES(reduce_norm1) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 #endif
 #if NOT_EXCLUDED(OP_reduce_norm1_bp)
@@ -109,7 +109,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(sd::transform::Sign, *gradI);
+  input->applyTransform(transform::Sign, *gradI);
 
   bool keepDims = false;
   auto dimensions = *block.getIArguments();
@@ -146,7 +146,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
   } else
     *gradI *= *gradO;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_norm1_bp) {
@@ -167,14 +167,14 @@ DECLARE_SHAPE_FN(reduce_norm1_bp) {
         "REDUCE_NORM1_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
+  LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_norm1_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 #endif

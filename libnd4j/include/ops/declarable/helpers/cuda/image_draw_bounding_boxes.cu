@@ -29,10 +29,10 @@ namespace ops {
 namespace helpers {
 
 typedef NDArray ColorTable_t;
-static NDArray DefaultColorTable(int depth, sd::LaunchContext* context) {
+static NDArray DefaultColorTable(int depth, LaunchContext* context) {
   // std::vector<std::vector<float>> colorTable;
-  const sd::LongType kDefaultTableLength = 10;
-  const sd::LongType kDefaultChannelLength = 4;
+  const LongType kDefaultTableLength = 10;
+  const LongType kDefaultChannelLength = 4;
   NDArray colorTable('c', {kDefaultTableLength, kDefaultChannelLength},
                      {
                          1,   1,   0,   1,  // yellow
@@ -46,7 +46,7 @@ static NDArray DefaultColorTable(int depth, sd::LaunchContext* context) {
                          0,   1,   1,   1,  // 8: aqua
                          1,   0,   1,   1   // 9: fuchsia
                      },
-                     DataType::FLOAT32, context);
+                     FLOAT32, context);
 
   if (depth == 1) {
     colorTable.assign(1.f);  // all to white when black and white colors
@@ -55,29 +55,29 @@ static NDArray DefaultColorTable(int depth, sd::LaunchContext* context) {
 }
 
 template <typename T>
-static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongType* imagesShape, float const* boxes,
-                                              const sd::LongType* boxesShape, float const* colorTable,
-                                              const sd::LongType* colorTableShape, T* output,
-                                              const sd::LongType* outputShape, sd::LongType batchSize,
-                                              sd::LongType width, sd::LongType height, sd::LongType channels,
-                                              sd::LongType boxSize, sd::LongType colorTableLen) {
+static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* imagesShape, float const* boxes,
+                                              const LongType* boxesShape, float const* colorTable,
+                                              const LongType* colorTableShape, T* output,
+                                              const LongType* outputShape,
+                                              LongType batchSize, LongType width, LongType height, LongType channels,
+                                              LongType boxSize, LongType colorTableLen) {
   for (auto batch = blockIdx.x; batch < (int)batchSize; batch += gridDim.x) {  // loop by batch
     for (auto boxIndex = 0; boxIndex < boxSize; ++boxIndex) {
       // box with shape
       // auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
       auto colorIndex = boxIndex % colorTableLen;  // colorSet->at(c);
-      sd::LongType indices0[] = {batch, boxIndex, 0};
-      sd::LongType indices1[] = {batch, boxIndex, 1};
-      sd::LongType indices2[] = {batch, boxIndex, 2};
-      sd::LongType indices3[] = {batch, boxIndex, 3};
-      auto rowStart = sd::LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices0, 0)]);
-      auto rowStartBound = sd::math::sd_max(sd::LongType(0), rowStart);
-      auto rowEnd = sd::LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices2, 0)]);
-      auto rowEndBound = sd::math::sd_min(sd::LongType(height - 1), rowEnd);
-      auto colStart = sd::LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices1, 0)]);
-      auto colStartBound = sd::math::sd_max(sd::LongType(0), colStart);
-      auto colEnd = sd::LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
-      auto colEndBound = sd::math::sd_min(sd::LongType(width - 1), colEnd);
+      LongType indices0[] = {batch, boxIndex, 0};
+      LongType indices1[] = {batch, boxIndex, 1};
+      LongType indices2[] = {batch, boxIndex, 2};
+      LongType indices3[] = {batch, boxIndex, 3};
+      auto rowStart = LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices0, 0)]);
+      auto rowStartBound = math::sd_max(LongType(0), rowStart);
+      auto rowEnd = LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices2, 0)]);
+      auto rowEndBound = math::sd_min(LongType(height - 1), rowEnd);
+      auto colStart = LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices1, 0)]);
+      auto colStartBound = math::sd_max(LongType(0), colStart);
+      auto colEnd = LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
+      auto colEndBound = math::sd_min(LongType(width - 1), colEnd);
       if (rowStart > rowEnd || colStart > colEnd) {
         continue;
       }
@@ -89,8 +89,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       if (rowStart >= 0) {
         for (auto j = colStartBound + threadIdx.x; j <= colEndBound; j += blockDim.x)
           for (auto c = 0; c < channels; c++) {
-            sd::LongType zPos[] = {batch, rowStart, j, c};
-            sd::LongType cPos[] = {colorIndex, c};
+            LongType zPos[] = {batch, rowStart, j, c};
+            LongType cPos[] = {colorIndex, c};
             auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
             auto zIndex = shape::getOffset(outputShape, zPos, 0);
             output[zIndex] = (T)colorTable[cIndex];
@@ -100,8 +100,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       if (rowEnd < height) {
         for (auto j = colStartBound + threadIdx.x; j <= colEndBound; j += blockDim.x)
           for (auto c = 0; c < channels; c++) {
-            sd::LongType zPos[] = {batch, rowEnd, j, c};
-            sd::LongType cPos[] = {colorIndex, c};
+            LongType zPos[] = {batch, rowEnd, j, c};
+            LongType cPos[] = {colorIndex, c};
             auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
             auto zIndex = shape::getOffset(outputShape, zPos, 0);
             output[zIndex] = (T)colorTable[cIndex];
@@ -112,8 +112,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       if (colStart >= 0) {
         for (auto i = rowStartBound + threadIdx.x; i <= rowEndBound; i += blockDim.x)
           for (auto c = 0; c < channels; c++) {
-            sd::LongType zPos[] = {batch, i, colStart, c};
-            sd::LongType cPos[] = {colorIndex, c};
+            LongType zPos[] = {batch, i, colStart, c};
+            LongType cPos[] = {colorIndex, c};
             auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
             auto zIndex = shape::getOffset(outputShape, zPos, 0);
             output[zIndex] = (T)colorTable[cIndex];
@@ -123,8 +123,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
       if (colEnd < width) {
         for (auto i = rowStartBound + threadIdx.x; i <= rowEndBound; i += blockDim.x)
           for (auto c = 0; c < channels; c++) {
-            sd::LongType zPos[] = {batch, i, colEnd, c};
-            sd::LongType cPos[] = {colorIndex, c};
+            LongType zPos[] = {batch, i, colEnd, c};
+            LongType cPos[] = {colorIndex, c};
             auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
             auto zIndex = shape::getOffset(outputShape, zPos, 0);
             output[zIndex] = (T)colorTable[cIndex];
@@ -135,7 +135,7 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const sd::LongTyp
 }
 
 template <typename T>
-void drawBoundingBoxesH(sd::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors,
+void drawBoundingBoxesH(LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors,
                         NDArray* output) {
   auto batchSize = images->sizeAt(0);
   auto height = images->sizeAt(1);
@@ -159,7 +159,7 @@ void drawBoundingBoxesH(sd::LaunchContext* context, NDArray const* images, NDArr
       boxSize, colorsTable.lengthOf());
 }
 
-void drawBoundingBoxesFunctor(sd::LaunchContext* context, NDArray* images, NDArray* boxes, NDArray* colors,
+void drawBoundingBoxesFunctor(LaunchContext* context, NDArray* images, NDArray* boxes, NDArray* colors,
                               NDArray* output) {
   // images - batch of 3D images with BW (last dim = 1), RGB (last dim = 3) or RGBA (last dim = 4) channel set
   // boxes - batch of 2D bounds with last dim (y_start, x_start, y_end, x_end) to compute i and j as

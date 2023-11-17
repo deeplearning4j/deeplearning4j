@@ -21,13 +21,15 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-#include <execution/cuda/LaunchDims.h>
+
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -37,14 +39,14 @@ namespace helpers {
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongType* inputShape, sd::LongType* starts,
-                                             sd::LongType* lengths, sd::LongType numOfClasses, void* output,
-                                             const sd::LongType* outputShape) {
+static SD_KERNEL void segmentMinLinearKernel(const void* input, const LongType* inputShape, LongType* starts,
+                                             LongType* lengths, LongType numOfClasses, void* output,
+                                             const LongType* outputShape) {
   __shared__ T* val;
-  __shared__ sd::LongType xLen, zLen, zIndex;
+  __shared__ LongType xLen, zLen, zIndex;
   __shared__ const T* x;
   __shared__ T* z;
-  __shared__ sd::LongType threadsPerSegment, start, finish;
+  __shared__ LongType threadsPerSegment, start, finish;
 
   auto segment = blockIdx.x;
   if(blockIdx.x >= numOfClasses)
@@ -71,20 +73,19 @@ static SD_KERNEL void segmentMinLinearKernel(const void* input, const sd::LongTy
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
-    if(xIndex >= xLen)
-      return;
-    sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
+    if (xIndex >= xLen) return;
+    math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const sd::LongType* inputShape,
-                                                     const void* indices, const sd::LongType* indicesShape, sd::LongType* starts,
-                                                     sd::LongType* lengths, sd::LongType numOfClasses, void* output,
-                                                     const sd::LongType* outputShape) {
+static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const LongType* inputShape,
+                                                     const void* indices, const LongType* indicesShape, LongType* starts, LongType* lengths,
+                                                     LongType numOfClasses, void* output,
+                                                     const LongType* outputShape) {
   __shared__ T* val;
-  __shared__ sd::LongType xLen, zLen, segment, zIndex;
+  __shared__ LongType xLen, zLen, segment, zIndex;
   __shared__ const T* x;
   __shared__ T* z;
   __shared__ const I* y;  // int threadsPerSegment, start, finish;
@@ -110,21 +111,20 @@ static SD_KERNEL void unsortedSegmentMinLinearKernel(const void* input, const sd
       auto xIndex = shape::getIndexOffset(e, inputShape);
       auto yIndex = shape::getIndexOffset(e, indicesShape);
       if (y[yIndex] == segment) {
-        sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
+        math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
       }
     }
 }
 // -------------------------------------------------------------------------------------------------------------- //
 // SegmentMin kernel
 template <typename T, typename I>
-static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongType* inputShape,
-                                          const sd::LongType* inputTads, const sd::LongType* inputTadOffsets,
-                                          I* indices, sd::LongType* starts, sd::LongType* lengths,
-                                          sd::LongType numOfClasses, void* outputBuf, const sd::LongType* outputShape,
-                                          const sd::LongType* outputTads, const sd::LongType* outputTadOffsets,
-                                          sd::LongType indicesLen) {
+static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const LongType* inputShape,
+                                          const LongType* inputTads, const LongType* inputTadOffsets,
+                                          I* indices, LongType* starts,
+                                          LongType* lengths, LongType numOfClasses, void* outputBuf, const LongType* outputShape,
+                                          const LongType* outputTads, const LongType* outputTadOffsets, LongType indicesLen) {
   __shared__ T* val;
-  __shared__ sd::LongType len, zIndex, total;
+  __shared__ LongType len, zIndex, total;
   __shared__ T* z;
   __shared__ int threadsPerSegment, start, finish;
   if(blockIdx.x >= indicesLen)
@@ -149,13 +149,13 @@ static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongTy
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
+        math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
       }
     } else {
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        sd::math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
+        math::atomics::sd_atomicMin(&z[zIndex], x[xIndex]);
       }
     }
   }
@@ -165,27 +165,29 @@ static SD_KERNEL void segmentMinTadKernel(const void* inputBuf, const sd::LongTy
 template <typename T, typename I>
 static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   auto stream = context->getCudaStream();
-  sd::LongType numClasses = indices->e<sd::LongType>(indices->lengthOf() - 1) + 1;
-  auto classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
-  auto classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numClasses}, context);
+  LongType numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
+  auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
+  auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
 
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
-  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
-  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
+  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
+  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
   if (input->isVector()  || input->isScalar()) {
     dim3 launchDims = segmentDims(numClasses,input->lengthOf());
     segmentMinLinearKernel<T, I><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo());
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinLinearKernel failed");
+
   } else {
-    sd::LongType zero = 0;
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+    LongType zero = 0;
+    std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
@@ -195,12 +197,14 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinTadKernel failed");
+
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
 }
 // -------------------------------------------------------------------------------------------------------------- //
-void segmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+void segmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices});
   output->nullify();
   BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMinFunctor_, (context, input, indices, output),
@@ -211,29 +215,30 @@ void segmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indi
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
-static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
-                                       sd::LongType numOfClasses, NDArray* output) {
+static void unsortedSegmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  NDArray classesRangesBegs = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
-  NDArray classesRangesLens = NDArrayFactory::create<sd::LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
+  NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
   classesRangesBegs.assign(indices->lengthOf());
   classesRangesLens.assign(0);
   dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
-  sd::LongType* begins = reinterpret_cast<sd::LongType*>(classesRangesBegs.specialBuffer());
-  sd::LongType* lengths = reinterpret_cast<sd::LongType*>(classesRangesLens.specialBuffer());
+  LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
+  LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
   NDArray::prepareSpecialUse({output}, {input, indices});
   if (input->isVector()  || input->isScalar()) {
     unsortedSegmentMinLinearKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
+    sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentMinLinearKernel failed");
+
   } else {
     output->assign(DataTypeUtils::max<T>());
-    sd::LongType zero = 0;
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+    LongType zero = 0;
+    std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
@@ -243,12 +248,14 @@ static void unsortedSegmentMinFunctor_(sd::LaunchContext* context, NDArray* inpu
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
         output->specialShapeInfo(), outputTads, outputTadOffsets, indices->lengthOf());
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinTadKernel failed");
+
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices});
 }
 // -------------------------------------------------------------------------------------------------------------- //
-void unsortedSegmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, sd::LongType numOfClasses,
+void unsortedSegmentMinFunctor(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses,
                                NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices});
   output->nullify();
@@ -258,17 +265,17 @@ void unsortedSegmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 }
 
 template <typename T, typename I>
-static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const sd::LongType* inputShape,
-                                               void* forwardOutput, const sd::LongType* forwardShape, void* eps,
-                                               const sd::LongType* epsShape, const void* indicesBuf,
-                                               const sd::LongType* indicesShape, void* outputBuf,
-                                               const sd::LongType* outputShape) {
+static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const LongType* inputShape,
+                                               void* forwardOutput, const LongType* forwardShape, void* eps,
+                                               const LongType* epsShape, const void* indicesBuf,
+                                               const LongType* indicesShape, void* outputBuf,
+                                               const LongType* outputShape) {
   __shared__ const T* x;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
   __shared__ const I* y;
   __shared__ T* z;
-  __shared__ sd::LongType xLen, gradLen;
+  __shared__ LongType xLen, gradLen;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(inputShape);
@@ -292,7 +299,7 @@ static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const sd::L
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (sd::math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -300,20 +307,20 @@ static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const sd::L
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const sd::LongType* inputShape, void* forwardOutput,
-                                            const sd::LongType* forwardShape, void* eps, const sd::LongType* epsShape,
-                                            const void* indicesBuf, const sd::LongType* indicesShape, void* outputBuf,
-                                            const sd::LongType* outputShape, const sd::LongType* inputTad,
-                                            const sd::LongType* inputOffsets, const sd::LongType* gradInTad,
-                                            const sd::LongType* gradInOffsets, const sd::LongType* gradOutTad,
-                                            const sd::LongType* gradOutOffsets, const sd::LongType* outTad,
-                                            const sd::LongType* outOffsets) {
+static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const LongType* inputShape, void* forwardOutput,
+                                            const LongType* forwardShape, void* eps, const LongType* epsShape,
+                                            const void* indicesBuf, const LongType* indicesShape, void* outputBuf,
+                                            const LongType* outputShape, const LongType* inputTad,
+                                            const LongType* inputOffsets, const LongType* gradInTad,
+                                            const LongType* gradInOffsets, const LongType* gradOutTad,
+                                            const LongType* gradOutOffsets, const LongType* outTad,
+                                            const LongType* outOffsets) {
   __shared__ const T* x;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
   __shared__ const I* y;
   __shared__ T* z;
-  __shared__ sd::LongType xLen, yLen, gradLen, currentLen;
+  __shared__ LongType xLen, yLen, gradLen, currentLen;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(inputShape);
@@ -337,14 +344,14 @@ static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const sd::Long
     auto outGrad = gradOut + gradOutOffsets[segment];
 
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      if (sd::math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
+      if (math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
     }
   }
 }
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-sd::Status segmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
+Status segmentMinFunctorBP_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
 
   // if input is a vector: (as if in doc sample)
@@ -354,20 +361,23 @@ sd::Status segmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
   segmentMinFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
   if (input->isVector()  || input->isScalar()) {
-    sd::LongType loop_size = input->lengthOf();
+    LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
 
     segmentMinBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinBPLinearKernel failed");
+
+
   } else {
-    sd::LongType zero = 0;
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
-    auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
+    LongType zero = 0;
+    std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+    auto packGradOut = ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
@@ -382,13 +392,15 @@ sd::Status segmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
         gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinBPTadKernel failed");
+
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  return sd::Status::OK;
+  return Status::OK;
 }
 // -------------------------------------------------------------------------------------------------------------- //
 // segmen min
-sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
+Status segmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMinFunctorBP_,
@@ -397,8 +409,9 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 }
 
 template <typename T, typename I>
-static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
-                                               NDArray* gradOut, sd::LongType numOfClasses, NDArray* output) {
+static Status unsortedSegmentMinFunctorBP_(LaunchContext* context, NDArray* input, NDArray* indices,
+                                               NDArray* gradOut,
+                                           LongType numOfClasses, NDArray* output) {
   // if input is a vector: (as if in doc sample)
   auto stream = context->getCudaStream();
   NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
@@ -406,20 +419,22 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
   unsortedSegmentMinFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
   if (input->isVector()  || input->isScalar()) {
-    sd::LongType loop_size = input->lengthOf();
+    LongType loop_size = input->lengthOf();
     auto numOfClasses = gradOut->lengthOf();
     segmentMinBPLinearKernel<T, I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), tempRes.specialBuffer(), tempRes.specialShapeInfo(),
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo());
-  } else {
-    sd::LongType zero = 0;
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinBPLinearKernel failed");
 
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
-    auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
-    auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
+  } else {
+    LongType zero = 0;
+
+    std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+    auto packGradIn = ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+    auto packGradOut = ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
     auto inputTads = packX->specialShapeInfo();
     auto inputTadOffsets = packX->specialOffsets();
     auto outputTads = packZ->specialShapeInfo();
@@ -434,14 +449,16 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
         gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         output->specialBuffer(), output->specialShapeInfo(), inputTads, inputTadOffsets, gradInTads, gradInTadOffsets,
         gradOutTads, gradOutTadOffsets, outputTads, outputTadOffsets);
+    sd::DebugHelper::checkErrorCode(stream, "segmentMinBPTadKernel failed");
+
     delete dimensions;
   }
   NDArray::registerSpecialUse({output}, {input, indices, gradOut, &tempRes});
-  return sd::Status::OK;
+  return Status::OK;
 }
 // -------------------------------------------------------------------------------------------------------------- //
-sd::Status unsortedSegmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
-                                       sd::LongType numOfClasses, NDArray* output) {
+Status unsortedSegmentMinFunctorBP(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
+                                   LongType numOfClasses, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
   BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_,
                         (context, input, indices, gradOut, numOfClasses, output), SD_FLOAT_TYPES, SD_INDEXING_TYPES);

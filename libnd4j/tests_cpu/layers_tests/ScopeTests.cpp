@@ -41,7 +41,7 @@ TEST_F(ScopeTests, BasicTests_1) {
   auto variableSpace = graph.getVariableSpace();
   variableSpace->putVariable(-1, x);
 
-  sd::ops::Scope opScope;
+  ops::Scope opScope;
 
   auto scopeBody = new Node(OpType_LOGIC, 10, 1);
   scopeBody->setName("scopeBody");

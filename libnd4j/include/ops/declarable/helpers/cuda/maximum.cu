@@ -87,7 +87,7 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
   }
 }
 
-void maximumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
+void maximumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
                       NDArray* gradY) {
   NDArray::prepareSpecialUse({gradX, gradY}, {x, y, epsNext});
 

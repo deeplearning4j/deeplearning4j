@@ -59,14 +59,14 @@ DECLARE_SHAPE_FN(listdiff) {
   REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
   auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, values->dataType());
-  auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, DataType::INT64);
+  auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, INT64);
   return SHAPELIST(shapeX, shapeY);
 }
 
 DECLARE_TYPES(listdiff) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
-      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setAllowedOutputTypes(0, INHERIT)
       ->setAllowedOutputTypes(1, {ALL_INTS});
 }
 }  // namespace ops

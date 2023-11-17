@@ -51,8 +51,8 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
   t1 = static_cast<T>(1) / t1;
   T result = t1;
 
-  for (sd::LongType i = 1; i <= maxIter; ++i) {
-    const sd::LongType i2 = 2 * i;
+  for (LongType i = 1; i <= maxIter; ++i) {
+    const LongType i2 = 2 * i;
     aPlus2i = a + static_cast<T>(i2);
 
     // t1
@@ -84,14 +84,15 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInfo, const void* vb,
-                                   const sd::LongType* bShapeInfo, const void* vx, const sd::LongType* xShapeInfo,
-                                   void* vz, const sd::LongType* zShapeInfo) {
+SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, const void* vb,
+                                   const LongType* bShapeInfo, const void* vx, const LongType* xShapeInfo,
+                                   void* vz,
+                                   const LongType* zShapeInfo) {
   extern __shared__ unsigned char shmem[];
   T* sharedMem = reinterpret_cast<T*>(shmem);
   T *z = reinterpret_cast<T *>(vz);
-  __shared__ sd::LongType aLen,bLen,xLen,zLen,aOffset,bOffset,xOffset,zOffset;
-  const sd::LongType j = blockIdx.x;  // one block per each element
+  __shared__ LongType aLen,bLen,xLen,zLen,aOffset,bOffset,xOffset,zOffset;
+  const LongType j = blockIdx.x;  // one block per each element
 
   __shared__ T a, b, x;
 
@@ -165,16 +166,18 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const sd::LongType* aShapeInf
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                        const cudaStream_t* stream, const void* va, const sd::LongType* aShapeInfo,
-                                        const void* vb, const sd::LongType* bShapeInfo, const void* vx,
-                                        const sd::LongType* xShapeInfo, void* vz, const sd::LongType* zShapeInfo) {
+                                        const cudaStream_t* stream, const void* va, const LongType* aShapeInfo,
+                                        const void* vb, const LongType* bShapeInfo, const void* vx,
+                                        const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo) {
   betaIncForArrayCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(va, aShapeInfo, vb, bShapeInfo, vx,
                                                                                  xShapeInfo, vz, zShapeInfo);
+  sd::DebugHelper::checkGlobalErrorCode("betaInc  failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
   dim3 launchDims = getBetaInc(maxIter,output.lengthOf(),output.sizeOfT());
 
   const auto xType = x.dataType();

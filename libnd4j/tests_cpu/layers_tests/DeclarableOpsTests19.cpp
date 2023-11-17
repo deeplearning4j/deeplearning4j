@@ -39,10 +39,10 @@ class DeclarableOpsTests19 : public NDArrayTests {
 
 TEST_F(DeclarableOpsTests19, test_argmax_maxint_vector_1) {
   auto x = NDArrayFactory::create<float>('c', {3}, {0.1f, 0.5f, 0.7f});
-  auto z = NDArrayFactory::create<sd::LongType>(0);
-  auto e = NDArrayFactory::create<sd::LongType>(2);
+  auto z = NDArrayFactory::create<LongType>(0);
+  auto e = NDArrayFactory::create<LongType>(2);
 
-  sd::ops::argmax op;
+  ops::argmax op;
   auto status = op.execute({&x}, {&z}, {DataTypeUtils::max<int>()});
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_EQ(e, z);
@@ -62,7 +62,7 @@ TEST_F(DeclarableOpsTests19, test_matmul_ccc) {
   x.assign(1.0f);
   y.assign(1.0f);
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -80,7 +80,7 @@ TEST_F(DeclarableOpsTests19, test_matmul_fcf) {
   x.assign(1.0f);
   y.assign(1.0f);
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -98,7 +98,7 @@ TEST_F(DeclarableOpsTests19, test_matmul_cff) {
   x.assign(1.0f);
   y.assign(1.0f);
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -116,7 +116,7 @@ TEST_F(DeclarableOpsTests19, test_matmul_ccf) {
   x.assign(1.0f);
   y.assign(1.0f);
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -134,7 +134,7 @@ TEST_F(DeclarableOpsTests19, test_matmul_fff) {
   x.assign(1.0f);
   y.assign(1.0f);
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -162,7 +162,7 @@ TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
   auto u = NDArrayFactory::create<float>('c', {3, 2, 3});
   auto v = NDArrayFactory::create<float>('c', {2, 3, 6});
 
-  sd::ops::conv1d_bp op;
+  ops::conv1d_bp op;
   auto result = op.evaluate({&t, &u, &v}, {3, 2, 0, 1, 2, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
@@ -172,7 +172,7 @@ TEST_F(DeclarableOpsTests19, test_squeeze_1) {
   auto e = NDArrayFactory::create<double>('c', {3, 4});
   int axis = 2;
 
-  sd::ops::squeeze op;
+  ops::squeeze op;
   auto status = op.execute({&x}, {&e}, {axis});
   ASSERT_EQ(sd::Status::OK, status);
 }
@@ -183,9 +183,9 @@ TEST_F(DeclarableOpsTests19, test_create_view_1) {
   auto x = xLinspace->reshape('c',{3,4});
   //multiple parts:
   //index type: 0 = point,interval = 1,all = 2,new axis = 3
-  auto indexFirstPoint = sd::NDIndexUtils::createPoint(1);
+  auto indexFirstPoint = NDIndexUtils::createPoint(1);
 
-  sd::ops::create_view op;
+  ops::create_view op;
   auto result = op.evaluate({&x,&indexFirstPoint,&indexFirstPoint});
   result.setNonRemovable();
   auto shape = result[0]->getShapeAsVectorInt();
@@ -200,13 +200,13 @@ TEST_F(DeclarableOpsTests19, test_create_view_1) {
 
 
 TEST_F(DeclarableOpsTests19,test_create_view_2) {
-   sd::ops::create_view op;
+  ops::create_view op;
    auto inclusive = std::vector<int>({0,1});
 
   for(int i = 0; i < 2; i++) {
     auto x = NDArrayFactory::create<double>('c', {3, 4});
-    auto all = sd::NDIndexUtils::createAll();
-    auto indexInterval = sd::NDIndexUtils::createInterval(0,1,1,(sd::LongType ) inclusive[i]);
+    auto all = NDIndexUtils::createAll();
+    auto indexInterval = NDIndexUtils::createInterval(0,1,1, (LongType) inclusive[i]);
     auto expectedRows = inclusive[i] > 0 ? 2 : 1;
     auto expectedShapeInterval = std::vector<int>({expectedRows,4});
     auto resultInterval = op.evaluate({&x,&indexInterval,&all});
@@ -219,10 +219,10 @@ TEST_F(DeclarableOpsTests19,test_create_view_2) {
 }
 
 TEST_F(DeclarableOpsTests19,test_create_view_3) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto x = NDArrayFactory::create<double>('c', {3, 4});
   auto expectedShapeAll = std::vector<int>({3,4});
-  auto all = sd::NDIndexUtils::createAll();
+  auto all = NDIndexUtils::createAll();
   auto newAll = all.dup();
   auto resultAll = op.evaluate({&x,&all,&newAll});
   resultAll.setNonRemovable();
@@ -234,10 +234,10 @@ TEST_F(DeclarableOpsTests19,test_create_view_3) {
 
 
 TEST_F(DeclarableOpsTests19,test_create_view_4) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto expectedShapeAll2 = std::vector<int>({3,4});
   auto x = NDArrayFactory::create<double>('c', {3, 4});
-  auto all = sd::NDIndexUtils::createAll();
+  auto all = NDIndexUtils::createAll();
 
   auto newAll2 = all.dup();
   auto resultAll2 = op.evaluate({&x,&all});
@@ -248,9 +248,9 @@ TEST_F(DeclarableOpsTests19,test_create_view_4) {
 }
 
 TEST_F(DeclarableOpsTests19,test_create_view_5) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto vectorInput = NDArrayFactory::create<double>(1.0);
-  auto newAxis = sd::NDIndexUtils::createNewAxis();
+  auto newAxis = NDIndexUtils::createNewAxis();
   auto resultNewAxis = op.evaluate({&vectorInput,&newAxis});
   auto expectedNewAxis = NDArrayFactory::create<double>(1.0);
   auto newExpectedAxis = expectedNewAxis.reshape('c',{1});
@@ -259,10 +259,10 @@ TEST_F(DeclarableOpsTests19,test_create_view_5) {
 }
 
 TEST_F(DeclarableOpsTests19,test_create_view_6) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto linspace = NDArrayFactory::linspace<double>(1,125,125);
   auto reshaped = linspace->reshape('c',{5,5,5});
-  auto slice = sd::NDIndexUtils::createInterval(0,1,1,false);
+  auto slice = NDIndexUtils::createInterval(0,1,1,false);
   auto resultSlice = op.evaluate({&reshaped,&slice});
   resultSlice.setNonRemovable();
   auto assertionShape = std::vector<int>({1,5,5});
@@ -272,7 +272,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_6) {
 }
 
 TEST_F(DeclarableOpsTests19,test_create_view_7) {
-  sd::ops::create_view op;
+  ops::create_view op;
   //intervals, new axis, point, all
   auto fiveByFive = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFive = fiveByFive->reshape('c',{5,5});
@@ -287,7 +287,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_7) {
 }
 
 TEST_F(DeclarableOpsTests19,test_create_view_8) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
   auto columns2 = NDIndexUtils::createInterval(0,1,1,false);
@@ -301,7 +301,7 @@ TEST_F(DeclarableOpsTests19,test_create_view_8) {
 
 
 TEST_F(DeclarableOpsTests19,test_create_view_9) {
-  sd::ops::create_view op;
+  ops::create_view op;
   auto fiveByFiveSubColumns = NDArrayFactory::linspace<double>(1,25,25);
   auto reshapedFiveByFiveSubColumns = fiveByFiveSubColumns->reshape('c',{5,5});
   auto columns2 = NDIndexUtils::createInterval(0,1,1,false);

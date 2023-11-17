@@ -40,29 +40,29 @@ CONFIGURABLE_OP_IMPL(cumsum, 1, 1, true, 0, 2) {
 
   if (input->isEmpty()) {
     // No-op
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   if (block.getIArguments()->size() == 2 && block.width() == 1) {
     // all at once case
-    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
+    helpers::prefix(block.launchContext(), scalar::Add, input, output, exclusive, reverse);
   } else {
-    std::vector<sd::LongType> dims(block.numI() - 2);
+    std::vector<LongType> dims(block.numI() - 2);
 
     if (block.width() == 1) {
       for (int e = 0; e < block.numI() - 2; e++) dims[e] = INT_ARG(e + 2);
     } else {
       auto ax = INPUT_VARIABLE(1);
-      dims = ax->template asVectorT<sd::LongType>();
+      dims = ax->template asVectorT<LongType>();
     }
 
     for (int e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += input->rankOf();
 
-    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
+    helpers::prefix(block.launchContext(), scalar::Add, input, output, dims, exclusive, reverse);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_TYPES(cumsum) {
   getOpDescriptor()
@@ -80,10 +80,10 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
   const bool exclusive = INT_ARG(0) == 1;
   const bool reverse = INT_ARG(1) == 1;
 
-  std::vector<sd::LongType> dims;
+  std::vector<LongType> dims;
 
   if (block.width() > 2) {
-    dims = axis->template asVectorT<sd::LongType>();
+    dims = axis->template asVectorT<LongType>();
     OUTPUT_VARIABLE(1)->assign(1.0f);
   } else if (int newSize = (block.numI() - 2)) {
     dims.resize(newSize);
@@ -92,28 +92,28 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
   }
   if (!exclusive && !reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, true);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, true);
 
   } else if (!exclusive && reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, false, false);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, false, false);
   } else if (exclusive && !reverse) {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, true);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, true);
   } else {
     if (dims.size())
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, dims, true, false);
     else
-      sd::ops::helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
+      helpers::prefix(block.launchContext(), scalar::Add, gradOut, output, true, false);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_TYPES(cumsum_bp) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS});
@@ -124,13 +124,13 @@ DECLARE_TYPES(cumsum_bp) {
 
 DECLARE_SHAPE_FN(cumsum_bp) {
   auto inp = inputShape->at(0);
-  sd::LongType *newShapeX = nullptr;
+  LongType *newShapeX = nullptr;
   COPY_SHAPE(inp, newShapeX);
 
   if (block.width() == 2) {
     return SHAPELIST(CONSTANT(newShapeX));
   } else {
-    sd::LongType *newShapeA = nullptr;
+    LongType *newShapeA = nullptr;
     COPY_SHAPE(inputShape->at(1), newShapeA);
 
     return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));

@@ -26,11 +26,13 @@
 #include <helpers/logger.h>
 #include <memory/Workspace.h>
 
+#include "helpers/DebugHelper.h"
+
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(const sd::LaunchContext* context, const std::string& funcName) {
-  _context = const_cast<sd::LaunchContext*>(context);
+PointersManager::PointersManager(const LaunchContext* context, const std::string& funcName) {
+  _context = const_cast<LaunchContext*>(context);
   _funcName = funcName;
 }
 //////////////////////////////////////////////////////////////////////////
@@ -41,7 +43,7 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
     if (cudaResult != 0)
       throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
   } else {
-    dst = _context->getWorkspace()->allocateBytes(sd::memory::MemoryType::DEVICE, sizeInBytes);
+    dst = _context->getWorkspace()->allocateBytes(memory::MemoryType::DEVICE, sizeInBytes);
   }
   return dst;
 }
@@ -72,30 +74,30 @@ void PointersManager::synchronize() const {
 
 //////////////////////////////////////////////////////////////////////////
 PointersManager::~PointersManager() {
-  for (auto& p : _pOnGlobMem) cudaFree(p);
+ // for (auto& p : _pOnGlobMem) cudaFree(p);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void printDevContentOnDev_(const void* pDev, const sd::LongType len, const int tid) {
+static SD_KERNEL void printDevContentOnDev_(const void* pDev, const LongType len, const int tid) {
   PointersManager::printDevContentOnDev<T>(pDev, len, tid);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void PointersManager::printDevContentOnDevFromHost(const void* pDev, const sd::LongType len, const int tid) {
-  printDevContentOnDev_<T><<<512, 512, 1024, *sd::LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
-  auto res = cudaStreamSynchronize(*sd::LaunchContext ::defaultContext()->getCudaStream());
-  if (res != 0)
-    THROW_EXCEPTION("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
+void PointersManager::printDevContentOnDevFromHost(const void* pDev, const LongType len, const int tid) {
+  printDevContentOnDev_<T><<<512, 512, 1024, *LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
+  auto res = cudaStreamSynchronize(*LaunchContext ::defaultContext()->getCudaStream());
+  DebugHelper::checkGlobalErrorCode("concat general case failed(...) failed");
+
 }
-template void PointersManager::printDevContentOnDevFromHost<sd::LongType>(const void* pDev, const sd::LongType len,
+template void PointersManager::printDevContentOnDevFromHost<LongType>(const void* pDev, const LongType len,
                                                                           const int tid);
-template void PointersManager::printDevContentOnDevFromHost<int>(const void* pDev, const sd::LongType len,
+template void PointersManager::printDevContentOnDevFromHost<int>(const void* pDev, const LongType len,
                                                                  const int tid);
-template void PointersManager::printDevContentOnDevFromHost<float>(const void* pDev, const sd::LongType len,
+template void PointersManager::printDevContentOnDevFromHost<float>(const void* pDev, const LongType len,
                                                                    const int tid);
-template void PointersManager::printDevContentOnDevFromHost<double>(const void* pDev, const sd::LongType len,
+template void PointersManager::printDevContentOnDevFromHost<double>(const void* pDev, const LongType len,
                                                                     const int tid);
 
 // BUILD_SINGLE_TEMPLATE(template void PointersManager::printDevContentOnDevFromHost, (void* pDev, sd::LongType len, int
@@ -103,7 +105,7 @@ template void PointersManager::printDevContentOnDevFromHost<double>(const void* 
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void PointersManager::printDevContentOnHost(const void* pDev, const sd::LongType len) const {
+void PointersManager::printDevContentOnHost(const void* pDev, const LongType len) const {
   printf("host print out\n");
   void* pHost = operator new(sizeof(T) * len);
 
@@ -111,15 +113,15 @@ void PointersManager::printDevContentOnHost(const void* pDev, const sd::LongType
   cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
   if (cudaResult != 0) THROW_EXCEPTION("PointersManager::printCudaHost: cudaStreamSynchronize failed!");
 
-  for (sd::LongType i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<T*>(pHost)[i]);
+  for (LongType i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<T*>(pHost)[i]);
   printf("\n");
 
   operator delete(pHost);
 }
 
-template void PointersManager::printDevContentOnHost<sd::LongType>(const void* pDev, const sd::LongType len) const;
-template void PointersManager::printDevContentOnHost<int>(const void* pDev, const sd::LongType len) const;
-template void PointersManager::printDevContentOnHost<float>(const void* pDev, const sd::LongType len) const;
-template void PointersManager::printDevContentOnHost<double>(const void* pDev, const sd::LongType len) const;
+template void PointersManager::printDevContentOnHost<LongType>(const void* pDev, const LongType len) const;
+template void PointersManager::printDevContentOnHost<int>(const void* pDev, const LongType len) const;
+template void PointersManager::printDevContentOnHost<float>(const void* pDev, const LongType len) const;
+template void PointersManager::printDevContentOnHost<double>(const void* pDev, const LongType len) const;
 
 }  // namespace sd

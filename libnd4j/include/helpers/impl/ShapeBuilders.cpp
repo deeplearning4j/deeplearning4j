@@ -25,24 +25,24 @@
 
 namespace sd {
 
-LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor *descriptor) {
-  sd::LongType bufferLen = shape::shapeInfoLength(descriptor->rank());
-  sd::LongType  *ret = new sd::LongType[bufferLen];
+LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
+  LongType bufferLen = shape::shapeInfoLength(descriptor->rank());
+  auto ret = new LongType[bufferLen];
   ret[0] = descriptor->rank();
-  shape::setOrder(ret,descriptor->order());
-  shape::setOffset(ret,0);
-  shape::setElementWiseStride(ret,descriptor->ews());
-  shape::setShape(ret,descriptor->shape_strides().data());
-  shape::setStride(ret,(descriptor->shape_strides().data() + descriptor->rank()));
-  shape::setExtra(ret,descriptor->extra());
+  shape::setOrder(ret, descriptor->order());
+  shape::setOffset(ret, 0);
+  shape::setElementWiseStride(ret, descriptor->ews());
+  shape::setShape(ret, descriptor->shape_strides().data());
+  shape::setStride(ret, (descriptor->shape_strides().data() + descriptor->rank()));
+  shape::setExtra(ret, descriptor->extra());
   return ret;
 }
 
-sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, sd::memory::Workspace* workspace) {
+LongType* ShapeBuilders::createScalarShapeInfo(const DataType dataType, memory::Workspace* workspace) {
   // there is no reason for shape info to use workspaces. we have constant shape helper for this
   // workspaces with shapebuffers also appears to cause issues when reused elsewhere.
-  sd::LongType lenOfShapeInfo = 6;
-  sd::LongType* newShape = new sd::LongType[lenOfShapeInfo];
+  LongType lenOfShapeInfo = 6;
+  auto newShape = new LongType[lenOfShapeInfo];
   newShape[0] = 0;
   newShape[1] = 0;
   newShape[2] = 1;
@@ -51,11 +51,11 @@ sd::LongType* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, 
   newShape[5] = 99;
   return newShape;
 }
-sd::LongType* ShapeBuilders::createVectorShapeInfo(const sd::DataType dataType, const sd::LongType length,
-                                                   sd::memory::Workspace* workspace) {
+LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const LongType length,
+                                               memory::Workspace* workspace) {
   //there is no reason for shape info to use workspaces. we have constant shape helper for this
-  //workspaces with shapebuffers also appears to cause issues when reused elsewhere.
-  sd::LongType* newShape = new sd::LongType[shape::shapeInfoLength(static_cast<sd::LongType>(1))];
+  // workspaces with shapebuffers also appears to cause issues when reused elsewhere.
+  LongType* newShape = new LongType[shape::shapeInfoLength(static_cast<LongType>(1))];
 
   newShape[0] = 1;
   newShape[1] = length;
@@ -67,15 +67,14 @@ sd::LongType* ShapeBuilders::createVectorShapeInfo(const sd::DataType dataType, 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order, int rank,
-                                         const sd::LongType* shapeOnly, memory::Workspace* workspace, bool empty) {
-  sd::LongType* shapeInfo = nullptr;
-
+auto ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shapeOnly,
+                                    memory::Workspace* workspace, bool empty) -> LongType* {
+  LongType* shapeInfo = nullptr;
 
   if (rank == 0) {  // scalar case
-    shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+    shapeInfo = createScalarShapeInfo(dataType, workspace);
   } else {
-    shapeInfo = new sd::LongType [shape::shapeInfoLength(rank)];
+    shapeInfo = new LongType[shape::shapeInfoLength(rank)];
     shapeInfo[0] = rank;
     for (int i = 0; i < rank; i++) {
       shapeInfo[i + 1] = shapeOnly[i];
@@ -83,42 +82,39 @@ LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char
 
     ArrayOptions::resetFlags(shapeInfo);
     shape::updateStrides(shapeInfo, order);
-
-
   }
 
-  sd::ArrayOptions::setDataType(shapeInfo, dataType);
+  ArrayOptions::setDataType(shapeInfo, dataType);
 
-  if(empty) {
+  if (empty) {
     ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   }
-
 
   return shapeInfo;
 }
 
-sd::LongType* ShapeBuilders::emptyShapeInfoWithShape(const sd::DataType dataType,std::vector<sd::LongType> &shape, memory::Workspace* workspace) {
-  auto shapeInfo = createShapeInfo(dataType,'c',shape,workspace);
+LongType* ShapeBuilders::emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape,
+                                                 memory::Workspace* workspace) {
+  auto shapeInfo = createShapeInfo(dataType, 'c', shape, workspace);
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   return shapeInfo;
 }
 
-sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, memory::Workspace* workspace) {
+LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, memory::Workspace* workspace) {
   auto shapeInfo = createScalarShapeInfo(dataType, workspace);
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   return shapeInfo;
 }
 
-sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const char order,
-                                            const std::vector<sd::LongType>& shape, memory::Workspace* workspace) {
-  auto shapeInfo = createShapeInfo(dataType, order, shape.size(),shape.data(), workspace,true);
+LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char order,
+                                        const std::vector<LongType>& shape, memory::Workspace* workspace) {
+  auto shapeInfo = createShapeInfo(dataType, order, shape.size(), shape.data(), workspace, true);
   return shapeInfo;
 }
 
-sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const char order, int rank,
-                                            const sd::LongType* shapeOnly, memory::Workspace* workspace) {
-
-  sd::LongType  *shapeInfo2 = new sd::LongType[shape::shapeInfoLength(rank)];
+LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char order, int rank,
+                                            const LongType* shapeOnly, memory::Workspace* workspace) {
+  auto shapeInfo2 = new LongType[shape::shapeInfoLength(rank)];
   shapeInfo2[0] = rank;
 
   for(int i = 0; i < rank; i++) {
@@ -136,8 +132,8 @@ sd::LongType* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const c
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order,
-                                             const std::vector<sd::LongType>& shapeOnly, memory::Workspace* workspace) {
+LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order,
+                                             const std::vector<LongType>& shapeOnly, memory::Workspace* workspace) {
   bool isEmpty = false;
   //shape size 1 but 0 can be scalar
   if(shapeOnly.size() > 1)
@@ -147,7 +143,7 @@ sd::LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const 
         break;
       }
     }
-  auto ret =  ShapeBuilders::createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace, isEmpty);
+  auto ret = createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace, isEmpty);
   if(isEmpty && !ArrayOptions::hasPropertyBitSet(ret, ARRAY_EMPTY)) {
     THROW_EXCEPTION("Shape builders: empty was specified was true but shape info returned false");
   } else if(!isEmpty && ArrayOptions::hasPropertyBitSet(ret, ARRAY_EMPTY)) {
@@ -158,16 +154,16 @@ sd::LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order,
-                                             const std::initializer_list<sd::LongType>& shapeOnly,
+LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order,
+                                             const std::initializer_list<LongType>& shapeOnly,
                                              memory::Workspace* workspace) {
-  return ShapeBuilders::createShapeInfo(dataType, order, std::vector<sd::LongType>(shapeOnly), workspace);
+  return createShapeInfo(dataType, order, std::vector<LongType>(shapeOnly), workspace);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::copyShapeInfo(const sd::LongType* inShapeInfo, const bool copyStrides,
+LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool copyStrides,
                                            memory::Workspace* workspace) {
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), sd::LongType);
 
   memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
@@ -178,35 +174,35 @@ sd::LongType* ShapeBuilders::copyShapeInfo(const sd::LongType* inShapeInfo, cons
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::copyShapeInfoAndType(const sd::LongType* inShapeInfo, const DataType dtype,
+LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo, const DataType dtype,
                                                   const bool copyStrides, memory::Workspace* workspace) {
-  sd::LongType* outShapeInfo = ShapeBuilders::copyShapeInfo(inShapeInfo, copyStrides, workspace);
+  LongType* outShapeInfo = copyShapeInfo(inShapeInfo, copyStrides, workspace);
   ArrayOptions::setExtra(outShapeInfo, ArrayOptions::propertyWithoutDataTypeValue(ArrayOptions::extra(inShapeInfo)));  // set extra value to 0 (like in DataTypeEx::TypeEx
   ArrayOptions::setDataType(outShapeInfo, dtype);
   return outShapeInfo;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::copyShapeInfoAndType(const sd::LongType* inShapeInfo,
-                                                  const sd::LongType* shapeInfoToGetTypeFrom, const bool copyStrides,
+LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo,
+                                                  const LongType* shapeInfoToGetTypeFrom, const bool copyStrides,
                                                   memory::Workspace* workspace) {
-  return ShapeBuilders::copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides,
+  return copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides,
                                              workspace);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-sd::LongType* ShapeBuilders::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims, const int dimsSize,
+LongType* ShapeBuilders::createSubArrShapeInfo(const LongType* inShapeInfo, const LongType* dims, const int dimsSize,
                                                    memory::Workspace* workspace) {
-  sd::LongType* subArrShapeInfo = nullptr;
-  ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), sd::LongType);
+  LongType* subArrShapeInfo = nullptr;
+  ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), LongType);
 
   subArrShapeInfo[0] = dimsSize;  // rank
   subArrShapeInfo[2 * dimsSize + 1] = 0;
-  sd::ArrayOptions::copyDataType(subArrShapeInfo, inShapeInfo);   // type
+  ArrayOptions::copyDataType(subArrShapeInfo, inShapeInfo);   // type
   subArrShapeInfo[2 * dimsSize + 3] = shape::order(inShapeInfo);  // order
 
-  sd::LongType* shape = shape::shapeOf(subArrShapeInfo);
-  sd::LongType* strides = shape::stride(subArrShapeInfo);
+  LongType* shape = shape::shapeOf(subArrShapeInfo);
+  LongType* strides = shape::stride(subArrShapeInfo);
 
   bool isEmpty = false;
   for (int i = 0; i < dimsSize; ++i) {

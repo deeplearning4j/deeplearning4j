@@ -62,7 +62,7 @@ class SD_LIB_EXPORT Logger {
   static SD_HOST void infoEmpty(const char *format);
 
   static SD_HOST void printv(const char *format, const std::vector<int> &vec);
-  static SD_HOST void printv(const char *format, const std::vector<sd::LongType> &vec);
+  static SD_HOST void printv(const char *format, const std::vector<LongType> &vec);
 
   static SD_HOST_DEVICE Status logStatusMsg(Status code, const char *msg);
 

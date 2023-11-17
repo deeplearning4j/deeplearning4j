@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
   int batchSize = x->sizeAt(0);
   int numColumns = x->sizeAt(1);
 
-  std::vector<sd::LongType> indices(*block.getIArguments());
+  std::vector<LongType> indices(*block.getIArguments());
   std::map<int, int> sparse2dense;
 
   int cnt = 0;
@@ -84,19 +84,19 @@ CUSTOM_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
 
   // STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(firas_sparse) {
   auto inP = inputShape->at(0);
 
-  std::vector<sd::LongType> shape({shape::shapeOf(inP)[0], (sd::LongType)block.getIArguments()->size()});
+  std::vector<LongType> shape({shape::shapeOf(inP)[0], (LongType)block.getIArguments()->size()});
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inP), 'c', shape);
   return SHAPELIST(newShape);
 }
 
 DECLARE_TYPES(firas_sparse) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

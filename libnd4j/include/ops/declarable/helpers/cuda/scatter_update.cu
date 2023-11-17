@@ -38,11 +38,11 @@ namespace ops {
 namespace helpers {
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, void* vx, const sd::LongType* xShapeInfo,
-                                        const sd::LongType* xOffsets, void* vy, const sd::LongType* yShapeInfo,
-                                        const sd::LongType* yOffsets, const LongType* indexes) {
+SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, void* vx, const LongType* xShapeInfo,
+                                        const LongType* xOffsets, void* vy, const LongType* yShapeInfo,
+                                        const LongType* yOffsets, const LongType* indexes) {
   __shared__ T *x, *y;
-  __shared__ sd::LongType arrLenX, arrLenY;
+  __shared__ LongType arrLenX, arrLenY;
 
   for (int e = 0; e < numOfInd; e++) {
     const auto xIndex = indexes[e];
@@ -60,7 +60,7 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, vo
 
     if (arrLenX != arrLenY) return;
 
-    for (sd::LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+    for (LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
       const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
       const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
@@ -96,27 +96,29 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, vo
 
 template <typename T>
 SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfInd,
-                                              void* vx, const sd::LongType* xShapeInfo, const sd::LongType* xOffsets,
-                                              void* vy, const sd::LongType* yShapeInfo, const sd::LongType* yOffsets,
+                                              void* vx, const LongType* xShapeInfo, const LongType* xOffsets,
+                                              void* vy, const LongType* yShapeInfo, const LongType* yOffsets,
                                               const LongType* indexes) {
   dim3 launchDims = getLaunchDims("scatter_update");
   scatterUpdateCuda<T><<<launchDims.y, launchDims.x, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy,
                                                                   yShapeInfo, yOffsets, indexes);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "scatterUpdateCuda failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<sd::LongType>* intArgs) {
+void scatterUpdate(LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<LongType>* intArgs) {
   const int opCode = (*intArgs)[0];
   const int numOfDims = (*intArgs)[1];
   const int numOfInd = (*intArgs)[2 + numOfDims];
 
-  std::vector<sd::LongType> tadDimensions(numOfDims);
+  std::vector<LongType> tadDimensions(numOfDims);
   for (int e = 2; e < 2 + numOfDims; e++) tadDimensions[e - 2] = (*intArgs)[e];
 
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &tadDimensions);
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(updates.shapeInfo(), &tadDimensions);
 
-  NDArray indices(const_cast<sd::LongType *>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, sd::DataType::INT32, context);
+  NDArray indices(const_cast<LongType*>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, INT32, context);
 
   PointersManager manager(context, "scatterUpdate");
 

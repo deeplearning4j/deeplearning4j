@@ -42,7 +42,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1,
+void lstmCell(LaunchContext* context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1,
               const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b, NDArray* ht,
               NDArray* ct, const std::vector<double>& params) {
   // xt   input [bS x nIn]
@@ -144,7 +144,7 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
   // Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
   NDArray concatOut(xt->ordering(), {xt->sizeAt(0), xt->sizeAt(1) + yLast->sizeAt(1)}, xt->dataType(),
                     xt->getContext());
-  helpers::concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, {1});
+  concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, {1});
 
   auto m = mmul(concatOut, *W);  // mmul: [bs, (nIn+nOut)] * [(nIn+nOut), 4*nOut] = [bs, 4*nOut]
   m += (*b);                     // addiRowVector

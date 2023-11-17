@@ -38,14 +38,14 @@ class LambdaTests : public NDArrayTests {
 };
 
 template <typename Lambda>
-SD_KERNEL void runLambda(double *input, double *output, sd::LongType length, Lambda lambda) {
+SD_KERNEL void runLambda(double *input, double *output, LongType length, Lambda lambda) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  for (sd::LongType e = tid; e < length; e += gridDim.x * blockDim.x) {
+  for (LongType e = tid; e < length; e += gridDim.x * blockDim.x) {
     output[e] = lambda(input[e]);
   }
 }
 
-void launcher(cudaStream_t *stream, double *input, double *output, sd::LongType length) {
+void launcher(cudaStream_t *stream, double *input, double *output, LongType length) {
   auto f = LAMBDA_D(x) { return x + 1.; };
 
   runLambda<<<128, 128, 128, *stream>>>(input, output, length, f);

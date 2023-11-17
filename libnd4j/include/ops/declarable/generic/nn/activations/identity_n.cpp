@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
   if (!block.isInplace()) {
-    for (sd::LongType i = 0; i < block.width(); ++i) {
+    for (LongType i = 0; i < block.width(); ++i) {
       auto x = INPUT_VARIABLE(i);
       auto z = OUTPUT_VARIABLE(i);
 
@@ -37,13 +37,13 @@ CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(identity_n) {
   auto shapes = SHAPELIST();
   for (size_t i = 0; i < inputShape->size(); ++i) {
-    sd::LongType* shape;
+    LongType* shape;
     COPY_SHAPE_EX(inputShape->at(i), shape, block.getWorkspace());
     shapes->push_back(CONSTANT(shape));
   }
@@ -51,7 +51,7 @@ DECLARE_SHAPE_FN(identity_n) {
 }
 
 DECLARE_TYPES(identity_n) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 
 }  // namespace ops

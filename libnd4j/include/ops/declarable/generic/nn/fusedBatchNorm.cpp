@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 
 DECLARE_TYPES(fused_batch_norm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     iW = x->sizeAt(2);
   }
 
-  auto xCast = x->cast(sd::DataType::FLOAT32);
+  auto xCast = x->cast(FLOAT32);
   // move to NWHC
   /**
    * TODO: TF has a permute to NWHC here:
@@ -94,7 +94,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   } else {
     // REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays
     // must be equal to 3, but got %i instead !", block.width());
-    std::vector<sd::LongType> shape = {iD};
+    std::vector<LongType> shape = {iD};
     mean = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());
     variance = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());
   }
@@ -116,7 +116,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   const float restSizeAdjust = (float)restSize / restSizeMinusOne;
 
   if (isTraining) {
-    std::vector<sd::LongType > dim = {0};
+    std::vector<LongType> dim = {0};
     auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
     mean->assign(sum);
@@ -130,7 +130,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   if (isTraining) {
     int power = 2;
     xAffected.applyScalar(scalar::Pow, power, xAffected);
-    std::vector<sd::LongType > dim = {0};
+    std::vector<LongType> dim = {0};
 
     auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);
     sum *= restSizeInv;
@@ -157,7 +157,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
    delete variance;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(fused_batch_norm) {
@@ -171,7 +171,7 @@ DECLARE_SHAPE_FN(fused_batch_norm) {
                "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD,
                ShapeUtils::shapeAsString(scaleShapeInfo).c_str());
 
-  sd::LongType *outShapeInfo(nullptr), *batchMeanShapeInfo(nullptr), *batchVarShapeInfo(nullptr);
+  LongType *outShapeInfo(nullptr), *batchMeanShapeInfo(nullptr), *batchVarShapeInfo(nullptr);
 
   COPY_SHAPE(xShapeInfo, outShapeInfo);
   COPY_SHAPE(scaleShapeInfo, batchMeanShapeInfo);

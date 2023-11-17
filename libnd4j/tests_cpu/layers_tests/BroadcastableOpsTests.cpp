@@ -35,18 +35,18 @@ class BroadcastableOpsTests : public NDArrayTests {
 };
 
 TEST_F(BroadcastableOpsTests, Test_Add_1) {
-  NDArray x('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray y('c', {1, 5}, sd::DataType::FLOAT32);
-  NDArray exp('c', {5, 5}, sd::DataType::FLOAT32);
+  NDArray x('c', {5, 5}, FLOAT32);
+  NDArray y('c', {1, 5}, FLOAT32);
+  NDArray exp('c', {5, 5}, FLOAT32);
   x.linspace(1);
   y.linspace(1);
   exp.linspace(1);
-  std::vector<sd::LongType> dims = {1};
+  std::vector<LongType> dims = {1};
 
 
   exp.applyBroadcast(broadcast::Add, &dims, y, exp);
 
-  sd::ops::add op;
+  ops::add op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -64,11 +64,11 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
   x.linspace(1);
   y.linspace(1);
   exp.linspace(1);
-  std::vector<sd::LongType> dims = {1};
+  std::vector<LongType> dims = {1};
 
   exp.applyBroadcast(broadcast::Multiply, &dims, y, exp);
 
-  sd::ops::multiply op;
+  ops::multiply op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -86,10 +86,10 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
   y.linspace(1);
   exp.linspace(1);
 
-  std::vector<sd::LongType> dims = {1};
+  std::vector<LongType> dims = {1};
   exp.applyBroadcast(broadcast::SquaredSubtract, &dims, y, exp);
 
-  sd::ops::squaredsubtract op;
+  ops::squaredsubtract op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -104,7 +104,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
   auto y = NDArrayFactory::create<float>('c', {1, 3}, {0, 1, 2});
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 0, -1});
 
-  sd::ops::subtract op;
+  ops::subtract op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -119,7 +119,7 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
   auto y = NDArrayFactory::create<float>('c', {1, 3}, {0, 1, 2});
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
 
-  sd::ops::add op;
+  ops::add op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -134,7 +134,7 @@ TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
   auto row = NDArrayFactory::create<float>('c', {1, 3}, {2, 2, 2});
   auto exp = NDArrayFactory::create<float>('c', {2, 3}, {2, 2, 2, 2, 3, 2});
 
-  sd::ops::maximum op;
+  ops::maximum op;
   auto result = op.evaluate({&x, &row});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -148,7 +148,7 @@ TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
   auto col = NDArrayFactory::create<float>('c', {2, 1}, {2, 1});
   auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1, 2, 1, 1, 1, 1});
 
-  sd::ops::minimum op;
+  ops::minimum op;
   auto result = op.evaluate({&x, &col});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -160,10 +160,10 @@ TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
 }
 
 TEST_F(BroadcastableOpsTests, Test_Shape_1) {
-  sd::ops::minimum op;
+  ops::minimum op;
 
-  sd::LongType shapeX[] = {2, 2, 5, 5, 1, 8192, 1, 99};
-  sd::LongType shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
+  LongType shapeX[] = {2, 2, 5, 5, 1, 8192, 1, 99};
+  LongType shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
   ShapeList inputShape({shapeX, shapeY});
   VariableSpace vs;
   Context ctx(1, &vs, false);
@@ -177,10 +177,10 @@ TEST_F(BroadcastableOpsTests, Test_Shape_1) {
 }
 
 TEST_F(BroadcastableOpsTests, Test_Shape_2) {
-  sd::ops::minimum op;
+  ops::minimum op;
 
-  const sd::LongType shapeX[] = {2, 1, 1, 1, 1, 8192, 1, 99};
-  const sd::LongType shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
+  const LongType shapeX[] = {2, 1, 1, 1, 1, 8192, 1, 99};
+  const LongType shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
   ShapeList inputShape({shapeX, shapeY});
   VariableSpace vs;
   Context ctx(1, &vs, false);
@@ -194,10 +194,10 @@ TEST_F(BroadcastableOpsTests, Test_Shape_2) {
 }
 
 TEST_F(BroadcastableOpsTests, Test_Shape_3) {
-  sd::ops::minimum op;
+  ops::minimum op;
 
-  const sd::LongType shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
-  const sd::LongType shapeY[] = {2, 1, 3, 3, 1, 8192, 1, 99};
+  const LongType shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
+  const LongType shapeY[] = {2, 1, 3, 3, 1, 8192, 1, 99};
   ShapeList inputShape({shapeX, shapeY});
   VariableSpace vs;
   Context ctx(1, &vs, false);
@@ -211,10 +211,10 @@ TEST_F(BroadcastableOpsTests, Test_Shape_3) {
 }
 
 TEST_F(BroadcastableOpsTests, Test_Shape_4) {
-  sd::ops::minimum op;
+  ops::minimum op;
 
-  const sd::LongType shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
-  const sd::LongType shapeY[] = {2, 5, 1, 1, 1, 8192, 1, 99};
+  const LongType shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
+  const LongType shapeY[] = {2, 5, 1, 1, 1, 8192, 1, 99};
   ShapeList inputShape({shapeX, shapeY});
   VariableSpace vs;
   Context ctx(1, &vs, false);
@@ -230,11 +230,11 @@ TEST_F(BroadcastableOpsTests, Test_Shape_4) {
 // (2,1,3) + (4,3) = (2,4,3)
 
 TEST_F(BroadcastableOpsTests, Test_Shape_5) {
-  sd::ops::minimum op;
+  ops::minimum op;
 
-  const sd::LongType shapeX[] = {3, 2, 1, 3, 3, 3, 1, 8192, 1, 99};
-  const sd::LongType shapeY[] = {2, 4, 3, 3, 1, 8192, 1, 99};
-  const sd::LongType shapeE[] = {3, 2, 4, 3, 12, 3, 1, 8192, 1, 99};
+  const LongType shapeX[] = {3, 2, 1, 3, 3, 3, 1, 8192, 1, 99};
+  const LongType shapeY[] = {2, 4, 3, 3, 1, 8192, 1, 99};
+  const LongType shapeE[] = {3, 2, 4, 3, 12, 3, 1, 8192, 1, 99};
   ShapeList inputShape({shapeX, shapeY});
   VariableSpace vs;
   Context ctx(1, &vs, false);
@@ -252,7 +252,7 @@ TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
   auto y = NDArrayFactory::create<float>(2.0f);
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {3, 4, 5, 6});
 
-  sd::ops::add op;
+  ops::add op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -270,7 +270,7 @@ TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
   y.assign(1.0f);
   e.assign(1.0f);
 
-  sd::ops::add op;
+  ops::add op;
   auto result = op.execute({&x, &y}, {&o}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result);
 
@@ -297,7 +297,7 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_2) {
   auto y = NDArrayFactory::create<float>('c', {2}, {0.0f, 1.0f});
   auto e = NDArrayFactory::create<float>('c', {2}, {1.0f, 0.0f});
 
-  sd::ops::subtract op;
+  ops::subtract op;
   auto result = op.evaluate({&x, &y});
   auto z = result.at(0);
 
@@ -310,7 +310,7 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_3) {
   auto z = NDArrayFactory::create<float>('c', {2}, {0.0f, 0.0f});
   auto e = NDArrayFactory::create<float>('c', {2}, {1.0f, 0.0f});
 
-  sd::ops::subtract op;
+  ops::subtract op;
   auto result = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result);
@@ -464,7 +464,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
   auto y = NDArrayFactory::create<float>('c', {1}, {4.f});
   auto e = NDArrayFactory::create<float>('c', {1}, {8.f});
 
-  sd::ops::multiply op;
+  ops::multiply op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -478,7 +478,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
   auto y = NDArrayFactory::create<float>('c', {1, 1}, {4.f});
   auto e = NDArrayFactory::create<float>('c', {1, 1}, {8.f});
 
-  sd::ops::multiply op;
+  ops::multiply op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -491,10 +491,10 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
 TEST_F(BroadcastableOpsTests, broadcast_add_1) {
   NDArray x('c', {4}, {1, 1, 1, 1});
   NDArray y('c', {1, 4}, {1, 2, 3, 4});
-  NDArray z('c', {1, 4}, sd::DataType::DOUBLE);
-  NDArray exp('c', {1, 4}, {2, 3, 4, 5}, sd::DataType::DOUBLE);
+  NDArray z('c', {1, 4}, DOUBLE);
+  NDArray exp('c', {1, 4}, {2, 3, 4, 5}, DOUBLE);
 
-  sd::ops::add op;
+  ops::add op;
   auto status = op.execute({&x, &y}, {&z});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -505,10 +505,10 @@ TEST_F(BroadcastableOpsTests, broadcast_add_1) {
 TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
   NDArray x('c', {1, 4}, {1, 2, 3, 4});
   NDArray y('c', {3, 4}, {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4});
-  NDArray z('c', {3, 4}, sd::DataType::BOOL);
-  NDArray exp('c', {3, 4}, {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1}, sd::DataType::BOOL);
+  NDArray z('c', {3, 4}, BOOL);
+  NDArray exp('c', {3, 4}, {0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1}, BOOL);
 
-  sd::ops::equals op;
+  ops::equals op;
   auto status = op.execute({&x, &y}, {&z});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -518,11 +518,11 @@ TEST_F(BroadcastableOpsTests, broadcast_equals_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(BroadcastableOpsTests, broadcast_empty_1) {
   NDArray y('c', {3, 4}, {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4});
-  NDArray x(sd::DataType::DOUBLE, y.getContext(), false);
-  NDArray z(sd::DataType::DOUBLE, y.getContext(), false);
-  NDArray zExp(sd::DataType::DOUBLE, y.getContext(), false);
+  NDArray x(DOUBLE, y.getContext(), false);
+  NDArray z(DOUBLE, y.getContext(), false);
+  NDArray zExp(DOUBLE, y.getContext(), false);
 
-  sd::ops::multiply op;
+  ops::multiply op;
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -536,7 +536,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_2) {
   NDArray e = NDArrayFactory::create<double>('c', {0, 4});
   ;
 
-  sd::ops::multiply op;
+  ops::multiply op;
   auto status = op.execute({&x, &y}, {&x}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -546,11 +546,11 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_2) {
 
 TEST_F(BroadcastableOpsTests, broadcast_empty_3) {
   NDArray x = NDArrayFactory::create<float>('c', {1, 0, 2});
-  NDArray y('c', {}, std::vector<double>{0.1}, sd::DataType::FLOAT32);
+  NDArray y('c', {}, std::vector<double>{0.1}, FLOAT32);
   NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});
   ;
 
-  sd::ops::maximum op;
+  ops::maximum op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -567,7 +567,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_4) {
   NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});
   ;
 
-  sd::ops::maximum op;
+  ops::maximum op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -584,7 +584,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_5) {
   NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});
   ;
 
-  sd::ops::realdiv op;
+  ops::realdiv op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -601,7 +601,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_6) {
   NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});
   ;
 
-  sd::ops::realdiv op;
+  ops::realdiv op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -618,7 +618,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_7) {
   NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2, 0});
   ;
 
-  sd::ops::realdiv op;
+  ops::realdiv op;
   auto result = op.evaluate({&x, &y});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -631,11 +631,11 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_7) {
 
 TEST_F(BroadcastableOpsTests, broadcast_bool_empty_1) {
   NDArray y('c', {3, 4}, {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4});
-  NDArray x(sd::DataType::DOUBLE, y.getContext(), false);
-  NDArray z(sd::DataType::BOOL, y.getContext(), false);
-  NDArray zExp(sd::DataType::BOOL, y.getContext(), false);
+  NDArray x(DOUBLE, y.getContext(), false);
+  NDArray z(BOOL, y.getContext(), false);
+  NDArray zExp(BOOL, y.getContext(), false);
 
-  sd::ops::greater op;
+  ops::greater op;
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -649,7 +649,7 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_empty_2) {
   NDArray e = NDArrayFactory::create<bool>('c', {0, 4});
   ;
 
-  sd::ops::greater op;
+  ops::greater op;
   auto result = op.evaluate({&x, &y});
 
   auto z = result.at(0);
@@ -660,16 +660,16 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_empty_2) {
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
-  NDArray x('c', {3, 1, 2}, sd::DataType::FLOAT32);
-  NDArray y('c', {2, 2}, sd::DataType::FLOAT32);
-  NDArray z('c', {3, 2, 2}, sd::DataType::BOOL);
-  NDArray e('c', {3, 2, 2}, sd::DataType::BOOL);
+  NDArray x('c', {3, 1, 2}, FLOAT32);
+  NDArray y('c', {2, 2}, FLOAT32);
+  NDArray z('c', {3, 2, 2}, BOOL);
+  NDArray e('c', {3, 2, 2}, BOOL);
 
   x.assign(4.f);
   y.assign(2.f);
   e.assign(true);
 
-  sd::ops::greater op;
+  ops::greater op;
 
   auto status = op.execute({&x, &y}, {&z});
 
@@ -681,16 +681,16 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_1) {
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
-  NDArray x('c', {3, 1, 2}, sd::DataType::FLOAT32);
-  NDArray y('c', {2, 2}, sd::DataType::FLOAT32);
-  NDArray z('c', {3, 2, 2}, sd::DataType::BOOL);
-  NDArray e('c', {3, 2, 2}, sd::DataType::BOOL);
+  NDArray x('c', {3, 1, 2}, FLOAT32);
+  NDArray y('c', {2, 2}, FLOAT32);
+  NDArray z('c', {3, 2, 2}, BOOL);
+  NDArray e('c', {3, 2, 2}, BOOL);
 
   x.assign(1.f);
   y.assign(2.f);
   e.assign(false);
 
-  sd::ops::equals op;
+  ops::equals op;
 
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
@@ -704,12 +704,12 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
 TEST_F(BroadcastableOpsTests, broadcast_bool_3) {
   auto x = NDArrayFactory::create<int>(0);
   auto y = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
-  NDArray z('c', {3}, sd::DataType::BOOL);
-  NDArray e('c', {3}, sd::DataType::BOOL);
+  NDArray z('c', {3}, BOOL);
+  NDArray e('c', {3}, BOOL);
 
   e.assign(true);
 
-  sd::ops::less op;
+  ops::less op;
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -720,16 +720,16 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_3) {
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_2) {
-  NDArray x('c', {3, 1, 2}, sd::DataType::FLOAT32);
-  NDArray y('c', {2, 2}, sd::DataType::FLOAT32);
-  NDArray z('c', {3, 2, 2}, sd::DataType::FLOAT32);
-  NDArray e('c', {3, 2, 2}, sd::DataType::FLOAT32);
+  NDArray x('c', {3, 1, 2}, FLOAT32);
+  NDArray y('c', {2, 2}, FLOAT32);
+  NDArray z('c', {3, 2, 2}, FLOAT32);
+  NDArray e('c', {3, 2, 2}, FLOAT32);
 
   x = 4.f;
   y = 2.f;
   e = -2.f;
 
-  sd::ops::reversesubtract op;  // z = y - x;
+  ops::reversesubtract op;  // z = y - x;
 
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
@@ -743,10 +743,10 @@ TEST_F(BroadcastableOpsTests, broadcast_2) {
 TEST_F(BroadcastableOpsTests, broadcast_3) {
   auto x = NDArrayFactory::create<int>(0);
   auto y = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
-  NDArray z('c', {3}, sd::DataType::INT32);
+  NDArray z('c', {3}, INT32);
   auto e = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
 
-  sd::ops::add op;
+  ops::add op;
   auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, status);

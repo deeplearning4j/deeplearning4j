@@ -63,7 +63,7 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars_per_channel, 3, 1, true, 0, 0)
                "was given.",
                numBits);
   helpers::fakeQuantWithMinMaxVarsPerChannel(block.launchContext(), x, min, max, numBits, narrowed, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(fake_quant_with_min_max_vars_per_channel) {

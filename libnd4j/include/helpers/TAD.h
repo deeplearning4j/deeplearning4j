@@ -212,18 +212,16 @@ SD_INLINE void TAD::initWithExternalTAD(sd::LongType *existingTAD, sd::LongType 
   this->dimension = dimension;
   this->dimensionLength = dimensionLength;
 
-  this->tadShape = shape::shapeOf(existingTAD);
-  this->tadStride = shape::stride(existingTAD);
+  this->tadShape = shapeOf(existingTAD);
+  this->tadStride = stride(existingTAD);
 
-  sd::LongType ews = shape::elementWiseStride(originalShape);
+  sd::LongType ews = elementWiseStride(originalShape);
 
-  this->numTads =
-      shape::length(originalShape) /
-      shape::length(
+  this->numTads = length(originalShape) / length(
           existingTAD);
   this->wholeThing =
       this->numTads == 1 ||
-      ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
+      ((this->dimensionLength == this->rank || this->numTads == length(this->shapeInfo)) && ews == 1);
 }
 
 SD_INLINE void TAD::init(int tadIndex, sd::LongType const *shapeInfo, const long long int *dimension,
@@ -244,26 +242,26 @@ SD_INLINE void TAD::init(sd::LongType const *shapeInfo, const long long int *dim
   this->numTads =
       dimensionLength == 0 ? 1 : this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
 
-  sd::LongType ews = shape::elementWiseStride(shapeInfo);
+  sd::LongType ews = elementWiseStride(shapeInfo);
 
   if (dimensionLength == 0) {
     wholeThing = true;
-  } else if (!shape::isVector(shapeInfo)) {
+  } else if (!isVector(shapeInfo)) {
     wholeThing = this->numTads == 1  // if number of TADs is 1, we just have input shape == TAD shape
                  ||
                  ((this->dimensionLength == this->rank  // if number of dimensions is the same as input rank, that'll be
                                                         // wholeTad too, but only if EWS==1 (aka - not a View)
-                   || (this->numTads == shape::length(shapeInfo) &&
-                       shape::order(shapeInfo) == 'c'))  // OR  number of tads equals to shapeInfo length AND input is
+                   || (this->numTads == length(shapeInfo) &&
+                          order(shapeInfo) == 'c'))  // OR  number of tads equals to shapeInfo length AND input is
                                                          // in C order. if order is F - we'll have to calculate offsets
                   && ews == 1);                          // as mentioned above - last 2 rules apply only to non-views
-  } else if (shape::isScalar(shapeInfo)) {
+  } else if (isScalar(shapeInfo)) {
     wholeThing = true;
     // vector case
   } else {
     // if(dimensionLength == 1 && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
     // if(dimension == 0 && ) {
-    if (dimensionLength != 0 && dimension != nullptr && shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
+    if (dimensionLength != 0 && dimension != nullptr && shapeOf(shapeInfo)[dimension[0]] == 1) {
       wholeThing = true;
     }
   }
@@ -272,7 +270,7 @@ SD_INLINE void TAD::init(sd::LongType const *shapeInfo, const long long int *dim
 template <typename T>
 SD_INLINE void TAD::printTADsND(T *x) {
   if (wholeThing) {
-    for (int i = 0; i < shape::length(tadOnlyShapeInfo); i++) {
+    for (int i = 0; i < length(tadOnlyShapeInfo); i++) {
       printf(" %f ", x[i]);
     }
     printf("\n");
@@ -285,8 +283,7 @@ SD_INLINE void TAD::printTADsND(T *x) {
       int rankIter = shape::rank(tadOnlyShapeInfo);
       sd::LongType xStridesIter[SD_MAX_RANK];
       T *xPointer = x + offset;
-      if (PrepareOneRawArrayIter<T>(rankIter, shape::shapeOf(tadOnlyShapeInfo), xPointer,
-                                    shape::stride(tadOnlyShapeInfo), &rankIter, shapeIter, &xPointer,
+      if (PrepareOneRawArrayIter<T>(rankIter, shapeOf(tadOnlyShapeInfo), xPointer, stride(tadOnlyShapeInfo), &rankIter, shapeIter, &xPointer,
                                     xStridesIter) >= 0) {
         ND4J_RAW_ITER_START(dim, shape::rank(tadOnlyShapeInfo), coord, shapeIter);
         {
@@ -305,13 +302,13 @@ SD_INLINE void TAD::printTADsND(T *x) {
 
 SD_INLINE void TAD::permuteShapeBufferInPlace(sd::LongType const *shapeBuffer, const sd::LongType *rearrange,
                                               sd::LongType *out) {
-  memcpy(out, shapeBuffer, sizeof(sd::LongType) * shape::shapeInfoLength(this->rank));
+  memcpy(out, shapeBuffer, sizeof(sd::LongType) * shapeInfoLength(this->rank));
   doPermuteShapeInfo(out, rearrange);
 }
 
 SD_INLINE sd::LongType *TAD::permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange) {
-  int len = shape::shapeInfoLength(this->rank);
-  sd::LongType *copy = shape::copyOf(len, shapeBuffer);
+  int len = shapeInfoLength(this->rank);
+  sd::LongType *copy = copyOf(len, shapeBuffer);
   doPermuteShapeInfo(copy, rearrange);
   return copy;
 }
@@ -329,35 +326,35 @@ SD_INLINE void TAD::createTadOnlyShapeInfo() {
   sd::ArrayOptions::setDataType(this->tadOnlyShapeInfo, sd::ArrayOptions::dataType(this->originalShapeInfo));
 
   // possible optimization goes here
-  if (shape::order(this->originalShapeInfo) == 'c' && shape::strideDescendingCAscendingF(this->originalShapeInfo) &&
+  if (order(this->originalShapeInfo) == 'c' && strideDescendingCAscendingF(this->originalShapeInfo) &&
       dimensionsDescending(shape::rank(this->originalShapeInfo), this->originalDimension,
                            this->originalDimensionLength)) {
     // for C order, if outer dimensions are used, continuous layout is preserved
-    this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 2] =
-        this->originalShapeInfo[shape::shapeInfoLength(this->originalShapeInfo) - 2];
+    this->tadOnlyShapeInfo[shapeInfoLength(this->tadOnlyShapeInfo) - 2] =
+        this->originalShapeInfo[shapeInfoLength(this->originalShapeInfo) - 2];
   }
 
   // do not swap order if positive elementwise stride preserved
-  if (shape::elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
-    this->tadOnlyShapeInfo[shape::shapeInfoLength(this->tadOnlyShapeInfo) - 1] = shape::order(this->originalShapeInfo);
+  if (elementWiseStride(this->tadOnlyShapeInfo) >= 1) {
+    this->tadOnlyShapeInfo[shapeInfoLength(this->tadOnlyShapeInfo) - 1] = order(this->originalShapeInfo);
   }
 
 //  if (this->tadShape != nullptr) delete[] this->tadShape;
 
-  this->tadShape = shape::shapeOf(this->tadOnlyShapeInfo);
-  this->tadStride = shape::stride(this->tadOnlyShapeInfo);
+  this->tadShape = shapeOf(this->tadOnlyShapeInfo);
+  this->tadStride = stride(this->tadOnlyShapeInfo);
 }
 
 SD_INLINE sd::LongType TAD::lengthPerSlice(sd::LongType const *shapeBuffer) {
   int dimension = 0;
-  sd::LongType *remove = shape::removeIndex(shape::shapeOf(shapeBuffer), &dimension, shape::rank(shapeBuffer), 1);
-  sd::LongType prod = shape::prodLong(remove, shape::rank(shapeBuffer) - 1);
+  sd::LongType *remove = removeIndex(shapeOf(shapeBuffer), &dimension, shape::rank(shapeBuffer), 1);
+  sd::LongType prod = prodLong(remove, shape::rank(shapeBuffer) - 1);
   delete[] remove;
   return prod;
 }
 
 SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index) {
-  sd::LongType *shape = shape::shapeOf(shapeInfo);
+  sd::LongType *shape = shapeOf(shapeInfo);
   int rank = shape::rank(shapeInfo);
   int leftOverIndexLen = rank - originalDimensionLength;
 
@@ -370,7 +367,7 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index) {
   // indexes not specified in the tad indexes
 
   // every coordinate starts as zero
-  memset(ret, 0, shape::shapeInfoByteLength(rank));
+  memset(ret, 0, shapeInfoByteLength(rank));
 
   // find the length of the elements we
   // are iterating over
@@ -405,7 +402,7 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index) {
   /* int *sub = new int[leftOverIndexLen];
    shape::ind2subOrder(tadShape,index,len,sub);
   */
-  shape::index2coords(index, leftOverIndexLen, tadShape, sub);
+  index2coords(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {
     ret[leftOverIndexes[i]] = sub[i];
@@ -481,7 +478,7 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
   if (dimensionLength > 1) {
     sd::LongType *tad2Sub = this->tad2Sub(index, ptrManager);
 
-    sd::LongType ret = shape::getOffset(shapeInfo, tad2Sub);
+    sd::LongType ret = getOffset(shapeInfo, tad2Sub);
 
     if (ret < 0) {
    //   if (ptrManager == nullptr) delete[] tad2Sub;
@@ -494,7 +491,7 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
   } else {
     sd::LongType *tad2Sub = this->tad2Sub(index, ptrManager);
 
-    sd::LongType ret = shape::getOffset(shapeInfo, tad2Sub);
+    sd::LongType ret = getOffset(shapeInfo, tad2Sub);
 
  //   if (ptrManager == nullptr) delete[] tad2Sub;
 
@@ -505,15 +502,15 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
 SD_INLINE sd::LongType *TAD::tensorShape() {
   if (this->tadShape != nullptr) return this->tadShape;
 
-  sd::LongType *theShape = shape::shapeOf(shapeInfo);
-  sd::LongType *tensorShape = shape::keep(theShape, this->dimension, dimensionLength, shape::rank(shapeInfo));
+  sd::LongType *theShape = shapeOf(shapeInfo);
+  sd::LongType *tensorShape = keep(theShape, this->dimension, dimensionLength, shape::rank(shapeInfo));
   this->tadShape = tensorShape;
   this->tadRank = dimensionLength;
   return tensorShape;
 }
 
 SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
-  auto shape = shape::shapeOf(shapeInfo);
+  auto shape = shapeOf(shapeInfo);
   int rank = shape::rank(shapeInfo);
   int leftOverIndexLen = rank - originalDimensionLength;
   sd::LongType *tadShape;
@@ -562,7 +559,7 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
   }
 
   // sub for indices
-  shape::index2coords(index, leftOverIndexLen, tadShape, sub);
+  index2coords(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {
     ret[leftOverIndexes[i]] = sub[i];
@@ -587,57 +584,56 @@ SD_INLINE void TAD::createOffsets() {
 SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
 
   // ensure tad shapes get setup right for vectors
-  if (dimensionLength > 1 && shape::isVector(shapeInfo))
-    return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
+  if (dimensionLength > 1 && isVector(shapeInfo))
+    return copyOf(shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
 
   // case when tad coincides with whole array
   if (this->numTads == 1 &&
       ((shape::rank(originalShapeInfo) == originalDimensionLength) || originalDimensionLength == 0)) {
     // we might have special case here: skipped dimensions might be just full of ones
-    sd::LongType *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
+    sd::LongType *ret = copyOf(shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
     if (shape::isDimPermuted<sd::LongType >(dimension, (sd::LongType)dimensionLength))  // check whether we need permutation
       doPermuteShapeInfo(ret, dimension);
 
     return ret;
   }
 
-  sd::LongType *theShape = shape::shapeOf(shapeInfo);
+  sd::LongType *theShape = shapeOf(shapeInfo);
   int rank = shape::rank(shapeInfo);
 
   if (dimensionLength == 1) {
-    if (dimension[0] == 0 && shape::isVector(shapeInfo) && theShape[1] == 1) {
+    if (dimension[0] == 0 && isVector(shapeInfo) && theShape[1] == 1) {
       sd::LongType permuted[2] = {1, 0};
       sd::LongType *permutedRet2 = shape::permuteShapeBuffer(shapeInfo, permuted);
       return permutedRet2;
-    } else if (dimension[0] == 1 && shape::isVector(shapeInfo) && theShape[0] == 1) {
-      sd::LongType *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
+    } else if (dimension[0] == 1 && isVector(shapeInfo) && theShape[0] == 1) {
+      sd::LongType *ret = copyOf(shapeInfoLength(shape::rank(shapeInfo)), shapeInfo);
       return ret;
-    } else if (shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
-      sd::LongType *scalarInfo = shape::createScalarShapeInfo();
-      scalarInfo[shape::shapeInfoLength(shape::rank(scalarInfo)) - 3] = this->tadIndex;
+    } else if (shapeOf(shapeInfo)[dimension[0]] == 1) {
+      sd::LongType *scalarInfo = createScalarShapeInfo();
+      scalarInfo[shapeInfoLength(shape::rank(scalarInfo)) - 3] = this->tadIndex;
       return scalarInfo;
     }
   }
 
   sd::LongType *tensorShape = this->tensorShape();
-  sd::LongType *reverseDimensions = shape::reverseCopy(dimension, dimensionLength);
+  sd::LongType *reverseDimensions = reverseCopy(dimension, dimensionLength);
   sd::LongType  *rankRange = shape::range<sd::LongType >(0, rank);
   sd::LongType  *remove = shape::removeIndex<sd::LongType >(rankRange, dimension, (sd::LongType)rank, (sd::LongType)dimensionLength);
   // concat is wrong here with the length
-  sd::LongType *newPermuteDims = shape::concat(remove, rank - dimensionLength, reverseDimensions, dimensionLength);
+  sd::LongType *newPermuteDims = concat(remove, rank - dimensionLength, reverseDimensions, dimensionLength);
 
   sd::LongType *permuted = shape::permuteShapeBuffer(shapeInfo, newPermuteDims);
 
-  sd::LongType sliceIndex =
-      shape::sliceOffsetForTensor(shape::rank(permuted), this->tadIndex, shape::shapeOf(shapeInfo), tensorShape,
+  sd::LongType sliceIndex = sliceOffsetForTensor(shape::rank(permuted), this->tadIndex, shapeOf(shapeInfo), tensorShape,
                                   dimensionLength, dimension, dimensionLength);
 
-  sd::LongType *ret2 = shape::sliceOfShapeBuffer(sliceIndex, permuted);
-  sd::LongType tensorLength = shape::prodLong(tensorShape, tadRank);
+  sd::LongType *ret2 = sliceOfShapeBuffer(sliceIndex, permuted);
+  sd::LongType tensorLength = prodLong(tensorShape, tadRank);
 
-  sd::LongType compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prodLong(tensorShape, tadRank);
-  if (dimensionLength == tadRank && compLength == shape::length(ret2)) {
-    if (dimensionLength == 1 && shape::isVector(ret2) && shape::shapeOf(ret2)[0] == 1) {
+  sd::LongType compLength = isVector(ret2) ? length(ret2) : prodLong(tensorShape, tadRank);
+  if (dimensionLength == tadRank && compLength == length(ret2)) {
+    if (dimensionLength == 1 && isVector(ret2) && shapeOf(ret2)[0] == 1) {
       // go to the bottom and return ret2 after proper freeing of pointers
       // basic idea; we *don't* permute row vectors
     } else if (dimensionLength > 1) {
@@ -660,7 +656,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
 
     sd::LongType offset = tadIndex * tensorLength / lengthPerSlice;
     if (sliceIndex == 0 && length == lengthPerSlice) {
-      sd::LongType *newRet2 = shape::sliceOfShapeBuffer(offset, ret2);
+      sd::LongType *newRet2 = sliceOfShapeBuffer(offset, ret2);
       delete[] ret2;
       ret2 = newRet2;
       sd::LongType  *finalPermuteDims = new sd::LongType [shape::rank(ret2)];
@@ -669,7 +665,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         finalPermuteDims[forward++] = i;
       }
       // bool isRowVector2 = shape::isRowVector(ret2) && !isLikeVector;
-      bool isRowVector2 = shape::isRowVector(ret2);
+      bool isRowVector2 = isRowVector(ret2);
       if (isRowVector2 == false) {
         shape::permuteShapeBufferInPlace(ret2, finalPermuteDims, ret2);
       }
@@ -677,11 +673,11 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
      // delete[] finalPermuteDims;
 
     } else if (length == lengthPerSlice) {
-      offset -= shape::slices(ret2) * (offset / shape::slices(ret2));
-      sd::LongType *newRet2 = shape::sliceOfShapeBuffer(offset, ret2);
+      offset -= slices(ret2) * (offset / slices(ret2));
+      sd::LongType *newRet2 = sliceOfShapeBuffer(offset, ret2);
       delete[] ret2;
       ret2 = newRet2;
-      if (dimensionLength == 1 && shape::isVector(ret2) && shape::shapeOf(ret2)[0] == 1) {
+      if (dimensionLength == 1 && isVector(ret2) && shapeOf(ret2)[0] == 1) {
         // go to the bottom and return ret2 after proper freeing of pointers
         // basic idea; we *don't* permute row vectors
       } else {
@@ -702,14 +698,14 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
       while (shape::length(ret2) > length) {
         auto lengthPerSlice2 = this->lengthPerSlice(ret2);
         sliceIndex = sliceOffsetForTensor(sliceIndex, shape::length(ret2), lengthPerSlice2);
-        sliceIndex -= shape::slices(ret2) * (sliceIndex / shape::slices(ret2));
-        auto newRet2 = shape::sliceOfShapeBuffer(sliceIndex, ret2);
+        sliceIndex -= slices(ret2) * (sliceIndex / slices(ret2));
+        auto newRet2 = sliceOfShapeBuffer(sliceIndex, ret2);
        // delete[] ret2;
         ret2 = newRet2;
       }
 
       // don't permute on a row vector
-      if (dimensionLength == 1 && shape::isVector(ret2) && shape::shapeOf(ret2)[0] == 1) {
+      if (dimensionLength == 1 && isVector(ret2) && shapeOf(ret2)[0] == 1) {
         // go to the bottom and return ret2 after proper freeing of pointers
         // basic idea; we *don't* permute row vectors
       } else if (dimensionLength > 1) {
@@ -738,12 +734,12 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
 SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const sd::LongType *dimension,
                                       sd::LongType dimensionLength) {
   if (dimensionLength == 1) {
-    return shape::shapeOf(shapeInfo)[dimension[0]];
+    return shapeOf(shapeInfo)[dimension[0]];
   } else {
     sd::LongType ret = 1;
     for (int i = 0; i < shape::rank(shapeInfo); i++) {
       for (int j = 0; j < dimensionLength; j++) {
-        if (i == dimension[j]) ret *= shape::shapeOf(shapeInfo)[dimension[j]];
+        if (i == dimension[j]) ret *= shapeOf(shapeInfo)[dimension[j]];
       }
     }
     return ret;
@@ -752,11 +748,11 @@ SD_INLINE sd::LongType TAD::tadLength(sd::LongType const *shapeInfo, const sd::L
 
 SD_INLINE sd::LongType TAD::tensorsAlongDimension(sd::LongType const *shapeInfo, const sd::LongType *dimension,
                                                   sd::LongType dimensionLength) {
-  return shape::length(shapeInfo) / this->tadLength(shapeInfo, dimension, dimensionLength);
+  return length(shapeInfo) / this->tadLength(shapeInfo, dimension, dimensionLength);
 }
 
 SD_INLINE void TAD::collapse() {
-  auto shape = shape::shapeOf(shapeInfo);
+  auto shape = shapeOf(shapeInfo);
   // handle negative dimensions/backwards indexing
   for (int i = 0; i < dimensionLength; i++) {
     if ((dimension)[i] < 0) (dimension)[i] += shape::rank(this->shapeInfo);

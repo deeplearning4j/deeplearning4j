@@ -30,7 +30,7 @@ namespace helpers {
 // pRows - array of ints with length N, vals from 0 to N-1
 // pCols - array of ints with length < N and vals between 0 and max(pRows)
 //
-static SD_KERNEL void countRowsKernel(int* pRowCounts, int const* pRows, int const* pCols, sd::LongType N) {
+static SD_KERNEL void countRowsKernel(int* pRowCounts, int const* pRows, int const* pCols, LongType N) {
   auto start = blockIdx.x * blockDim.x;
   auto step = blockDim.x * gridDim.x;
   for (int n = threadIdx.x + start; n < N; n += step) {
@@ -54,14 +54,16 @@ static SD_KERNEL void countRowsKernel(int* pRowCounts, int const* pRows, int con
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // row counter caller
-sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::LongType N, NDArray& rowCounts) {
+LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, LongType N, NDArray& rowCounts) {
   int* pRowCounts = reinterpret_cast<int*>(rowCounts.specialBuffer());
   int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
   int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
   auto stream = rowCounts.getContext()->getCudaStream();
   countRowsKernel<<<1, 1, 128, *stream>>>(pRowCounts, pRows, pCols, N);
+  sd::DebugHelper::checkErrorCode(stream, "countRows  failed");
+
   NDArray numElementsArr = rowCounts.sumNumber();  // reduceAlongDimension(reduce::Sum, {});
-  auto numElements = numElementsArr.e<sd::LongType>(0);
+  auto numElements = numElementsArr.e<LongType>(0);
   return numElements;
 }
 
@@ -141,7 +143,7 @@ static SD_KERNEL void symmetrizeKernel(int const* pRows, int const* pCols, T con
 // symmetrize algorithm itself
 //
 template <typename T>
-static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, LongType N,
                                NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
   int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
   int* symRowP = reinterpret_cast<int*>(outputRows->specialBuffer());
@@ -149,6 +151,8 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
   auto stream = outputCols->getContext()->getCudaStream();
   // fill up syRowP array
   fillUpsymRow<<<1, N, 128, *stream>>>(pRowCounts, symRowP, N);
+  sd::DebugHelper::checkErrorCode(stream, "fillUpsymRow  failed");
+
   outputRows->syncToHost();
   int* symColP = reinterpret_cast<int*>(outputCols->specialBuffer());
   int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
@@ -158,12 +162,14 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
   int* offset = reinterpret_cast<int*>(offsetArr.specialBuffer());
   // symmetrize itself
   symmetrizeKernel<T><<<1, 1, 1024, *stream>>>(pRows, pCols, pVals, symRowP, symColP, offset, pOutput, N);
+  sd::DebugHelper::checkErrorCode(stream, "symmetrizeKernel  failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // symmetrize caller and adoption
 //
-void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
   BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_,
                         (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), SD_NUMERIC_TYPES);
@@ -223,6 +229,8 @@ static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArra
   auto rowSize = sizeof(T) * colCount;
   auto stream = output->getContext()->getCudaStream();
   edgeForcesKernel<T><<<1, 128, 1024, *stream>>>(pRows, pCols, dataP, vals, outputP, N, colCount, rowSize);
+  sd::DebugHelper::checkErrorCode(stream, "edgeForces  failed");
+
   NDArray::registerSpecialUse({output}, {rowP, colP, valP, data});
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -245,7 +253,7 @@ BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_,
 template <typename T>
 void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
   auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-    T res = sd::math::sd_sign<T, T>(grad) != sd::math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
+    T res = math::sd_sign<T, T>(grad) != math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
     if (res < .01) res = .01;
     return res;
   };
@@ -264,13 +272,13 @@ BUILD_SINGLE_TEMPLATE(template void barnes_gains_, (NDArray * input, NDArray* gr
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cell contains - check cells for given point
 //
-bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, sd::LongType dimension) {
+bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, LongType dimension) {
   auto cornerMinusWidth = *corner - *width;
   auto cornerPlusWidth = *corner + *width;
   // executes on host side, so sync all to host memory
   cornerMinusWidth.syncToHost();
   cornerPlusWidth.syncToHost();
-  for (sd::LongType i = 0; i < dimension; i++) {
+  for (LongType i = 0; i < dimension; i++) {
     if (cornerMinusWidth.e<double>(i) > point->e<double>(i)) return false;
     if (cornerPlusWidth.e<double>(i) < point->e<double>(i)) return false;
   }

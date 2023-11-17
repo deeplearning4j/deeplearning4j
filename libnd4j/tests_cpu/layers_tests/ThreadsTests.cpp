@@ -167,7 +167,7 @@ TEST_F(ThreadsTests, validation_test_2d_1) {
           }
         };
 
-        samediff::Threads::parallel_for(func, 0, e, 1, 0, i, 1, t, true);
+        Threads::parallel_for(func, 0, e, 1, 0, i, 1, t, true);
 
         ASSERT_EQ(e * i, sum.load());
       }
@@ -187,7 +187,7 @@ TEST_F(ThreadsTests, reduction_test_1) {
     return sum;
   };
 
-  auto sum = samediff::Threads::parallel_long(
+  auto sum = Threads::parallel_long(
       func, LAMBDA_AL { return _old + _new; }, 0, 8192, 1, 4);
   ASSERT_EQ(8192, sum);
 }

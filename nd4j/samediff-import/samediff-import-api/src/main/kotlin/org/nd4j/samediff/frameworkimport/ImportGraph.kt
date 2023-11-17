@@ -50,6 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.util.*
 
 import mu.KotlinLogging
+import org.nd4j.autodiff.listeners.debugging.ArrayTracker
 import org.nd4j.linalg.api.ndarray.INDArray
 import kotlin.collections.HashMap
 
@@ -215,13 +216,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
      * @param opFilter       Optional filter - ops to exclude/ignore
      * @return Imported model
      */
-    fun importGraph(irGraph: IRGraph<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>,
-                    importOverride: Map<String?, ImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>?>?,
-                    opFilter: OpImportFilter<GRAPH_TYPE, NODE_TYPE, ATTR_VALUE_TYPE>?,
-                    dynamicVariables: MutableMap<String, TENSOR_TYPE> = HashMap(),
-                    opMappingRegistry:
-                    OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE,
-                            DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
+    fun importGraph(
+        irGraph: IRGraph<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>,
+        importOverride: Map<String?, ImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>?>?,
+        opFilter: OpImportFilter<GRAPH_TYPE, NODE_TYPE, ATTR_VALUE_TYPE>?,
+        dynamicVariables: MutableMap<String, TENSOR_TYPE> = HashMap(),
+        opMappingRegistry:
+        OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>,
+        trackVariableChanges: Boolean
+    ): SameDiff {
 
 
 
@@ -256,6 +259,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         //First, add any constants, placeholders, and zero-input ops
         //note: we enable eager mode here for dynamic variable resolution
         val sd = SameDiff.create().enableEagerMode()
+        if(trackVariableChanges) {
+            sd.addListeners(ArrayTracker(irGraph.variableNames()))
+        }
+
         val convertedDynamic = HashMap<String,INDArray>()
 
         if(dynamicVariables != null) {

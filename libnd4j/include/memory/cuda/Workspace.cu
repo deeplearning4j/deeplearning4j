@@ -57,7 +57,7 @@ Workspace::Workspace(ExternalWorkspace *external) {
   }
 }
 
-Workspace::Workspace(sd::LongType primarySize, sd::LongType secondarySize) {
+Workspace::Workspace(LongType primarySize, LongType secondarySize) {
   if (secondarySize > 0) {
     auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondarySize, cudaHostAllocDefault);
     if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
@@ -87,7 +87,7 @@ Workspace::Workspace(sd::LongType primarySize, sd::LongType secondarySize) {
   this->_spillsSizeSecondary = 0;
 }
 
-void Workspace::init(sd::LongType primaryBytes, sd::LongType secondaryBytes) {
+void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   if (this->_currentSize < primaryBytes) {
     if (this->_allocatedDevice && !_externalized) cudaFree((void *)this->_ptrDevice);
 
@@ -111,11 +111,11 @@ void Workspace::init(sd::LongType primaryBytes, sd::LongType secondaryBytes) {
   }
 }
 
-void Workspace::expandBy(sd::LongType numBytes, sd::LongType secondaryBytes) {
+void Workspace::expandBy(LongType numBytes, LongType secondaryBytes) {
   this->init(_currentSize + numBytes, _currentSizeSecondary + secondaryBytes);
 }
 
-void Workspace::expandTo(sd::LongType numBytes, sd::LongType secondaryBytes) { this->init(numBytes, secondaryBytes); }
+void Workspace::expandTo(LongType numBytes, LongType secondaryBytes) { this->init(numBytes, secondaryBytes); }
 
 void Workspace::freeSpills() {
   _spillsSize = 0;
@@ -137,15 +137,15 @@ Workspace::~Workspace() {
   freeSpills();
 }
 
-sd::LongType Workspace::getUsedSize() { return getCurrentOffset(); }
+LongType Workspace::getUsedSize() { return getCurrentOffset(); }
 
-sd::LongType Workspace::getCurrentSize() { return _currentSize; }
+LongType Workspace::getCurrentSize() { return _currentSize; }
 
-sd::LongType Workspace::getCurrentOffset() { return _offset.load(); }
+LongType Workspace::getCurrentOffset() { return _offset.load(); }
 
-void *Workspace::allocateBytes(sd::LongType numBytes) { return allocateBytes(sd::memory::MemoryType::HOST, numBytes); }
+void *Workspace::allocateBytes(LongType numBytes) { return allocateBytes(HOST, numBytes); }
 
-sd::LongType Workspace::getAllocatedSize() { return getCurrentSize() + getSpilledSize(); }
+LongType Workspace::getAllocatedSize() { return getCurrentSize() + getSpilledSize(); }
 
 void Workspace::scopeIn() {
   freeSpills();
@@ -155,9 +155,9 @@ void Workspace::scopeIn() {
 
 void Workspace::scopeOut() { _offset = 0; }
 
-sd::LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
+LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
 
-void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numBytes) {
+void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
   switch (type) {
     case HOST: {
       if (numBytes < 1)
@@ -172,7 +172,7 @@ void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numByte
         sd_debug("Allocating %lld [HOST] bytes in spills\n", numBytes);
         this->_mutexAllocation.unlock();
 
-        sd::Pointer p;
+        Pointer p;
         auto res = cudaHostAlloc(reinterpret_cast<void **>(&p), numBytes, cudaHostAllocDefault);
         if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
 
@@ -209,7 +209,7 @@ void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numByte
         sd_debug("Allocating %lld [DEVICE] bytes in spills\n", numBytes);
         this->_mutexAllocation.unlock();
 
-        sd::Pointer p;
+        Pointer p;
         auto res = cudaMalloc(reinterpret_cast<void **>(&p), numBytes);
         if (res != 0) throw cuda_exception::build("Can't allocate [DEVICE] memory", res);
 
@@ -240,18 +240,18 @@ void *Workspace::allocateBytes(sd::memory::MemoryType type, sd::LongType numByte
 
 Workspace *Workspace::clone() {
   // for clone we take whatever is higher: current allocated size, or allocated size of current loop
-  return new Workspace(sd::math::sd_max<sd::LongType>(this->getCurrentSize(), this->_cycleAllocations.load()));
+  return new Workspace(sd::math::sd_max<LongType>(this->getCurrentSize(), this->_cycleAllocations.load()));
 }
 
-sd::LongType Workspace::getAllocatedSecondarySize() { return getCurrentSecondarySize() + getSpilledSecondarySize(); }
+LongType Workspace::getAllocatedSecondarySize() { return getCurrentSecondarySize() + getSpilledSecondarySize(); }
 
-sd::LongType Workspace::getCurrentSecondarySize() { return _currentSizeSecondary; }
+LongType Workspace::getCurrentSecondarySize() { return _currentSizeSecondary; }
 
-sd::LongType Workspace::getCurrentSecondaryOffset() { return _offsetSecondary.load(); }
+LongType Workspace::getCurrentSecondaryOffset() { return _offsetSecondary.load(); }
 
-sd::LongType Workspace::getSpilledSecondarySize() { return _spillsSizeSecondary; }
+LongType Workspace::getSpilledSecondarySize() { return _spillsSizeSecondary; }
 
-sd::LongType Workspace::getUsedSecondarySize() { return getCurrentSecondaryOffset(); }
+LongType Workspace::getUsedSecondarySize() { return getCurrentSecondaryOffset(); }
 
 }  // namespace memory
 }  // namespace sd

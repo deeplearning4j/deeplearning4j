@@ -47,7 +47,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
   weights.assign(2.0);
   input.linspace(1);
 
-  sd::ops::conv2d op;
+  ops::conv2d op;
   auto result = op.evaluate({&input, &weights}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
 
   ASSERT_EQ(sd::Status::VALIDATION, result.status());
@@ -62,7 +62,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
   weights.assign(2.0);
   input.linspace(1);
 
-  sd::ops::conv2d op;
+  ops::conv2d op;
   auto result = op.evaluate({&input, &weights}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -81,7 +81,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_3) {
   weights.assign(2.0);
   input.linspace(1);
 
-  sd::ops::conv2d op;
+  ops::conv2d op;
   auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
   ASSERT_EQ(sd::Status::OK, result);
 
@@ -98,7 +98,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_4) {
   weights.assign(2.0);
   input.linspace(1);
 
-  sd::ops::conv2d op;
+  ops::conv2d op;
   auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
   ASSERT_EQ(sd::Status::VALIDATION, result);
 }
@@ -137,7 +137,7 @@ TEST_F(DataTypesValidationTests, test_bits_hamming_distance_1) {
   ctx.setInputArray(1, &y);
   ctx.setOutputArray(0, &z);
 
-  sd::ops::bits_hamming_distance op;
+  ops::bits_hamming_distance op;
   auto status = op.execute(&ctx);
   ASSERT_NE(sd::Status::OK, status);
 }
@@ -145,14 +145,14 @@ TEST_F(DataTypesValidationTests, test_bits_hamming_distance_1) {
 TEST_F(DataTypesValidationTests, test_bits_hamming_distance_2) {
   auto x = NDArrayFactory::create<int>('c', {3}, {0b01011000, 0b01011111, 0b01111110});
   auto y = NDArrayFactory::create<int>('c', {3}, {0b00010110, 0b01011000, 0b01011000});
-  auto z = NDArrayFactory::create<sd::LongType>(0);
+  auto z = NDArrayFactory::create<LongType>(0);
 
   Context ctx(1);
   ctx.setInputArray(0, &x);
   ctx.setInputArray(1, &y);
   ctx.setOutputArray(0, &z);
 
-  sd::ops::bits_hamming_distance op;
+  ops::bits_hamming_distance op;
   auto status = op.execute(&ctx);
   ASSERT_EQ(sd::Status::OK, status);
 }

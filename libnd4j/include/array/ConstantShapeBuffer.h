@@ -42,9 +42,9 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary, const std::shared_ptr<PointerWrapper> &special);
   ConstantShapeBuffer() = default;
 
-  const sd::LongType *primary() const;
-  const sd::LongType *special() const;
-  const sd::LongType *platform() const;
+  const LongType *primary() const;
+  const LongType *special() const;
+  const LongType *platform() const;
 };
 
 }  // namespace sd

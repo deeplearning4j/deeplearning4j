@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(hashcode, 1, 1, false, 0, 0) {
 
   helpers::hashCode(block.launchContext(), *input, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_SHAPE_FN(hashcode) {
@@ -50,7 +50,7 @@ DECLARE_TYPES(hashcode) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ANY})
       ->setAllowedInputTypes(1, {ANY})
-      ->setAllowedOutputTypes({sd::DataType::INT64});
+      ->setAllowedOutputTypes({INT64});
 };
 }  // namespace ops
 }  // namespace sd

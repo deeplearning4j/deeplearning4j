@@ -328,7 +328,7 @@ TEST_F(ContextTests, test_short_context_2) {
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
 #endif
   ASSERT_EQ(2, ctx.width());
-  sd::ops::add op;
+  add op;
   op.execute(&ctx);
 
   ASSERT_EQ(*exp, *z);
@@ -347,7 +347,7 @@ TEST_F(ContextTests, test_short_context_3) {
 
   ASSERT_EQ(2, ctx.width());
 
-  sd::ops::add op;
+  add op;
   op.execute(&ctx);
 
   ASSERT_EQ(1, ctx.fastpath_out().size());

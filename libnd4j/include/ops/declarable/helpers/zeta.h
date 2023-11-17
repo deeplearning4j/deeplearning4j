@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 // calculate the Hurwitz zeta function for arrays
-SD_LIB_HIDDEN void zeta(sd::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& output);
+SD_LIB_HIDDEN void zeta(LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& output);
 
 // calculate the Hurwitz zeta function for scalars
 // fast implementation, it is based on Euler-Maclaurin summation formula

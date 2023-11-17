@@ -24,12 +24,12 @@
 #include <execution/cuda/LaunchDims.h>
 
 namespace sd {
-static sd::LongType SD_DEVICE __noinline__ getIndexOffset_(sd::LongType index, sd::LongType const* shapeInfo) {
+static LongType SD_DEVICE __noinline__ getIndexOffset_(LongType index, LongType const* shapeInfo) {
   return shape::getIndexOffset(index, shapeInfo);
 }
 
-static sd::LongType SD_DEVICE __noinline__ subArrayOffset(sd::LongType index, sd::LongType const* shapeInfoA,
-                                                          sd::LongType const* shapeInfoB) {
+static LongType SD_DEVICE __noinline__ subArrayOffset(LongType index, LongType const* shapeInfoA,
+                                                      LongType const* shapeInfoB) {
   return shape::subArrayOffset(index, shapeInfoA, shapeInfoB);
 }
 
@@ -39,8 +39,8 @@ static sd::LongType SD_DEVICE __noinline__ subArrayOffset(sd::LongType index, sd
 //  output: (outputBuffer and outputShape) - NDArray to tile input
 //  resultLength - length for output array
 template <typename T>
-static SD_KERNEL void tileKernel(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                                 sd::LongType const* outputShape, sd::LongType resultLength) {
+static SD_KERNEL void tileKernel(void const* inputBuffer, LongType const* inputShape, void* outputBuffer,
+                                 LongType const* outputShape, LongType resultLength) {
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //        Original code to transform in cuda-based
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;  // copy linear sequence of elements, so one-level threading
@@ -66,11 +66,14 @@ BUILD_SINGLE_TEMPLATE(template SD_KERNEL void tileKernel,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void tileKernelH(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                 sd::LongType const* outputShape, sd::LongType resultLength, cudaStream_t* stream) {
+void tileKernelH(void const* inputBuffer, LongType const* inputShape, void* outputBuffer, LongType const* outputShape,
+                 LongType resultLength, cudaStream_t* stream) {
   dim3 launchDims = getLaunchDims("tile");
   tileKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
                                                                        outputShape, resultLength);
+  sd::DebugHelper::checkErrorCode(stream, "tileKernel  failed");
+
+
 }
 
 BUILD_SINGLE_TEMPLATE(template void tileKernelH,
@@ -81,8 +84,8 @@ BUILD_SINGLE_TEMPLATE(template void tileKernelH,
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // enhancement for tileKernel to different input and output data types: X - output type, Y - input type
 template <typename X, typename Y>
-static SD_KERNEL void tileKernelDouble(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                                       sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews) {
+static SD_KERNEL void tileKernelDouble(void const* inputBuffer, LongType const* inputShape, void* outputBuffer,
+                                       LongType const* outputShape, LongType resultLength, LongType ews) {
   char ordering = shape::order(outputShape);
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
@@ -114,13 +117,13 @@ BUILD_SINGLE_TEMPLATE_TWICE(template SD_KERNEL void tileKernelDouble,
                             SD_COMMON_TYPES);
 
 template <typename X, typename Y>
-void tileKernelHH(void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                  sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews, cudaStream_t* stream) {
+void tileKernelHH(void const* inputBuffer, LongType const* inputShape, void* outputBuffer, LongType const* outputShape,
+                  LongType resultLength, LongType ews, cudaStream_t* stream) {
   dim3 launchDims = getLaunchDims("tile");
   tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
                                                                                 outputShape, resultLength, ews);
 
-  sd::DebugHelper::checkErrorCode(stream,"templatedSwapUnsafe(...) failed");
+  DebugHelper::checkErrorCode(stream,"templatedSwapUnsafe(...) failed");
 
 }
 

@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(zeros_as, 1, 1, false, 0, 0) {
 
   out->assign(0);  // output is filled by zero by default
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(zeroslike, zeros_as);
 DECLARE_SYN(zeros_like, zeros_as);
@@ -45,7 +45,7 @@ DECLARE_SHAPE_FN(zeros_as) {
       return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
 
     }
-    std::vector<sd::LongType> inShape;
+    std::vector<LongType> inShape;
     auto inShape2 = shape::shapeOf(in);
     for(int i = 0; i < shape::rank(in); i++) {
       inShape.emplace_back(inShape2[i]);
@@ -53,15 +53,15 @@ DECLARE_SHAPE_FN(zeros_as) {
 
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype,inShape));
   }
-  auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
+  auto shape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
 
   return SHAPELIST(shape);
 }
 
 DECLARE_TYPES(zeros_as) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
-      ->setAllowedOutputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
+      ->setAllowedOutputTypes(ANY)
       ->setSameMode(false);
 }
 }  // namespace ops

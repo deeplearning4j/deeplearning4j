@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
   bool isInplace = block.isInplace();
   helpers::clipByGlobalNorm(block.launchContext(), inputs, clipNorm, block.workspace(), outputs, isInplace);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(clip_by_global_norm) {
@@ -50,7 +50,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
   for (int e = 0; e < block.width(); e++) {
     auto in = inputShape->at(e);
 
-    sd::LongType* newShape;
+    LongType* newShape;
     COPY_SHAPE(in, newShape);
     shapeList->push_back(CONSTANT(newShape));
   }
@@ -60,7 +60,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
 }
 
 DECLARE_TYPES(clip_by_global_norm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

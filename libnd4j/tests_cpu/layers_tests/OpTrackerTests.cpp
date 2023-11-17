@@ -44,7 +44,7 @@ class OpTrackerTests : public NDArrayTests {
 };
 
 TEST_F(OpTrackerTests, Test_Existence_1) {
-  sd::_loader loader;
+  _loader loader;
 
 
   ASSERT_TRUE(OpTracker::getInstance().totalGroups() > 0);
@@ -54,7 +54,7 @@ TEST_F(OpTrackerTests, Test_Existence_1) {
 }
 
 TEST_F(OpTrackerTests, Test_Ops_List_1) {
-  sd::ops::less op;
+  less op;
   auto vec = OpRegistrator::getInstance().getAllHashes();
 
   for (const auto &v : vec) {

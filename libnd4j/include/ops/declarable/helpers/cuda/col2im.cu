@@ -32,18 +32,18 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // columns [bS, iC, kH, kW, oH, oW] to be de-convoluted to image [bS, iC, iH, iW]
 template <typename T>
-static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colShapeInfo, void* image,
-                                 const sd::LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeInfo, void* image,
+                                 const LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW) {
   const T* col = reinterpret_cast<const T*>(columns);
   T* im = reinterpret_cast<T*>(image);
 
-  __shared__ sd::LongType kH, kW, oH, oW, *sharedMem;
-  __shared__ sd::LongType imLen;
+  __shared__ LongType kH, kW, oH, oW, *sharedMem;
+  __shared__ LongType imLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     kH = dH * (colShapeInfo[3] - 1) + 1;
     kW = dW * (colShapeInfo[4] - 1) + 1;
@@ -59,21 +59,21 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < imLen; i += gridDim.x * blockDim.x) {
+  for (LongType i = tid; i < imLen; i += gridDim.x * blockDim.x) {
     shape::index2coords(i, imShapeInfo, coords);
 
     const auto imOffset = shape::getOffset(imShapeInfo, coords);
 
     const auto bSiCoffset = coords[0] * colShapeInfo[7] + coords[1] * colShapeInfo[8];
 
-    const sd::LongType imH = coords[2] + pH;
-    const sd::LongType imW = coords[3] + pW;
+    const LongType imH = coords[2] + pH;
+    const LongType imW = coords[3] + pW;
 
-    const sd::LongType colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
-    const sd::LongType colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
+    const LongType colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
+    const LongType colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    const sd::LongType colHend = sd::math::sd_min<sd::LongType>(imH / sH + 1, oH);
-    const sd::LongType colWend = sd::math::sd_min<sd::LongType>(imW / sW + 1, oW);
+    const LongType colHend = sd::math::sd_min<LongType>(imH / sH + 1, oH);
+    const LongType colWend = sd::math::sd_min<LongType>(imW / sW + 1, oW);
 
     T val = 0;
 
@@ -99,17 +99,17 @@ static SD_KERNEL void col2imCuda(const void* columns, const sd::LongType* colSha
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                               const cudaStream_t* stream, const void* columns, const sd::LongType* colShapeInfo,
-                               void* image, const sd::LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+                               const cudaStream_t* stream, const void* columns, const LongType* colShapeInfo,
+                               void* image, const LongType* imShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                const LongType pW, const LongType dH, const LongType dW) {
   col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH,
                                                                         sW, pH, pW, dH, dW);
-  sd::DebugHelper::checkGlobalErrorCode( "col2im(...) failed");
+  DebugHelper::checkGlobalErrorCode( "col2im(...) failed");
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const LongType sH, const LongType sW, const LongType pH,
+void col2im(LaunchContext& context, const NDArray& col, NDArray& im, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   PointersManager manager(&context, "col2im");
   dim3 dims = getCol2imLaunchParams(im,col);

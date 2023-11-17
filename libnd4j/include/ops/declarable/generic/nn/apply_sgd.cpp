@@ -52,7 +52,7 @@ CONFIGURABLE_OP_IMPL(apply_sgd, 2, 1, true, -2, 0) {
 
   helpers::applyGradientDescent(block.launchContext(), parameters, gradients, lr, Z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(ApplyGradientDescent, apply_sgd);
 }  // namespace ops

@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -33,12 +34,12 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vinv,
-                                  const sd::LongType* invShapeInfo, const void* vinm, const sd::LongType* inmShapeInfo,
-                                  const void* vinh, const sd::LongType* inhShapeInfo, void* vz,
-                                  const sd::LongType* zShapeInfo, void* vstV, const sd::LongType* stvShapeInfo,
-                                  void* vstM, const sd::LongType* stmShapeInfo, void* vstH,
-                                  const sd::LongType* sthShapeInfo, const T lr, const T beta1, const T beta2,
+SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinv,
+                                  const LongType* invShapeInfo, const void* vinm, const LongType* inmShapeInfo,
+                                  const void* vinh, const LongType* inhShapeInfo, void* vz,
+                                  const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo,
+                                  void* vstM, const LongType* stmShapeInfo, void* vstH,
+                                  const LongType* sthShapeInfo, const T lr, const T beta1, const T beta2,
                                   const T epsilon, const T iteration) {
   const auto grad = reinterpret_cast<const T*>(vx);
   const auto initV = reinterpret_cast<const T*>(vinv);
@@ -50,17 +51,17 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
   auto stM = reinterpret_cast<T*>(vstM);
   auto stH = reinterpret_cast<T*>(vstH);
 
-  __shared__ sd::LongType xLen;
+  __shared__ LongType xLen;
   __shared__ T mbeta1, mbeta2, epsilonT;
   __shared__ bool bEWS, bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame, bXInHSame, bXStHSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
 
-    epsilonT = lr * sd::math::sd_sqrt<T, T>(1.0 - sd::math::sd_pow<T, T, T>(beta2, (iteration + 1))) /
-               (1.0 - sd::math::sd_pow<T, T, T>(beta1, (iteration + 1)));
+    epsilonT = lr * math::sd_sqrt<T, T>(1.0 - math::sd_pow<T, T, T>(beta2, (iteration + 1))) /
+               (1.0 - math::sd_pow<T, T, T>(beta1, (iteration + 1)));
 
-    if (sd::math::sd_isnan(epsilonT) || 0 == epsilonT || sd::math::sd_isinf(epsilonT)) epsilonT = epsilon;
+    if (math::sd_isnan(epsilonT) || 0 == epsilonT || math::sd_isinf(epsilonT)) epsilonT = epsilon;
 
     mbeta1 = (1 - beta1);
     mbeta2 = (1 - beta2);
@@ -88,10 +89,10 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
   }
   __syncthreads();
 
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
-  for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    sd::LongType  xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
+  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
+    LongType xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
         stHOffset = i;
 
     if (!bEWS || !bOrdering) {
@@ -108,21 +109,21 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * mbeta1;
     stV[stVOffset] = beta2 * initV[initVOffset] + grad[xOffset] * grad[xOffset] * mbeta2;
-    stH[stHOffset] = sd::math::sd_max(initH[initHOffset], stV[stVOffset]);
+    stH[stHOffset] = math::sd_max(initH[initHOffset], stV[stVOffset]);
 
-    up[zOffset] = epsilonT * stM[stMOffset] / (sd::math::sd_sqrt<T, T>(stH[stHOffset]) + epsilon);
+    up[zOffset] = epsilonT * stM[stMOffset] / (math::sd_sqrt<T, T>(stH[stHOffset]) + epsilon);
   }
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
-                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                const void* vinv, const sd::LongType* invShapeInfo, const void* vinm,
-                                const sd::LongType* inmShapeInfo, const void* vinh, const sd::LongType* inhShapeInfo,
-                                void* vz, const sd::LongType* zShapeInfo, void* vstV, const sd::LongType* stvShapeInfo,
-                                void* vstM, const sd::LongType* stmShapeInfo, void* vstH,
-                                const sd::LongType* sthShapeInfo, const double dLr, const double dBeta1,
+                                const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                const void* vinv, const LongType* invShapeInfo, const void* vinm,
+                                const LongType* inmShapeInfo, const void* vinh, const LongType* inhShapeInfo,
+                                void* vz, const LongType* zShapeInfo, void* vstV, const LongType* stvShapeInfo,
+                                void* vstM, const LongType* stmShapeInfo, void* vstH,
+                                const LongType* sthShapeInfo, const double dLr, const double dBeta1,
                                 const double dBeta2, const double dEpsilon, const int nIteration) {
   const T lr = static_cast<T>(dLr);
   const T beta1 = static_cast<T>(dBeta1);
@@ -137,10 +138,12 @@ void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
   amsGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vinh, inhShapeInfo, vz, zShapeInfo, vstV, stvShapeInfo,
       vstM, stmShapeInfo, vstH, sthShapeInfo, lr, beta1, beta2, epsilon, iteration);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "amsGradUpdaterCudaLauncher failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAmsGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
+void updaterAmsGrad(LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
                     const NDArray& initStateM, const NDArray& initStateH, NDArray& update, NDArray& stateV,
                     NDArray& stateM, NDArray& stateH, const double dLr, const double dBeta1, const double dBeta2,
                     const double dEpsilon, const int nIteration) {

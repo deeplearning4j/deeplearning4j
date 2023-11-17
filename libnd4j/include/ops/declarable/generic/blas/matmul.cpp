@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
 
   MmulHelper::matmul(x, y, z, transX, transY, alpha, beta);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(mMul, matmul);
@@ -194,10 +194,10 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   // special case for scalar value
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
-      if(x->isRowVector() && y->isRowVector()) {
+      if (x->isRowVector() && y->isRowVector()) {
         dldx->assign((*eps) * y->sumNumber());
         dldy->assign((*eps) * x->sumNumber());
-      } else if(x->isColumnVector() && y->isColumnVector()) {
+      } else if (x->isColumnVector() && y->isColumnVector()) {
         dldx->assign((*eps) * y->sumNumber());
         dldy->assign((*eps) * x->sumNumber());
       } else {
@@ -220,13 +220,13 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       // match the dimensions for reduction for matrix multiply: columns on first input, rows on second input
       // the dimensions should match the matching dimensions to compute proper gradients wrt each input
       // core gradient for each is sum(input) * eps as scalar
-      std::vector<sd::LongType> axesZero({0});
-      auto xSum = x->reduceAlongDimension(sd::reduce::Sum, &axesZero);
+      std::vector<LongType> axesZero({0});
+      auto xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
       xSum *= *eps;
       // ensure we have proper shape for broadcasted multiplication
       auto xSumRow = xSum.reshape(xSum.ordering(), {xSum.lengthOf(), 1});
-      std::vector<sd::LongType> axes({1});
-      auto ySum = y->reduceAlongDimension(sd::reduce::Sum, &axes);
+      std::vector<LongType> axes({1});
+      auto ySum = y->reduceAlongDimension(reduce::Sum, &axes);
       ySum *= *eps;
       auto ySumRow = ySum.reshape(ySum.ordering(), {1, ySum.lengthOf()});
       // execute proper multiplication: rows for first input, columns for second
@@ -234,20 +234,20 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       dldy->muliColumnVector(xSumRow);
     }
 
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  sd::ops::matmul op;
+  matmul op;
   op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, !transY, transX}, {});
   op.execute({x, eps}, {dldy}, {alpha, beta}, {!transX, transZ, transY}, {});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(matmul_bp) {
-  sd::LongType *xShapeInfo;
-  sd::LongType *yShapeInfo;
+  LongType *xShapeInfo;
+  LongType *yShapeInfo;
 
   COPY_SHAPE(inputShape->at(0), xShapeInfo);
   COPY_SHAPE(inputShape->at(1), yShapeInfo);

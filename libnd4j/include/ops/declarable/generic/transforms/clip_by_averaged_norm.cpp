@@ -48,11 +48,11 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, true, -2, 0) {
     helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, true);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(clipbyavgnorm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,12 +69,12 @@ CUSTOM_OP_IMPL(clipbyavgnorm_bp, -2, 1, false, -1, 0) {
     helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, true);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(clipbyavgnorm_bp) {
-  sd::LongType *newShape = nullptr;
+  LongType *newShape = nullptr;
   COPY_SHAPE(inputShape->at(1), newShape);
 
   return SHAPELIST(CONSTANT(newShape));
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(clipbyavgnorm_bp) {
 
 DECLARE_TYPES(clipbyavgnorm_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }

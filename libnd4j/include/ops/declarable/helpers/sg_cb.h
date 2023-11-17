@@ -39,7 +39,7 @@ SD_LIB_HIDDEN void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDAr
 
 
 SD_LIB_HIDDEN void  skipgramInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
-                       int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, sd::LongType randomValue,
+                       int ngStarter, int nsRounds, NDArray &indices, NDArray &codes, double alpha, LongType randomValue,
                        NDArray &inferenceVector, const bool preciseMode, const int numWorkers,double minLearningRate,const int iterations);
 
 SD_LIB_HIDDEN void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
@@ -51,7 +51,7 @@ SD_LIB_HIDDEN void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray 
 
 SD_LIB_HIDDEN void cbowInference(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, int target,
                                  int ngStarter, int nsRounds, NDArray &context, NDArray &lockedWords, NDArray &indices, NDArray &codes,
-                                 double alpha, sd::LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
+                                 double alpha, LongType randomValue, int numLabels, NDArray &inferenceVector, const bool trainWords,
                                  int numWorkers,int iterations,double minLearningRate);
 
 SD_LIB_HIDDEN int binarySearch(const int *haystack, const int needle, const int totalElements);

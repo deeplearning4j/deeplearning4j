@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(resize_bilinear, 1, 1, false, 0, -2) {
   int height;
   bool alignCorners = false;  // - default value
   auto inRank = image->rankOf();
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(inRank == 4 || inRank == 3, 0,
                "resize_bilinear: input image should be 4D "
@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(resize_bilinear) {
   auto shapeList = SHAPELIST();
   auto in = inputShape->at(0);
 
-  sd::LongType* outputShape;
+  LongType* outputShape;
   auto inRank = shape::rank(in);
   REQUIRE_TRUE(inRank == 4 || inRank == 3, 0,
                "resize_bilinear: input image should be 4D "
@@ -125,14 +125,14 @@ DECLARE_SHAPE_FN(resize_bilinear) {
   if (DataTypeUtils::isR(ArrayOptions::dataType(in))) {
     ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
   } else {
-    ShapeUtils::updateStridesAndType(outputShape, DataType::FLOAT32, shape::order(in));
+    ShapeUtils::updateStridesAndType(outputShape, FLOAT32, shape::order(in));
   }
 
   shapeList->push_back(CONSTANT(outputShape));
   return shapeList;
 }
 DECLARE_TYPES(resize_bilinear) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

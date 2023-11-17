@@ -35,9 +35,9 @@ OP_IMPL(Assert, 1, 1, false) {
     REQUIRE_TRUE(false, 0, "Assertion failed for node [%i]\n", block.getNodeId());
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
-DECLARE_TYPES(Assert) { getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(Assert) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

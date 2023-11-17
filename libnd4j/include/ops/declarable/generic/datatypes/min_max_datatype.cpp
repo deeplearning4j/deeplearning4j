@@ -35,43 +35,43 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
   auto minOrMax = INT_ARG(1);
   if (minOrMax == 0) {
     switch (type) {
-      case sd::DataType::UINT8:
+      case UINT8:
         output->p(0, DataTypeUtils::min<uint8_t>());
         break;
-      case sd::DataType::INT8:
+      case INT8:
         output->p(0, DataTypeUtils::min<int8_t>());
         break;
-      case sd::DataType::BOOL:
+      case BOOL:
         output->p(0, DataTypeUtils::min<bool>());
         break;
-      case sd::DataType::BFLOAT16:
+      case BFLOAT16:
         output->p(0, DataTypeUtils::min<bfloat16>());
         break;
-      case sd::DataType::HALF:
+      case HALF:
         output->p(0, DataTypeUtils::min<float16>());
         break;
-      case sd::DataType::INT16:
+      case INT16:
         output->p(0, DataTypeUtils::min<int16_t>());
         break;
-      case sd::DataType::UINT16:
+      case UINT16:
         output->p(0, DataTypeUtils::min<uint16_t>());
         break;
-      case sd::DataType::INT32:
+      case INT32:
         output->p(0, DataTypeUtils::min<int>());
         break;
-      case sd::DataType::UINT32:
+      case UINT32:
         output->p(0, DataTypeUtils::min<uint32_t>());
         break;
-      case sd::DataType::FLOAT32:
+      case FLOAT32:
         output->p(0, DataTypeUtils::min<float>());
         break;
-      case sd::DataType::UINT64:
+      case UINT64:
         output->p(0, DataTypeUtils::min<uint64_t>());
         break;
-      case sd::DataType::INT64:
-        output->p(0, DataTypeUtils::min<sd::LongType>());
+      case INT64:
+        output->p(0, DataTypeUtils::min<LongType>());
         break;
-      case sd::DataType::DOUBLE:
+      case DOUBLE:
         output->p(0, DataTypeUtils::min<double>());
         break;
       default: {
@@ -85,43 +85,43 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
     }
   } else {
     switch (type) {
-      case sd::DataType::UINT8:
+      case UINT8:
         output->p(0, DataTypeUtils::max<uint8_t>());
         break;
-      case sd::DataType::INT8:
+      case INT8:
         output->p(0, DataTypeUtils::max<int8_t>());
         break;
-      case sd::DataType::BOOL:
+      case BOOL:
         output->p(0, DataTypeUtils::max<bool>());
         break;
-      case sd::DataType::BFLOAT16:
+      case BFLOAT16:
         output->p(0, DataTypeUtils::max<bfloat16>());
         break;
-      case sd::DataType::HALF:
+      case HALF:
         output->p(0, DataTypeUtils::max<float16>());
         break;
-      case sd::DataType::INT16:
+      case INT16:
         output->p(0, DataTypeUtils::max<int16_t>());
         break;
-      case sd::DataType::UINT16:
+      case UINT16:
         output->p(0, DataTypeUtils::max<uint16_t>());
         break;
-      case sd::DataType::INT32:
+      case INT32:
         output->p(0, DataTypeUtils::max<int>());
         break;
-      case sd::DataType::UINT32:
+      case UINT32:
         output->p(0, DataTypeUtils::max<uint32_t>());
         break;
-      case sd::DataType::FLOAT32:
+      case FLOAT32:
         output->p(0, DataTypeUtils::max<float>());
         break;
-      case sd::DataType::UINT64:
+      case UINT64:
         output->p(0, DataTypeUtils::max<uint64_t>());
         break;
-      case sd::DataType::INT64:
-        output->p(0, DataTypeUtils::max<sd::LongType>());
+      case INT64:
+        output->p(0, DataTypeUtils::max<LongType>());
         break;
-      case sd::DataType::DOUBLE:
+      case DOUBLE:
         output->p(0, DataTypeUtils::max<double>());
         break;
       default: {
@@ -137,7 +137,7 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
 
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 
 }
 
@@ -148,7 +148,7 @@ DECLARE_SHAPE_FN(min_max_datatype) {
 }
 
 DECLARE_TYPES(min_max_datatype) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

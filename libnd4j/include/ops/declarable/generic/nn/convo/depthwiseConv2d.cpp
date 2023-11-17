@@ -65,7 +65,7 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM DEPTHWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -82,11 +82,11 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
   ConvolutionUtils::depthwiseConv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode,
                                     isNCHW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(depthwise_conv2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 DECLARE_SHAPE_FN(depthwise_conv2d) {
   auto inputShapeInfo = inputShape->at(0);    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
@@ -101,8 +101,8 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
                "CUSTOM DEPTHWISECONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weightsShapeInfo[0]);
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -124,14 +124,14 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
     indIiH = 2;
   }
 
-  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(0));           // batch size
-  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH));      // input height
-  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH + 1));  // input width
-  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIOioC));    // input channels
-  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(indWmC));    // channels multiplier(oC = iC*mC)
+  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<LongType>(0));           // batch size
+  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIiH));      // input height
+  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIiH + 1));  // input width
+  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIOioC));    // input channels
+  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<LongType>(indWmC));    // channels multiplier(oC = iC*mC)
   const LongType oC = iC * mC;                                    // output channels
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(shape::shapeEquals(4, expectedWeightsShape.data(), shape::rank(weightsShapeInfo),
                                   shape::shapeOf(weightsShapeInfo)),
                0, "DEPTHWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -146,7 +146,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  sd::LongType* outputShapeInfo = nullptr;
+  LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), sd::LongType);
 
   outputShapeInfo[0] = rank;
@@ -168,7 +168,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
 }
 
 DECLARE_TYPES(depthwise_conv2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -219,9 +219,9 @@ CUSTOM_OP_IMPL(depthwise_conv2d_bp, 3, 2, false, 0, 9) {
   LongType trueoH, trueoW;  // correct output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "CUSTOM DEPTHWISECONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, "
                "but got %s instead !",
@@ -238,7 +238,7 @@ CUSTOM_OP_IMPL(depthwise_conv2d_bp, 3, 2, false, 0, 9) {
   ConvolutionUtils::depthwiseConv2dBP(block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW,
                                       dH, dW, isSameMode, isNCHW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -260,8 +260,8 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
                "got %i instead !",
                rank, shape::rank(gradOShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -283,19 +283,19 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
     indIiH = 2;
   }
 
-  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(0));           // batch size
-  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH));      // input height
-  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIiH + 1));  // input width
-  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<sd::LongType>(indIOioC));    // input channels
-  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(indWmC));    // channels multiplier(oC = iC*mC)
+  const LongType bS = shape::sizeAt(inputShapeInfo, static_cast<LongType>(0));           // batch size
+  const LongType iH = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIiH));      // input height
+  const LongType iW = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIiH + 1));  // input width
+  const LongType iC = shape::sizeAt(inputShapeInfo, static_cast<LongType>(indIOioC));    // input channels
+  const LongType mC = shape::sizeAt(weightsShapeInfo, static_cast<LongType>(indWmC));    // channels multiplier(oC = iC*mC)
   const LongType oC = iC * mC;                                    // output channels
 
   LongType trueoH, trueoW;  // correct output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indIiH, indIiH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
   REQUIRE_TRUE(
       shape::shapeEquals(4, expectedGradOShape.data(), shape::rank(gradOShapeInfo), shape::shapeOf(gradOShapeInfo)), 0,
       "CUSTOM DEPTHWISECONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s "
@@ -318,7 +318,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
       ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 
   if (biasShapeInfo) {
-    sd::LongType* gradBshapeInfo =
+    LongType* gradBshapeInfo =
         ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
     return SHAPELIST(CONSTANT(gradIshapeInfo), CONSTANT(gradWshapeInfo), CONSTANT(gradBshapeInfo));
   }

@@ -49,12 +49,12 @@ CUSTOM_OP_IMPL(lu, 1, 2, false, 0, 0) {
                input->sizeAt(-2));
 
   helpers::lu(block.launchContext(), input, z, p);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(lu) {
   auto in = inputShape->at(0);
-  auto dtype = sd::DataType::INT32;
+  auto dtype = INT32;
   if (block.getIArguments()->size()) {
     dtype = (DataType)INT_ARG(0);
     REQUIRE_TRUE(dtype == sd::DataType::INT32 || dtype == sd::DataType::INT64, 0,
@@ -81,7 +81,7 @@ DECLARE_TYPES(lu) {
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
-      ->setAllowedOutputTypes(1, {sd::DataType::INT32, sd::DataType::INT64})
+      ->setAllowedOutputTypes(1, {INT32, INT64})
       ->setSameMode(false);
 }
 }  // namespace ops

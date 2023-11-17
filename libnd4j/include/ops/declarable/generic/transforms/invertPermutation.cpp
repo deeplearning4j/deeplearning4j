@@ -39,12 +39,12 @@ CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
 
   helpers::invertPermutation(block.launchContext(), *input, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(InvertPermutation, invert_permutation);
 
-DECLARE_TYPES(invert_permutation) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(invert_permutation) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

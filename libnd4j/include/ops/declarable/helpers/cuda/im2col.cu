@@ -31,19 +31,19 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 template <typename T>
-SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::LongType *imShapeInfo,
-                                 const sd::LongType *colShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongType *imShapeInfo,
+                                 const LongType *colShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW, const double zeroPadValD) {
   T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
 
-  __shared__ sd::LongType colLen, iH, iW;
-  __shared__ sd::LongType imRank, colRank, *sharedMem;
+  __shared__ LongType colLen, iH, iW;
+  __shared__ LongType imRank, colRank, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
+    sharedMem = reinterpret_cast<LongType *>(shmem);
 
     colRank = 6;
     imRank = 4;
@@ -68,8 +68,8 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
 
-  if (static_cast<sd::LongType>(coords[2]) >= static_cast<sd::LongType>(iH) ||
-      static_cast<sd::LongType>(coords[3]) >= static_cast<sd::LongType>(iW) ||
+  if (static_cast<LongType>(coords[2]) >= static_cast<LongType>(iH) ||
+      static_cast<LongType>(coords[3]) >= static_cast<LongType>(iW) ||
       coords[2] < 0 || coords[3] < 0)
     col[colOffset] = zeroPadVal;
   else
@@ -79,19 +79,17 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const sd::Lon
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
-                               sd::LaunchContext &context, const void *image, void *columns,
-                               const sd::LongType *imShapeInfo, const sd::LongType *colShapeInfo, LongType sH,
+                               LaunchContext &context, const void *image, void *columns,
+                               const LongType *imShapeInfo, const LongType *colShapeInfo, LongType sH,
                                LongType sW, LongType pH, LongType pW, LongType dH, LongType dW, double zeroPadVal) {
-  printf("invoking im2colcuda\n");
-  im2colCuda<T>
-  <<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */,
-  *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
-  sd::DebugHelper::checkErrorCode(context.getCudaStream(), "im2colCuda(...) failed");
+  im2colCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory /* rank of columns = 6 */, *context.getCudaStream()>>>(
+      image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+  DebugHelper::checkErrorCode(context.getCudaStream(), "im2colCuda(...) failed");
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void im2col(sd::LaunchContext &context, const NDArray &image, NDArray &columns, const LongType kH, const LongType kW,
+void im2col(LaunchContext &context, const NDArray &image, NDArray &columns, const LongType kH, const LongType kW,
             const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
             const NDArray &arrZeroPadVal) {
   PointersManager manager(&context, "im2col");

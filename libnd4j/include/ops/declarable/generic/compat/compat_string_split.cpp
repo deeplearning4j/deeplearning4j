@@ -40,15 +40,15 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   NDArray::preparePrimaryUse({values},{indices});
 
   // output rank N+1 wrt input rank
-  std::vector<sd::LongType> icoords(input->rankOf());
+  std::vector<LongType> icoords(input->rankOf());
 
   // getting buffer lengths
   auto outputLength = StringUtils::byteLength(*input);
-  sd::LongType ss = 0L;
-  sd::LongType ic = 0L;
+  LongType ss = 0L;
+  LongType ic = 0L;
   int len = input->isScalar() ? 1 : input->lengthOf();
   // loop through each string within tensor
-  for (sd::LongType e = 0L; e < len; e++) {
+  for (LongType e = 0L; e < len; e++) {
     // now we should map substring to indices
     auto s = input->e<std::string>(e);
 
@@ -58,7 +58,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
     // getting number of substrings
     auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length());
     // filling output indices
-    for (sd::LongType f = 0; f < cnt; f++) {
+    for (LongType f = 0; f < cnt; f++) {
       for (auto v : icoords) {
         indices->p(ic++, v);
       }
@@ -95,7 +95,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   values->dataBuffer()->readSpecial();
 
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_SHAPE_FN(compat_string_split) {
@@ -106,7 +106,7 @@ DECLARE_SHAPE_FN(compat_string_split) {
   auto d = delim->e<std::string>(0);
 
   // count number of delimiter substrings in all strings within input tensor
-  sd::LongType cnt = 0;
+  LongType cnt = 0;
   int len = input->isScalar() ? 1 : input->lengthOf();
   for (auto e = 0L; e < len; e++) {
     auto s = input->e<std::string>(e);
@@ -123,9 +123,9 @@ DECLARE_SHAPE_FN(compat_string_split) {
 
   sd_printf("compat_string_split: Assigning number of values: %d\n",cnt);
 
-  auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, sd::DataType::UTF8);
+  auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, UTF8);
   auto indicesShape =
-      ConstantShapeHelper::getInstance().vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
+      ConstantShapeHelper::getInstance().vectorShapeInfo(cnt * (input->rankOf() + 1), INT64);
 
   return SHAPELIST(indicesShape, valuesShape);
 }

@@ -243,7 +243,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
     // scalar assign
-    functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
+    scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
                                                                    z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
   } else {
     const sd::LongType zRank = shape::rank(hZShapeInfo);
@@ -253,8 +253,8 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
 
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
-        reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+        x, outerPack->special(),
+        innerPack->special(), extraParams, vreductionBuffer, z, dZShapeInfo);
   }
 
   sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction intermediateXD(...) failed");
@@ -313,7 +313,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_
                                                     const sd::LongType *hZShapeInfo,
                                                     const long long int *dims) {
   if (shape::length(hZShapeInfo) == 1) {
-    ReduceLongFunction<X, Y>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
+    execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
                                                dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_TT(intermediateXD,

@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static SD_KERNEL void print_device(const void *special, const sd::LongType *shapeInfo) {
+static SD_KERNEL void print_device(const void *special, const LongType *shapeInfo) {
   auto length = shape::length(shapeInfo);
   auto x = reinterpret_cast<const T *>(special);
 
@@ -45,9 +45,11 @@ static SD_KERNEL void print_device(const void *special, const sd::LongType *shap
 }
 
 template <typename T>
-static SD_HOST void exec_print_device(LaunchContext &ctx, const void *special, const sd::LongType *shapeInfo) {
+static SD_HOST void exec_print_device(LaunchContext &ctx, const void *special, const LongType *shapeInfo) {
   dim3 launchDims = getLaunchDims("print");
   print_device<T><<<launchDims.x, launchDims.y, launchDims.z, *ctx.getCudaStream()>>>(special, shapeInfo);
+  sd::DebugHelper::checkErrorCode(ctx.getCudaStream(), "print_device failed");
+
 }
 
 void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {

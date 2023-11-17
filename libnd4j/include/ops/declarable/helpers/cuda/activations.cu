@@ -36,13 +36,13 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const void *vy, const sd::LongType *yShapeInfo,
+void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void *vy, const LongType *yShapeInfo,
                          void *vz) {
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<X *>(vz);
 
-  __shared__ sd::LongType xzLen;
+  __shared__ LongType xzLen;
   __shared__ int xzRank, yRank;
 
   if (threadIdx.x == 0) {
@@ -54,7 +54,7 @@ void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const v
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
     shape::index2coords(i, xShapeInfo, coords);
@@ -63,7 +63,7 @@ void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const v
     const auto xVal = x[xzOffset];
 
     if (xVal < 0) {
-      for (sd::LongType j = 0; j < yRank; ++j)
+      for (LongType j = 0; j < yRank; ++j)
         if (yShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       z[xzOffset] = xVal * y[shape::getOffset(yShapeInfo, coords + 1)];
@@ -75,13 +75,15 @@ void SD_KERNEL preluCuda(const void *vx, const sd::LongType *xShapeInfo, const v
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                       const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                       const sd::LongType *yShapeInfo, void *vz) {
+                       const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, const void *vy,
+                       const LongType *yShapeInfo, void *vz) {
   preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
+  sd::DebugHelper::checkGlobalErrorCode("prelu  failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(sd::LaunchContext *context, const NDArray &input, const NDArray &alpha, NDArray &output) {
+void prelu(LaunchContext *context, const NDArray &input, const NDArray &alpha, NDArray &output) {
   PointersManager manager(context, "prelu");
 
   dim3 launchDims = getLaunchDims("prelu");
@@ -102,17 +104,17 @@ void prelu(sd::LaunchContext *context, const NDArray &input, const NDArray &alph
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, const void *vAlpha,
-                           const sd::LongType *alphaShapeInfo, const void *vdLdO, const sd::LongType *dLdOShapeInfo,
-                           void *vdLdI, const sd::LongType *dLdIShapeInfo, void *vdLdA,
-                           const sd::LongType *dLdAShapeInfo) {
+void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const void *vAlpha,
+                           const LongType *alphaShapeInfo, const void *vdLdO, const LongType *dLdOShapeInfo,
+                           void *vdLdI, const LongType *dLdIShapeInfo, void *vdLdA,
+                           const LongType *dLdAShapeInfo) {
   const auto in = reinterpret_cast<const X *>(vIn);
   const auto alpha = reinterpret_cast<const Y *>(vAlpha);
   const auto dLdO = reinterpret_cast<const Y *>(vdLdO);
   auto dLdI = reinterpret_cast<Y *>(vdLdI);
   auto dLdA = reinterpret_cast<Y *>(vdLdA);
 
-  __shared__ sd::LongType inLen, totalThreads;
+  __shared__ LongType inLen, totalThreads;
   __shared__ int inRank, alphaRank;
 
   if (threadIdx.x == 0) {
@@ -125,7 +127,7 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < inLen; i += totalThreads) {
     shape::index2coords(i, inShapeInfo, coords);
@@ -138,7 +140,7 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
     const auto grO = dLdO[dLdOOffset];
 
     if (xVal < 0) {
-      for (sd::LongType j = 0; j < alphaRank; ++j)
+      for (LongType j = 0; j < alphaRank; ++j)
         if (alphaShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       const auto alphaOffset = shape::getOffset(alphaShapeInfo, coords + 1);
@@ -146,7 +148,7 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
 
       dLdI[dLdIOffset] = grO * alpha[alphaOffset];
 
-      sd::math::atomics::sd_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
+      math::atomics::sd_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
     } else
       dLdI[dLdIOffset] = grO;
   }
@@ -155,16 +157,18 @@ void SD_KERNEL preluBPCuda(const void *vIn, const sd::LongType *inShapeInfo, con
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void SD_HOST preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                 const cudaStream_t *stream, const void *vIn, const sd::LongType *inShapeInfo,
-                                 const void *vAlpha, const sd::LongType *alphaShapeInfo, const void *vdLdO,
-                                 const sd::LongType *dLdOShapeInfo, void *vdLdI, const sd::LongType *dLdIShapeInfo,
-                                 void *vdLdA, const sd::LongType *dLdAShapeInfo) {
+                                 const cudaStream_t *stream, const void *vIn, const LongType *inShapeInfo,
+                                 const void *vAlpha, const LongType *alphaShapeInfo, const void *vdLdO,
+                                 const LongType *dLdOShapeInfo, void *vdLdI, const LongType *dLdIShapeInfo,
+                                 void *vdLdA, const LongType *dLdAShapeInfo) {
   preluBPCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(
       vIn, inShapeInfo, vAlpha, alphaShapeInfo, vdLdO, dLdOShapeInfo, vdLdI, dLdIShapeInfo, vdLdA, dLdAShapeInfo);
+  sd::DebugHelper::checkGlobalErrorCode("prelu bp failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI,
+void preluBP(LaunchContext *context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI,
              NDArray &dLdA) {
   dLdA.nullify();
 
@@ -190,14 +194,14 @@ void preluBP(sd::LaunchContext *context, const NDArray &input, const NDArray &al
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void softMaxForVectorCuda(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                    const sd::LongType *zShapeInfo) {
+SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, void *vz,
+                                    const LongType *zShapeInfo) {
   auto inBuff = reinterpret_cast<const T *>(vx);
   auto outBuff = reinterpret_cast<T *>(vz);
 
   __shared__ T shmemMax;
   __shared__ T shmemSum;
-  __shared__ sd::LongType tadLen;
+  __shared__ LongType tadLen;
   if (threadIdx.x == 0) {
     tadLen = shape::length(xShapeInfo);
     shmemMax = -DataTypeUtils::max<T>();
@@ -209,49 +213,49 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const sd::LongType *xShapeIn
   T sum = 0.f;
 
   // Calculate max
-  for (sd::LongType j = 0; j < tadLen; ++j) {
-    sd::LongType offset = shape::getIndexOffset(j, xShapeInfo);
-    max = sd::math::sd_max<T>(max, inBuff[offset]);
+  for (LongType j = 0; j < tadLen; ++j) {
+    LongType offset = shape::getIndexOffset(j, xShapeInfo);
+    max = math::sd_max<T>(max, inBuff[offset]);
   }
 
-  printf("final sum for tad %d is %f max is %d\n", blockIdx.x, sum);
 
   // Calculate exp(x - max) and sum
-  for (sd::LongType j = 0; j < tadLen; ++j) {
-    sd::LongType offset = shape::getIndexOffset(j, xShapeInfo);
-    T temp = sd::math::sd_exp<T, T>(inBuff[offset] - max);
+  for (LongType j = 0; j < tadLen; ++j) {
+    LongType offset = shape::getIndexOffset(j, xShapeInfo);
+    T temp = math::sd_exp<T, T>(inBuff[offset] - max);
     outBuff[offset] = temp;
     sum += temp;
   }
 
   // Final division step
-  for (sd::LongType j = 0; j < tadLen; ++j) {
-    sd::LongType offset = shape::getIndexOffset(j, zShapeInfo);
+  for (LongType j = 0; j < tadLen; ++j) {
+    LongType offset = shape::getIndexOffset(j, zShapeInfo);
     outBuff[offset] /= sum;
   }
 }
 
 template <typename T>
-void SD_KERNEL softMaxForVectorCudaGlobal(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                          const sd::LongType *zShapeInfo, sd::LongType numOfSubArrs) {
-  printf("softmax for vector cuda 3\n");
+void SD_KERNEL softMaxForVectorCudaGlobal(const void *vx, const LongType *xShapeInfo, void *vz,
+                                          const LongType *zShapeInfo, LongType numOfSubArrs) {
   softMaxForVectorCuda<T>(vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void softMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                  const sd::LongType *zShapeInfo, sd::LongType numTads) {
-  printf("softmax for vector cuda 2\n");
+void softMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vz,
+                                  const LongType *zShapeInfo, LongType numTads) {
 
   softMaxForVectorCudaGlobal<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, numTads);
+  sd::DebugHelper::checkGlobalErrorCode("softmax  failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 
 template <typename T>
-SD_KERNEL void softmaxEws1Kernel(const T *input, const sd::LongType *inputOffsets, T *output,
-                                 const sd::LongType *outputOffsets, sd::LongType numOfSubArrs, sd::LongType tadLen) {
+SD_KERNEL void softmaxEws1Kernel(const T *input, const LongType *inputOffsets, T *output,
+                                 const LongType *outputOffsets,
+                                 LongType numOfSubArrs, LongType tadLen) {
   int i = blockIdx.x;  // Each block handles one TAD
 
   if (i >= numOfSubArrs) return;  // Out-of-bounds check for TADs
@@ -270,30 +274,29 @@ SD_KERNEL void softmaxEws1Kernel(const T *input, const sd::LongType *inputOffset
 
 
   // Calculate max
-  for (sd::LongType j = threadIdx.x; j < tadLen; j+= gridDim.x) {
-    sd::math::atomics::sd_atomicMax(&shmemMax, inBuff[j]);
+  for (LongType j = threadIdx.x; j < tadLen; j+= gridDim.x) {
+    math::atomics::sd_atomicMax(&shmemMax, inBuff[j]);
   }
   __syncthreads();
 
   // Calculate exp(x - max) and sum
-  for (sd::LongType j = threadIdx.x; j < tadLen; j += gridDim.x) {
-    T temp = sd::math::sd_exp<T, T>(inBuff[j] - shmemMax);
+  for (LongType j = threadIdx.x; j < tadLen; j += gridDim.x) {
+    T temp = math::sd_exp<T, T>(inBuff[j] - shmemMax);
     outBuff[j] = temp;
-    sd::math::atomics::sd_atomicAdd(&shmemSum, temp);
+    math::atomics::sd_atomicAdd(&shmemSum, temp);
   }
   __syncthreads();
 
   // Final division step
-  for (sd::LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
+  for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
     outBuff[j] /= shmemSum;
   }
 
 
 }
 template <typename T>
-SD_KERNEL static void softMaxCuda(const void *vx, const sd::LongType *xTadShapeInfo, const sd::LongType *xOffsets,
-                                  void *vz, const sd::LongType *zTadShapeInfo, const sd::LongType *zOffsets,
-                                  sd::LongType numTads) {
+SD_KERNEL static void softMaxCuda(const void *vx, const LongType *xTadShapeInfo, const LongType *xOffsets,
+                                  void *vz, const LongType *zTadShapeInfo, const LongType *zOffsets, LongType numTads) {
   int i = blockIdx.x;
   if(i >= numTads) return;
 
@@ -302,7 +305,6 @@ SD_KERNEL static void softMaxCuda(const void *vx, const sd::LongType *xTadShapeI
 
   const auto *xTad = x + xOffsets[blockIdx.x];
   auto *zTad = z + zOffsets[blockIdx.x];
-  printf("softmax for vector cuda 1\n");
   softMaxForVectorCuda<T>(xTad, xTadShapeInfo, zTad, zTadShapeInfo);
 }
 
@@ -313,14 +315,11 @@ static void softMaxEws1CudaLauncher(const int blocksPerGrid,
                                     const int threadsPerBlock,
                                     const int sharedMem,
                                     const cudaStream_t *stream,
-                                    const void *vx, const sd::LongType *xOffsets, void *vz,
-                                    const sd::LongType *zOffsets,
-                                    sd::LongType numTads,
-                                    sd::LongType tadLength) {
+                                    const void *vx, const LongType *xOffsets, void *vz,
+                                    const LongType *zOffsets, LongType numTads, LongType tadLength) {
 
 
 
-  printf("running softmaxews1 kernel\n");
   auto reCastInputs = reinterpret_cast<const T *>(vx);
   auto reCastOutputs = reinterpret_cast<T *>(vz);
   softmaxEws1Kernel<T>
@@ -330,21 +329,25 @@ static void softMaxEws1CudaLauncher(const int blocksPerGrid,
                                                            zOffsets,
                                                            numTads,
                                                            tadLength);
+  sd::DebugHelper::checkGlobalErrorCode("softmaxews  failed");
+
 }
 
 template <typename T>
 static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                const cudaStream_t *stream, const void *vx, const sd::LongType *xTadShapeInfo,
-                                const sd::LongType *xOffsets, void *vz, const sd::LongType *zTadShapeInfo,
-                                const sd::LongType *zOffsets, sd::LongType numTads) {
+                                const cudaStream_t *stream, const void *vx, const LongType *xTadShapeInfo,
+                                const LongType *xOffsets, void *vz, const LongType *zTadShapeInfo,
+                                const LongType *zOffsets, LongType numTads) {
 
 
   softMaxCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xTadShapeInfo, xOffsets, vz, zTadShapeInfo,
                                                                          zOffsets ,numTads);
+  sd::DebugHelper::checkGlobalErrorCode("softmax  failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void softmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
   const int rank = input.rankOf();
 
   PointersManager manager(context, "helpers::softmax");
@@ -360,8 +363,8 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
     } else
       output = 1.;
   } else if(shape::ews(input.shapeInfo()) == 1) {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
     dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
     manager.synchronize();
     NDArray::prepareSpecialUse({&output}, {&input});
@@ -382,8 +385,8 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
   }
 
   else {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
     dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
 
@@ -410,13 +413,13 @@ void softmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzShapeInfo, void *vz) {
+void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
   // logic of this kernel is based on assumption gridDim = 1
 
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  __shared__ sd::LongType len;
+  __shared__ LongType len;
   __shared__ int numOfIters;
   __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
 
@@ -431,13 +434,13 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
 
   // ************ evaluate max element in input array x ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
-      const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+      const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
           ? x[offset]
-          : sd::math::sd_max<T>(
+          : math::sd_max<T>(
               x[offset],
               temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else
@@ -446,7 +449,7 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
     __syncthreads();
 
     for (int s = blockDim.x / 2; s > 0; s /= 2) {
-      if (threadIdx.x < s) shmem[threadIdx.x] = sd::math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+      if (threadIdx.x < s) shmem[threadIdx.x] = math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
       __syncthreads();
     }
 
@@ -459,10 +462,10 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
   // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
   // // at the same time evaluate sum of exponents, sum will be stored in shmem[0]
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
-      const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-      z[offset] = sd::math::sd_exp<T, T>(x[offset] - max);
+      const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+      z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
           ? z[offset]
@@ -482,21 +485,24 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const sd::LongType *xzSha
 
   // ************ evaluate log(z[offset] / sum)  ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
-    const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-    z[offset] = sd::math::sd_log<T, T>(z[offset] / shmem[0]);
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+    z[offset] = math::sd_log<T, T>(z[offset] / shmem[0]);
   }
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const sd::LongType *xzShapeInfo,
+void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xzShapeInfo,
                                      void *vz) {
-  logSoftMaxForVectorCuda<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xzShapeInfo, vz);
+  dim3 launchDims = getLaunchDims("softmax");
+  logSoftMaxForVectorCuda<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xzShapeInfo, vz);
+  sd::DebugHelper::checkGlobalErrorCode("logsoftmax  failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(sd::LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void logSoftmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
 
@@ -510,7 +516,7 @@ void logSoftmax(sd::LaunchContext *context, const NDArray &input, NDArray &outpu
     } else
       output = 0.;
   } else {
-    std::vector<sd::LongType> dim = {static_cast<sd::LongType>(dimension)};
+    std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray &>(input).reduceAlongDimension(reduce::Max, &dim, true);
     (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
     auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dim, true);
@@ -527,13 +533,13 @@ void logSoftmax(sd::LaunchContext *context, const NDArray &input, NDArray &outpu
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzShapeInfo, void *vz) {
+void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShapeInfo, void *vz) {
   // logic of this kernel is based on assumption gridDim = 1
 
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  __shared__ sd::LongType len;
+  __shared__ LongType len;
   __shared__ int numOfIters;
   __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
 
@@ -548,13 +554,13 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
 
   // ************ evaluate max element in input array x ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
-      const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+      const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
           ? x[offset]
-          : sd::math::sd_max<T>(
+          : math::sd_max<T>(
               x[offset],
               temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else
@@ -563,7 +569,7 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
     __syncthreads();
 
     for (int s = blockDim.x / 2; s > 0; s /= 2) {
-      if (threadIdx.x < s) shmem[threadIdx.x] = sd::math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+      if (threadIdx.x < s) shmem[threadIdx.x] = math::sd_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
       __syncthreads();
     }
 
@@ -576,10 +582,10 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
   // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
   // // at the same evaluate sum of exponents, sum will be stored in shmem[0]
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
-      const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-      z[offset] = sd::math::sd_exp<T, T>(x[offset] - max);
+      const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+      z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] =
           (threadIdx.x != 0)
           ? z[offset]
@@ -599,9 +605,9 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
 
   // ************ evaluate (z[offset] / sum) and derivative z[offset] = z[offset] * (1 - z[offset]) ************ //
   for (int i = 0; i < numOfIters; ++i) {
-    const sd::LongType elemIdx = i * blockDim.x + threadIdx.x;
+    const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx >= len) continue;
-    const sd::LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
+    const LongType offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
     z[offset] /= shmem[0];
     z[offset] *= (1.f - z[offset]);  // derivative
   }
@@ -609,16 +615,20 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const sd::LongType *xzS
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const sd::LongType *xzShapeInfo,
+void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xzShapeInfo,
                                        void *vz) {
-  softMaxDerivForVectorCuda<T><<<1, SD_CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xzShapeInfo, vz);
+  dim3 launchDims = getLaunchDims("softmax");
+
+  softMaxDerivForVectorCuda<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(vx, xzShapeInfo, vz);
+  sd::DebugHelper::checkGlobalErrorCode("softmax derivative  failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(sd::LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void softmaxDerivative(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
-  sd::LongType temp;
+  LongType temp;
 
   if (shape::isCommonVector(input.shapeInfo(), temp)) {
     BUILD_SINGLE_SELECTOR(
@@ -627,7 +637,7 @@ void softmaxDerivative(sd::LaunchContext *context, const NDArray &input, NDArray
         SD_FLOAT_TYPES);
     input.tickReadDevice();
   } else {
-    std::vector<sd::LongType> dim = {static_cast<sd::LongType>(dimension)};
+    std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray &>(input).reduceAlongDimension(reduce::Max, &dim, true);
     (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
     auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dim, true);
@@ -648,7 +658,7 @@ void thresholdRelu_(NDArray const &input, double threshold, NDArray &output) {
   const_cast<NDArray &>(input).applyLambda(routine, output);
 }
 
-void thresholdRelu(sd::LaunchContext *context, NDArray const &input, double threshold, NDArray &output) {
+void thresholdRelu(LaunchContext *context, NDArray const &input, double threshold, NDArray &output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
 }
 
@@ -664,7 +674,7 @@ void thresholdReluDerivative_(NDArray *input, double theta, NDArray *dLdO, NDArr
   input->applyPairwiseLambda(*dLdO, derivative, *output);
 }
 
-void thresholdReluDerivative(sd::LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,
+void thresholdReluDerivative(LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,
                              NDArray *output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), SD_FLOAT_TYPES);
 }

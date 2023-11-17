@@ -2489,7 +2489,7 @@
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \
-  sd::Status sd::ops::NAME::validateAndExecute(Context& block)
+  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
 
 #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS) \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableReductionOp {     \
@@ -2498,7 +2498,7 @@
                                                                          \
    protected:                                                            \
     void registerTypes();                                                \
-    sd::Status validateAndExecute(Context& block);                       \
+    sd::Status validateAndExecute(sd::graph::Context& block);                       \
   };                                                                     \
   REGISTER_H(NAME)
 
@@ -2511,7 +2511,7 @@
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableCustomOp {                              \
    protected:                                                                                  \
     void registerTypes();                                                                      \
-    sd::Status validateAndExecute(Context& block);                                             \
+    sd::Status validateAndExecute(sd::graph::Context& block);                                             \
                                                                                                \
    public:                                                                                     \
     NAME();                                                                                    \
@@ -2537,7 +2537,7 @@
   class SD_LIB_EXPORT NAME : public sd::ops::BroadcastableOp { \
    protected:                                                  \
     void registerTypes();                                      \
-    sd::Status validateAndExecute(Context& block);             \
+    sd::Status validateAndExecute(sd::graph::Context& block);             \
                                                                \
    public:                                                     \
     NAME();                                                    \
@@ -2548,7 +2548,7 @@
   class SD_LIB_EXPORT NAME : public sd::ops::BroadcastableBoolOp { \
    protected:                                                      \
     void registerTypes();                                          \
-    sd::Status validateAndExecute(Context& block);                 \
+    sd::Status validateAndExecute(sd::graph::Context& block);                 \
                                                                    \
    public:                                                         \
     NAME();                                                        \

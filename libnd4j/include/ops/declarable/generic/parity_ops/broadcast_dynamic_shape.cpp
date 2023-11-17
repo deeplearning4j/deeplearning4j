@@ -46,23 +46,23 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
 
   // contract shapeInfos, neglect and don't fill strides, ews, order
   // shapes are of interest only
-  std::vector<sd::LongType> xShapeInfo(shape::shapeInfoLength(x->lengthOf()));
-  std::vector<sd::LongType> yShapeInfo(shape::shapeInfoLength(y->lengthOf()));
+  std::vector<LongType> xShapeInfo(shape::shapeInfoLength(x->lengthOf()));
+  std::vector<LongType> yShapeInfo(shape::shapeInfoLength(y->lengthOf()));
 
   // fill rank and data type
   xShapeInfo[0] = x->lengthOf();
   yShapeInfo[0] = y->lengthOf();
   ArrayOptions::setDataType(
       xShapeInfo.data(),
-      sd::DataType::INT64);  // fill with some data type, it doesn't matter what type exactly to choose
-  ArrayOptions::setDataType(yShapeInfo.data(), sd::DataType::INT64);
+                            INT64);  // fill with some data type, it doesn't matter what type exactly to choose
+  ArrayOptions::setDataType(yShapeInfo.data(), INT64);
   shape::setOrder(xShapeInfo.data(), 'c');
   shape::setOrder(yShapeInfo.data(), 'c');
-  for (sd::LongType i = 0; i < x->lengthOf(); ++i) xShapeInfo[i + 1] = x->e<sd::LongType>(i);
+  for (LongType i = 0; i < x->lengthOf(); ++i) xShapeInfo[i + 1] = x->e<LongType>(i);
 
-  for (sd::LongType i = 0; i < y->lengthOf(); ++i) yShapeInfo[i + 1] = y->e<sd::LongType>(i);
+  for (LongType i = 0; i < y->lengthOf(); ++i) yShapeInfo[i + 1] = y->e<LongType>(i);
 
-  const sd::LongType* poinerOnOutShapeInfo = nullptr;
+  const LongType* poinerOnOutShapeInfo = nullptr;
 
   const bool isBroadcastPossible = ShapeUtils::evalBroadcastShapeInfo(
       xShapeInfo.data(), yShapeInfo.data(), true, poinerOnOutShapeInfo, block.launchContext()->getWorkspace());
@@ -72,9 +72,9 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
       "BROADCAST_DYNAMIC_SHAPE OP: the shapes of two input arrays %s and %s are not suitable for broadcast operation !",
       ShapeUtils::shapeAsString(xShapeInfo.data()).c_str(), ShapeUtils::shapeAsString(yShapeInfo.data()).c_str());
 
-  for (sd::LongType i = 0; i < z->lengthOf(); ++i) z->p<sd::LongType>(i, poinerOnOutShapeInfo[i + 1]);
+  for (LongType i = 0; i < z->lengthOf(); ++i) z->p<LongType>(i, poinerOnOutShapeInfo[i + 1]);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(broadcast_dynamic_shape) {

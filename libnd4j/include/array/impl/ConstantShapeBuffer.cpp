@@ -35,15 +35,15 @@ ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &
   _specialShapeInfo = special;
 }
 
-const sd::LongType *ConstantShapeBuffer::primary() const {
-  return reinterpret_cast<sd::LongType *>(_primaryShapeInfo->pointer());
+const LongType *ConstantShapeBuffer::primary() const {
+  return reinterpret_cast<LongType *>(_primaryShapeInfo->pointer());
 }
 
-const sd::LongType *ConstantShapeBuffer::special() const {
-  return _specialShapeInfo ? reinterpret_cast<sd::LongType *>(_specialShapeInfo->pointer()) : nullptr;
+const LongType *ConstantShapeBuffer::special() const {
+  return _specialShapeInfo ? reinterpret_cast<LongType *>(_specialShapeInfo->pointer()) : nullptr;
 }
 
-const sd::LongType *ConstantShapeBuffer::platform() const {
+const LongType *ConstantShapeBuffer::platform() const {
 #ifdef __CUDABLAS__
   return special();
 #else

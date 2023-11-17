@@ -40,10 +40,10 @@ DataBuffer::DataBuffer() {
   _workspace = nullptr;
   _isOwnerPrimary = false;
   _isOwnerSpecial = false;
-  _deviceId = sd::AffinityManager::currentDeviceId();
+  _deviceId = AffinityManager::currentDeviceId();
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -67,7 +67,7 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -92,10 +92,10 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   _workspace = workspace;
   _isOwnerPrimary = isOwnerPrimary;
   _isOwnerSpecial = isOwnerSpecial;
-  _deviceId = sd::AffinityManager::currentDeviceId();
+  _deviceId = AffinityManager::currentDeviceId();
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -119,7 +119,7 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -140,7 +140,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
   _dataType = dataType;
   _workspace = workspace;
 
-  _deviceId = sd::AffinityManager::currentDeviceId();
+  _deviceId = AffinityManager::currentDeviceId();
 
   setCountersToZero();
 
@@ -150,7 +150,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -167,7 +167,7 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
   _primaryBuffer = nullptr;
   _specialBuffer = nullptr;
 
-  _deviceId = sd::AffinityManager::currentDeviceId();
+  _deviceId = AffinityManager::currentDeviceId();
 
   setCountersToZero();
 
@@ -180,7 +180,7 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -211,7 +211,7 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -233,7 +233,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   copyBufferFrom(other);
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -263,7 +263,7 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other._lenInBytes = 0;
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    creationStackTrace = new backward::StackTrace();
+    creationStackTrace = new StackTrace();
     creationStackTrace->load_here();
   }
 
@@ -305,21 +305,21 @@ void DataBuffer::allocatePrimary() {
 
 #endif
   if (_primaryBuffer == nullptr) {
-    auto deviceId = sd::AffinityManager::currentDeviceId();
+    auto deviceId = AffinityManager::currentDeviceId();
     // check if this allocation won't bring us above limit
     if (_workspace == nullptr) {
       if (Environment::getInstance().isCPU()) {
         // on cpu backend we validate against device 0 for now
-        if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-          throw sd::allocation_exception::build("Requested amount exceeds HOST device limits",
-                                                sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
+        if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
+          throw allocation_exception::build("Requested amount exceeds HOST device limits",
+                                            memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                                 getLenInBytes());
       } else {
         // in heterogenuous mode we validate against device group
-        if (!sd::memory::MemoryCounter::getInstance().validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
-          throw sd::allocation_exception::build(
+        if (!memory::MemoryCounter::getInstance().validateGroup(memory::MemoryType::HOST, getLenInBytes()))
+          throw allocation_exception::build(
               "Requested amount exceeds HOST group limits",
-              sd::memory::MemoryCounter::getInstance().groupLimit(sd::memory::MemoryType::HOST), getLenInBytes());
+                                            memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes());
       }
     }
 
@@ -331,9 +331,9 @@ void DataBuffer::allocatePrimary() {
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
       if (Environment::getInstance().isCPU())  // we don't want this counter to be added to CUDA device
-        sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
+        memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
 
-      sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::HOST, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(memory::MemoryType::HOST, getLenInBytes());
     }
   }
 }
@@ -362,10 +362,9 @@ void DataBuffer::deletePrimary() {
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
-      if (Environment::getInstance().isCPU())
-        sd::memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+      if (Environment::getInstance().isCPU()) memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
 
-      sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::HOST, getLenInBytes());
+      memory::MemoryCounter::getInstance().countOut(memory::MemoryType::HOST, getLenInBytes());
     }
   }
 

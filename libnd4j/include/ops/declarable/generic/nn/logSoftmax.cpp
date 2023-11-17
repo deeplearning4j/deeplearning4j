@@ -46,12 +46,12 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
   if(!input->isEmpty())
     helpers::logSoftmax(block.launchContext(), *input, *output, dim);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(log_softmax_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -72,13 +72,13 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
 
   helpers::softmax(block.launchContext(), *input, *gradI, dim);
 
-  std::vector<sd::LongType> dimVec;
+  std::vector<LongType> dimVec;
   dimVec.push_back(dim);
   auto sumGradOj = gradO->reduceAlongDimension(reduce::Sum,&dimVec, true);
   //we stored softmax inside gradI
   gradI->assign(*gradO - *gradI * sumGradOj);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 }  // namespace ops

@@ -187,6 +187,8 @@ void SD_HOST ScalarIntTransform<X>::intermediateShaped(dim3& launchDims, cudaStr
                                                        void* vextraParams, sd::LongType * allocPointer) {
   scalarSimpleShaped<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+  sd::DebugHelper::checkGlobalErrorCode("scalar simple int(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////

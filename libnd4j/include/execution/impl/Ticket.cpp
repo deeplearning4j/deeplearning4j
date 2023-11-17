@@ -37,7 +37,7 @@ Ticket::Ticket() {
 
 bool Ticket::acquired() { return _acquired; }
 
-void Ticket::enqueue(int thread_id, samediff::CallableWithArguments *callable) {
+void Ticket::enqueue(int thread_id, CallableWithArguments *callable) {
   _queues[thread_id]->put(callable);
   _callables.emplace_back(callable);
 }
@@ -91,5 +91,5 @@ void Ticket::waitAndRelease() {
   ThreadPool::getInstance().release(this);
 }
 
-void Ticket::attach(uint32_t thread_id, samediff::CallableInterface *call_interface) { _interfaces[thread_id] = call_interface; }
+void Ticket::attach(uint32_t thread_id, CallableInterface *call_interface) { _interfaces[thread_id] = call_interface; }
 }  // namespace samediff

@@ -43,7 +43,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
 
   InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
   InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer);
-  InteropDataBuffer(size_t lenInBytes, sd::DataType dtype, bool allocateBoth);
+  InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
   ~InteropDataBuffer() {
     if(!isConstant)
       dataBuffer()->close();

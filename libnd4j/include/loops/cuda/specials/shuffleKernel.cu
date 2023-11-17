@@ -26,8 +26,8 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **vdZ, int N, int *shuffleMap,
-                                 sd::LongType **tadOnlyShapeInfo, sd::LongType **tadOffsets) {
+SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ, int N, int *shuffleMap,
+                                 LongType **tadOnlyShapeInfo, LongType **tadOffsets) {
   // we assume that shuffle map for each X contains pair TAD Y
   auto dX = reinterpret_cast<T **>(vdX);
   auto dZ = reinterpret_cast<T **>(vdZ);
@@ -36,8 +36,8 @@ SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **
   __shared__ int xRank;
   __shared__ int tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType *xShapeInfo;
-  __shared__ sd::LongType xLength;
+  __shared__ LongType *xShapeInfo;
+  __shared__ LongType xLength;
 
   for (int f = 0; f < N; f++) {
     auto x = reinterpret_cast<T *>(dX[f]);
@@ -67,7 +67,7 @@ SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **
       }
     } else {
       // we roll over the pairs of TADs, thus limit is numTads / 2
-      for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
+      for (LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
         if (shuffleMap[r] >= 0) {
           auto oldOffset = tadOffsets[f][r];
           auto newOffset = tadOffsets[f][shuffleMap[r]];
@@ -80,14 +80,14 @@ SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **
 
           // so we're going to change TAD[oldOffset] with TAD[newOffset]
           if (tadEWS == 1) {
-            for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
               T oldX = rX[i];
               rX[i] = rY[i];
               zY[i] = oldX;
             }
 
           } else {
-            for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
               auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
               auto yOffset = newOffset + xOffset;
               xOffset += oldOffset;
@@ -106,12 +106,11 @@ SD_KERNEL void execShuffleKernel(void **vdX, sd::LongType **dxShapeInfo, void **
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void shuffleKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdX, sd::LongType **xShapeInfo,
-                                  void **vdZ, int N, int *shuffleMap, sd::LongType **tadOnlyShapeInfo,
-                                  sd::LongType **tadOffsets) {
+SD_HOST void shuffleKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdX, LongType **xShapeInfo,
+                                  void **vdZ, int N, int *shuffleMap, LongType **tadOnlyShapeInfo, LongType **tadOffsets) {
   execShuffleKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdX, xShapeInfo, vdZ, N, shuffleMap,
                                                                               tadOnlyShapeInfo, tadOffsets);
-  sd::DebugHelper::checkErrorCode(stream, "shuffleGeneric(...) failed");
+  DebugHelper::checkErrorCode(stream, "shuffleGeneric(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void shuffleKernelGeneric,

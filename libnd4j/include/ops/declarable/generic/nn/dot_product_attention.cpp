@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
                "But got keys = %i, values = %i",
                keys->sizeAt(-1), values->sizeAt(-1));
 
-  sd::ops::matmul mmul;
+  matmul mmul;
   mmul.execute({keys, queries}, {weights}, {}, {1}, {});
   if (normalization) {
     *weights /= sqrt((double)keys->sizeAt(-2));
@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
   }
 
   int softmaxDim = -2;
-  sd::ops::softmax softmax;
+  softmax softmax;
   softmax.execute({weights}, std::vector<NDArray *>{weights}, {}, {softmaxDim}, {}, {}, true);
 
   mmul.execute({values, weights}, {output}, {}, {}, {});
@@ -109,7 +109,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     delete weights;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dot_product_attention) {
@@ -123,10 +123,10 @@ DECLARE_SHAPE_FN(dot_product_attention) {
   auto values_shape = inputShape->at(2);
 
   auto weights_shape = ConstantShapeHelper::getInstance().createShapeInfo(
-      sd::ArrayOptions::dataType(values_shape), 'c',
+      ArrayOptions::dataType(values_shape), 'c',
       ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
   auto output_shape = ConstantShapeHelper::getInstance().createShapeInfo(
-      sd::ArrayOptions::dataType(values_shape), 'c',
+      ArrayOptions::dataType(values_shape), 'c',
       ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
   if (INT_ARG(1)) {
@@ -180,7 +180,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 
   auto weightShape = ShapeUtils::evalShapeForMatmul(keys->shapeInfo(), queries->shapeInfo(), true, false);
 
-  sd::ops::matmul mmul;
+  matmul mmul;
   NDArray preSoftmax('c', weightShape, values->dataType(), block.launchContext());
   mmul.execute({keys, queries}, {&preSoftmax}, {}, {1}, {});
 
@@ -200,14 +200,14 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   int softmaxDim = -2;
 
   NDArray weights('c', weightShape, values->dataType(), block.launchContext());
-  sd::ops::softmax softmax;
+  softmax softmax;
   softmax.execute({&preSoftmax}, {&weights}, {}, {softmaxDim}, {});
-  sd::ops::matmul_bp mmul_bp;
+  matmul_bp mmul_bp;
   NDArray dLdw(weights.shapeInfo(), block.workspace());
   mmul_bp.execute({values, &weights, eps}, {dLdv, &dLdw}, {}, {}, {});
 
   NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
-  sd::ops::softmax_bp softmax_bp;
+  softmax_bp softmax_bp;
   softmax_bp.execute({&preSoftmax, &dLdw,&weights}, {&dLds}, {}, {softmaxDim}, {});
 
   if (normalization) dLds /= factor;
@@ -216,7 +216,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   }
   mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray *>{dLdk, dLdq}, {}, {1}, {});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dot_product_attention_bp) {
@@ -225,11 +225,11 @@ DECLARE_TYPES(dot_product_attention_bp) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_bp) {
-  sd::LongType *dLdq_shape;
+  LongType *dLdq_shape;
   COPY_SHAPE(inputShape->at(0), dLdq_shape);
-  sd::LongType *dLdk_shape;
+  LongType *dLdk_shape;
   COPY_SHAPE(inputShape->at(1), dLdk_shape);
-  sd::LongType *dLdv_shape;
+  LongType *dLdv_shape;
   COPY_SHAPE(inputShape->at(2), dLdv_shape);
 
   return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape));

@@ -33,7 +33,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
@@ -58,7 +58,7 @@ CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::Sum, *output, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_sum) {
@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
                                                    keepDims, false, block.getWorkspace()));
 }
 
-DECLARE_TYPES(reduce_sum) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reduce_sum) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
@@ -129,11 +129,11 @@ CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
     auto r = gradO->reshape(gradO->ordering(),
                             ShapeUtils::pullShapeFromShapeInfo(
                                 gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), r, *gradI);
+    gradI->applyTrueBroadcast(BroadcastOpsTuple::Assign(), r, *gradI);
   } else
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), *gradO, *gradI);
+    gradI->applyTrueBroadcast(BroadcastOpsTuple::Assign(), *gradO, *gradI);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_sum_bp) {
@@ -154,14 +154,14 @@ DECLARE_SHAPE_FN(reduce_sum_bp) {
         "REDUCE_SUM_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
+  LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_sum_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 

@@ -29,31 +29,31 @@
 namespace sd {
 namespace ops {
 BooleanOp::BooleanOp(const char *name, int numInputs, bool scalar)
-    : DeclarableOp::DeclarableOp(name, numInputs, scalar) {
+    : DeclarableOp(name, numInputs, scalar) {
   //
 }
 
 /**
  * Output shape of any BooleanOp is ALWAYS scalar
  */
-ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::BOOL));
 }
 
-bool BooleanOp::verify(sd::graph::Context &block) {
+bool BooleanOp::verify(Context &block) {
   // check if scalar or not
 
   // validation?
 
-  sd::Status status = this->validateNonEmptyInput(block);
-  if (status != sd::Status::OK) {
+  Status status = this->validateNonEmptyInput(block);
+  if (status != Status::OK) {
     THROW_EXCEPTION("Bad inputs");
   }
 
   status = this->validateAndExecute(block);
-  if (status == sd::Status::EQ_TRUE)
+  if (status == Status::EQ_TRUE)
     return true;
-  else if (status == sd::Status::EQ_FALSE)
+  else if (status == Status::EQ_FALSE)
     return false;
   else {
     sd_printf("Got error %i during [%s] evaluation: ", (int)status, this->getOpDescriptor()->getOpName()->c_str());
@@ -81,7 +81,7 @@ bool BooleanOp::prepareOutputs(Context &ctx) {
   return true;
 }
 
-sd::Status sd::ops::BooleanOp::execute(Context *block) {
+Status BooleanOp::execute(Context *block) {
   // basic validation: ensure inputs are set
   REQUIRE_OK(this->validateNonEmptyInput(*block));
 
@@ -93,7 +93,7 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
 
   auto timeStart = std::chrono::system_clock::now();
 
-  sd::Status status = this->validateAndExecute(*block);
+  Status status = this->validateAndExecute(*block);
 
   auto timeEnd = std::chrono::system_clock::now();
   auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
@@ -103,12 +103,12 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
   std::pair<int, int> p(block->nodeId(), 0);
   auto var = block->isFastPath() ? block->fastpath_out()[0] : block->variable(p)->getNDArray();
   if(!var->isEmpty())
-    var->p(sd::LongType(0), status == sd::Status::EQ_TRUE ? 1.0f : 0.0f);
+    var->p(LongType(0), status == Status::EQ_TRUE ? 1.0f : 0.0f);
 
   // for CPU backend that's nop, but for CUDA-like archs this will update special buffer
   var->syncToDevice();
 
-  if (status == sd::Status::EQ_FALSE || status == sd::Status::EQ_TRUE) return sd::Status::OK;
+  if (status == Status::EQ_FALSE || status == Status::EQ_TRUE) return Status::OK;
 
   sd_printf("%s: node_%i got unexpected result instead of boolean: [%i]\n", this->getOpName()->c_str(), block->nodeId(),
             status);
@@ -117,10 +117,10 @@ sd::Status sd::ops::BooleanOp::execute(Context *block) {
   traceExecIfNeeded(*block);
 
 
-  return sd::Status::KERNEL_FAILURE;
+  return Status::KERNEL_FAILURE;
 }
 
-bool BooleanOp::verify(const std::vector<sd::NDArray *> &args) {
+bool BooleanOp::verify(const std::vector<NDArray *> &args) {
   VariableSpace variableSpace;
 
   int cnt = -1;

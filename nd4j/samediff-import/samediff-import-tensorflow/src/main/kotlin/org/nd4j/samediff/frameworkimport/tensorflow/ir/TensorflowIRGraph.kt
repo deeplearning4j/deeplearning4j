@@ -124,6 +124,10 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
         return opName == "Placeholder" || opName == "PlaceholderWithDefault"
     }
 
+    override fun variableNames(): List<String> {
+        return nodeNames.toList()
+    }
+
     override fun shapeOfInput(varName: String): LongArray? {
         val attrMap = nodeByName(varName).attrMap
         val shapeAvailable = attrMap.containsKey("shape")

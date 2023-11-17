@@ -68,7 +68,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, wFormat, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM DECONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -97,7 +97,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   // [kD, kH, kW, oC, iC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
   // [iC, oC, kD, kH, kW] x [bS, iD, iH, iW, iC] = [oC, kD, kH, kW, bS, iD, iH, iW]
   // [iC, kD, kH, kW, oC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
-  sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC},
+  MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC},
                             colPermut);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
 
   ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH,
@@ -109,12 +109,12 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
   if (!isNCDHW) delete output;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(deconv3d) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_FLOATS});
@@ -125,7 +125,7 @@ DECLARE_SHAPE_FN(deconv3d) {
   auto weightsShapeInfo = inputShape->at(1);  // [kD, kH, kW, oC, iC], [iC, oC, kD, kH, kW], [iC, kD, kH, kW, oC]
   auto biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;  // [oC]
 
-  const sd::LongType rank = 5;
+  const LongType rank = 5;
   REQUIRE_TRUE(shape::rank(inputShapeInfo) == rank, 0,
                "CUSTOM DECONV3D OP: rank of input array must be equal to %i, but got %i instead !", rank,
                shape::rank(inputShapeInfo));
@@ -133,9 +133,9 @@ DECLARE_SHAPE_FN(deconv3d) {
                "CUSTOM DECONV3D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                shape::rank(weightsShapeInfo));
 
-  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) depth
-  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) height
-  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(2)));  // filter(kernel) width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(2)));  // filter(kernel) width
   LongType sD = INT_ARG(3);                                                                          // strides depth
   LongType sH = INT_ARG(4);                                                                          // strides height
   LongType sW = INT_ARG(5);                                                                          // strides width
@@ -167,7 +167,7 @@ DECLARE_SHAPE_FN(deconv3d) {
   const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
   const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
   REQUIRE_TRUE(shape::shapeEquals(5, expectedWeightsShape.data(), shape::rank(weightsShapeInfo),
                                   shape::shapeOf(weightsShapeInfo)),
                0, "CUSTOM DECONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -185,7 +185,7 @@ DECLARE_SHAPE_FN(deconv3d) {
 
 
 
-  std::vector<sd::LongType> outputShape;
+  std::vector<LongType> outputShape;
   if (isNCDHW) {
     outputShape = {bS,oC,oD,oH,oW};
   } else {
@@ -250,9 +250,9 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   ConvolutionUtils::calcOutSizeDeconv3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                         iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape = ShapeUtils::composeShapeUsingDimsAndIdx(
+  std::vector<LongType> expectedGradOShape = ShapeUtils::composeShapeUsingDimsAndIdx(
       {bS, oC, trueoD, trueoH, trueoW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "CUSTOM DECONV3D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got "
                "%s instead !",
@@ -271,11 +271,11 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
   // ----- calculation of gradI -> pass it through conv3d_ff ----- //
-  sd::ops::conv3dnew conv3d;
-  const sd::Status status =
+  conv3dnew conv3d;
+  const Status status =
       conv3d.execute({gradO, weights}, {gradI}, {},
                      {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode, !isNCDHW, wFormat}, {});
-  if (status != sd::Status::OK) return status;
+  if (status != Status::OK) return status;
 
   // -----prepare permutation arrays and axes for dot product ----- //
   std::vector<LongType> inputAxesForDot;
@@ -304,19 +304,19 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   // ----- calculation of gradB ----- //
   if (gradB) {
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
-    std::vector<sd::LongType> dims = {{0, 2, 3, 4}};
+    std::vector<LongType> dims = {{0, 2, 3, 4}};
     gradO->reduceAlongDimension(reduce::Sum, *gradB, &dims);  // sum over bS, oD, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 
   if (!isNCDHW) delete gradO;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(deconv3d_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedInputTypes(3, {ALL_FLOATS})
@@ -344,9 +344,9 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
       "CUSTOM DECONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, shape::rank(gradOShapeInfo));
 
-  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) depth
-  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) height
-  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(2)));  // filter(kernel) width
+  LongType kD = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) depth
+  LongType kH = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) height
+  LongType kW = INT_ARG(2) > 0 ? INT_ARG(2) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(2)));  // filter(kernel) width
   LongType sD = INT_ARG(3);                                                                          // strides depth
   LongType sH = INT_ARG(4);                                                                          // strides height
   LongType sW = INT_ARG(5);                                                                          // strides width
@@ -382,9 +382,9 @@ DECLARE_SHAPE_FN(deconv3d_bp) {
   ConvolutionUtils::calcOutSizeDeconv3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH,
                                         iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape = ShapeUtils::composeShapeUsingDimsAndIdx(
+  std::vector<LongType> expectedGradOShape = ShapeUtils::composeShapeUsingDimsAndIdx(
       {bS, oC, trueoD, trueoH, trueoW, 0, indIOioC, indIiD, indIiD + 1, indIiD + 2});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
   REQUIRE_TRUE(
       shape::shapeEquals(5, expectedGradOShape.data(), shape::rank(gradOShapeInfo), shape::shapeOf(gradOShapeInfo)), 0,
       "CUSTOM DECONV3D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead "

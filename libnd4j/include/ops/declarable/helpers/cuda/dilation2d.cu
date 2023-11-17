@@ -31,8 +31,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL static void dilation2dCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                     const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+                                     const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                      const int sH, const int sW, const int pH, const int pW, const int dH,
                                      const int dW) {
   // x [bS, iH, iW, iC]
@@ -43,13 +43,13 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const sd::LongType* xShapeI
   const X* y = reinterpret_cast<const X*>(vy);
   Z* z = reinterpret_cast<Z*>(vz);
 
-  __shared__ sd::LongType xzRank, yRank, *sharedMem;
-  __shared__ sd::LongType iH, iW, kH, kW;
-  __shared__ sd::LongType zLen;
+  __shared__ LongType xzRank, yRank, *sharedMem;
+  __shared__ LongType iH, iW, kH, kW;
+  __shared__ LongType zLen;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     zLen = shape::length(zShapeInfo);
 
@@ -101,18 +101,18 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const sd::LongType* xShapeI
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                   const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                   const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                   const sd::LongType* zShapeInfo, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
-                                   const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
+                                   const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                   const void* vy, const LongType* yShapeInfo, void* vz,
+                                   const LongType* zShapeInfo, const LongType sH, const LongType sW, const LongType pH,
+                                   const LongType pW, const LongType dH, const LongType dW) {
   dilation2dCuda<X, Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                                zShapeInfo, sH, sW, pH, pW, dH, dW);
-  sd::DebugHelper::checkGlobalErrorCode( "dilation2d(...) failed");
+  DebugHelper::checkGlobalErrorCode( "dilation2d(...) failed");
 
 }
 
-void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,
-                const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
+void dilation2d(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const LongType sH,
+                const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW) {
   PointersManager manager(context, "dilation2d");
   dim3 dilation = getDilation(output->lengthOf(),weights->rankOf(),output->rankOf());
 

@@ -25,18 +25,17 @@
 namespace sd {
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfos, void *vz,
-                            sd::LongType *resultShapeInfo, sd::Pointer *tadPointers, sd::Pointer *offsetPointers,
-                            sd::LongType *zTadShape, sd::LongType *zOffsets) {
+SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz, LongType *resultShapeInfo,
+                            Pointer *tadPointers, Pointer *offsetPointers, LongType *zTadShape, LongType *zOffsets) {
   int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   int zRank = shape::rank(resultShapeInfo);
 
   auto result = reinterpret_cast<T *>(vz);
   auto dataT = reinterpret_cast<T **>(data);
-  auto shapeInfoPointers = reinterpret_cast<sd::LongType **>(inputShapeInfos);
-  auto tadShapes = reinterpret_cast<sd::LongType **>(tadPointers);
-  auto tadOffsets = reinterpret_cast<sd::LongType **>(offsetPointers);
+  auto shapeInfoPointers = reinterpret_cast<LongType **>(inputShapeInfos);
+  auto tadShapes = reinterpret_cast<LongType **>(tadPointers);
+  auto tadOffsets = reinterpret_cast<LongType **>(offsetPointers);
 
   __shared__ int baseIdx;
 
@@ -109,18 +108,18 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
 
     if (yLength == 1 && _vec) {
       // edge case, each thread will handle it's own tad then
-      for (sd::LongType j = tid; j < numTads; j += blockDim.x * gridDim.x) {
-        sd::LongType inputOffset = currentOffsets[j];
-        sd::LongType resultOffset = zOffsets[j];
+      for (LongType j = tid; j < numTads; j += blockDim.x * gridDim.x) {
+        LongType inputOffset = currentOffsets[j];
+        LongType resultOffset = zOffsets[j];
 
         T *dataTAD = currentData + inputOffset;
         T *resultTAD = result + resultOffset;
 
-        sd::LongType sub[SD_MAX_RANK];
+        LongType sub[SD_MAX_RANK];
 
         shape::index2coords(arrOffset, zTadShape, sub);
 
-        sd::LongType baseOffset = shape::getOffset(zTadShape, sub);
+        LongType baseOffset = shape::getOffset(zTadShape, sub);
 
         resultTAD += baseOffset;
 
@@ -137,17 +136,17 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
     } else {
 
 
-      for (sd::LongType j = blockIdx.x; j < numTads; j += gridDim.x) {
+      for (LongType j = blockIdx.x; j < numTads; j += gridDim.x) {
         auto inputOffset = currentOffsets[j];
         auto resultOffset = zOffsets[j];
 
         auto dataTAD = currentData + inputOffset;
         auto resultTAD = result + resultOffset;
 
-        sd::LongType sub[SD_MAX_RANK];
+        LongType sub[SD_MAX_RANK];
 
         shape::index2coords(arrOffset, zTadShape, sub);
-        sd::LongType baseOffset = shape::getOffset(zTadShape, sub);
+        LongType baseOffset = shape::getOffset(zTadShape, sub);
 
         resultTAD += baseOffset;
 
@@ -171,10 +170,10 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
                 resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
               }
             } else {
-              sd::LongType yIdx[SD_MAX_RANK];
+              LongType yIdx[SD_MAX_RANK];
               auto yRank = shape::rank(currentTad);
 
-              for (sd::LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
+              for (LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
                 shape::index2coords(i, currentTad, yIdx);
                 auto yOffset = shape::getOffset(currentTad, yIdx);
 
@@ -183,10 +182,10 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
             }
             __syncthreads();
           } else {
-            sd::LongType zIdx[SD_MAX_RANK];
-            sd::LongType yIdx[SD_MAX_RANK];
+            LongType zIdx[SD_MAX_RANK];
+            LongType yIdx[SD_MAX_RANK];
 
-            for (sd::LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
+            for (LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
               shape::index2coords(i, currentTad, yIdx);
               shape::index2coords(i, zTadShape, zIdx);
 
@@ -206,22 +205,21 @@ SD_DEVICE void concatKernel(int numArrays, sd::Pointer *data, sd::Pointer *input
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConcatKernel(int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfos, void *vz,
-                                sd::LongType *zShapeInfo, sd::Pointer *tadPointers, sd::Pointer *offsetPointers,
-                                sd::LongType *zTadShape, sd::LongType *zOffsets) {
+SD_KERNEL void execConcatKernel(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz, LongType *zShapeInfo,
+                                Pointer *tadPointers, Pointer *offsetPointers, LongType *zTadShape,
+                                LongType *zOffsets) {
   concatKernel<T>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
 
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void concatKernelGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
-                                 sd::Pointer *inputShapeInfos, void *vz, sd::LongType *zShapeInfo,
-                                 sd::Pointer *tadPointers, sd::Pointer *offsetPointers, sd::LongType *zTadShape,
-                                 sd::LongType *zOffsets) {
+SD_HOST void concatKernelGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
+                                 Pointer *inputShapeInfos, void *vz, LongType *zShapeInfo, Pointer *tadPointers,
+                                 Pointer *offsetPointers, LongType *zTadShape, LongType *zOffsets) {
   execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
-  sd::DebugHelper::checkErrorCode(stream, "concatGenericLegacy(...) failed");
+  DebugHelper::checkErrorCode(stream, "concatGenericLegacy(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void concatKernelGeneric,

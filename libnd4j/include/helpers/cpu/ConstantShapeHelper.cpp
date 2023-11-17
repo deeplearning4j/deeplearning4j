@@ -191,11 +191,9 @@ const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeI
 
 const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
-  printf("Shape descriptor creating from existing creating from:\n");
-  descriptor->print();
   auto result = createShapeInfo(descriptor);
 
-  //RELEASE(shapeInfo, workspace);
+  RELEASE(shapeInfo, workspace);
   delete descriptor;
   return result;
 }
@@ -256,7 +254,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  //RELEASE(newShapeInfo, workspace);
+  RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;
@@ -280,7 +278,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  //RELEASE(newShapeInfo, workspace);
+  RELEASE(newShapeInfo, workspace);
 
   auto ret =  bufferForShapeInfo(descriptor);
   delete descriptor;
@@ -294,7 +292,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongTy
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
 
-  //RELEASE(newShapeInfo, workspace);
+  RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
   delete descriptor;

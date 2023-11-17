@@ -34,35 +34,33 @@ class SD_LIB_EXPORT TadPack {
  private:
   ConstantShapeBuffer _tadShape;
   ConstantOffsetsBuffer _tadOffsets;
-  sd::LongType _numTads = 0;
-  sd::LongType _shapeInfoLength = 0;
-  sd::LongType *_dimensions = nullptr;
-  sd::LongType _dimensionsLength = 0;
+  LongType _numTads = 0;
+  LongType _shapeInfoLength = 0;
+  LongType* _dimensions = nullptr;
+  LongType _dimensionsLength = 0;
  public:
   explicit TadPack(const ConstantShapeBuffer& shapes,
-                   const ConstantOffsetsBuffer& offets,
-                   sd::LongType numTads,
-                   sd::LongType* dimensions = nullptr,
-                   sd::LongType dimLength = 0);
+                   const ConstantOffsetsBuffer& offets, LongType numTads,
+                   LongType* dimensions = nullptr, LongType dimLength = 0);
   TadPack() = default;
   ~TadPack() {};
 
-  const sd::LongType* primaryShapeInfo() const;
-  const sd::LongType* primaryOffsets() const;
+  const LongType* primaryShapeInfo() const;
+  const LongType* primaryOffsets() const;
 
-  const sd::LongType* specialShapeInfo() const;
-  const sd::LongType* specialOffsets() const;
+  const LongType* specialShapeInfo() const;
+  const LongType* specialOffsets() const;
 
-  sd::LongType numberOfTads() const;
-  sd::LongType shapeInfoLength() const;
+  LongType numberOfTads() const;
+  LongType shapeInfoLength() const;
 
 
   /**
    * These methods return either primary or special pointers depending on platform binaries were compiled for
    * @return
    */
-  const sd::LongType* platformShapeInfo() const;
-  const sd::LongType* platformOffsets() const;
+  const LongType* platformShapeInfo() const;
+  const LongType* platformOffsets() const;
 
   void print(const char* msg) const;
 };

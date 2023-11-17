@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::SquaredNorm, *gradI, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_sqnorm) {
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
 }
 
 DECLARE_TYPES(reduce_sqnorm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
     } else
       gradI->assign(2. * (*input) * *gradO);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
@@ -166,14 +166,14 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
           inputShape->at(0)[0], inputShape->at(0)[0], item);
   }
 
-  sd::LongType* gradIshapeInfo(nullptr);
+  LongType* gradIshapeInfo(nullptr);
   COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
 
   return SHAPELIST(CONSTANT(gradIshapeInfo));
 }
 
 DECLARE_TYPES(reduce_sqnorm_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 

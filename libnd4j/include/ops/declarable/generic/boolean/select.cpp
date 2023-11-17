@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
       auto v = !cond->e<bool>(0) ? y->e<double>(0) : x->e<double>(0);
       z->p(0, v);
     } else {
-      auto v = !cond->e<bool>(0) ? y->e<sd::LongType>(0) : x->e<sd::LongType>(0);
+      auto v = !cond->e<bool>(0) ? y->e<LongType>(0) : x->e<LongType>(0);
       z->p(0, v);
     }
   } else {
@@ -65,7 +65,7 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
           auto r = !cond->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
           z->p(e, r);
         } else {
-          auto r = !cond->e<bool>(e) ? y->e<sd::LongType>(e) : x->e<sd::LongType>(e);
+          auto r = !cond->e<bool>(e) ? y->e<LongType>(e) : x->e<LongType>(e);
           z->p(e, r);
         }
       }
@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
                    cond->lengthOf());
 
       auto z = OUTPUT_VARIABLE(0);
-      std::vector<sd::LongType> idxs;
+      std::vector<LongType> idxs;
       idxs.push_back(0);
       auto dims = ShapeUtils::evalDimsToExclude(x->rankOf() ,1,idxs.data());
       auto tadsX = x->allTensorsAlongDimension(*dims);
@@ -94,13 +94,13 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(select) {
   auto inShape = inputShape->at(1);
 
-  sd::LongType *newshape;
+  LongType *newshape;
   COPY_SHAPE(inShape, newshape);
 
   return SHAPELIST(CONSTANT(newshape));
@@ -108,10 +108,10 @@ DECLARE_SHAPE_FN(select) {
 
 DECLARE_TYPES(select) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::BOOL)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedInputTypes(2, DataType::ANY)
-      ->setAllowedOutputTypes(1, DataType::INHERIT);
+      ->setAllowedInputTypes(0, BOOL)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedInputTypes(2, ANY)
+      ->setAllowedOutputTypes(1, INHERIT);
 }
 }  // namespace ops
 }  // namespace sd

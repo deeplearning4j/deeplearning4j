@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC, oC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM POINTWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -76,11 +76,11 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, 1 /*isSameMode*/,
                            isNCHW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(pointwise_conv2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(pointwise_conv2d) {
@@ -110,7 +110,7 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
   const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
   const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, 1, 1, iC, oC);
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
                "POINTWISECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),

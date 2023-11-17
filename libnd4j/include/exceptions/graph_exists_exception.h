@@ -31,7 +31,7 @@
 namespace sd {
 class SD_LIB_EXPORT graph_exists_exception : public graph_exception {
  public:
-  explicit graph_exists_exception(sd::LongType graphId);
+  explicit graph_exists_exception(LongType graphId);
 };
 }  // namespace sd
 

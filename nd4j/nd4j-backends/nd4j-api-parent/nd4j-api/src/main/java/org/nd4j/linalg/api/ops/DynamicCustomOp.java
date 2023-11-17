@@ -27,8 +27,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -386,21 +389,50 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
                     }
 
-                INDArray[] exec = Nd4j.getExecutioner().exec(this);
-                if(outputVariables.length != exec.length) {
-                    log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
-                }
-                for (int i = 0; i < outputVariables.length; i++) {
-                    if(i >= exec.length) {
-                        INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
-                        outputVariables[i].setShape(stub.shape());
-                        sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
-                    }  else {
-                        outputVariables[i].setShape(exec[i].shape());
-                        sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                    ctx.setIArguments(iArguments);
+                    ctx.setDArguments(dArguments);
+                    ctx.setTArguments(tArguments);
+                    ctx.setBAArguments(bArguments);
+                    ctx.setInputArrays(inputArguments);
+                    ctx.setOutputArrays(outputArguments);
+
+                    SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
+                    for(Listener  l : sameDiff.getListeners()) {
+                        l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
                     }
 
+                    INDArray[] exec = Nd4j.getExecutioner().exec(this,ctx);
+                    for(Listener  l : sameDiff.getListeners()) {
+                        l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
+                    }
+
+                    for(Listener  l : sameDiff.getListeners()) {
+                        for(int i = 0; i < outputVariables.length; i++) {
+                            l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariables[i].name()),exec[i]);
+                        }
+                    }
+
+                    if(outputVariables.length != exec.length) {
+                        log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
+                    }
+                    for (int i = 0; i < outputVariables.length; i++) {
+                        if(i >= exec.length) {
+                            INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
+                            outputVariables[i].setShape(stub.shape());
+                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
+                        }  else {
+                            outputVariables[i].setShape(exec[i].shape());
+                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                        }
+
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
+
+
+
             }
 
         }

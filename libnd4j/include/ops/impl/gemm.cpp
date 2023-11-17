@@ -111,7 +111,7 @@ void GEMV<X, Y, Z>::op(int TRANS, int M, int N, double alpha, void *vX, int lda,
   auto y = reinterpret_cast<Y *>(vY);
   auto z = reinterpret_cast<Z *>(vZ);
 
-  auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(sd::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N,
+  auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N,
                                                                                reinterpret_cast<void *>(x)))
                                 : x;
 
@@ -120,7 +120,7 @@ void GEMV<X, Y, Z>::op(int TRANS, int M, int N, double alpha, void *vX, int lda,
       int aIdx = linearIndexC(M, N, r, 0);
       auto aX = aT + aIdx;
 
-      auto dot = sd::math::sd_dot<X, Y, Z>(aX, y, lda) * static_cast<Z>(alpha);
+      auto dot = math::sd_dot<X, Y, Z>(aX, y, lda) * static_cast<Z>(alpha);
       z[r] = beta == 0.0f ? dot : dot + static_cast<Z>(beta) * z[r];
     }
   };

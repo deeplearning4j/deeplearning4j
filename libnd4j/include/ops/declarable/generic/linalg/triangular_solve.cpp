@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
   auto res = helpers::triangularSolveFunctor(block.launchContext(), input, b, isLower, false, z);
   if (input != a) delete input;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(triangular_solve) {

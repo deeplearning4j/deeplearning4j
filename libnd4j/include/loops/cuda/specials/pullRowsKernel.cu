@@ -26,9 +26,8 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void pullRowsKernel(void *vx, void *vz, sd::LongType len, sd::LongType *indexes,
-                              sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
-                              sd::LongType const *zTadShapeInfo, sd::LongType const *zTadOffsets) {
+SD_DEVICE void pullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType const *tadShapeInfo,
+                              LongType const *tadOffsets, LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
   auto xEWS = shape::elementWiseStride(tadShapeInfo);
@@ -60,21 +59,20 @@ SD_DEVICE void pullRowsKernel(void *vx, void *vz, sd::LongType len, sd::LongType
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execPullRowsKernel(void *vx, void *vz, sd::LongType len, sd::LongType *indexes,
-                                  sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
-                                  sd::LongType const *zTadShapeInfo, sd::LongType const *zTadOffsets) {
+SD_KERNEL void execPullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType const *tadShapeInfo,
+                                  LongType const *tadOffsets, LongType const *zTadShapeInfo,
+                                  LongType const *zTadOffsets) {
   pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, void *vz, sd::LongType len,
-                                   sd::LongType *indexes, sd::LongType const *tadShapeInfo,
-                                   sd::LongType const *tadOffsets, sd::LongType const *zTadShapeInfo,
-                                   sd::LongType const *zTadOffsets) {
+SD_HOST void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, void *vz, LongType len,
+                                   LongType *indexes, LongType const *tadShapeInfo, LongType const *tadOffsets,
+                                   LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
   execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo,
                                                                                tadOffsets, zTadShapeInfo, zTadOffsets);
-  sd::DebugHelper::checkErrorCode(stream, "pullRows(...) failed");
+  DebugHelper::checkErrorCode(stream, "pullRows(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsKernelGeneric,

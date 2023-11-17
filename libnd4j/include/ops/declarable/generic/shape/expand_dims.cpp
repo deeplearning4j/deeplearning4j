@@ -30,7 +30,7 @@ namespace ops {
 CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<sd::LongType>(0);
+  LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<LongType>(0);
 
   if (axis < 0) axis += input->rankOf() + 1;
   if(!input->isEmpty() && !input->isScalar())
@@ -46,12 +46,13 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
   }
 
   //the shape was already determined in the calculate shape info, just reshape to the same shape as the output
-  auto tmp = input->reshape(input->ordering(), output->getShapeAsVector(),true);
+  auto tmp = input->reshape(input->ordering(), output->getShapeAsVector(),false);
   output->assign(tmp);
+  output->syncToHost();
   return Status::OK;
 }
 
-DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(expand_dims) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(expand_dims) {
   auto inShape = inputShape->at(0);
@@ -59,11 +60,11 @@ DECLARE_SHAPE_FN(expand_dims) {
   // 0D scalar edge case
   if (shape::isScalar(inShape)) {
     if(rank < 1) {
-      sd::LongType x = 1;
+      LongType x = 1;
       auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x, -1);
       return SHAPELIST(newShape);
     } else {
-      std::vector<sd::LongType> x = {1, 1};
+      std::vector<LongType> x = {1, 1};
       auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, x.data(), -1);
       return SHAPELIST(newShape);
     }
@@ -80,7 +81,7 @@ DECLARE_SHAPE_FN(expand_dims) {
   auto x_rank = shape::rank(inShape);
   char order = shape::order(inShape);
 
-  sd::LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<sd::LongType>(0);
+  LongType axis = block.numI() > 0 ? INT_ARG(0) : INPUT_VARIABLE(1)->e<LongType>(0);
   if (axis < 0) axis += x_rank + 1;
 
   REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf(), 0,
@@ -88,8 +89,8 @@ DECLARE_SHAPE_FN(expand_dims) {
                axis);
 
   printf("New shape case with axis %d\n",axis);
-  std::vector<sd::LongType> shape;
-  for (sd::LongType e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
+  std::vector<LongType> shape;
+  for (LongType e = 0; e < x_rank; e++) shape.emplace_back(shape::shapeOf(inShape)[e]);
 
   shape.insert(shape.begin() + axis, 1);
 

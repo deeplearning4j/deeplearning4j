@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(histogram, 1, 1, false, 0, 1) {
   output->nullify();
   helpers::histogramHelper(block.launchContext(), *input, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(histogram) {

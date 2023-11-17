@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::NormMax, *output, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_norm_max) {
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
 }
 
 DECLARE_TYPES(reduce_norm_max) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> dimensions = *block.getIArguments();
+  std::vector<LongType> dimensions = *block.getIArguments();
 
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -127,22 +127,22 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
   *gradI = 0.0;
 
   if (gradO->lengthOf() == 1) {
-    auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
-    const sd::LongType ind = indOfAbsMaxElem.t<sd::LongType>(0);
+    auto indOfAbsMaxElem = input->indexReduceNumber(indexreduce::IndexAbsoluteMax);
+    const LongType ind = indOfAbsMaxElem.t<LongType>(0);
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
     gradI->p(ind, sign * gradO->e(0));
 
   } else {
-    auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);
+    auto indicesArr = input->applyIndexReduce(indexreduce::IndexAbsoluteMax, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, indicesArr,
         *vec);  // 6 corresponds to copy operation
     delete vec;
-    *gradI *= input->transform(sd::transform::Sign);
+    *gradI *= input->transform(transform::Sign);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_norm_max_bp) {
@@ -163,14 +163,14 @@ DECLARE_SHAPE_FN(reduce_norm_max_bp) {
         "REDUCE_NORM_MAX_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
+  LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_norm_max_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

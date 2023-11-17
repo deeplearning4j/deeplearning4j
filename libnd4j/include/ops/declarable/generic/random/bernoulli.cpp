@@ -49,19 +49,19 @@ CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
 
   RandomLauncher::fillBernoulli(block.launchContext(), rng, z, f);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(random_bernoulli) {
   auto in = INPUT_VARIABLE(0);
-  auto shape = in->template asVectorT<sd::LongType>();
+  auto shape = in->template asVectorT<LongType>();
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
   return SHAPELIST(newShape);
 }
 
 DECLARE_TYPES(random_bernoulli) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

@@ -46,11 +46,11 @@ class SD_LIB_EXPORT DataBuffer {
   std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
 #if defined(__CUDABLAS__) || defined(HAVE_VEDA)
-  mutable std::atomic<sd::LongType> _counter;
-  mutable std::atomic<sd::LongType> _writePrimary;
-  mutable std::atomic<sd::LongType> _writeSpecial;
-  mutable std::atomic<sd::LongType> _readPrimary;
-  mutable std::atomic<sd::LongType> _readSpecial;
+  mutable std::atomic<LongType> _counter;
+  mutable std::atomic<LongType> _writePrimary;
+  mutable std::atomic<LongType> _writeSpecial;
+  mutable std::atomic<LongType> _readPrimary;
+  mutable std::atomic<LongType> _readSpecial;
 #endif
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -77,8 +77,8 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setSpecial(void *special, const bool isOwnerSpecial);
 
-  void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
-                          const sd::LongType offsetHostBuffer = 0);
+  void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const LongType offsetThis = 0,
+                          const LongType offsetHostBuffer = 0);
 
  public:
 
@@ -145,8 +145,8 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setToZeroBuffers(const bool both = false);
 
-  void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
-                      const sd::LongType offsetOther = 0);
+  void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const LongType offsetThis = 0,
+                      const LongType offsetOther = 0);
 
   static void memcpy(const DataBuffer &dst, const DataBuffer &src);
 

@@ -20,12 +20,13 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <exceptions/cuda_exception.h>
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/matrix_band.h>
 
-#include <execution/cuda/LaunchDims.h>
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -47,29 +48,29 @@ namespace helpers {
 // inputLength - input subarray length
 //
 template <typename T>
-static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const sd::LongType* inputShape, void* outputBuffer,
-                                       const sd::LongType* outputShape, sd::LongType lowerBand, sd::LongType upperBand,
-                                       const sd::LongType* tadOnlyInputShapeInfo, const sd::LongType* tadInputOffsets,
-                                       const sd::LongType* tadOnlyOutputShapeInfo, const sd::LongType* tadOutputOffsets,
-                                       sd::LongType numTads, sd::LongType inputLength) {
+static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const LongType* inputShape, void* outputBuffer,
+                                       const LongType* outputShape, LongType lowerBand, LongType upperBand,
+                                       const LongType* tadOnlyInputShapeInfo, const LongType* tadInputOffsets,
+                                       const LongType* tadOnlyOutputShapeInfo, const LongType* tadOutputOffsets,
+                                       LongType numTads, LongType inputLength) {
   int totalThreads = blockDim.x;
-  sd::LongType rows = shape::sizeAt(inputShape, -2);
-  sd::LongType cols = shape::sizeAt(inputShape, -1);
+  LongType rows = shape::sizeAt(inputShape, -2);
+  LongType cols = shape::sizeAt(inputShape, -1);
   auto resetBuffer = reinterpret_cast<T *>(outputBuffer);
   auto input = reinterpret_cast<T const *>(inputBuffer);
 
-  for (sd::LongType e = blockIdx.x; e < numTads; e += gridDim.x) {
+  for (LongType e = blockIdx.x; e < numTads; e += gridDim.x) {
     auto yOffset = tadInputOffsets[e];
     auto xOffset = tadOutputOffsets[e];
     if (outputBuffer != inputBuffer)  // if not inplace
       for(int i = 0; i < inputLength; i++) {
         resetBuffer[i] = input[i];
       }
-    for (sd::LongType i = blockIdx.y; i < rows; i += gridDim.y) {
-      for (sd::LongType j = threadIdx.x; j < cols; j += totalThreads) {
-        sd::LongType coords[2] = {i, j};
-        sd::LongType tadOffsetOut = shape::getOffset(tadOnlyOutputShapeInfo, coords);
-        sd::LongType tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
+    for (LongType i = blockIdx.y; i < rows; i += gridDim.y) {
+      for (LongType j = threadIdx.x; j < cols; j += totalThreads) {
+        LongType coords[2] = {i, j};
+        LongType tadOffsetOut = shape::getOffset(tadOnlyOutputShapeInfo, coords);
+        LongType tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
 
         // If not inplace, copy the input to the output
         *(resetBuffer + xOffset + tadOffsetOut) = *(input + yOffset + tadOffsetIn);
@@ -89,32 +90,32 @@ static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const sd::LongTy
 // matrixBandPart_ - main algorithm caller
 //
 template <typename T>
-void matrixBandPart_(sd::LaunchContext* context, NDArray* input, NDArray* output, sd::LongType lowerBand,
-                     sd::LongType upperBand) {
+void matrixBandPart_(LaunchContext* context, NDArray* input, NDArray* output, LongType lowerBand, LongType upperBand) {
   dim3 launchDims = getLaunchDims("matrixBand");
   auto stream = context->getCudaStream();
 
-  std::vector<sd::LongType> lastDims({input->rankOf() - 2, input->rankOf() - 1});
-  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims.size(),lastDims.data());
+  std::vector<LongType> lastDims({input->rankOf() - 2, input->rankOf() - 1});
+  std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims.size(),lastDims.data());
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &lastDims);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDims);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &lastDims);
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &lastDims);
 
-  const sd::LongType numTads = packX->numberOfTads();
+  const LongType numTads = packX->numberOfTads();
 
   NDArray::prepareSpecialUse({output}, {input});
   matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), lowerBand,
       upperBand, packX->specialShapeInfo(), packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets(),
       numTads, input->lengthOf());
+  sd::DebugHelper::checkErrorCode(stream, "matrixBandKernel failed");
+
   NDArray::registerSpecialUse({output}, {input});
 
   delete dimsToExclude;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void matrixBandPart(sd::LaunchContext* context, NDArray* input, NDArray* output, sd::LongType lowerBand,
-                    sd::LongType upperBand) {
+void matrixBandPart(LaunchContext* context, NDArray* input, NDArray* output, LongType lowerBand, LongType upperBand) {
   BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand),
                         SD_FLOAT_TYPES);
 }

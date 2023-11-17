@@ -188,7 +188,7 @@ TEST_F(NDArrayTest2, Test_AllReduce3_1) {
   auto x = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {2, 3, 4, 2, 3, 4});
   auto exp = NDArrayFactory::create<double>('c', {2, 2}, {1.73205, 1.73205, 1.73205, 1.73205});
-  std::vector<sd::LongType> ones = {1};
+  std::vector<LongType> ones = {1};
 
   auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
@@ -201,7 +201,7 @@ TEST_F(NDArrayTest2, Test_AllReduce3_2) {
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 2, 3, 4});
   auto exp = NDArrayFactory::create<double>('c', {2, 2}, {0., 1.73205, 1.73205, 0.});
 
-  std::vector<sd::LongType> ones = {1};
+  std::vector<LongType> ones = {1};
 
   auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, &ones);
 
@@ -616,16 +616,16 @@ TEST_F(NDArrayTest2, Test_toIndexedString_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, permute_test4) {
-  sd::LongType arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2, 48, 48, 12, 4, 2, 1, 8192, 1, 99};
-  sd::LongType arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3, 48, 2, 1, 48, 12, 4, 8192, 0, 99};
+  LongType arr1ShapeInfo[] = {6, 1, 1, 4, 3, 2, 2, 48, 48, 12, 4, 2, 1, 8192, 1, 99};
+  LongType arr2ShapeInfo[] = {6, 1, 2, 2, 1, 4, 3, 48, 2, 1, 48, 12, 4, 8192, 0, 99};
 
   auto arr1Buffer = new float[786432];
   auto arr2Buffer = new float[786432];
 
-  NDArray arr1(arr1Buffer, arr1ShapeInfo, sd::LaunchContext ::defaultContext());
-  NDArray arr2(arr2Buffer, arr2ShapeInfo, sd::LaunchContext ::defaultContext());
+  NDArray arr1(arr1Buffer, arr1ShapeInfo, LaunchContext ::defaultContext());
+  NDArray arr2(arr2Buffer, arr2ShapeInfo, LaunchContext ::defaultContext());
 
-  const std::vector<sd::LongType> perm = {0, 4, 5, 1, 2, 3};
+  const std::vector<LongType> perm = {0, 4, 5, 1, 2, 3};
   auto arr1P = arr1.permute(perm);
 
   // ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
@@ -722,7 +722,7 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
 TEST_F(NDArrayTest2, scalar_get_test1) {
   auto scalar1 = NDArrayFactory::create(20.f);
 
-  NDArray arr('c', {2, 2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
+  NDArray arr('c', {2, 2}, {0., 10., 20., 30.}, FLOAT32);
 
   NDArray scalar2 = arr.e(2);
 
@@ -735,7 +735,7 @@ TEST_F(NDArrayTest2, scalar_get_test1) {
 TEST_F(NDArrayTest2, scalar_get_test2) {
   auto scalar1 = NDArrayFactory::create(20.f);
 
-  NDArray arr('f', {2, 2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
+  NDArray arr('f', {2, 2}, {0., 10., 20., 30.}, FLOAT32);
 
   NDArray scalar2 = arr.e(1);
 
@@ -748,8 +748,8 @@ TEST_F(NDArrayTest2, scalar_get_test2) {
 TEST_F(NDArrayTest2, scalar_set_test1) {
   NDArray scalar1 = NDArrayFactory::create(20.f);
 
-  NDArray arr('c', {2, 2}, {0., 10., -20., 30.}, sd::DataType::FLOAT32);
-  NDArray exp('c', {2, 2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
+  NDArray arr('c', {2, 2}, {0., 10., -20., 30.}, FLOAT32);
+  NDArray exp('c', {2, 2}, {0., 10., 20., 30.}, FLOAT32);
 
   arr.p(2, scalar1);
 
@@ -760,8 +760,8 @@ TEST_F(NDArrayTest2, scalar_set_test1) {
 TEST_F(NDArrayTest2, scalar_set_test2) {
   NDArray scalar1 = NDArrayFactory::create(20.f);
 
-  NDArray arr('f', {2, 2}, {0., 10., -20., 30.}, sd::DataType::FLOAT32);
-  NDArray exp('f', {2, 2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
+  NDArray arr('f', {2, 2}, {0., 10., -20., 30.}, FLOAT32);
+  NDArray exp('f', {2, 2}, {0., 10., 20., 30.}, FLOAT32);
 
   arr.p(1, scalar1);
 
@@ -789,14 +789,14 @@ TEST_F(NDArrayTest2, debugInfoTest_1) {
                      51., 42.,  67., 24., 15.,   0.,  93., 28., 109.,  82., 12.,  113., 114., 14.,  116., 11.,
                      31., 22.,  87., 44., 55.,   46., 73., 28., 119.,  12., 112., 13.,  14.,  114., 16.,  117.,
                      91., 82.,  37., 64., -3,    0,   73., 28., 119.,  12., 112., 13.,  140., 110., 160., 107.},
-                    sd::DataType::DOUBLE);
-  NDArray res(sd::DataType::DOUBLE);
+                    DOUBLE);
+  NDArray res(DOUBLE);
   DebugInfo info = DebugHelper::debugStatistics(&testArray);
   DebugInfo exp;  // = {}
-  sd::ops::reduce_min minOp;
-  sd::ops::reduce_mean meanOp;
-  sd::ops::reduce_max maxOp;
-  sd::ops::reduce_stdev stdevOp;
+  ops::reduce_min minOp;
+  ops::reduce_mean meanOp;
+  ops::reduce_max maxOp;
+  ops::reduce_stdev stdevOp;
 
   minOp.execute({&testArray}, {&res}, {}, {}, {});
   exp._minValue = res.e<double>(0);
@@ -828,7 +828,7 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
                      51., 42.,  67., 24., 15.,   0.,  93., 28., 109.,  82., 12.,  113., 114., 14.,  116., 11.,
                      31., 22.,  87., 44., 55.,   46., 73., 28., 119.,  12., 112., 13.,  14.,  114., 16.,  117.,
                      91., 82.,  37., 64., -3,    0,   73., 28., 119.,  12., 112., 13.,  140., 110., 160., 107.},
-                    sd::DataType::DOUBLE);
+                    DOUBLE);
 
   DebugInfo info;
   DebugInfo exp;  // = {}
@@ -847,7 +847,7 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_1) {
-  NDArray x('c', {10, 5}, sd::DataType::FLOAT32);
+  NDArray x('c', {10, 5}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
   ASSERT_EQ(5, subArr1.ews());
@@ -855,7 +855,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_2) {
-  NDArray x('f', {10, 5}, sd::DataType::FLOAT32);
+  NDArray x('f', {10, 5}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
   ASSERT_EQ(1, subArr1.ews());
@@ -863,7 +863,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_3) {
-  NDArray x('c', {10, 5}, sd::DataType::FLOAT32);
+  NDArray x('c', {10, 5}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
   ASSERT_EQ(1, subArr1.ews());
@@ -871,7 +871,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_3) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_4) {
-  NDArray x('f', {10, 5}, sd::DataType::FLOAT32);
+  NDArray x('f', {10, 5}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
   ASSERT_EQ(10, subArr1.ews());
@@ -880,32 +880,32 @@ TEST_F(NDArrayTest2, test_subarray_ews_4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, subarray_1) {
   NDArray x('c', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24},
-            sd::DataType::FLOAT32);
+            FLOAT32);
   NDArray y('f', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24},
-            sd::DataType::FLOAT32);
+            FLOAT32);
 
-  sd::LongType shapeExpX0[] = {1, 2, 12, 8192, 12, 99};
+  LongType shapeExpX0[] = {1, 2, 12, 8192, 12, 99};
   float buffExpX0[] = {1.000000, 13.000000};
   float buffExpX1[] = {2.000000, 14.000000};
-  sd::LongType shapeExpX2[] = {3, 2, 1, 1, 12, 4, 1, 8192, 12, 99};
+  LongType shapeExpX2[] = {3, 2, 1, 1, 12, 4, 1, 8192, 12, 99};
   float buffExpX2[] = {1.000000, 13.000000};
-  sd::LongType shapeExpX3[] = {2, 2, 4, 12, 1, 8192, 0, 99};
+  LongType shapeExpX3[] = {2, 2, 4, 12, 1, 8192, 0, 99};
   float buffExpX3[] = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
-  sd::LongType shapeExpX4[] = {3, 2, 1, 4, 12, 4, 1, 8192, 0, 99};
+  LongType shapeExpX4[] = {3, 2, 1, 4, 12, 4, 1, 8192, 0, 99};
   float buffExpX4[] = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
-  sd::LongType shapeExpX5[] = {2, 2, 3, 12, 4, 8192, 4, 99};
+  LongType shapeExpX5[] = {2, 2, 3, 12, 4, 8192, 4, 99};
   float buffExpX5[] = {4.000000, 8.000000, 12.000000, 16.000000, 20.000000, 24.000000};
 
-  sd::LongType shapeExpY0[] = {1, 2, 1, 8192, 1, 102};
+  LongType shapeExpY0[] = {1, 2, 1, 8192, 1, 102};
   float buffExpY0[] = {1.000000, 2.000000};
   float buffExpY1[] = {7.000000, 8.000000};
-  sd::LongType shapeExpY2[] = {3, 2, 1, 1, 1, 2, 6, 8192, 1, 102};
+  LongType shapeExpY2[] = {3, 2, 1, 1, 1, 2, 6, 8192, 1, 102};
   float buffExpY2[] = {1.000000, 2.000000};
-  sd::LongType shapeExpY3[] = {2, 2, 4, 1, 6, 8192, 0, 102};
+  LongType shapeExpY3[] = {2, 2, 4, 1, 6, 8192, 0, 102};
   float buffExpY3[] = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
-  sd::LongType shapeExpY4[] = {3, 2, 1, 4, 1, 2, 6, 8192, 0, 102};
+  LongType shapeExpY4[] = {3, 2, 1, 4, 1, 2, 6, 8192, 0, 102};
   float buffExpY4[] = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
-  sd::LongType shapeExpY5[] = {2, 2, 3, 1, 2, 8192, 1, 102};
+  LongType shapeExpY5[] = {2, 2, 3, 1, 2, 8192, 1, 102};
   float buffExpY5[] = {19.000000, 21.000000, 23.000000, 20.000000, 22.000000, 24.000000};
 
   NDArray x0 = x(0, {1, 2});
@@ -959,7 +959,7 @@ TEST_F(NDArrayTest2, subarray_1) {
 }
 
 TEST_F(NDArrayTest2, test_subarray_interval_1) {
-  NDArray x('f', {10, 10}, sd::DataType::FLOAT32);
+  NDArray x('f', {10, 10}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0, 9)});
 
   ASSERT_EQ(10, subArr1.sizeAt(0));
@@ -967,7 +967,7 @@ TEST_F(NDArrayTest2, test_subarray_interval_1) {
 }
 
 TEST_F(NDArrayTest2, test_subarray_interval_2) {
-  NDArray x('c', {10, 10}, sd::DataType::FLOAT32);
+  NDArray x('c', {10, 10}, FLOAT32);
   auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0, 9)});
 
   ASSERT_EQ(10, subArr1.sizeAt(0));
@@ -975,8 +975,8 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
 }
 
 TEST_F(NDArrayTest2, test_subarray_3d_cf) {
-  NDArray f('f', {10, 20, 30}, sd::DataType::FLOAT32);
-  NDArray c('c', {10, 20, 30}, sd::DataType::FLOAT32);
+  NDArray f('f', {10, 20, 30}, FLOAT32);
+  NDArray c('c', {10, 20, 30}, FLOAT32);
 
   auto subarrayF = f({0, 0, 0, 0, 2, 3}, true);
 
@@ -1063,15 +1063,15 @@ TEST_F(NDArrayTest2, test_not_tiled_2) {
 }
 
 TEST_F(NDArrayTest2, test_long_sum_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2, 2}, {1, 2, 3, 4});
-  std::vector<sd::LongType> zero = {0};
+  auto x = NDArrayFactory::create<LongType>('c', {2, 2}, {1, 2, 3, 4});
+  std::vector<LongType> zero = {0};
   auto z = x.reduceAlongDimension(reduce::Sum, &zero);
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, reshapei_1) {
-  sd::LongType shapeInfo1[] = {6, 2, 1, 2, 1, 7, 1, 7, 7, 14, 28, 1, 1, 8192, 0, 99};
-  sd::LongType shapeInfo2[] = {2, 4, 7, 7, 1, 8192, 1, 99};
+  LongType shapeInfo1[] = {6, 2, 1, 2, 1, 7, 1, 7, 7, 14, 28, 1, 1, 8192, 0, 99};
+  LongType shapeInfo2[] = {2, 4, 7, 7, 1, 8192, 1, 99};
 
   auto buffer = new float[shape::length(shapeInfo1)];
   NDArray x(buffer, shapeInfo1);
@@ -1086,8 +1086,8 @@ TEST_F(NDArrayTest2, reshapei_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, reshapei_2) {
-  sd::LongType shapeInfo1[] = {6, 1, 2, 1, 2, 7, 1, 28, 7, 7, 14, 1, 1, 8192, 0, 99};
-  sd::LongType shapeInfo2[] = {2, 4, 7, 7, 1, 8192, 1, 99};
+  LongType shapeInfo1[] = {6, 1, 2, 1, 2, 7, 1, 28, 7, 7, 14, 1, 1, 8192, 0, 99};
+  LongType shapeInfo2[] = {2, 4, 7, 7, 1, 8192, 1, 99};
 
   auto buffer = new float[shape::length(shapeInfo1)];
   NDArray x(buffer, shapeInfo1);
@@ -1104,31 +1104,31 @@ TEST_F(NDArrayTest2, reshapei_2) {
 TEST_F(NDArrayTest2, trueBroadcast_1) {
   NDArray x('f', {2, 3}, {1., 2., 3., 4., 5., 6.});
   NDArray y('f', {1, 3}, {5., 4., 3.});
-  NDArray z('c', {2, 3}, sd::DataType::DOUBLE);
+  NDArray z('c', {2, 3}, DOUBLE);
 
   auto exp = x - y;
-  x.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), y, z);
+  x.applyTrueBroadcast(BroadcastOpsTuple::Subtract(), y, z);
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, reduce_1) {
-  NDArray arr6('f', {1, 1, 4, 4, 4, 4}, sd::DataType::DOUBLE);
-  NDArray exp('f', {1, 1, 4, 4}, sd::DataType::DOUBLE);
+  NDArray arr6('f', {1, 1, 4, 4, 4, 4}, DOUBLE);
+  NDArray exp('f', {1, 1, 4, 4}, DOUBLE);
 
   arr6.linspace(1);
 
-  std::vector<sd::LongType> dimensions = {2, 3};
+  std::vector<LongType> dimensions = {2, 3};
 
-  NDArray arr6s = arr6.reduceAlongDimension(sd::reduce::Sum, &dimensions);
+  NDArray arr6s = arr6.reduceAlongDimension(reduce::Sum, &dimensions);
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       double sum = 0;
       for (int x = 0; x < 4; x++) {
         for (int y = 0; y < 4; y++) {
-          sd::LongType indices[] = {0, 0, x, y, i, j};
-          sd::LongType offset = shape::getOffset(arr6.shapeInfo(), indices);
+          LongType indices[] = {0, 0, x, y, i, j};
+          LongType offset = shape::getOffset(arr6.shapeInfo(), indices);
           sum += ((double *)arr6.buffer())[offset];
         }
       }
@@ -1146,7 +1146,7 @@ TEST_F(NDArrayTest2, reduce3_1) {
   NDArray y('c', {1, 4}, {2, 3, 4, 5});
   NDArray exp('c', {4}, {1, 1, 1, 1});
 
-  NDArray z = x.applyReduce3(sd::reduce3::EuclideanDistance, y, {0}, nullptr);
+  NDArray z = x.applyReduce3(reduce3::EuclideanDistance, y, {0}, nullptr);
 
   ASSERT_EQ(exp,z);
 }
@@ -1177,8 +1177,8 @@ TEST_F(NDArrayTest2, test_trueBroadcast_empty_2) {
 }
 
 TEST_F(NDArrayTest2, test_subarray_followed_by_reshape_1) {
-  NDArray x('c', {5, 1, 3}, sd::DataType::FLOAT32);
-  NDArray e('c', {1, 3}, {7.f, 8.f, 9.f}, sd::DataType::FLOAT32);
+  NDArray x('c', {5, 1, 3}, FLOAT32);
+  NDArray e('c', {1, 3}, {7.f, 8.f, 9.f}, FLOAT32);
 
   x.linspace(1.);
 

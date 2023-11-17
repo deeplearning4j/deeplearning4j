@@ -33,11 +33,11 @@ CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
 
   output->assign(input);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(order) {
-  getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes({ALL_INTS});
 }
 
 DECLARE_SHAPE_FN(order) {

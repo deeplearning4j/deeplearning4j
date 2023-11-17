@@ -140,7 +140,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-  sd::ops::helpers::bgemm(vA,
+  helpers::bgemm(vA,
                           vB,
                           vC,
                           alphaInput,
@@ -157,7 +157,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
 
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_SHAPE_FN(batched_gemm) {
@@ -187,7 +187,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
     return shapeList;
   }
 
-  std::vector<sd::LongType> shape({M, N});
+  std::vector<LongType> shape({M, N});
 
   for (int e = 0; e < batchSize; e++) {
     auto newShape =
@@ -263,7 +263,7 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   int lda1 = dlDOut[0]->sizeAt(0);
   int ldb1 = matricesB[0]->sizeAt(0);
   int ldc1 = dldXOutputs[0]->sizeAt(0);
-  sd::ops::helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput, transA1, transB1, M1, N1, k1, lda1, ldb1, ldc1);
+  helpers::bgemm(dlDOut, matricesB, dldXOutputs, alphaInput, betaInput, transA1, transB1, M1, N1, k1, lda1, ldb1, ldc1);
 
   int transA2 = transA;
   int transB2 = 0;
@@ -273,7 +273,7 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   int lda2 = dlDOut[0]->sizeAt(0);
   int ldb2 = dlDOut[0]->sizeAt(0);
   int ldc2 = dlDOut[0]->sizeAt(0);
-  sd::ops::helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, transA2, transB2, M2, N2, k2, lda2, ldb2, ldc2);
+  helpers::bgemm(matricesA, dlDOut, dldYOutputs, alphaInput, betaInput, transA2, transB2, M2, N2, k2, lda2, ldb2, ldc2);
 
 
    if(alphaInput != alpha) {
@@ -285,14 +285,14 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   }
 
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 
 
 DECLARE_SHAPE_FN(batched_gemm_bp) {
-  sd::LongType *xShapeInfo;
-  sd::LongType *yShapeInfo;
+  LongType *xShapeInfo;
+  LongType *yShapeInfo;
   int batchSize = INT_ARG(8);
   COPY_SHAPE(inputShape->at(2), xShapeInfo);
   COPY_SHAPE(inputShape->at(2 + batchSize), yShapeInfo);

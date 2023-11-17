@@ -36,8 +36,8 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* output,
-                   const std::vector<sd::LongType>& dimensions) {
+static void ismax_(LaunchContext* context, const NDArray* input, NDArray* output,
+                   const std::vector<LongType>& dimensions) {
   auto stream = context->getCudaStream();
 
   auto xRank = input->rankOf();
@@ -45,14 +45,14 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
   auto xType = input->dataType();
   auto zType = output->dataType();
   input->syncToDevice();
-  sd::LongType* special = nullptr;
+  LongType* special = nullptr;
   PointersManager manager(context, "IsMaxHelper");
   if (dimensions.size() == 0) {
     /**
      * In case of vector-input for IsMax, it just turns into IndexReduce call + subsequent filler call
      */
     auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
-    auto targetIdx = indexMax.e<sd::LongType>(0);
+    auto targetIdx = indexMax.e<LongType>(0);
 
     dim3 launchDims = getLaunchDims("ismaxFill");
     BUILD_SINGLE_SELECTOR(
@@ -62,20 +62,20 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
     manager.synchronize();
 
   } else {
-    sd::LongType* hostYShapeInfo = nullptr;
-    sd::LongType* hostTShapeInfo = nullptr;
-    sd::LongType* dimension = nullptr;
+    LongType* hostYShapeInfo = nullptr;
+    LongType* hostTShapeInfo = nullptr;
+    LongType* dimension = nullptr;
 
-    sd::LongType dimensionLength = dimensions.size();
-    std::vector<sd::LongType> copy(dimensions);
+    LongType dimensionLength = dimensions.size();
+    std::vector<LongType> copy(dimensions);
 
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
 
     // we launch legacy IndexMax op, to get indices of max values along dimension
     auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, &dimensions);
 
     dim3 launchDims = getLaunchDims("ismax");
-    dimension = (sd::LongType*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType));
+    dimension = (LongType*)manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(LongType));
 
     // at this point, all IMax indexes are gathered, and we execute filler
     BUILD_SINGLE_SELECTOR(
@@ -87,7 +87,7 @@ static void ismax_(sd::LaunchContext* context, const NDArray* input, NDArray* ou
   }
 }
 
-void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<sd::LongType>& dimensions) {
+void ismax(LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({output}, {input});
 
   BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), SD_COMMON_TYPES);

@@ -30,6 +30,7 @@
 namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
+  fflush(stdout);
   auto x = INPUT_VARIABLE(0);
   auto xInput = x;
   auto y = block.width() < 2 ? x: INPUT_VARIABLE(1);
@@ -43,32 +44,29 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  NDArray *castedX;
-  if(x->dataType() == z->dataType()) {
-    castedX = xInput;
-  } else {
-    auto originalCastedX = xInput->cast(z->dataType());
-    castedX = new NDArray(xInput->cast(z->dataType()));
-  }
+  NDArray *castedX = x->dataType() == z->dataType() ? x : new NDArray(x->cast(z->dataType()));
+  NDArray *castedY = y->dataType() == z->dataType() ? y : new NDArray(y->cast(z->dataType()));
 
-  NDArray *castedY;
-  if(y->dataType() == z->dataType()) {
-    castedY = y;
-  } else {
-    auto originalCastedY = y->cast(z->dataType());
-    castedY = new NDArray(y->cast(z->dataType()));
-  }
 
   ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::extra(z->shapeInfo()));
 
-  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), castedX, castedY, z);
+  auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), castedX, castedY, z);
 
   if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  //note this is very finnicky. Keep this  as is. Depending on how the assign happens
+  //we can end up with deallocated buffers and downstream failures.
+  if(x->dataType() != z->dataType())
+    delete castedX;
+
+  if(y->dataType() != z->dataType())
+    delete castedY;
+
+  return Status::OK;
 }
 DECLARE_SYN(set, assign);
 DECLARE_SYN(copy, assign);
@@ -81,7 +79,7 @@ DECLARE_TYPES(assign) {
 }
 
 DECLARE_TYPES(assign_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_INTS,ALL_FLOATS,ALL_STRINGS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS,ALL_FLOATS,ALL_STRINGS});
 }
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
@@ -97,20 +95,20 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   if (x->isSameShape(y)) {
     gradY->assign(epsNext);
   } else if (y->isScalar()) {
-    auto sum = epsNext->reduceNumber(sd::reduce::Sum);
+    auto sum = epsNext->reduceNumber(reduce::Sum);
     gradY->assign(sum);
   } else {
     // broadcastable
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, &axisY);
+      auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(epsNext);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(assign_bp) {
@@ -121,8 +119,8 @@ DECLARE_SHAPE_FN(assign_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  sd::LongType *shapeE;
-  sd::LongType *shapeG;
+  LongType *shapeE;
+  LongType *shapeG;
 
   COPY_SHAPE(x, shapeE);
   COPY_SHAPE(y, shapeG);

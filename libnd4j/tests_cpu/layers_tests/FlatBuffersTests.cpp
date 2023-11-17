@@ -37,8 +37,8 @@ class FlatBuffersTest : public NDArrayTests {
  public:
   int alpha = 0;
 
-  sd::LongType *cShape = new sd::LongType[8]{2, 2, 2, 2, 1, 8192, 1, 99};
-  sd::LongType *fShape = new sd::LongType[8]{2, 2, 2, 1, 2, 8192, 1, 102};
+  LongType *cShape = new LongType[8]{2, 2, 2, 2, 1, 8192, 1, 99};
+  LongType *fShape = new LongType[8]{2, 2, 2, 1, 2, 8192, 1, 102};
 
   FlatBuffersTest() {
     Environment::getInstance().setDebug(false);

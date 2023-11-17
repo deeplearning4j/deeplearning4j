@@ -27,8 +27,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static SD_KERNEL void spaceToDepthKernel(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                         const sd::LongType *zShapeInfo, const int block_size, const bool isNHWC) {
+static SD_KERNEL void spaceToDepthKernel(const void *vx, const LongType *xShapeInfo, void *vz,
+                                         const LongType *zShapeInfo, const int block_size, const bool isNHWC) {
   auto input_ptr = reinterpret_cast<const T *>(vx);
   auto output_ptr = reinterpret_cast<T *>(vz);
 
@@ -95,15 +95,17 @@ static SD_KERNEL void spaceToDepthKernel(const void *vx, const sd::LongType *xSh
 }
 
 template <typename T>
-static void _spaceTodepth_(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+static void _spaceTodepth_(LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
                            bool isNHWC) {
   dim3 launchDims = getLaunchDims("space_to_depth");
   spaceToDepthKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                                        output->specialBuffer(),
                                                                        output->specialShapeInfo(), block_size, isNHWC);
+  sd::DebugHelper::checkErrorCode(context->getCudaStream(), "spaceToDepthKernel failed");
+
 }
 
-void _spaceTodepth(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _spaceTodepth(LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
   NDArray::prepareSpecialUse({output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (context, input, output, block_size, isNHWC),
                         SD_COMMON_TYPES);

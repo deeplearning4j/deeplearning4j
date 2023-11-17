@@ -911,7 +911,7 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
   auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if (xType != yType || xType != zType) {
+  if (xType != yType) {
     std::string errorMessage;
     errorMessage += "NativeOpExecutioner::execScalarBool requires both X & Y to have same data type";
     errorMessage += "X data type: ";

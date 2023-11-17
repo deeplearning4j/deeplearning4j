@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -33,11 +34,11 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vinMsg,
-                                   const sd::LongType* inMsgShapeInfo, const void* vinMsdx,
-                                   const sd::LongType* inMsdxShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                   void* vstMsg, const sd::LongType* stMsgShapeInfo, void* vstMsdx,
-                                   const sd::LongType* stMsdxShapeInfo, const T rho, const T epsilon) {
+SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, const void* vinMsg,
+                                   const LongType* inMsgShapeInfo, const void* vinMsdx,
+                                   const LongType* inMsdxShapeInfo, void* vz, const LongType* zShapeInfo,
+                                   void* vstMsg, const LongType* stMsgShapeInfo, void* vstMsdx,
+                                   const LongType* stMsdxShapeInfo, const T rho, const T epsilon) {
   const auto grad = reinterpret_cast<const T*>(vx);
   const auto initMsg = reinterpret_cast<const T*>(vinMsg);
   const auto initMsdx = reinterpret_cast<const T*>(vinMsdx);
@@ -46,7 +47,7 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInf
   auto stMsg = reinterpret_cast<T*>(vstMsg);
   auto stMsdx = reinterpret_cast<T*>(vstMsdx);
 
-  __shared__ sd::LongType xLen;
+  __shared__ LongType xLen;
   __shared__ T rhoT;
   __shared__ bool bEWS, bOrdering, bXZsame, bXInMsgSame, bXStMsgSame, bXInMsdxSame, bXStMsdxSame;
 
@@ -72,9 +73,9 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInf
   }
   __syncthreads();
 
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
-  for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
+  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     auto xOffset = i, zOffset = i, initMsgOffset = i, initMsdxOffset = i, stMsgOffset = i, stMsdxOffset = i;
 
     if (!bEWS || !bOrdering) {
@@ -89,8 +90,8 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInf
 
     stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;
 
-    up[zOffset] = grad[xOffset] * (sd::math::sd_sqrt<T, T>(initMsdx[initMsdxOffset] + epsilon) /
-                                   sd::math::sd_sqrt<T, T>(stMsg[stMsgOffset] + epsilon));
+    up[zOffset] = grad[xOffset] * (math::sd_sqrt<T, T>(initMsdx[initMsdxOffset] + epsilon) /
+                                   math::sd_sqrt<T, T>(stMsg[stMsgOffset] + epsilon));
 
     stMsdx[stMsdxOffset] = rho * initMsdx[initMsdxOffset] + up[zOffset] * up[zOffset] * rhoT;
   }
@@ -99,11 +100,11 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const sd::LongType* xShapeInf
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
-                                 const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                 const void* vinMsg, const sd::LongType* inMsgShapeInfo, const void* vinMsdx,
-                                 const sd::LongType* inMsdxShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                 void* vstMsg, const sd::LongType* stMsgShapeInfo, void* vstMsdx,
-                                 const sd::LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon) {
+                                 const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                 const void* vinMsg, const LongType* inMsgShapeInfo, const void* vinMsdx,
+                                 const LongType* inMsdxShapeInfo, void* vz, const LongType* zShapeInfo,
+                                 void* vstMsg, const LongType* stMsgShapeInfo, void* vstMsdx,
+                                 const LongType* stMsdxShapeInfo, const double dRho, const double dEpsilon) {
   const T rho = static_cast<T>(dRho);
   T epsilon = static_cast<T>(dEpsilon);
   //fp16 to prevent underflow
@@ -113,10 +114,12 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
   adaDeltaUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(
       vx, xShapeInfo, vinMsg, inMsgShapeInfo, vinMsdx, inMsdxShapeInfo, vz, zShapeInfo, vstMsg, stMsgShapeInfo, vstMsdx,
       stMsdxShapeInfo, rho, epsilon);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adaDeltaUpdaterCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaDelta(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateMsg,
+void updaterAdaDelta(LaunchContext* context, const NDArray& gradient, const NDArray& initStateMsg,
                      const NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
                      const double dRho, const double dEpsilon) {
   PointersManager manager(context, "adaDeltaUpdater");

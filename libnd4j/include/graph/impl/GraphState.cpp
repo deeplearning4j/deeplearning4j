@@ -24,7 +24,7 @@
 
 namespace sd {
 namespace graph {
-GraphState::GraphState(sd::LongType id) {
+GraphState::GraphState(LongType id) {
   _id = id;
   _graph = new Graph(nullptr, &_variableSpace);
 };
@@ -42,27 +42,27 @@ GraphState::~GraphState() {
   delete _graph;
 };
 
-sd::Status GraphState::registerScope(int scopeId) {
+Status GraphState::registerScope(int scopeId) {
   auto scope = new Scope(scopeId);
   _scopes[scopeId] = scope;
 
   auto scopeWrapper = new Node(OpType_LOGIC, 10, scopeId);
   _graph->addNode(scopeWrapper);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
-sd::Status GraphState::forgetScope(int scopeId) {
+Status GraphState::forgetScope(int scopeId) {
   if (_scopes.count(scopeId) > 0)
     _scopes.erase(scopeId);
   else
     return Logger::logKernelFailureMsg("Non-existent scope requested");
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 #ifndef __JAVACPP_HACK__
-sd::Status GraphState::attachOpToScope(int scopeId, int nodeId, ops::DeclarableOp* op, ArgumentsList inputs) {
+Status GraphState::attachOpToScope(int scopeId, int nodeId, ops::DeclarableOp* op, ArgumentsList inputs) {
   if (_scopes.count(scopeId) == 0) return Logger::logKernelFailureMsg("GraphState: can't attach op to unknown scope");
 
   auto scope = _scopes[scopeId];
@@ -91,7 +91,7 @@ sd::Status GraphState::attachOpToScope(int scopeId, int nodeId, ops::DeclarableO
 
   _graph->addNode(node);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 Graph* GraphState::graph() { return _graph; }
@@ -105,7 +105,7 @@ Scope* GraphState::getScope(int scopeId) {
   return _scopes[scopeId];
 }
 #endif
-sd::Status GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args) {
+Status GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args) {
   if (_scopes.count(scopeId) == 0) return Logger::logKernelFailureMsg("GraphState: can't attach op to unknown scope");
 
   auto scope = _scopes[scopeId];
@@ -135,18 +135,18 @@ sd::Status GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args)
 
   _graph->addNode(node);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 bool GraphState::hasScope(int scopeId) { return _scopes.count(scopeId) > 0; }
 
 VariableSpace* GraphState::variableSpace() { return &_variableSpace; };
 
-sd::LongType GraphState::id() { return _id; }
+LongType GraphState::id() { return _id; }
 
-sd::Status GraphState::attachOpToScope(int scopeId, sd::LongType opNum, int type, ArgumentsList inputs) {
+Status GraphState::attachOpToScope(int scopeId, LongType opNum, int type, ArgumentsList inputs) {
   // we should use OpRegistrator here, to create Node and push it to specific scope
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

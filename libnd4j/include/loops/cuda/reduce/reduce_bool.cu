@@ -235,7 +235,7 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
     // scalar assign
-    functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hZShapeInfo,
+    scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hZShapeInfo,
                                                                    z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolDim empty(...) failed");
   } else {
@@ -246,8 +246,8 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
     auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
 
     simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
-        reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+        x, outerPack->special(),
+        innerPack->special(), extraParams, vreductionBuffer, z, dZShapeInfo);
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolDim(...) failed");
   }
 }
@@ -304,7 +304,7 @@ SD_HOST void ReduceBoolFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_
                                                     void *vreductionBuffer, void *z, const sd::LongType *dZShapeInfo,
                                                     const sd::LongType *hZShapeInfo, const sd::LongType *dims) {
   if (shape::length(hZShapeInfo) == 1) {
-    ReduceBoolFunction<X, Y>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
+    execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
                                                dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_TT(intermediateXD,

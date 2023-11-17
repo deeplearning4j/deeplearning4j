@@ -45,7 +45,7 @@ NDArrayList::~NDArrayList() {
 
 NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup()); }
 
-sd::DataType NDArrayList::dataType() { return _dtype; }
+DataType NDArrayList::dataType() { return _dtype; }
 
 NDArray* NDArrayList::readRaw(int idx) {
   if (_chunks.count(idx) < 1) {
@@ -57,7 +57,7 @@ NDArray* NDArrayList::readRaw(int idx) {
 
 
 NDArray* NDArrayList::remove(int idx) {
-  if(!isWritten(idx)) {
+  if (!isWritten(idx)) {
     THROW_EXCEPTION("Bad index");
   }
 
@@ -67,8 +67,7 @@ NDArray* NDArrayList::remove(int idx) {
   return new NDArray(readRaw(idx)->dup());
 }
 
-
-sd::Status NDArrayList::write(int idx, NDArray* array) {
+Status NDArrayList::write(int idx, NDArray* array) {
   if (_chunks.count(idx) == 0)
     _elements++;
   else {
@@ -132,16 +131,16 @@ sd::Status NDArrayList::write(int idx, NDArray* array) {
   return Status::OK;
 }
 
-std::vector<sd::LongType>& NDArrayList::shape() { return _shape; }
+std::vector<LongType>& NDArrayList::shape() { return _shape; }
 
 int NDArrayList::counter() { return _counter++; }
 
 void NDArrayList::unstack(NDArray* array, LongType axis) {
   _axis = axis;
-  std::vector<sd::LongType> args({axis});
+  std::vector<LongType> args({axis});
   auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(),1, args.data());
   auto result = array->allTensorsAlongDimension(*newAxis);
-  for (sd::LongType e = 0; e < result.size(); e++) {
+  for (LongType e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
     write(e, new NDArray(chunk->dup(array->ordering())));
   }
@@ -178,15 +177,15 @@ NDArray* NDArrayList::stack() {
         if (numElements == 1) {
           array = new NDArray(inputs[0]->ordering(), {0}, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
         } else {
-          array = new NDArray('c', {(sd::LongType)numElements, 0}, ArrayOptions::dataType(inShapeInfo),
+          array = new NDArray('c', {(LongType)numElements, 0}, ArrayOptions::dataType(inShapeInfo),
                               inputs[0]->getContext());
         }
       }
     }
   } else {
 
-    std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-    outShape.insert(outShape.begin(), (sd::LongType)numElements);
+    std::vector<LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
+    outShape.insert(outShape.begin(), (LongType)numElements);
     array =
         new NDArray(shape::order(inShapeInfo), outShape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
   }
@@ -201,7 +200,7 @@ std::pair<int, int>& NDArrayList::id() { return _id; }
 
 std::string& NDArrayList::name() { return _name; }
 
-sd::LaunchContext* NDArrayList::context() { return _context; }
+LaunchContext* NDArrayList::context() { return _context; }
 
 int NDArrayList::elements() { return _elements.load(); }
 
@@ -222,13 +221,13 @@ NDArray* NDArrayList::pick(std::initializer_list<LongType> indices) {
 }
 
 NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
-  std::vector<sd::LongType> shape(_shape);
+  std::vector<LongType> shape(_shape);
 
   shape[_axis] = indices.size();
   // do we have to enforce C order here?
   auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
-  const sd::LongType *axis2 = const_cast<sd::LongType *>(&_axis);
-  std::vector<sd::LongType> *axis = ShapeUtils::evalDimsToExclude(shape.size(),1, axis2);
+  const LongType* axis2 = const_cast<LongType*>(&_axis);
+  std::vector<LongType> *axis = ShapeUtils::evalDimsToExclude(shape.size(),1, axis2);
   auto tads = array->allTensorsAlongDimension(*axis);
   int indicesSize = indices.size();
 

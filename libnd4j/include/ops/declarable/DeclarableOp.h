@@ -43,20 +43,20 @@ using namespace sd::graph;
 namespace sd {
 namespace ops {
 #ifndef  __JAVACPP_HACK__
-SD_LIB_EXPORT sd::ErrorResult conditionHelper(const char* file, int line, int condition, int argNumber, const char* format,
+SD_LIB_EXPORT ErrorResult conditionHelper(const char* file, int line, int condition, int argNumber, const char* format,
                                          ...);
 #endif
 template <typename T>
-sd::Status resultHelper(T status, const char* func, const char* file, int line) {
-  if (status != sd::Status::OK) {
+Status resultHelper(T status, const char* func, const char* file, int line) {
+  if (status != Status::OK) {
     //  TODO: fill out error codes here
     fprintf(stderr, "Validation error at %s:%d code=%d(%s) \"%s\" \n", file, line, static_cast<unsigned int>(status),
             "", func);
 
-    return sd::Status::BAD_INPUT;
+    return Status::BAD_INPUT;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
@@ -79,15 +79,15 @@ class SD_LIB_EXPORT DeclarableOp {
   /**
    * This method executes this Op, and defined for most of individual ops separately
    */
-  virtual sd::Status validateAndExecute(Context& block) = 0;
+  virtual Status validateAndExecute(sd::graph::Context& block) = 0;
 
   /**
    * This method ensures that target variable has enough space for op execution
    *
    * TODO: we want workspaces support right here
    */
-  bool allocateResult(Context& block, std::initializer_list<sd::LongType>& shape, char order = 'c');
-  bool allocateResult(Context& block, sd::LongType* shape);
+  bool allocateResult(sd::graph::Context& block, std::initializer_list<LongType>& shape, char order = 'c');
+  bool allocateResult(sd::graph::Context& block, LongType* shape);
 
   /**
    * This method overwrites existing NDArray or NDArrayList in VariableSpace
@@ -98,22 +98,22 @@ class SD_LIB_EXPORT DeclarableOp {
    * @param numOutput
    * @param array
    */
-  void overwriteResult(Context& block, int outputIdx, NDArray* array);
-  void overwriteResult(Context& block, int outputIdx, NDArrayList* list);
+  void overwriteResult(sd::graph::Context& block, int outputIdx, NDArray* array);
+  void overwriteResult(sd::graph::Context& block, int outputIdx, NDArrayList* list);
 
   /*
    * This method attaches array to specific Variable, identified by node ID and outputNumber (which is output index for
    * multi-output operations)
    */
-  void storeResult(Context& block, int outputNumber, NDArray& array);
-  void storeResult(Context& block, int outputNumber, NDArray* array);
-  sd::NDArray* getZ(Context& block, int inputId = 0);
-  sd::NDArray* getNullifiedZ(Context& block, int inputId = 0);
+  void storeResult(sd::graph::Context& block, int outputNumber, NDArray& array);
+  void storeResult(sd::graph::Context& block, int outputNumber, NDArray* array);
+  NDArray* getZ(sd::graph::Context& block, int inputId = 0);
+  NDArray* getNullifiedZ(sd::graph::Context& block, int inputId = 0);
 
   /**
    *   This method pre-allocates NDArrays for Op output, in case they are not available at op execution time
    */
-  int prepareOutputs(Context& block);
+  int prepareOutputs(sd::graph::Context& block);
 
   virtual samediff::EmptyHandling emptyHandling();
 
@@ -136,13 +136,13 @@ class SD_LIB_EXPORT DeclarableOp {
   // this method returns OpDescriptor, describing this Op instance
   OpDescriptor* getOpDescriptor();
 
-  virtual sd::Status validateDataTypes(Context& block);
+  virtual Status validateDataTypes(sd::graph::Context& block);
 
   /**
    *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input
    * shape(s)
    */
-  virtual ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) = 0;
+  virtual ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) = 0;
 
   /**
    * Returns opName
@@ -154,7 +154,7 @@ class SD_LIB_EXPORT DeclarableOp {
   /**
    * Returns opHash
    */
-  sd::LongType getOpHash();
+  LongType getOpHash();
 
 
 
@@ -164,62 +164,61 @@ class SD_LIB_EXPORT DeclarableOp {
    * @param block
    * @return 0 if OK, error code otherwise
    */
-  virtual sd::Status execute(Context* block);
+  virtual Status execute(Context* block);
 
-  sd::Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs);
-
-  template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
-  sd::Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs,
-                     std::initializer_list<T> tArgs);
-
-  sd::Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs,
-                     const std::vector<double>& tArgs, const std::vector<sd::LongType>& iArgs,
-                     const std::vector<bool>& bArgs = std::vector<bool>(),
-                     const std::vector<sd::DataType>& dArgs = std::vector<sd::DataType>(), bool isInplace = false);
-
-  sd::ResultSet evaluate(const std::vector<NDArray*>& inputs);
+  Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs);
 
   template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
-  sd::ResultSet evaluate(const std::vector<NDArray*>& inputs, std::initializer_list<T> args);
+  Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs,
+                 std::initializer_list<T> tArgs);
 
-  sd::ResultSet evaluate(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs,
-                         const std::vector<sd::LongType>& iArgs, const std::vector<bool>& bArgs = std::vector<bool>(),
-                         const std::vector<sd::DataType>& dArgs = std::vector<sd::DataType>(), bool isInplace = false);
+  Status execute(const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs,
+                 const std::vector<double>& tArgs, const std::vector<LongType>& iArgs,
+                 const std::vector<bool>& bArgs = std::vector<bool>(),
+                 const std::vector<DataType>& dArgs = std::vector<DataType>(), bool isInplace = false);
 
-  sd::Status execute(sd::graph::RandomGenerator& rng, const std::vector<NDArray*>& inputs,
-                     const std::vector<NDArray*>& outputs, const std::vector<double>& tArgs,
-                     const std::vector<sd::LongType>& iArgs, const std::vector<bool>& bArgs,
-                     const std::vector<sd::DataType>& dArgs = std::vector<sd::DataType>(), bool isInplace = false,
-                     sd::DataType type = sd::DataType::FLOAT32);
+  ResultSet evaluate(const std::vector<NDArray*>& inputs);
 
-  sd::ResultSet execute(const sd::OpArgsHolder& holder, bool isInplace = false);
+  template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
+  ResultSet evaluate(const std::vector<NDArray*>& inputs, std::initializer_list<T> args);
+
+  ResultSet evaluate(const std::vector<NDArray*>& inputs, const std::vector<double>& tArgs,
+                     const std::vector<LongType>& iArgs, const std::vector<bool>& bArgs = std::vector<bool>(),
+                     const std::vector<DataType>& dArgs = std::vector<DataType>(), bool isInplace = false);
+
+  Status execute(RandomGenerator& rng, const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs,
+                 const std::vector<double>& tArgs, const std::vector<LongType>& iArgs, const std::vector<bool>& bArgs,
+                 const std::vector<DataType>& dArgs = std::vector<DataType>(), bool isInplace = false,
+                 DataType type = FLOAT32);
+
+  ResultSet execute(const OpArgsHolder& holder, bool isInplace = false);
 
   // There methods provide various validation options
-  sd::Status validateNonEmptyInput(Context& block);
+  Status validateNonEmptyInput(Context& block);
 
   // this method checks if all input arrays have equal lengths
-  sd::Status validateInputLengthMatch(Context& block);
+  Status validateInputLengthMatch(Context& block);
 
   // this method checks if all input arrays have the same shapes (orders/strides are NOT checked)
-  sd::Status validateInputDimensionsMatch(Context& block);
+  Status validateInputDimensionsMatch(Context& block);
 
   // this method check if all input arrays have the same orders
-  sd::Status validateOrdersMatch(Context& block);
+  Status validateOrdersMatch(Context& block);
 
   // this method checks if all input arrays are 2D
-  sd::Status validateInput2D(Context& block);
+  Status validateInput2D(Context& block);
 
   // this method checks if all input arrays are 3D
-  sd::Status validateInput3D(Context& block);
+  Status validateInput3D(Context& block);
 
   // this method checks if all input arrays are 4D
-  sd::Status validateInput4D(Context& block);
+  Status validateInput4D(Context& block);
 
   // this method checks if all input arrays are ND
-  sd::Status validateInputDimensions(Context& block, int rank);
+  Status validateInputDimensions(Context& block, int rank);
 
   // this method checks if number of available arguments matches op expectations
-  sd::Status validateArguments(Context& block);
+  Status validateArguments(Context& block);
   void overwriteResult(Context& block, int outputIdx, NDArray* array, bool remove);
   void traceExecIfNeeded(Context& block);
 };

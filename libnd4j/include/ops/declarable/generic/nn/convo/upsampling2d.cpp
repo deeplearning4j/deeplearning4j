@@ -45,12 +45,12 @@ CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
 
   ConvolutionUtils::upsampling2d(block, *input, *output, factorH, factorW, (bool)isNCHW);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(upsampling, upsampling2d);
 
 DECLARE_TYPES(upsampling2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(upsampling2d) {
@@ -63,7 +63,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
   const LongType factorW = INT_ARG(1);
   const int isNCHW = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;  // INT_ARG(2): 0-NCHW,  1-NHWC
 
-  sd::LongType *outputShapeInfo = nullptr;
+  LongType *outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo[0]), sd::LongType);
 
   outputShapeInfo[0] = inputShapeInfo[0];
@@ -85,7 +85,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
 }
 
 DECLARE_TYPES(upsampling2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(upsampling2d_bp, 2, 1, false, 0, 0) {
 
   ConvolutionUtils::upsampling2dBP(block, *gradO, *gradI, (bool)isNCHW);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(upsampling_bp, upsampling2d_bp);
 

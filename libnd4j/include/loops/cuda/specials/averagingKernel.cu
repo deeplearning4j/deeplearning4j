@@ -26,7 +26,7 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void averagingKernel(void **vdx, void *vdz, int n, sd::LongType length, bool propagate) {
+SD_DEVICE void averagingKernel(void **vdx, void *vdz, int n, LongType length, bool propagate) {
   auto dx = reinterpret_cast<T **>(vdx);
   auto dz = reinterpret_cast<T *>(vdz);
 
@@ -42,7 +42,7 @@ SD_DEVICE void averagingKernel(void **vdx, void *vdz, int n, sd::LongType length
   for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
     shmem[threadIdx.x] = (T)0.0f;
 
-    sd::LongType baseIdx = r;
+    LongType baseIdx = r;
 
     // aggregation step, we roll over all arrays
     for (int ar = 0; ar < n; ar++) {
@@ -77,16 +77,16 @@ SD_DEVICE void averagingKernel(void **vdx, void *vdz, int n, sd::LongType length
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execAveragingKernel(void **vdx, void *vdz, int n, sd::LongType length, bool propagate) {
+SD_KERNEL void execAveragingKernel(void **vdx, void *vdz, int n, LongType length, bool propagate) {
   averagingKernel<T>(vdx, vdz, n, length, propagate);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n,
-                                    sd::LongType length, bool propagate) {
+                                    LongType length, bool propagate) {
   execAveragingKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, vdz, n, length, propagate);
-  sd::DebugHelper::checkErrorCode(stream, "averaging(...) failed");
+  DebugHelper::checkErrorCode(stream, "averaging(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void averagingKernelGeneric,

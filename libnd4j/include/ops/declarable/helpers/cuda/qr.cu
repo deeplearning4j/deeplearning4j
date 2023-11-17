@@ -24,19 +24,20 @@
 #include <ops/declarable/helpers/qr.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void matrixMinorKernel(T* outBuffer, sd::LongType* outShape, T* inBuffer, sd::LongType* inShape,
-                                        sd::LongType column, sd::LongType rows, sd::LongType columns) {
+static SD_KERNEL void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inBuffer, LongType* inShape,
+                                        LongType column, LongType rows, LongType columns) {
 
 
   for (auto i = blockIdx.x; i < rows; i += gridDim.x)
     for (auto j = threadIdx.x; j < columns; j += blockDim.x) {
-      sd::LongType pos[] = {i, j};
+      LongType pos[] = {i, j};
       auto zIndex = shape::getOffset(outShape, pos);
       auto xIndex = shape::getOffset(inShape, pos);
       if (i < column || j < column) {
@@ -47,7 +48,7 @@ static SD_KERNEL void matrixMinorKernel(T* outBuffer, sd::LongType* outShape, T*
 }
 
 template <typename T>
-NDArray matrixMinor(LaunchContext* context, NDArray& in, sd::LongType col) {
+NDArray matrixMinor(LaunchContext* context, NDArray& in, LongType col) {
   NDArray m = in.ulike();
   m.setIdentity();
   m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
@@ -58,11 +59,11 @@ NDArray matrixMinor(LaunchContext* context, NDArray& in, sd::LongType col) {
 
 /* m = I - v v^T */
 template <typename T>
-static SD_KERNEL void vmulKernel(T* resBuf, const sd::LongType* resShape, T const* vBuff, sd::LongType const* vShape,
-                                 sd::LongType n) {
+static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* vBuff, LongType const* vShape,
+                                 LongType n) {
   for (auto i = blockIdx.x; i < n; i += gridDim.x)
     for (auto j = threadIdx.x; j < n; j += blockDim.x) {
-      sd::LongType posR[] = {i, j};
+      LongType posR[] = {i, j};
       auto indexR = shape::getOffset(resShape, posR);
       auto indexX = shape::getIndexOffset(i, vShape);
       auto indexY = shape::getIndexOffset(j, vShape);
@@ -79,13 +80,15 @@ NDArray vmul(LaunchContext* context, NDArray const& v, int n) {
   dim3 launchDims = getLaunchDims("qr");
   vmulKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
                                             reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
+  sd::DebugHelper::checkErrorCode(stream, "vmulKernel failed");
+
   return res;
 }
 
 template <typename T>
-static bool diagonalIsPositive(NDArray* matrix, sd::LongType k) {
+static bool diagonalIsPositive(NDArray* matrix, LongType k) {
   T hVal;
-  sd::LongType pos[] = {k, k};
+  LongType pos[] = {k, k};
   auto shift = shape::getOffset(matrix->shapeInfo(), pos);
   cudaMemcpy(&hVal, matrix->specialBuffer(), sizeof(T), cudaMemcpyDeviceToHost);
   return hVal > T(0.f);
@@ -93,8 +96,8 @@ static bool diagonalIsPositive(NDArray* matrix, sd::LongType k) {
 
 template <typename T>
 void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
-  sd::LongType M = matrix->sizeAt(0);
-  sd::LongType N = matrix->sizeAt(1);
+  LongType M = matrix->sizeAt(0);
+  LongType N = matrix->sizeAt(1);
   auto resQ = fullMatrices ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
   auto resR = fullMatrices ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
@@ -106,7 +109,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
                        k);  // minor computing for current column with given matrix z (initally is a input matrix)
 
     auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    std::vector<sd::LongType> zero = {0};
+    std::vector<LongType> zero = {0};
     auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, &zero);
     if (diagonalIsPositive<T>(matrix, k))  // matrix->t<T>(k,k) > T(0.f)) // negate on positive matrix diagonal element
       norm.applyTransform(transform::Neg, norm);  // *= -1.f;//-norm.t<T>(0);
@@ -142,8 +145,8 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 
 template <typename T>
 void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
-  sd::LongType lastDim = input->rankOf() - 1;
-  sd::LongType preLastDim = input->rankOf() - 2;
+  LongType lastDim = input->rankOf() - 1;
+  LongType preLastDim = input->rankOf() - 2;
 
   NDArray::prepareSpecialUse({outputQ, outputR}, {input});
   ResultSet listOutQ(outputQ->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
@@ -160,7 +163,7 @@ void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray
   NDArray::registerSpecialUse({outputQ, outputR}, {input});
 }
 
-void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR,
+void qr(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR,
         bool const fullMatricies) {
   BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (context, input, outputQ, outputR, fullMatricies), SD_FLOAT_TYPES);
 }

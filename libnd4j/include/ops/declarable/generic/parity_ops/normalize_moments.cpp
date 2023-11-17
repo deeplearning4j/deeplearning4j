@@ -55,14 +55,14 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
     resMeans->applyScalarArr(scalar::Add, shift, *resMeans);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(normalize_moments) {
   auto in = inputShape->at(1);
 
-  sd::LongType* meanShape = nullptr;
-  sd::LongType* varianceShape = nullptr;
+  LongType* meanShape = nullptr;
+  LongType* varianceShape = nullptr;
 
   COPY_SHAPE_EX(in, meanShape, block.getWorkspace());
   COPY_SHAPE_EX(in, varianceShape, block.getWorkspace());
@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(normalize_moments) {
 }
 
 DECLARE_TYPES(normalize_moments) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 

@@ -122,7 +122,6 @@ static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDA
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////

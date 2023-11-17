@@ -32,7 +32,7 @@ namespace graph {
 class SD_LIB_EXPORT FrameState {
  private:
   std::string _name;
-  sd::LongType _id = 0;
+  LongType _id = 0;
   int _numberOfCycles = 0;
   bool _activated = false;
 
@@ -40,7 +40,7 @@ class SD_LIB_EXPORT FrameState {
   int _rewindPosition = -1;
 
  public:
-  FrameState(sd::LongType id = 0);
+  FrameState(LongType id = 0);
   ~FrameState() = default;
 
   /**

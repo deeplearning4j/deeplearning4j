@@ -46,7 +46,7 @@ static SD_INLINE NDArray sigmoid(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
              NDArray* h, NDArray* c) {
   // x   input [bS x inSize], bS - batch size, inSize - number of features
   // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -77,7 +77,7 @@ void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
                  NDArray* h, NDArray* c) {
   // x   input [bS x inSize x time]
   // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -99,18 +99,19 @@ void sruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* c0
     auto ht = (*h)({0, 0, 0, 0, t, t + 1});
     auto ct = (*c)({0, 0, 0, 0, t, t + 1});
 
-    helpers::sruCell(context, &xt, &ct_1, &wT, b, &ht, &ct);
+    sruCell(context, &xt, &ct_1, &wT, b, &ht, &ct);
     ct_1.assign(ct);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, const void* vwi,
-                                const sd::LongType* wiShapeInfo, const void* vb, const sd::LongType* bShapeInfo,
-                                const void* vc0, const sd::LongType* c0ShapeInfo, const void* vmask,
-                                const sd::LongType* maskShapeInfo, void* vht, const sd::LongType* htShapeInfo,
-                                void* vct, const sd::LongType* ctShapeInfo) {
+SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+                                const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
+                                const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
+                                const LongType* maskShapeInfo, void* vht, const LongType* htShapeInfo,
+                                void* vct,
+                                const LongType* ctShapeInfo) {
   // inputs:
   // x     [time, bS, 2*K]
   // wi    [time, bS, 6*K], wi = mmul(x, weights);
@@ -130,14 +131,14 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto ht = reinterpret_cast<T*>(vht);
   auto ct = reinterpret_cast<T*>(vct);
 
-  const sd::LongType rank = 3;
+  const LongType rank = 3;
 
-  __shared__ sd::LongType time, K, *sharedMem;
-  __shared__ sd::LongType len, totalThreads;
+  __shared__ LongType time, K, *sharedMem;
+  __shared__ LongType len, totalThreads;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     time = xShapeInfo[1];
     K = xShapeInfo[3] / 2;
@@ -147,8 +148,8 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   }
   __syncthreads();
 
-  const sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
-  sd::LongType *coords = sharedMem + threadIdx.x * rank;
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType *coords = sharedMem + threadIdx.x * rank;
 
   if (tid >= len) return;
 
@@ -181,14 +182,14 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
   // time loop
-  for (sd::LongType t = 0; t < time; ++t) {
+  for (LongType t = 0; t < time; ++t) {
     // evaluate sigmoids
-    T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
-    T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
+    T ft = (1.f) / (1.f + math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
+    T rt = (1.f) / (1.f + math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
 
     c0Val = (c0Val - wi[wiOffset0]) * ft + wi[wiOffset0];
     ct[ctOffset] = c0Val;
-    T val = sd::math::sd_tanh<T, T>(c0Val);
+    T val = math::sd_tanh<T, T>(c0Val);
     T xVal = x[xOffset];
     ht[htOffset] = (val * maskVal - xVal) * rt + xVal;
 
@@ -213,21 +214,24 @@ SD_KERNEL static void sruBICuda(const void* vx, const sd::LongType* xShapeInfo, 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                              const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                              const void* vwi, const sd::LongType* wiShapeInfo, const void* vb,
-                              const sd::LongType* bShapeInfo, const void* vc0, const sd::LongType* c0ShapeInfo,
-                              const void* vmask, const sd::LongType* maskShapeInfo, void* vht,
-                              const sd::LongType* htShapeInfo, void* vct, const sd::LongType* ctShapeInfo) {
+                              const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                              const void* vwi,
+                              const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo, const void* vc0,
+                              const LongType* c0ShapeInfo,
+                              const void* vmask, const LongType* maskShapeInfo, void* vht,
+                              const LongType* htShapeInfo, void* vct, const LongType* ctShapeInfo) {
   sruBICuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo,
                                                                        vc0, c0ShapeInfo, vmask, maskShapeInfo, vht,
                                                                        htShapeInfo, vct, ctShapeInfo);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "sruBICuda failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
+void sruBI(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
            const NDArray* mask, NDArray* ht, NDArray* ct) {
   //  x = x * mask
-  std::vector<sd::LongType> dims = {1,2};
+  std::vector<LongType> dims = {1,2};
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
 
   // U = x * w
@@ -251,15 +255,14 @@ void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vwi,
-                                  const sd::LongType* wiShapeInfo, const void* vb, const sd::LongType* bShapeInfo,
-                                  const void* vc0, const sd::LongType* c0ShapeInfo, const void* vmask,
-                                  const sd::LongType* maskShapeInfo, const void* vct, const sd::LongType* ctShapeInfo,
-                                  const void* vgradHt, const sd::LongType* gradHtShapeInfo, const void* vgradCt,
-                                  const sd::LongType* gradCtShapeInfo, void* vgradI, const sd::LongType* gradIShapeInfo,
-                                  void* vgradWi, const sd::LongType* gradWiShapeInfo, void* vgradB,
-                                  const sd::LongType* gradBShapeInfo, void* vgradC0,
-                                  const sd::LongType* gradC0ShapeInfo) {
+SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, const void* vwi,
+                                  const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
+                                  const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
+                                  const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo,
+                                  const void* vgradHt, const LongType* gradHtShapeInfo, const void* vgradCt,
+                                  const LongType* gradCtShapeInfo, void* vgradI, const LongType* gradIShapeInfo,
+                                  void* vgradWi, const LongType* gradWiShapeInfo, void* vgradB,
+                                  const LongType* gradBShapeInfo, void* vgradC0, const LongType* gradC0ShapeInfo) {
   // inputs:
   // x      [time, bS, 2*K]
   // wi     [time, bS, 6*K], wi = mmul(x, weights);
@@ -292,12 +295,12 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
 
   const int rank = 3;
 
-  __shared__ sd::LongType time, K, *sharedMem;
-  __shared__ sd::LongType len, totalThreads;
+  __shared__ LongType time, K, *sharedMem;
+  __shared__ LongType len, totalThreads;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     time = xShapeInfo[1];
     K = xShapeInfo[3] / 2;
@@ -308,7 +311,7 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
 
   __syncthreads();
 
-  const sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto coords = sharedMem + threadIdx.x * rank;
 
   if (tid >= len) return;
@@ -354,12 +357,12 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
   T gbR = 0.f;
 
   // time loop
-  for (sd::LongType t = 0; t < time; ++t) {
+  for (LongType t = 0; t < time; ++t) {
     // evaluate sigmoids
-    T ft = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
-    T rt = (1.f) / (1.f + sd::math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
+    T ft = (1.f) / (1.f + math::sd_exp<T, T>(-(wi[wiOffset1] + bF)));
+    T rt = (1.f) / (1.f + math::sd_exp<T, T>(-(wi[wiOffset2] + bR)));
 
-    T val = sd::math::sd_tanh<T, T>(ct[ctOffset]);
+    T val = math::sd_tanh<T, T>(ct[ctOffset]);
 
     T prevVal;
     if (t < time - 1)
@@ -420,17 +423,17 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const sd::LongType* xShapeInfo
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void sruBIBPCudaLauncher(
-    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void* vx,
-    const sd::LongType* xShapeInfo, const void* vwi, const sd::LongType* wiShapeInfo, const void* vb,
-    const sd::LongType* bShapeInfo, const void* vc0, const sd::LongType* c0ShapeInfo, const void* vmask,
-    const sd::LongType* maskShapeInfo, const void* vct, const sd::LongType* ctShapeInfo, const void* vgradHt,
-    const sd::LongType* gradHtShapeInfo, const void* vgradCt, const sd::LongType* gradCtShapeInfo, void* vgradI,
-    const sd::LongType* gradIShapeInfo, void* vgradWi, const sd::LongType* gradWiShapeInfo, void* vgradB,
-    const sd::LongType* gradBShapeInfo, void* vgradC0, const sd::LongType* gradC0ShapeInfo) {
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vwi,
+                                const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo, const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
+                                const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo, const void* vgradHt, const LongType* gradHtShapeInfo, const void* vgradCt,
+                                const LongType* gradCtShapeInfo, void* vgradI, const LongType* gradIShapeInfo, void* vgradWi, const LongType* gradWiShapeInfo, void* vgradB,
+                                const LongType* gradBShapeInfo, void* vgradC0, const LongType* gradC0ShapeInfo) {
   sruBIBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(
       vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo, vc0, c0ShapeInfo, vmask, maskShapeInfo, vct, ctShapeInfo,
       vgradHt, gradHtShapeInfo, vgradCt, gradCtShapeInfo, vgradI, gradIShapeInfo, vgradWi, gradWiShapeInfo, vgradB,
       gradBShapeInfo, vgradC0, gradC0ShapeInfo);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "sruBIBPCuda failed");
+
 }
 BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -445,11 +448,11 @@ BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher,
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
+void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
              const NDArray* ct, const NDArray* gradCt, const NDArray* gradHt, const NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   //  x = x * mask
-  std::vector<sd::LongType> dims = {1, 2};
+  std::vector<LongType> dims = {1, 2};
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
 
   // U = x * w
@@ -467,7 +470,7 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) /
                             threadsPerBlock;  // loop through last two dimensions of x array -> bS, 2*K
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * x->rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(LongType) * x->rankOf() + 128;
   dim3 sruBiBpDims = sruBiDims(x->sizeAt(1) + x->sizeAt(2),x->rankOf());
   NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
   BUILD_SINGLE_SELECTOR(
@@ -485,7 +488,7 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
   manager.synchronize();
 
 
-  std::vector<sd::LongType> dims2 = {0};
+  std::vector<LongType> dims2 = {0};
   // gradB
   gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims2);  // [4*K]
 

@@ -28,8 +28,8 @@
 namespace sd {
 class EnumUtils {
  public:
-  static const char* _VariableTypeToString(sd::graph::VariableType variableType);
-  static const char* _OpTypeToString(sd::graph::OpType opType);
+  static const char* _VariableTypeToString(graph::VariableType variableType);
+  static const char* _OpTypeToString(graph::OpType opType);
   static const char* _LogicOpToString(int opNum);
 };
 }  // namespace sd

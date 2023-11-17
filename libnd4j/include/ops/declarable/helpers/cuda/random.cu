@@ -32,6 +32,7 @@
 #include <vector>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -45,7 +46,7 @@ namespace helpers {
  * @return gamma distributed value
  */
 template <typename T>
-T SD_DEVICE gammaLess(T const* U, sd::LongType index, sd::LongType maxLength, T const alpha, T const beta) {
+T SD_DEVICE gammaLess(T const* U, LongType index, LongType maxLength, T const alpha, T const beta) {
   auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
   auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
   auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
@@ -89,12 +90,12 @@ T SD_DEVICE gammaLess(T const* U, sd::LongType index, sd::LongType maxLength, T 
  * @return - gamma distributed value with given params
  */
 template <typename T>
-T SD_DEVICE gammaGreat(T const* U, sd::LongType index, sd::LongType maxLength, T const alpha, T const beta) {
+T SD_DEVICE gammaGreat(T const* U, LongType index, LongType maxLength, T const alpha, T const beta) {
   auto decreasedAlpha = alpha - T(1.f / 3.f);
   auto c = T(1.) / math::p_sqrt(T(9.f) * decreasedAlpha);
   auto indexV = index;
   T x;
-  auto normalDistributed = [U, maxLength](sd::LongType& index) {
+  auto normalDistributed = [U, maxLength](LongType& index) {
     auto v1 = index < maxLength ? U[index++] : U[0];
     if (index >= maxLength) index = 0LL;
     auto v2 = index < maxLength ? U[index++] : U[0];
@@ -128,12 +129,12 @@ T SD_DEVICE gammaGreat(T const* U, sd::LongType index, sd::LongType maxLength, T
  *  output - distributed output.
  * */
 template <typename T>
-static SD_KERNEL void fillGammaKernel(T const* uList, sd::LongType uLength, T const* alpha,
-                                      const sd::LongType* alphaShape, T const* beta, const sd::LongType* betaShape,
-                                      T* output, const sd::LongType* outputShape) {
+static SD_KERNEL void fillGammaKernel(T const* uList, LongType uLength, T const* alpha,
+                                      const LongType* alphaShape, T const* beta, const LongType* betaShape,
+                                      T* output, const LongType* outputShape) {
   // fill up
-  __shared__ sd::LongType aLength;
-  __shared__ sd::LongType outLength;
+  __shared__ LongType aLength;
+  __shared__ LongType outLength;
   if (threadIdx.x == 0) {
     aLength = shape::length(alphaShape);
     outLength = shape::length(outputShape) / aLength;
@@ -158,7 +159,7 @@ template <typename T>
 static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                              NDArray* output) {
   // To fill up output need to broadcast alpha and beta to the same shape and in
-  const sd::LongType* broadcasted = nullptr;
+  const LongType* broadcasted = nullptr;
   if (beta != nullptr)
     ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcasted, context->getWorkspace());
   else
@@ -186,8 +187,9 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
   fillGammaKernel<T><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(
       uniform.dataBuffer()->specialAsT<T>(), shift, copyAlpha->dataBuffer()->specialAsT<T>(),
       copyAlpha->specialShapeInfo(), beta ? copyBeta->dataBuffer()->specialAsT<T>() : (T const*)nullptr,
-      beta ? copyBeta->specialShapeInfo() : (sd::LongType const*)nullptr, output->dataBuffer()->specialAsT<T>(),
+      beta ? copyBeta->specialShapeInfo() : (LongType const*)nullptr, output->dataBuffer()->specialAsT<T>(),
       output->specialShapeInfo());
+  sd::DebugHelper::checkErrorCode(stream, "fillGammaKernel failed");
 
   if (beta != nullptr) {
     delete copyAlpha;
@@ -225,9 +227,8 @@ while u > s do:
 return x.
  * */
 template <typename T>
-static SD_KERNEL void fillPoissonKernel(T* uList, sd::LongType uLength, T* lambda, const sd::LongType* lambdaShape,
-                                        T* output, const sd::LongType* outputShape) {
-  __shared__ sd::LongType step;
+static SD_KERNEL void fillPoissonKernel(T* uList, LongType uLength, T* lambda, const LongType* lambdaShape, T* output, const LongType* outputShape) {
+  __shared__ LongType step;
 
   if (threadIdx.x == 0) {
     step = shape::length(lambdaShape);
@@ -256,14 +257,14 @@ static SD_KERNEL void fillPoissonKernel(T* uList, sd::LongType uLength, T* lambd
 template <typename T>
 static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
   auto shift = output->lengthOf() / lambda->lengthOf();
-  NDArray uniform('c', {shift}, DataType::DOUBLE);
+  NDArray uniform('c', {shift}, DOUBLE);
   PointersManager manager(context, "fillRandomPoisson");
   auto stream = context->getCudaStream();
   // fill up uniform with given length
-  NDArray tempOutput = output->cast(DataType::DOUBLE);
+  NDArray tempOutput = output->cast(DOUBLE);
   RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
 
-  NDArray tempLambda = lambda->cast(DataType::DOUBLE);
+  NDArray tempLambda = lambda->cast(DOUBLE);
   NDArray::prepareSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
 
   dim3 launchDims = getLaunchDims("random_poisson");
@@ -271,6 +272,7 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
                                                                               tempLambda.dataBuffer()->specialAsT<T>(), tempLambda.specialShapeInfo(),
                                                                               tempOutput.dataBuffer()->specialAsT<T>(), tempOutput.specialShapeInfo());
 
+  sd::DebugHelper::checkErrorCode(stream, "fillPoissonKernel failed");
 
   output->assign(tempOutput.cast(output->dataType()));
   NDArray::registerSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
@@ -290,11 +292,11 @@ BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_,
 
 template <typename T>
 static SD_KERNEL void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output,
-                                        const sd::LongType* outputShape) {
+                                        const LongType* outputShape) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
-  __shared__ sd::LongType outputLen;
+  __shared__ LongType outputLen;
 
   if (0 == threadIdx.x) {
     outputLen = shape::length(outputShape);
@@ -333,6 +335,7 @@ static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& r
     auto outputShape = output->specialShapeInfo();
     dim3 launchDims = getLaunchDims("random_uniform");
     fillUniformKernel<T><<<launchDims.x,launchDims.y, launchDims.z, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);
+    sd::DebugHelper::checkErrorCode(stream, "fillUniformKernel failed");
 
     err = cudaStreamSynchronize(*stream);
     if (err != 0) {
@@ -355,15 +358,14 @@ void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDAr
 // used https://en.wikipedia.org/wiki/Categorical_distribution
 // methods: gumbel trick + softmax + argmax
 template <typename X, typename Z>
-SD_KERNEL static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, const void* vx,
-                                           const sd::LongType* xShapeInfo, void* vz, const sd::LongType* zShapeInfo,
-                                           const sd::LongType batchValue, const sd::LongType numOfSamples,
-                                           const sd::LongType numOfClassX, const sd::LongType dimA, const X minVal,
+SD_KERNEL static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, const void* vx, const LongType* xShapeInfo,
+                                           void* vz, const LongType* zShapeInfo, const LongType batchValue,
+                                           const LongType numOfSamples, const LongType numOfClassX, const LongType dimA, const X minVal,
                                            const X maxVal) {
   const X* x = reinterpret_cast<const X*>(vx);
   Z* z = reinterpret_cast<Z*>(vz);
 
-  __shared__ sd::LongType xDimAstride, zDimAstride, xDimCstride, zDimCstride, dimC;
+  __shared__ LongType xDimAstride, zDimAstride, xDimCstride, zDimCstride, dimC;
 
   if (0 == threadIdx.x) {
     dimC = (0 == dimA) ? 1 : 0;
@@ -376,22 +378,22 @@ SD_KERNEL static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, const
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType index = tid; index < batchValue * numOfSamples; index += gridDim.x * blockDim.x) {
-    sd::LongType nBatchIndex = index / numOfSamples;
-    sd::LongType nSampleIndexInBatch = index - (nBatchIndex * numOfSamples);
+  for (LongType index = tid; index < batchValue * numOfSamples; index += gridDim.x * blockDim.x) {
+    LongType nBatchIndex = index / numOfSamples;
+    LongType nSampleIndexInBatch = index - (nBatchIndex * numOfSamples);
 
     const X* xTad = x + (nBatchIndex * xDimCstride);
     Z* zTad = z + (nBatchIndex * zDimCstride);
     Z& arg = zTad[nSampleIndexInBatch * zDimAstride];
 
     X Max = -minVal;
-    sd::LongType nSamplesPerBatch = nBatchIndex * numOfClassX * numOfSamples;
-    sd::LongType nClassPerSamples = nSampleIndexInBatch * numOfClassX;
+    LongType nSamplesPerBatch = nBatchIndex * numOfClassX * numOfSamples;
+    LongType nClassPerSamples = nSampleIndexInBatch * numOfClassX;
 
-    for (sd::LongType nClass = 0; nClass < numOfClassX; nClass++) {
-      sd::LongType nIndex = nSamplesPerBatch + nClassPerSamples + nClass;
+    for (LongType nClass = 0; nClass < numOfClassX; nClass++) {
+      LongType nIndex = nSamplesPerBatch + nClassPerSamples + nClass;
       X tValue = (xTad[nClass * xDimAstride] -
-                  sd::math::sd_log<X, X>(-sd::math::sd_log<X, X>(devRng->relativeT<X>(nIndex, minVal, maxVal))));
+                  math::sd_log<X, X>(-math::sd_log<X, X>(devRng->relativeT<X>(nIndex, minVal, maxVal))));
       if (tValue > Max) {
         Max = tValue;
         arg = nClass;
@@ -404,24 +406,26 @@ SD_KERNEL static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, const
 template <typename X, typename Z>
 SD_HOST static void fillMultiNomialCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
                                                 const cudaStream_t* stream, graph::RandomGenerator* devRng,
-                                                const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                                const sd::LongType* zShapeInfo, const sd::LongType batchValue,
-                                                const sd::LongType numOfSamples, const sd::LongType numOfClassX,
-                                                const sd::LongType dimA) {
+                                                const void* vx, const LongType* xShapeInfo, void* vz,
+                                                const LongType* zShapeInfo, const LongType batchValue,
+                                                const LongType numOfSamples, const LongType numOfClassX,
+                                                const LongType dimA) {
   const X minVal = DataTypeUtils::min<X>();
   const X maxVal = 1.0;
 
   fillMultiNomialCuda_<X, Z><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       devRng, vx, xShapeInfo, vz, zShapeInfo, batchValue, numOfSamples, numOfClassX, dimA, minVal, maxVal);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "fillMultiNomialCuda_ failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output,
-                           const sd::LongType numOfSamples, const int dimC) {
-  sd::LongType dimA = (0 == dimC) ? 1 : 0;
+                           const LongType numOfSamples, const int dimC) {
+  LongType dimA = (0 == dimC) ? 1 : 0;
 
-  const sd::LongType batchValue = output.sizeAt(dimC);
-  const sd::LongType numOfClassX = input.sizeAt(dimA);
+  const LongType batchValue = output.sizeAt(dimC);
+  const LongType numOfClassX = input.sizeAt(dimA);
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (batchValue * numOfSamples + threadsPerBlock - 1) / threadsPerBlock;

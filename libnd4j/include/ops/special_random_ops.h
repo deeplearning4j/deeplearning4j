@@ -51,7 +51,6 @@ class Choice {
     // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities,
     // i.e. should sum to 1.0
     // T probSum = extraArguments[0];
-    printf("normal random specialOpCuda 5\n");
 
     __shared__ sd::LongType xLength;
     __shared__ sd::LongType yLength;
@@ -274,26 +273,20 @@ class GaussianDistribution {
 if(tid < middle)
     for (sd::LongType e = tid; e < middle; e += step) {
       auto epm = e + middle;
-      printf("epm + middle %lld\n",epm + middle);
       // we need to get random values
       T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
       T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
       T realMean0 = y == z ? mean : y[e * yEWS];
-      printf("before z[%d] = %f\n",e,z[e * zEWS]);
       z[e * zEWS] =
           (sd::math::sd_sqrt<T, T>(t * sd::math::sd_log<T, T>(r0)) * sd::math::sd_cos<T, T>(two_pi * r1)) * stddev +
           realMean0;
-      printf("after z[%d] = %f\n",e,z[e * zEWS]);
 
       if (epm < zLength) {
-        printf("epm before z[%d] = %f\n",epm,z[epm * zEWS]);
-
         T realMean1 = y == z ? mean : y[epm * yEWS];
         z[epm * zEWS] =
             (sd::math::sd_sqrt<T, T>(t * sd::math::sd_log<T, T>(r0)) * sd::math::sd_sin<T, T>(two_pi * r1)) * stddev +
             realMean1;
-        printf("epm after  z[%d] = %f\n",epm,z[epm * zEWS]);
 
       }
     }
@@ -374,11 +367,9 @@ class BinomialDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     int trials = (int)extraArguments[0];
     T prob = extraArguments[1];
-    printf("normal random specialOpCuda\n");
     __shared__ sd::LongType zLength;
     __shared__ int yEWS;
     __shared__ int zEWS;
-    printf("normal random specialOpCuda 7\n");
 
     __shared__ sd::graph::RandomGenerator *rng;
     __shared__ unsigned char *cB;
@@ -477,7 +468,6 @@ class BinomialDistributionEx {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     int trials = (int)extraArguments[0];
     T prob = extraArguments[1];
-    printf("normal random specialOpCuda 2\n");
 
     __shared__ sd::LongType zLength;
     __shared__ int yEWS;
@@ -607,7 +597,6 @@ class TruncatedNormalDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     __shared__ T epsilon;
     __shared__ T two_pi;
-    printf("normal random specialOpCuda 3\n");
 
     __shared__ sd::LongType zLength;
     __shared__ sd::LongType zEWS;
@@ -716,7 +705,6 @@ class LogNormalDistribution {
                                                 sd::LongType const *zShapeBuffer, T *extraArguments) {
     __shared__ T epsilon;
     __shared__ T two_pi;
-    printf("normal random specialOpCuda 4\n");
 
     __shared__ sd::LongType zLength;
     __shared__ sd::LongType zEWS;

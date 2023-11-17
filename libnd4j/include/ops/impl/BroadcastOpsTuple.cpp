@@ -22,43 +22,42 @@
 #include <ops/BroadcastOpsTuple.h>
 
 namespace sd {
-BroadcastOpsTuple BroadcastOpsTuple::custom(sd::scalar::Ops scalar, sd::pairwise::Ops pairwise,
-                                            sd::broadcast::Ops broadcast) {
+BroadcastOpsTuple BroadcastOpsTuple::custom(scalar::Ops scalar, pairwise::Ops pairwise, broadcast::Ops broadcast) {
   BroadcastOpsTuple t(scalar, pairwise, broadcast);
   return t;
 }
 
-BroadcastOpsTuple BroadcastOpsTuple::Add() { return custom(sd::scalar::Add, sd::pairwise::Add, sd::broadcast::Add); }
+BroadcastOpsTuple BroadcastOpsTuple::Add() { return custom(scalar::Add, pairwise::Add, broadcast::Add); }
 
 BroadcastOpsTuple BroadcastOpsTuple::Assign() {
-  return custom(sd::scalar::CopyPws, sd::pairwise::CopyPws, sd::broadcast::CopyPws);
+  return custom(scalar::CopyPws, pairwise::CopyPws, broadcast::CopyPws);
 }
 
 BroadcastOpsTuple BroadcastOpsTuple::Divide() {
-  return custom(sd::scalar::Divide, sd::pairwise::Divide, sd::broadcast::Divide);
+  return custom(scalar::Divide, pairwise::Divide, broadcast::Divide);
 }
 
 BroadcastOpsTuple BroadcastOpsTuple::DivideNoNan() {
-  return custom(sd::scalar::DivideNoNan, sd::pairwise::DivideNoNan, sd::broadcast::DivideNoNan);
+  return custom(scalar::DivideNoNan, pairwise::DivideNoNan, broadcast::DivideNoNan);
 }
 
 BroadcastOpsTuple BroadcastOpsTuple::Multiply() {
-  return custom(sd::scalar::Multiply, sd::pairwise::Multiply, sd::broadcast::Multiply);
+  return custom(scalar::Multiply, pairwise::Multiply, broadcast::Multiply);
 }
 
 BroadcastOpsTuple BroadcastOpsTuple::Subtract() {
-  return custom(sd::scalar::Subtract, sd::pairwise::Subtract, sd::broadcast::Subtract);
+  return custom(scalar::Subtract, pairwise::Subtract, broadcast::Subtract);
 }
 BroadcastOpsTuple BroadcastOpsTuple::IGamma() {
-  return custom(sd::scalar::IGamma, sd::pairwise::IGamma, sd::broadcast::IGamma);
+  return custom(scalar::IGamma, pairwise::IGamma, broadcast::IGamma);
 }
 BroadcastOpsTuple BroadcastOpsTuple::IGammac() {
-  return custom(sd::scalar::IGammac, sd::pairwise::IGammac, sd::broadcast::IGammac);
+  return custom(scalar::IGammac, pairwise::IGammac, broadcast::IGammac);
 }
 
-BroadcastOpsTuple BroadcastOpsTuple::Pow() { return custom(sd::scalar::Pow, sd::pairwise::Pow, sd::broadcast::Pow); }
+BroadcastOpsTuple BroadcastOpsTuple::Pow() { return custom(scalar::Pow, pairwise::Pow, broadcast::Pow); }
 BroadcastOpsTuple BroadcastOpsTuple::PowDerivative() {
-  return custom(sd::scalar::PowDerivative, sd::pairwise::PowDerivative, sd::broadcast::PowDerivative);
+  return custom(scalar::PowDerivative, pairwise::PowDerivative, broadcast::PowDerivative);
 }
 
 }  // namespace sd

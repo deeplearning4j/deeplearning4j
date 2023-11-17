@@ -73,8 +73,8 @@ TEST_F(VariableSpaceTest, SettersGettersTest2) {
   space1->putVariable(-1, varA);
   space1->putVariable(2, varB);
 
-  sd::LongType expExternal = (25 * 4) + (8 * 8);
-  sd::LongType expInternal = (9 * 4) + (8 * 8);
+  LongType expExternal = (25 * 4) + (8 * 8);
+  LongType expInternal = (9 * 4) + (8 * 8);
 
   ASSERT_EQ(expExternal, space1->externalMemory());
   ASSERT_EQ(expInternal, space1->internalMemory());

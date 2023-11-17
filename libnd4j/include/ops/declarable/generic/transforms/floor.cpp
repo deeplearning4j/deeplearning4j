@@ -35,11 +35,11 @@ OP_IMPL(Floor, 1, 1, true) {
 
   STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(floor, Floor);
 
-DECLARE_TYPES(Floor) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(Floor) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

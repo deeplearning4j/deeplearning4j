@@ -3333,7 +3333,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return; //No op
 
         if (this.flattenedParams != null && this.flattenedParams.length() == params.length()) {
-            this.flattenedParams.assign(params);
+            this.flattenedParams.assign(params.reshape(flattenedParams.shape()));
             return;
         }
 

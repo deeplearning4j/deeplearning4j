@@ -19,30 +19,32 @@
 //
 //  @author sgazeos@gmail.com
 //
-#include <ops/declarable/helpers/weights.h>
 #include <execution/cuda/LaunchDims.h>
+#include <ops/declarable/helpers/weights.h>
+
+#include "helpers/DebugHelper.h"
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, sd::LongType const* inputShape, void* weightsBuffer,
-                                           sd::LongType const* weightsShape, void* outputBuffer,
-                                           sd::LongType inputLength, sd::LongType outputLength, int val) {
+static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
+                                           LongType const* weightsShape, void* outputBuffer, LongType inputLength,
+                                           LongType outputLength, int val) {
   if(inputBuffer == nullptr || outputBuffer == nullptr) return;
   auto tid = threadIdx.x;
-  for (sd::LongType e = tid; e < inputLength; e += blockDim.x) {
-    sd::LongType xOffset = shape::getIndexOffset(e, inputShape);
-    if(xOffset >= inputLength) return;
-    sd::LongType current = *(reinterpret_cast<sd::LongType*>(inputBuffer) + xOffset);
+  for (LongType e = tid; e < inputLength; e += blockDim.x) {
+    LongType xOffset = shape::getIndexOffset(e, inputShape);
+    if (xOffset >= inputLength) return;
+    LongType current = *(reinterpret_cast<LongType*>(inputBuffer) + xOffset);
     if (current == val) {
       if (weightsBuffer != nullptr) {
-        sd::LongType yOffset = shape::getIndexOffset(e, weightsShape);
-        sd::math::atomics::sd_atomicAdd(
+        LongType yOffset = shape::getIndexOffset(e, weightsShape);
+        math::atomics::sd_atomicAdd(
             reinterpret_cast<T*>(outputBuffer),
             reinterpret_cast<T*>(weightsBuffer)[yOffset]);
       } else {
-        sd::math::atomics::sd_atomicAdd(reinterpret_cast<T*>(outputBuffer),
+        math::atomics::sd_atomicAdd(reinterpret_cast<T*>(outputBuffer),
                                         T(1));
 
       }
@@ -51,17 +53,16 @@ static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, sd::LongType const
 }
 
 template <typename T>
-static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const* inputShape, void* weightsBuffer,
-                                          sd::LongType const* weightsShape, void* outputBuffer,
-                                          sd::LongType const* outputShape, int minLength, int maxLength) {
+static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
+                                          LongType const* weightsShape, void* outputBuffer, LongType const* outputShape, int minLength, int maxLength) {
   int threadCount = gridDim.x * blockDim.x;
-  sd::LongType inputLength = shape::length(inputShape);
+  LongType inputLength = shape::length(inputShape);
 
-  sd::LongType outputLength = shape::length(outputShape);
-  sd::LongType borderLen = 1;
+  LongType outputLength = shape::length(outputShape);
+  LongType borderLen = 1;
 
-  for (sd::LongType e = blockIdx.x; e < outputLength; e += threadCount) {
-    sd::LongType zOffset = shape::getIndexOffset(e, outputShape);
+  for (LongType e = blockIdx.x; e < outputLength; e += threadCount) {
+    LongType zOffset = shape::getIndexOffset(e, outputShape);
     T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
     adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ, inputLength,
                             outputLength, (int)zOffset);
@@ -69,7 +70,7 @@ static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, sd::LongType const*
 }
 
 template <typename T>
-static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
+static void adjustWeights_(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                            int maxLength) {
   dim3 launchDims = getLaunchDims("adjustWeights");
   auto stream = context->getCudaStream();
@@ -77,9 +78,11 @@ static void adjustWeights_(sd::LaunchContext* context, NDArray* input, NDArray* 
       input->specialBuffer(), input->specialShapeInfo(), weights ? weights->specialBuffer() : nullptr,
       weights ? weights->specialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), minLength,
       maxLength);
+    sd::DebugHelper::checkErrorCode(stream, "adjustWeightsKernel failed");
+
 }
 
-void adjustWeights(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
+void adjustWeights(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                    int maxLength) {
   BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength),
                         SD_GENERIC_NUMERIC_TYPES);

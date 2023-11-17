@@ -27,12 +27,13 @@ namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void flattenKernel(sd::Pointer *extraPointers, int dOffset, char order, void *vz, sd::LongType *zShapeInfo,
-                             void *vy, sd::LongType *yShapeInfo) {
+SD_KERNEL void flattenKernel(Pointer *extraPointers, int dOffset, char order, void *vz, LongType *zShapeInfo,
+                             void *vy,
+                             LongType *yShapeInfo) {
   auto z = reinterpret_cast<T *>(vz);
   auto y = reinterpret_cast<T *>(vy);
 
-  __shared__ sd::LongType lenY, yOrder, zEWS, yEWS;
+  __shared__ LongType lenY, yOrder, zEWS, yEWS;
 
   if (threadIdx.x == 0) {
     yEWS = shape::elementWiseStride(yShapeInfo);
@@ -41,7 +42,7 @@ SD_KERNEL void flattenKernel(sd::Pointer *extraPointers, int dOffset, char order
   }
   __syncthreads();
 
-  sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (auto i = tid; i < lenY; i += gridDim.x * blockDim.x)
     z[i * zEWS + dOffset] = y[ops::helpers::getIndexOffsetOrdered(i, yShapeInfo, order)];
@@ -49,11 +50,11 @@ SD_KERNEL void flattenKernel(sd::Pointer *extraPointers, int dOffset, char order
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void flattenKernelGeneric(dim3 &launchDims, cudaStream_t *stream, sd::Pointer *extraPointers, int dOffset,
-                                  char order, void *vz, sd::LongType *zShapeInfo, void *vy, sd::LongType *yShapeInfo) {
+SD_HOST void flattenKernelGeneric(dim3 &launchDims, cudaStream_t *stream, Pointer *extraPointers, int dOffset,
+                                  char order, void *vz, LongType *zShapeInfo, void *vy, LongType *yShapeInfo) {
   flattenKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(extraPointers, dOffset, order, vz, zShapeInfo,
                                                                           vy, yShapeInfo);
-  sd::DebugHelper::checkErrorCode(stream, "flattenGeneric(...) failed");
+  DebugHelper::checkErrorCode(stream, "flattenGeneric(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void flattenKernelGeneric,

@@ -51,28 +51,28 @@ CUSTOM_OP_IMPL(dynamic_partition, 2, 1, false, 0, 1) {
   }
   helpers::dynamicPartitionFunctor(block.launchContext(), input, indices, outputList);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(dynamic_partition) {
   auto numPartition = INT_ARG(0);
   auto indices = INPUT_VARIABLE(1);
-  std::vector<sd::LongType> partitionSizes(numPartition, 0);
+  std::vector<LongType> partitionSizes(numPartition, 0);
   auto in = inputShape->at(0);
   auto idx = inputShape->at(1);
   for (int i = 0; i < numPartition; i++) {
     for (int e = 0; e < indices->lengthOf(); ++e)
-      if (indices->e<sd::LongType>(e) == i) partitionSizes[i]++;
+      if (indices->e<LongType>(e) == i) partitionSizes[i]++;
   }
 
   auto shapes = SHAPELIST();
-  sd::LongType outRank = shape::rank(in) - shape::rank(idx) + 1;
-  for (sd::LongType e = 0; e < numPartition; e++) {
-    sd::LongType *newShape;
+  LongType outRank = shape::rank(in) - shape::rank(idx) + 1;
+  for (LongType e = 0; e < numPartition; e++) {
+    LongType *newShape;
     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     newShape[0] = outRank;
     newShape[1] = partitionSizes[e];
-    for (sd::LongType i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
+    for (LongType i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
     shape::updateStrides(newShape, shape::order(in));
     ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
@@ -83,10 +83,10 @@ DECLARE_SHAPE_FN(dynamic_partition) {
 }
 
 DECLARE_TYPES(dynamic_partition) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
 }
 
-DECLARE_TYPES(dynamic_partition_bp) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(dynamic_partition_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
@@ -95,17 +95,17 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
 
   std::vector<NDArray *> outputList(2);  // only for output
   std::vector<NDArray *> gradOutList(numPartition);
-  for (sd::LongType e = 0; e < numPartition; e++) {
+  for (LongType e = 0; e < numPartition; e++) {
     gradOutList[e] = INPUT_VARIABLE(e + 2);
   }
   outputList[0] = OUTPUT_VARIABLE(0);
   outputList[1] = OUTPUT_VARIABLE(1);
   NDArray originalIndices(*indices);
   originalIndices.linspace(0);
-  ops::dynamic_partition op;
+  dynamic_partition op;
   auto res = op.evaluate({&originalIndices, indices}, {numPartition});
   REQUIRE_TRUE(res.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  ops::dynamic_stitch stitchOp;
+  dynamic_stitch stitchOp;
   std::vector<NDArray *> partitions(numPartition * 2);
   for (size_t i = 0; i < res.size(); i++) {
     partitions[i] = res.at(i);
@@ -117,18 +117,18 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
   outputList[1]->assign(indices);
   outputList[0]->assign(result.at(0));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(dynamic_partition_bp) {
   auto numPartition = INT_ARG(0);
   auto indices = INPUT_VARIABLE(1);
-  std::vector<sd::LongType> partitionSizes(numPartition, 0);
+  std::vector<LongType> partitionSizes(numPartition, 0);
 
   auto shapes = SHAPELIST();
   // just copy shape info from input and indices to output
-  for (sd::LongType i = 0; i < 2; i++) {
-    sd::LongType *newShape;
+  for (LongType i = 0; i < 2; i++) {
+    LongType *newShape;
     COPY_SHAPE(inputShape->at(i), newShape);
     shapes->push_back(CONSTANT(newShape));
   }

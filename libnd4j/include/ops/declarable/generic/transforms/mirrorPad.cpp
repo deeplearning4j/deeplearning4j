@@ -38,12 +38,12 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
   const int includeBorder = mode ? 0 : 1;
   helpers::mirrorPad(block.launchContext(), *input, *paddings, *output, mode);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(mirror_pad) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});  // to conform with TF
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});  // to conform with TF
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
@@ -54,23 +54,24 @@ DECLARE_SHAPE_FN(mirror_pad) {
   const int includeBorder = static_cast<bool>(INT_ARG(0)) ? 0 : 1;
 
   if (input->isScalar()) {
-    sd::LongType len = input->isScalar() ? 1 + paddings->e<sd::LongType>(0)  + paddings->e<sd::LongType>(1) : input->lengthOf() + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+    LongType len = input->isScalar() ? 1 + paddings->e<LongType>(0) + paddings->e<LongType>(1)
+                                     : input->lengthOf() + paddings->e<LongType>(0) + paddings->e<LongType>(1);
     return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
   }
 
-  sd::LongType* outShapeInfo(nullptr);
+  LongType* outShapeInfo(nullptr);
   int rank = input->rankOf();
 
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
   if(paddings->isVector()) {
     for (int i = 0; i < rank; ++i) {
-      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(0) + paddings->e<sd::LongType>(1);
+      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<LongType>(0) + paddings->e<LongType>(1);
 
     }
   } else {
     for (int i = 0; i < rank; ++i) {
-      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<sd::LongType>(i, 0) + paddings->e<sd::LongType>(i, 1);
+      outShapeInfo[i + 1] = input->sizeAt(i) + paddings->e<LongType>(i, 0) + paddings->e<LongType>(i, 1);
 
     }
   }

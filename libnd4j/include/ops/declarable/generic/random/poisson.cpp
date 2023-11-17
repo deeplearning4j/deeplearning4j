@@ -41,15 +41,15 @@ CUSTOM_OP_IMPL(random_poisson, 2, 1, false, 0, 0) {
   rng.setSeed(seed);
   helpers::fillRandomPoisson(block.launchContext(), rng, lambda, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(random_poisson) {
   auto in = INPUT_VARIABLE(0);
-  auto shape = in->template asVectorT<sd::LongType>();
+  auto shape = in->template asVectorT<LongType>();
   auto lambdaShape = inputShape->at(1);
   auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(lambdaShape);
-  for (sd::LongType d = 0; d < shape::rank(lambdaShape); ++d) {
+  for (LongType d = 0; d < shape::rank(lambdaShape); ++d) {
     shape.emplace_back(shape::sizeAt(lambdaShape, d));
   }
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);

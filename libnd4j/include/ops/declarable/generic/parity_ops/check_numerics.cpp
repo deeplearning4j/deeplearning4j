@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
 
   if (!block.isInplace()) output->assign(input);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(check_numerics) {
@@ -51,7 +51,7 @@ DECLARE_SHAPE_FN(check_numerics) {
 DECLARE_TYPES(check_numerics) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
-      ->setAllowedInputTypes(1, sd::DataType::UTF8)
+      ->setAllowedInputTypes(1, UTF8)
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops

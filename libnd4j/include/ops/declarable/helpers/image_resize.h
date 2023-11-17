@@ -279,7 +279,7 @@ struct ImageResizerStateCommon {
   // heightScale and widthScale, and calculates the output size.
   // If any of these operations fails, it sets an error status in
   // the context, which the caller must check.
-  sd::Status validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
+  Status validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
     //
     batchSize = input->sizeAt(0);  //.dim_size(0);
     outHeight = static_cast<I>(height);
@@ -297,18 +297,18 @@ struct ImageResizerStateCommon {
     // Guard against overflows
     if (ceilf((outHeight - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
       sd_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
-      return Logger::logStatusMsg(sd::Status::BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize height");
+      return Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize height");
     }
     if (ceilf((outWidth - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
       sd_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
-      return Logger::logStatusMsg(sd::Status::BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize width");
+      return Logger::logStatusMsg(Status::BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize width");
     }
 
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   // Calculates all the required variables, and allocates the output.
-  sd::Status validateAndCreateOutput(NDArray const* input, int const width, int const height) {
+  Status validateAndCreateOutput(NDArray const* input, int const width, int const height) {
     return validateAndCalculateOutputSize(input, width, height);
   }
 
@@ -334,11 +334,11 @@ struct ImageResizerStateCommon {
   bool _halfPixelCenters;
 };
 
-using ImageResizerState = ImageResizerStateCommon<sd::LongType, float>;
+using ImageResizerState = ImageResizerStateCommon<LongType, float>;
 
 struct BilinearInterpolationData {
-  sd::LongType bottomIndex;  // Lower source index used in the interpolation
-  sd::LongType topIndex;     // Upper source index used in the interpolation
+  LongType bottomIndex;  // Lower source index used in the interpolation
+  LongType topIndex;     // Upper source index used in the interpolation
   // 1-D linear iterpolation scale (see:
   // https://en.wikipedia.org/wiki/Bilinear_interpolation)
   double interpolarValue;
@@ -390,25 +390,25 @@ struct HalfPixelScalerNN {
   virtual ~HalfPixelScalerNN() = default;
 };
 
-constexpr sd::LongType kTableSize = (1 << 10);
+constexpr LongType kTableSize = (1 << 10);
 
 struct WeightsAndIndices {
   float _weight0;
   float _weight1;
   float _weight2;
   float _weight3;
-  sd::LongType _index0;
-  sd::LongType _index1;
-  sd::LongType _index2;
-  sd::LongType _index3;
+  LongType _index0;
+  LongType _index1;
+  LongType _index2;
+  LongType _index3;
 
   int _advance;  // advance value.
   // see: https://stackoverflow.com/questions/41552966/getting-new-delete-type-mismatch-from-asan
   virtual ~WeightsAndIndices() = default;
 };
 
-SD_INLINE SD_HOST_DEVICE sd::LongType bound(sd::LongType val, sd::LongType limit) {
-  return math::sd_min(limit - 1ll, math::sd_max(sd::LongType{0}, val));
+SD_INLINE SD_HOST_DEVICE LongType bound(LongType val, LongType limit) {
+  return math::sd_min(limit - 1ll, math::sd_max(LongType{0}, val));
 }
 
 template <typename T>
@@ -453,14 +453,14 @@ static SD_INLINE SD_HOST_DEVICE float computeYInterpolation(int which, int chann
 }
 
 template <typename Scaler>
-SD_INLINE SD_HOST_DEVICE void getWeightsAndIndices(const float* coeffs_table, const float scale,
-                                                   const sd::LongType out_loc, const sd::LongType limit,
+SD_INLINE SD_HOST_DEVICE void getWeightsAndIndices(const float* coeffs_table, const float scale, const LongType out_loc,
+                                                   const LongType limit,
                                                    WeightsAndIndices* out, bool exclude_outside) {
   const Scaler scaler;
   const float in_loc_f = scaler(out_loc, scale);
-  const sd::LongType in_loc = math::sd_floor<float, sd::LongType>(in_loc_f);
+  const LongType in_loc = math::sd_floor<float, LongType>(in_loc_f);
   const float delta = in_loc_f - in_loc;
-  const sd::LongType offset = math::sd_round<float, sd::LongType>(delta * kTableSize);
+  const LongType offset = math::sd_round<float, LongType>(delta * kTableSize);
 
   if (exclude_outside) {
     // The legacy code placed more weight on the edge pixels, since bounding
@@ -506,12 +506,11 @@ class CachedInterpolationCalculator {
   // the current point to the next point. The copying should always be done by
   // copying the last <retval> values from the old point to the first <retval>
   // values of the new point.
-  SD_INLINE SD_HOST_DEVICE int Advance(const sd::LongType x0, const sd::LongType x1, const sd::LongType x2,
-                                       const sd::LongType x3) {
+  SD_INLINE SD_HOST_DEVICE int Advance(const LongType x0, const LongType x1, const LongType x2, const LongType x3) {
     // We use 2 hands and walk through, copying from one to another where
     // we already have values.
     // Invariant, new_indicies_hand <= cached_values_hand
-    const sd::LongType new_x_indices[4] = {x0, x1, x2, x3};
+    const LongType new_x_indices[4] = {x0, x1, x2, x3};
     int cachedValuesHand = 0;
     int newIndiciesHand = 0;
 
@@ -539,7 +538,7 @@ class CachedInterpolationCalculator {
   }
 
  private:
-  sd::LongType _indexes[4];
+  LongType _indexes[4];
 };
 
 template <typename F, typename I>
@@ -551,7 +550,7 @@ struct CachedInterpolationT {
   bool needsBounding;
 };
 
-using CachedInterpolation = CachedInterpolationT<float, sd::LongType>;
+using CachedInterpolation = CachedInterpolationT<float, LongType>;
 // ResizeArea
 template <typename T>
 struct ScaleCache {
@@ -570,7 +569,7 @@ SD_HOST_DEVICE void computePatchSumOf3Channels(T scale, const ImageResizerState&
                                                I ptrsLen, const CachedInterpolationT<T, I>& xCache, T* outputPtr) {
   bool const needsXBounding = xCache.needsBounding;
 
-  auto boundIfNeeded = [needsXBounding](sd::LongType x, sd::LongType y) -> sd::LongType {
+  auto boundIfNeeded = [needsXBounding](LongType x, LongType y) -> LongType {
     return (needsXBounding ? bound(x, y) : (x));
   };
 
@@ -620,19 +619,19 @@ SD_HOST_DEVICE void computePatchSum(T scale, const ImageResizerState& st, const 
                                     const CachedInterpolationT<T, I>& xCache, T* outputPtr) {
   bool const needsXBounding = xCache.needsBounding;
 
-  auto boundIfNeeded = [needsXBounding](sd::LongType x, sd::LongType y) -> sd::LongType {
+  auto boundIfNeeded = [needsXBounding](LongType x, LongType y) -> LongType {
     return (needsXBounding ? bound(x, y) : (x));
   };
 
   const auto numChannels = st.channels;
-  for (sd::LongType c = 0; c < numChannels; ++c) {
+  for (LongType c = 0; c < numChannels; ++c) {
     T sum = T(0);
     for (int i = 0; i < ptrsLen; ++i) {
       F const* ptr = yScaleCache[i].yPtr;
       T scaleX = xCache.startScale;
       T sumY = static_cast<T>(ptr[st.wStride * boundIfNeeded(xCache.start, st.inWidth) + c * st.cStride]) * scaleX;
       if (xCache.start + 1 != xCache.end) {
-        for (sd::LongType x = xCache.start + 1; x < xCache.end - 1; ++x) {
+        for (LongType x = xCache.start + 1; x < xCache.end - 1; ++x) {
           sumY += static_cast<T>(ptr[st.wStride * boundIfNeeded(x, st.inWidth) + c * st.cStride]);
         }
         scaleX = xCache.endMinusOneScale;
@@ -646,10 +645,9 @@ SD_HOST_DEVICE void computePatchSum(T scale, const ImageResizerState& st, const 
 
 template <typename X, typename Z>
 SD_HOST_DEVICE void gatherRows(int const spanSize, int const* starts, Z const* weights, X const* imagePtr,
-                               sd::LongType const inputHeight, sd::LongType const inputWidth,
-                               sd::LongType const outputHeight, sd::LongType const outputWidth,
-                               sd::LongType const channels, Z* outputPtr, bool inputEws1, sd::LongType inRowStride,
-                               sd::LongType wStride, sd::LongType cStride) {
+                               LongType const inputHeight, LongType const inputWidth, LongType const outputHeight,
+                               LongType const outputWidth, LongType const channels, Z* outputPtr, bool inputEws1,
+                               LongType inRowStride, LongType wStride, LongType cStride) {
   auto inRowSize = inputWidth * channels;
   auto outRowSize = outputWidth * channels;
 
@@ -677,8 +675,8 @@ SD_HOST_DEVICE void gatherRows(int const spanSize, int const* starts, Z const* w
     }
 
   } else {
-    auto addScaledVector = [](const X* inVector, int inputWidth, int channels, const sd::LongType wStride,
-                              const sd::LongType cStride, Z weight, Z* outVector) {
+    auto addScaledVector = [](const X* inVector, int inputWidth, int channels, const LongType wStride,
+                              const LongType cStride, Z weight, Z* outVector) {
       const X* inVec = inVector;
       for (int i = 0; i < inputWidth; i++) {
         for (int c = 0; c < channels; c++) {
@@ -708,9 +706,8 @@ SD_HOST_DEVICE void gatherRows(int const spanSize, int const* starts, Z const* w
 
 template <typename Z>
 SD_HOST_DEVICE void gatherColumns(int const spanSize, int const* starts, Z const* weights, Z const* imagesPtr,
-                                  sd::LongType const inputHeight, sd::LongType const inputWidth,
-                                  sd::LongType const outputHeight, sd::LongType const outputWidth,
-                                  sd::LongType channels, Z* outputPtr) {
+                                  LongType const inputHeight, LongType const inputWidth, LongType const outputHeight,
+                                  LongType const outputWidth, LongType channels, Z* outputPtr) {
   auto inRowSize = inputWidth * channels;
   auto outRowSize = outputWidth * channels;
 
@@ -736,28 +733,28 @@ SD_HOST_DEVICE void gatherColumns(int const spanSize, int const* starts, Z const
   }
 }
 
-SD_LIB_HIDDEN sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBilinearFunctor(LaunchContext* context, NDArray const* image, int const width,
                                                int const height, bool const alignCorners, bool const halfPixelCenter,
                                                NDArray* output);
-SD_LIB_HIDDEN sd::Status resizeNeighborFunctor(sd::LaunchContext* context, NDArray const* images, int const width,
+SD_LIB_HIDDEN Status resizeNeighborFunctor(LaunchContext* context, NDArray const* images, int const width,
                                                int const height, CoordinateTransformationMode coorMode,
                                                NearestMode nearestMode, bool alignCorner, NDArray* output);
-SD_LIB_HIDDEN sd::Status resizeBicubicFunctor(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBicubicFunctor(LaunchContext* context, NDArray const* image, int const width,
                                               int const height, bool preserveAspectRatio, bool antialias,
                                               NDArray* output);
-SD_LIB_HIDDEN sd::Status resizeBicubicFunctorA(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBicubicFunctorA(LaunchContext* context, NDArray const* image, int const width,
                                                int const height, bool const alignCorners,
                                                CoordinateTransformationMode coorMode, bool exclude_outside,
                                                double coefficient, NDArray* output);
-SD_LIB_HIDDEN sd::Status resizeAreaFunctor(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeAreaFunctor(LaunchContext* context, NDArray const* image, int const width,
                                            int const height, bool const alignCorners, NDArray* output);
 
-SD_LIB_HIDDEN sd::Status resizeFunctor(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeFunctor(LaunchContext* context, NDArray const* image, int const width,
                                        int const height, ImageResizeMethods method,
                                        CoordinateTransformationMode coorMode, bool exclude_outside,
                                        NearestMode nearestMode, double coefficient, bool antialias, NDArray* output);
 
-SD_LIB_HIDDEN sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeImagesFunctor(LaunchContext* context, NDArray const* image, int const width,
                                              int const height, ImageResizeMethods method, bool alignCorners,
                                              NDArray* output);
 }  // namespace helpers

@@ -1279,9 +1279,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        if (nativeOps.lastErrorCode() != 0) {
+            String errorMessage = nativeOps.lastErrorMessage();
+            throw new RuntimeException(errorMessage);
+        }
         profilingConfigurableHookOut(op, oc, st);
 
         return null;
@@ -1735,7 +1736,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
                 inputBuffers.put(cnt, in.data().addressPointer());
-                 inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
+                inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
             }
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());

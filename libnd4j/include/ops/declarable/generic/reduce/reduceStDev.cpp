@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   if(input->lengthOf() <= 1) {
     output->assign(1);
-    return sd::Status::OK;
+    return Status::OK;
   }
   bool keepDims = false;       // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   bool biasCorrected = false;  // block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
@@ -64,9 +64,9 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
         "REDUCE_STDEV OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         input->rankOf(), input->rankOf(), item);
 
-  sd::ops::helpers::standardDeviation(*input, *output, dimensions, biasCorrected);
+  helpers::standardDeviation(*input, *output, dimensions, biasCorrected);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_stdev) {
@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(reduce_stdev) {
 }
 
 DECLARE_TYPES(reduce_stdev) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -143,8 +143,8 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
         input->rankOf(), input->rankOf(), item);
 
   auto gradOLen = gradO->lengthOf() < 1 ? 1 : gradO->lengthOf();
-  const sd::LongType N = input->lengthOf() / gradOLen;
-  const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
+  const LongType N = input->lengthOf() / gradOLen;
+  const LongType NminusOne = biasCorrected ? N - 1 : N;
 
   auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
 
@@ -152,7 +152,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
                    block.launchContext());  // create empty array with shape matching shape of mean array
   input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, &dimensions);
 
-  sd::ops::divide_no_nan divideNoNan;
+  divide_no_nan divideNoNan;
   auto inputMinusMean  = (*input - mean);
   auto varianceTimesNMinusOne = variance * NminusOne;
   divideNoNan.execute({&inputMinusMean,&varianceTimesNMinusOne},{gradI});
@@ -170,7 +170,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
   } else {
     *gradI *= *gradO;  // automatic broadcasting happens here
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_stdev_bp) {
@@ -193,7 +193,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
         "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* gradIshapeInfo(nullptr);
+  LongType* gradIshapeInfo(nullptr);
   COPY_SHAPE(in, gradIshapeInfo);
 
   return SHAPELIST(CONSTANT(gradIshapeInfo));
@@ -201,7 +201,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
 }
 
 DECLARE_TYPES(reduce_stdev_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

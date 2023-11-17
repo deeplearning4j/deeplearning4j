@@ -43,7 +43,7 @@ void SD_KERNEL summaryStatsReduceT(int op, void const* dx, sd::LongType const* x
                                    sd::LongType* dimension, long long int dimensionLength, int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer,
                                    void* reductionBuffer, sd::LongType const* tadOnlyShapeInfo,
                                    sd::LongType const* tadOffsets) {
-  functions::summarystats::SummaryStatsReduce<X, Z>::transform(
+  SummaryStatsReduce<X, Z>::transform(
       op, dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, biasCorrected, allocationBuffer,
       reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }

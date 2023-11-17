@@ -44,18 +44,18 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
   const int dim = 0;
   helpers::stack(block.launchContext(), inArrs, *output, dim);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(parallel_stack) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(parallel_stack) {
   auto inShapeInfo = inputShape->at(0);
   int rank = inShapeInfo[0];
 
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank + 1), sd::LongType);
 
   outShapeInfo[0] = rank + 1;

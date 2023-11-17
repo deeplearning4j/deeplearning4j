@@ -49,6 +49,8 @@ public interface OpContext extends AutoCloseable {
      */
     void setIArguments(long... arguments);
 
+    void setIArguments(List<Long> iArguments);
+
     List<Long> getIArguments();
 
     int numIArguments();
@@ -58,6 +60,9 @@ public interface OpContext extends AutoCloseable {
      * @param arguments
      */
     void setTArguments(double... arguments);
+
+
+    void setTArguments(List<Double> tArguments);
 
     /**
      * This method sets floating point arguments required for operation
@@ -76,6 +81,7 @@ public interface OpContext extends AutoCloseable {
      */
     void setDArguments(DataType... arguments);
 
+    void setDArguments(List<DataType> arguments);
 
     /**
      * This method sets data type arguments required for operation
@@ -97,6 +103,9 @@ public interface OpContext extends AutoCloseable {
      * @param length
      */
     void setBArguments(Pointer arguments, int length);
+
+
+    void setBAArguments(List<Boolean> arguments);
 
     /**
      * This method sets boolean arguments required for operation

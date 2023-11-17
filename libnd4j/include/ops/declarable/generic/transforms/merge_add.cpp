@@ -33,17 +33,26 @@ OP_IMPL(mergeadd, -1, 1, false) {
   REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
   auto output = OUTPUT_VARIABLE(0);
+  if (output->isEmpty()) {
+    return Status::OK;
+  }
 
-  std::vector<const NDArray*> inArrs(block.width());
+  int nonEmpty = 0;
+  for (int i = 0; i < block.width(); i++)
+    if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
-  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+
+  std::vector<const NDArray*> inArrs(nonEmpty);
+  int numNonEmptyAdded = 0;
+  if(nonEmpty > 0)
+  for (int i = 0; i < block.width(); ++i) {
+     if(!INPUT_VARIABLE(i)->isEmpty())inArrs[numNonEmptyAdded++] = INPUT_VARIABLE(i);
+  }
 
   helpers::mergeAdd(block.launchContext(), inArrs, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
-
-
 
 DECLARE_SYN(mergesum, mergeadd);
 DECLARE_SYN(add_n, mergeadd);
@@ -51,9 +60,7 @@ DECLARE_SYN(addn, mergeadd);
 DECLARE_SYN(accumulaten, mergeadd);
 DECLARE_SYN(accumulate_n, mergeadd);
 
-DECLARE_TYPES(mergeadd) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
-}
+DECLARE_TYPES(mergeadd) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
 
 CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
   auto inSize = block.width() - 1;
@@ -69,12 +76,10 @@ CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
   }
   helpers::mergeAddBp(block.launchContext(), *gradient, outArrs);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(mergeadd_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
-}
+DECLARE_TYPES(mergeadd_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
 DECLARE_SHAPE_FN(mergeadd_bp) {
   const int numOfInArrs = block.width() - 1;
 
@@ -82,8 +87,8 @@ DECLARE_SHAPE_FN(mergeadd_bp) {
 
   for (int e = 0; e < numOfInArrs; e++) {
     auto inShape = inputShape->at(e);
-    auto desc = new ShapeDescriptor(
-        ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape));
+    auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape),
+                                    shape::rank(inShape));
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
   }

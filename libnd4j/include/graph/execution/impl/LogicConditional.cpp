@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
+Status LogicConditional::processNode(Graph *graph, Node *node) {
   auto __variableSpace = graph->getVariableSpace();
 
   auto size = node->input()->size();
@@ -125,7 +125,7 @@ sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

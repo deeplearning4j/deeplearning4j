@@ -25,14 +25,15 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void upsampling2dBPCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                         const sd::LongType* zShapeInfo, const bool isNCHW) {
+SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                         const LongType* zShapeInfo, const bool isNCHW) {
   // x (gradO) has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
   // z (gradI) has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
@@ -40,12 +41,12 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const sd::LongType* xSh
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ LongType rank, dimIH;
-  __shared__ sd::LongType factorH, factorW;
-  __shared__ sd::LongType zLen, *sharedMem;
+  __shared__ LongType factorH, factorW;
+  __shared__ LongType zLen, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     dimIH = isNCHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
@@ -68,8 +69,8 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const sd::LongType* xSh
 
   z[zOffset] = 0;
 
-  const sd::LongType zCoord2 = coords[dimIH] * factorH;
-  const sd::LongType zCoord3 = coords[dimIH + 1] * factorW;
+  const LongType zCoord2 = coords[dimIH] * factorH;
+  const LongType zCoord3 = coords[dimIH + 1] * factorW;
 
   for (coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
     for (coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1])
@@ -79,13 +80,15 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const sd::LongType* xSh
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                       const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                       void* vz, const sd::LongType* zShapeInfo, const bool isNCHW) {
+                                       const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                       void* vz, const LongType* zShapeInfo, const bool isNCHW) {
   upsampling2dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, isNCHW);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"upsampling2dBPCuda failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI,
+void ConvolutionUtils::upsampling2dBP(graph::Context& block, const NDArray& gradO, NDArray& gradI,
                                       const bool isNCHW) {
   PointersManager manager(block.launchContext(), "upsampling2d_bp");
 

@@ -42,12 +42,12 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
 
   if (axis < 0) axis += input->rankOf();
 
-  std::vector<sd::LongType> axisVec = {axis};
+  std::vector<LongType> axisVec = {axis};
 
   int pos = 0;
-  std::vector<sd::LongType> indices(2 * input->rankOf());
+  std::vector<LongType> indices(2 * input->rankOf());
 
-  for (sd::LongType e = 0; e < sizes->lengthOf(); e++) {
+  for (LongType e = 0; e < sizes->lengthOf(); e++) {
     int c_size = sizes->e<int>(e);
 
     for (int d = 0; d < input->rankOf(); d++) {
@@ -67,7 +67,7 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
     pos += c_size;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(split_v) {
@@ -102,12 +102,12 @@ DECLARE_SHAPE_FN(split_v) {
 
   auto length = sizes->lengthOf();
   int pos = 0;
-  for (sd::LongType e = 0; e < length; e++) {
+  for (LongType e = 0; e < length; e++) {
     int c_size = sizes->e<int>(e);
 
-    std::vector<sd::LongType> shape(rank);
+    std::vector<LongType> shape(rank);
 
-    for (sd::LongType d = 0; d < rank; d++) {
+    for (LongType d = 0; d < rank; d++) {
       if (d != axis)
         shape[d] = shape::sizeAt(input, d);
       else

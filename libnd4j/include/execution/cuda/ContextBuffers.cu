@@ -198,5 +198,5 @@ void* ContextBuffers::specialStream() {
 
 bool ContextBuffers::isInitialized() { return _initialized; }
 
-sd::ErrorReference* ContextBuffers::errorReference() { return &_errorReference; }
+ErrorReference* ContextBuffers::errorReference() { return &_errorReference; }
 }  // namespace sd

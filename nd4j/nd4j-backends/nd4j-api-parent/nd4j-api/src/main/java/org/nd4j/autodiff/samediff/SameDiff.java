@@ -4883,6 +4883,9 @@ public class SameDiff extends SDBaseOps {
                                Map<String, INDArray> inputs) {
         if (!sameDiffFunctionInstances.containsKey(function)) {
             SameDiff sub = SameDiff.create();
+            if(!listeners.isEmpty()) {
+                sub.setListeners(listeners);
+            }
             //setup subgraph
             //re execute to populate subgraph
             functionDefinition.define(sub, inputs, null);

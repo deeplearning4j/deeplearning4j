@@ -30,12 +30,12 @@ namespace sd {
 // input - theSecondBuffer/Shape from input NDArray
 // output - theFirstBuffer/Shape from input NDArray
 template <typename T>
-static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,
-                                       sd::LongType const* theSecondShape) {
+static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, LongType const* theFirstShape, void* theSecondBuffer,
+                                       LongType const* theSecondShape) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
 
-  __shared__ sd::LongType resultLength, xEws, yEws;
+  __shared__ LongType resultLength, xEws, yEws;
   __shared__ bool sameOffsets, sameOrders;
   __shared__ T* input;
   __shared__ T* output;
@@ -55,14 +55,14 @@ static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, sd::LongType const*
 
   for (int i = tid; i < resultLength; i += totalThreads) {
     if (sameOrders && xEws > 0 && yEws > 0) {
-      sd::math::sd_swap(output[i * xEws], input[i * yEws]);
+      math::sd_swap(output[i * xEws], input[i * yEws]);
     } else if (sameOffsets) {
       const auto offset = shape::getIndexOffset(i, theFirstShape);
-      sd::math::sd_swap(output[offset], input[offset]);
+      math::sd_swap(output[offset], input[offset]);
     } else {
       const auto xOffset = shape::getIndexOffset(i, theFirstShape);
       const auto yOffset = shape::getIndexOffset(i, theSecondShape);
-      sd::math::sd_swap(output[xOffset], input[yOffset]);
+      math::sd_swap(output[xOffset], input[yOffset]);
     }
   }
 }
@@ -73,11 +73,12 @@ BUILD_SINGLE_TEMPLATE(template SD_KERNEL void swapUnsafeKernel,
                       SD_COMMON_TYPES);
 
 template <typename T>
-void templatedSwapUnsafe(void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,
-                         sd::LongType const* theSecondShape, cudaStream_t* theStream) {
+void templatedSwapUnsafe(void* theFirstBuffer, LongType const* theFirstShape, void* theSecondBuffer,
+                         LongType const* theSecondShape, cudaStream_t* theStream) {
   dim3 launchDims = getLaunchDims("swap_unsafe");
-  swapUnsafeKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *theStream>>>(theFirstBuffer, theFirstShape, theSecondBuffer, theSecondShape);
-  sd::DebugHelper::checkGlobalErrorCode("templatedSwapUnsafe(...) failed");
+  swapUnsafeKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *theStream>>>(theFirstBuffer, theFirstShape,
+                                                                                theSecondBuffer, theSecondShape);
+  DebugHelper::checkGlobalErrorCode("templatedSwapUnsafe(...) failed");
 
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwapUnsafe,

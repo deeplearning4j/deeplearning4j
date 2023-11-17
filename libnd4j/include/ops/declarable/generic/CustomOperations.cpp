@@ -49,5 +49,5 @@ _loader::_loader() {
   //#endif
 };
 
-static sd::_loader loader;
+static _loader loader;
 }  // namespace sd

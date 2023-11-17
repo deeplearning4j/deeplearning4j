@@ -45,36 +45,36 @@
 
 namespace sd {
 namespace graph {
-void sd::graph::Node::setOuterTime(sd::LongType time) {
+void Node::setOuterTime(LongType time) {
   //            if (hasBlockAttached())
   //                _block->setOuterTime(time);
 }
 
-void sd::graph::Node::setInnerTime(sd::LongType time) {
+void Node::setInnerTime(LongType time) {
   //            if (hasBlockAttached())
   //                _block->setInnerTime(time);
 }
 
-void sd::graph::Node::setGraph(sd::graph::Graph* graph) { _graph = graph; }
+void Node::setGraph(Graph* graph) { _graph = graph; }
 
-sd::graph::Graph* sd::graph::Node::getGraph() { return _graph; }
+Graph* Node::getGraph() { return _graph; }
 
-bool sd::graph::Node::hasGraphEmbedded() { return _graph != nullptr; }
+bool Node::hasGraphEmbedded() { return _graph != nullptr; }
 
-void sd::graph::Node::markInplace(bool reallyInplace) {
+void Node::markInplace(bool reallyInplace) {
   _isInplace = reallyInplace;
   if (_protoContext != nullptr) {
     _protoContext->markInplace(reallyInplace);
   }
 }
 
-OpClass sd::graph::Node::getOpClass() { return _opClass; }
+OpClass Node::getOpClass() { return _opClass; }
 
-bool sd::graph::Node::hasBlockAttached() { return _protoContext != nullptr; }
+bool Node::hasBlockAttached() { return _protoContext != nullptr; }
 
-bool sd::graph::Node::isInplace() { return _isInplace; }
+bool Node::isInplace() { return _isInplace; }
 
-bool sd::graph::Node::isDivergencePoint() {
+bool Node::isDivergencePoint() {
   if (hasCustomOp()) {
     return _customOp->getOpDescriptor()->isDivergent();
   } else if (opType() == OpType_LOGIC && opNum() == 30)
@@ -83,15 +83,15 @@ bool sd::graph::Node::isDivergencePoint() {
     return false;
 }
 
-void sd::graph::Node::setActive(bool reallyActive) { _active = reallyActive; }
+void Node::setActive(bool reallyActive) { _active = reallyActive; }
 
-bool sd::graph::Node::isActive() { return _active; }
+bool Node::isActive() { return _active; }
 
-sd::LongType Node::getFrameId() { return _frameId; }
+LongType Node::getFrameId() { return _frameId; }
 
-void Node::setFrameId(sd::LongType frameId) { _frameId = frameId; }
+void Node::setFrameId(LongType frameId) { _frameId = frameId; }
 
-ContextPrototype* sd::graph::Node::getContextPrototype() {
+ContextPrototype* Node::getContextPrototype() {
   if (_protoContext == nullptr)
     _protoContext = new ContextPrototype(
         this->getCustomOp() != nullptr ? this->getCustomOp()->getOpDescriptor() : nullptr, this->id());
@@ -103,43 +103,43 @@ ContextPrototype* sd::graph::Node::getContextPrototype() {
   return _protoContext;
 }
 
-void sd::graph::Node::setContextPrototype(ContextPrototype* block) {
+void Node::setContextPrototype(ContextPrototype* block) {
   if (_protoContext != nullptr) THROW_EXCEPTION("Block already exists");
 
   _protoContext = block;
 }
 
-void sd::graph::Node::setId(int id) { _id = id; }
+void Node::setId(int id) { _id = id; }
 
-sd::ops::DeclarableOp* sd::graph::Node::getCustomOp() { return _customOp; }
+ops::DeclarableOp* Node::getCustomOp() { return _customOp; }
 
-void sd::graph::Node::setCustomOp(sd::ops::DeclarableOp* customOp) {
+void Node::setCustomOp(ops::DeclarableOp* customOp) {
   _customOp = customOp;
 
   // divergent ops (Switch etc) are always inplace, they don't allocate anything
   if (_customOp != nullptr && customOp->getOpDescriptor()->isDivergent()) _isInplace = true;
 }
 
-bool sd::graph::Node::hasCustomOp() { return _customOp != nullptr; }
+bool Node::hasCustomOp() { return _customOp != nullptr; }
 
-std::string* sd::graph::Node::name() { return this->getName(); }
+std::string* Node::name() { return this->getName(); }
 
-std::string* sd::graph::Node::getName() { return &_name; }
+std::string* Node::getName() { return &_name; }
 
-void sd::graph::Node::setName(const std::string& name) { _name = name.c_str(); }
+void Node::setName(const std::string& name) { _name = name.c_str(); }
 
-void sd::graph::Node::setName(std::string* name) { _name = *name; }
+void Node::setName(std::string* name) { _name = *name; }
 
-double sd::graph::Node::scalar() { return _scalar.e<double>(0); };
+double Node::scalar() { return _scalar.e<double>(0); };
 
-void sd::graph::Node::pickInput(std::pair<int, int>& pair) { _input.push_back(pair); }
+void Node::pickInput(std::pair<int, int>& pair) { _input.push_back(pair); }
 
-void sd::graph::Node::pickInput(int inputId, int outputId) {
+void Node::pickInput(int inputId, int outputId) {
   std::pair<int, int> p(inputId, outputId);
   pickInput(p);
 }
 
-void sd::graph::Node::pickInput(int inputId) {
+void Node::pickInput(int inputId) {
   pickInput(inputId, 0);
 
   if (inputId < 0)
@@ -148,24 +148,24 @@ void sd::graph::Node::pickInput(int inputId) {
     _hasInternalInputs = true;
 }
 
-void sd::graph::Node::pickExternalOutput(int outputId) {
+void Node::pickExternalOutput(int outputId) {
   std::pair<int, int> pair(outputId, 0);
   _output.push_back(pair);
 
   _hasExternalOutputs = true;
 }
 
-void sd::graph::Node::pickOutputOnce(int outputId) {
+void Node::pickOutputOnce(int outputId) {
   std::pair<int, int> pair(outputId, 0);
   if (std::find(_output.begin(), _output.end(), pair) == _output.end()) pickOutput(outputId);
 }
 
-void sd::graph::Node::pickOutput(int nodeId, int outputId) {
+void Node::pickOutput(int nodeId, int outputId) {
   std::pair<int, int> pair(nodeId, outputId);
   _output.emplace_back(pair);
 }
 
-void sd::graph::Node::pickOutput(int outputId) {
+void Node::pickOutput(int outputId) {
   std::pair<int, int> pair(outputId, 0);
   _output.emplace_back(pair);
 
@@ -175,41 +175,41 @@ void sd::graph::Node::pickOutput(int outputId) {
     _hasInternalOutputs = true;
 }
 
-sd::LongType* sd::graph::Node::getDimensionsPtr() { return _dim; }
+LongType* Node::getDimensionsPtr() { return _dim; }
 
-std::vector<sd::LongType>* sd::graph::Node::getDimensions() { return &_dimensions; }
+std::vector<LongType>* Node::getDimensions() { return &_dimensions; }
 
-int sd::graph::Node::getLayer() { return _layer; }
+int Node::getLayer() { return _layer; }
 
-void sd::graph::Node::setLayer(int layer) { _layer = layer; }
+void Node::setLayer(int layer) { _layer = layer; }
 
-bool sd::graph::Node::hasExternalOutputs() { return _hasExternalOutputs; }
+bool Node::hasExternalOutputs() { return _hasExternalOutputs; }
 
-bool sd::graph::Node::hasExternalInputs() { return _hasExternalInputs; }
+bool Node::hasExternalInputs() { return _hasExternalInputs; }
 
-bool sd::graph::Node::hasInternalOutputs() { return _hasInternalOutputs; }
+bool Node::hasInternalOutputs() { return _hasInternalOutputs; }
 
-bool sd::graph::Node::hasInternalInputs() { return _hasInternalInputs; }
+bool Node::hasInternalInputs() { return _hasInternalInputs; }
 
-bool sd::graph::Node::isMultiInput() { return _input.size() > 1; }
+bool Node::isMultiInput() { return _input.size() > 1; }
 
-bool sd::graph::Node::isMultiOutput() { return _output.size() > 1; }
+bool Node::isMultiOutput() { return _output.size() > 1; }
 
-double* sd::graph::Node::extraParams() { return _extraParams; }
+double* Node::extraParams() { return _extraParams; }
 
 int Node::totalReferences() { return _referencedBy.size(); }
 
 void Node::addReference(int nodeId) { _referencedBy.emplace_back(nodeId); }
 
-sd::graph::OpType sd::graph::Node::opType() { return _opType; }
+OpType Node::opType() { return _opType; }
 
-int sd::graph::Node::id() { return _id; }
+int Node::id() { return _id; }
 
-sd::LongType sd::graph::Node::opNum() { return _opNum; }
+LongType Node::opNum() { return _opNum; }
 
-std::vector<std::pair<int, int>>* sd::graph::Node::input() { return &_input; }
+std::vector<std::pair<int, int>>* Node::input() { return &_input; }
 
-std::vector<std::pair<int, int>>* sd::graph::Node::output() { return &_output; }
+std::vector<std::pair<int, int>>* Node::output() { return &_output; }
 
 bool Node::isScoped() { return _scope_id != 0; }
 
@@ -231,14 +231,14 @@ Node* Node::asT() {
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT Node* Node::asT, (), SD_COMMON_TYPES);
 
-sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_list<int> input,
+Node::Node(ops::DeclarableOp* customOp, int id, std::initializer_list<int> input,
                       std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar,
                       std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
   this->_opType = OpType_CUSTOM;
   this->_id = id;
   this->_opNum = customOp->getOpHash();
   this->_extraParams = nullptr;
-  this->_dataType = sd::DataType::FLOAT32;  // float as default
+  this->_dataType = FLOAT32;  // float as default
   this->_dim = nullptr;
   this->_customOp = customOp;
 
@@ -254,7 +254,7 @@ sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new LongType[dimensions.size()];
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -273,16 +273,16 @@ sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_
   this->setContextPrototype(block);
 }
 
-void sd::graph::Node::setOpType(OpType opType) { this->_opType = opType; }
+void Node::setOpType(OpType opType) { this->_opType = opType; }
 
-sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input,
+Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input,
                       std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar,
                       std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
   this->_opType = opType;
   this->_id = id;
   this->_opNum = opNum;
   this->_extraParams = nullptr;
-  this->_dataType = sd::DataType::FLOAT32;  // float as default
+  this->_dataType = FLOAT32;  // float as default
   this->_dim = nullptr;
 
   _hasExternalInputs = false;
@@ -297,7 +297,7 @@ sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<in
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new LongType[dimensions.size()];
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -334,7 +334,7 @@ sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<in
     for (auto v : tArgs) block->getTArguments()->emplace_back(v);
 
     this->setContextPrototype(block);
-    this->setCustomOp(Node::buildOpByType(opType, (int)input.size(), (int)block->getIArguments()->size(),
+    this->setCustomOp(buildOpByType(opType, (int)input.size(), (int)block->getIArguments()->size(),
                                           (int)block->getTArguments()->size(), opNum, &_scalar));
     block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
   } else if (opType == OpType_CUSTOM) {
@@ -353,20 +353,20 @@ sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<in
   }
 };
 
-sd::graph::Node::Node(const sd::graph::FlatNode* node) {
+Node::Node(const FlatNode* node) {
   _hasExternalInputs = false;
   _hasExternalOutputs = false;
   _hasInternalInputs = false;
   _hasInternalOutputs = false;
   _extraParams = nullptr;
   _dim = nullptr;
-  _dataType = sd::DataType::FLOAT32;  // float as default
+  _dataType = FLOAT32;  // float as default
   if (node->scope_id() != 0) this->_scope_id = node->scope_id();
 
   if (node->scope_name() != nullptr && node->scope_name()->size() > 0) this->_scope_name = node->scope_name()->str();
 
   if (node->scalar() != nullptr) {
-    auto scalar = sd::graph::FlatUtils::fromFlatArray(node->scalar());
+    auto scalar = FlatUtils::fromFlatArray(node->scalar());
     _scalar = *scalar;
     delete scalar;
   }
@@ -416,7 +416,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
     }
 
     if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
-      _dim = new sd::LongType [node->dimensions()->size()];
+      _dim = new LongType[node->dimensions()->size()];
       for (int e = 0; e < (int)node->dimensions()->size(); e++) {
         _dimensions.emplace_back(node->dimensions()->Get(e));
         _dim[e] = node->dimensions()->Get(e);
@@ -467,13 +467,13 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
         if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
           for (int e = 0; e < (int)node->extraTypes()->size(); e++) {
-            block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
+            block->getDArguments()->emplace_back((DataType)node->extraTypes()->Get(e));
           }
         }
 
         this->setContextPrototype(block);
-        this->setCustomOp(Node::buildOpByType(_opType, (int)node->input()->size(), (int)block->getIArguments()->size(),
-                                              (int)block->getTArguments()->size(), (int)_opNum, &_scalar));
+        this->setCustomOp(buildOpByType(_opType, (int)node->input()->size(), (int)block->getIArguments()->size(),
+                                        (int)block->getTArguments()->size(), (int)_opNum, &_scalar));
         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
       } else if (node->inputPaired() != nullptr && node->inputPaired()->size() > 0) {
         this->_isDeductable = true;
@@ -504,19 +504,18 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
         if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
           for (int e = 0; e < (int)node->extraTypes()->size(); e++) {
-            block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
+            block->getDArguments()->emplace_back((DataType)node->extraTypes()->Get(e));
           }
         }
 
         this->setContextPrototype(block);
 
-        this->setCustomOp(Node::buildOpByType(_opType, (int)node->inputPaired()->size(),
-                                              (int)block->getIArguments()->size(), (int)block->getTArguments()->size(),
-                                              (int)_opNum, &_scalar));
+        this->setCustomOp(buildOpByType(_opType, (int)node->inputPaired()->size(), (int)block->getIArguments()->size(),
+                                        (int)block->getTArguments()->size(), (int)_opNum, &_scalar));
         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
       }
     } else if (this->_opType == OpType_CUSTOM) {
-      auto op = sd::ops::OpRegistrator::getInstance().getOperation(this->opNum());
+      auto op = ops::OpRegistrator::getInstance().getOperation(this->opNum());
       if (op == nullptr) {
         sd_verbose("Can't find operation: %lld\n", this->opNum());
         THROW_EXCEPTION("Can't find requested operation");
@@ -546,7 +545,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
       if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
         for (int e = 0; e < (int)node->extraTypes()->size(); e++) {
-          block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
+          block->getDArguments()->emplace_back((DataType)node->extraTypes()->Get(e));
         }
       }
 
@@ -561,11 +560,11 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
   }
 }
 
-sd::DataType Node::dataType() { return _dataType; }
+DataType Node::dataType() { return _dataType; }
 
 ContextPrototype* Node::protoContext() { return _protoContext; }
 
-sd::graph::Node::~Node() {
+Node::~Node() {
   if (_extraParams != nullptr) delete[] _extraParams;
 
   if (_dim != nullptr) delete[] _dim;
@@ -573,131 +572,131 @@ sd::graph::Node::~Node() {
   if (_protoContext != nullptr) delete _protoContext;
 
   if (_isDeductable && _customOp != nullptr) {
-    Node::deleteOpByType(_opType, _customOp);
+    deleteOpByType(_opType, _customOp);
   }
 }
 
-int sd::graph::Node::getRewindNode() { return _rewindNode; }
+int Node::getRewindNode() { return _rewindNode; }
 
-void sd::graph::Node::setRewindNode(int nodeId) { _rewindNode = nodeId; }
+void Node::setRewindNode(int nodeId) { _rewindNode = nodeId; }
 
-std::pair<int, int>& sd::graph::Node::getRewindLayer() { return _rewindLayer; };
+std::pair<int, int>& Node::getRewindLayer() { return _rewindLayer; };
 
-void sd::graph::Node::setRewindLayer(int layerId, int stepId) {
+void Node::setRewindLayer(int layerId, int stepId) {
   _rewindLayer.first = layerId;
   _rewindLayer.second = stepId;
 }
 
-bool sd::graph::Node::equals(Node* other) {
+bool Node::equals(Node* other) {
   if (_opType == other->_opType && _dataType == other->_dataType && _opNum == other->_opNum) return true;
 
   return false;
 }
 
-void sd::graph::Node::deleteOpByType(OpType opType, void* op) {
+void Node::deleteOpByType(OpType opType, void* op) {
   switch (opType) {
     case OpType_PAIRWISE:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
+      delete reinterpret_cast<ops::LegacyPairwiseTransformOp*>(op);
       break;
     case OpType_PAIRWISE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
+      delete reinterpret_cast<ops::LegacyPairwiseTransformBoolOp*>(op);
       break;
     case OpType_TRANSFORM_STRICT:
-      delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
+      delete reinterpret_cast<ops::LegacyTransformStrictOp*>(op);
       break;
     case OpType_TRANSFORM_SAME:
-      delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
+      delete reinterpret_cast<ops::LegacyTransformSameOp*>(op);
       break;
     case OpType_TRANSFORM_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
+      delete reinterpret_cast<ops::LegacyTransformFloatOp*>(op);
       break;
     case OpType_TRANSFORM_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
+      delete reinterpret_cast<ops::LegacyTransformBoolOp*>(op);
       break;
     case OpType_SCALAR:
-      delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
+      delete reinterpret_cast<ops::LegacyScalarOp*>(op);
       break;
     case OpType_SCALAR_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
+      delete reinterpret_cast<ops::LegacyScalarBoolOp*>(op);
       break;
     case OpType_REDUCE_3:
-      delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
+      delete reinterpret_cast<ops::LegacyReduce3Op*>(op);
       break;
     case OpType_REDUCE_SAME:
-      delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
+      delete reinterpret_cast<ops::LegacyReduceSameOp*>(op);
       break;
     case OpType_REDUCE_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
+      delete reinterpret_cast<ops::LegacyReduceFloatOp*>(op);
       break;
     case OpType_REDUCE_LONG:
-      delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
+      delete reinterpret_cast<ops::LegacyReduceLongOp*>(op);
       break;
     case OpType_REDUCE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
+      delete reinterpret_cast<ops::LegacyReduceBoolOp*>(op);
       break;
     case OpType_INDEX_REDUCE:
-      delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
+      delete reinterpret_cast<ops::LegacyIndexReduceOp*>(op);
       break;
     case OpType_SUMMARYSTATS:
-      delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
+      delete reinterpret_cast<ops::LegacyStatsOp*>(op);
       break;
     case OpType_RANDOM:
-      delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
+      delete reinterpret_cast<ops::LegacyRandomOp*>(op);
       break;
     case OpType_BROADCAST:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
+      delete reinterpret_cast<ops::LegacyBroadcastOp*>(op);
       break;
     case OpType_BROADCAST_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
+      delete reinterpret_cast<ops::LegacyBroadcastBoolOp*>(op);
       break;
     case OpType_CUSTOM:
-      delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
+      delete reinterpret_cast<ops::DeclarableOp*>(op);
       break;
     default:
       THROW_EXCEPTION("Bad opType passed in");
   }
 }
 
-sd::ops::DeclarableOp* sd::graph::Node::buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs,
+ops::DeclarableOp* Node::buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs,
                                                       int opNum, NDArray* scalar) {
   switch (opType) {
     case OpType_PAIRWISE:
-      return new sd::ops::LegacyPairwiseTransformOp(opNum);
+      return new ops::LegacyPairwiseTransformOp(opNum);
     case OpType_PAIRWISE_BOOL:
-      return new sd::ops::LegacyPairwiseTransformBoolOp(opNum);
+      return new ops::LegacyPairwiseTransformBoolOp(opNum);
     case OpType_TRANSFORM_STRICT:
-      return new sd::ops::LegacyTransformStrictOp(opNum);
+      return new ops::LegacyTransformStrictOp(opNum);
     case OpType_TRANSFORM_SAME:
-      return new sd::ops::LegacyTransformSameOp(opNum);
+      return new ops::LegacyTransformSameOp(opNum);
     case OpType_TRANSFORM_FLOAT:
-      return new sd::ops::LegacyTransformFloatOp(opNum);
+      return new ops::LegacyTransformFloatOp(opNum);
     case OpType_TRANSFORM_BOOL:
-      return new sd::ops::LegacyTransformBoolOp(opNum);
+      return new ops::LegacyTransformBoolOp(opNum);
     case OpType_SCALAR:
-      return scalar == nullptr ? new sd::ops::LegacyScalarOp(opNum) : new sd::ops::LegacyScalarOp(opNum, *scalar);
+      return scalar == nullptr ? new ops::LegacyScalarOp(opNum) : new ops::LegacyScalarOp(opNum, *scalar);
     case OpType_SCALAR_BOOL:
-      return scalar == nullptr ? new sd::ops::LegacyScalarBoolOp(opNum)
-                               : new sd::ops::LegacyScalarBoolOp(opNum, *scalar);
+      return scalar == nullptr ? new ops::LegacyScalarBoolOp(opNum)
+                               : new ops::LegacyScalarBoolOp(opNum, *scalar);
     case OpType_REDUCE_3:
-      return new sd::ops::LegacyReduce3Op(opNum);
+      return new ops::LegacyReduce3Op(opNum);
     case OpType_REDUCE_SAME:
-      return new sd::ops::LegacyReduceSameOp(opNum);
+      return new ops::LegacyReduceSameOp(opNum);
     case OpType_REDUCE_FLOAT:
-      return new sd::ops::LegacyReduceFloatOp(opNum);
+      return new ops::LegacyReduceFloatOp(opNum);
     case OpType_REDUCE_LONG:
-      return new sd::ops::LegacyReduceLongOp(opNum);
+      return new ops::LegacyReduceLongOp(opNum);
     case OpType_REDUCE_BOOL:
-      return new sd::ops::LegacyReduceBoolOp(opNum);
+      return new ops::LegacyReduceBoolOp(opNum);
     case OpType_INDEX_REDUCE:
-      return new sd::ops::LegacyIndexReduceOp(opNum);
+      return new ops::LegacyIndexReduceOp(opNum);
     case OpType_SUMMARYSTATS:
-      return new sd::ops::LegacyStatsOp(opNum);
+      return new ops::LegacyStatsOp(opNum);
     case OpType_RANDOM:
-      return new sd::ops::LegacyRandomOp(opNum);
+      return new ops::LegacyRandomOp(opNum);
     case OpType_BROADCAST:
-      return new sd::ops::LegacyBroadcastOp(opNum);
+      return new ops::LegacyBroadcastOp(opNum);
     case OpType_BROADCAST_BOOL:
-      return new sd::ops::LegacyBroadcastBoolOp(opNum);
+      return new ops::LegacyBroadcastBoolOp(opNum);
     default:
       THROW_EXCEPTION("Bad opType passed in");
   }
@@ -708,7 +707,7 @@ bool Node::isDeductable() { return _isDeductable; }
 void Node::setDeductable(bool reallyDeductable) { _isDeductable = reallyDeductable; }
 
 Node* Node::clone() {
-  if (this->_customOp && this->_opType == sd::graph::OpType_CUSTOM) {
+  if (this->_customOp && this->_opType == OpType_CUSTOM) {
     auto clone = new Node(this->_customOp, _id);
     clone->pullValues(this);
     return clone;
@@ -721,7 +720,7 @@ Node* Node::clone() {
     if (!_isDeductable)
       clone->_customOp = _customOp;
     else {
-      auto c = dynamic_cast<sd::ops::LegacyOp*>(_customOp);
+      auto c = dynamic_cast<ops::LegacyOp*>(_customOp);
       clone->_customOp = c->clone();
     }
 

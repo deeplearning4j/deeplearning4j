@@ -31,7 +31,7 @@
 namespace sd {
 namespace ops {
 
-DECLARE_TYPES(lrn) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(lrn) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 CONFIGURABLE_OP_IMPL(lrn, 1, 1, true, 3, 1) {
   auto input = INPUT_VARIABLE(0);
@@ -48,7 +48,7 @@ CONFIGURABLE_OP_IMPL(lrn, 1, 1, true, 3, 1) {
 }
 
 DECLARE_TYPES(lrn_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(lrn_bp, 2, 1, true, 3, 1) {
@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(lrn_bp, 2, 1, true, 3, 1) {
 
   helpers::lrnBP(block, *input, *gradO, *gradI, depth, bias, alpha, beta);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(local_response_normalization, lrn);
 

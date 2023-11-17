@@ -26,9 +26,9 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void concatKernelScalar(int numArrays, sd::Pointer *data, void *vz) {
+SD_DEVICE void concatKernelScalar(int numArrays, Pointer *data, void *vz) {
   auto z = static_cast<T *>(vz);
-  sd::LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto input = reinterpret_cast<T **>(data);
 
   for (int i = tid; i < numArrays; i += blockDim.x * gridDim.x) z[i] = input[i][0];
@@ -36,16 +36,16 @@ SD_DEVICE void concatKernelScalar(int numArrays, sd::Pointer *data, void *vz) {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConcatKernelScalar(int numArrays, sd::Pointer *data, void *vz) {
+SD_KERNEL void execConcatKernelScalar(int numArrays, Pointer *data, void *vz) {
   concatKernelScalar<T>(numArrays, data, vz);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
+SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
                                        void *vz) {
   execConcatKernelScalar<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, vz);
-  sd::DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
+  DebugHelper::checkErrorCode(stream, "concatScalar(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void concatKernelScalarGeneric,

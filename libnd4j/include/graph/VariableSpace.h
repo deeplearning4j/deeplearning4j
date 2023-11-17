@@ -41,10 +41,10 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT VariableSpace {
  protected:
-  sd::memory::Workspace* _workspace;
+  memory::Workspace* _workspace;
 
   // stash is NOT cloned
-  sd::graph::Stash _stash;
+  Stash _stash;
 
   SD_MAP_IMPL<std::pair<int, int>, Variable*> _paired;
   SD_MAP_IMPL<std::string, Variable*> _symbolic;
@@ -52,9 +52,9 @@ class SD_LIB_EXPORT VariableSpace {
   std::vector<Variable*> _external;
   std::vector<Variable*> _internal;
 
-  std::vector<sd::NDArrayList*> _lists;
+  std::vector<NDArrayList*> _lists;
 
-  std::vector<sd::graph::Variable*> _placeholders;
+  std::vector<Variable*> _placeholders;
 
   void silentPutVariable(std::pair<int, int>& pair, Variable* variable);
 
@@ -62,9 +62,9 @@ class SD_LIB_EXPORT VariableSpace {
 
   std::mutex _varmap;
 
-  SD_MAP_IMPL<int, sd::graph::Variable*> _temporary;
+  SD_MAP_IMPL<int, Variable*> _temporary;
 
-  std::vector<sd::graph::Variable*>* _handles;
+  std::vector<Variable*>* _handles;
 
   FlowPath* _flow = nullptr;
 
@@ -76,7 +76,7 @@ class SD_LIB_EXPORT VariableSpace {
 
   virtual int numberOfPlaceholders();
   virtual std::vector<Variable*>* getPlaceholders();
-  virtual void setWorkspace(sd::memory::Workspace* workspace);
+  virtual void setWorkspace(memory::Workspace* workspace);
 
   virtual LaunchContext* launchContext();
 
@@ -89,10 +89,10 @@ class SD_LIB_EXPORT VariableSpace {
   virtual bool hasVariable(std::pair<int, int>& pair);
   virtual bool hasVariable(std::string* symbol);
 
-  virtual sd::graph::Variable* getVariable(int id);
-  virtual sd::graph::Variable* getVariable(int id, int idx);
-  virtual sd::graph::Variable* getVariable(std::pair<int, int>& pair);
-  virtual sd::graph::Variable* getVariable(std::string* symbol);
+  virtual Variable* getVariable(int id);
+  virtual Variable* getVariable(int id, int idx);
+  virtual Variable* getVariable(std::pair<int, int>& pair);
+  virtual Variable* getVariable(std::string* symbol);
 
   virtual std::vector<Variable*> getVariables();
 
@@ -107,31 +107,31 @@ class SD_LIB_EXPORT VariableSpace {
   virtual void dropVariable(std::pair<int, int>& pair);
   virtual void dropVariable(int id, int idx);
 
-  virtual void trackList(sd::NDArrayList* list);
+  virtual void trackList(NDArrayList* list);
 
   virtual void putOutputVariable(Variable* variable);
 
   virtual void replaceVariable(Variable* variable);
 
   // memory-related statistics
-  virtual sd::LongType externalMemory();
-  virtual sd::LongType internalMemory();
-  virtual sd::LongType totalMemory();
+  virtual LongType externalMemory();
+  virtual LongType internalMemory();
+  virtual LongType totalMemory();
 
   virtual int externalEntries();
   virtual int internalEntries();
   virtual int totalEntries();
 
-  virtual sd::graph::VariableSpace* clone();
+  virtual VariableSpace* clone();
 
   std::vector<Variable*>* handles();
 
-  sd::graph::VariableSpace* asT();
+  VariableSpace* asT();
   void injectVariable(std::pair<int, int>& pair, Variable* variable);
 
-  virtual sd::graph::Stash* getStash();
+  virtual Stash* getStash();
 
-  virtual std::vector<sd::graph::Variable*>* getExternalVariables();
+  virtual std::vector<Variable*>* getExternalVariables();
 
   virtual void setFlowPath(FlowPath* timers);
   virtual FlowPath* flowPath();

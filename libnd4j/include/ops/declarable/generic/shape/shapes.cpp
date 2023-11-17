@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(shapes_of, -1, -1, false, 0, 0) {
     for (int i = 0; i < x->rankOf(); i++) z->p(i, x->sizeAt(i));
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 DECLARE_SYN(shape_n, shapes_of);
 
@@ -44,14 +44,14 @@ DECLARE_SHAPE_FN(shapes_of) {
 
   for (int e = 0; e < inputShape->size(); e++) {
     auto inShape = inputShape->at(e);
-    shapeList->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), sd::DataType::INT64));
+    shapeList->push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), INT64));
   }
 
   return shapeList;
 };
 
 DECLARE_TYPES(shapes_of) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS});
 }
 }  // namespace ops
 }  // namespace sd

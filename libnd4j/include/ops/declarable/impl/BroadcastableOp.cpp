@@ -26,17 +26,17 @@
 namespace sd {
 namespace ops {
 BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
-    : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
+    : DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
   //
 }
 
-ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
   auto y = inputShape->size() > 1  ? inputShape->at(1) : x;
   auto outputs = _descriptor->getOutputTypesForOutput(0);
-  sd::DataType dtype = block.dataType(0);
-  if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {
+  DataType dtype = block.dataType(0);
+  if (block.dataType(0) != BOOL && !(outputs.size() == 1 && outputs[0] == BOOL)) {
     if (Environment::getInstance().isExperimentalBuild()) {
       if (shape::length(y) > shape::length(x)) {
         dtype = DataTypeUtils::pickPairwiseResultType(y, x);
@@ -47,7 +47,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
       dtype = ArrayOptions::dataType(x);
     }
   } else
-    dtype = sd::DataType::BOOL;
+    dtype = BOOL;
 
   if (shape::isEmpty(x) || shape::isEmpty(y)) {
     // this is edge case, [3, 4] + [] = []
@@ -55,7 +55,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
         || (shape::isEmpty(y) && shape::rank(y) == 0)
         || (shape::isEmpty(x) && shape::rank(x) == 1 && shape::shapeOf(x)[0] == 0)
         ||  (shape::isEmpty(y) && shape::rank(y) == 1 && shape::shapeOf(y)[0] == 0)) {
-      std::vector<sd::LongType> vecShape;
+      std::vector<LongType> vecShape;
       auto xShape = shape::shapeOf(x);
       for(int i = 0; i < shape::rank(x); i++)
         vecShape.emplace_back(xShape[i]);
@@ -63,12 +63,12 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
       return shapeList;
     }
 
-    if(dtype == sd::DataType::ANY) {
+    if(dtype == ANY) {
       THROW_EXCEPTION("No data type found!");
     }
 
 
-    const sd::LongType *newshape = nullptr;
+    const LongType *newshape = nullptr;
     if(!ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace())) {
       std::string errorMessage;
       errorMessage += "Unable to evaluate broadcast shape info:";
@@ -107,7 +107,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
-    const sd::LongType *newshape = nullptr;
+    const LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     auto desc = new ShapeDescriptor(newshape, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));

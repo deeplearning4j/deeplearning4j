@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicSwitch::processNode(Graph* graph, Node* node) {
+Status LogicSwitch::processNode(Graph* graph, Node* node) {
   auto __variableSpace = graph->getVariableSpace();
   auto __flowPath = __variableSpace->flowPath();
 
@@ -99,7 +99,7 @@ sd::Status LogicSwitch::processNode(Graph* graph, Node* node) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 }  // namespace graph
 }  // namespace sd

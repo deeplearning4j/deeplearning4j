@@ -60,7 +60,7 @@ DIVERGENT_OP_IMPL(Switch, 2, 2, true) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(switch, Switch);
 DECLARE_SYN(if, Switch);

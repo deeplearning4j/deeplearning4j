@@ -36,8 +36,7 @@
 namespace sd {
 namespace ops {
 
-
-sd::ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
+ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   std::string message;
   if (!condition) {
     va_list args;
@@ -58,9 +57,9 @@ sd::ErrorResult conditionHelper(const char *file, int line, int condition, int a
 
     message += "\n";
 
-    return { sd::Status::BAD_PARAMS, message };
+    return {Status::BAD_PARAMS, message };
   }
-  return { sd::Status::OK, "" };
+  return {Status::OK, "" };
 }
 
 DeclarableOp::DeclarableOp() {
@@ -103,16 +102,16 @@ OpDescriptor *DeclarableOp::getOpDescriptor() { return _descriptor; }
 
 std::string *DeclarableOp::getOpName() { return _descriptor->getOpName(); }
 
-sd::LongType DeclarableOp::getOpHash() { return _descriptor->getHash(); }
+LongType DeclarableOp::getOpHash() { return _descriptor->getHash(); }
 
-sd::NDArray *sd::ops::DeclarableOp::getNullifiedZ(Context &block, int inputId) {
+NDArray *DeclarableOp::getNullifiedZ(Context &block, int inputId) {
   auto result = getZ(block, inputId);
   if (result != nullptr && !block.isInplace()) result->nullify();
 
   return result;
 }
 
-sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
+NDArray *DeclarableOp::getZ(Context &ctx, int inputId) {
   NDArray *z = nullptr;
 
   if (ctx.isFastPath()) {
@@ -155,7 +154,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
   return z;
 }
 
-int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
+int DeclarableOp::prepareOutputs(Context &ctx) {
   auto workspace = ctx.getWorkspace();
   GraphProfile *prof = nullptr;
   NodeProfile *node = nullptr;
@@ -178,7 +177,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       } else {
         for (auto p : *ctx.inputs()) {
           auto var = ctx.variable(p);
-          if (var->variableType() == VariableType::NDARRAY) {
+          if (var->variableType() == NDARRAY) {
             NDArray *array = var->getNDArray();
 
             node->addInputShape(array->shapeInfo());
@@ -195,7 +194,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       auto vs = ctx.getVariableSpace();
       for (auto p : *ctx.inputs()) {
         auto var = ctx.variable(p);
-        if (var->variableType() == VariableType::NDARRAY) {
+        if (var->variableType() == NDARRAY) {
           NDArray *array = var->getNDArray();
           ctx.setInputArray(cnt, array);
           ctx.setOutputArray(cnt, array);
@@ -242,7 +241,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       int arrCnt = 0;
       for (auto p : *ctx.inputs()) {
         auto var = ctx.variable(p);
-        if (var->variableType() == VariableType::NDARRAY) {
+        if (var->variableType() == NDARRAY) {
           NDArray *array = var->getNDArray();
           var->markRemovable(false);
           if (array == nullptr)
@@ -277,7 +276,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
     }
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
-    if (sd::Environment::getInstance().isDebugAndVerbose()) {
+    if (Environment::getInstance().isDebugAndVerbose()) {
       sd_printf("Node_%i: %s\n", ctx.nodeId(), this->getOpDescriptor()->getOpName()->c_str());
       sd_printf("Input shapes:\n",0);
       for (int e = 0; e < inSha.size(); e++) {
@@ -366,7 +365,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
           if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
             std::string msg =
                 "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
-            throw sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
+            throw datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
           }
         }
       } else {
@@ -441,21 +440,21 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
   }
 }
 
-void sd::ops::DeclarableOp::storeResult(Context &block, int outputNumber, NDArray *array) {
+void DeclarableOp::storeResult(Context &block, int outputNumber, NDArray *array) {
   this->storeResult(block, outputNumber, *array);
 }
 
-void sd::ops::DeclarableOp::storeResult(sd::graph::Context &ctx, int outputNumber, NDArray &array) {
+void DeclarableOp::storeResult(Context &ctx, int outputNumber, NDArray &array) {
   ctx.pushNDArrayToVariableSpace(ctx.nodeId(), outputNumber, &array, !ctx.isInplace());
 }
 
-bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) {
+bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
   auto var = block.variable(block.getNodeId(), 0);
 
   auto workspace = block.getWorkspace();
 
-  sd::LongType len = shape::length(shape);
-  sd::LongType *__shape;
+  LongType len = shape::length(shape);
+  LongType *__shape;
   ALLOCATE(__shape, workspace, shape::shapeInfoLength(shape), sd::LongType);  // new int[shape[0] * 2 + 4];
 
   memcpy(__shape, shape, shape::shapeInfoByteLength(shape));
@@ -481,7 +480,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
 }
 
 
-void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
+void DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
     for(int i = 0; i < block.width(); i++) {
@@ -497,11 +496,11 @@ void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   }
 }
 
-bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list<sd::LongType> &shape, char order) {
+bool DeclarableOp::allocateResult(Context &block, std::initializer_list<LongType> &shape, char order) {
   auto var = block.variable(block.getNodeId(), 0);
   auto workspace = block.getWorkspace();
 
-  sd::LongType len = shape::length(shape);
+  LongType len = shape::length(shape);
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
@@ -514,7 +513,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
   return true;
 }
 
-sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
+Status DeclarableOp::validateDataTypes(Context &block) {
   _registrator.lock();
   if (!_registered) {
     _registered = true;
@@ -531,7 +530,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
     THROW_EXCEPTION("Provided inputs are more than allowed");
   }
 #else
-  std::vector<sd::DataType> inputTypes(block.width());
+  std::vector<DataType> inputTypes(block.width());
 #endif
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
@@ -546,26 +545,25 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         auto ctype = DataTypeUtils::asString(dtype);
 
         auto inputTypes2 = _descriptor->getInputTypesForInput(cnt);
-        if(inputTypes2.size() > 1) {
+        if (inputTypes2.size() > 1) {
           std::string allTypes;
-          for(int i = 0; i < inputTypes2.size(); i++) {
+          for (int i = 0; i < inputTypes2.size(); i++) {
             allTypes += DataTypeUtils::asString(inputTypes2[i]);
-            if(i < inputTypes2.size() - 1) {
+            if (i < inputTypes2.size() - 1) {
               allTypes += ",";
             }
           }
-          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
-                    ctype.c_str(),allTypes.c_str());
-        } else  if(!inputTypes2.size() < 1){
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n",
+                    _descriptor->getOpName()->data(), cnt, ctype.c_str(), allTypes.c_str());
+        } else if (!inputTypes2.size() < 1) {
           auto typeAsString = DataTypeUtils::asString(inputTypes2[0]);
-          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
-                    ctype.c_str(),typeAsString.c_str());
+          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n",
+                    _descriptor->getOpName()->data(), cnt, ctype.c_str(), typeAsString.c_str());
         } else {
-          sd_printf("Op [%s] data types empty \n",_descriptor->getOpName()->data());
+          sd_printf("Op [%s] data types empty \n", _descriptor->getOpName()->data());
         }
 
-
-        return sd::Status::BAD_ARGUMENTS;
+        return Status::BAD_ARGUMENTS;
       }
       cnt++;
     }
@@ -581,10 +579,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         if (!_descriptor->checkInputMatch(cnt, array->dataType())) {
           auto ctype = DataTypeUtils::asString(array->dataType());
           std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                     "] failed check for input [" + std::to_string(cnt) +
-                                     "], DataType: [" + ctype + "]\n";
+                                     "] failed check for input [" + std::to_string(cnt) + "], DataType: [" + ctype +
+                                     "]\n";
           THROW_EXCEPTION(errorMessage.c_str());
-          return sd::Status::BAD_ARGUMENTS;
+          return Status::BAD_ARGUMENTS;
         }
       }
 
@@ -608,10 +606,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           if (ia->dataType() != cType) {
             auto t = DataTypeUtils::asString(cType);
             std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                       "] failed check for output [" + std::to_string(index) +
-                                       "], DataType: [" + t + "]\n";
+                                       "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                       "]\n";
             THROW_EXCEPTION(errorMessage.c_str());
-            return sd::Status::BAD_ARGUMENTS;
+            return Status::BAD_ARGUMENTS;
           }
         } else {
           // for same mode, output type must be the same as input type
@@ -620,10 +618,10 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           if (ia->dataType() != cType) {
             auto t = DataTypeUtils::asString(cType);
             std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                       "] failed check for output [" + std::to_string(index) +
-                                       "], DataType: [" + t + "]\n";
+                                       "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                       "]\n";
             THROW_EXCEPTION(errorMessage.c_str());
-            return sd::Status::BAD_ARGUMENTS;
+            return Status::BAD_ARGUMENTS;
           }
         }
       } else if (_descriptor->isInherit(index)) {
@@ -631,19 +629,19 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
           auto t = DataTypeUtils::asString(cType);
           std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                     "] failed check for output [" + std::to_string(index) +
-                                     "], DataType: [" + t + "].\n";
+                                     "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                     "].\n";
           THROW_EXCEPTION(errorMessage.c_str());
-          return sd::Status::BAD_ARGUMENTS;
+          return Status::BAD_ARGUMENTS;
         }
 
       } else if (!_descriptor->checkOutputMatch(index, cType)) {
         auto t = DataTypeUtils::asString(cType);
         std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                   "] failed check for output [" + std::to_string(index) +
-                                   "], DataType: [" + t + "];\n";
+                                   "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                   "];\n";
         THROW_EXCEPTION(errorMessage.c_str());
-        return sd::Status::BAD_ARGUMENTS;
+        return Status::BAD_ARGUMENTS;
       }
       index++;
     }
@@ -667,23 +665,22 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
               if (iv->getNDArray()->dataType() != cType) {
                 auto t = DataTypeUtils::asString(cType);
                 std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                           "] failed check for output [" + std::to_string(index) +
-                                           "], DataType: [" + t + "]\n";
+                                           "] failed check for output [" + std::to_string(index) + "], DataType: [" +
+                                           t + "]\n";
                 THROW_EXCEPTION(errorMessage.c_str());
-                return sd::Status::BAD_ARGUMENTS;
+                return Status::BAD_ARGUMENTS;
               }
             } else {
-
               // for same mode, output type must be the same as input type
               auto iv = block.variable(index);
 
               if (iv->getNDArray()->dataType() != cType) {
                 auto t = DataTypeUtils::asString(cType);
                 std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                           "] failed check for output [" + std::to_string(index) +
-                                           "], DataType: [" + t + "]\n";
+                                           "] failed check for output [" + std::to_string(index) + "], DataType: [" +
+                                           t + "]\n";
                 THROW_EXCEPTION(errorMessage.c_str());
-                return sd::Status::BAD_ARGUMENTS;
+                return Status::BAD_ARGUMENTS;
               }
             }
           } else if (_descriptor->isInherit(index)) {
@@ -691,19 +688,19 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
             if (std::find(std::begin(inputTypes), std::end(inputTypes), cType) == std::end(inputTypes)) {
               auto t = DataTypeUtils::asString(cType);
               std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                         "] failed check for output [" + std::to_string(index) +
-                                         "], DataType: [" + t + "].\n";
+                                         "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                         "].\n";
               THROW_EXCEPTION(errorMessage.c_str());
-              return sd::Status::BAD_ARGUMENTS;
+              return Status::BAD_ARGUMENTS;
             }
 
           } else if (!_descriptor->checkOutputMatch(index, cType)) {
             auto t = DataTypeUtils::asString(cType);
             std::string errorMessage = "Op [" + std::string(_descriptor->getOpName()->data()) +
-                                       "] failed check for output [" + std::to_string(index) +
-                                       "], DataType: [" + t + "];\n";
+                                       "] failed check for output [" + std::to_string(index) + "], DataType: [" + t +
+                                       "];\n";
             THROW_EXCEPTION(errorMessage.c_str());
-            return sd::Status::BAD_ARGUMENTS;
+            return Status::BAD_ARGUMENTS;
           }
         }
       } else
@@ -711,16 +708,16 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::execute(Context *block) {
+Status DeclarableOp::execute(Context *block) {
   sd_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
   std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
-  sd::LongType prepTime, outerTime;
+  LongType prepTime, outerTime;
 
-  sd::LongType memoryBefore =
+  LongType memoryBefore =
       block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
   if (Environment::getInstance().isProfiling()) timeEnter = std::chrono::system_clock::now();
   // basic validation: ensure inputs are set
@@ -740,11 +737,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
   }
 
-  sd::Status status;
+  Status status;
   bool hasHelper = false;
 
   // platform helpers use might be forbidden for various reasons, so we'll check it out first
-  if (block->helpersAllowed() && sd::Environment::getInstance().helpersAllowed()) {
+  if (block->helpersAllowed() && Environment::getInstance().helpersAllowed()) {
     // if we have platform-specific helper for this op - invoke it
     if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
       auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
@@ -847,10 +844,10 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     if (fp != nullptr) {
       auto p = fp->profile();
       if (p != nullptr) {
-        sd::LongType memoryAfter = block->workspace() == nullptr
+        LongType memoryAfter = block->workspace() == nullptr
                                    ? 0L
                                    : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
-        sd::LongType memoryUsed = memoryAfter - memoryBefore;
+        LongType memoryUsed = memoryAfter - memoryBefore;
         p->nodeById(block->nodeId())->setPreparationTime(prepTime);
         p->nodeById(block->nodeId())->setExecutionTime(outerTime);
         p->nodeById(block->nodeId())->setTotalSize(memoryUsed);
@@ -859,7 +856,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 
   // now we print out all outputs for this node
-  if (sd::Environment::getInstance().isDebugAndVerbose()) {
+  if (Environment::getInstance().isDebugAndVerbose()) {
     sd_printf("Op with name %s and num inputs %i \n", this->getOpName()->c_str(), block->width());
     auto vs = block->getVariableSpace();
     int numInputs = block->width();
@@ -904,7 +901,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       bool isEmpty = array->isEmpty();
       bool isScalar = array->isScalar();
       int lengthOf = array->lengthOf();
-      sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+      LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
@@ -983,7 +980,7 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArrayList *l
   }
 }
 
-sd::Status sd::ops::DeclarableOp::validateArguments(Context &block) {
+Status DeclarableOp::validateArguments(Context &block) {
   /*
    * We're checking number of T and I arguments. If number of args is finite number - we check strict equality
    * If number of args is variable (-1), but variables MUST be present - we check for non-zero number of arguments
@@ -992,62 +989,60 @@ sd::Status sd::ops::DeclarableOp::validateArguments(Context &block) {
     if ((int)block.getTArguments()->size() < _descriptor->getNumberOfTArgs()) {
       sd_printf("%s: %i T args expected, but %i received\n", this->getOpName()->c_str(),
                 _descriptor->getNumberOfTArgs(), block.getTArguments()->size());
-      return sd::Status::BAD_PARAMS;
+      return Status::BAD_PARAMS;
     }
   } else if (_descriptor->getNumberOfTArgs() == -1)
     if (block.getTArguments()->size() == 0) {
       sd_printf("%s: Number of T arguments should be positive number, but got 0 arguments\n",
                 this->getOpName()->c_str());
-      return sd::Status::BAD_PARAMS;
+      return Status::BAD_PARAMS;
     }
 
   if (_descriptor->getNumberOfIArgs() > 0) {
     if ((int)block.getIArguments()->size() < _descriptor->getNumberOfIArgs()) {
       sd_printf("%s: %i int args expected, but %i received\n", this->getOpName()->c_str(),
                 _descriptor->getNumberOfIArgs(), block.getIArguments()->size());
-      return sd::Status::BAD_PARAMS;
+      return Status::BAD_PARAMS;
     }
   } else if (_descriptor->getNumberOfIArgs() == -1)
     if (block.getIArguments()->size() == 0) {
       sd_printf("%s: Number of Integer arguments should be positive number, but got 0 arguments\n",
                 this->getOpName()->c_str());
-      return sd::Status::BAD_PARAMS;
+      return Status::BAD_PARAMS;
     }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::validateInputDimensions(Context &block, int rank) {
-  if (block.width() == 0) return sd::Status::OK;
+Status DeclarableOp::validateInputDimensions(Context &block, int rank) {
+  if (block.width() == 0) return Status::OK;
 
   for (auto p : *block.inputs()) {
     auto v = block.variable(p);
     NDArray *aV = v->getNDArray();
 
-    if (aV == nullptr) return sd::Status::BAD_INPUT;
+    if (aV == nullptr) return Status::BAD_INPUT;
 
-    if (aV->rankOf() != rank) return sd::Status::BAD_DIMENSIONS;
+    if (aV->rankOf() != rank) return Status::BAD_DIMENSIONS;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::validateInput2D(Context &block) { return validateInputDimensions(block, 2); }
+Status DeclarableOp::validateInput2D(Context &block) { return validateInputDimensions(block, 2); }
 
-sd::Status sd::ops::DeclarableOp::validateInput3D(Context &block) { return validateInputDimensions(block, 3); }
+Status DeclarableOp::validateInput3D(Context &block) { return validateInputDimensions(block, 3); }
 
-sd::Status sd::ops::DeclarableOp::validateInput4D(Context &block) { return validateInputDimensions(block, 4); }
+Status DeclarableOp::validateInput4D(Context &block) { return validateInputDimensions(block, 4); }
 
-sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
+Status DeclarableOp::validateNonEmptyInput(Context &block) {
   if (this->getOpDescriptor()->getNumberOfInputs() == -2 || this->getOpDescriptor()->getNumberOfInputs() == 0)
-    return sd::Status::OK;
+    return Status::OK;
 
   if (block.width() < 1 && !block.isFastPath() && block.fastpath_in().size() < 1) {
     sd_printf("%s: no operands provided for the op", this->getOpName()->c_str());
-    return sd::Status::BAD_INPUT;
+    return Status::BAD_INPUT;
   }
-
-
 
   int cnt = 0;
   for (auto p : *block.inputs()) {
@@ -1059,10 +1054,10 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
       } else {
         sd_printf("Node [%i:<noname>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, p.first, p.second);
       }
-      return sd::Status::BAD_INPUT;
+      return Status::BAD_INPUT;
     }
 
-    if (v->variableType() == VariableType::NDARRAY) {
+    if (v->variableType() == NDARRAY) {
       NDArray *aV = v->getNDArray();
 
       // if array is empty intentionally - we're ok with that
@@ -1075,33 +1070,33 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
         } else {
           sd_printf("Node [%i:<noname>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, p.first, p.second);
         }
-        return sd::Status::BAD_INPUT;
+        return Status::BAD_INPUT;
       }
     }
 
     cnt++;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::validateOrdersMatch(Context &block) {
-  if (block.width() == 0) return sd::Status::OK;
+Status DeclarableOp::validateOrdersMatch(Context &block) {
+  if (block.width() == 0) return Status::OK;
 
   NDArray *a0 = block.variable(0)->getNDArray();
   for (auto p : *block.inputs()) {
     auto v = block.variable(p);
     NDArray *aV = v->getNDArray();
-    if (a0->ordering() != aV->ordering()) return sd::Status::BAD_ORDER;
+    if (a0->ordering() != aV->ordering()) return Status::BAD_ORDER;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const std::vector<NDArray *> &inputs,
-                                          const std::vector<NDArray *> &outputs, const std::vector<double> &tArgs,
-                                          const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
-                                          const std::vector<sd::DataType> &dArgs, bool isInplace, sd::DataType type) {
+Status DeclarableOp::execute(RandomGenerator &rng, const std::vector<NDArray *> &inputs,
+                             const std::vector<NDArray *> &outputs, const std::vector<double> &tArgs,
+                             const std::vector<LongType> &iArgs, const std::vector<bool> &bArgs,
+                             const std::vector<DataType> &dArgs, bool isInplace, DataType type) {
   VariableSpace variableSpace;
   FlowPath fp;
   variableSpace.setFlowPath(&fp);
@@ -1143,75 +1138,71 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
 
   for (int e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
 
-  sd::Status result = this->execute(&block);
+  Status result = this->execute(&block);
 
   return result;
 }
 
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs) {
-  return execute(inputs, outputs, std::vector<double>(), std::vector<sd::LongType>(), std::vector<bool>(),
-                 std::vector<sd::DataType>());
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs) {
+  return execute(inputs, outputs, std::vector<double>(), std::vector<LongType>(), std::vector<bool>(),
+                 std::vector<DataType>());
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
                                  std::initializer_list<double> tArgs) {
-  return execute(inputs, outputs, tArgs, std::vector<sd::LongType>(), std::vector<bool>(), std::vector<sd::DataType>());
+  return execute(inputs, outputs, tArgs, std::vector<LongType>(), std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<sd::DataType> dArgs) {
-  return execute(inputs, outputs, std::vector<double>(), std::vector<sd::LongType>(), std::vector<bool>(), dArgs);
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+                                 std::initializer_list<DataType> dArgs) {
+  return execute(inputs, outputs, std::vector<double>(), std::vector<LongType>(), std::vector<bool>(), dArgs);
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
                                  std::initializer_list<float> tArgs) {
   std::vector<double> realArgs;
   for (auto v : tArgs) realArgs.emplace_back(v);
 
-  return execute(inputs, outputs, realArgs, std::vector<sd::LongType>(), std::vector<bool>(),
-                 std::vector<sd::DataType>());
+  return execute(inputs, outputs, realArgs, std::vector<LongType>(), std::vector<bool>(),
+                 std::vector<DataType>());
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<sd::LongType> iArgs) {
-  return execute(inputs, outputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<sd::DataType>());
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+                                 std::initializer_list<LongType> iArgs) {
+  return execute(inputs, outputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
                                  std::initializer_list<int> iArgs) {
-  std::vector<sd::LongType> realArgs;
+  std::vector<LongType> realArgs;
   for (auto v : iArgs) realArgs.emplace_back(v);
 
-  return execute(inputs, outputs, std::vector<double>(), realArgs, std::vector<bool>(), std::vector<sd::DataType>());
+  return execute(inputs, outputs, std::vector<double>(), realArgs, std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<bool> bArgs) {
-  return execute(inputs, outputs, std::vector<double>(), std::vector<sd::LongType>(), bArgs,
-                 std::vector<sd::DataType>());
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+                             std::initializer_list<bool> bArgs) {
+  return execute(inputs, outputs, std::vector<double>(), std::vector<LongType>(), bArgs, std::vector<DataType>());
 }
 
-sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 const std::vector<double> &tArgs, const std::vector<sd::LongType> &iArgs,
-                                 const std::vector<bool> &bArgs, const std::vector<sd::DataType> &dArgs,
-                                 bool isInplace) {
+Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
+                             const std::vector<double> &tArgs, const std::vector<LongType> &iArgs,
+                             const std::vector<bool> &bArgs, const std::vector<DataType> &dArgs, bool isInplace) {
   Context ctx(1);
 
   for (int e = 0; e < inputs.size(); e++) {
     ctx.setInputArray(e, inputs[e]);
   }
 
-
   for (int e = 0; e < outputs.size(); e++) {
     ctx.setOutputArray(e, outputs[e]);
   }
-
 
   if (isInplace) ctx.markInplace(isInplace);
 
@@ -1223,50 +1214,50 @@ sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std
   return execute(&ctx);
 }
 
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs) {
-  return evaluate(inputs, std::vector<double>(), std::vector<sd::LongType>(), std::vector<bool>(),
-                  std::vector<sd::DataType>());
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs) {
+  return evaluate(inputs, std::vector<double>(), std::vector<LongType>(), std::vector<bool>(),
+                  std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<int> iArgs) {
-  std::vector<sd::LongType> realArgs;
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<int> iArgs) {
+  std::vector<LongType> realArgs;
   for (auto v : iArgs) realArgs.emplace_back(v);
 
-  return evaluate(inputs, std::vector<double>(), realArgs, std::vector<bool>(), std::vector<sd::DataType>());
+  return evaluate(inputs, std::vector<double>(), realArgs, std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<sd::LongType> iArgs) {
-  return evaluate(inputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<sd::DataType>());
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<LongType> iArgs) {
+  return evaluate(inputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<float> tArgs) {
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<float> tArgs) {
   std::vector<double> realArgs;
   for (auto v : tArgs) realArgs.emplace_back(v);
 
-  return evaluate(inputs, realArgs, std::vector<sd::LongType>(), std::vector<bool>(), std::vector<sd::DataType>());
+  return evaluate(inputs, realArgs, std::vector<LongType>(), std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<double> tArgs) {
-  return evaluate(inputs, tArgs, std::vector<sd::LongType>(), std::vector<bool>(), std::vector<sd::DataType>());
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<double> tArgs) {
+  return evaluate(inputs, tArgs, std::vector<LongType>(), std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<bool> bArgs) {
-  return evaluate(inputs, std::vector<double>(), std::vector<sd::LongType>(), bArgs, std::vector<sd::DataType>());
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<bool> bArgs) {
+  return evaluate(inputs, std::vector<double>(), std::vector<LongType>(), bArgs, std::vector<DataType>());
 }
 
 template <>
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<sd::DataType> bArgs) {
-  return evaluate(inputs, std::vector<double>(), std::vector<sd::LongType>(), std::vector<bool>(), bArgs);
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<DataType> bArgs) {
+  return evaluate(inputs, std::vector<double>(), std::vector<LongType>(), std::vector<bool>(), bArgs);
 }
 
-sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const std::vector<double> &tArgs,
-                                     const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
-                                     const std::vector<sd::DataType> &dArgs, bool isInplace) {
+ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const std::vector<double> &tArgs,
+                                 const std::vector<LongType> &iArgs, const std::vector<bool> &bArgs,
+                                 const std::vector<DataType> &dArgs, bool isInplace) {
   VariableSpace variableSpace;
   // ResultSet arrayList;
   FlowPath fp;
@@ -1284,7 +1275,7 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
   }
 
   Context block(1, &variableSpace, false);
-  block.setDataType(0, sd::DataType::FLOAT32);
+  block.setDataType(0, FLOAT32);
   block.fillInputs(in);
   block.markInplace(isInplace);
 
@@ -1296,18 +1287,18 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
 
   for (int e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
 
-  sd::Status status = this->execute(&block);
+  Status status = this->execute(&block);
   ResultSet arrayList;
   if (isInplace) arrayList.setNonRemovable();
 
   arrayList.setStatus(status);
-  if (status != sd::Status::OK) return arrayList;
+  if (status != Status::OK) return arrayList;
 
   if (!isInplace) {
-    if(block.isFastPath()) {
-      //note this *is* similar to the code below but we use fast paths instead
-      //we need to ensure variables don't get freed allowing reuse of outputs
-      //as views
+    if (block.isFastPath()) {
+      // note this *is* similar to the code below but we use fast paths instead
+      // we need to ensure variables don't get freed allowing reuse of outputs
+      // as views
       for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
         std::pair<int, int> pair(1, e);
         if (variableSpace.hasVariable(pair)) {
@@ -1315,20 +1306,19 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
           auto arr = var->getNDArray();
           if (!arr->isAttached()) {
             var->markRemovable(false);
-            arr->setContext(sd::LaunchContext::defaultContext());
+            arr->setContext(LaunchContext::defaultContext());
           }
         } else
           break;
       }
-      for(int e = 0; e < block.fastpath_out().size(); e++) {
+      for (int e = 0; e < block.fastpath_out().size(); e++) {
         auto arr = block.fastpath_out()[e];
         if (!arr->isAttached()) {
-          arr->setContext(sd::LaunchContext::defaultContext());
+          arr->setContext(LaunchContext::defaultContext());
           arrayList.push_back(arr);
         } else {
           arrayList.push_back(arr->detach());
         }
-
       }
 
       arrayList.setNonRemovable();
@@ -1341,7 +1331,7 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
           auto arr = var->getNDArray();
           if (!arr->isAttached()) {
             var->markRemovable(false);
-            arr->setContext(sd::LaunchContext::defaultContext());
+            arr->setContext(LaunchContext::defaultContext());
             arrayList.push_back(arr);
           } else {
             arrayList.push_back(arr->detach());
@@ -1360,33 +1350,33 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
   return arrayList;
 }
 
-sd::ResultSet sd::ops::DeclarableOp::execute(const sd::OpArgsHolder &holder, bool isInplace) {
+ResultSet DeclarableOp::execute(const OpArgsHolder &holder, bool isInplace) {
   // FIXME: add DArgs to OpArgsHolder
-  return evaluate(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(),
-                  std::vector<sd::DataType>(), isInplace);
+  return evaluate(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(), std::vector<DataType>(),
+                  isInplace);
 }
 
-sd::Status sd::ops::DeclarableOp::validateInputDimensionsMatch(Context &block) {
-  if (block.width() == 0) return sd::Status::OK;
+Status DeclarableOp::validateInputDimensionsMatch(Context &block) {
+  if (block.width() == 0) return Status::OK;
 
   NDArray *a0 = block.array(0);
   for (int e = 1; e < block.width(); e++) {
     auto aV = block.array(e);
-    if (!shape::equalsSoft(a0->shapeInfo(), aV->shapeInfo())) return sd::Status::BAD_DIMENSIONS;
+    if (!shape::equalsSoft(a0->shapeInfo(), aV->shapeInfo())) return Status::BAD_DIMENSIONS;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status sd::ops::DeclarableOp::validateInputLengthMatch(Context &block) {
-  if (block.width() == 0) return sd::Status::OK;
+Status DeclarableOp::validateInputLengthMatch(Context &block) {
+  if (block.width() == 0) return Status::OK;
 
-  sd::LongType l0 = block.array(0)->lengthOf();
+  LongType l0 = block.array(0)->lengthOf();
   for (uint32_t e = 0; e < block.width(); e++) {
-    if (l0 != block.array(e)->lengthOf()) return sd::Status::BAD_LENGTH;
+    if (l0 != block.array(e)->lengthOf()) return Status::BAD_LENGTH;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 samediff::EmptyHandling DeclarableOp::emptyHandling() { return samediff::EmptyHandling::EMPTY_SKIP; }

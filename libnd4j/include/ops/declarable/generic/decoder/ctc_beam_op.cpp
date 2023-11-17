@@ -95,10 +95,10 @@ CUSTOM_OP_IMPL(ctc_beam, 2, 3, false, 0, -2) {
       "Ctc Beam Search: result_sequences_length output should be ews()==1 and c order: %d == ews(1) %c == order(c) ",
       result_sequences_length->ews(), result_sequences_length->ordering());
 
-  sd::ops::helpers::beamSearch(*logit, *sequence_length, *result_sequences, *result_probs, *result_sequences_length,
+  helpers::beamSearch(*logit, *sequence_length, *result_sequences, *result_probs, *result_sequences_length,
                                blank_index, beam_width, nbest_len, normalize_logits);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////

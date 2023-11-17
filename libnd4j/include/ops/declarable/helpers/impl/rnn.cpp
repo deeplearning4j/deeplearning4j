@@ -33,7 +33,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void rnnCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+void rnnCell(LaunchContext* context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
              const NDArray* hPrev, NDArray* ht) {
   // xt    input [bS x iS]
   // Wx    input-to-hidden weights, [iS  x nU]
@@ -50,7 +50,7 @@ void rnnCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* Wx, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void rnnTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+void rnnTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
                  const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
   // x   input [time x bS x iS]
   // Wx  input-to-hidden  weights, [iS  x nU]
@@ -85,7 +85,7 @@ void rnnTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* Wx
         ht = 0.;
         if (maxStep != 0) hPrev.assign((*h)({maxStep - 1, maxStep, e, e + 1, 0, 0}));
       } else {
-        helpers::rnnCell(context, &xt, Wx, Wh, b, &hPrev, &ht);
+        rnnCell(context, &xt, Wx, Wh, b, &hPrev, &ht);
         hPrev.assign(ht);
       }
     }

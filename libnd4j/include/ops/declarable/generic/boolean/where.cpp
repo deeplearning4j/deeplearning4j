@@ -32,7 +32,7 @@ namespace ops {
 CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
   auto condition = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
-  if (z->isEmpty()) return sd::Status::OK;
+  if (z->isEmpty()) return Status::OK;
 
   if (block.width() == 3) {
     auto x = INPUT_VARIABLE(1);
@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
           auto r = !condition->e<bool>(e) ? y->e<double>(e) : x->e<double>(e);
           z->p(e, r);
         } else {
-          auto r = !condition->e<bool>(e) ? y->e<sd::LongType>(e) : x->e<sd::LongType>(e);
+          auto r = !condition->e<bool>(e) ? y->e<LongType>(e) : x->e<LongType>(e);
           z->p(e, r);
         }
       }
@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
                    "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead",
                    condition->lengthOf());
 
-      std::vector<sd::LongType> zero({0});
+      std::vector<LongType> zero({0});
       auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1,zero.data());
       auto tadsX = x->allTensorsAlongDimension(*dims);
       auto tadsY = y->allTensorsAlongDimension(*dims);
@@ -79,24 +79,24 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                  block.width());
     auto output = OUTPUT_VARIABLE(0);
-    std::vector<sd::LongType> zero({0});
+    std::vector<LongType> zero({0});
 
     int width = condition->rankOf();
-    if (z->isEmpty()) return sd::Status::OK;
+    if (z->isEmpty()) return Status::OK;
 
 
-    std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(width,1,zero.data());
+    std::vector<LongType> *dims = ShapeUtils::evalDimsToExclude(width,1,zero.data());
 
     helpers::_where(block.launchContext(), *condition, *output, block.workspace());
     delete dims;
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(Where) {
   if (block.width() == 3) {
     auto inShape = inputShape->at(1);
-    sd::LongType* newshape;
+    LongType* newshape;
     COPY_SHAPE(inShape, newshape);
 
     return SHAPELIST(CONSTANT(newshape));
@@ -105,13 +105,13 @@ DECLARE_SHAPE_FN(Where) {
     // output shape is the 2D tensor num_true x rankOf (inShape)
     auto condition = INPUT_VARIABLE(0);
     auto inShape = inputShape->at(0);
-    sd::LongType numOfTrue = 0;  // condition->reduceNumber(reduce::CountNonZero, nullptr).e<sd::LongType>(0);
-    for (sd::LongType i = 0; i < condition->lengthOf(); i++)
+    LongType numOfTrue = 0;  // condition->reduceNumber(reduce::CountNonZero, nullptr).e<sd::LongType>(0);
+    for (LongType i = 0; i < condition->lengthOf(); i++)
       if (condition->e<bool>(i)) numOfTrue++;
 
-    sd::LongType const* theNewShape;
+    LongType const* theNewShape;
     if (numOfTrue > 0) {
-      sd::LongType* newShape;
+      LongType* newShape;
       ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
       printf("where: num true is %d\n",numOfTrue);
       newShape[0] = 2;
@@ -122,11 +122,11 @@ DECLARE_SHAPE_FN(Where) {
       newShape[5] = 0;
       newShape[6] = 1;
       newShape[7] = 99;
-      ShapeUtils::updateStridesAndType(newShape, sd::DataType::INT64, 'c');
+      ShapeUtils::updateStridesAndType(newShape, INT64, 'c');
 
       theNewShape = CONSTANT(newShape);
     } else {
-      theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(sd::DataType::INT64);
+      theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INT64);
     }
 
     return SHAPELIST(theNewShape);
@@ -135,9 +135,9 @@ DECLARE_SHAPE_FN(Where) {
 
 DECLARE_TYPES(Where) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)  // bool
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedInputTypes(2, DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)  // bool
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedInputTypes(2, ANY)
       ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS});
 }
 }  // namespace ops

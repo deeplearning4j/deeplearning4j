@@ -2142,7 +2142,7 @@ class RELU6 {
 
   SD_OP_DEF static Z
   op(X d1, Y d2, Z *params) {
-    auto relu = simdOps::RELU<X, Y, Z>::op(d1, d2, params);
+    auto relu = RELU<X, Y, Z>::op(d1, d2, params);
     return relu < static_cast<Z>(6) ? relu : static_cast<Z>(6);
   }
 };
@@ -3357,7 +3357,7 @@ class FirstIndex {
     if (opOutput.index < 0) return old;
 #endif
 
-    auto res = simdOps::MatchCondition<X, X>::op(opOutput.value, extraParams);
+    auto res = MatchCondition<X, X>::op(opOutput.value, extraParams);
 
     if (res == static_cast<X>(0)) return old;
 
@@ -3411,7 +3411,7 @@ class LastIndex {
     if (opOutput.index < 0) return old;
 #endif
 
-    auto res = simdOps::MatchCondition<X, X>::op(opOutput.value, extraParams);
+    auto res = MatchCondition<X, X>::op(opOutput.value, extraParams);
 
     if (res == static_cast<X>(0)) return old;
 

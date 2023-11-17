@@ -28,7 +28,7 @@ namespace sd {
 OpArgsHolder::OpArgsHolder() {
   _inArrs = std::vector<NDArray*>();
   _tArgs = std::vector<double>();
-  _iArgs = std::vector<sd::LongType>();
+  _iArgs = std::vector<LongType>();
   _bArgs = std::vector<bool>();
 
   _isArrAlloc = std::vector<bool>();
@@ -48,7 +48,7 @@ OpArgsHolder::OpArgsHolder(const OpArgsHolder& other) {
 ////////////////////////////////////////////////////////////////////////
 // constructor
 OpArgsHolder::OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs,
-                           const std::vector<sd::LongType>& iArgs, const std::vector<bool>& bArgs) {
+                           const std::vector<LongType>& iArgs, const std::vector<bool>& bArgs) {
   _inArrs = inArrs;
   _tArgs = tArgs;
   _iArgs = iArgs;

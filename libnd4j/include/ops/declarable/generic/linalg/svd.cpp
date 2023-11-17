@@ -46,12 +46,12 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
                {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr},
                fullUV, calcUV, switchNum);
 
-  return sd::Status::OK;
+  return Status::OK;
   ;
 }
 
 DECLARE_TYPES(svd) {
-  getOpDescriptor()->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(0, {FLOAT32, DOUBLE, HALF})->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(svd) {
@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(svd) {
 
   const int diagSize = inShapeInfo[rank] < inShapeInfo[rank - 1] ? inShapeInfo[rank] : inShapeInfo[rank - 1];
 
-  sd::LongType* sShapeInfo(nullptr);
+  LongType* sShapeInfo(nullptr);
   if (rank == 2) {
     ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
     sShapeInfo[0] = 1;
@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(svd) {
   ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
 
   if (calcUV) {
-    sd::LongType *uShapeInfo(nullptr), *vShapeInfo(nullptr);
+    LongType *uShapeInfo(nullptr), *vShapeInfo(nullptr);
     COPY_SHAPE(inShapeInfo, uShapeInfo);
     COPY_SHAPE(inShapeInfo, vShapeInfo);
 

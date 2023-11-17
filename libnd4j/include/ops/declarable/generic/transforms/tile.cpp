@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
   auto output = OUTPUT_VARIABLE(0);
 
   const int inRank = input->rankOf();
-  std::vector<sd::LongType> reps;
+  std::vector<LongType> reps;
 
   if (block.getIArguments()->size() == inRank) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
                  "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
 
-    reps = reps_vector->template asVectorT<sd::LongType>();
+    reps = reps_vector->template asVectorT<LongType>();
   } else {
     REQUIRE_TRUE(false, 0,
                  "TILE op: this op requires repeats vector, either as IArgs or second array with length equal to rank "
@@ -57,20 +57,20 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 
   input->tile(reps, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(tile) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_INTS})
-      ->setAllowedOutputTypes(sd::DataType::ANY);
+      ->setAllowedOutputTypes(ANY);
 }
 
 DECLARE_SHAPE_FN(tile) {
   auto inShape = inputShape->at(0);
   const int inRank = inShape[0];
-  std::vector<sd::LongType> reps;
+  std::vector<LongType> reps;
 
   if (block.getIArguments()->size() == inRank) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(tile) {
     REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
                  "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
-    reps = reps_vector->template asVectorT<sd::LongType>();
+    reps = reps_vector->template asVectorT<LongType>();
   } else {
     REQUIRE_TRUE(false, 0,
                  "TILE op: this op requires repeats vector, either as IArgs or second array with length equal to rank "
@@ -89,8 +89,8 @@ DECLARE_SHAPE_FN(tile) {
   auto repProd = shape::prodLong(reps.data(), reps.size());
   REQUIRE_TRUE(repProd > 0, 0, "TILE op: reps can't contain 0s");
 
-  std::vector<sd::LongType> shape(inRank);
-  for (sd::LongType e = 0; e < shape::rank(inShape); e++) shape[e] = shape::sizeAt(inShape, e) * reps[e];
+  std::vector<LongType> shape(inRank);
+  for (LongType e = 0; e < shape::rank(inShape); e++) shape[e] = shape::sizeAt(inShape, e) * reps[e];
 
   auto newShape =
       ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
@@ -105,7 +105,7 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
 
   const int inRank = input->rankOf();
 
-  std::vector<sd::LongType> reps;
+  std::vector<LongType> reps;
 
   if (block.getIArguments()->size() == inRank) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
@@ -115,7 +115,7 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
                  "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
 
-    reps = reps_vector->template asVectorT<sd::LongType>();
+    reps = reps_vector->template asVectorT<LongType>();
     gradO = INPUT_VARIABLE(2);
   } else {
     REQUIRE_TRUE(false, 0,
@@ -134,7 +134,7 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
 
   helpers::tileBP(block.launchContext(), *gradO, *gradI, reps);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(tile_bp) {
@@ -150,7 +150,7 @@ DECLARE_SHAPE_FN(tile_bp) {
   auto gradOShape = inputShape->at(1);
   const int inRank = inShape[0];
 
-  std::vector<sd::LongType> reps;
+  std::vector<LongType> reps;
 
   if (block.getIArguments()->size() == inRank) {
     reps = ArrayUtils::toLongVector(*(block.getIArguments()));
@@ -159,7 +159,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
                  "TILE_BP op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
-    reps = reps_vector->template asVectorT<sd::LongType>();
+    reps = reps_vector->template asVectorT<LongType>();
     gradOShape = inputShape->at(2);
   } else {
     REQUIRE_TRUE(false, 0,
@@ -172,11 +172,11 @@ DECLARE_SHAPE_FN(tile_bp) {
                "got %i and %i correspondingly !",
                inRank, gradOShape[0]);
 
-  for (sd::LongType i = 0; i < inRank; ++i)
+  for (LongType i = 0; i < inRank; ++i)
     REQUIRE_TRUE(shape::sizeAt(gradOShape, i) == shape::sizeAt(inShape, i) * reps[i], 0,
                  "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
 
-  sd::LongType *gradIShape;
+  LongType *gradIShape;
   COPY_SHAPE(inShape, gradIShape);
 
   return SHAPELIST(CONSTANT(gradIShape));

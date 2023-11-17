@@ -62,7 +62,7 @@ TEST_F(ConstantTadHelperTests, test_cachedAmount_1) {
   auto arrayA = NDArrayFactory::create<bool>('c', {7, 11, 17, 23, 31, 43});
   auto ttlBefore = ConstantTadHelper::getInstance().totalCachedEntries();
 
-  std::vector<sd::LongType> dimensions = {3, 4};
+  std::vector<LongType> dimensions = {3, 4};
   auto packAA = ConstantTadHelper::getInstance().tadForDimensions(arrayA.shapeInfo(), &dimensions);
 
   auto ttlMiddle = ConstantTadHelper::getInstance().totalCachedEntries();
@@ -104,12 +104,12 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
 
 TEST_F(ConstantShapeHelperTests, stress_test_1) {
   for (auto x = 0; x < 1000; x++) {
-    auto ptr = ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', {5, x + 10, x + 1});
+    auto ptr = ShapeBuilders::createShapeInfo(FLOAT32, 'c', {5, x + 10, x + 1});
     ShapeDescriptor descriptor(ptr);
     ConstantShapeHelper::getInstance().createShapeInfo(&descriptor);
     delete[] ptr;
   }
-  ShapeDescriptor aShape(sd::DataType::FLOAT32, 'c', {(sd::LongType)5, (sd::LongType)382, (sd::LongType)373});
+  ShapeDescriptor aShape(FLOAT32, 'c', {(LongType)5, (LongType)382, (LongType)373});
 
   auto timeStart = std::chrono::system_clock::now();
   ASSERT_TRUE(ConstantShapeHelper::getInstance().checkBufferExistenceForShapeInfo(&aShape));
@@ -140,7 +140,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
 #ifdef __CUDABLAS__
   ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
-  PointersManager manager(sd::LaunchContext ::defaultContext(), "test");
+  PointersManager manager(LaunchContext ::defaultContext(), "test");
 #endif
 
   delete array;
@@ -158,8 +158,8 @@ TEST_F(ConstantShapeHelperTests, basic_test_5) {
 }
 
 TEST_F(ConstantShapeHelperTests, basic_test_6) {
-  ShapeDescriptor descriptorA(sd::DataType::INT32, 'c', {});
-  ShapeDescriptor descriptorB(sd::DataType::FLOAT32, 'c', {10, 10});
+  ShapeDescriptor descriptorA(INT32, 'c', {});
+  ShapeDescriptor descriptorB(FLOAT32, 'c', {10, 10});
 
   ASSERT_TRUE(descriptorA < descriptorB);
   ASSERT_FALSE(descriptorB < descriptorA);
@@ -179,14 +179,14 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 TEST_F(ConstantHelperTests, basic_test_1) {
   ConstantDescriptor descriptor({1, 2, 3});
 
-  ConstantDataBuffer* fBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, sd::DataType::FLOAT32);
+  ConstantDataBuffer* fBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, FLOAT32);
   auto fPtr = fBuffer->primaryAsT<float>();
 
   ASSERT_NEAR(1.f, fPtr[0], 1e-5);
   ASSERT_NEAR(2.f, fPtr[1], 1e-5);
   ASSERT_NEAR(3.f, fPtr[2], 1e-5);
 
-  auto iBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, sd::DataType::INT32);
+  auto iBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, INT32);
   auto iPtr = iBuffer->primaryAsT<int>();
 
   ASSERT_EQ(1, iPtr[0]);
@@ -198,14 +198,14 @@ TEST_F(ConstantHelperTests, basic_test_2) {
   double array[] = {1., 2., 3.};
   ConstantDescriptor descriptor(array, 3);
 
-  ConstantDataBuffer* fBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, sd::DataType::FLOAT32);
+  ConstantDataBuffer* fBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, FLOAT32);
   auto fPtr = fBuffer->primaryAsT<float>();
 
   ASSERT_NEAR(1.f, fPtr[0], 1e-5);
   ASSERT_NEAR(2.f, fPtr[1], 1e-5);
   ASSERT_NEAR(3.f, fPtr[2], 1e-5);
 
-  auto iBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, sd::DataType::INT32);
+  auto iBuffer = ConstantHelper::getInstance().constantBuffer(descriptor, INT32);
   auto iPtr = iBuffer->primaryAsT<int>();
 
   ASSERT_EQ(1, iPtr[0]);
@@ -215,8 +215,8 @@ TEST_F(ConstantHelperTests, basic_test_2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
-  sd::LongType shapeInfo1[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
-  sd::LongType shapeInfo2[] = {4, 2, 5, 5, 2, 50, 10, 2, 1, 8192, 1, 99};
+  LongType shapeInfo1[] = {4, 2, 5, 5, 2, 25, 5, 1, 50, 8192, 0, 99};
+  LongType shapeInfo2[] = {4, 2, 5, 5, 2, 50, 10, 2, 1, 8192, 1, 99};
 
   ShapeDescriptor descr1(shapeInfo1);
   ShapeDescriptor descr2(shapeInfo2);
@@ -226,26 +226,26 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
 
 TEST_F(ConstantShapeHelperTests, ShapeDescriptor_validation) {
   // for c order
-  std::vector<sd::LongType> shape{2, 3, 4, 5};
-  std::vector<sd::LongType> incorrectStride1{20, 20, 5, 1};
-  std::vector<sd::LongType> incorrectStride2{60, 20, 5, 5};
-  std::vector<sd::LongType> correctStride1{60, 20, 5, 1};
-  std::vector<sd::LongType> correctStride2{300, 100, 25, 5};
-  std::vector<sd::LongType> correctStride3{800, 200, 40, 5};
+  std::vector<LongType> shape{2, 3, 4, 5};
+  std::vector<LongType> incorrectStride1{20, 20, 5, 1};
+  std::vector<LongType> incorrectStride2{60, 20, 5, 5};
+  std::vector<LongType> correctStride1{60, 20, 5, 1};
+  std::vector<LongType> correctStride2{300, 100, 25, 5};
+  std::vector<LongType> correctStride3{800, 200, 40, 5};
 
-  auto shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, incorrectStride1, 1);
+  auto shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, incorrectStride1, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_STRIDES);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride1, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, correctStride1, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, incorrectStride2, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, incorrectStride2, 1);
   ASSERT_TRUE(shapeDesc.validate() == (SHAPE_DESC_INCORRECT_STRIDES | SHAPE_DESC_INCORRECT_EWS));
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride2, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, correctStride2, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride2, 5);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, correctStride2, 5);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride3, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, correctStride3, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride3, 0);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'c', shape, correctStride3, 0);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
 
   // order f
@@ -256,24 +256,24 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_validation) {
   std::reverse(std::begin(correctStride2), std::end(correctStride2));
   std::reverse(std::begin(correctStride3), std::end(correctStride3));
 
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, incorrectStride1, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, incorrectStride1, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_STRIDES);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride1, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, correctStride1, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, incorrectStride2, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, incorrectStride2, 1);
   ASSERT_TRUE(shapeDesc.validate() == (SHAPE_DESC_INCORRECT_STRIDES | SHAPE_DESC_INCORRECT_EWS));
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride2, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, correctStride2, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride2, 5);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, correctStride2, 5);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride3, 1);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, correctStride3, 1);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride3, 0);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape, correctStride3, 0);
   ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
 
-  std::vector<sd::LongType> shape1;
+  std::vector<LongType> shape1;
   shape1.resize(SD_MAX_RANK + 1);
-  shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape1, correctStride3, 0);
+  shapeDesc = ShapeDescriptor(FLOAT32, 'f', shape1, correctStride3, 0);
   ASSERT_TRUE((shapeDesc.validate() & SHAPE_DESC_INCORRECT_RANK) == SHAPE_DESC_INCORRECT_RANK);
 }
 
@@ -290,13 +290,13 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_paddedBuffer) {
 
   for (auto& order : orders) {
     auto shapeDesc1 =
-        ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {n_pad, c_pad, h_pad, w_pad});
-    auto shapeDesc2 = ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h + h_pad, w + w_pad});
-    auto shapeDesc3 = ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {n_pad, c_pad});
-    auto shapeDesc4 = ShapeDescriptor(DataType::FLOAT32, order, {n + n_pad, c + c_pad, h, w});
+        ShapeDescriptor::paddedBufferDescriptor(FLOAT32, order, {n, c, h, w}, {n_pad, c_pad, h_pad, w_pad});
+    auto shapeDesc2 = ShapeDescriptor(FLOAT32, order, {n + n_pad, c + c_pad, h + h_pad, w + w_pad});
+    auto shapeDesc3 = ShapeDescriptor::paddedBufferDescriptor(FLOAT32, order, {n, c, h, w}, {n_pad, c_pad});
+    auto shapeDesc4 = ShapeDescriptor(FLOAT32, order, {n + n_pad, c + c_pad, h, w});
     auto shapeDesc5 =
-        ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, {n, c, h, w}, {0, 0, h_pad, w_pad});
-    auto shapeDesc6 = ShapeDescriptor(DataType::FLOAT32, order, {n, c, h + h_pad, w + w_pad});
+        ShapeDescriptor::paddedBufferDescriptor(FLOAT32, order, {n, c, h, w}, {0, 0, h_pad, w_pad});
+    auto shapeDesc6 = ShapeDescriptor(FLOAT32, order, {n, c, h + h_pad, w + w_pad});
 
     ASSERT_TRUE(shapeDesc1->validate() == SHAPE_DESC_OK);
     ASSERT_TRUE(shapeDesc2.validate() == SHAPE_DESC_OK);

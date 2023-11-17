@@ -36,9 +36,9 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   if(input->isScalar()) {
     output->assign(1);
-    return sd::Status::OK;
+    return Status::OK;
   }
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
 
   input->reduceAlongDimension(reduce::Prod, *output, &dimensions, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_prod) {
@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(reduce_prod) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  std::vector<sd::LongType> dimensions;
+  std::vector<LongType> dimensions;
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
@@ -95,7 +95,7 @@ DECLARE_SHAPE_FN(reduce_prod) {
 }
 
 DECLARE_TYPES(reduce_prod) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 
@@ -106,7 +106,7 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() <= 1) {
-    gradI->assign(input->reduceNumber(sd::reduce::Prod));
+    gradI->assign(input->reduceNumber(reduce::Prod));
     *gradI /= *input;
     *gradI *= gradO->e(0);
   } else {
@@ -137,7 +137,7 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
     // *** calculations *** //
 
     auto products = input->reduceAlongDimension(reduce::Prod, &dimensions, true);
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), products, *gradI);
+    gradI->applyTrueBroadcast(BroadcastOpsTuple::Assign(), products, *gradI);
     *gradI /= *input;
 
     if (!keepDims) {
@@ -150,7 +150,7 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
       *gradI *= *gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_prod_bp) {
@@ -171,14 +171,14 @@ DECLARE_SHAPE_FN(reduce_prod_bp) {
       "REDUCE_PROD_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
       inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
+  LongType* outShapeInfo;
   COPY_SHAPE(inputShape->at(0), outShapeInfo);
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 DECLARE_TYPES(reduce_prod_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 

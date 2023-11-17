@@ -30,7 +30,7 @@ HashHelper& HashHelper::getInstance() {
   return instance;
 }
 
-sd::LongType HashHelper::getLongHash(std::string& str) {
+LongType HashHelper::getLongHash(std::string& str) {
   _locker.lock();
   if (!_isInit) {
     sd_verbose("Building HashUtil table\n", "");
@@ -57,7 +57,7 @@ sd::LongType HashHelper::getLongHash(std::string& str) {
   unsigned long long h = HSTART;
   unsigned long long hmult = HMULT;
 
-  sd::LongType len = str.size();
+  LongType len = str.size();
   for (int i = 0; i < len; i++) {
     char ch = str.at(i);
     auto uch = (unsigned char)ch;

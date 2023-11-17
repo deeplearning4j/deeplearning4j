@@ -45,15 +45,15 @@ CUSTOM_OP_IMPL(relu_layer, 3, 1, false, 0, 0) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  sd::ops::xw_plus_b op;
+  xw_plus_b op;
   auto status = op.execute({x, w, b}, {output});
   REQUIRE_TRUE(sd::Status::OK == status, 0, "relu_layer: xw_plus_b op failed on input data.");
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-  output->applyScalar(sd::scalar::RELU, scalar, *output);
+  output->applyScalar(scalar::RELU, scalar, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(relu_layer) {
@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(relu_layer) {
 
 DECLARE_TYPES(relu_layer) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
       //                  ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_FLOATS});
 }

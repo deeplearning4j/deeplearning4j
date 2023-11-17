@@ -24,15 +24,15 @@
 #include <ops/declarable/helpers/dynamic.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename X, typename Y>
-static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const sd::LongType *xShapeInfo, const void *vi,
-                                                   const sd::LongType *iShapeInfo, void **vz,
-                                                   sd::LongType **zShapeInfos, const sd::LongType numOutputs) {
+static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongType *xShapeInfo, const void *vi,
+                                                   const LongType *iShapeInfo, void **vz, LongType **zShapeInfos, const LongType numOutputs) {
   auto x = reinterpret_cast<const X *>(vx);
   auto i = reinterpret_cast<const Y *>(vi);
   auto xLength = shape::length(xShapeInfo);
@@ -49,7 +49,7 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const sd::Lon
   __syncthreads();
 
   // we run things in blocks, 1 partition per block of threads
-  for (sd::LongType o = blockIdx.x; o < numOutputs; o += gridDim.x) {
+  for (LongType o = blockIdx.x; o < numOutputs; o += gridDim.x) {
     auto z = reinterpret_cast<X *>(vz[o]);
 
     auto zShapeInfo = zShapeInfos[o];
@@ -59,7 +59,7 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const sd::Lon
     auto iLimit = iLength <= blockDim.x ? blockDim.x : (iLength + (blockDim.x - (iLength % blockDim.x)));
     int cnt = 0;
 
-    for (sd::LongType e = threadIdx.x; e < iLimit; e += blockDim.x) {
+    for (LongType e = threadIdx.x; e < iLimit; e += blockDim.x) {
       // load set of indices into shared memory
       if (e < iLength) rawIndices[threadIdx.x] = i[shape::getIndexOffset(e, iShapeInfo)];
       __syncthreads();
@@ -88,11 +88,11 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const sd::Lon
 }
 
 template <typename X, typename Y>
-static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const sd::LongType *xTadShapeInfo,
-                                                const sd::LongType *xTadOffsets, sd::LongType xLength,
-                                                const void *vindices, const sd::LongType *iShapeInfo,
-                                                sd::LongType iLength, void **vz, sd::LongType **zTadShapeInfos,
-                                                sd::LongType **zTadOffsets, sd::LongType numOutputs) {
+static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *xTadShapeInfo,
+                                                const LongType *xTadOffsets, LongType xLength,
+                                                const void *vindices, const LongType *iShapeInfo, LongType iLength, void **vz,
+                                                LongType **zTadShapeInfos, LongType **zTadOffsets,
+                                                LongType numOutputs) {
   auto x = reinterpret_cast<const X *>(vx);
   auto indices = reinterpret_cast<const Y *>(vindices);
 
@@ -103,7 +103,7 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const sd::LongTy
     // each thread has own counter for partitions
     int outCnt = 0;
 
-    for (sd::LongType e = 0; e < iLength; e++) {
+    for (LongType e = 0; e < iLength; e++) {
       if (indices[shape::getIndexOffset(e, iShapeInfo)] == i) {
         auto dx = x + xTadOffsets[e];
         auto dz = z + zTadOffsets[i][outCnt++];
@@ -117,7 +117,7 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const sd::LongTy
 }
 
 template <typename X, typename Y>
-static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *input, NDArray const *indices,
+static void _dynamicPartitionFunctor(LaunchContext *context, NDArray const *input, NDArray const *indices,
                                      std::vector<NDArray *> &outputList) {
   std::vector<std::pair<NDArray *, int>> outputs(outputList.size());
   int sourceDimsLen = input->rankOf() - indices->rankOf();
@@ -127,20 +127,20 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
   PointersManager pm(context, "dynamicPartition");
 
   if (sourceDimsLen) {  // non-linear case
-    std::vector<sd::LongType> sourceDims(sourceDimsLen);
+    std::vector<LongType> sourceDims(sourceDimsLen);
 
     for (int i = sourceDimsLen; i > 0; i--) sourceDims[sourceDimsLen - i] = input->rankOf() - i;
     // compute tad array for given dimensions
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &sourceDims);
 
     std::vector<void *> outBuffers(outSize);
-    std::vector<const sd::LongType *> tadShapes(outSize);
-    std::vector<const sd::LongType *> tadOffsets(outSize);
-    std::vector<sd::LongType> numTads(outSize);
+    std::vector<const LongType *> tadShapes(outSize);
+    std::vector<const LongType *> tadOffsets(outSize);
+    std::vector<LongType> numTads(outSize);
     // fill up dimensions array for before kernel
     for (unsigned int i = 0; i < outSize; i++) {
       outputs[i].first = outputList[i];
-      std::vector<sd::LongType> outDims(outputs[i].first->rankOf() - 1);
+      std::vector<LongType> outDims(outputs[i].first->rankOf() - 1);
 
       int r = outputs[i].first->rankOf();
 
@@ -156,10 +156,10 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
     // we copy pointers to device
     auto dOutBuffers =
         reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
-    auto dOutTadShapes = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(sd::LongType *)));
-    auto dOutTadOffsets = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(sd::LongType *)));
+    auto dOutTadShapes = reinterpret_cast<LongType **>(
+        pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(LongType *)));
+    auto dOutTadOffsets = reinterpret_cast<LongType **>(
+        pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(LongType *)));
     // run kernel on device
     dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
 
@@ -167,11 +167,13 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
         input->specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(),
         shape::length(packX->primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(),
         indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
+    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicPartitionTadKernel failed");
+
 
   } else {  // linear case
     dim3 launchDims = getDynamicPartitionDims(256,sizeof(Y));
     std::vector<void *> outBuffers;
-    std::vector<const sd::LongType *> outShapes;
+    std::vector<const LongType *> outShapes;
 
     for (auto v : outputList) {
       outBuffers.emplace_back(v->specialBuffer());
@@ -180,21 +182,23 @@ static void _dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *
 
     auto dOutBuffers =
         reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
-    auto dOutShapes = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(sd::LongType *)));
+    auto dOutShapes = reinterpret_cast<LongType **>(
+        pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(LongType *)));
 
     dynamicPartitionScalarKernel<X, Y><<<launchDims.y,launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
         dOutBuffers, dOutShapes, outSize);
+    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicPartitionScalarKernel failed");
+
   }
 
   pm.synchronize();
 }
 
 template <typename X, typename Y>
-static SD_KERNEL void dynamicStitchScalarKernel(void **vx, sd::LongType **xShapeInfos, void **vindices,
-                                                sd::LongType **iShapeInfos, int inputSize, void *vz,
-                                                const sd::LongType *zShapeInfo, sd::LongType zLength) {
+static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfos, void **vindices,
+                                                LongType **iShapeInfos, int inputSize, void *vz,
+                                                const LongType *zShapeInfo, LongType zLength) {
   auto z = reinterpret_cast<X *>(vz);
 
   for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
@@ -215,10 +219,10 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, sd::LongType **xShape
 }
 
 template <typename X, typename Y>
-static SD_KERNEL void dynamicStitchTadKernel(void **vx, sd::LongType **xTadShapeInfos, sd::LongType **xTadOffsets,
-                                             void **vindices, sd::LongType **iShapeInfos, int inputSize, void *vz,
-                                             const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffsets,
-                                             sd::LongType *numTadsPerInput, sd::LongType numOutputsTad) {
+static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfos, LongType **xTadOffsets,
+                                             void **vindices, LongType **iShapeInfos, int inputSize, void *vz,
+                                             const LongType *zTadShapeInfo, const LongType *zTadOffsets,
+                                             LongType *numTadsPerInput, LongType numOutputsTad) {
   //note: this implementation is less than ideal but several forms of parallelization do not seem to work.
   //for now since this isn't a computationally intensive function this serial implementation that works correctly
   //will stay.
@@ -259,19 +263,19 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, sd::LongType **xTadShape
 
 
 template <typename X, typename Y>
-static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<NDArray *> const &inputs,
+static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,
                                         std::vector<NDArray *> const &indices, NDArray *output) {
-  sd::LongType inputSize = inputs.size();
+  LongType inputSize = inputs.size();
 
   PointersManager pm(context, "dynamicStitch");
 
   if (output->isVector()) {
     std::vector<const void *> inputBuffers(inputSize);
-    std::vector<const sd::LongType *> inputShapes(inputSize);
+    std::vector<const LongType *> inputShapes(inputSize);
     std::vector<const void *> indicesBuffers(inputSize);
-    std::vector<const sd::LongType *> indicesShapes(inputSize);
+    std::vector<const LongType *> indicesShapes(inputSize);
 
-    for (sd::LongType e = 0; e < inputSize; e++) {
+    for (LongType e = 0; e < inputSize; e++) {
       inputBuffers[e] = inputs.at(e)->specialBuffer();
       indicesBuffers[e] = indices.at(e)->specialBuffer();
 
@@ -285,32 +289,32 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     auto dIndicesBuffers =
         reinterpret_cast<void **>(pm.replicatePointer(indicesBuffers.data(), inputSize * sizeof(void *)));
     auto dInputShapes =
-        reinterpret_cast<sd::LongType **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(sd::LongType *)));
-    auto dIndicesShapes = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(sd::LongType *)));
+        reinterpret_cast<LongType **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(LongType *)));
+    auto dIndicesShapes = reinterpret_cast<LongType **>(
+        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
     dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
 
     dynamicStitchScalarKernel<X, Y><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(
         dInputBuffers, dInputShapes, dIndicesBuffers, dIndicesShapes, inputSize, output->specialBuffer(),
         output->specialShapeInfo(), output->lengthOf());
+    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicStitchScalarKernel failed");
+
   } else {
-    std::vector<sd::LongType> restDims(output->rankOf() - 1);
+    std::vector<LongType> restDims(output->rankOf() - 1);
     for (int i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
-    printf("dynamic stitch_1\n");
-    shape::printShapeInfo(output->shapeInfo());
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &restDims);
 
     std::vector<const void *> inputBuffers(inputSize);
-    std::vector<const sd::LongType *> inputTadShapes(inputSize);
-    std::vector<const sd::LongType *> inputTadOffsets(inputSize);
+    std::vector<const LongType *> inputTadShapes(inputSize);
+    std::vector<const LongType *> inputTadOffsets(inputSize);
 
     std::vector<const void *> indicesBuffers(inputSize);
-    std::vector<const sd::LongType *> indicesShapes(inputSize);
-    std::vector<sd::LongType > inputsNumTads(inputSize);
+    std::vector<const LongType *> indicesShapes(inputSize);
+    std::vector<LongType> inputsNumTads(inputSize);
 
-    for (sd::LongType e = 0; e < inputSize; e++) {
-      std::vector<sd::LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
-      for (sd::LongType  i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
+    for (LongType e = 0; e < inputSize; e++) {
+      std::vector<LongType> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
+      for (LongType i = sourceDims.size(); i > 0; i--) sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
       auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), &sourceDims);
       indicesBuffers[e] = indices[e]->specialBuffer();
@@ -324,29 +328,31 @@ static sd::Status _dynamicStitchFunctor(sd::LaunchContext *context, std::vector<
     // copying pointers to buffers to device
     auto dInputBuffers =
         reinterpret_cast<void **>(pm.replicatePointer(inputBuffers.data(), inputSize * sizeof(void *)));
-    auto dInputTadShapes = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(inputTadShapes.data(), inputSize * sizeof(sd::LongType *)));
-    auto dInputTadOffsets = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(inputTadOffsets.data(), inputSize * sizeof(sd::LongType *)));
+    auto dInputTadShapes = reinterpret_cast<LongType **>(
+        pm.replicatePointer(inputTadShapes.data(), inputSize * sizeof(LongType *)));
+    auto dInputTadOffsets = reinterpret_cast<LongType **>(
+        pm.replicatePointer(inputTadOffsets.data(), inputSize * sizeof(LongType *)));
 
     auto dIndicesBuffers =
         reinterpret_cast<void **>(pm.replicatePointer(indicesBuffers.data(), inputSize * sizeof(void *)));
-    auto dIndicesShapes = reinterpret_cast<sd::LongType **>(
-        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(sd::LongType *)));
+    auto dIndicesShapes = reinterpret_cast<LongType **>(
+        pm.replicatePointer(indicesShapes.data(), inputSize * sizeof(LongType *)));
 
-    auto dNumTadsInputs = reinterpret_cast<sd::LongType *>(
-        pm.replicatePointer(inputsNumTads.data(), inputSize * sizeof(sd::LongType *)));
+    auto dNumTadsInputs = reinterpret_cast<LongType *>(
+        pm.replicatePointer(inputsNumTads.data(), inputSize * sizeof(LongType *)));
 
 
     dim3 launchDims = getLaunchDims("dynamic_stitch_tad");
     dynamicStitchTadKernel<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
         dInputBuffers, dInputTadShapes, dInputTadOffsets, dIndicesBuffers, dIndicesShapes, inputSize,
         output->specialBuffer(), packZ->platformShapeInfo(), packZ->platformOffsets(),dNumTadsInputs, packZ->numberOfTads());
+    DebugHelper::checkErrorCode(context->getCudaStream(),"dynamicStitchTadKernel failed");
+
   }
 
   pm.synchronize();
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 template <typename T>
@@ -354,7 +360,7 @@ static void _dynamicPartitionFunctorBP(NDArray const *input, NDArray const *indi
                                        std::vector<NDArray *> const &inputGradientList,
                                        std::vector<NDArray *> &outputList) {}
 
-void dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *input, NDArray const *indices,
+void dynamicPartitionFunctor(LaunchContext *context, NDArray const *input, NDArray const *indices,
                              std::vector<NDArray *> &outputList) {
   auto xType = input->dataType();
   auto yType = indices->dataType();
@@ -374,13 +380,13 @@ void dynamicPartitionFunctor(sd::LaunchContext *context, NDArray const *input, N
 }
 
 template <typename T>
-static sd::Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
-                                          NDArray const *gradInput, std::vector<NDArray *> &outputList) {
+static Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
+                                      NDArray const *gradInput, std::vector<NDArray *> &outputList) {
   THROW_EXCEPTION("Not implemented yet");
 }
 
-sd::Status dynamicStitchFunctor(sd::LaunchContext *context, std::vector<NDArray *> const &inputs,
-                                std::vector<NDArray *> const &indices, NDArray *output) {
+Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,
+                            std::vector<NDArray *> const &indices, NDArray *output) {
   auto xType = inputs.at(0)->dataType();
   auto yType = indices.at(0)->dataType();
 
@@ -401,10 +407,10 @@ sd::Status dynamicStitchFunctor(sd::LaunchContext *context, std::vector<NDArray 
 
   NDArray::registerSpecialUse({output}, {});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status dynamicStitchFunctorBP(sd::LaunchContext *context, std::vector<NDArray *> const &inputs,
+Status dynamicStitchFunctorBP(LaunchContext *context, std::vector<NDArray *> const &inputs,
                                   std::vector<NDArray *> const &indices, NDArray const *gradInput,
                                   std::vector<NDArray *> &outputList) {
   auto xType = inputs.at(0)->dataType();
@@ -413,7 +419,7 @@ sd::Status dynamicStitchFunctorBP(sd::LaunchContext *context, std::vector<NDArra
                         SD_NUMERIC_TYPES);
 }
 
-void dynamicPartitionFunctorBP(sd::LaunchContext *context, NDArray const *input, NDArray const *indices,
+void dynamicPartitionFunctorBP(LaunchContext *context, NDArray const *input, NDArray const *indices,
                                std::vector<NDArray *> const &inputGradientList, std::vector<NDArray *> &outputList) {
   auto xType = input->dataType();
 

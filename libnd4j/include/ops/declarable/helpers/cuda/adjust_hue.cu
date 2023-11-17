@@ -20,11 +20,12 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/adjust_hue.h>
 
-#include <execution/cuda/LaunchDims.h>
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -32,14 +33,14 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void SD_KERNEL adjustHueCuda(const void* vx, const sd::LongType* xShapeInfo, const sd::LongType* xTadOffsets,
-                                    void* vz, const sd::LongType* zShapeInfo, const sd::LongType* zTadOffsets,
-                                    const sd::LongType numOfTads, const T delta, const sd::LongType dimC) {
+static void SD_KERNEL adjustHueCuda(const void* vx, const LongType* xShapeInfo, const LongType* xTadOffsets,
+                                    void* vz, const LongType* zShapeInfo, const LongType* zTadOffsets,
+                                    const LongType numOfTads, const T delta, const LongType dimC) {
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ int rank;
-  __shared__ sd::LongType xDimCstride, zDimCstride;
+  __shared__ LongType xDimCstride, zDimCstride;
 
   if (threadIdx.x == 0) {
     rank = shape::rank(xShapeInfo);
@@ -50,7 +51,7 @@ static void SD_KERNEL adjustHueCuda(const void* vx, const sd::LongType* xShapeIn
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+  for (LongType i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
     const T* xTad = x + xTadOffsets[i];
     T* zTad = z + zTadOffsets[i];
 
@@ -71,21 +72,23 @@ static void SD_KERNEL adjustHueCuda(const void* vx, const sd::LongType* xShapeIn
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static SD_HOST void adjustHueCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
-                                          const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                          const sd::LongType* xTadOffsets, void* vz, const sd::LongType* zShapeInfo,
-                                          const sd::LongType* zTadOffsets, const sd::LongType numOfTads,
-                                          const NDArray* deltaScalarArr, const sd::LongType dimC) {
+                                          const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                          const LongType* xTadOffsets, void* vz, const LongType* zShapeInfo,
+                                          const LongType* zTadOffsets, const LongType numOfTads,
+                                          const NDArray* deltaScalarArr, const LongType dimC) {
   adjustHueCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, deltaScalarArr->e<T>(0), dimC);
+  sd::DebugHelper::checkGlobalErrorCode("sadjustHue  failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr, NDArray* output,
-               const sd::LongType dimC) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
+void adjustHue(LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr, NDArray* output,
+               const LongType dimC) {
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
-  const sd::LongType numOfTads = packX->numberOfTads();
+  const LongType numOfTads = packX->numberOfTads();
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;

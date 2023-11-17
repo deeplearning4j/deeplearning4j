@@ -39,7 +39,7 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t len
 
 InteropDataBuffer::InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer) { _dataBuffer = std::make_shared<DataBuffer>(*databuffer.get()); }
 
-InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, sd::DataType dtype, bool allocateBoth) {
+InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) {
   if (lenInBytes == 0) {
     _dataBuffer = std::make_shared<DataBuffer>();
     _dataBuffer->setDataType(dtype);
@@ -117,7 +117,7 @@ void InteropDataBuffer::registerSpecialUse(const std::vector<const InteropDataBu
 void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuffer*>& writeList,
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
-  auto currentDeviceId = sd::AffinityManager::currentDeviceId();
+  auto currentDeviceId = AffinityManager::currentDeviceId();
   for (const auto& v : readList) {
     if (v == nullptr) continue;
 

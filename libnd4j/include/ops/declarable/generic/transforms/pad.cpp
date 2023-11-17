@@ -40,8 +40,8 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
   const int rank = input->rankOf();
 
   // input validation
-  std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
-  std::vector<sd::LongType> currentPaddingsShape = paddings->getShapeAsVector();
+  std::vector<LongType> expectedPaddingsShape = {rank, 2};
+  std::vector<LongType> currentPaddingsShape = paddings->getShapeAsVector();
   REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0,
                "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(),
@@ -80,13 +80,13 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
   helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(pad) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64})  // INT32 with TF
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {INT32, INT64})  // INT32 with TF
       ->setSameMode(true);
 }
 
@@ -99,18 +99,18 @@ DECLARE_SHAPE_FN(pad) {
     THROW_EXCEPTION("PAD op: Bad shape buffer. Likely corrupt. Please ensure buffer was not deallocated.");
   }
   // paddings validation
-  const std::vector<sd::LongType> expectedPaddingsShape = {rank, 2};
-  const std::vector<sd::LongType> currentPaddingsShape = paddings->getShapeAsVector();
+  const std::vector<LongType> expectedPaddingsShape = {rank, 2};
+  const std::vector<LongType> currentPaddingsShape = paddings->getShapeAsVector();
   REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0,
                "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(),
                ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
 
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
   for (int i = 1; i <= rank; ++i)
-    outShapeInfo[i] = inputShapeInfo[i] + paddings->e<sd::LongType>(i - 1, 0) + paddings->e<sd::LongType>(i - 1, 1);
+    outShapeInfo[i] = inputShapeInfo[i] + paddings->e<LongType>(i - 1, 0) + paddings->e<LongType>(i - 1, 1);
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo);

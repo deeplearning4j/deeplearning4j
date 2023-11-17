@@ -63,7 +63,7 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
              bits for quantization should be in between 2 and 16, but %i was given.",
                numBits);
   helpers::fakeQuantWithMinMaxVars(x, min, max, numBits, narrowed, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(fake_quant_with_min_max_vars) {

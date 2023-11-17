@@ -39,11 +39,11 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, void* pVz,
-                                const sd::LongType* zTadShapeInfo, const LongType axis) {
+SD_KERNEL static void splitCuda(const void* vx, const LongType* xShapeInfo, void* pVz,
+                                const LongType* zTadShapeInfo, const LongType axis) {
   const T* x = reinterpret_cast<const T*>(vx);
 
-  __shared__ sd::LongType xLen, totalThreads;
+  __shared__ LongType xLen, totalThreads;
   __shared__ int xRank, zDim;
 
   if (threadIdx.x == 0) {
@@ -56,18 +56,18 @@ SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
-  for (sd::LongType i = tid; i < xLen; i += totalThreads) {
+  for (LongType i = tid; i < xLen; i += totalThreads) {
     shape::index2coords(i, xShapeInfo, coords);
 
-    const sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
+    const LongType xOffset = shape::getOffset(xShapeInfo, coords);
 
     auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[coords[axis] / zDim]);
 
     coords[axis] %= zDim;
 
-    const sd::LongType zOffset = shape::getOffset(zTadShapeInfo, coords);
+    const LongType zOffset = shape::getOffset(zTadShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
   }
@@ -76,9 +76,11 @@ SD_KERNEL static void splitCuda(const void* vx, const sd::LongType* xShapeInfo, 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
-                                      const void* vx, const sd::LongType* xShapeInfo, void* pVz,
-                                      const sd::LongType* zTadShapeInfo, const LongType axis) {
+                                      const void* vx, const LongType* xShapeInfo, void* pVz,
+                                      const LongType* zTadShapeInfo, const LongType axis) {
   splitCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, pVz, zTadShapeInfo, axis);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "splitCuda failed");
+
 }
 BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx,
@@ -86,7 +88,7 @@ BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher,
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const LongType axis) {
+void split(LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const LongType axis) {
   const int numOfSubArrs = outArrs.size();
   const auto sizeofT = input.sizeOfT();
 
@@ -98,7 +100,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
       input.ews() == 1;
 
   if (luckCase1) {
-    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
+    for (LongType i = 0; i < numOfSubArrs; ++i) {
       luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
       if (!luckCase1) break;
     }
@@ -109,7 +111,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
 
     auto x = static_cast<const int8_t*>(input.specialBuffer());
 
-    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
+    for (LongType i = 0; i < numOfSubArrs; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf() * sizeofT;
       cudaMemcpyAsync(static_cast<int8_t*>(outArrs[i]->specialBuffer()), x, memAmountToCopy, cudaMemcpyDeviceToDevice,
                       *context->getCudaStream());

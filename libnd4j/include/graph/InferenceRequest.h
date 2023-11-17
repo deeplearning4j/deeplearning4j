@@ -31,7 +31,7 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT InferenceRequest {
  private:
-  sd::LongType _id;
+  LongType _id;
   std::vector<Variable *> _variables;
   std::vector<Variable *> _deletables;
 
@@ -40,7 +40,7 @@ class SD_LIB_EXPORT InferenceRequest {
   void insertVariable(Variable *variable);
 
  public:
-  InferenceRequest(sd::LongType graphId, ExecutorConfiguration *configuration = nullptr);
+  InferenceRequest(LongType graphId, ExecutorConfiguration *configuration = nullptr);
   ~InferenceRequest();
 
   void appendVariable(int id, NDArray *array);

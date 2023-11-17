@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
                lastIndDim, rankIn);
 
   if (checkIndices) {
-    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *input);
+    const LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *input);
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
                  "GATHER_ND OP: please check elements of indices-array, total number of wrong elements is %lld!",
                  numOfBadIndx);
@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
   helpers::gatherND(block.launchContext(), *input, *indices, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(gather_nd) {
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(gather_nd) {
 
   int outRank = (rankInd - 1) + (rankIn - lastIndDim);
 
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
 
   outShapeInfo[0] = outRank;

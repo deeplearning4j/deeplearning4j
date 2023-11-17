@@ -691,7 +691,7 @@ dim3 getCompareElem(int length) {
 
 dim3 getConcat(int length) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
-  int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
+  int blocksPerGrid = SD_CUDA_BLOCK_SIZE;
   int sharedMem = 256;
 
   threadsPerBlock = getEnvVariable("GRID_SIZE_CONCAT", threadsPerBlock);

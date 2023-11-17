@@ -38,9 +38,9 @@ CUSTOM_OP_IMPL(compat_sparse_to_dense, 4, 1, false, 0, 0) {
 
   if (block.width() > 3) def = INPUT_VARIABLE(3);
 
-  sd::ops::helpers::compat_sparse_to_dense(*values, *indices, def, *output);
+  helpers::compat_sparse_to_dense(*values, *indices, def, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_SHAPE_FN(compat_sparse_to_dense) {
@@ -66,9 +66,9 @@ DECLARE_TYPES(compat_sparse_to_dense) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})         // indices
       ->setAllowedInputTypes(1, {ALL_INTS})         // shape
-      ->setAllowedInputTypes(2, sd::DataType::ANY)  // sparse values
-      ->setAllowedInputTypes(3, sd::DataType::ANY)  // default value
-      ->setAllowedOutputTypes(sd::DataType::ANY);
+      ->setAllowedInputTypes(2, ANY)  // sparse values
+      ->setAllowedInputTypes(3, ANY)  // default value
+      ->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

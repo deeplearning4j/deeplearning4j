@@ -134,6 +134,8 @@ SD_HOST void bitonicSortStepGenericKey(dim3 &launchDims, cudaStream_t *stream, v
                                        bool descending) {
   bitonicSortStepKernelKey<X, Y>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, j, k, length, descending);
+  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericKey  failed");
+
 }
 
 BUILD_SINGLE_TEMPLATE(template void bitonicSortStepGeneric,

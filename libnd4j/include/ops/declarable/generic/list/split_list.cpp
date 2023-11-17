@@ -54,8 +54,8 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
 
   // now let's build subarrays
   int cnt = 0;
-  std::vector<sd::LongType> indices(2 * array->rankOf(), 0);
-  for (sd::LongType e = 0; e < sizes->lengthOf(); e++) {
+  std::vector<LongType> indices(2 * array->rankOf(), 0);
+  for (LongType e = 0; e < sizes->lengthOf(); e++) {
     int c_size = sizes->e<int>(e);
 
     REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);
@@ -73,7 +73,7 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
 
     auto status = list->write(e, new NDArray(subarray.dup(array->ordering())));
 
-    if (status != sd::Status::OK) return status;
+    if (status != Status::OK) return status;
   }
 
   if (!hasList) {
@@ -81,7 +81,7 @@ LIST_OP_IMPL(split_list, 2, 1, 0, -2) {
     setupResultList(list, block);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArraySplitV3, split_list);
 DECLARE_SYN(tensorarraysplitv3, split_list);

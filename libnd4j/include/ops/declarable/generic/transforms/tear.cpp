@@ -34,14 +34,14 @@ CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
 
   REQUIRE_TRUE(!block.getIArguments()->empty(), 0, "At least 1 dimension should be specified for Tear");
 
-  std::vector<sd::LongType> dims(*block.getIArguments());
+  std::vector<LongType> dims(*block.getIArguments());
 
   for (auto &v : dims)
     REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0,
                  "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
 
   auto tads = input->allTensorsAlongDimension(dims);
-  for (sd::LongType e = 0; e < tads.size(); e++) {
+  for (LongType e = 0; e < tads.size(); e++) {
     auto outE = OUTPUT_VARIABLE(e);
     outE->assign(tads.at(e));
 
@@ -49,21 +49,21 @@ CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
     this->storeResult(block, e, *outE);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(tear) {
   auto inShape = inputShape->at(0);
 
-  std::vector<sd::LongType> dims(*block.getIArguments());
+  std::vector<LongType> dims(*block.getIArguments());
 
   if (dims.size() > 1) std::sort(dims.begin(), dims.end());
 
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, &dims);
+  auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(inShape, &dims);
   auto numTads = tadPack->numberOfTads();
 
   auto result = SHAPELIST();
-  for (sd::LongType e = 0; e < numTads; e++) {
+  for (LongType e = 0; e < numTads; e++) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape),
                                                                        shape::rank(tadPack->primaryShapeInfo()),
                                                                        shape::shapeOf(tadPack->primaryShapeInfo()), -1);
@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(tear) {
   return result;
 }
 
-DECLARE_TYPES(tear) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(tear) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

@@ -36,11 +36,11 @@ OP_IMPL(stop_gradient, 1, 1, true) {
     out->assign(x);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(StopGradient, stop_gradient);
 
-DECLARE_TYPES(stop_gradient) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(stop_gradient) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

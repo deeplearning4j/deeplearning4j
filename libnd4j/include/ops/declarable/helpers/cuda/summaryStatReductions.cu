@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void variance(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
+void variance(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
   // informs and prepares (syncs) specialBuffer of which NDArrays will be used as read, write.
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
@@ -37,12 +37,12 @@ void variance(const NDArray& input, NDArray& output, const std::vector<sd::LongT
                                                 input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                 output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
   } else {
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
 
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsVariance, input.buffer(), input.shapeInfo(),
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
+        output.specialBuffer(), output.specialShapeInfo(), (LongType*)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
         tadPack->specialOffsets(), biasCorrected);
   }
   // inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse
@@ -50,7 +50,7 @@ void variance(const NDArray& input, NDArray& output, const std::vector<sd::LongT
 }
 
 //////////////////////////////////////////////////////////////////////////
-void standardDeviation(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
+void standardDeviation(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions, bool biasCorrected) {
   // informs and prepares (syncs) of which NDArrays will be used as read, write
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
@@ -59,12 +59,12 @@ void standardDeviation(const NDArray& input, NDArray& output, const std::vector<
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
         output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
   } else {
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
 
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsStandardDeviation, input.buffer(), input.shapeInfo(),
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
-        output.specialBuffer(), output.specialShapeInfo(), (sd::LongType *)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
+        output.specialBuffer(), output.specialShapeInfo(), (LongType*)nullptr, dimensions.size(), tadPack->specialShapeInfo(),
         tadPack->specialOffsets(), biasCorrected);
   }
   // inform that we are done with those specialBuffers. it matches arrays used in the prepareSpecialUse

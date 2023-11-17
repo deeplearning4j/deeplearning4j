@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
-  const sd::LongType channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
+  const LongType channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
 
   REQUIRE_TRUE(bias->rankOf() == 1, 0, "BIASADD CUSTOM_OP: bias array should have rank = 1, but got %i instead !",
                bias->rankOf());
@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
 
   helpers::addBias(block, *input, *bias, *output, isNCHW);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(bias_add, biasadd);
 
@@ -71,7 +71,7 @@ DECLARE_SHAPE_FN(biasadd) {
 }
 
 DECLARE_TYPES(biasadd) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -88,12 +88,12 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
 
   gradI->assign(gradO);
 
-  std::vector<sd::LongType> channel;
+  std::vector<LongType> channel;
   channel.push_back(channelDim);
   auto dims = ShapeUtils::evalDimsToExclude(gradO->rankOf(), 1,channel.data());
-  gradO->reduceAlongDimension(sd::reduce::Sum, *gradB, dims);
+  gradO->reduceAlongDimension(reduce::Sum, *gradB, dims);
   delete dims;
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(BiasAddGrad, biasadd_bp);
 
@@ -102,8 +102,8 @@ DECLARE_SHAPE_FN(biasadd_bp) {
   auto input = inputShape->at(0);
   auto bias = inputShape->at(1);
 
-  sd::LongType* epsShape;
-  sd::LongType* gradShape;
+  LongType* epsShape;
+  LongType* gradShape;
 
   COPY_SHAPE(input, epsShape);
   COPY_SHAPE(bias, gradShape);
@@ -112,7 +112,7 @@ DECLARE_SHAPE_FN(biasadd_bp) {
 }
 
 DECLARE_TYPES(biasadd_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

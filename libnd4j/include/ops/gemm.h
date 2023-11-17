@@ -47,7 +47,7 @@ class GEMM {
 };
 
 template <typename X, typename Y, typename Z>
-class GEMV : public sd::blas::GEMM<X, Y, Z> {
+class GEMV : public GEMM<X, Y, Z> {
  public:
   static void op(int TRANS, int M, int N, double alpha, void *vA, int lda, void *vX, int incx, double beta, void *vY,
                  int incy);

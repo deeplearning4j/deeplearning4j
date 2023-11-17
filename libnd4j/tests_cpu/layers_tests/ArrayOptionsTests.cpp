@@ -28,7 +28,7 @@ using namespace sd;
 
 class ArrayOptionsTests : public NDArrayTests {
  public:
-  sd::LongType shape[8] = {2, 5, 5, 5, 1, 0, 1, 99};
+  LongType shape[8] = {2, 5, 5, 5, 1, 0, 1, 99};
 };
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_0) {
@@ -86,22 +86,22 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_6) {
 }
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_7) {
-  ArrayOptions::setDataType(shape, sd::DataType::FLOAT32);
-  ArrayOptions::setDataType(shape, sd::DataType::FLOAT32);
+  ArrayOptions::setDataType(shape, FLOAT32);
+  ArrayOptions::setDataType(shape, FLOAT32);
 
   ASSERT_EQ(sd::DataType::FLOAT32, ArrayOptions::dataType(shape));
 }
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_8) {
-  ArrayOptions::setDataType(shape, sd::DataType::DOUBLE);
-  ArrayOptions::setDataType(shape, sd::DataType::FLOAT32);
+  ArrayOptions::setDataType(shape, DOUBLE);
+  ArrayOptions::setDataType(shape, FLOAT32);
 
   ASSERT_EQ(sd::DataType::FLOAT32, ArrayOptions::dataType(shape));
 }
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_9) {
-  ArrayOptions::setDataType(shape, sd::DataType::FLOAT32);
-  ArrayOptions::setDataType(shape, sd::DataType::DOUBLE);
+  ArrayOptions::setDataType(shape, FLOAT32);
+  ArrayOptions::setDataType(shape, DOUBLE);
 
   ASSERT_EQ(sd::DataType::DOUBLE, ArrayOptions::dataType(shape));
 }

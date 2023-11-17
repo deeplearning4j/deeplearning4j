@@ -53,13 +53,13 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   const int inRank = input->rankOf();
 
   // get axes args to normalize input array over
-  std::vector<sd::LongType> axes;
+  std::vector<LongType> axes;
   if (numOfIntArgs > 2)
     for (int i = 2; i < numOfIntArgs; ++i) axes.push_back(INT_ARG(i));
   else
     axes.push_back(inRank - 1);  // default dimension to reduce along is last dimension
 
-  const sd::LongType numOfAxes = axes.size();
+  const LongType numOfAxes = axes.size();
   REQUIRE_TRUE(numOfAxes <= inRank, 0,
                "BATCHNORM op: too big number of input axes to normalize over, expected number should be less or equal "
                "to rank of input array, but got %i and %i correspondingly !",
@@ -68,12 +68,12 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
   // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes =
   // {3}, then expected shape would be {5}
-  std::vector<sd::LongType> expShape;
+  std::vector<LongType> expShape;
   if (numOfAxes == 1)
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
-    expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    expShape = std::vector<LongType>(inRank, 1);
+    for (LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -103,7 +103,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
 
 
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(batchnorm) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
@@ -156,7 +156,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   else
     axes.push_back(inRank - 1);  // default dimension to reduce along is last dimension
 
-  const sd::LongType numOfAxes = axes.size();
+  const LongType numOfAxes = axes.size();
   REQUIRE_TRUE(numOfAxes <= inRank, 0,
                "BATCHNORM_BP op: too big number of input axes to normalize over, expected number should be less or "
                "equal to rank of input array, but got %i and %i correspondingly !",
@@ -165,12 +165,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
   // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes =
   // {3}, then expected shape would be {5}
-  std::vector<sd::LongType> expShape;
+  std::vector<LongType> expShape;
   if (numOfAxes == 1)
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
-    expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    expShape = std::vector<LongType>(inRank, 1);
+    for (LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -227,11 +227,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   const bool keepUnitiesInShape = inRank == mean->rankOf();
 
   // inverse batch size 1/N
-  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), const_cast<sd::LongType * const>(axes.data()), axes.size()) / input->lengthOf();
+  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), const_cast<LongType* const>(axes.data()), axes.size()) / input->lengthOf();
 
   // input - mean
   NDArray xMinusMean(input);  // empty array with same shape as input
-  input->applyBroadcast(sd::broadcast::Subtract, &axes, *mean, xMinusMean);
+  input->applyBroadcast(broadcast::Subtract, &axes, *mean, xMinusMean);
 
   // stdInv
   NDArray stdInv = *variance + epsilon;
@@ -239,22 +239,22 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   stdInv.applyTransform(transform::Sqrt, stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dvdm (use dLdM as storage for dvdm)
-  xMinusMean.reduceAlongDimension(sd::reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
+  xMinusMean.reduceAlongDimension(reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
   *dLdM *= -Ninv;
 
   // g_sum
-  auto gSum = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes, keepUnitiesInShape);
+  auto gSum = dLdO->reduceAlongDimension(reduce::Sum, excludedAxes, keepUnitiesInShape);
 
   // dLdB
   if (applyOffset) dLdB->assign(gSum);
 
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
   gSum *= Ninv;
-  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, gSum, *dLdI);
-  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, stdInv, *dLdI);
+  dLdO->applyBroadcast(broadcast::Subtract, &axes, gSum, *dLdI);
+  dLdI->applyBroadcast(broadcast::Multiply, &axes, stdInv, *dLdI);
 
   // dLdV <- [g*(x - m)]_sum
-  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
+  (xMinusMean * *dLdO).reduceAlongDimension(reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
 
   // dLdG
   *dLdV *= stdInv;
@@ -265,37 +265,37 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdV *= -Ninv;            // -0.5f * (2 / N);
 
   // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
-  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, *dLdM, xMinusMean);
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, *dLdV, xMinusMean);
+  xMinusMean.applyBroadcast(broadcast::Add, &axes, *dLdM, xMinusMean);
+  xMinusMean.applyBroadcast(broadcast::Multiply, &axes, *dLdV, xMinusMean);
 
   // dLdI
   *dLdI += xMinusMean;
-  if (applyScale) dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, *gamma, *dLdI);
+  if (applyScale) dLdI->applyBroadcast(broadcast::Multiply, &axes, *gamma, *dLdI);
 
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far
 
 
   delete excludedAxes;
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(batchnorm_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
-      ->setAllowedInputTypes(1, sd::DataType::ANY)
-      ->setAllowedInputTypes(2, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedInputTypes(2, ANY)
       ->setAllowedInputTypes(3, {ALL_FLOATS})
-      ->setAllowedInputTypes(4, sd::DataType::ANY)
-      ->setAllowedInputTypes(5, sd::DataType::ANY)
+      ->setAllowedInputTypes(4, ANY)
+      ->setAllowedInputTypes(5, ANY)
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 DECLARE_SHAPE_FN(batchnorm_bp) {
-  sd::LongType const* inShapeInfo = inputShape->at(0);
-  sd::LongType const* meanShapeInfo = inputShape->at(1);
+  LongType const* inShapeInfo = inputShape->at(0);
+  LongType const* meanShapeInfo = inputShape->at(1);
 
   const bool applyScale = (bool)INT_ARG(0);
   const bool applyOffset = (bool)INT_ARG(1);

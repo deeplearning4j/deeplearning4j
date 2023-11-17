@@ -31,10 +31,10 @@ REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
   auto z = OUTPUT_VARIABLE(0);
 
   //            STORE_RESULT(*z);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(testreduction) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(testreduction) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

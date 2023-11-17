@@ -45,7 +45,7 @@ public class ArraySavingListener extends BaseListener {
     protected final File dir;
     protected int count = 0;
 
-    public ArraySavingListener(@NonNull File dir){
+    public ArraySavingListener(@NonNull File dir) {
 
         if(!dir.exists()){
             dir.mkdir();
@@ -67,7 +67,7 @@ public class ArraySavingListener extends BaseListener {
     @Override
     public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         List<String> outNames = op.getOutputsOfOp();
-        for(int i=0; i<outputs.length; i++ ){
+        for(int i=0; i<outputs.length; i++) {
             String filename = (count++) + "_" + outNames.get(i).replaceAll("/", "__") + ".bin";
             File outFile = new File(dir, filename);
 

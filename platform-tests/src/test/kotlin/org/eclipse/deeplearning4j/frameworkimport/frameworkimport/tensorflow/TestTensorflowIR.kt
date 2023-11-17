@@ -752,7 +752,14 @@ class TestTensorflowIR {
                     Node(opNode)
                 }
                 val tensorflowGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-                val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,HashMap(),OpRegistryHolder.tensorflow()).enableDebugMode()!!
+                val mappedGraph = importGraph.importGraph(
+                    tensorflowGraph,
+                    null,
+                    null,
+                    HashMap(),
+                    OpRegistryHolder.tensorflow(),
+                    false
+                ).enableDebugMode()!!
                 Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
                     .stackTrace(true).build())
                 val xVal =  Nd4j.scalar(scalarInputs[mappingProcess.opName()]).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
@@ -821,7 +828,14 @@ class TestTensorflowIR {
 
                         val mappingProcess = tensorflowOpRegistry.lookupOpMappingProcess(tensorflowOpDef.name)
                         val tensorflowGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,HashMap(),tensorflowOpRegistry)!!
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            HashMap(),
+                            tensorflowOpRegistry,
+                            false
+                        )!!
                         val xVal =  singularReduceOps[mappingProcess.opName()]!!.castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE)
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =   tensorflowGraph,inputNames = listOf("x"),outputNames = listOf("output"))
                         val inputs = mapOf("x" to xVal)
@@ -889,7 +903,14 @@ class TestTensorflowIR {
 
                         val mappingProcess = tensorflowOpRegistry.lookupOpMappingProcess(tensorflowOpDef.name)
                         val tensorflowGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,HashMap(),OpRegistryHolder.tensorflow())!!
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            HashMap(),
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )!!
                         val xVal =  booleanReduceOps[mappingProcess.opName()]!!
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =   tensorflowGraph,inputNames = listOf("x"),outputNames = listOf("output"))
                         val inputs = mapOf("x" to xVal)
@@ -943,11 +964,11 @@ class TestTensorflowIR {
 
                 val mappingProcess = tensorflowOpRegistry.lookupOpMappingProcess(tensorflowOpDef.name)
                 val tensorflowGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-                val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicVariables = hashMapOf("y" to TensorProto {
+                val mappedGraph = importGraph.importGraph(tensorflowGraph, null, null, dynamicVariables = hashMapOf("y" to TensorProto {
                     dtype = DataType.DT_DOUBLE
                     DoubleData(listOf(1.0))
                     Shape(listOf(1,1))
-                }),OpRegistryHolder.tensorflow())!!
+                }), OpRegistryHolder.tensorflow(), false)!!
 
                 val xVal =  Nd4j.scalar(pairWiseInputs[mappingProcess.opName()]!![0])
                     .reshape(1,1)
@@ -998,7 +1019,14 @@ class TestTensorflowIR {
                 }
 
                 val tensorflowGraph = TensorflowIRGraph(graphDef, tensorflowOps,tensorflowOpRegistry)
-                val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,HashMap(),OpRegistryHolder.tensorflow())!!
+                val mappedGraph = importGraph.importGraph(
+                    tensorflowGraph,
+                    null,
+                    null,
+                    HashMap(),
+                    OpRegistryHolder.tensorflow(),
+                    false
+                )!!
                 val xVal =  Nd4j.scalar(pairWiseIntOps[mappingProcess.opName()]!![0])
                     .reshape(1,1)
                     .castTo(org.nd4j.linalg.api.buffer.DataType.INT32)
@@ -1034,7 +1062,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
@@ -1058,7 +1093,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
@@ -1070,7 +1112,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         if(mappingProcess.opName() == "matrix_determinant") {
@@ -1084,7 +1133,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
@@ -1093,7 +1149,14 @@ class TestTensorflowIR {
 
                     } else if(mappingProcess.opName() == "draw_bounding_boxes") {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
                         val results = mappedGraph!!.output(graphInput.inputArrays,graphInput.outputNames)
@@ -1104,7 +1167,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)
@@ -1118,7 +1188,14 @@ class TestTensorflowIR {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 
-                        val mappedGraph = importGraph.importGraph(tensorflowGraph,null,null,dynamicOpsMap,OpRegistryHolder.tensorflow())
+                        val mappedGraph = importGraph.importGraph(
+                            tensorflowGraph,
+                            null,
+                            null,
+                            dynamicOpsMap,
+                            OpRegistryHolder.tensorflow(),
+                            false
+                        )
                         assertEquals(graphInput.inputArrays.keys,graphInput.inputNames.toSet(),"Input name mismatch with input array elements")
 
                         val tfResults = tensorflowRunner.run(graphInput.inputArrays)

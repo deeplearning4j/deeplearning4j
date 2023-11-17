@@ -33,7 +33,7 @@ namespace sd {
 namespace ops {
 class BroadcastHelper {
  public:
-  static SD_INLINE NDArray* broadcastApply(sd::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
+  static SD_INLINE NDArray* broadcastApply(BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
       return z;
@@ -91,7 +91,7 @@ class BroadcastHelper {
     return z;
   }
 
-  static SD_INLINE NDArray* broadcastApply(sd::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
+  static SD_INLINE NDArray* broadcastApply(BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
       if (!z->isEmpty()) {

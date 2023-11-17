@@ -35,7 +35,7 @@ void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
   theFirst->applyPairwiseLambda(*theSecond, functor, *theFirst);
 }
 
-void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond) {
+void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative__, (theFirst, theSecond), SD_FLOAT_TYPES);
 }
 
@@ -46,7 +46,7 @@ void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   input->applyPairwiseLambda(*epsilon, functor, *output);
 }
 
-void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative_, (theFirst, theSecond, theOutput), SD_FLOAT_TYPES);
 }
 
@@ -57,7 +57,7 @@ void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   input->applyPairwiseLambda(*epsilon, functor, *output);
 }
 
-void relu6Derivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+void relu6Derivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), relu6Derivative_, (theFirst, theSecond, theOutput), SD_FLOAT_TYPES);
 }
 
@@ -70,7 +70,7 @@ void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, con
   input->applyPairwiseLambda(*epsilon, functor, *output);
 }
 
-void leakyReluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
+void leakyReluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
                          const float alpha) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput, alpha),
                         SD_FLOAT_TYPES);
@@ -80,12 +80,12 @@ template <typename T>
 void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
   const T alphaT = static_cast<T>(alpha);
 
-  auto functor = LAMBDA_TT(x, y, alphaT) { return y * sd::math::sd_eluderivative<T, T>(x, alphaT); };
+  auto functor = LAMBDA_TT(x, y, alphaT) { return y * math::sd_eluderivative<T, T>(x, alphaT); };
 
   input->applyPairwiseLambda(*epsilon, functor, *output);
 }
 
-void eluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
+void eluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
                    const float alpha) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput, alpha), SD_FLOAT_TYPES);
 }
@@ -97,7 +97,7 @@ void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   input->applyPairwiseLambda(*epsilon, functor, *output);
 }
 
-void seluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+void seluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
   BUILD_SINGLE_SELECTOR(theFirst->dataType(), seluDerivative_, (theFirst, theSecond, theOutput), SD_FLOAT_TYPES);
 }
 }  // namespace helpers

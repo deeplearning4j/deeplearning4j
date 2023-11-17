@@ -33,7 +33,7 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
   NDArray *output = OUTPUT_VARIABLE(0);
 
   auto mode = (int)T_ARG(0);
-  std::vector<sd::LongType> dims = *block.getIArguments();
+  std::vector<LongType> dims = *block.getIArguments();
   bool overwrite = false;
 
   if (block.width() == 1) {
@@ -89,10 +89,10 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
     OVERWRITE_RESULT(output);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
-DECLARE_TYPES(norm) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(norm) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 }  // namespace ops
 }  // namespace sd
 

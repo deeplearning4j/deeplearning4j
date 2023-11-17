@@ -23,6 +23,7 @@
 #include <ops/declarable/helpers/fake_quantization.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -49,7 +50,7 @@ static SD_HOST_DEVICE void nudge(T min, T max, int quantMin, int quantMax, T* sc
     if (zeroPointFromMin > quantMaxF) {
       return static_cast<uint16_t>(quantMax);
     }
-    return sd::math::sd_round<T, uint16_t>(zeroPointFromMin);
+    return math::sd_round<T, uint16_t>(zeroPointFromMin);
   }();
   *nudgedMax = (quantMaxF - static_cast<T>(nudgedZeroPoint)) * (*scale);
   *nudgedMin = (quantMinF - static_cast<T>(nudgedZeroPoint)) * (*scale);
@@ -79,9 +80,9 @@ void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int nu
 }
 
 template <typename T>
-static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const sd::LongType* inputShape, T* min, T* max,
-                                                int lowIntBound, int upperIntBound, sd::LongType channels, T* output,
-                                                const sd::LongType* outputShape, sd::LongType length) {
+static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* inputShape, T* min, T* max,
+                                                int lowIntBound, int upperIntBound, LongType channels, T* output,
+                                                const LongType* outputShape, LongType length) {
   __shared__ int block;
   if (threadIdx.x == 0) {
     block = length / channels;  // to loop with last dimension as block
@@ -122,6 +123,8 @@ void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, 
   fakeQuantWithMinMaxKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, input->specialShapeInfo(), minBuf, maxBuf,
                                                         lowIntBound, upperIntBound, channels, outputBuf,
                                                         output->specialShapeInfo(), length);
+  DebugHelper::checkErrorCode(context->getCudaStream(),"fakeQuantWithMinMaxKernel failed");
+
   NDArray::registerSpecialUse({output}, {min, max, input});
 }
 

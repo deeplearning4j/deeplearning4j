@@ -59,11 +59,11 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
 }
-sd::DataType Context::dataType(int index) { return _dataType; }
+DataType Context::dataType(int index) { return _dataType; }
 
-sd::DataType Context::dataType() { return dataType(0); }
+DataType Context::dataType() { return dataType(0); }
 
-void Context::setDataType(int index, sd::DataType type) {
+void Context::setDataType(int index, DataType type) {
   if (this->_dataTypes.size() > (size_t)index) _dataTypes[index] = type;
   _dataType = type;
 }
@@ -101,7 +101,7 @@ void Context::setTargetEngine(samediff::Engine engine) { _engine = engine; }
 
 bool Context::hasWorkspaceProvided() { return this->_workspace != nullptr; }
 
-void Context::attachWorkspace(sd::memory::Workspace *workspace) { this->_workspace = workspace; }
+void Context::attachWorkspace(memory::Workspace *workspace) { this->_workspace = workspace; }
 
 void Context::setVariableSpace(VariableSpace *variableSpace) { this->_variableSpace = variableSpace; }
 
@@ -127,13 +127,13 @@ void Context::forbidFastPath(bool reallyForbid) { _forbidFastPath = reallyForbid
 
 VariableSpace *Context::getVariableSpace() { return _variableSpace; }
 
-sd::memory::Workspace *Context::getWorkspace() { return _workspace; }
+memory::Workspace *Context::getWorkspace() { return _workspace; }
 
-sd::memory::Workspace *Context::workspace() { return _workspace; }
+memory::Workspace *Context::workspace() { return _workspace; }
 
-sd::random::RandomBuffer *Context::getRNG() { return _rng; }
+random::RandomBuffer *Context::getRNG() { return _rng; }
 
-void Context::setRNG(sd::random::RandomBuffer *rng) { _rng = rng; }
+void Context::setRNG(random::RandomBuffer *rng) { _rng = rng; }
 
 
 Stash *Context::getStash() { return _variableSpace->getStash(); }
@@ -147,13 +147,13 @@ void Context::setBranch(int branch) {
   if (_variableSpace->flowPath() != nullptr) _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
 }
 
-sd::LongType sd::graph::Context::getOuterTime() { return this->_executionTime.first; }
+LongType Context::getOuterTime() { return this->_executionTime.first; }
 
-sd::LongType sd::graph::Context::getInnerTime() { return this->_executionTime.second; }
+LongType Context::getInnerTime() { return this->_executionTime.second; }
 
-void sd::graph::Context::setOuterTime(sd::LongType time) { this->_executionTime.first = time; }
+void Context::setOuterTime(LongType time) { this->_executionTime.first = time; }
 
-void sd::graph::Context::setInnerTime(sd::LongType time) { this->_executionTime.second = time; }
+void Context::setInnerTime(LongType time) { this->_executionTime.second = time; }
 
 Variable *Context::getVariable(int idx) {
   if (idx >= this->_inputs.size()) {
@@ -166,20 +166,20 @@ Variable *Context::getVariable(int idx) {
 
   auto v = variable(p);
   // preconditioned with v->variableType()==VariableType::NDARRAY as for other cases getNDArray() can throw exception
-  if (Environment::getInstance().isDebugAndVerbose() && v != nullptr && v->variableType() == VariableType::NDARRAY &&
+  if (Environment::getInstance().isDebugAndVerbose() && v != nullptr && v->variableType() == NDARRAY &&
       v->getNDArray() != nullptr) {
     auto array = v->getNDArray();
     std::string shape_ = ShapeUtils::shapeAsString(array);
     auto type = DataTypeUtils::asString(array->dataType());
     float m = std::numeric_limits<float>::quiet_NaN();
     if (!array->isEmpty()) {
-      sd::LongType maxLen = sd::math::sd_min<sd::LongType>(16, array->lengthOf() - 1);
+      LongType maxLen = sd::math::sd_min<LongType>(16, array->lengthOf() - 1);
 
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
       auto raveled = array->reshape(array->ordering(), {array->lengthOf()});
       sd_printf("Values: [ ",0);
-      for(sd::LongType i = 0; i < maxLen; i++) {
+      for (LongType i = 0; i < maxLen; i++) {
         auto v = raveled.e<float>(i);
         sd_printf("%f, ", v);
       }
@@ -293,9 +293,9 @@ Variable *Context::ensureVariable(int idx) {
 bool Context::isValueAvailable(int idx) {
   auto var = ensureVariable(idx);
 
-  if (var->variableType() == VariableType::NDARRAY) {
+  if (var->variableType() == NDARRAY) {
     return var->hasNDArray();
-  } else if (var->variableType() == VariableType::ARRAY_LIST) {
+  } else if (var->variableType() == ARRAY_LIST) {
     return var->hasNDArrayList();
   }
 
@@ -313,11 +313,11 @@ NDArray *Context::array(int idx) {
   return getVariable(idx)->getNDArray();
 }
 
-sd::memory::Workspace *Context::fWorkspace() { return workspace(); }
+memory::Workspace *Context::fWorkspace() { return workspace(); }
 
-sd::memory::Workspace *Context::tWorkspace() { return nullptr; }
+memory::Workspace *Context::tWorkspace() { return nullptr; }
 
-sd::memory::Workspace *Context::oWorkspace() { return nullptr; }
+memory::Workspace *Context::oWorkspace() { return nullptr; }
 
 LaunchContext *Context::launchContext() {
   // FIXME: we need proper context to be shared here
@@ -366,7 +366,7 @@ void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *spec
 
 void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void *specialBuffer,
                             void const *specialShapeInfo) {
-  const sd::LongType *shapeInfoCast = reinterpret_cast<const sd::LongType*>(shapeInfo);
+  const LongType *shapeInfoCast = reinterpret_cast<const LongType *>(shapeInfo);
   if(!DataTypeUtils::validDataType(ArrayOptions::dataType(shapeInfoCast))) {
     std::string errorMessage;
     errorMessage += std::string("Shape Buffer at index ");
@@ -384,7 +384,7 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
     errorMessage += std::string(" Offset: ");
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
+  auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
 
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
@@ -426,7 +426,7 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
   sd_print("Using void * setOutput array\n");
-  auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<sd::LongType const *>(shapeInfo));
+  auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
 
   _fastpath_out[index] = array;
   _handles.emplace_back(array);
@@ -435,16 +435,15 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
 }
 
 
-void validateBufferAndShape(InteropDataBuffer* dataBuffer, sd::LongType* newShapeInfoCast, int index) {
+void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeInfoCast, int index) {
   bool errorFound = false;
   std::string errorMessage;
   //opaque/interop data buffers are created with int8 on purpose and therefore will be excluded from validation here.
   //see more here: https://github.com/deeplearning4j/deeplearning4j/blob/8aa0ef12794ca40a2d00c5c80206a24a3bd6529c/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java/org/nd4j/linalg/cpu/nativecpu/buffer/BaseCpuDataBuffer.java#L386
 
-  bool isString = ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF8
-                  || ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF16 ||
-                  ArrayOptions::dataType(newShapeInfoCast) == DataType::UTF32;
-  if(isString || shape::isEmpty(newShapeInfoCast) || dataBuffer->getDataBuffer()->getDataType() == DataType::INT8) return;
+  bool isString = ArrayOptions::dataType(newShapeInfoCast) == UTF8 || ArrayOptions::dataType(newShapeInfoCast) == UTF16 ||
+                  ArrayOptions::dataType(newShapeInfoCast) == UTF32;
+  if(isString || shape::isEmpty(newShapeInfoCast) || dataBuffer->getDataBuffer()->getDataType() == INT8) return;
   if (dataBuffer != nullptr) {
     if (!shape::isEmpty(newShapeInfoCast)) {
       if (dataBuffer->dataBuffer() != nullptr) {
@@ -499,7 +498,7 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, sd::LongType* newShap
 void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
   auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
   auto shapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
-  auto newShapeInfoCast = reinterpret_cast<sd::LongType *>(shapeInfoCast->primary());
+  auto newShapeInfoCast = reinterpret_cast<LongType *>(shapeInfoCast->primary());
 
   validateBufferAndShape(dataBuffer,newShapeInfoCast,index);
   if(shape::rank(newShapeInfoCast) > SD_MAX_RANK || shape::rank(newShapeInfoCast) < 0) {
@@ -523,7 +522,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
     }
 
 
-    array = new NDArray(newRef,newShapeInfoCast, sd::LaunchContext::defaultContext(),
+    array = new NDArray(newRef,newShapeInfoCast, LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeInfoCast)));
 
@@ -541,8 +540,8 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
   auto shapeInfoCast =  reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
   auto primary = shapeInfoCast->primary();
-  auto newShapeInfoCast = reinterpret_cast<const sd::LongType *>(primary);
-  auto newShapeCast2 = const_cast<sd::LongType *>(newShapeInfoCast);
+  auto newShapeInfoCast = reinterpret_cast<const LongType *>(primary);
+  auto newShapeCast2 = const_cast<LongType *>(newShapeInfoCast);
   if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmpty(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
     std::string errorMessage;
     errorMessage += std::string("Shape Buffer at index ");
@@ -573,8 +572,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   if (dataBuffer != nullptr) {
     auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
 
-    array = new NDArray(newRef,newShapeCast2,
-                        sd::LaunchContext::defaultContext(),
+    array = new NDArray(newRef,newShapeCast2, LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeCast2)));
   }
@@ -594,7 +592,7 @@ void Context::setTArguments(double *arguments, int numberOfArguments) {
   for (int e = 0; e < numberOfArguments; e++) _tArgs.push_back(arguments[e]);
 }
 
-void Context::setIArguments(sd::LongType *arguments, int numberOfArguments) {
+void Context::setIArguments(LongType *arguments, int numberOfArguments) {
   _iArgs.clear();
   _iArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _iArgs.push_back(arguments[e]);
@@ -606,7 +604,7 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
   for (int e = 0; e < numberOfArguments; e++) _bArgs.push_back(arguments[e]);
 }
 
-void Context::setCudaContext(sd::Pointer cudaStream, sd::Pointer reductionPointer, sd::Pointer allocationPointer) {
+void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
 #ifdef __CUDABLAS__
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
@@ -627,7 +625,7 @@ void Context::setTArguments(const std::vector<double> &tArgs) {
   for (auto t : tArgs) _tArgs.emplace_back(t);
 }
 
-void Context::setIArguments(const std::vector<sd::LongType> &iArgs) {
+void Context::setIArguments(const std::vector<LongType> &iArgs) {
   for (auto i : iArgs) _iArgs.emplace_back(i);
 }
 
@@ -647,12 +645,12 @@ bool Context::isTraining() { return _execMode == samediff::ExecutionMode::MODE_T
 
 bool Context::isInference() { return _execMode == samediff::ExecutionMode::MODE_INFERENCE; }
 
-void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {
+void Context::setDArguments(DataType *arguments, int numberOfArguments) {
   _dArgs.clear();
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
 }
 
-void Context::setDArguments(const std::vector<sd::DataType> &dArgs) {
+void Context::setDArguments(const std::vector<DataType> &dArgs) {
   _dArgs.clear();
   for (auto d : dArgs) _dArgs.emplace_back(d);
 }

@@ -33,19 +33,27 @@ OP_IMPL(mergemax, -1, 1, false) {
   REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
   auto output = OUTPUT_VARIABLE(0);
+  if (output->isEmpty()) {
+    return Status::OK;
+  }
+  int nonEmpty = 0;
+  for (int i = 0; i < block.width(); i++)
+    if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
-  std::vector<const NDArray*> inArrs(block.width());
+  std::vector<const NDArray*> inArrs(nonEmpty);
 
-  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+  int numNonEmptyAdded = 0;
+  if(nonEmpty > 0)
+  for (int i = 0; i < block.width(); ++i) if(!INPUT_VARIABLE(i)->isEmpty())inArrs[numNonEmptyAdded++] = INPUT_VARIABLE(i);
 
   helpers::mergeMax(block.launchContext(), inArrs, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(MergeMax, mergemax);
 
 DECLARE_TYPES(mergemax) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 
 CUSTOM_OP_IMPL(mergemax_bp, 2, 1, false, 0, 0) {
@@ -64,11 +72,11 @@ CUSTOM_OP_IMPL(mergemax_bp, 2, 1, false, 0, 0) {
 
   helpers::mergeMaxBp(block.launchContext(), inArrs, outArrs);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(mergemax_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 DECLARE_SHAPE_FN(mergemax_bp) {
   const int numOfInArrs = block.width() - 1;

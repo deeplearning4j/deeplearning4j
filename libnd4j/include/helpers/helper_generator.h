@@ -70,15 +70,15 @@ class SD_LIB_EXPORT RandomBuffer {
 #endif
  private:
   void *devHolder;
-  sd::LongType size;
+  LongType size;
   uint64_t *buffer;
   uint64_t *devBuffer;
-  sd::LongType offset;
-  sd::LongType seed;
-  sd::LongType position;
-  sd::LongType generation;
-  sd::LongType currentPosition;
-  sd::LongType amplifier;
+  LongType offset;
+  LongType seed;
+  LongType position;
+  LongType generation;
+  LongType currentPosition;
+  LongType amplifier;
   unsigned int synchronizer;
 
 #ifdef __CUDACC__
@@ -94,7 +94,7 @@ class SD_LIB_EXPORT RandomBuffer {
    */
 #ifdef __CUDACC__
   SD_HOST
-  RandomBuffer(sd::LongType seed, sd::LongType size, uint64_t *hostBuffer, uint64_t *devBuffer) {
+  RandomBuffer(LongType seed, LongType size, uint64_t *hostBuffer, uint64_t *devBuffer) {
     this->buffer = hostBuffer;
     this->seed = seed;
     this->size = size;
@@ -105,23 +105,23 @@ class SD_LIB_EXPORT RandomBuffer {
     this->synchronizer = 0;
     this->devBuffer = devBuffer;
 
-    cudaMalloc(&devHolder, sizeof(sd::random::RandomBuffer));
+    cudaMalloc(&devHolder, sizeof(RandomBuffer));
   }
 
   SD_HOST
-  sd::Pointer getDevicePointer() { return reinterpret_cast<sd::Pointer>(devHolder); }
+  Pointer getDevicePointer() { return reinterpret_cast<Pointer>(devHolder); }
 
   SD_HOST
   ~RandomBuffer() { cudaFree(devHolder); }
 
   SD_HOST
-  void propagateToDevice(sd::random::RandomBuffer *buffer, cudaStream_t stream) {
-    cudaMemcpyAsync(devHolder, buffer, sizeof(sd::random::RandomBuffer), cudaMemcpyHostToDevice, stream);
+  void propagateToDevice(RandomBuffer *buffer, cudaStream_t stream) {
+    cudaMemcpyAsync(devHolder, buffer, sizeof(RandomBuffer), cudaMemcpyHostToDevice, stream);
   }
 
   SD_HOST_DEVICE
 #endif
-  RandomBuffer(sd::LongType seed, sd::LongType size, uint64_t *buffer) {
+  RandomBuffer(LongType seed, LongType size, uint64_t *buffer) {
     this->buffer = buffer;
     this->seed = seed;
     this->size = size;
@@ -145,27 +145,27 @@ class SD_LIB_EXPORT RandomBuffer {
   SD_HOST void setBuffer(uint64_t *ptr) { this->buffer = ptr; }
 #endif
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType getSize() { return this->size; }
+  SD_INLINE SD_HOST_DEVICE LongType getSize() { return this->size; }
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType getSeed() { return this->seed; }
+  SD_INLINE SD_HOST_DEVICE LongType getSeed() { return this->seed; }
 
-  void SD_HOST_DEVICE setSeed(sd::LongType seed) {
+  void SD_HOST_DEVICE setSeed(LongType seed) {
     this->seed = seed;
     this->amplifier = seed;
     this->generation = 1;
   }
 
-  sd::LongType SD_HOST_DEVICE getAllocatedSize() { return this->size * sizeof(double); }
+  LongType SD_HOST_DEVICE getAllocatedSize() { return this->size * sizeof(double); }
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType getOffset() { return this->currentPosition; }
+  SD_INLINE SD_HOST_DEVICE LongType getOffset() { return this->currentPosition; }
 
-  void SD_HOST_DEVICE setOffset(sd::LongType offset) { this->currentPosition = offset; }
+  void SD_HOST_DEVICE setOffset(LongType offset) { this->currentPosition = offset; }
 
-  void SD_HOST_DEVICE reSeed(sd::LongType amplifier) { this->amplifier = amplifier; }
+  void SD_HOST_DEVICE reSeed(LongType amplifier) { this->amplifier = amplifier; }
 
-  SD_INLINE SD_DEVICE uint64_t getElement(sd::LongType position) {
-    sd::LongType actualPosition = this->getOffset() + position;
-    sd::LongType tempGen = generation;
+  SD_INLINE SD_DEVICE uint64_t getElement(LongType position) {
+    LongType actualPosition = this->getOffset() + position;
+    LongType tempGen = generation;
     if (actualPosition >= this->size) {
       tempGen += actualPosition / this->size;
       actualPosition = actualPosition % this->size;
@@ -188,14 +188,14 @@ class SD_LIB_EXPORT RandomBuffer {
 //                __syncthreads();
 #endif
     if (amplifier != seed || generation > 1 || tempGen != generation)
-      ret = next64(seedConv(static_cast<sd::LongType>(ret)));
+      ret = next64(seedConv(static_cast<LongType>(ret)));
 
     return ret;
   }
 
   uint64_t SD_HOST_DEVICE next64(uint64_t shiftedSeed) {
     const auto s0 = static_cast<uint64_t>(shiftedSeed);
-    auto s1 = static_cast<uint64_t>(shiftedSeed) % sd::DataTypeUtils::max<int>() + 11;
+    auto s1 = static_cast<uint64_t>(shiftedSeed) % DataTypeUtils::max<int>() + 11;
     uint64_t r0, r1;
 
     s1 ^= s0;
@@ -208,13 +208,13 @@ class SD_LIB_EXPORT RandomBuffer {
   static SD_HOST_DEVICE inline uint64_t rotl(const uint64_t x, uint64_t k) { return (x << k) | (x >> (64 - k)); }
 
   uint64_t static SD_HOST_DEVICE inline safeShift(uint64_t x, uint64_t y) {
-    if (y != 0 && x > sd::DataTypeUtils::max<uint64_t>() / y) {
+    if (y != 0 && x > DataTypeUtils::max<uint64_t>() / y) {
       return x / y + 11;
     } else
       return (x * y) + 11;
   }
 
-  uint64_t SD_HOST_DEVICE seedConv(sd::LongType seed) {
+  uint64_t SD_HOST_DEVICE seedConv(LongType seed) {
     uint64_t x = static_cast<uint64_t>(seed);
     uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
     z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -224,13 +224,13 @@ class SD_LIB_EXPORT RandomBuffer {
 
   void SD_HOST_DEVICE incrementGeneration() { this->generation++; }
 
-  sd::LongType SD_HOST_DEVICE getNextIndex() {
+  LongType SD_HOST_DEVICE getNextIndex() {
     currentPosition++;
     if (currentPosition >= size) {
       currentPosition = 0;
       generation++;
     }
-    sd::LongType ret = currentPosition;
+    LongType ret = currentPosition;
 
     return ret;
   }
@@ -247,7 +247,7 @@ class SD_LIB_EXPORT RandomBuffer {
    */
 #ifdef __CUDACC__
   SD_DEVICE
-  void rewind(sd::LongType numberOfElements) {
+  void rewind(LongType numberOfElements) {
     if (gridDim.x > 1) {
       __shared__ bool amLast;
 
@@ -261,7 +261,7 @@ class SD_LIB_EXPORT RandomBuffer {
         if (threadIdx.x == 0) {
           synchronizer = 0;
 
-          sd::LongType newPos = this->getOffset() + numberOfElements;
+          LongType newPos = this->getOffset() + numberOfElements;
           if (newPos > this->getSize()) {
             generation += newPos / this->size;
             newPos = newPos % this->size;
@@ -275,7 +275,7 @@ class SD_LIB_EXPORT RandomBuffer {
       }
     } else {
       if (threadIdx.x == 0) {
-        sd::LongType newPos = this->getOffset() + numberOfElements;
+        LongType newPos = this->getOffset() + numberOfElements;
         if (newPos > this->getSize()) {
           generation += newPos / this->size;
           newPos = newPos % this->size;
@@ -289,8 +289,8 @@ class SD_LIB_EXPORT RandomBuffer {
     }
   }
 #endif
-  void rewindH(sd::LongType numberOfElements) {
-    sd::LongType newPos = this->getOffset() + numberOfElements;
+  void rewindH(LongType numberOfElements) {
+    LongType newPos = this->getOffset() + numberOfElements;
     if (newPos > this->getSize()) {
       generation += newPos / this->size;
       newPos = newPos % this->size;
@@ -308,8 +308,8 @@ class SD_LIB_EXPORT RandomBuffer {
    */
   int SD_DEVICE nextInt() {
     auto u = nextUInt64();
-    return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
-                                              : static_cast<int>(u % sd::DataTypeUtils::max<int>());
+    return u <= DataTypeUtils::max<int>() ? static_cast<int>(u)
+                                              : static_cast<int>(u % DataTypeUtils::max<int>());
   };
 
   uint64_t SD_DEVICE nextUInt64() { return getNextElement(); }
@@ -323,7 +323,7 @@ class SD_LIB_EXPORT RandomBuffer {
     int r = nextInt();
     int m = to - 1;
     if ((to & m) == 0)  // i.e., bound is a power of 2
-      r = ((to * (sd::LongType)r) >> 31);
+      r = ((to * (LongType)r) >> 31);
     else {
       for (int u = r; u - (r = u % to) + m < 0; u = nextInt())
         ;
@@ -350,7 +350,7 @@ class SD_LIB_EXPORT RandomBuffer {
   template <typename T>
   SD_DEVICE T nextT() {
     auto u = static_cast<float>(nextUInt64());
-    auto m = static_cast<float>(sd::DataTypeUtils::max<uint64_t>());
+    auto m = static_cast<float>(DataTypeUtils::max<uint64_t>());
     return static_cast<T>(u / m);
   }
 
@@ -377,15 +377,15 @@ class SD_LIB_EXPORT RandomBuffer {
     return from + (nextT<T>() * (to - from));
   }
 
-  SD_INLINE SD_DEVICE uint64_t relativeUInt64(sd::LongType index) { return getElement(index); }
+  SD_INLINE SD_DEVICE uint64_t relativeUInt64(LongType index) { return getElement(index); }
 
   /**
    *  relative methods are made as workaround for lock-free concurrent execution
    */
-  inline int SD_DEVICE relativeInt(sd::LongType index) {
+  inline int SD_DEVICE relativeInt(LongType index) {
     auto u = relativeUInt64(index);
-    return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
-                                              : static_cast<int>(u % sd::DataTypeUtils::max<int>());
+    return u <= DataTypeUtils::max<int>() ? static_cast<int>(u)
+                                              : static_cast<int>(u % DataTypeUtils::max<int>());
   }
 
   /**
@@ -395,7 +395,7 @@ class SD_LIB_EXPORT RandomBuffer {
    * @param to
    * @return
    */
-  inline int SD_DEVICE relativeInt(sd::LongType index, int to) {
+  inline int SD_DEVICE relativeInt(LongType index, int to) {
     auto rel = relativeInt(index);
     return rel % to;
   }
@@ -408,7 +408,7 @@ class SD_LIB_EXPORT RandomBuffer {
    * @param from
    * @return
    */
-  SD_INLINE SD_DEVICE int relativeInt(sd::LongType index, int from, int to) {
+  SD_INLINE SD_DEVICE int relativeInt(LongType index, int from, int to) {
     if (from == 0) return relativeInt(index, to);
 
     return from + relativeInt(index, to - from);
@@ -421,14 +421,14 @@ class SD_LIB_EXPORT RandomBuffer {
    * @return
    */
   template <typename T>
-  SD_INLINE SD_DEVICE T relativeT(sd::LongType index) {
+  SD_INLINE SD_DEVICE T relativeT(LongType index) {
     /**
      * Basically we just get float u/m value, and convert into to
      *
      * FIXME: once we add support for additional datatypes this code must be tweaked
      */
     auto u = static_cast<float>(relativeUInt64(index));
-    auto m = static_cast<float>(sd::DataTypeUtils::max<uint64_t>());
+    auto m = static_cast<float>(DataTypeUtils::max<uint64_t>());
     return static_cast<T>(u / m);
   }
 
@@ -441,7 +441,7 @@ class SD_LIB_EXPORT RandomBuffer {
    */
 
   template <typename T>
-  SD_DEVICE T relativeT(sd::LongType index, T to) {
+  SD_DEVICE T relativeT(LongType index, T to) {
     if (to == static_cast<T>(1.0f)) return relativeT<T>(index);
 
     return relativeT<T>(index, static_cast<T>(0.0f), to);
@@ -456,20 +456,20 @@ class SD_LIB_EXPORT RandomBuffer {
    * @return
    */
   template <typename T>
-  SD_DEVICE T relativeT(sd::LongType index, T from, T to) {
+  SD_DEVICE T relativeT(LongType index, T from, T to) {
     return from + (relativeT<T>(index) * (to - from));
   }
 };
 
 class SD_LIB_EXPORT IGenerator {
  protected:
-  sd::LongType limit;
-  sd::LongType seed;
+  LongType limit;
+  LongType seed;
   uint64_t *buffer;
-  sd::random::RandomBuffer *realBuffer;
+  RandomBuffer *realBuffer;
 
  public:
-  SD_HOST_DEVICE IGenerator(sd::random::RandomBuffer *buffer) {
+  SD_HOST_DEVICE IGenerator(RandomBuffer *buffer) {
     this->limit = buffer->getSize();
     this->buffer = reinterpret_cast<uint64_t *>(buffer->getBuffer());
     this->realBuffer = buffer;
@@ -478,11 +478,11 @@ class SD_LIB_EXPORT IGenerator {
 
   SD_HOST_DEVICE RandomBuffer *getBuffer() { return realBuffer; }
 
-  SD_HOST_DEVICE void setOffset(sd::LongType offset) { this->realBuffer->setOffset(offset); }
+  SD_HOST_DEVICE void setOffset(LongType offset) { this->realBuffer->setOffset(offset); }
 
-  SD_HOST_DEVICE sd::LongType getElementAbsolute(sd::LongType position) { return buffer[position]; }
+  SD_HOST_DEVICE LongType getElementAbsolute(LongType position) { return buffer[position]; }
 
-  SD_HOST_DEVICE sd::LongType getElementRelative(sd::LongType position) {
+  SD_HOST_DEVICE LongType getElementRelative(LongType position) {
     return buffer[realBuffer->getOffset() + position];
   }
 
@@ -511,7 +511,7 @@ class SD_LIB_EXPORT Xoroshiro128 : public IGenerator {
     return result;
   }
 
-  uint64_t SD_HOST_DEVICE seedConv(sd::LongType seed) {
+  uint64_t SD_HOST_DEVICE seedConv(LongType seed) {
     uint64_t x = static_cast<uint64_t>(seed);
     uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
     z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
@@ -538,7 +538,7 @@ class SD_LIB_EXPORT Xoroshiro128 : public IGenerator {
   }
 
  public:
-  SD_HOST_DEVICE Xoroshiro128(sd::random::RandomBuffer *buffer) : IGenerator(buffer) {
+  SD_HOST_DEVICE Xoroshiro128(RandomBuffer *buffer) : IGenerator(buffer) {
     //
   }
 
@@ -548,7 +548,7 @@ class SD_LIB_EXPORT Xoroshiro128 : public IGenerator {
 
     int fd = 3 + 3;
 
-    for (sd::LongType i = 0; i < limit; i++) {
+    for (LongType i = 0; i < limit; i++) {
       buffer[i] = next64();
     }
   }

@@ -28,8 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void matrixBandPart(sd::LaunchContext* context, NDArray* input, NDArray* output, sd::LongType lowerBand,
-                                  sd::LongType upperBand);
+SD_LIB_HIDDEN void matrixBandPart(LaunchContext* context, NDArray* input, NDArray* output, LongType lowerBand,
+                                  LongType upperBand);
 
 }
 }  // namespace ops

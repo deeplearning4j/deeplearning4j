@@ -27,7 +27,7 @@ namespace sd {
 //        _autoremovable = autoRemovable;
 //    }
 
-ShapeList::ShapeList(const sd::LongType* shape) {
+ShapeList::ShapeList(const LongType* shape) {
   if (shape != nullptr) push_back(shape);
 }
 
@@ -35,7 +35,7 @@ ShapeList::~ShapeList() {
   if (_autoremovable) destroy();
 }
 
-ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes, bool isWorkspace)
+ShapeList::ShapeList(const std::vector<const LongType*>& shapes, bool isWorkspace)
 #if !defined(__NEC__)
     : ShapeList(shapes) {
 #else
@@ -47,7 +47,7 @@ ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes, bool isWork
   _workspace = isWorkspace;
 }
 
-ShapeList::ShapeList(const std::vector<const sd::LongType*>& shapes) {
+ShapeList::ShapeList(const std::vector<const LongType*>& shapes) {
 #if defined(__NEC__)
   for (int i = 0; i < shapes.size(); i++) {
     push_back(shapes[i]);
@@ -76,7 +76,7 @@ int ShapeList::size() const {
 #endif
 }
 
-const sd::LongType* ShapeList::at(int idx) {
+const LongType* ShapeList::at(int idx) {
 
   if (size() <= idx || idx < 0) {
     std::string errorMessage;
@@ -88,7 +88,7 @@ const sd::LongType* ShapeList::at(int idx) {
   return _shapes[idx];
 }
 
-void ShapeList::push_back(const sd::LongType* shape) {
+void ShapeList::push_back(const LongType* shape) {
 #if defined(__NEC__)
   if (size_x >= SD_MAX_INPUT_SIZE) {
     sd_printf("%s:%d Exceeded allowed limit of shapes.  ShapeList max size is (%d) \n", __FILE__, __LINE__,  SD_MAX_INPUT_SIZE);

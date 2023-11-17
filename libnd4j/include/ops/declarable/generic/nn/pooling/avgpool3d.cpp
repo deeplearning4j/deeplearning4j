@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
-  std::vector<sd::LongType> expectedOutputShape =
+  std::vector<LongType> expectedOutputShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
   REQUIRE_TRUE(output->isSameShape(expectedOutputShape), 0,
                "AVGPOOL3DNEW OP: wrong shape of output array, expected is %s, but got %s instead !",
@@ -83,11 +83,11 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
      delete output;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(avgpool3dnew) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew) {
@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
   ConvolutionUtils::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW,
                                       isSameMode);
 
-  sd::LongType outputShape[5];
+  LongType outputShape[5];
 
   outputShape[0] = bS;
 
@@ -153,7 +153,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
 }
 
 DECLARE_TYPES(avgpool3dnew_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -189,9 +189,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, iD, iH, iW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "AVGPOOL3DNEW_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s "
@@ -222,7 +222,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
     delete gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew_bp) {

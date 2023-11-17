@@ -38,7 +38,7 @@ CONFIGURABLE_OP_IMPL(nesterovs_updater, 2, 2, true, 0, 0) {
   auto update = OUTPUT_VARIABLE(0);
   auto stateV = OUTPUT_VARIABLE(1);
 
-  if (gradient->isEmpty() || initState->isEmpty()) return sd::Status::OK;
+  if (gradient->isEmpty() || initState->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initState), 0,
                "NESTEROVS UPDATER OP: input state Msg must have the same shape as gradient,"
@@ -68,7 +68,7 @@ CONFIGURABLE_OP_IMPL(nesterovs_updater, 2, 2, true, 0, 0) {
     dMomentum = T_ARG(1);
   }
   helpers::updaterNesterovs(block.launchContext(), *gradient, *initState, *update, *stateV, dLr, dMomentum);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(nesterovs_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

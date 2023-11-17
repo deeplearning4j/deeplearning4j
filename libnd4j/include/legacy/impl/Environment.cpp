@@ -44,7 +44,7 @@
 
 namespace sd {
 
-sd::Environment::Environment() {
+Environment::Environment() {
   _tadThreshold.store(1);
   _elementThreshold.store(1024);
   _verbose.store(false);
@@ -52,7 +52,7 @@ sd::Environment::Environment() {
   _profile.store(false);
   _precBoost.store(false);
   _leaks.store(false);
-  _dataType.store(sd::DataType::FLOAT32);
+  _dataType.store(FLOAT32);
   _maxThreads = std::thread::hardware_concurrency();
   _maxMasterThreads = _maxThreads.load();
 
@@ -194,9 +194,9 @@ sd::Environment::Environment() {
 #endif
 }
 
-bool sd::Environment::blasFallback() { return _blasFallback; }
+bool Environment::blasFallback() { return _blasFallback; }
 
-sd::Environment::~Environment() {
+Environment::~Environment() {
   //
 }
 
@@ -215,13 +215,13 @@ bool Environment::isVerbose() { return _verbose.load(); }
 
 bool Environment::isExperimentalBuild() { return _experimental; }
 
-sd::DataType Environment::defaultFloatDataType() { return _dataType.load(); }
+DataType Environment::defaultFloatDataType() { return _dataType.load(); }
 
 std::vector<Pair> &Environment::capabilities() { return _capabilities; }
 
-void Environment::setDefaultFloatDataType(sd::DataType dtype) {
-  if (dtype != sd::DataType::FLOAT32 && dtype != sd::DataType::DOUBLE && dtype != sd::DataType::FLOAT8 &&
-      dtype != sd::DataType::HALF)
+void Environment::setDefaultFloatDataType(DataType dtype) {
+  if (dtype != FLOAT32 && dtype != DOUBLE && dtype != FLOAT8 &&
+      dtype != HALF)
     THROW_EXCEPTION("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
 
   _dataType.store(dtype);
@@ -302,28 +302,28 @@ bool Environment::helpersAllowed() { return _allowHelpers.load(); }
 
 void Environment::allowHelpers(bool reallyAllow) { _allowHelpers.store(reallyAllow); }
 
-void Environment::setGroupLimit(int group, sd::LongType numBytes) {
-  sd::memory::MemoryCounter::getInstance().setGroupLimit((sd::memory::MemoryType)group, numBytes);
+void Environment::setGroupLimit(int group, LongType numBytes) {
+  memory::MemoryCounter::getInstance().setGroupLimit((memory::MemoryType)group, numBytes);
 }
 
-void Environment::setDeviceLimit(int deviceId, sd::LongType numBytes) {
-  sd::memory::MemoryCounter::getInstance().setDeviceLimit(deviceId, numBytes);
+void Environment::setDeviceLimit(int deviceId, LongType numBytes) {
+  memory::MemoryCounter::getInstance().setDeviceLimit(deviceId, numBytes);
 }
 
-sd::LongType Environment::getGroupLimit(int group) {
-  return sd::memory::MemoryCounter::getInstance().groupLimit((sd::memory::MemoryType)group);
+LongType Environment::getGroupLimit(int group) {
+  return memory::MemoryCounter::getInstance().groupLimit((memory::MemoryType)group);
 }
 
-sd::LongType Environment::getDeviceLimit(int deviceId) {
-  return sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId);
+LongType Environment::getDeviceLimit(int deviceId) {
+  return memory::MemoryCounter::getInstance().deviceLimit(deviceId);
 }
 
-sd::LongType Environment::getGroupCounter(int group) {
-  return sd::memory::MemoryCounter::getInstance().allocatedGroup((sd::memory::MemoryType)group);
+LongType Environment::getGroupCounter(int group) {
+  return memory::MemoryCounter::getInstance().allocatedGroup((memory::MemoryType)group);
 }
 
-sd::LongType Environment::getDeviceCounter(int deviceId) {
-  return sd::memory::MemoryCounter::getInstance().allocatedDevice(deviceId);
+LongType Environment::getDeviceCounter(int deviceId) {
+  return memory::MemoryCounter::getInstance().allocatedDevice(deviceId);
 }
 
 uint64_t Environment::maxPrimaryMemory() { return _maxTotalPrimaryMemory.load(); }

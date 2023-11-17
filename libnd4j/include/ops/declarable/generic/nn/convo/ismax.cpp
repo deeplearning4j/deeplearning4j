@@ -39,12 +39,12 @@ CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
   else
     helpers::ismax(block.launchContext(), x, z, dimensions);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(IsMax, ismax);
 
 DECLARE_TYPES(ismax) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, ANY);
 }
 
 }  // namespace ops

@@ -67,9 +67,9 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
   int iW = input->sizeAt(indIiW);    // input width
   int iC = input->sizeAt(indIOioC);  // input channels
   int oC = weights->sizeAt(indWoC);  // output channels
-  std::vector<sd::LongType> expectedWeightsShape =
-      0 == wFormat ? std::vector<sd::LongType>({kW, iC, oC})
-                   : (1 == wFormat ? std::vector<sd::LongType>({oC, iC, kW}) : std::vector<sd::LongType>({oC, kW, iC}));
+  std::vector<LongType> expectedWeightsShape =
+      0 == wFormat ? std::vector<LongType>({kW, iC, oC})
+                   : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
 
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
         "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
         oC, bias->rankOf(), bias->lengthOf());
 
-  std::vector<sd::LongType> reshapeForInput, reshapeForOutput;
+  std::vector<LongType> reshapeForInput, reshapeForOutput;
   if (!isNCW) {
     reshapeForInput = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};      // [bS, iW, iC] -> [bS, 1, iW, iC]
     reshapeForOutput = {output->sizeAt(0), 1, output->sizeAt(1), output->sizeAt(2)};  // [bS, oW, oC] -> [bS, 1, oW, oC]
@@ -95,21 +95,21 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
       weights->ordering(),
       {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});  // [kW, iC, oC] -> [1, kW, iC, oC]
 
-  sd::ops::conv2d conv2d;
-  const sd::Status status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {},
+  conv2d conv2d;
+  const Status status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {},
                                            {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-  if (status != sd::Status::OK) return status;
+  if (status != Status::OK) return status;
 
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(conv1d) {
   auto inputShapeInfo = inputShape->at(0);
   auto weightsShapeInfo = inputShape->at(1);
-  sd::LongType const* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;
+  LongType const* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;
 
-  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) width
+  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                                          // strides width
   LongType pW = INT_ARG(2);                                                                          // paddings width
   LongType dW = INT_ARG(3);                                                                          // dilations width
@@ -139,9 +139,9 @@ DECLARE_SHAPE_FN(conv1d) {
   LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
   LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
-  std::vector<sd::LongType> expectedWeightsShape =
-      0 == wFormat ? std::vector<sd::LongType>({kW, iC, oC})
-                   : (1 == wFormat ? std::vector<sd::LongType>({oC, iC, kW}) : std::vector<sd::LongType>({oC, kW, iC}));
+  std::vector<LongType> expectedWeightsShape =
+      0 == wFormat ? std::vector<LongType>({kW, iC, oC})
+                   : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
 
   if (biasShapeInfo)
     REQUIRE_TRUE(
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(conv1d) {
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, 1, kW, 1, sW, 0, pW, 1, dW, 1, iW, paddingMode);
 
-  sd::LongType* outputShapeInfo = nullptr;
+  LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
   outputShapeInfo[0] = 3;
@@ -172,7 +172,7 @@ DECLARE_SHAPE_FN(conv1d) {
 
 DECLARE_TYPES(conv1d) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
+      ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, QINT8, QINT16})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
@@ -228,11 +228,11 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, 1, kW, 1, sW, 0, pW, 1, dW, 1, iW, paddingMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoW, 0, indIOioC, indIiW});
-  std::vector<sd::LongType> expectedWeightsShape =
-      0 == wFormat ? std::vector<sd::LongType>({kW, iC, oC})
-                   : (1 == wFormat ? std::vector<sd::LongType>({oC, iC, kW}) : std::vector<sd::LongType>({oC, kW, iC}));
+  std::vector<LongType> expectedWeightsShape =
+      0 == wFormat ? std::vector<LongType>({kW, iC, oC})
+                   : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
   REQUIRE_TRUE(
       gradO->isSameShape(expectedGradOShape), 0,
       "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
@@ -246,7 +246,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
                  "%i instead !",
                  oC, bias->rankOf(), bias->lengthOf());
 
-  std::vector<sd::LongType> reshapeForInput, reshapeForGradO;
+  std::vector<LongType> reshapeForInput, reshapeForGradO;
   if (!isNCW) {
     reshapeForInput = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};  // [bS, iW, iC] -> [bS, 1, iW, iC]
     reshapeForGradO = {gradO->sizeAt(0), 1, gradO->sizeAt(1), gradO->sizeAt(2)};  // [bS, oW, oC] -> [bS, 1, oW, oC]
@@ -265,23 +265,23 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
       gradW->reshape(gradW->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},
                      false);  // [kW, iC, oC] -> [1, kW, iC, oC]
 
-  sd::ops::conv2d_bp conv2dBP;
+  conv2d_bp conv2dBP;
   auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped},
                                  {&gradIReshaped, &gradWReshaped, gradB}, {},
                                  {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-  if (status != sd::Status::OK) return status;
+  if (status != Status::OK) return status;
 
   // ConvolutionUtils::conv2dBP(block, &inputReshaped, &weightsReshaped, bias, &gradOReshaped, &gradIReshaped,
   // &gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, isNCW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(conv1d_bp) {
   auto inputShapeInfo = inputShape->at(0);    // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
   auto weightsShapeInfo = inputShape->at(1);  // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
-  sd::LongType const* biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
-  sd::LongType const* gradOShapeInfo =
+  LongType const* biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
+  LongType const* gradOShapeInfo =
       block.width() > 3 ? inputShape->at(3)
                         : inputShape->at(2);  // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
@@ -297,7 +297,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
       "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, gradOShapeInfo[0]);
 
-  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) width
+  LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                                          // strides width
   LongType pW = INT_ARG(2);                                                                          // paddings width
   LongType dW = INT_ARG(3);                                                                          // dilations width
@@ -323,11 +323,11 @@ DECLARE_SHAPE_FN(conv1d_bp) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, 1, kW, 1, sW, 0, pW, 1, dW, 1, iW, paddingMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoW, 0, indIOioC, indIiW});
-  std::vector<sd::LongType> expectedWeightsShape =
-      0 == wFormat ? std::vector<sd::LongType>({kW, iC, oC})
-                   : (1 == wFormat ? std::vector<sd::LongType>({oC, iC, kW}) : std::vector<sd::LongType>({oC, kW, iC}));
+  std::vector<LongType> expectedWeightsShape =
+      0 == wFormat ? std::vector<LongType>({kW, iC, oC})
+                   : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
   REQUIRE_TRUE(
       ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,
       "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
@@ -358,7 +358,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
 
 DECLARE_TYPES(conv1d_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, DataType::QINT8, DataType::QINT16})
+      ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, QINT8, QINT16})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedInputTypes(3, {ALL_FLOATS})

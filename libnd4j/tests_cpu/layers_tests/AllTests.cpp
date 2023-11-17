@@ -181,9 +181,9 @@ int main(int argc, char **argv) {
 #if defined(HAVE_VEDA)
   load_device_lib();
 #endif
-  testing::InitGoogleTest(&argc, argv);
+  InitGoogleTest(&argc, argv);
 
-  testing::TestEventListeners& listeners = testing::UnitTest::GetInstance()->listeners();
+  TestEventListeners& listeners = UnitTest::GetInstance()->listeners();
   auto default_printer = listeners.Release(listeners.default_result_printer());
 
   // add our listener, by default everything is on (the same as using the default listener)

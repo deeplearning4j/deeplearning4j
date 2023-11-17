@@ -33,11 +33,11 @@ namespace ArrayUtils {
 void toIntPtr(std::initializer_list<int> list, int* target);
 void toIntPtr(std::vector<int>& list, int* target);
 
-void toLongPtr(std::initializer_list<sd::LongType> list, sd::LongType* target);
-void toLongPtr(std::vector<sd::LongType>& list, sd::LongType* target);
+void toLongPtr(std::initializer_list<LongType> list, LongType* target);
+void toLongPtr(std::vector<LongType>& list, LongType* target);
 
-std::vector<sd::LongType> toLongVector(std::vector<int> vec);
-std::vector<sd::LongType> toLongVector(std::vector<sd::LongType> vec);
+std::vector<LongType> toLongVector(std::vector<int> vec);
+std::vector<LongType> toLongVector(std::vector<LongType> vec);
 }  // namespace ArrayUtils
 }  // namespace sd
 

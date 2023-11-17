@@ -1430,7 +1430,7 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
                                         nullptr, allowParallelism);
         registerUse({this}, {});
       } else {
-        prepareSpecialUse({this}, {&other});
+        prepareUse({this}, {&other});
         NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws,
                                         buffer(),
                                         shapeInfo(), specialBuffer(),
@@ -1439,25 +1439,25 @@ void NDArray::assign(const NDArray &other, bool allowParallelism) {
                                         other.buffer(),
                                         other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(),
                                         nullptr, allowParallelism);
-        registerSpecialUse({this}, {&other});
+        registerUse({this}, {&other});
       }
 
     } else {
       if (dataType() != other.dataType()) {
         auto tmp = other.cast(dataType());
-        prepareSpecialUse({this}, {&tmp});
+        prepareUse({this}, {&tmp});
         NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
                                         specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                         tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(),
                                         nullptr, allowParallelism);
-        registerSpecialUse({this}, {});
+        registerUse({this}, {});
       } else {
-        prepareSpecialUse({this}, {&other});
+        prepareUse({this}, {&other});
         NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
                                         specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                         other.buffer(), other.shapeInfo(), other.specialBuffer(),
                                         other.specialShapeInfo(), nullptr, allowParallelism);
-        registerSpecialUse({this}, {&other});
+        registerUse({this}, {&other});
       }
     }
   } else {
@@ -2492,7 +2492,7 @@ NDArray NDArray::asT() const {
   auto result = isScalar() ? NDArray('c', {}, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext())
                            : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
 
-  prepareSpecialUse({&result}, {this});
+   prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformAny(getContext(),
                                         transform::AnyOps::Assign,
                                         buffer(), shapeInfo(),
@@ -3709,7 +3709,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, cshape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
-    //RELEASE(shapeInfoNew, getContext()->getWorkspace());
+    RELEASE(shapeInfoNew, getContext()->getWorkspace());
     return true;
   }
 
@@ -3867,7 +3867,7 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
         "NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array "
         "!");
 
-  prepareUse({&target}, {this, &other},true);
+  NDArray::prepareSpecialUse({&target}, {this, &other});
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op,
       buffer(),
@@ -3879,8 +3879,7 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, const NDArray &other,
       target.specialBuffer(),
       target.specialShapeInfo(),
       extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
-
-  registerUse({&target}, {this, &other});
+  NDArray::registerSpecialUse({&target}, {this, &other});
   if (extraParams != nullptr) synchronize("NDArray::applyPairwiseTransform");
 }
 
@@ -4827,7 +4826,7 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, const NDArray &other, const E
       ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), getContext()->getWorkspace());
   // create output array (scalar)
   NDArray result(newShape, true, getContext());
-  //RELEASE(newShape, getContext()->getWorkspace());
+  RELEASE(newShape, getContext()->getWorkspace());
   // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
   void *params = extraParams != nullptr ? const_cast<ExtraArguments *>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
@@ -5638,7 +5637,7 @@ NDArray NDArray::diagonal(const char type) const {
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
   NDArray result(_buffer, const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
 
-  //RELEASE(outShapeInfo, getContext()->getWorkspace());
+  RELEASE(outShapeInfo, getContext()->getWorkspace());
 
   return result;
 }
@@ -5674,7 +5673,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
   if (dimensions.size() == 0) {
     return result;
   }
-  if (dimensions.back() == rankOf() || isScalar() && dimensions.size() == 1 && dimensions[0] == 0) {
+  if (isScalar() && dimensions.size() == 1 && dimensions[0] == 0) {
     auto newShapeInfoCast = const_cast<sd::LongType *const>(this->shapeInfo());
     auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), bufferOffset());
     array->_isView = true;
@@ -5715,8 +5714,6 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                             const bool isStrided) const {
-  printf("Array operator 1: ()]\n");
-  fflush(stdout);
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
   sd::LongType numOfUntiesInSubArrShape = 0;
@@ -5743,8 +5740,6 @@ NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool kee
   auto inOrder = shape::order(shapeInfo());
   if(inOrder != 'c' && inOrder != 'f')
     THROW_EXCEPTION("Invalid in order for deriving order for view!");
-  printf("Array operator: ()] calc sub arr shape info and offset\n");
-  fflush(stdout);
   shape::calcSubArrShapeInfoAndOffset(idx.data(), shapeInfo(), subArrShapeInfo, offset, keepUnitiesInShape, isStrided,
                                       numOfUntiesInSubArrShape);
 
@@ -5762,7 +5757,6 @@ NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::
                             bool keepUnitiesInShape) const {
   std::vector<sd::LongType> idxRanges(2 * rankOf());
 
-  printf("operator() 2\n");
   const sd::LongType rank = rankOf();
   const sd::LongType subArrRank = static_cast<sd::LongType>(dimsToExclude.size());
 
@@ -5794,7 +5788,6 @@ NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::
 void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, sd::LongType *&subArrShapeInfo,
                                        sd::LongType *&subArrOffsets, bool keepUnitiesInShape) const {
   if (isEmpty()) THROW_EXCEPTION("NDArray::getSubArrShapeAndOffsets: array is empty !");
-  printf("getSubArrShapeAndOffsets arr sub shape info and offsets\n");
 
   const sd::LongType rank = rankOf();
   const sd::LongType subArrRank =

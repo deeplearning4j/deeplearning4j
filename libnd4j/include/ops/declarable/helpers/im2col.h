@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW,
+SD_LIB_HIDDEN void im2col(LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW,
                           const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                           const NDArray& arrZeroPadVal);
 }

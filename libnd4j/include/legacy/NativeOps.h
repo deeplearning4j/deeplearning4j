@@ -1462,7 +1462,7 @@ SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fil
 
 SD_LIB_EXPORT void munmapFile(sd::Pointer* extraPointers, sd::LongType* ptrMap, sd::LongType length);
 
-typedef sd::graph::ResultWrapper OpaqueResultWrapper;
+typedef ResultWrapper OpaqueResultWrapper;
 
 // flatbuffers execution
 SD_LIB_EXPORT OpaqueResultWrapper* executeFlatGraph(sd::Pointer* extraPointers, sd::Pointer flatBufferPointer);
@@ -1482,7 +1482,7 @@ SD_LIB_EXPORT sd::Status execCustomOp(sd::Pointer* extraPointers, sd::LongType h
 SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer* extraPointers, sd::LongType hash, sd::Pointer opContext);
 
 typedef sd::ShapeList OpaqueShapeList;
-typedef sd::graph::Context OpaqueContext;
+typedef Context OpaqueContext;
 
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
@@ -1506,8 +1506,8 @@ SD_LIB_EXPORT void deleteShapeList(sd::Pointer shapeList);
 
 SD_LIB_EXPORT sd::Status registerGraph(sd::Pointer* extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer);
 
-typedef sd::graph::VariablesSet OpaqueVariablesSet;
-typedef sd::graph::Variable OpaqueVariable;
+typedef VariablesSet OpaqueVariablesSet;
+typedef Variable OpaqueVariable;
 
 SD_LIB_EXPORT OpaqueVariablesSet* executeStoredGraph(sd::Pointer* extraPointers, sd::LongType graphId,
                                                      sd::Pointer* inputBuffers, sd::Pointer* inputShapes,
@@ -1587,7 +1587,7 @@ SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffe
 SD_LIB_EXPORT void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer* ptr);
 SD_LIB_EXPORT void deleteConstantDataBuffer(OpaqueConstantDataBuffer* ptr);
 
-typedef sd::graph::RandomGenerator OpaqueRandomGenerator;
+typedef RandomGenerator OpaqueRandomGenerator;
 
 SD_LIB_EXPORT OpaqueContext* createGraphContext(int nodeId);
 SD_LIB_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext* ptr);

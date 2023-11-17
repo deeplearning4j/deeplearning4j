@@ -31,21 +31,20 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static sd::LongType listDiffCount_(NDArray* values, NDArray* keep) {
-  sd::LongType saved = 0L;
-  for (sd::LongType e = 0; e < values->lengthOf(); e++) {
+static LongType listDiffCount_(NDArray* values, NDArray* keep) {
+  LongType saved = 0L;
+  for (LongType e = 0; e < values->lengthOf(); e++) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
     auto idx = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
-    auto index = idx.e<sd::LongType>(0);
+    auto index = idx.e<LongType>(0);
     if (index < 0) saved++;
   }
-
 
   return saved;
 }
 
-sd::LongType listDiffCount(sd::LaunchContext* context, NDArray* values, NDArray* keep) {
+LongType listDiffCount(LaunchContext* context, NDArray* values, NDArray* keep) {
   auto xType = values->dataType();
 
   NDArray::preparePrimaryUse({}, {values, keep});
@@ -58,14 +57,14 @@ sd::LongType listDiffCount(sd::LaunchContext* context, NDArray* values, NDArray*
 BUILD_SINGLE_TEMPLATE(template sd::LongType listDiffCount_, (NDArray * values, NDArray* keep);, SD_COMMON_TYPES);
 
 template <typename T>
-static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
+static Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
   std::vector<T> saved;
-  std::vector<sd::LongType> indices;
-  for (sd::LongType e = 0; e < values->lengthOf(); e++) {
+  std::vector<LongType> indices;
+  for (LongType e = 0; e < values->lengthOf(); e++) {
     auto v = values->e<double>(e);
     ExtraArguments extras({v, 0.0, 10.0});
     NDArray idxScalar = keep->indexReduceNumber(indexreduce::FirstIndex, &extras);
-    sd::LongType idx = idxScalar.e<sd::LongType>(0);
+    LongType idx = idxScalar.e<LongType>(0);
     if (idx < 0) {
       saved.emplace_back(v);
       indices.emplace_back(e);
@@ -89,21 +88,20 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
       THROW_EXCEPTION("Op validation failed");
     }
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
-    for (sd::LongType e = 0; e < indices.size(); e++) {
+    for (LongType e = 0; e < indices.size(); e++) {
       z1->p(e, indices[e]);
     }
-
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray* keep, NDArray* output1,
+Status listDiffFunctor(LaunchContext* context, NDArray* values, NDArray* keep, NDArray* output1,
                            NDArray* output2) {
   auto xType = values->dataType();
 
   NDArray::preparePrimaryUse({output1, output2}, {values, keep});
 
-  sd::Status result = sd::Status::OK;
+  Status result = Status::OK;
 
   if (DataTypeUtils::isR(xType)) {
     BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), SD_FLOAT_TYPES);

@@ -35,7 +35,7 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
   auto x = NDArrayFactory::create<double>('c', {128});
   x.linspace(1);
 
-  sd::ops::write_list op;
+  write_list op;
 
   auto result = op.execute(&list, {&x}, {}, {1});
 
@@ -59,7 +59,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     tads.at(e)->assign(row);
   }
 
-  sd::ops::stack_list op;
+  stack_list op;
 
   auto result = op.execute(&list, {}, {}, {1});
 
@@ -82,7 +82,7 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
     delete row;
   }
 
-  sd::ops::unstack_list op;
+  unstack_list op;
 
   auto result = op.execute(&list, {&x}, {}, {0});
 
@@ -110,7 +110,7 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
     delete row;
   }
 
-  sd::ops::read_list op;
+  read_list op;
 
   auto result = op.execute(&list, {}, {}, {4});
 
@@ -139,7 +139,7 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
   tads.at(2)->assign(3.0f);
   tads.at(3)->assign(3.0f);
 
-  sd::ops::pick_list op;
+  pick_list op;
   auto result = op.execute(&list, {}, {}, {1, 1, 3, 3});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -160,7 +160,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
     delete row;
   }
 
-  sd::ops::size_list op;
+  size_list op;
 
   auto result = op.execute(&list, {}, {}, {1});
 
@@ -175,7 +175,7 @@ TEST_F(ListOperationsTests, BasicTest_Create_1) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 2});
   matrix.linspace(1);
 
-  sd::ops::create_list op;
+  create_list op;
 
   auto result = op.execute(nullptr, {&matrix}, {}, {1, 1});
 
@@ -225,7 +225,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     delete row;
   }
 
-  sd::ops::split_list op;
+  split_list op;
   auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -257,7 +257,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
   auto indices = NDArrayFactory::create<double>('c', {1, 10});
   for (int e = 0; e < matrix.rows(); e++) indices.p(e, 9 - e);
 
-  sd::ops::scatter_list op;
+  scatter_list op;
   auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -285,7 +285,7 @@ TEST_F(ListOperationsTests, BasicTest_Clone_1) {
   Context block(1, &variableSpace);
   block.pickInput(-1);
 
-  sd::ops::clone_list op;
+  clone_list op;
 
   ASSERT_TRUE(list == block.variable(0)->getNDArrayList());
 
@@ -322,7 +322,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
   auto indices = NDArrayFactory::create<double>('c', {1, 10});
   indices.linspace(9, -1);
 
-  sd::ops::gather_list op;
+  gather_list op;
   auto result = op.execute(&list, {&indices}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -360,17 +360,17 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
   auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
   // creating list
-  sd::ops::create_list opB;
+  create_list opB;
   auto nodeB = new Node(&opB, 2, {1}, {}, {}, 0.0f, {}, {0, 1});
   // nodeB->setCustomOp(&opB);
 
   // filling list with matrix
-  sd::ops::split_list opC;
+  split_list opC;
   auto nodeC = new Node(&opC, 3, {2, 1, -2});
   // nodeC->setCustomOp(&opC);
 
   // reading chunks from List. We're adding op number 3 in inputs, to ensure graph will execute this node after split
-  sd::ops::read_list opD;
+  read_list opD;
   auto nodeD0 = new Node(&opD, 5, {2, 3}, {}, {}, 0.0f, {}, {0});
   auto nodeD1 = new Node(&opD, 6, {2, 3}, {}, {}, 0.0f, {}, {1});
   auto nodeD2 = new Node(&opD, 7, {2, 3}, {}, {}, 0.0f, {}, {2});
@@ -379,12 +379,12 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
   // nodeD2->setCustomOp(&opD);
 
   // using OneMinus on each chunk separately
-  auto nodeE0 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 10, {5});
-  auto nodeE1 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 11, {6});
-  auto nodeE2 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 12, {7});
+  auto nodeE0 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 10, {5});
+  auto nodeE1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 11, {6});
+  auto nodeE2 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 12, {7});
 
   // writing chunks back to the List
-  sd::ops::write_list opF;
+  write_list opF;
   auto nodeF0 = new Node(&opF, 15, {2, 10}, {}, {}, 0.0f, {}, {0});
   auto nodeF1 = new Node(&opF, 16, {2, 11}, {}, {}, 0.0f, {}, {1});
   auto nodeF2 = new Node(&opF, 17, {2, 12}, {}, {}, 0.0f, {}, {2});
@@ -394,7 +394,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
   //    nodeF2->setCustomOp(&opF);
 
   // now we're stacking chunks back to matrix state
-  sd::ops::stack_list opG;
+  stack_list opG;
   auto nodeG = new Node(&opG, 20, {2, 15, 16, 17});
   // auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 
@@ -486,17 +486,17 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
   auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
   // creating list
-  sd::ops::create_list opB;
+  create_list opB;
   auto nodeB = new Node(&opB, 2, {1}, {}, {}, 0.0f, {}, {0, 1});
   //    nodeB->setCustomOp(&opB);
 
   // filling list with matrix
-  sd::ops::scatter_list opC;
+  scatter_list opC;
   auto nodeC = new Node(&opC, 3, {2, -2, 1, -3});
 
   // nodeC->setCustomOp(&opC);
 
-  sd::ops::read_list opD;
+  read_list opD;
   auto nodeD0 = new Node(&opD, 5, {2, 3}, {}, {}, 0.0f, {}, {0});
   auto nodeD1 = new Node(&opD, 6, {2, 3, 15}, {}, {}, 0.0f, {}, {1});
   auto nodeD2 = new Node(&opD, 7, {2, 3, 16}, {}, {}, 0.0f, {}, {2});
@@ -506,12 +506,12 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
   //    nodeD2->setCustomOp(&opD);
 
   // using OneMinus on each chunk separately
-  auto nodeE0 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 10, {5});
-  auto nodeE1 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 11, {6});
-  auto nodeE2 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 12, {7});
+  auto nodeE0 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 10, {5});
+  auto nodeE1 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 11, {6});
+  auto nodeE2 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 12, {7});
 
   // writing chunks back to the List
-  sd::ops::write_list opF;
+  write_list opF;
   auto nodeF0 = new Node(&opF, 15, {2, 10}, {}, {}, 0.0f, {}, {0});
   auto nodeF1 = new Node(&opF, 16, {2, 11}, {}, {}, 0.0f, {}, {1});
   auto nodeF2 = new Node(&opF, 17, {2, 12}, {}, {}, 0.0f, {}, {2});
@@ -521,7 +521,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
   //    nodeF2->setCustomOp(&opF);
 
   // now we're gathering chunks back to matrix state
-  sd::ops::pick_list opG;
+  pick_list opG;
   auto nodeG = new Node(&opG, 20, {2, -2, 15, 16, 17});
   // auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 

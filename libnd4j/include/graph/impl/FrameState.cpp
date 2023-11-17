@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-FrameState::FrameState(sd::LongType id) { this->_id = id; }
+FrameState::FrameState(LongType id) { this->_id = id; }
 
 int FrameState::getNumberOfCycles() { return _numberOfCycles; }
 

@@ -523,18 +523,20 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (dataType() == DataType.FLOAT) {
             attached = true;
             parentWorkspace = workspace;
-
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer();
             setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
         } else if (dataType() == DataType.HALF) {
             attached = true;
             parentWorkspace = workspace;
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
 
             setIndexer(HalfIndexer.create((ShortPointer) pointer));
 
         } else if (dataType() == DataType.BFLOAT16) {
             attached = true;
             parentWorkspace = workspace;
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
 
             setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
         } else if (dataType() == DataType.INT) {

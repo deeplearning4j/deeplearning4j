@@ -37,8 +37,8 @@ class NDArray;  // forward declaration of template class NDArray
 
 class SD_LIB_EXPORT ResultSet {
  private:
-  std::vector<sd::NDArray *> _content;
-  sd::Status _status = sd::Status::OK;
+  std::vector<NDArray *> _content;
+  Status _status = Status::OK;
   bool _removable = true;
 
   void delContent();
@@ -47,7 +47,7 @@ class SD_LIB_EXPORT ResultSet {
   explicit ResultSet();
 
 #ifndef __JAVACPP_HACK__
-  ResultSet(const sd::graph::FlatResult *result);
+  ResultSet(const graph::FlatResult *result);
 #endif
 
   ResultSet(const ResultSet &other) noexcept;
@@ -63,12 +63,12 @@ class SD_LIB_EXPORT ResultSet {
   ~ResultSet();
 
   int size();
-  sd::NDArray *at(const unsigned long idx) const;
-  sd::NDArray *operator[](const unsigned long idx) const;
-  void push_back(sd::NDArray *array);
+  NDArray *at(const unsigned long idx) const;
+  NDArray *operator[](const unsigned long idx) const;
+  void push_back(NDArray *array);
 
-  sd::Status status();
-  void setStatus(sd::Status status);
+  Status status();
+  void setStatus(Status status);
   void purge();
   void setNonRemovable();
   void printIndexedBuffers();

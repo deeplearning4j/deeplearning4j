@@ -24,11 +24,11 @@
 
 namespace sd {
 namespace graph {
-std::vector<sd::graph::Variable*>* sd::graph::VariableSpace::getExternalVariables() { return &_external; }
+std::vector<Variable*>* VariableSpace::getExternalVariables() { return &_external; }
 
-sd::graph::Stash* sd::graph::VariableSpace::getStash() { return &_stash; }
+Stash* VariableSpace::getStash() { return &_stash; }
 
-sd::graph::VariableSpace* sd::graph::VariableSpace::clone() {
+VariableSpace* VariableSpace::clone() {
   auto result = new VariableSpace();
 
   for (auto const& x : _paired) {
@@ -42,10 +42,9 @@ sd::graph::VariableSpace* sd::graph::VariableSpace::clone() {
   return result;
 }
 
-void VariableSpace::setWorkspace(sd::memory::Workspace* workspace) {
-}
+void VariableSpace::setWorkspace(memory::Workspace* workspace) {}
 
-sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {
+VariableSpace* VariableSpace::asT() {
   auto result = new VariableSpace();
 
   for (auto const& x : _paired) {
@@ -55,7 +54,7 @@ sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {
   return result;
 }
 
-void sd::graph::VariableSpace::injectVariable(std::pair<int, int>& pair, Variable* variable) {
+void VariableSpace::injectVariable(std::pair<int, int>& pair, Variable* variable) {
   if (pair.second == 0) {
     if (pair.first < 0)
       this->_variables[pair.first] = variable;
@@ -71,15 +70,15 @@ void sd::graph::VariableSpace::injectVariable(std::pair<int, int>& pair, Variabl
   this->_handles->push_back(variable);
 }
 
-std::vector<sd::graph::Variable*>* sd::graph::VariableSpace::getPlaceholders() { return &_placeholders; }
+std::vector<Variable*>* VariableSpace::getPlaceholders() { return &_placeholders; }
 
-int sd::graph::VariableSpace ::numberOfPlaceholders() { return _placeholders.size(); }
+int VariableSpace ::numberOfPlaceholders() { return _placeholders.size(); }
 
-bool sd::graph::VariableSpace::hasVariable(std::string* symbol) { return _symbolic.count(*symbol) == 1; }
+bool VariableSpace::hasVariable(std::string* symbol) { return _symbolic.count(*symbol) == 1; }
 
-sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::string* symbol) { return _symbolic.at(*symbol); }
+Variable* VariableSpace::getVariable(std::string* symbol) { return _symbolic.at(*symbol); }
 
-bool sd::graph::VariableSpace::hasVariable(int id, int index) {
+bool VariableSpace::hasVariable(int id, int index) {
   std::pair<int, int> pair(id, index);
   return hasVariable(pair);
 }
@@ -105,12 +104,12 @@ bool VariableSpace::hasExternalVariable(std::string* symbol) {
   return var->isExternal();
 }
 
-sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id, int index) {
+Variable* VariableSpace::getVariable(int id, int index) {
   std::pair<int, int> pair(id, index);
   return getVariable(pair);
 }
 
-sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
+Variable* VariableSpace::getVariable(std::pair<int, int>& pair) {
   if (pair.first < 0) {
     return getVariable(pair.first);
   } else {
@@ -120,23 +119,23 @@ sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::pair<int, int>& 
   THROW_EXCEPTION("Unknown variable requested");
 }
 
-bool sd::graph::VariableSpace::hasVariable(int id) { return _variables.count(id) == 1 || _temporary.count(id) == 1; }
+bool VariableSpace::hasVariable(int id) { return _variables.count(id) == 1 || _temporary.count(id) == 1; }
 
-bool sd::graph::VariableSpace::hasVariable(std::pair<int, int>& id) { return _paired.count(id) > 0; }
+bool VariableSpace::hasVariable(std::pair<int, int>& id) { return _paired.count(id) > 0; }
 
-void sd::graph::VariableSpace::putOutputVariable(Variable* variable) {
+void VariableSpace::putOutputVariable(Variable* variable) {
   // putVariable(_auto_counter--, variable);
   putVariable(variable->id(), variable);
 }
 
-int sd::graph::VariableSpace::externalEntries() { return _external.size(); }
+int VariableSpace::externalEntries() { return _external.size(); }
 
-int sd::graph::VariableSpace::internalEntries() { return _internal.size(); }
+int VariableSpace::internalEntries() { return _internal.size(); }
 
-int sd::graph::VariableSpace::totalEntries() { return externalEntries() + internalEntries(); }
+int VariableSpace::totalEntries() { return externalEntries() + internalEntries(); }
 
-sd::LongType sd::graph::VariableSpace::externalMemory() {
-  sd::LongType size = 0;
+LongType VariableSpace::externalMemory() {
+  LongType size = 0;
   for (auto n : _external) {
     size += n->getNDArray()->memoryFootprint();
   }
@@ -154,8 +153,8 @@ std::vector<Variable*> VariableSpace::getVariables() {
   return result;
 }
 
-sd::LongType sd::graph::VariableSpace::internalMemory() {
-  sd::LongType size = 0;
+LongType VariableSpace::internalMemory() {
+  LongType size = 0;
   for (auto n : _internal) {
     size += n->getNDArray()->memoryFootprint();
   }
@@ -163,25 +162,25 @@ sd::LongType sd::graph::VariableSpace::internalMemory() {
   return size;
 }
 
-sd::LongType sd::graph::VariableSpace::totalMemory() { return externalMemory() + internalMemory(); }
+LongType VariableSpace::totalMemory() { return externalMemory() + internalMemory(); }
 
-Variable* sd::graph::VariableSpace::putVariable(std::pair<int, int>& pair, NDArray* array) {
+Variable* VariableSpace::putVariable(std::pair<int, int>& pair, NDArray* array) {
   auto variable = new Variable(array, nullptr, pair.first, pair.second);
   this->putVariable(pair, variable);
   return variable;
 }
 
-Variable* sd::graph::VariableSpace::putVariable(int node, int idx, NDArray* array) {
+Variable* VariableSpace::putVariable(int node, int idx, NDArray* array) {
   std::pair<int, int> pair(node, idx);
   return this->putVariable(pair, array);
 }
 
-void sd::graph::VariableSpace::putVariable(int node, int idx, Variable* variable) {
+void VariableSpace::putVariable(int node, int idx, Variable* variable) {
   std::pair<int, int> pair(node, idx);
   this->putVariable(pair, variable);
 }
 
-void sd::graph::VariableSpace::silentPutVariable(std::pair<int, int>& pair, Variable* variable) {
+void VariableSpace::silentPutVariable(std::pair<int, int>& pair, Variable* variable) {
   _varmap.lock();
 
   // std::pair<std::pair<int, int>, sd::graph::Variable *> p(pair, variable);
@@ -190,7 +189,7 @@ void sd::graph::VariableSpace::silentPutVariable(std::pair<int, int>& pair, Vari
   _varmap.unlock();
 }
 
-void sd::graph::VariableSpace::putVariable(std::pair<int, int>& pair, Variable* variable) {
+void VariableSpace::putVariable(std::pair<int, int>& pair, Variable* variable) {
   silentPutVariable(pair, variable);
 
   if (variable->isPlaceholder()) _placeholders.push_back(variable);
@@ -211,9 +210,9 @@ void sd::graph::VariableSpace::putVariable(std::pair<int, int>& pair, Variable* 
   }
 }
 
-void VariableSpace::trackList(sd::NDArrayList* list) { _lists.emplace_back(list); }
+void VariableSpace::trackList(NDArrayList* list) { _lists.emplace_back(list); }
 
-void sd::graph::VariableSpace::putVariable(int id, Variable* variable) {
+void VariableSpace::putVariable(int id, Variable* variable) {
   // we don't want to add variables more then once
   if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
     auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
@@ -265,8 +264,8 @@ void sd::graph::VariableSpace::putVariable(int id, Variable* variable) {
   }
 }
 
-void sd::graph::VariableSpace::putVariable(int id, int idx, NDArray& array) {
-  auto* var = new sd::graph::Variable(&array, "", id, idx);
+void VariableSpace::putVariable(int id, int idx, NDArray& array) {
+  auto* var = new Variable(&array, "", id, idx);
   var->markRemovable(false);
   var->markReadOnly(true);
 
@@ -279,12 +278,12 @@ void sd::graph::VariableSpace::putVariable(int id, int idx, NDArray& array) {
   if (d) delete var;
 }
 
-void sd::graph::VariableSpace::putVariable(int id, NDArray* array) {
-  auto* var = new sd::graph::Variable(array);
+void VariableSpace::putVariable(int id, NDArray* array) {
+  auto* var = new Variable(array);
   this->putVariable(id, var);
 }
 
-sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id) {
+Variable* VariableSpace::getVariable(int id) {
   if (id < 0) {
     return _variables.at(id);
   } else {
@@ -292,14 +291,14 @@ sd::graph::Variable* sd::graph::VariableSpace::getVariable(int id) {
   }
 }
 
-LaunchContext* sd::graph::VariableSpace::launchContext() { return LaunchContext::defaultContext(); }
+LaunchContext* VariableSpace::launchContext() { return LaunchContext::defaultContext(); }
 
-std::vector<Variable*>* sd::graph::VariableSpace::handles() { return _handles; }
+std::vector<Variable*>* VariableSpace::handles() { return _handles; }
 
 /*
  * FIXME: this thing have nice chances to become backend-specific!
  */
-sd::graph::VariableSpace::~VariableSpace() {
+VariableSpace::~VariableSpace() {
   // loop through variables and release them
   for (auto p : *_handles) {
     delete p;

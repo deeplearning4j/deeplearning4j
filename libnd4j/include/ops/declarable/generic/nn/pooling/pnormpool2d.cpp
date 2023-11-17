@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 -
   // poolingMode; 9 - divisor;
-  ConvolutionUtils::pooling2d(block, *input, *output, kY, kX, sY, sX, pY, pX, dY, dX, PoolingType::PNORM_POOL,
+  ConvolutionUtils::pooling2d(block, *input, *output, kY, kX, sY, sX, pY, pX, dY, dX, PNORM_POOL,
                               extraParam0);
 
   if (!isNCHW) {
@@ -78,14 +78,14 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
     delete output;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(PnormPool2D, pnormpool2d);
 DECLARE_SYN(PnormPool, pnormpool2d);
 DECLARE_SYN(pnormpool, pnormpool2d);
 
 DECLARE_TYPES(pnormpool2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(pnormpool2d) {
@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(pnormpool2d) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same
   // mode;
-  std::vector<sd::LongType> argI = *(block.getIArguments());
+  std::vector<LongType> argI = *(block.getIArguments());
   LongType kH = INT_ARG(0);
   LongType kW = INT_ARG(1);
   LongType sH = INT_ARG(2);
@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(pnormpool2d) {
   LongType oH, oW;
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
   // allocate memory for new shape
-  sd::LongType newShape[4];
+  LongType newShape[4];
 
   newShape[0] = bS;
   if (isNCHW) {
@@ -138,7 +138,7 @@ DECLARE_SHAPE_FN(pnormpool2d) {
 }
 
 DECLARE_TYPES(pnormpool2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -172,9 +172,9 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oH, oW, 0, indIOioC, indIiH, indIiH + 1});
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, iH, iW, 0, indIOioC, indIiH, indIiH + 1});
   REQUIRE_TRUE(
       gradO->isSameShape(expectedGradOShape), 0,
@@ -200,7 +200,7 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
       delete gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(pnormpool2d_bp) {

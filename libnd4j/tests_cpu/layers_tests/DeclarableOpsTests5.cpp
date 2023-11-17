@@ -48,7 +48,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_1) {
   x.linspace(1);
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {0, 2, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -67,7 +67,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_0) {
                        46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {0, 1, 2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -86,7 +86,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_2) {
                        16.0, 17.0, 18.0, 19.0, 20.0, 36.0, 37.0, 38.0, 39.0, 40.0, 56.0, 57.0, 58.0, 59.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {1, 0, 2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -105,7 +105,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_3) {
                        16.0, 36.0, 56.0, 17.0, 37.0, 57.0, 18.0, 38.0, 58.0, 19.0, 39.0, 59.0, 20.0, 40.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {1, 2, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -124,7 +124,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_4) {
                        49.0, 54.0, 59.0, 5.0,  10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {2, 0, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -143,7 +143,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
                        19.0, 39.0, 59.0, 5.0,  25.0, 45.0, 10.0, 30.0, 50.0, 15.0, 35.0, 55.0, 20.0, 40.0, 60.0});
   x.reshapei('c', {3, 4, 5});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {2, 1, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -160,7 +160,7 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
 
   eps.linspace(1.f);
 
-  sd::ops::tile_to_shape_bp op;
+  ops::tile_to_shape_bp op;
   auto result = op.evaluate({&x, &eps}, {}, {2, 4, 3});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -175,14 +175,14 @@ TEST_F(DeclarableOpsTests5, Test_Rdiv_bp_1) {
   auto y = NDArrayFactory::create<double>('c', {1, 4}, {1, 2, 3, 4});
   auto eps = NDArrayFactory::create<double>('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
 
-  sd::ops::reversedivide op_ff;
+  ops::reversedivide op_ff;
   auto result_ff = op_ff.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result_ff.status());
 
   auto z_ff = result_ff.at(0);
   ASSERT_TRUE(eps.isSameShape(z_ff));
 
-  sd::ops::reversedivide_bp op_bp;
+  ops::reversedivide_bp op_bp;
   auto result_bp = op_bp.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(sd::Status::OK, result_bp.status());
 
@@ -194,7 +194,7 @@ TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
   auto x = NDArrayFactory::create<double>('c', {1, 1}, {1.0f});
   auto y = NDArrayFactory::create<double>(2.0f);
 
-  sd::ops::less op;
+  ops::less op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(result.at(0)->t<bool>(0), true);
@@ -204,12 +204,12 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
   auto x = NDArrayFactory::create<int>('c', {1, 1}, {120});
   auto y = NDArrayFactory::create<int>(5);
 
-  sd::ops::set_seed op;
+  ops::set_seed op;
   auto result = op.evaluate({&x, &y}, {}, {120, 5});
 
   ASSERT_EQ(sd::Status::OK, result.status());
 
-  sd::ops::get_seed getOp;
+  ops::get_seed getOp;
   auto getRes = getOp.evaluate({});
   ASSERT_EQ(sd::Status::OK, getRes.status());
 }
@@ -217,11 +217,11 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterMul_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-  NDArray idc('c', {1}, std::vector<double>({0LL}), sd::DataType::INT64);
+  NDArray idc('c', {1}, std::vector<double>({0LL}), INT64);
   auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10.f, 2.f, 3.f, 4.f});
 
-  sd::ops::scatter_mul op;
+  ops::scatter_mul op;
   auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -233,11 +233,11 @@ TEST_F(DeclarableOpsTests5, scatterMul_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-  NDArray idc('c', {1}, std::vector<double>({0LL}), sd::DataType::INT64);
+  NDArray idc('c', {1}, std::vector<double>({0LL}), INT64);
   auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10f, 2.f, 3.f, 4.f});
 
-  sd::ops::scatter_div op;
+  ops::scatter_div op;
   auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -248,11 +248,11 @@ TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterSub_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-  NDArray idc('c', {1}, std::vector<double>({0LL}), sd::DataType::INT64);
+  NDArray idc('c', {1}, std::vector<double>({0LL}), INT64);
   auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9.f, 1.f, 3.f, 4.f});
 
-  sd::ops::scatter_sub op;
+  ops::scatter_sub op;
   auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -265,7 +265,7 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.7f, 0.9f, 1.f, 1.f});
 
-  sd::ops::hardsigmoid op;
+  ops::hardsigmoid op;
   auto result = op.evaluate({&matrix}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -279,7 +279,7 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
   auto eps = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.2f, 0.4f, 0.f, 0.f});
 
-  sd::ops::hardsigmoid_bp op;
+  ops::hardsigmoid_bp op;
   auto result = op.evaluate({&matrix, &eps}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -292,7 +292,7 @@ TEST_F(DeclarableOpsTests5, hardtanh_test1) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
   auto exp = NDArrayFactory::create<double>('c', {3, 3}, {-1, -1, -1, -1, 0, 1, 1, 1, 1});
 
-  sd::ops::hardtanh op;
+  ops::hardtanh op;
   auto result = op.evaluate({&matrix}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -305,7 +305,7 @@ TEST_F(DeclarableOpsTests5, hardtanh_test2) {
   auto eps = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto exp = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 4, 5, 6, 0, 0, 0});
 
-  sd::ops::hardtanh_bp op;
+  ops::hardtanh_bp op;
   auto result = op.evaluate({&matrix, &eps}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -316,9 +316,9 @@ TEST_F(DeclarableOpsTests5, hardtanh_test2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, histogram_test1) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
-  auto exp = NDArrayFactory::create<sd::LongType>('c', {3}, {3, 3, 3});
+  auto exp = NDArrayFactory::create<LongType>('c', {3}, {3, 3, 3});
 
-  sd::ops::histogram op;
+  ops::histogram op;
   auto result = op.evaluate({&matrix}, {}, {3}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -328,9 +328,9 @@ TEST_F(DeclarableOpsTests5, histogram_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, histogram_test2) {
   auto matrix = NDArrayFactory::create<double>('c', {3}, {1, 2, 1});
-  auto exp = NDArrayFactory::create<sd::LongType>('c', {4}, {2, 0, 0, 1});
+  auto exp = NDArrayFactory::create<LongType>('c', {4}, {2, 0, 0, 1});
 
-  sd::ops::histogram op;
+  ops::histogram op;
   auto result = op.evaluate({&matrix}, {}, {4}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -342,7 +342,7 @@ TEST_F(DeclarableOpsTests5, histogram_test2) {
 TEST_F(DeclarableOpsTests5, Identity_test1) {
   auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f});
 
-  sd::ops::identity op;
+  ops::identity op;
   auto result = op.evaluate({&matrix}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -354,7 +354,7 @@ TEST_F(DeclarableOpsTests5, Identity_test1) {
 TEST_F(DeclarableOpsTests5, Identity_test2) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
   auto eps = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-  sd::ops::identity_bp op;
+  ops::identity_bp op;
   auto result = op.evaluate({&matrix, &eps}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -365,8 +365,8 @@ TEST_F(DeclarableOpsTests5, Identity_test2) {
 TEST_F(DeclarableOpsTests5, Log1p_test1) {
   auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
   auto y = NDArrayFactory::create<double>('c', {3, 3}, {5, 4, 3, 2, 1, 2, 3, 4, 5});
-  sd::ops::Log1p op;
-  y.applyTransform(sd::transform::Log, y);
+  ops::Log1p op;
+  y.applyTransform(transform::Log, y);
   auto result = op.evaluate({&matrix}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -379,7 +379,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
   auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
   auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
-  sd::ops::space_to_batch op;
+  ops::space_to_batch op;
   auto result = op.evaluate({&x, &paddings}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -393,7 +393,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_2) {
   auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 1}, {1, 2, 3, 4});
   auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
-  sd::ops::space_to_batch op;
+  ops::space_to_batch op;
   auto result = op.evaluate({&x, &paddings}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -408,7 +408,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
   auto exp = NDArrayFactory::create<double>(
       'c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
 
-  sd::ops::space_to_batch op;
+  ops::space_to_batch op;
   auto result = op.evaluate({&x, &paddings}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -424,7 +424,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
             {147, 148, 219, 220, 149, 150, 11, 12, 83,  84,  13, 14, 155, 156, 227, 228, 157, 158,
              171, 172, 243, 244, 173, 174, 35, 36, 107, 108, 37, 38, 179, 180, 251, 252, 181, 182,
              195, 196, 267, 268, 197, 198, 59, 60, 131, 132, 61, 62, 203, 204, 275, 276, 205, 206},
-            sd::DataType::FLOAT32);
+            FLOAT32);
   NDArray paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
 
   NDArray exp('c', {3 * blockSize * blockSize, 3, 4, 2},
@@ -440,9 +440,9 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
                0, 0, 219, 220, 0,   0,   0, 0, 0, 0, 227, 228, 0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                0, 0, 243, 244, 0,   0,   0, 0, 0, 0, 251, 252, 0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                0, 0, 267, 268, 0,   0,   0, 0, 0, 0, 275, 276, 0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-              sd::DataType::FLOAT32);
+              FLOAT32);
 
-  sd::ops::space_to_batch op;
+  ops::space_to_batch op;
   auto result = op.evaluate({&x, &paddings}, {}, {blockSize});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -456,7 +456,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
   auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
   auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
-  sd::ops::batch_to_space op;
+  ops::batch_to_space op;
   auto result = op.evaluate({&x, &crops}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -470,7 +470,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
   auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 1}, {1, 2, 3, 4});
   auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
-  sd::ops::batch_to_space op;
+  ops::batch_to_space op;
   auto result = op.evaluate({&x, &crops}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -485,7 +485,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
   auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
   auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 2, 0});
 
-  sd::ops::batch_to_space op;
+  ops::batch_to_space op;
   auto result = op.evaluate({&x, &crops}, {}, {2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -497,7 +497,7 @@ ASSERT_EQ(exp,*z);
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_4) {
   const int blockSize = 2;
-  NDArray x('c', {3 * blockSize * blockSize, 3, 4, 2}, sd::DataType::FLOAT32);
+  NDArray x('c', {3 * blockSize * blockSize, 3, 4, 2}, FLOAT32);
   x.linspace(1, 1);
   NDArray crops = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
 
@@ -505,9 +505,9 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_4) {
               {147, 148, 219, 220, 149, 150, 11, 12, 83,  84,  13, 14, 155, 156, 227, 228, 157, 158,
                171, 172, 243, 244, 173, 174, 35, 36, 107, 108, 37, 38, 179, 180, 251, 252, 181, 182,
                195, 196, 267, 268, 197, 198, 59, 60, 131, 132, 61, 62, 203, 204, 275, 276, 205, 206},
-              sd::DataType::FLOAT32);
+              FLOAT32);
 
-  sd::ops::batch_to_space op;
+  ops::batch_to_space op;
   auto result = op.evaluate({&x, &crops}, {}, {blockSize});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -520,7 +520,7 @@ ASSERT_EQ(exp,*z);
 TEST_F(DeclarableOpsTests5, eye_test1) {
   auto expected = NDArrayFactory::create<float>('c', {3, 3}, {1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f});
 
-  sd::ops::eye op;
+  ops::eye op;
   auto results = op.evaluate({}, {}, {-99, 3});
   auto output = results.at(0);
 
@@ -534,7 +534,7 @@ TEST_F(DeclarableOpsTests5, eye_test2) {
   auto expected =
       NDArrayFactory::create<float>('c', {3, 4}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f});
 
-  sd::ops::eye op;
+  ops::eye op;
   auto results = op.evaluate({}, {}, {-99, 3, 4});
   auto output = results.at(0);
 
@@ -548,7 +548,7 @@ TEST_F(DeclarableOpsTests5, eye_test3) {
   auto expected = NDArrayFactory::create<int>('c', {2, 3, 4},
                                               {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0});
 
-  sd::ops::eye op;
+  ops::eye op;
   auto results = op.evaluate({}, {9 /*int*/}, {-99, 3, 4, 2});
   auto output = results.at(0);
 
@@ -564,7 +564,7 @@ TEST_F(DeclarableOpsTests5, eye_test4) {
       {1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.,
        1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.});
 
-  sd::ops::eye op;
+  ops::eye op;
   auto results = op.evaluate({}, {6 /*double*/}, {-99, 3, 4, 2, 2});
   auto output = results.at(0);
 
@@ -575,7 +575,7 @@ TEST_F(DeclarableOpsTests5, eye_test4) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test5) {
-  sd::ops::eye op;
+  ops::eye op;
   auto result = op.evaluate({}, {}, {3, 2});
 
   auto z = result.at(0);
@@ -591,7 +591,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test1) {
   auto expected = NDArrayFactory::create<double>('c', {2, 2, 3, 2}, {19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18,
                                                                      19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {});
   auto output = results.at(0);
 
@@ -608,7 +608,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test2) {
 
   auto expected = NDArrayFactory::create<double>('c', {2, 2, 2}, {23, 24, 11, 12, 3, 4, 3, 4});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {}, {true});
   auto output = results.at(0);
 
@@ -624,7 +624,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test3) {
   auto indices = NDArrayFactory::create<int>('c', {3}, {3, 2, 1});
   auto expected = NDArrayFactory::create<double>(24.);
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {});
   auto output = results.at(0);
 
@@ -640,7 +640,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test4) {
   auto indices = NDArrayFactory::create<int>('c', {2, 3}, {3, 2, 1, 0, 2, 1});
   auto expected = NDArrayFactory::create<double>('c', {2}, {24., 6});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {});
   auto output = results.at(0);
 
@@ -655,7 +655,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test5) {
   auto indices = NDArrayFactory::create<int>('c', {5, 1}, {3, 2, 0, 1, 1});
   auto expected = NDArrayFactory::create<double>('c', {5}, {4., 3, 1, 2, 2});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {});
   auto output = results.at(0);
 
@@ -667,11 +667,11 @@ TEST_F(DeclarableOpsTests5, gatherNd_test5) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test6) {
   auto input = NDArrayFactory::create<double>('c', {4}, {1, 2, 3, 4});
-  std::vector<sd::LongType> shape = {1};
+  std::vector<LongType> shape = {1};
   auto indices = NDArrayFactory::create<int>('c', shape, {2});
   auto expected = NDArrayFactory::create<double>(3.);
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {});
   auto output = results.at(0);
 
@@ -687,7 +687,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test7) {
   auto indices = NDArrayFactory::create<int>('c', {3, 3, 2}, {0, 2, 1, 0, 1, 0, 1, 3, 1, 0, 2, 1, 0, 1, 0, 1, 3, 1});
   auto expected = NDArrayFactory::create<double>('c', {3, 3}, {3, 5, 5, 8, 5, 10, 2, 2, 14});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto results = op.evaluate({&input, &indices}, {}, {}, {true});
   auto output = results.at(0);
 
@@ -702,7 +702,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test8) {
   auto y = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 1, 1});
   auto e = NDArrayFactory::create<double>('c', {2}, {1., 4.});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -717,7 +717,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test9) {
   auto exp = NDArrayFactory::create<double>('c', {3, 2}, {11.f, 12.f, 5.f, 6.f, 31.f, 32.f});
   x.linspace(1);
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
   auto result = op.evaluate({&x, &indices}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -733,7 +733,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test10) {
 
   auto output = NDArrayFactory::create<double>('c', {2, 2, 2});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
 
   ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {}, {true}));
 }
@@ -745,7 +745,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test11) {
       NDArrayFactory::create<int>('c', {3, 3, 2}, {0, 2, 1, 0, 10, 0, 1, 30, 1, 0, 20, 1, 0, 1, 0, 1, 30, 1});
   auto output = NDArrayFactory::create<double>('c', {3, 3});
 
-  sd::ops::gather_nd op;
+  ops::gather_nd op;
 
   ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {}, {true}));
 }
@@ -760,7 +760,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test1) {
                        24, 23, 22, 21, 25, 29, 28, 27, 26, 30, 34, 33, 32, 31, 35, 39, 38, 37, 36, 40,
                        44, 43, 42, 41, 45, 49, 48, 47, 46, 50, 54, 53, 52, 51, 55, 59, 58, 57, 56, 60});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {2, 1});
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -773,13 +773,13 @@ ASSERT_EQ(exp,*output);
 TEST_F(DeclarableOpsTests5, reverse_sequense_test2) {
   auto input = NDArrayFactory::create<double>('c', {3, 4, 5});
   input.linspace(1);
-  auto seqLengths = NDArrayFactory::create<sd::LongType>('c', {4}, {0, 1, 2, 3});
+  auto seqLengths = NDArrayFactory::create<LongType>('c', {4}, {0, 1, 2, 3});
   auto exp = NDArrayFactory::create<double>(
       'c', {3, 4, 5}, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 12, 11, 13, 14, 15, 18, 17, 16, 19, 20,
                        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 31, 33, 34, 35, 38, 37, 36, 39, 40,
                        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 51, 53, 54, 55, 58, 57, 56, 59, 60});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {2, 1});
   auto output = results.at(0);
 
@@ -797,7 +797,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test3) {
                        23, 22, 21, 24, 25, 28, 27, 26, 29, 30, 33, 32, 31, 34, 35, 38, 37, 36, 39, 40,
                        44, 43, 42, 41, 45, 49, 48, 47, 46, 50, 54, 53, 52, 51, 55, 59, 58, 57, 56, 60});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {2, 0});
   auto output = results.at(0);
 
@@ -815,7 +815,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test4) {
                        21, 2,  23, 4,  25, 26, 7,  28, 9,  30, 31, 12, 33, 14, 35, 36, 17, 38, 19, 40,
                        41, 42, 43, 44, 5,  46, 47, 48, 49, 10, 51, 52, 53, 54, 15, 56, 57, 58, 59, 20});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {0, 2});
   auto output = results.at(0);
 
@@ -833,7 +833,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test5) {
                        21, 27, 38, 29, 35, 26, 22, 33, 24, 30, 31, 32, 28, 34, 25, 36, 37, 23, 39, 40,
                        41, 47, 58, 49, 55, 46, 42, 53, 44, 50, 51, 52, 48, 54, 45, 56, 57, 43, 59, 60});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {1, 2});
   auto output = results.at(0);
 
@@ -851,7 +851,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test6) {
                        21, 22, 23, 24, 25, 6,  7,  8,  9,  10, 31, 32, 33, 34, 35, 16, 17, 18, 19, 20,
                        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 11, 12, 13, 14, 15, 56, 57, 58, 59, 60});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {0, 1});
   auto output = results.at(0);
 
@@ -867,7 +867,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test7) {
   auto seqLengths = NDArrayFactory::create<int>('c', {1}, data);
   auto exp = NDArrayFactory::create<double>('c', {1, 5}, {3, 2, 1, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {1, 0});
   auto output = results.at(0);
 
@@ -883,7 +883,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test8) {
   auto seqLengths = NDArrayFactory::create<int>('c', {5}, data);
   auto exp = NDArrayFactory::create<double>('c', {1, 5}, {1, 2, 3, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {0, 1});
   auto output = results.at(0);
 
@@ -895,11 +895,11 @@ ASSERT_EQ(exp,*output);
 TEST_F(DeclarableOpsTests5, reverse_sequense_test9) {
   auto input = NDArrayFactory::create<double>('c', {5, 1});
   input.linspace(1);
-  std::vector<sd::LongType> data = {1, 0, 1, 0, 1};
-  auto seqLengths = NDArrayFactory::create<sd::LongType>('c', {5}, data);
+  std::vector<LongType> data = {1, 0, 1, 0, 1};
+  auto seqLengths = NDArrayFactory::create<LongType>('c', {5}, data);
   auto exp = NDArrayFactory::create<double>('c', {5, 1}, {1, 2, 3, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {1, 0});
   auto output = results.at(0);
 
@@ -915,7 +915,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test10) {
   auto seqLengths = NDArrayFactory::create<int>('c', {1}, data);
   auto exp = NDArrayFactory::create<double>('c', {5, 1}, {3, 2, 1, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {0, 1});
   auto output = results.at(0);
 
@@ -931,7 +931,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test11) {
   auto seqLengths = NDArrayFactory::create<int>('c', {5}, data);
   auto exp = NDArrayFactory::create<double>('c', {1, 1, 5, 1}, {1, 2, 3, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {1, 2});
   auto output = results.at(0);
 
@@ -947,7 +947,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test12) {
   auto seqLengths = NDArrayFactory::create<int>('c', {1}, data);
   auto exp = NDArrayFactory::create<double>('c', {1, 1, 5, 1}, {3, 2, 1, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {2, 0});
   auto output = results.at(0);
 
@@ -963,7 +963,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test13) {
   auto seqLengths = NDArrayFactory::create<int>('c', {1}, data);
   auto exp = NDArrayFactory::create<double>('c', {1, 1, 5, 1}, {1, 2, 3, 4, 5});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &seqLengths}, {}, {3, 0});
   auto output = results.at(0);
 
@@ -1018,7 +1018,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test14) {
        0.07112842, 0.54090558, 0.68230725, 0.49713828, 0.41958965, 0.68013847, 0.47691765, 0.63269259, 0.94304095,
        0.54587271, 0.72447569, 0.28913523, 0.75766936, 0.52965692, 0.96854824, 0.15589071, 0.84128672, 0.16337522,
        0.05771034, 0.21556356, 0.12094140, 0.29721207, 0.00811008, 0.66184926});
-  auto lengths = NDArrayFactory::create<sd::LongType>('c', {8}, {7, 2, 3, 5, 2, 1, 6, 4});
+  auto lengths = NDArrayFactory::create<LongType>('c', {8}, {7, 2, 3, 5, 2, 1, 6, 4});
   auto e = NDArrayFactory::create<double>(
       'c', {8, 8, 3, 2},
       {0.54193264, 0.05176904, 0.82555761, 0.71106697, 0.04416722, 0.07653656, 0.06478678, 0.68985848, 0.55216783,
@@ -1065,7 +1065,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test14) {
        0.54587271, 0.72447569, 0.28913523, 0.75766936, 0.52965692, 0.96854824, 0.15589071, 0.84128672, 0.16337522,
        0.05771034, 0.21556356, 0.12094140, 0.29721207, 0.00811008, 0.66184926});
 
-  sd::ops::reverse_sequence op;
+  ops::reverse_sequence op;
   auto results = op.evaluate({&input, &lengths}, {}, {1, 0});
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -1078,9 +1078,9 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test14) {
 TEST_F(DeclarableOpsTests5, Test_TopK_0) {
   auto x = NDArrayFactory::create<double>('c', {2, 6}, {1.0, 1.0, 1.0, 1.0, 11.0, 3.0, 1.0, 1.0, 1.0, 14.0, 5.0, 6.0});
   auto expV = NDArrayFactory::create<double>('c', {2, 1}, {11.0, 14.0});
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 1}, {4, 3});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 1}, {4, 3});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {1, 0});  // without sorting
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1103,9 +1103,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_0) {
 TEST_F(DeclarableOpsTests5, Test_TopK_1) {
   auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
   auto expV = NDArrayFactory::create<double>('c', {2, 1}, {11.0f, 14.0f});
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 1}, {1, 0});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 1}, {1, 0});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {1, 0});  // without sorting
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1133,9 +1133,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_2) {
   // <<<14.>,<9.>>, <<21.>,<9.>>, <<14.>,<16.>>>
   auto expV = NDArrayFactory::create<double>('c', {2, 3, 1}, {14.0f, 9.0f, 21.0f, 9.0f, 14.0f, 16.0f});
 
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 3, 1}, {2, 1, 0, 1, 2, 0});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 3, 1}, {2, 1, 0, 1, 2, 0});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1159,9 +1159,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
   auto expV = NDArrayFactory::create<double>(
       'c', {2, 3, 2}, {14.0f, 11.0f, 9.0f, 7.0f, 21.0f, 15.0f, 9.0f, 7.0f, 14.0f, 13.0f, 16.0f, 13.5f});
 
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 3, 2}, {2, 0, 1, 3, 0, 3, 1, 3, 2, 1, 0, 2});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 3, 2}, {2, 0, 1, 3, 0, 3, 1, 3, 2, 1, 0, 2});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {2, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1185,9 +1185,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
   auto expV = NDArrayFactory::create<double>(
       'c', {2, 3, 2}, {11.0f, 14.0f, 9.0f, 7.0f, 21.0f, 15.0f, 9.0f, 7.0f, 13.0f, 14.0f, 16.0f, 13.5f});
 
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 3, 2}, {0, 2, 1, 3, 0, 3, 1, 3, 1, 2, 0, 2});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 3, 2}, {0, 2, 1, 3, 0, 3, 1, 3, 1, 2, 0, 2});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {2}, {false});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1207,9 +1207,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
 TEST_F(DeclarableOpsTests5, Test_TopK_4) {
   auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
   auto expV = NDArrayFactory::create<double>('c', {2, 2}, {11.0f, 3.0f, 14.0f, 6.0f});
-  auto expI = NDArrayFactory::create<sd::LongType>('c', {2, 2}, {1, 2, 0, 2});
+  auto expI = NDArrayFactory::create<LongType>('c', {2, 2}, {1, 2, 0, 2});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {2, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1229,9 +1229,9 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
 TEST_F(DeclarableOpsTests5, Test_TopK_5) {
   auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.1, 5.2, 3.1, 14.2, 11.1, 6.2});
   auto expV = NDArrayFactory::create<double>('f', {2, 2}, {11.1, 14.2, 3.1, 6.2});
-  auto expI = NDArrayFactory::create<sd::LongType>('f', {2, 2}, {2, 1, 1, 2});
+  auto expI = NDArrayFactory::create<LongType>('f', {2, 2}, {2, 1, 1, 2});
 
-  sd::ops::top_k op;
+  ops::top_k op;
   auto result = op.evaluate({&x}, {}, {2, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1262,7 +1262,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
 
   float inf = 1.e-5f;
 
-  sd::ops::moments op;
+  ops::moments op;
   auto result = op.evaluate({&x, &y}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1283,7 +1283,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_2) {
   NDArray expV('c', {4}, {11.833333, 7.6666665, 10.416667, 7.6666665});
   NDArray expD('c', {4}, {28.472221, 12.888889, 23.951387, 11.555554});
 
-  sd::ops::moments op;
+  ops::moments op;
   auto result = op.evaluate({&x}, {}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1309,7 +1309,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_3) {
   auto expD = NDArrayFactory::create<double>(
       'c', {3, 4}, {6.25f, 9.f, 27.5625f, 1.f, 6.25f, 4.f, 27.5625f, 1.f, 6.25f, 9.f, 0.0625f, 16.f});
 
-  sd::ops::moments op;
+  ops::moments op;
   auto result = op.evaluate({&x}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1335,7 +1335,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_4) {
   auto expD = NDArrayFactory::create<double>(
       'c', {3, 4}, {6.25f, 9.f, 27.5625f, 1.f, 6.25f, 4.f, 27.5625f, 1.f, 6.25f, 9.f, 0.0625f, 16.f});
 
-  sd::ops::moments op;
+  ops::moments op;
   auto result = op.evaluate({&x}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1357,7 +1357,7 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
   input.linspace(1);
   auto exp = NDArrayFactory::create<double>('c', {3}, {40, 120, 200});
   NDArray matrix('c', {3, 3}, {1., 2., 3., 4., 5., 6., 7., 8., 9.});
-  sd::ops::trace op;
+  ops::trace op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
   double traceM = matrix.getTrace();
@@ -1371,7 +1371,7 @@ TEST_F(DeclarableOpsTests5, trace_test2) {
   input.linspace(1);
   auto exp = NDArrayFactory::create<double>(40.);
 
-  sd::ops::trace op;
+  ops::trace op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
 
@@ -1385,7 +1385,7 @@ TEST_F(DeclarableOpsTests5, trace_test3) {
   input.linspace(1);
   auto exp = NDArrayFactory::create<double>(1.);
 
-  sd::ops::trace op;
+  ops::trace op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
 
@@ -1399,7 +1399,7 @@ TEST_F(DeclarableOpsTests5, trace_test4) {
   input.linspace(1);
   auto exp = NDArrayFactory::create<double>(1.);
 
-  sd::ops::trace op;
+  ops::trace op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
 
@@ -1414,7 +1414,7 @@ TEST_F(DeclarableOpsTests5, trace_test5) {
   auto exp =
       NDArrayFactory::create<double>('c', {3, 4}, {75, 225, 375, 525, 675, 825, 975, 1125, 1275, 1425, 1575, 1725});
 
-  sd::ops::trace op;
+  ops::trace op;
   auto results = op.evaluate({&input});
   auto output = results.at(0);
 
@@ -1427,9 +1427,9 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
   auto input = NDArrayFactory::create<double>('c', {2, 2, 2});
   input.linspace(1);
   NDArray exp1 = input.dup();
-  NDArray exp2('c', {2, 2, 2}, {5, 6, 7, 8, 1, 2, 3, 4}, sd::DataType::DOUBLE);
+  NDArray exp2('c', {2, 2, 2}, {5, 6, 7, 8, 1, 2, 3, 4}, DOUBLE);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input});
   auto output = results.at(0);
 
@@ -1443,7 +1443,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test2) {
   input.linspace(1);
   NDArray exp1 = input.dup();
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input});
   auto output = results.at(0);
 
@@ -1456,13 +1456,13 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
   auto input = NDArrayFactory::create<double>('c', {3, 2, 1});
   input.linspace(1);
   NDArray exp1 = input.dup();
-  NDArray exp2('c', {3, 2, 1}, {1, 2, 5, 6, 3, 4}, sd::DataType::DOUBLE);
-  NDArray exp3('c', {3, 2, 1}, {3, 4, 1, 2, 5, 6}, sd::DataType::DOUBLE);
-  NDArray exp4('c', {3, 2, 1}, {3, 4, 5, 6, 1, 2}, sd::DataType::DOUBLE);
-  NDArray exp5('c', {3, 2, 1}, {5, 6, 1, 2, 3, 4}, sd::DataType::DOUBLE);
-  NDArray exp6('c', {3, 2, 1}, {5, 6, 3, 4, 1, 2}, sd::DataType::DOUBLE);
+  NDArray exp2('c', {3, 2, 1}, {1, 2, 5, 6, 3, 4}, DOUBLE);
+  NDArray exp3('c', {3, 2, 1}, {3, 4, 1, 2, 5, 6}, DOUBLE);
+  NDArray exp4('c', {3, 2, 1}, {3, 4, 5, 6, 1, 2}, DOUBLE);
+  NDArray exp5('c', {3, 2, 1}, {5, 6, 1, 2, 3, 4}, DOUBLE);
+  NDArray exp6('c', {3, 2, 1}, {5, 6, 3, 4, 1, 2}, DOUBLE);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, true);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1475,13 +1475,13 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
   auto input = NDArrayFactory::create<double>('c', {3, 2, 1});
   input.linspace(1);
   NDArray exp1 = input.dup();
-  NDArray exp2('c', {3, 2, 1}, {1, 2, 5, 6, 3, 4}, sd::DataType::DOUBLE);
-  NDArray exp3('c', {3, 2, 1}, {3, 4, 1, 2, 5, 6}, sd::DataType::DOUBLE);
-  NDArray exp4('c', {3, 2, 1}, {3, 4, 5, 6, 1, 2}, sd::DataType::DOUBLE);
-  NDArray exp5('c', {3, 2, 1}, {5, 6, 1, 2, 3, 4}, sd::DataType::DOUBLE);
-  NDArray exp6('c', {3, 2, 1}, {5, 6, 3, 4, 1, 2}, sd::DataType::DOUBLE);
+  NDArray exp2('c', {3, 2, 1}, {1, 2, 5, 6, 3, 4}, DOUBLE);
+  NDArray exp3('c', {3, 2, 1}, {3, 4, 1, 2, 5, 6}, DOUBLE);
+  NDArray exp4('c', {3, 2, 1}, {3, 4, 5, 6, 1, 2}, DOUBLE);
+  NDArray exp5('c', {3, 2, 1}, {5, 6, 1, 2, 3, 4}, DOUBLE);
+  NDArray exp6('c', {3, 2, 1}, {5, 6, 3, 4, 1, 2}, DOUBLE);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input});
   auto output = results.at(0);
 
@@ -1495,7 +1495,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
   auto input = NDArrayFactory::create<int>('c', {4});
   input.linspace(1);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   auto output = results.at(0);
 
@@ -1517,7 +1517,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
   auto input = NDArrayFactory::create<int>('c', {4, 1, 1});
   input.linspace(1);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   auto output = results.at(0);
 
@@ -1539,7 +1539,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
   auto input = NDArrayFactory::create<int>('c', {16010});
   input.linspace(1);
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   auto output = results.at(0);
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1557,7 +1557,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test8) {
   input.linspace(1);
   NDArray inCopy = input.dup();
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto results = op.evaluate({&input}, {}, {}, {}, {}, false);
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(input.equalsTo(inCopy));
@@ -1567,7 +1567,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test9) {
   auto x = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
   auto z = x.ulike();
 
-  sd::ops::random_shuffle op;
+  ops::random_shuffle op;
   auto status = op.execute({&x}, {&z});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -1588,7 +1588,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
                        10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21, 12, 22, 13, 23,
                        18, 28, 19, 29, 20, 30, 21, 31, 18, 28, 19, 29, 20, 30, 21, 31, 18, 28, 19, 29, 20, 30, 21, 31});
 
-  sd::ops::embedding_lookup op;
+  ops::embedding_lookup op;
   auto result = op.evaluate({&x, &y}, {}, {0});
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1599,12 +1599,12 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
   auto x = NDArrayFactory::create<double>(
       'c', {3, 4, 2}, {10, 20, 30, 40, 50, 60, 70, 80, 90, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
   // 1,   0,   1,   0,   1,   0
-  auto y = NDArrayFactory::create<sd::LongType>({1, 0, 1, 0, 1, 0});
+  auto y = NDArrayFactory::create<LongType>({1, 0, 1, 0, 1, 0});
   auto exp = NDArrayFactory::create<double>(
       'c', {6, 4, 2}, {90, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80, 90, 10, 11, 12, 13, 14, 15, 16,
                        10, 20, 30, 40, 50, 60, 70, 80, 90, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80});
 
-  sd::ops::embedding_lookup op;
+  ops::embedding_lookup op;
   auto result = op.evaluate({&x, &y}, {}, {0});
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1612,7 +1612,7 @@ ASSERT_EQ(exp,*output);
 }
 
 TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
-  auto y = NDArrayFactory::create<sd::LongType>('c', {3, 2}, {5, 4, 4, 5, 3, 3});
+  auto y = NDArrayFactory::create<LongType>('c', {3, 2}, {5, 4, 4, 5, 3, 3});
   auto exp = NDArrayFactory::create<double>(
       'c', {6, 3, 3},
       {6, 20, 11, 21, 12, 22, 13, 23, 14, 5, 20, 11, 21, 12, 22, 13, 23, 14, 5, 20, 11, 21, 12, 22, 13, 23, 14,
@@ -1629,7 +1629,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
 
   //    res = tf.nn.embedding_lookup((p1, p2, p3, p4, p5, p6, p7), ids, 'mod')
 
-  sd::ops::embedding_lookup op;
+  ops::embedding_lookup op;
   auto result = op.evaluate({&p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8, &y}, {}, {1});
   auto output = result.at(0);
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1645,7 +1645,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_01) {
   std::vector<NDArray> exp({NDArrayFactory::create<int>('c', {2}, {2, 0}), NDArrayFactory::create<int>('c', {1}, {2}),
                             NDArrayFactory::create<int>('c', {1}, {1})});
 
-  sd::ops::dynamic_partition op;
+  ops::dynamic_partition op;
   auto result = op.evaluate({&x, &y}, {}, {numPartition});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1669,7 +1669,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
                             NDArrayFactory::create<double>('c', {8}, {18, 28, 19, 29, 20, 30, 21, 31}),
                             NDArrayFactory::create<double>('c', {10}, {13, 23, 14, 24, 15, 25, 16, 26, 17, 27})});
 
-  sd::ops::dynamic_partition op;
+  ops::dynamic_partition op;
   auto result = op.evaluate({&x, &y}, {}, {numPartition});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1692,7 +1692,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
       {NDArrayFactory::create<double>('c', {1}, {-2.2}), NDArrayFactory::create<double>('c', {3}, {0.1, 5.2, -1.}),
        NDArrayFactory::create<double>('c', {3}, {-1., 4.3, 7.4}), NDArrayFactory::create<double>('c', {1}, {0.0})});
 
-  sd::ops::dynamic_partition op;
+  ops::dynamic_partition op;
   int numPartition = 4;
   auto result = op.evaluate({&x, &y}, {}, {numPartition});
 
@@ -1709,13 +1709,13 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
 
 TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
   auto x = NDArrayFactory::create<double>('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
-  auto y = NDArrayFactory::create<sd::LongType>('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
+  auto y = NDArrayFactory::create<LongType>('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
 
   std::vector<NDArray> exp(
       {NDArrayFactory::create<double>({0.1f, 5.2f, -1.f, -2.2f}), NDArrayFactory::create<double>('c', {1}, {-1.f}),
        NDArrayFactory::create<double>({4.3f, 7.4f}), NDArrayFactory::create<double>('c', {1}, {0.0f})});
 
-  sd::ops::dynamic_partition op;
+  ops::dynamic_partition op;
   int numPartition = 4;
   auto result = op.evaluate({&x, &y}, {}, {numPartition});
 
@@ -1746,14 +1746,14 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_empty_1) {
                                            {0.94414854, 0.5956861, 0.8668989, 0.3502196, 0.5100082, 0.061725974,
                                             0.6621324, 0.034165382, 0.32576954, 0.51917326});
 
-  sd::ops::dynamic_stitch op;
+  ops::dynamic_stitch op;
   auto result = op.evaluate({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
   auto i0 = NDArrayFactory::create<int>('c', {2}, {2, 3});
-  std::vector<sd::LongType> zero = {0};
+  std::vector<LongType> zero = {0};
   auto i1 = NDArrayFactory::create<int>('c', zero);
   auto i2 = NDArrayFactory::create<int>('c', {2}, {0, 1});
 
@@ -1765,7 +1765,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
                                            {0.94414854, 0.5956861, 0.8668989, 0.3502196, 0.5100082, 0.061725974,
                                             0.6621324, 0.034165382, 0.32576954, 0.51917326});
 
-  sd::ops::dynamic_stitch op;
+  ops::dynamic_stitch op;
   auto result = op.evaluate({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
@@ -1780,7 +1780,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
 
   auto exp = NDArrayFactory::create<double>({7.4f, 0.1f, -1.f, 5.2f, -1.f, 4.3f});
 
-  sd::ops::dynamic_stitch op;
+  ops::dynamic_stitch op;
   auto result = op.evaluate({&x1, &x2, &y1, &y2}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1800,7 +1800,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_2) {
 
   auto exp = NDArrayFactory::create<double>({5.2f, -1.f, 4.3f, -1.f, 7.4f, 0.1f});
 
-  sd::ops::dynamic_stitch op;
+  ops::dynamic_stitch op;
   auto result = op.evaluate({&x1, &x2, &y1, &y2}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -1829,7 +1829,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test1) {
   auto expBatchMean = NDArrayFactory::create<double>('c', {4}, {23., 24., 25., 26.});
   auto expBatchVar = NDArrayFactory::create<double>('c', {4}, {208.00001526, 208.00001526, 208.00001526, 208.00001526});
 
-  sd::ops::fused_batch_norm op;
+  ops::fused_batch_norm op;
   auto results = op.evaluate({&x, &scale, &offset}, {}, {0, 1});
   auto y = results.at(0);
   auto batchMean = results.at(1);
@@ -1862,7 +1862,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test2) {
   auto expBatchMean = NDArrayFactory::create<double>('c', {4}, {23., 24., 25., 26.});
   auto expBatchVar = NDArrayFactory::create<double>('c', {4}, {208.00001526, 208.00001526, 208.00001526, 208.00001526});
 
-  sd::ops::fused_batch_norm op;
+  ops::fused_batch_norm op;
   auto results = op.evaluate({&x, &scale, &offset}, {0.05}, {0, 1});
   auto y = results.at(0);
   auto batchMean = results.at(1);
@@ -1895,7 +1895,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test3) {
   auto expBatchMean = NDArrayFactory::create<double>('c', {4}, {23., 24., 25., 26.});
   auto expBatchVar = NDArrayFactory::create<double>('c', {4}, {208.00001526, 208.00001526, 208.00001526, 208.00001526});
 
-  sd::ops::fused_batch_norm op;
+  ops::fused_batch_norm op;
   auto results = op.evaluate({&x, &scale, &offset}, {}, {1, 1});
   auto y = results.at(0);
   auto batchMean = results.at(1);
@@ -1911,7 +1911,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test3) {
 TEST_F(DeclarableOpsTests5, fusedBatchNorm_test4) {
   auto x = NDArrayFactory::create<double>('c', {2, 2, 3, 4});
   x.linspace(1);
-  std::vector<sd::LongType> shape = {4};
+  std::vector<LongType> shape = {4};
   auto scale = NDArrayFactory::create<double>('c', shape);
   auto offset = NDArrayFactory::create<double>('c', shape);
   auto mean = NDArrayFactory::create<double>('c', shape);
@@ -1933,7 +1933,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test4) {
   auto expBatchMean = NDArrayFactory::create<double>('c', shape, {0., 0., 0., 0.});
   auto expBatchVar = NDArrayFactory::create<double>('c', shape, {0., 0., 0., 0.});
 
-  sd::ops::fused_batch_norm op;
+  ops::fused_batch_norm op;
   auto results = op.evaluate({&x, &scale, &offset}, {}, {0, 1});
   auto y = results.at(0);
   auto batchMean = results.at(1);
@@ -1949,7 +1949,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test4) {
 TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
   auto x = NDArrayFactory::create<double>('c', {2, 2, 3, 4});
   x.linspace(1);
-  std::vector<sd::LongType> shape = {4};
+  std::vector<LongType> shape = {4};
   auto scale = NDArrayFactory::create<double>('c', shape);
   auto offset = NDArrayFactory::create<double>('c', shape);
   auto mean = NDArrayFactory::create<double>('c', shape);
@@ -1973,7 +1973,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
   auto expBatchMean = NDArrayFactory::create<double>('c', shape, {0., 0., 0., 0.});
   auto expBatchVar = NDArrayFactory::create<double>('c', shape, {0., 0., 0., 0.});
 
-  sd::ops::fused_batch_norm op;
+  ops::fused_batch_norm op;
   auto results = op.evaluate({&x, &scale, &offset}, {0.05}, {0, 1});
   auto y = results.at(0);
   auto batchMean = results.at(1);
@@ -1987,12 +1987,12 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
-  auto labels = NDArrayFactory::create<sd::LongType>('c', {1, 3}, {1, 2, 4});
-  auto predictions = NDArrayFactory::create<sd::LongType>('c', {1, 3}, {2, 2, 4});
-  auto expected = NDArrayFactory::create<sd::LongType>(
+  auto labels = NDArrayFactory::create<LongType>('c', {1, 3}, {1, 2, 4});
+  auto predictions = NDArrayFactory::create<LongType>('c', {1, 3}, {2, 2, 4});
+  auto expected = NDArrayFactory::create<LongType>(
       'c', {5, 5}, {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
 
-  sd::ops::confusion_matrix op;
+  ops::confusion_matrix op;
   auto results = op.evaluate({&labels, &predictions}, {}, {});
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -2004,11 +2004,11 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
-  auto labels = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {1, 2});
-  auto predictions = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {0, 2});
-  auto expected = NDArrayFactory::create<sd::LongType>('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
+  auto labels = NDArrayFactory::create<LongType>('c', {1, 2}, {1, 2});
+  auto predictions = NDArrayFactory::create<LongType>('c', {1, 2}, {0, 2});
+  auto expected = NDArrayFactory::create<LongType>('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
 
-  sd::ops::confusion_matrix op;
+  ops::confusion_matrix op;
   auto results = op.evaluate({&labels, &predictions}, {}, {3});
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -2020,12 +2020,12 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
-  auto labels = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {1, 2});
-  auto predictions = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {0, 2});
-  auto weights = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {100, 200});
-  auto expected = NDArrayFactory::create<sd::LongType>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
+  auto labels = NDArrayFactory::create<LongType>('c', {1, 2}, {1, 2});
+  auto predictions = NDArrayFactory::create<LongType>('c', {1, 2}, {0, 2});
+  auto weights = NDArrayFactory::create<LongType>('c', {1, 2}, {100, 200});
+  auto expected = NDArrayFactory::create<LongType>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
 
-  sd::ops::confusion_matrix op;
+  ops::confusion_matrix op;
   auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3});
   auto output = results.at(0);
 
@@ -2041,7 +2041,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
   auto x = NDArrayFactory::create<double>(
       'c', {3, 4, 2}, {0, 20, 30, 0, 50, 0, 70, 0, 90, 0, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0, 21, 22, 23, 24});
 
-  sd::ops::zero_fraction op;
+  ops::zero_fraction op;
   auto res = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, res.status());
@@ -2053,7 +2053,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
 TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
   auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
-  sd::ops::zero_fraction op;
+  ops::zero_fraction op;
   auto res = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, res.status());
@@ -2065,7 +2065,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
 TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
   auto x = NDArrayFactory::create<double>('f', {2, 2, 2}, {5.5, 0., 0.3, 5.5, 8.6, 0., 0., 0.4});
 
-  sd::ops::zero_fraction op;
+  ops::zero_fraction op;
   auto res = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, res.status());
@@ -2081,7 +2081,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_1) {
 
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {173.f, 264.f, 310.f, 279.f});
 
-  sd::ops::xw_plus_b op;
+  ops::xw_plus_b op;
   auto result = op.evaluate({&x, &y, &b});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2099,7 +2099,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_2) {
 
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {166.f, 269.f, 326.f});
 
-  sd::ops::xw_plus_b op;
+  ops::xw_plus_b op;
   auto result = op.evaluate({&x, &y, &b}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2116,7 +2116,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_3) {
 
   auto exp = NDArrayFactory::create<float>('c', {1, 1}, {244.f});
 
-  sd::ops::xw_plus_b op;
+  ops::xw_plus_b op;
   auto result = op.evaluate({&x, &y, &b});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2132,7 +2132,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_4) {
 
   auto exp = NDArrayFactory::create<float>('f', {2, 2}, {140.f, 287.f, 233.f, 351.f});
 
-  sd::ops::xw_plus_b op;
+  ops::xw_plus_b op;
   auto result = op.evaluate({&x, &y, &b});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2157,7 +2157,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_7) {
       'c', {3, 5},
       {219.f, 375.f, 531.f, 575.f, 731.f, 217.f, 317.f, 505.f, 517.f, 705.f, 248.f, 396.f, 496.f, 596.f, 696.f});
 
-  sd::ops::xw_plus_b op;
+  ops::xw_plus_b op;
   auto result = op.evaluate({&x, &y, &b});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2170,7 +2170,7 @@ ASSERT_EQ(exp,*output);
 TEST_F(DeclarableOpsTests5, StopGradient_1) {
   auto x = NDArrayFactory::create<double>('c', {2, 3}, {1.f, 11.f, 3.f, 14.f, 5.f, 6.f});
 
-  sd::ops::stop_gradient op;
+  ops::stop_gradient op;
   auto result = op.evaluate({&x});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2186,7 +2186,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_1) {
 TEST_F(DeclarableOpsTests5, StopGradient_2) {
   auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.f, 11.f, 3.f, 14.f, 5.f, 6.f});
 
-  sd::ops::stop_gradient op;
+  ops::stop_gradient op;
   auto result = op.evaluate({&x});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2207,7 +2207,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test1) {
                        -1.50000e+01, -1.31326e+00, -1.83133e+01, -3.13262e-01, -2.00000e+01, -2.81941e-09, -2.10000e+01,
                        -1.31326e+00, -2.43133e+01, -3.13262e-01, -2.73133e+01, -1.31326e+00, -3.13262e-01});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input});
   auto z = results.at(0);
 
@@ -2226,7 +2226,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test2) {
                        -1.70486e+01, -4.85876e-02, -1.60000e+01, -4.85874e-02, -2.10000e+01, -3.04859e+00, -2.51269e+01,
                        -7.96007e-10, -2.50486e+01, -2.12693e+00, -2.40000e+01, -4.85874e-02, -1.26928e-01});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input}, {}, {1});
   auto z = results.at(0);
 
@@ -2245,7 +2245,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test3) {
                        -1.50000e+01, -1.31326e+00, -1.83133e+01, -3.13262e-01, -2.00000e+01, -2.81941e-09, -2.10000e+01,
                        -1.31326e+00, -2.43133e+01, -3.13262e-01, -2.73133e+01, -1.31326e+00, -3.13262e-01});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input}, {}, {2});
   auto z = results.at(0);
 
@@ -2260,7 +2260,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test5) {
   auto expOutput = NDArrayFactory::create<double>(
       'c', {3, 3}, {-2.16985, -0.16985, -3.16985, -1.31507, -6.31507, -0.31507, -9.31335, -1.31335, -0.31335});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input});
   auto z = results.at(0);
 
@@ -2275,7 +2275,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test6) {
   auto expOutput = NDArrayFactory::create<double>(
       'c', {3, 3}, {-3.05095, -3.04946, -7.12773, -0.05095, -7.04946, -2.12773, -6.05095, -0.04946, -0.12773});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input}, {}, {0});
   auto z = results.at(0);
 
@@ -2289,7 +2289,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test7) {
   auto input = NDArrayFactory::create<double>('c', {1, 5}, {-1, 1, -2, 2, 3});
   auto expOutput = NDArrayFactory::create<double>('c', {1, 5}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input});
   auto z = results.at(0);
 
@@ -2303,7 +2303,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test8) {
   auto input = NDArrayFactory::create<double>('c', {1, 5}, {-1, 1, -2, 2, 3});
   auto expOutput = NDArrayFactory::create<double>('c', {1, 5}, {0, 0, 0, 0, 0});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input}, {}, {0});
   auto z = results.at(0);
 
@@ -2317,7 +2317,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test9) {
   auto input = NDArrayFactory::create<double>('c', {5, 1}, {-1, 1, -2, 2, 3});
   auto expOutput = NDArrayFactory::create<double>('c', {5, 1}, {0, 0, 0, 0, 0});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input});
   auto z = results.at(0);
 
@@ -2331,7 +2331,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test10) {
   auto input = NDArrayFactory::create<double>('c', {5, 1}, {-1, 1, -2, 2, 3});
   auto expOutput = NDArrayFactory::create<double>('c', {5, 1}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input}, {}, {0});
   auto z = results.at(0);
 
@@ -2345,7 +2345,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test11) {
   auto input = NDArrayFactory::create<double>('c', {5}, {-1, 1, -2, 2, 3});
   auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.42414, -2.42414, -5.42414, -1.42414, -0.42414});
 
-  sd::ops::log_softmax op;
+  ops::log_softmax op;
   auto results = op.evaluate({&input});
   auto z = results.at(0);
 
@@ -2360,7 +2360,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test12) {
   auto expOutput = NDArrayFactory::create<double>('c', {1, 4}, {-0.6738, -2.3525, -1.5104, -1.7472});
 
   for (int i = 0; i < 10; ++i) {
-    sd::ops::log_softmax op;
+    ops::log_softmax op;
     auto results = op.evaluate({&input});
     auto z = results.at(0);
 
@@ -2377,7 +2377,7 @@ TEST_F(DeclarableOpsTests5, ELU_1) {
   auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {-0.63212055, 2., 1.5, -0.753403, 1., 2., 2., 1.});
   auto res = NDArrayFactory::create<double>('c', {2, 2, 2});
 
-  input.applyScalar(sd::scalar::ELU, 1.f, res);
+  input.applyScalar(scalar::ELU, 1.f, res);
 
   ASSERT_TRUE(res.equalsTo(&exp));
 }
@@ -2387,7 +2387,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
   auto input = NDArrayFactory::create<double>('c', {2, 2, 2}, {-1., 2., 1.5, -1.4, 1., 2., 2., 1.});
   double exp(9.605);
 
-  sd::ops::l2_loss op;
+  ops::l2_loss op;
   auto results = op.evaluate({&input}, {}, {});
   auto output = results.at(0);
 
@@ -2401,7 +2401,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_2) {
   auto x = NDArrayFactory::create<double>(0.7787855863571167);
   auto e = NDArrayFactory::create<double>(0.303254);
 
-  sd::ops::l2_loss op;
+  ops::l2_loss op;
   auto results = op.evaluate({&x}, {}, {});
   ASSERT_EQ(sd::Status::OK, results.status());
 
@@ -2415,7 +2415,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_3) {
   auto e = NDArrayFactory::create<double>(0.303254);
   auto z = NDArrayFactory::create<double>(0.0);
 
-  sd::ops::l2_loss op;
+  ops::l2_loss op;
   auto status = op.execute({&x}, {&z}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -2432,7 +2432,7 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_1) {
   auto exp = NDArrayFactory::create<double>(
       'c', {2, 2, 2}, {1.3678794, 5.389056, 2.981689, 1.6465969, 1.7182817, 5.389056, 5.389056, 1.7182817});
 
-  sd::ops::log_poisson_loss op;
+  ops::log_poisson_loss op;
   auto results = op.evaluate({&input, &weights, &targets}, {}, {0});
   auto output = results.at(0);
 
@@ -2450,7 +2450,7 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_2) {
   auto exp = NDArrayFactory::create<double>(
       'c', {2, 2, 2}, {3.0196857, 4.0408626, 2.1334953, 3.6984034, 1.3700882, 4.0408626, 4.0408626, 1.3700882});
 
-  sd::ops::log_poisson_loss op;
+  ops::log_poisson_loss op;
   auto results = op.evaluate({&input, &weights, &targets}, {}, {0, 1});
   auto output = results.at(0);
 
@@ -2477,7 +2477,7 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_1) {
       'c', {2, 3, 4}, {-19.75, 4.25,   -37.,   1.25,  -1.,    -10.75, 3.6875, -3.75, -94.75, 4.25,   -37.,     -43.75,
                        -1.,    -10.75, 3.6875, -3.75, -19.75, -30.75, -37.,   1.25,  -51.,   -10.75, -33.8125, -3.75});
 
-  sd::ops::normalize_moments op;
+  ops::normalize_moments op;
   auto results = op.evaluate({&counts, &means, &deviance}, {0.0}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2513,7 +2513,7 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_2) {
                        -0.4791665, 1.0208334, 0.6388887, 0.5208335, 1.0833334,  1.0208334, 1.0399306, 1.076389,
                        0.9097222,  0.7430556, 0.6388887, 1.0763888, 0.38888884, 1.0208334, 0.6927084, 1.076389});
 
-  sd::ops::normalize_moments op;
+  ops::normalize_moments op;
   auto results = op.evaluate({&counts, &means, &deviance}, {0.0}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2549,7 +2549,7 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_3) {
                        -0.4791665, 1.0208334, 0.6388887, 0.5208335, 1.0833334,  1.0208334, 1.0399306, 1.076389,
                        0.9097222,  0.7430556, 0.6388887, 1.0763888, 0.38888884, 1.0208334, 0.6927084, 1.076389});
 
-  sd::ops::normalize_moments op;
+  ops::normalize_moments op;
   auto results = op.evaluate({&counts, &means, &deviance}, {shift}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());

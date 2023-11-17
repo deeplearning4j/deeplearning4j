@@ -29,7 +29,10 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-public interface CustomOp {
+public interface CustomOp  {
+
+ String getOwnName();
+
  /**
   * This allows a custom op to configure relevant fields from its arguments.
   * This is needed when ops are created via reflection for things like model import.

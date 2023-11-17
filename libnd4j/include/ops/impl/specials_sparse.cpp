@@ -30,7 +30,7 @@ namespace sd {
 namespace sparse {
 
 template <typename T>
-void SparseUtils<T>::printIndex(sd::LongType *indices, int rank, int x) {
+void SparseUtils<T>::printIndex(LongType *indices, int rank, int x) {
   printf(" [");
   for (int e = 0; e < rank; e++) {
     if (e > 0) printf(", ");
@@ -41,10 +41,10 @@ void SparseUtils<T>::printIndex(sd::LongType *indices, int rank, int x) {
 }
 
 template <typename T>
-bool SparseUtils<T>::ltIndices(sd::LongType *indices, int rank, sd::LongType x, sd::LongType y) {
+bool SparseUtils<T>::ltIndices(LongType *indices, int rank, LongType x, LongType y) {
   for (int e = 0; e < rank; e++) {
-    sd::LongType idxX = indices[x * rank + e];
-    sd::LongType idxY = indices[y * rank + e];
+    LongType idxX = indices[x * rank + e];
+    LongType idxY = indices[y * rank + e];
     // we're comparing indices one by one, starting from outer dimension
     if (idxX < idxY) {
       return true;
@@ -58,11 +58,11 @@ bool SparseUtils<T>::ltIndices(sd::LongType *indices, int rank, sd::LongType x, 
 }
 
 template <typename T>
-bool SparseUtils<T>::gtIndices(sd::LongType *indices, int rank, sd::LongType x, sd::LongType y) {
+bool SparseUtils<T>::gtIndices(LongType *indices, int rank, LongType x, LongType y) {
   for (int e = 0; e < rank; e++) {
     // we're comparing indices one by one, starting from outer dimension
-    sd::LongType idxX = indices[x * rank + e];
-    sd::LongType idxY = indices[y * rank + e];
+    LongType idxX = indices[x * rank + e];
+    LongType idxY = indices[y * rank + e];
     if (idxX > idxY) {
       return true;
     } else if (idxX == idxY) {
@@ -74,10 +74,10 @@ bool SparseUtils<T>::gtIndices(sd::LongType *indices, int rank, sd::LongType x, 
 }
 
 template <typename T>
-void SparseUtils<T>::swapEverything(sd::LongType *indices, T *array, int rank, sd::LongType x, sd::LongType y) {
+void SparseUtils<T>::swapEverything(LongType *indices, T *array, int rank, LongType x, LongType y) {
   // swap indices
   for (int e = 0; e < rank; e++) {
-    sd::LongType tmp = indices[x * rank + e];
+    LongType tmp = indices[x * rank + e];
     indices[x * rank + e] = indices[y * rank + e];
     indices[y * rank + e] = tmp;
   }
@@ -89,9 +89,8 @@ void SparseUtils<T>::swapEverything(sd::LongType *indices, T *array, int rank, s
 }
 
 template <typename T>
-sd::LongType SparseUtils<T>::coo_quickSort_findPivot(sd::LongType *indices, T *array, sd::LongType left,
-                                                     sd::LongType right, int rank) {
-  sd::LongType mid = (left + right) / 2;
+LongType SparseUtils<T>::coo_quickSort_findPivot(LongType *indices, T *array, LongType left, LongType right, int rank) {
+  LongType mid = (left + right) / 2;
 
   // ensure left < mid
   if (ltIndices(indices, rank, mid, left)) {  // ensure lo < mid
@@ -113,9 +112,8 @@ sd::LongType SparseUtils<T>::coo_quickSort_findPivot(sd::LongType *indices, T *a
 }
 
 template <typename T>
-void SparseUtils<T>::coo_quickSort_parallel_internal(sd::LongType *indices, T *array, sd::LongType left,
-                                                     sd::LongType right, int cutoff, int rank) {
-  sd::LongType span = right - left;  // elements to be partitioned - 1
+void SparseUtils<T>::coo_quickSort_parallel_internal(LongType *indices, T *array, LongType left, LongType right, int cutoff, int rank) {
+  LongType span = right - left;  // elements to be partitioned - 1
 
   if (span == 1) {
     // only 2 elements to partition. swap if needed and return directly without further sorting.
@@ -126,7 +124,7 @@ void SparseUtils<T>::coo_quickSort_parallel_internal(sd::LongType *indices, T *a
   }
 
   // find optimal pivot and sort left < right < right
-  sd::LongType pvt = coo_quickSort_findPivot(indices, array, left, right, rank);
+  LongType pvt = coo_quickSort_findPivot(indices, array, left, right, rank);
 
   if (span == 2) {
     // only 3 elements to partition. findPivot has already sorted them. no further sorting is needed.
@@ -134,10 +132,10 @@ void SparseUtils<T>::coo_quickSort_parallel_internal(sd::LongType *indices, T *a
   }
 
   // index that is greater than pivot - leftmost element is already partitioned because of findPivot.
-  sd::LongType i = left + 1;
+  LongType i = left + 1;
 
   // index that is smaller than pivot - rightmost element is already partitioned because of findPivot.
-  sd::LongType j = right - 1;
+  LongType j = right - 1;
 
   {
     // flag that indicates that pivot index lies between i and j and *could* be swapped.
@@ -186,7 +184,7 @@ void SparseUtils<T>::coo_quickSort_parallel_internal(sd::LongType *indices, T *a
 }
 
 template <typename T>
-void SparseUtils<T>::coo_quickSort_parallel(sd::LongType *indices, T *array, sd::LongType lenArray, int numThreads,
+void SparseUtils<T>::coo_quickSort_parallel(LongType *indices, T *array, LongType lenArray, int numThreads,
                                             int rank) {
   int cutoff = 1000;
 
@@ -196,7 +194,7 @@ void SparseUtils<T>::coo_quickSort_parallel(sd::LongType *indices, T *array, sd:
 }
 
 template <typename T>
-void SparseUtils<T>::sortCooIndicesGeneric(sd::LongType *indices, void *vx, sd::LongType length, int rank) {
+void SparseUtils<T>::sortCooIndicesGeneric(LongType *indices, void *vx, LongType length, int rank) {
   auto values = reinterpret_cast<T *>(vx);
 #ifdef _OPENMP
   coo_quickSort_parallel(indices, values, length, omp_get_max_threads(), rank);
@@ -207,18 +205,17 @@ void SparseUtils<T>::sortCooIndicesGeneric(sd::LongType *indices, void *vx, sd::
 
 BUILD_SINGLE_TEMPLATE(template class SparseUtils, , SD_COMMON_TYPES);
 
-void IndexUtils::ravelMultiIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                                 sd::LongType *shapeInfo, int mode) {
-  sd::LongType *shape = shape::shapeOf(shapeInfo);
-  sd::LongType *stride = shape::stride(shapeInfo);
-  sd::LongType rank = shape::rank(shapeInfo);
+void IndexUtils::ravelMultiIndex(LongType *indices, LongType *flatIndices, LongType length, LongType *shapeInfo, int mode) {
+  LongType *shape = shape::shapeOf(shapeInfo);
+  LongType *stride = shape::stride(shapeInfo);
+  LongType rank = shape::rank(shapeInfo);
   int errorCount = 0;
 
   PRAGMA_OMP_PARALLEL_FOR
-  for (sd::LongType i = 0; i < length; ++i) {
-    sd::LongType raveledIndex = 0;
-    for (sd::LongType j = 0; j < rank; ++j) {
-      sd::LongType idx = indices[i * rank + j];
+  for (LongType i = 0; i < length; ++i) {
+    LongType raveledIndex = 0;
+    for (LongType j = 0; j < rank; ++j) {
+      LongType idx = indices[i * rank + j];
       if (idx >= shape[j]) {
         // index does not fit into shape at j dimension.
         if (mode == ND4J_CLIPMODE_CLIP) {
@@ -247,11 +244,10 @@ void IndexUtils::ravelMultiIndex(sd::LongType *indices, sd::LongType *flatIndice
   }
 }
 
-void IndexUtils::unravelIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                              sd::LongType *shapeInfo) {
-  sd::LongType *shape = shape::shapeOf(shapeInfo);
-  sd::LongType *stride = shape::stride(shapeInfo);
-  sd::LongType rank = shape::rank(shapeInfo);
+void IndexUtils::unravelIndex(LongType *indices, LongType *flatIndices, LongType length, LongType *shapeInfo) {
+  LongType *shape = shape::shapeOf(shapeInfo);
+  LongType *stride = shape::stride(shapeInfo);
+  LongType rank = shape::rank(shapeInfo);
   int errorCount = 0;
 
   // unravelOrder ensures that the dimensions with largest stride are unraveled first.
@@ -262,11 +258,11 @@ void IndexUtils::unravelIndex(sd::LongType *indices, sd::LongType *flatIndices, 
   std::sort(unravelOrder, unravelOrder + rank, [&](int i1, int i2) { return stride[i1] > stride[i2]; });
 
   // calculate the largest raveled index that will fit into passed shape
-  sd::LongType maxRaveledIndex = shape[unravelOrder[0]] * stride[unravelOrder[0]] - 1;
+  LongType maxRaveledIndex = shape[unravelOrder[0]] * stride[unravelOrder[0]] - 1;
 
   PRAGMA_OMP_PARALLEL_FOR
-  for (sd::LongType i = 0; i < length; ++i) {
-    sd::LongType raveledIndex = flatIndices[i];
+  for (LongType i = 0; i < length; ++i) {
+    LongType raveledIndex = flatIndices[i];
     if (raveledIndex > maxRaveledIndex) {
       // cannot throw here because of parallel region
       sd_printf(
@@ -288,7 +284,7 @@ void IndexUtils::unravelIndex(sd::LongType *indices, sd::LongType *flatIndices, 
 
   if (errorCount > 0) {
     // throw error if one occurred in loop
-    sd_printf("Largest raveled index is: %d, ", maxRaveledIndex) std::vector<sd::LongType> v(shape, shape + rank);
+    sd_printf("Largest raveled index is: %d, ", maxRaveledIndex) std::vector<LongType> v(shape, shape + rank);
     sd_printv("Shape: ", v);
     THROW_EXCEPTION("sparse::IndexUtils::unravelIndex Cannot unravel index");
   }

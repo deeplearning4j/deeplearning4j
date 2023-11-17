@@ -49,11 +49,11 @@ CONFIGURABLE_OP_IMPL(scatter_update, -2, 1, true, 0, -2) {
 
   helpers::scatterUpdate(block.launchContext(), *operand, *updates, block.getIArguments());
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(scatterupdate, scatter_update);
 
-DECLARE_TYPES(scatter_update) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(scatter_update) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

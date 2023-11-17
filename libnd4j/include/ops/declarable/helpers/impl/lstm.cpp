@@ -73,8 +73,8 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
     nOut = iSeq->sizeAt(2);
   }
 
-  const std::vector<sd::LongType> inSliceShape({bS, nIn});
-  const std::vector<sd::LongType> outSliceShape({bS, nOut});
+  const std::vector<LongType> inSliceShape({bS, nIn});
+  const std::vector<LongType> outSliceShape({bS, nOut});
 
   auto c_t1 = const_cast<NDArray*>(c0);
   auto y_t1 = const_cast<NDArray*>(y0);
@@ -91,7 +91,7 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
     auto ht = timeSubset(hSeq, t, dataFormat);
     auto yt = timeSubset(ySeq, t, dataFormat);
 
-    helpers::lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
+    lstmBlockCell(&xt, c_t1, y_t1, W, Wci, Wcf, Wco, b, &it, &ct, &ft, &ot, &zt, &ht, &yt, params);
 
     if (t != 0) {
       delete c_t1;
@@ -106,7 +106,7 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx,
+void lstmTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx,
                   const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b, NDArray* h, NDArray* c,
                   const std::vector<double>& params) {
   // x  input [time x bS x nIn]
@@ -133,7 +133,7 @@ void lstmTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h
     auto ht = (*h)({t, t + 1, 0, 0, 0, 0});
     auto ct = (*c)({t, t + 1, 0, 0, 0, 0});
 
-    helpers::lstmCell(context, &xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, &ht, &ct, params);
+    lstmCell(context, &xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, &ht, &ct, params);
     currentH.assign(ht);
     currentC.assign(ct);
   }

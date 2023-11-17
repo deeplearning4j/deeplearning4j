@@ -37,7 +37,7 @@
 #include <cstring>
 #endif
 
-bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport &report) {
+bool sd::memory::MemoryUtils::retrieveMemoryStatistics(MemoryReport &report) {
 #if defined(__APPLE__)
   sd_debug("APPLE route\n", "");
   /*
@@ -74,7 +74,7 @@ bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport 
     int n;
     lseek(fd, 0, SEEK_SET);
     if ((n = read(fd, line, sizeof(line))) > 0 && (s = (char*)memchr(line, ' ', n)) != NULL) {
-      report.setRSS((sd::LongType)(atoll(s + 1) * getpagesize()));
+      report.setRSS((LongType)(atoll(s + 1) * getpagesize()));
     }
     close(fd);
   }

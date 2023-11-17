@@ -21,12 +21,13 @@
 //
 #include <array/ResultSet.h>
 #include <exceptions/cuda_exception.h>
+#include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
-#include <execution/cuda/LaunchDims.h>
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -35,11 +36,11 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // put diagonals from input batched matrices to output batched vectors
 template <typename T>
-static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, sd::LongType numTads,
-                                           sd::LongType inputLength, const sd::LongType* tadOnlyInputShapeInfo,
-                                           const sd::LongType* tadInputOffsets,
-                                           const sd::LongType* tadOnlyOutputShapeInfo,
-                                           const sd::LongType* tadOutputOffsets) {
+static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, LongType numTads,
+                                           LongType inputLength, const LongType* tadOnlyInputShapeInfo,
+                                           const LongType* tadInputOffsets,
+                                           const LongType* tadOnlyOutputShapeInfo,
+                                           const LongType* tadOutputOffsets) {
 
   if(blockIdx.x >= numTads)
     return;
@@ -47,12 +48,12 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
   auto inputBuffer2 = reinterpret_cast<T const*>(inputBuffer);
 
   int totalThreads = blockDim.x;
-  for (sd::LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
+  for (LongType i = blockIdx.x; i < numTads; i += gridDim.x) {
     auto yOffset = tadInputOffsets[i];
     auto xOffset = tadOutputOffsets[i];
-    for (sd::LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
-      sd::LongType coords[2] = {j, j};
-      sd::LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
+    for (LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
+      LongType coords[2] = {j, j};
+      LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
       *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
           *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
     }
@@ -65,25 +66,25 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 //
 template <typename T>
-static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+static Status _matrixDiagPart(LaunchContext* context, const NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
   auto listOut = output->allTensorsAlongDimension({output->rankOf() - 1});
   auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   if (listOut.size() != listDiag.size()) {
     sd_printf("matrix_diag_part: Input matrix has wrong shape.", "");
-    return sd::Status::VALIDATION;
+    return Status::VALIDATION;
   }
-  sd::LongType lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
+  LongType lastDimension = math::sd_min(input->sizeAt(-2), input->sizeAt(-1));
 
-  sd::LongType dims = output->rankOf() - 1;
-  std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), 1,&dims);
-  const sd::LongType numTads =
+  LongType dims = output->rankOf() - 1;
+  std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), 1,&dims);
+  const LongType numTads =
       ShapeUtils::getNumOfSubArrs(input->shapeInfo(),*dimsToExclude);
-  std::vector<sd::LongType> outputDims({output->rankOf() - 1});
-  std::vector<sd::LongType> inputDims({input->rankOf() - 2, input->rankOf() - 1});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &inputDims);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &outputDims);
+  std::vector<LongType> outputDims({output->rankOf() - 1});
+  std::vector<LongType> inputDims({input->rankOf() - 2, input->rankOf() - 1});
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &inputDims);
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &outputDims);
 
   if (!output->isActualOnDeviceSide()) input->syncToDevice();
 
@@ -94,16 +95,17 @@ static sd::Status _matrixDiagPart(sd::LaunchContext* context, const NDArray* inp
       input->specialBuffer(), output->specialBuffer(),numTads, lastDimension, packX->specialShapeInfo(),
       packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());
 
+  sd::DebugHelper::checkErrorCode(stream, "matrixDiagPartKernel failed");
 
   delete dimsToExclude;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // caller for _matrixDiagPart
 //
-sd::Status matrixDiagPart(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+Status matrixDiagPart(LaunchContext* context, const NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (context, input, output), SD_COMMON_TYPES);
 }
 

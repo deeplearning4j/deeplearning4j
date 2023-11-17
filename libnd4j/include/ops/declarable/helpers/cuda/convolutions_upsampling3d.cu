@@ -25,14 +25,15 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void upsampling3dCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                       const sd::LongType* zShapeInfo, const int factorD, const int factorH,
+SD_KERNEL static void upsampling3dCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                       const LongType* zShapeInfo, const int factorD, const int factorH,
                                        const int factorW, const bool isNCDHW) {
   // x has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
   // z has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC]
@@ -42,11 +43,11 @@ SD_KERNEL static void upsampling3dCuda(const void* vx, const sd::LongType* xShap
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ int rank, dimID;
-  __shared__ sd::LongType zLen, *sharedMem;
+  __shared__ LongType zLen, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     dimID = isNCDHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
@@ -76,15 +77,18 @@ SD_KERNEL static void upsampling3dCuda(const void* vx, const sd::LongType* xShap
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling3dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                     const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                     void* vz, const sd::LongType* zShapeInfo, const int factorD, const int factorH,
+                                     const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                     void* vz, const LongType* zShapeInfo, const int factorD, const int factorH,
                                      const int factorW, const bool isNCDHW) {
   upsampling3dCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, factorD,
                                                                               factorH, factorW, isNCDHW);
+
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"upsampling3dCudaLauncher failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType factorD,
+void ConvolutionUtils::upsampling3d(graph::Context& block, const NDArray& input, NDArray& output, const LongType factorD,
                                     const LongType factorH, const LongType factorW, const bool isNCDHW) {
   PointersManager manager(block.launchContext(), "upsampling3d");
 

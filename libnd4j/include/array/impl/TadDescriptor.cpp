@@ -33,12 +33,12 @@ TadDescriptor::TadDescriptor(const TadDescriptor &other) {
   _unitiesInShape = other._unitiesInShape;
 }
 #endif
-TadDescriptor::TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const LongType length,
+TadDescriptor::TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape);
 
   _axis.resize(length);
-  for (sd::LongType e = 0; e < length; e++) {
+  for (LongType e = 0; e < length; e++) {
     _axis[e] = dimensions[e];
   }
 
@@ -67,7 +67,7 @@ bool TadDescriptor::operator<(const TadDescriptor &other) const {
          std::tie(other._originalShape, other._axis, other._unitiesInShape);
 }
 
-std::vector<sd::LongType> &TadDescriptor::axis() { return _axis; }
+std::vector<LongType> &TadDescriptor::axis() { return _axis; }
 
 ShapeDescriptor &TadDescriptor::originalShape() { return _originalShape; }
 

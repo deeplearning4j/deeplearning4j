@@ -62,10 +62,10 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
   mC = weights->sizeAt(indWmC);  // channels multiplier
 
-  std::vector<std::vector<sd::LongType>> modifColumns = {
+  std::vector<std::vector<LongType>> modifColumns = {
       {1, 2, 3, 0, 4, 5}, {iC, kH * kW, bS * oH * oW}};  // [bS,iC,kH,kW,oH,oW] -> [iC, kH*kW, bS*oH*oW]
-  std::vector<std::vector<sd::LongType>> modifGradO1, modifGradO2, modifWeights;
-  std::vector<sd::LongType> gradOreShape;
+  std::vector<std::vector<LongType>> modifGradO1, modifGradO2, modifWeights;
+  std::vector<LongType> gradOreShape;
 
   if (!isNCHW) {
     gradOreShape = {bS, oH, oW, iC, mC};  // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
@@ -99,20 +99,20 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   helpers::im2col(
       *input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  sd::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1,
+  MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1,
                             modifWeights);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(sd::LongType)gradB->lengthOf()}));
-    std::vector<sd::LongType> dims =  {0, indOoH, indOoH + 1};
+    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(LongType)gradB->lengthOf()}));
+    std::vector<LongType> dims =  {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, *gradBR,&dims, false);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;
   }
 
   //----- calculation of gradI -----//
-  sd::MmulHelper::tensorDot(weights, gradO, &columns, modifWeights, modifGradO2,
+  MmulHelper::tensorDot(weights, gradO, &columns, modifWeights, modifGradO2,
                             modifColumns);  // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
   helpers::col2im(*input->getContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
@@ -124,7 +124,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
+void ConvolutionUtils::depthwiseConv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights,
                                          const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                          NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH,
                                          LongType pW, const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,

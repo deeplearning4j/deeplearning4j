@@ -138,7 +138,7 @@ public class TFGraphTestAllHelper {
 
             System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
             try {
-                SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables);
+                SameDiff result = tensorflowFrameworkImporter.runImport(file.getAbsolutePath(), dynamicVariables, suggestDynamicVariables, false);
                 return new ModelLoadResult(result, graphDef);
             }catch(Exception e) {
                 if(failFast) {
@@ -540,8 +540,7 @@ public class TFGraphTestAllHelper {
             throw new RuntimeException(e);
         }
         Map<String,INDArray> tfResults = runTfResults(graphDef,inputs,new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), requiredOutputs);
-   */
-
+*/
         ModelLoadResult result  = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
 
         SameDiff graph = result.getSameDiff();
@@ -573,8 +572,8 @@ public class TFGraphTestAllHelper {
             log.info("Testing inputs with names " + inputs.keySet() + " and shapes " + shapes);
 
              outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
-            //outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
-         /*   Map<String, INDArray> differencesCorrect = new LinkedHashMap<>();
+           // outMap = graph.output(inputs, new ArrayList<>(tfResults.keySet()));
+        /*    Map<String, INDArray> differencesCorrect = new LinkedHashMap<>();
             Map<String, INDArray> differencesWrong = new LinkedHashMap<>();
             for (String s : outMap.keySet()) {
                 INDArray tfValue = tfResults.get(s);

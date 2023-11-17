@@ -31,13 +31,13 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void polyGammaCuda(const void *vn, const sd::LongType *nShapeInfo, const void *vx,
-                                    const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
+SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, const void *vx,
+                                    const LongType *xShapeInfo, void *vz, const LongType *zShapeInfo) {
   const auto n = reinterpret_cast<const T *>(vn);
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  __shared__ sd::LongType len;
+  __shared__ LongType len;
   __shared__ bool sameOffsetNX, sameOffsetNZ;
 
   if (threadIdx.x == 0) {
@@ -75,14 +75,16 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const sd::LongType *nShapeIn
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
-                                  const cudaStream_t *stream, const void *vn, const sd::LongType *nShapeInfo,
-                                  const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                  const sd::LongType *zShapeInfo) {
+                                  const cudaStream_t *stream, const void *vn, const LongType *nShapeInfo,
+                                  const void *vx, const LongType *xShapeInfo, void *vz,
+                                  const LongType *zShapeInfo) {
   polyGammaCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vn, nShapeInfo, vx, xShapeInfo, vz, zShapeInfo);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "print_device failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void polyGamma(sd::LaunchContext *context, const NDArray &n, const NDArray &x, NDArray &z) {
+void polyGamma(LaunchContext *context, const NDArray &n, const NDArray &x, NDArray &z) {
   NDArray::prepareSpecialUse({&z}, {&n, &x});
 
   dim3 launchDims = polygammaDims(z.lengthOf());

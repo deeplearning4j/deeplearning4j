@@ -29,21 +29,20 @@ namespace sd {
 class SD_LIB_EXPORT BroadcastIntOpsTuple {
  private:
  public:
-  sd::scalar::IntOps s;
-  sd::pairwise::IntOps p;
-  sd::broadcast::IntOps b;
+  scalar::IntOps s;
+  pairwise::IntOps p;
+  broadcast::IntOps b;
 
   BroadcastIntOpsTuple() = default;
   ~BroadcastIntOpsTuple() = default;
 
-  BroadcastIntOpsTuple(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast) {
+  BroadcastIntOpsTuple(scalar::IntOps scalar, pairwise::IntOps pairwise, broadcast::IntOps broadcast) {
     s = scalar;
     p = pairwise;
     b = broadcast;
   }
 
-  static BroadcastIntOpsTuple custom(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise,
-                                     sd::broadcast::IntOps broadcast);
+  static BroadcastIntOpsTuple custom(scalar::IntOps scalar, pairwise::IntOps pairwise, broadcast::IntOps broadcast);
 };
 }  // namespace sd
 

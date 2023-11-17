@@ -37,19 +37,19 @@ LIST_OP_IMPL(pick_list, 1, 1, 0, -2) {
   } else if (block.getIArguments()->size() > 0) {
     indices = *(block.getIArguments());
   } else
-    return sd::Status::BAD_ARGUMENTS;
+    return Status::BAD_ARGUMENTS;
 
   for (auto& v : indices) {
     if (v >= list->height()) {
       sd_printf("Requested index [%i] is higher (or equal) then ArrayList height: [%i]", v, list->height());
-      return sd::Status::BAD_ARGUMENTS;
+      return Status::BAD_ARGUMENTS;
     }
   }
   auto result = list->pick(indices);
 
   //            OVERWRITE_RESULT(result);
   setupResult(result, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace ops
 }  // namespace sd

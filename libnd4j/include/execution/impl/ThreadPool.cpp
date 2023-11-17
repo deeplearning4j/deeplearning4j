@@ -185,7 +185,7 @@ Ticket *ThreadPool::tryAcquire(int numThreads) {
   }
 }
 
-void ThreadPool::release(samediff::Ticket *ticket) {
+void ThreadPool::release(Ticket *ticket) {
   // returning ticket back to the queue
   std::unique_lock<std::mutex> lock(_lock);
   _tickets.push(ticket);

@@ -88,14 +88,14 @@ CUSTOM_OP_IMPL(resize_images, 1, 1, false, 0, 0) {
                             {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}, false)
           : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
-  return helpers::resizeImagesFunctor(block.launchContext(), &source, width, height,
+  return resizeImagesFunctor(block.launchContext(), &source, width, height,
                                       (helpers::ImageResizeMethods)method, alignCorners, &target);
 }
 
 DECLARE_SHAPE_FN(resize_images) {
   auto in = inputShape->at(0);
 
-  sd::LongType* outputShape;
+  LongType* outputShape;
 
   int width;
   int height;
@@ -116,27 +116,27 @@ DECLARE_SHAPE_FN(resize_images) {
     }
   }
 
-  double ratio = shape::sizeAt(in, static_cast<sd::LongType>(1)) / (0.0 + shape::sizeAt(in, static_cast<sd::LongType>(2)));
+  double ratio = shape::sizeAt(in, static_cast<LongType>(1)) / (0.0 + shape::sizeAt(in, static_cast<LongType>(2)));
   if (block.numB() > 1) {
     if (B_ARG(1)) {
       width = math::sd_ceil<double, int>(height / ratio);
     }
   }
 
-  std::vector<sd::LongType> shape;
+  std::vector<LongType> shape;
   if (shape::rank(in) == 4)
     shape = {in[1], height, width, in[4]};
   else if (shape::rank(in) == 3)
     shape = {height, width, in[3]};
 
-  auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, shape::order(in), shape);
+  auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(FLOAT32, shape::order(in), shape);
   return SHAPELIST(outShape);
 }
 DECLARE_TYPES(resize_images) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})
-      ->setAllowedOutputTypes({DataType::FLOAT32});
+      ->setAllowedOutputTypes({FLOAT32});
 }
 
 }  // namespace ops

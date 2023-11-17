@@ -32,6 +32,7 @@
 #include <numeric>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
@@ -40,18 +41,18 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // x - indices, z - output
 template <typename X, typename Z>
-SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                 const sd::LongType *zShapeInfo, const sd::LongType axis, const sd::LongType depth,
+SD_KERNEL static void onehotCuda(const void *vx, const LongType *xShapeInfo, void *vz,
+                                 const LongType *zShapeInfo, const LongType axis, const LongType depth,
                                  const Z on, const Z off) {
   const auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
 
   __shared__ int xRank, zRank;
-  __shared__ sd::LongType zLen, totalThreads, *sharedMem;
+  __shared__ LongType zLen, totalThreads, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
+    sharedMem = reinterpret_cast<LongType *>(shmem);
     xRank = shape::rank(xShapeInfo);
     zRank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
@@ -63,15 +64,15 @@ SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo,
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+  for (LongType i = tid; i < zLen; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coord);
     const auto zOffset = shape::getOffset(zShapeInfo, coord);
     const auto depthCoord = coord[axis];
 
-    for (sd::LongType j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
+    for (LongType j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
 
     const auto xOffset = shape::getOffset(xShapeInfo, coord);
-    const sd::LongType idx = x[xOffset];
+    const LongType idx = x[xOffset];
     z[zOffset] = depthCoord == idx ? on : off;
   }
 }
@@ -79,16 +80,18 @@ SD_KERNEL static void onehotCuda(const void *vx, const sd::LongType *xShapeInfo,
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void onehotCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                               const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                               const sd::LongType *zShapeInfo, const sd::LongType axis, const sd::LongType depth,
+                               const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vz,
+                               const LongType *zShapeInfo, const LongType axis, const LongType depth,
                                const double on, const double off) {
   onehotCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, axis, depth,
                                                                            static_cast<Y>(on), static_cast<Y>(off));
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "onehotCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void onehot(const sd::LaunchContext *context, const NDArray *indices, NDArray *output, const sd::LongType axis,
-            const sd::LongType depth, const double on, const double off) {
+void onehot(const LaunchContext *context, const NDArray *indices, NDArray *output, const LongType axis,
+            const LongType depth, const double on, const double off) {
   const auto xType = indices->dataType();
   const auto zType = output->dataType();
 

@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 -
   // poolingMode; 9 - divisor;
-  ConvolutionUtils::pooling2d(block, *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, PoolingType::AVG_POOL,
+  ConvolutionUtils::pooling2d(block, *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, AVG_POOL,
                               extraParam0);
 
   if (!isNCHW) {
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
       delete output;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(AvgPool2D, avgpool2d);
@@ -86,7 +86,7 @@ DECLARE_SYN(AvgPool, avgpool2d);
 DECLARE_SYN(avgpool, avgpool2d);
 
 DECLARE_TYPES(avgpool2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(avgpool2d) {
@@ -121,7 +121,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   // allocate memory for new shape
-  sd::LongType *newShape = new sd::LongType[4];
+  LongType *newShape = new LongType[4];
   if (isNCHW) {
     newShape[0] = bS;
     newShape[1] = iD;
@@ -141,7 +141,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
 }
 
 DECLARE_TYPES(avgpool2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -154,8 +154,8 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
   LongType kW = INT_ARG(1);          // filter(kernel) width
   LongType sH = INT_ARG(2);          // strides height
   LongType sW = INT_ARG(3);          // strides width
-  sd::LongType pH = INT_ARG(4);          // paddings height
-  sd::LongType pW = INT_ARG(5);          // paddings width
+  LongType pH = INT_ARG(4);          // paddings height
+  LongType pW = INT_ARG(5);          // paddings width
   LongType dH = INT_ARG(6);          // dilations height
   LongType dW = INT_ARG(7);          // dilations width
   int isSameMode = INT_ARG(8);  // 0-VALID, 1-SAME
@@ -172,9 +172,9 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                              indWiC, indWoC, indWkH, indOoH);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oH, oW, 0, indIOioC, indIiH, indIiH + 1});
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, iH, iW, 0, indIOioC, indIiH, indIiH + 1});
   REQUIRE_TRUE(
       gradO->isSameShape(expectedGradOShape), 0,
@@ -204,7 +204,7 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     delete gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(avgpool2d_bp) {

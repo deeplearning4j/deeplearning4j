@@ -39,8 +39,8 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // x - input, y - paddings, z - output
 template <typename X, typename Y>
-SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                              const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xShapeInfo, const void* vy,
+                              const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                               const void* vPadVal) {
   const X padVal = *reinterpret_cast<const X*>(vPadVal);
 
@@ -49,15 +49,15 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType
   auto z = reinterpret_cast<X*>(vz);
 
   __shared__ int rank, rankMinusOne;
-  __shared__ sd::LongType zLen, totalThreads, *coords, *xShape, *zShape, shift1, shift2, yStride0;
+  __shared__ LongType zLen, totalThreads, *coords, *xShape, *zShape, shift1, shift2, yStride0;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<sd::LongType*>(shmem);
+    coords = reinterpret_cast<LongType*>(shmem);
     zLen = shape::length(zShapeInfo);
-    xShape = shape::shapeOf(const_cast<sd::LongType*>(xShapeInfo));
-    zShape = shape::shapeOf(const_cast<sd::LongType*>(zShapeInfo));
-    yStride0 = shape::stride(const_cast<sd::LongType*>(yShapeInfo))[0];
+    xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
+    zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
+    yStride0 = shape::stride(const_cast<LongType*>(yShapeInfo))[0];
     rank = shape::rank(xShapeInfo);
     zLen = shape::length(zShapeInfo);
     rankMinusOne = rank - 1;
@@ -74,7 +74,7 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType
 
   if (mode == 0) {  // CONSTANT case
 
-    for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+    for (LongType i = tid; i < zLen; i += totalThreads) {
       shape::index2coords(i, zShapeInfo, xzCoord);
       const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
 
@@ -97,7 +97,7 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType
     }
   } else {  // REFLECT and SYMMETRIC cases
 
-    for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+    for (LongType i = tid; i < zLen; i += totalThreads) {
       shape::index2coords(i, zShapeInfo, xzCoord);
       const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
 
@@ -121,15 +121,17 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const sd::LongType
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                            const cudaStream_t* stream, const int mode, const void* vx, const sd::LongType* xShapeInfo,
-                            const void* vy, const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+                            const cudaStream_t* stream, const int mode, const void* vx, const LongType* xShapeInfo,
+                            const void* vy, const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                             const void* padVal) {
   padCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(mode, vx, xShapeInfo, vy, yShapeInfo, vz,
                                                                         zShapeInfo, padVal);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "padCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output,
+void pad(LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output,
          const NDArray& padValue) {
   PointersManager manager(context, "pad");
 
@@ -152,10 +154,10 @@ void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const sd::LongType* xShape, void* vz,
-                                            const sd::LongType* zShape, sd::LongType leftSide,
-                                            sd::LongType leftSideCorrected, sd::LongType xLen, sd::LongType len,
-                                            sd::LongType zLen) {
+static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xShape, void* vz,
+                                            const LongType* zShape,
+                                            LongType leftSide, LongType leftSideCorrected, LongType xLen, LongType len,
+                                            LongType zLen) {
   __shared__ T const* x;
   __shared__ T* z;
   if (threadIdx.x == 0) {
@@ -181,17 +183,17 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const sd::LongType* 
 }
 
 template <typename F, typename I>
-static SD_KERNEL void mirrorPadKernel(void const* vx, const sd::LongType* xShape, void* vz, const sd::LongType* zShape,
-                                      sd::LongType outLen, void const* paddings, const sd::LongType* paddingShape,
+static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, void* vz, const LongType* zShape,
+                                      LongType outLen, void const* paddings, const LongType* paddingShape,
                                       int reflBorder) {
   __shared__ F const* x;
   __shared__ I const* pads;
   __shared__ F* z;
-  __shared__ sd::LongType zRank, rank;
-  __shared__ sd::LongType* xIdx;
+  __shared__ LongType zRank, rank;
+  __shared__ LongType* xIdx;
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    xIdx = reinterpret_cast<sd::LongType*>(shmem);
+    xIdx = reinterpret_cast<LongType*>(shmem);
     rank = shape::rank(xShape);
 
     x = reinterpret_cast<F const*>(vx);  //
@@ -202,17 +204,17 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const sd::LongType* xShape
   auto start = threadIdx.x + blockIdx.x * blockDim.x;
   auto step = blockDim.x * gridDim.x;
 
-  for (sd::LongType i = start; i < outLen; i += step) {
+  for (LongType i = start; i < outLen; i += step) {
     auto xzCoord = xIdx + threadIdx.x * rank;
     shape::index2coords(i, zShape, xzCoord);
     auto outOffset = shape::getOffset(zShape, xzCoord);
-    for (sd::LongType j = 0; j < rank; j++) {
-      const sd::LongType inLen = shape::sizeAt(xShape, j);
-      sd::LongType coords[2] = {j, 0};
+    for (LongType j = 0; j < rank; j++) {
+      const LongType inLen = shape::sizeAt(xShape, j);
+      LongType coords[2] = {j, 0};
       auto padOffset = shape::getOffset(paddingShape, coords);  // padding already has rank 2
       const auto leftSide = pads[padOffset];
       const auto leftSideCorrected = leftSide - reflBorder;
-      const sd::LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
+      const LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
 
       if (xzCoord[j] < leftSide)  // left side
         xzCoord[j] = leftSideCorrected - xzCoord[j];
@@ -232,37 +234,37 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const sd::LongType* xShape
 }
 
 template <typename F, typename I>
-static void mirrorPad_(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+static void mirrorPad_(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
                        const int mode) {
   // mode:  0 - REFLECT, else - SYMMETRIC
   const int reflBorder = (bool)mode ? 1 : 0;
-  const sd::LongType rank = input.rankOf();
-  const sd::LongType outLen = output.lengthOf();
+  const LongType rank = input.rankOf();
+  const LongType outLen = output.lengthOf();
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({&output}, {&input, &paddings});
 
   if (rank <= 1) {
-    const sd::LongType inLen = input.isScalar() ? 1 : input.lengthOf();
-    const auto leftSide = paddings.e<sd::LongType>(0);
+    const LongType inLen = input.isScalar() ? 1 : input.lengthOf();
+    const auto leftSide = paddings.e<LongType>(0);
     const auto leftSideCorrected = leftSide - reflBorder;
-    const sd::LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
+    const LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
 
     dim3 mirrorPadLinearDims2 = mirrorPadLinearDims(len);
-    mirrorPadLinearKernel<F><<<mirrorPadLinearDims2.y, mirrorPadLinearDims2.x, mirrorPadLinearDims2.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
-                                                                                                                  output.specialBuffer(), output.specialShapeInfo(), leftSide,
-                                                                                                                  leftSideCorrected, inLen, len, outLen);
-    sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
+    mirrorPadLinearKernel<F><<<mirrorPadLinearDims2.y, mirrorPadLinearDims2.x, mirrorPadLinearDims2.z, *stream>>>(
+        input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide,
+        leftSideCorrected, inLen, len, outLen);
+    DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
   } else {
     dim3 mirrorPadDims = mirrorPadTad(output.lengthOf(),input.rankOf());
     mirrorPadKernel<F, I><<<mirrorPadDims.y, mirrorPadDims.x, mirrorPadDims.z, *stream>>>(
         input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen,
         paddings.specialBuffer(), paddings.specialShapeInfo(), reflBorder);
-    sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
+    DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
   }
   NDArray::registerSpecialUse({&output}, {&input, &paddings});
 }
 
-void mirrorPad(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+void mirrorPad(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
                const int mode) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), paddings.dataType(), mirrorPad_, (context, input, paddings, output, mode),
                         SD_COMMON_TYPES, SD_INDEXING_TYPES);

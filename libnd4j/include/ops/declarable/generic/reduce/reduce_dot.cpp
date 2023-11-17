@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
       gradY->assign((*x) * (*gradO));
     }
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reduce_dot_bp) {
@@ -117,7 +117,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
           inputShape->at(0)[0], inputShape->at(0)[0], item);
   }
 
-  sd::LongType *outShapeInfo1, *outShapeInfo2;
+  LongType *outShapeInfo1, *outShapeInfo2;
   COPY_SHAPE(inputShape->at(0), outShapeInfo1);
   COPY_SHAPE(inputShape->at(1), outShapeInfo2);
 
@@ -125,7 +125,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
 }
 
 DECLARE_TYPES(reduce_dot_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops
