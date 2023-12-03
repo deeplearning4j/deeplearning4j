@@ -26,8 +26,6 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.HelperUtils;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
@@ -40,20 +38,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
-    protected LSTMHelper helper = null;
     protected FwdPassReturn cachedFwdPass;
     public final static String CUDNN_LSTM_CLASS_NAME = "org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper";
     public LSTM(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
-        initializeHelper();
     }
 
-    void initializeHelper() {
-        helper = HelperUtils.createHelper(CUDNN_LSTM_CLASS_NAME,
-                "",
-                LSTMHelper.class, layerConf().getLayerName(), dataType
-        );
-    }
+
 
     @Override
     public Gradient gradient() {
@@ -96,7 +87,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                 this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                 recurrentWeights, inputWeights, permuteIfNWC(epsilon), truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                 LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr,
+                LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, workspaceMgr,
                 layerConf().isHelperAllowFallback());
 
         weightNoiseParams.clear();
@@ -145,7 +136,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                 input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                 prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
-                LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false, helper,
+                LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false,
                 forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
         fwd.fwdPassOutput = permuteIfNWC(fwd.fwdPassOutput);
@@ -214,8 +205,5 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return outAct;
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return helper;
-    }
+
 }

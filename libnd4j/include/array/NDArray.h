@@ -1855,8 +1855,17 @@ bool NDArray::isSameShapeStrict(const NDArray &other) const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isEmpty() const {
   if (this->_shapeInfo == nullptr) THROW_EXCEPTION("NDArray::isEmpty() - shapeInfo is nullptr!");
-  if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0)
-    THROW_EXCEPTION("NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated.");
+  if(this->_shapeInfo[0] > SD_MAX_RANK || this->_shapeInfo[0] < 0) {
+    std::string errorMessage;
+    errorMessage += "NDArray::isEmpty() - rank of array is out of range! Shape info could have been deallocated. ";
+    errorMessage += "Rank: ";
+    errorMessage += std::to_string(this->_shapeInfo[0]);
+    errorMessage += " Max rank: ";
+    errorMessage += std::to_string(SD_MAX_RANK);
+    errorMessage += " Min rank: ";
+    errorMessage += std::to_string(0);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   bool baseEmpty =  ArrayOptions::hasPropertyBitSet(this->_shapeInfo, ARRAY_EMPTY);
   return baseEmpty;
 }

@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
+
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(libnd4j)
+
+
+
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
@@ -18,13 +24,27 @@ option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
 # GCC specific flag: 	 -finstrument-functions enables call stack logging. Useful for debugging segfaults.
-# TODO: from https://sii.pl/blog/en/call-stack-logger-function-instrumentation-as-a-way-to-trace-programs-flow-of-execution/?category=hard-development&tag=binutils-en,cpp-en,embedded-competency-center-en,function-instrumentation-en,gcc-en,logging-en,trace-en
-# from: https://github.com/TomaszAugustyn/call-stack-logger/blob/master/src/trace.cpp
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
-set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+    message("Set optimization for functrace ${SD_GCC_FUNCTRACE}")
+    set(SD_OPTIMIZATION_LEVEL   "0")
 
+else()
+    message("Set optimization level for no functrace ${SD_GCC_FUNCTRACE}")
+    set(SD_OPTIMIZATION_LEVEL  "3")
+endif()
+
+message("Set default optimization level ${SD_OPTIMIZATION_LEVEL}")
+set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+# note we may or may not use a build type called "none" to prevent default injection
+# of flags from cmake. We do this when using functrace so we can add symbols
+# to a binary but still run from java without freezing.
+# Normally, we would just want to use debug build. Running a debug build
+# via JNI seems to just freeze though. The goal is to just use tools like
+# valgrind or compute-sanitizer or even address sanitizer with symbols
+# embedded in a binary but still run code from java.
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
 macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")
@@ -87,7 +107,7 @@ if (SD_CUDA AND NOT SD_AURORA)
     endif()
 
 
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}    -allow-unsupported-compiler --ptxas-options=-v")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v")
     if(SD_KEEP_NVCC_OUTPUT)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
     endif()
@@ -260,14 +280,14 @@ endif()
 if (SD_AURORA)
     message("Aurora build in process")
     set(SD_X86_BUILD false)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O4 -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O${SD_OPTIMIZATION_LEVEL} -fPIC -DSD_AURORA=true")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 elseif (SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64*" OR "${SD_ARCH}" MATCHES "armv8-a")
         set(SD_ARCH armv8-a)
@@ -276,20 +296,20 @@ elseif (APPLE)
     endif()
 
 
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
     set(SD_X86_BUILD true)
     if (SD_CUDA)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
-        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
     endif()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
-    set(CMAKE_CXX_FLAGS_RELEASE  "-w -O3 -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O0 -fPIC -fno-openmp -fassociative-math")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-w -O${SD_OPTIMIZATION_LEVEL} -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-openmp -fassociative-math")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 
@@ -308,11 +328,18 @@ else()
     # ideally debug builds would work but since it's not consistent it's better to just
     # set this for release flags so we can debug code even from the java level
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true")
+        # note we may or may not use a build type called "none" to prevent default injection
+        # of flags from cmake. We do this when using functrace so we can add symbols
+        # to a binary but still run from java without freezing.
+        # Normally, we would just want to use debug build. Running a debug build
+        # via JNI seems to just freeze though. The goal is to just use tools like
+        # valgrind or compute-sanitizer or even address sanitizer with symbols
+        # embedded in a binary but still run code from java.
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -g")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
     endif()
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
 
     if (SD_SANITIZE)
         set(SANITIZE_FLAGS " -Wall -Wextra -fPIE  -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")

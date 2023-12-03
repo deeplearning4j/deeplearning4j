@@ -137,7 +137,7 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             params.put(RECURRENT_WEIGHT_KEY, rwInit.init(fanIn, fanOut, recurrentWShape,
                             IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, recurrentWeightView));
             biasView.put(new INDArrayIndex[] {NDArrayIndex.interval(nL, 2 * nL)},
-                            Nd4j.valueArrayOf(new long[]{1, nL}, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
+                            Nd4j.valueArrayOf(new long[]{nL}, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.
              * See Sutskever PhD thesis, pg19:
              * "it is important for [the forget gate activations] to be approximately 1 at the early stages of learning,

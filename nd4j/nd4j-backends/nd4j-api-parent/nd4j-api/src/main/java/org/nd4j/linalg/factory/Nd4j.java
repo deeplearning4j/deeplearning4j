@@ -21,6 +21,7 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.jita.constant.DeviceIDProvider;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
@@ -5366,6 +5367,9 @@ public class Nd4j {
                     }
                 }
             }
+
+
+            DifferentialFunctionClassHolder.initInstance();
 
             backend.logBackendInit();
         } catch (Exception e) {

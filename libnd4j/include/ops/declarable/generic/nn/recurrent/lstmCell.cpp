@@ -177,8 +177,10 @@ DECLARE_SHAPE_FN(lstmCell) {
                           ConstantShapeHelper::getInstance().createShapeInfo(desc2));
   RELEASE(hShapeInfo, block.workspace());
   RELEASE(cShapeInfo, block.workspace());
+    if (Environment::getInstance().isDeleteShapeInfo()) {
   delete desc;
   delete desc2;
+}
   return result;
 }
 

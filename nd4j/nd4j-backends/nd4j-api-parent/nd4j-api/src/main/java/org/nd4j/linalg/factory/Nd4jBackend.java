@@ -190,7 +190,7 @@ public abstract class Nd4jBackend {
             }
 
             if(logInit) {
-                log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
+                log.info("Loaded [{}] backend with logging {}", backend.getClass().getSimpleName(),log.getClass().getName());
             }
             return backend;
         }

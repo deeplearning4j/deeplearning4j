@@ -117,7 +117,6 @@ static void conv2d_(graph::Context& block,
   if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
   }
-  if (!isNCHW) delete input;
 
 
 }

@@ -33,8 +33,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.layers.HelperUtils;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
@@ -57,7 +55,6 @@ import java.util.Arrays;
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
 
     protected INDArray i2d;
-    protected ConvolutionHelper helper = null;
     protected int helperCountFail = 0;
     @Getter
     @Setter
@@ -137,45 +134,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
         delta = afn.backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
-            INDArray helperDelta = delta;
-            if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC)
-                helperDelta = delta.permute(0,2,3,1); //NCHW to NHWC
-
-            if(!hasBias()) {
-                if(dummyBiasGrad == null) {
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        dummyBiasGrad = Nd4j.create(1, layerConf().getNOut());
-                    }
-                }
-                biasGradView = dummyBiasGrad;
-            }
-
-            Pair<Gradient, INDArray> ret = null;
-            try {
-                ret = helper.backpropGradient(origInput, weights, bias, helperDelta, kernel, strides,
-                        pad, biasGradView, weightGradView, afn,
-                        layerConf().getCudnnAlgoMode(), layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(),
-                        convolutionMode, dilation, layerConf().getCnn2dDataFormat(), workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-
-            }
-
-            if (ret != null) {
-                //Backprop dropout, if present
-                INDArray gradPostDropout = ret.getRight();
-                gradPostDropout = backpropDropOutIfPresent(gradPostDropout);
-                ret.setSecond(gradPostDropout);
-                return ret;
-            }
-        }
 
         delta = delta.permute(1, 0, 2, 3); //To shape: [outDepth,miniBatch,outH,outW]
 
@@ -372,40 +330,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = outSize[0];
         int outW = outSize[1];
 
-
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
-            if (preOutput != null && forBackprop) {
-                return new Pair<>(preOutput, null);
-            }
-
-            //For no-bias convolutional layers: use an empty (all 0s) value for biases
-            if(!hasBias()){
-                if(dummyBias == null){
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        dummyBias = Nd4j.create(1, layerConf().getNOut());
-                    }
-                }
-                bias = dummyBias;
-            }
-
-            INDArray ret = null;
-            try {
-                ret = helper.preOutput(inputOrig, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, layerConf().getCnn2dDataFormat(), workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-            }
-            if (ret != null) {
-                return new Pair<>(ret, null);
-            }
-        }
-
         if (preOutput != null && i2d != null && forBackprop) {
             return new Pair<>(preOutput, i2d);
         }
@@ -488,26 +412,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = layerConf().getActivationFn();
-
-        if (helper != null && Shape.strideDescendingCAscendingF(z) && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
-            INDArray ret = null;
-            try {
-                ret = helper.activate(z, layerConf().getActivationFn(), training);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e) {
-                if (e.getMessage() != null && e.getMessage().contains("Failed to allocate")) {
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-            }
-
-            if (ret != null) {
-                return ret;
-            }
-        }
-
         INDArray activation = afn.getActivation(z, training);
         return activation;
     }
@@ -522,10 +426,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return false;
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return helper;
-    }
 
     @Override
     public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {

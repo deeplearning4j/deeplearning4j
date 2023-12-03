@@ -20,14 +20,11 @@
 package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.CNN2DFormat;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -131,7 +128,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     LossFunctions.LossFunction lf = lossFunctions[i];
                     Activation outputActivation = outputActivations[i];
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp()).weightInit(WeightInit.XAVIER).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
+                    ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp()).weightInit(WeightInit.XAVIER).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
                     MultiLayerConfiguration conf = builder.build();
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
@@ -196,7 +193,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             Activation outputActivation = outputActivations[i];
             double l2 = l2vals[i];
             double l1 = l1vals[i];
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i]).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).weightInit(WeightInit.XAVIER).updater(new NoOp()).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
+            ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i]).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).weightInit(WeightInit.XAVIER).updater(new NoOp()).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
             MultiLayerConfiguration conf = builder.build();
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -655,7 +652,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             for (int j = 0; j < minibatchSize; j++) {
                 labels.putScalar(new int[] { j, j % nOut }, 1.0);
             }
-            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(act).list().layer(new Deconvolution2D.Builder().name("deconvolution_2D_layer").kernelSize(k, k).stride(s, s).dataFormat(format).dilation(d, d).convolutionMode(cm).nIn(inputDepth).nOut(nOut).build());
+            ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(act).list().layer(new Deconvolution2D.Builder().name("deconvolution_2D_layer").kernelSize(k, k).stride(s, s).dataFormat(format).dilation(d, d).convolutionMode(cm).nIn(inputDepth).nOut(nOut).build());
             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(h, w, inputDepth, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -700,7 +697,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             for (int i = 0; i < minibatchSize; i++) {
                 labels.putScalar(new int[] { i, i % nOut }, 1.0);
             }
-            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new SeparableConvolution2D.Builder().name("Separable conv 2D layer").kernelSize(k, k).stride(s, s).dilation(d, d).depthMultiplier(3).dataFormat(format).nIn(inputDepth).nOut(2).build());
+            ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new SeparableConvolution2D.Builder().name("Separable conv 2D layer").kernelSize(k, k).stride(s, s).dilation(d, d).depthMultiplier(3).dataFormat(format).nIn(inputDepth).nOut(2).build());
             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(h, w, inputDepth, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -747,7 +744,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             for (int i = 0; i < minibatchSize; i++) {
                 labels.putScalar(new int[] { i, i % nOut }, 1.0);
             }
-            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k).stride(s, s).dilation(d, d).dataFormat(format).nIn(inputDepth).nOut(2).build());
+            ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new ConvolutionLayer.Builder().name("layer 0").kernelSize(k, k).stride(s, s).dilation(d, d).dataFormat(format).nIn(inputDepth).nOut(2).build());
             if (subsampling) {
                 b.layer(new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(k, k).stride(s, s).dilation(d, d).dataFormat(format).build());
             } else {
@@ -838,7 +835,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             for (int i = 0; i < minibatchSize; i++) {
                 labels.putScalar(new int[] { i, i % nOut }, 1.0);
             }
-            NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new Convolution2D.Builder().kernelSize(1, 1).stride(1, 1).nIn(nIn).nOut(nIn).dataFormat(format).build()).layer(new DepthwiseConvolution2D.Builder().name("depth-wise conv 2D layer").cudnnAllowFallback(false).kernelSize(k, k).stride(s, s).depthMultiplier(depthMultiplier).nIn(nIn).build());
+            ListBuilder b = new NeuralNetConfiguration.Builder().seed(12345).dataType(DataType.DOUBLE).updater(new NoOp()).activation(Activation.TANH).convolutionMode(cm).list().layer(new Convolution2D.Builder().kernelSize(1, 1).stride(1, 1).nIn(nIn).nOut(nIn).dataFormat(format).build()).layer(new DepthwiseConvolution2D.Builder().name("depth-wise conv 2D layer").cudnnAllowFallback(false).kernelSize(k, k).stride(s, s).depthMultiplier(depthMultiplier).nIn(nIn).build());
             MultiLayerConfiguration conf = b.layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(height, width, nIn, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();

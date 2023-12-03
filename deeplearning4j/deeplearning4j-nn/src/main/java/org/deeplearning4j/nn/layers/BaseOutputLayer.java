@@ -177,7 +177,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
-        if(hasBias()){
+        if(hasBias()) {
             INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
             delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
             gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);

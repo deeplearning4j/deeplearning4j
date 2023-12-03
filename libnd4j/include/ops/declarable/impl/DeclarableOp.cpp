@@ -465,7 +465,7 @@ bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t),desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
@@ -473,7 +473,7 @@ bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t), desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
 
   return true;

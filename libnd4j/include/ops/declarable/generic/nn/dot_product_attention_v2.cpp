@@ -169,13 +169,17 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
   auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
   if(dropout > 0) {
-    delete descriptor;
-    delete scoresShape;
+    if (Environment::getInstance().isDeleteShapeInfo()) {
+      delete descriptor;
+      delete scoresShape;
+    }
     return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape,attentionScoresShape);
 
   } else {
-    delete descriptor;
-    delete scoresShape;
+    if (Environment::getInstance().isDeleteShapeInfo()) {
+      delete descriptor;
+      delete scoresShape;
+    }
     return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape);
 
   }

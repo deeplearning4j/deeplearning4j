@@ -53,7 +53,7 @@
         <platform.classifier>${javacpp.platform}</platform.classifier>
         <backend.artifactId>nd4j-cuda-12.1</backend.artifactId>
         <!-- UDF package names for TestUdf -->
-        <org.nd4j.linalg.api.ops.udf.packages>org.nd4j.linalg.api.ops</org.nd4j.linalg.api.ops.udf.packages>
+        <org.nd4j.linalg.api.ops.udf.classes>org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf</org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.24</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
@@ -71,11 +71,11 @@
         <lz4.version>1.8.0</lz4.version>
 
         <dokka.version>1.4.30</dokka.version>
-        <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
+        <maven-surefire-plugin.version>3.2.2</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
 
         <java.version>11</java.version>
-        <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>6g</test.heap.size>
@@ -84,7 +84,7 @@
         <surefire.threads>1</surefire.threads>
 
         <test.nogc>true</test.nogc>
-        <test.prefix>/usr/local/cuda-12.1/bin/compute-sanitizer</test.prefix>
+        <test.prefix></test.prefix>
         <!--
         TODO: figure out if address sanitizer is being loaded twice based on -fsanitize=address
         and preload. The build without -fsanitize=address is where you left off.
@@ -195,7 +195,6 @@
                 <version>${maven-surefire.version}</version>
             </dependency>
 
-
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-slf4j-impl</artifactId>
@@ -216,6 +215,23 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- This is for building an uberjar and being able to run junit tests from the command line for
+        usage in benchmarking applications.
+        https://stackoverflow.com/questions/2235276/how-to-run-junit-test-cases-from-the-command-line
+        -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-console-standalone</artifactId>
+            <version>1.10.1</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -390,7 +406,6 @@
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
             <version>${derby.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -419,36 +434,34 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test</artifactId>
             <version>${kotlin.version}</version>
-            <scope>test</scope>
+
         </dependency>
+
 
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
+
         </dependency>
 
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-launcher</artifactId>
-            <version>1.8.0-M1</version>
-            <scope>test</scope>
-        </dependency>
+        <!-- Needed for running tests on command line:
+        https://github.com/junit-team/junit5/issues/2813
+        -->
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
+
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
+
         </dependency>
 
 
@@ -473,25 +486,25 @@
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-vertx</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
+
         </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5-api</artifactId>
             <version>0.14.1</version>
-            <scope>test</scope>
+
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>3.8.0</version>
-            <scope>test</scope>
+
         </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-excel</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
+
         </dependency>
 
 
@@ -512,10 +525,21 @@
                 <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
                 <test.heap.size>6g</test.heap.size>
                 <test.offheap.size>12g</test.offheap.size>
-                <surefire.forks>1</surefire.forks>
-                <surefire.threads>1</surefire.threads>
+                <surefire.threads>4</surefire.threads>
             </properties>
             <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>${backend.artifactId}</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-12.1</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+
                 <dependency>
                     <groupId>org.bytedeco</groupId>
                     <artifactId>cuda-platform-redist</artifactId>
@@ -717,14 +741,62 @@
             <properties>
                 <test.heap.size>34g</test.heap.size>
                 <test.offheap.size>34g</test.offheap.size>
-                <surefire.forks>16</surefire.forks>
-                <surefire.threads>16</surefire.threads>
+                <surefire.forks>1</surefire.forks>
+                <surefire.threads>1</surefire.threads>
             </properties>
         </profile>
     </profiles>
 
     <build>
         <plugins>
+
+            <!-- This is for being able to run tests on the command line.-->
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <configuration>
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+
+                            <artifact>*:*</artifact>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <excludes>
+                                <exclude>org/datanucleus/**</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                    <shadeTestJar>true</shadeTestJar>
+
+                </configuration>
+
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
@@ -833,6 +905,18 @@
                             </sources>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/test/java/</source>
+                            </sources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -905,9 +989,10 @@
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
-                    <testFailureIgnore>true</testFailureIgnore>
+                    <testFailureIgnore>false</testFailureIgnore>
                     <properties>
                         <org.nd4j.imports.tfgraphs.failfast>true</org.nd4j.imports.tfgraphs.failfast>
+                        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
@@ -919,23 +1004,20 @@
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
-
+                        <CUDA_VISIBLE_DEVICES>1</CUDA_VISIBLE_DEVICES>
                     </environmentVariables>
-                    <shutdown>kill</shutdown>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
                         <classpathDependencyExclude>com.google.android:android
                         </classpathDependencyExclude>
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine> -javaagent:"${settings.localRepository}"/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.packages=org.nd4j.linalg.api.ops  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
-                    <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
-                    <forkedProcessExitTimeoutInSeconds>0</forkedProcessExitTimeoutInSeconds>
-                    <parallelTestsTimeoutInSeconds>0</parallelTestsTimeoutInSeconds>
-                    <parallelTestsTimeoutForcedInSeconds>0</parallelTestsTimeoutForcedInSeconds>
+                    <shutdown>kill</shutdown>
+                    <argLine>-Djava.compiler=NONE  ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.classes=org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>
+                    <useSystemClassLoader>false</useSystemClassLoader>
                     <reuseForks>false</reuseForks>
                     <!-- Do not delete this. This is used to specify a wrapper script allowing us to insert valgrind and other things in to the surefire sub processes.-->
                     <jvm>${project.basedir}/bin/java</jvm>

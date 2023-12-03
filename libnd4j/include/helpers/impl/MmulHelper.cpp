@@ -36,8 +36,8 @@ namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B,
-                                       const std::initializer_list<LongType>& axesA,
-                                       const std::initializer_list<LongType>& axesB) {
+                               const std::initializer_list<LongType>& axesA,
+                               const std::initializer_list<LongType>& axesB) {
   std::vector<LongType> aA(axesA);
   std::vector<LongType> aB(axesB);
   return tensorDot(A, B, aA, aB);
@@ -45,7 +45,7 @@ NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B,
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B, const std::vector<LongType>& axesA,
-                                       const std::vector<LongType>& axesB) {
+                               const std::vector<LongType>& axesB) {
   std::vector<LongType> permutAt, permutBt;
   std::vector<LongType> shapeAt, shapeBt;
 
@@ -63,10 +63,10 @@ NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B, const std::ve
 
   c->reshapei(outShape);
 
-   if (aP != aPR) delete aPR;
-   if (bP != bPR) delete bPR;
-   if (A != aP) delete aP;
-   if (B != bP) delete bP;
+  if (aP != aPR) delete aPR;
+  if (bP != bPR) delete bPR;
+  if (A != aP) delete aP;
+  if (B != bP) delete bP;
 
   return c;
 }
@@ -137,9 +137,9 @@ void MmulHelper::computeNewShapesAndAxes(
 
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
-                                const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
-                                std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
-                                std::vector<LongType>& permuteCt) {
+                            const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
+                            std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
+                            std::vector<LongType>& permuteCt) {
 
 
   // check whether permutation is required
@@ -186,8 +186,8 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
   if (c != cP) delete cP;
 }
 void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
-                               const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
-                               const std::vector<LongType>& permutForC) {
+                           const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
+                           const std::vector<LongType>& permutForC) {
 
   std::vector<LongType> permutAt, permutBt;
   std::vector<LongType> shapeAt, shapeBt;
@@ -229,9 +229,9 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
-                               const std::vector<std::vector<LongType>>& modifA,
-                               const std::vector<std::vector<LongType>>& modifB,
-                               const std::vector<std::vector<LongType>>& modifC) {
+                           const std::vector<std::vector<LongType>>& modifA,
+                           const std::vector<std::vector<LongType>>& modifB,
+                           const std::vector<std::vector<LongType>>& modifC) {
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA, whatToDoWithB,
       whatToDoWithC;  // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" -
@@ -299,8 +299,8 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
-                                   const std::vector<std::vector<LongType>>& modifA,
-                                   const std::vector<std::vector<LongType>>& modifB) {
+                               const std::vector<std::vector<LongType>>& modifA,
+                               const std::vector<std::vector<LongType>>& modifB) {
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA,
       whatToDoWithB;  // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp"
@@ -338,15 +338,15 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 
   NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
-   if (aPR != a) delete aPR;
-   if (bPR != b) delete bPR;
+  if (aPR != a) delete aPR;
+  if (bPR != b) delete bPR;
   return result;
 }
 #endif
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const double alpha,
-                              const double beta, const char outOrder) {
+                          const double beta, const char outOrder) {
   LongType lenDim;
   const LongType aRank = A->rankOf();
   const LongType bRank = B->rankOf();
@@ -408,6 +408,8 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+
+
   if (z->isEmpty()) return;
 
   NDArray *xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
@@ -422,6 +424,7 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     if (transX) xT = new NDArray(x->permute(permut));
 
     if (transY) yT = new NDArray(y->permute(permut));
+
   }
 
   if (xRank <= 2 &&
@@ -451,9 +454,6 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     }
   }
 
-  if (xT != x) delete xT;
-  if (yT != y) delete yT;
-  if (zT != z) delete zT;
 }
 
 

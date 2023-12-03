@@ -55,6 +55,7 @@ Environment::Environment() {
   _dataType.store(FLOAT32);
   _maxThreads = std::thread::hardware_concurrency();
   _maxMasterThreads = _maxThreads.load();
+  deleteShapeInfo = deleteShapeInfo.load();
 
 #ifndef ANDROID
   const char *omp_threads = std::getenv("OMP_NUM_THREADS");
@@ -193,6 +194,10 @@ Environment::Environment() {
 
 #endif
 }
+
+bool Environment::isDeleteShapeInfo() { return deleteShapeInfo; }
+void Environment::setDeleteShapeInfo(bool reallyDelete) { deleteShapeInfo = reallyDelete; }
+
 
 bool Environment::blasFallback() { return _blasFallback; }
 

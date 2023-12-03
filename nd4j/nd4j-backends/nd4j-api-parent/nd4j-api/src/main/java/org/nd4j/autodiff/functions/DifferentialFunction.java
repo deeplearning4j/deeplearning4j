@@ -881,9 +881,6 @@ public abstract class DifferentialFunction {
     @Override
     public int hashCode() {
         int result = 31;
-        result = 31 * result + (inPlace ? 1 : 0);
-        result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(dimensions);
         result = 31 * result + (ownName != null ? ownName.hashCode() : 0);
         return result;
     }

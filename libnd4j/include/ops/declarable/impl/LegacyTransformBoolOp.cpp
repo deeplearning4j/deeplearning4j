@@ -68,7 +68,7 @@ ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, Co
   auto inShape = inputShape->at(0);
   auto desc = new ShapeDescriptor(inShape, BOOL);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 }  // namespace ops

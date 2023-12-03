@@ -23,14 +23,10 @@ package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
-import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.internal.AbstractSession;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -91,22 +87,7 @@ public class TensorArray extends  BaseTensorOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val idd = nodeDef.getInput(nodeDef.getInputCount() - 1);
-        NodeDef iddNode = null;
-        for(int i = 0; i < graph.getNodeCount(); i++) {
-            if(graph.getNode(i).getName().equals(idd)) {
-                iddNode = graph.getNode(i);
-            }
-        }
-
-        val arr = TFGraphMapper.getNDArrayFromTensor(iddNode);
-
-        if (arr != null) {
-            int idx = arr.getInt(0);
-            addIArgument(idx);
-        }
-
-        this.tensorArrayDataType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
+        throw new UnsupportedOperationException("Do not use these methods. Use the new TensorflowImporter instead.");
     }
 
 

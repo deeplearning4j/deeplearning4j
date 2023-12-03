@@ -33,6 +33,9 @@ import java.util.Map;
 
 public interface Model {
 
+
+    org.deeplearning4j.nn.api.Updater createUpdater();
+
     /**
      * Init the model
      */

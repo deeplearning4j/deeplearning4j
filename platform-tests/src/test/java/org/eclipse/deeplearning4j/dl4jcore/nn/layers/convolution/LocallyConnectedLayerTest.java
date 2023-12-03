@@ -20,12 +20,9 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -70,7 +67,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test 2 d Forward")
     void test2dForward() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3).stride(4, 4).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28, 28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3).stride(4, 4).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28, 28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
         new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -83,7 +80,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test 1 d Forward")
     void test1dForward() {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3).stride(1).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3).stride(1).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
         new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.recurrent(3, 8));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);

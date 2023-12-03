@@ -93,7 +93,6 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
             Pair<DataBuffer, long[]> buffer = null;
-            synchronized (this) {
                 if (!protector.containsDataBuffer(deviceId, descriptor)) {
                     buffer = super.createShapeInformation(shape, stride, elementWiseStride, order, extras);
                     buffer.getFirst().setConstant(true);
@@ -107,7 +106,7 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
                 } else {
                     buffer = protector.getDataBuffer(deviceId, descriptor);
                 }
-            }
+
             return buffer;
         } else {
             cacheHit.incrementAndGet();

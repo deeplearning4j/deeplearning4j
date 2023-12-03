@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(eye) {
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
   auto ret =  SHAPELIST(result);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 

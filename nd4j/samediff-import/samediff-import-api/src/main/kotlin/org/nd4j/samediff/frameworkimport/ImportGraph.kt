@@ -173,7 +173,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
         val dfInstance = if( DifferentialFunctionClassHolder.getInstance()
                 .hasName(nd4jOpName)) DifferentialFunctionClassHolder
-            .getInstance()
             .getInstance(nd4jOpName)
         else DynamicCustomOp.builder(nd4jOpName).build()
         Preconditions.checkState(dfInstance != null, "Could not find class for input framework Ops: %s", opName)
@@ -792,7 +791,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
 
                     val dfInstance = if( DifferentialFunctionClassHolder.getInstance()
-                            .hasName(opName)) DifferentialFunctionClassHolder.getInstance().getInstance(opName)
+                            .hasName(opName)) DifferentialFunctionClassHolder.getInstance(opName)
                     else DynamicCustomOp.builder(opName).build()
                     Preconditions.checkState(
                         dfInstance != null,

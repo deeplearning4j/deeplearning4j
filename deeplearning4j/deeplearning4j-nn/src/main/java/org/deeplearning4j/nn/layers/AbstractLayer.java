@@ -422,11 +422,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         inputModificationAllowed = allow;
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        //Layers with helpers should override this method!
-        return null;
-    }
 
     @Override
     public boolean updaterDivideByMinibatch(String paramName) {

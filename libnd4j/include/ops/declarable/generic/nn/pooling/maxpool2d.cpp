@@ -134,7 +134,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
 
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, newShape, 4);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 

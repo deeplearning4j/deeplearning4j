@@ -101,7 +101,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         Integer device = null;
         if (!CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() && getNumberOfDevices() > 0) {
             // simple round-robin here
-            synchronized (this) {
                 device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(devPtr.getAndIncrement());
 
                 // We check only for number of entries here, not their actual values
@@ -112,7 +111,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
                 val n = t.getId() == threadId ? t.getName() : "N/A";
 
                 logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId, n, device, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
-            }
+
         } else {
             device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
             logger.debug("Single device is forced, mapping to device [{}]", device);
@@ -131,11 +130,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public int getNumberOfDevices() {
         if (numberOfDevices.get() < 0) {
-            synchronized (this) {
                 if (numberOfDevices.get() < 1) {
                     numberOfDevices.set(NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices());
                 }
-            }
+
         }
 
         return numberOfDevices.get();

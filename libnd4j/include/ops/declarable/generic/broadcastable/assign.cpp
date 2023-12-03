@@ -60,11 +60,11 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
 
   //note this is very finnicky. Keep this  as is. Depending on how the assign happens
   //we can end up with deallocated buffers and downstream failures.
-  if(x->dataType() != z->dataType())
+/*  if(x->dataType() != z->dataType())
     delete castedX;
 
   if(y->dataType() != z->dataType())
-    delete castedY;
+    delete castedY;*/
 
   return Status::OK;
 }

@@ -66,6 +66,15 @@
         </dependency>
 
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <classifier>${dependency.platform}</classifier>
+
+            <type>zip</type>
+        </dependency>
+
+        <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
         </dependency>

@@ -196,8 +196,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-  _isOwnerPrimary = other._isOwnerPrimary;
-  _isOwnerSpecial = other._isOwnerSpecial;
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
   _deviceId.store(other._deviceId);
 
   copyCounters(other);
@@ -223,7 +223,7 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   if (this == &other) return *this;
 
-  //deleteBuffers();
+  deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
@@ -246,15 +246,15 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   if (this == &other) return *this;
 
-  //deleteBuffers();
+   deleteBuffers();
 
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-  _isOwnerPrimary = other._isOwnerPrimary;
-  _isOwnerSpecial = other._isOwnerSpecial;
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
 
   copyCounters(other);
 

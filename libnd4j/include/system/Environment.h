@@ -56,6 +56,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int> _maxMasterThreads;
   std::atomic<bool> deleteSpecial{true};
   std::atomic<bool> deletePrimary{true};
+  std::atomic<bool> deleteShapeInfo{true};
 
   // these fields hold defaults
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
@@ -75,6 +76,9 @@ class SD_LIB_EXPORT Environment {
   const bool _experimental = false;
 #endif
 
+
+
+
   // device compute capability for CUDA
   std::vector<Pair> _capabilities;
 
@@ -90,6 +94,18 @@ class SD_LIB_EXPORT Environment {
   int _blasPatchVersion = 0;
 
   static Environment& getInstance();
+
+  /**
+   * This is mainly for debugging. This toggles
+   * deletion of shape info descriptors.
+   * This can be used to isolate potential issues with shape info
+   * memory management.
+   * The next concern is why have this at all?
+   * Historically, we had issues with shape descriptors and shape info
+   * buffers being deallocated when they shouldn't be due to stack based deallocation.
+   * By controlling everything with normal heap allocation, manual deletes and configurable behavior
+   * we can keep memory management consistent and predictable.
+   */
 
   bool isDeleteSpecial();
   void setDeleteSpecial(bool reallyDelete);
@@ -174,7 +190,8 @@ class SD_LIB_EXPORT Environment {
   bool isFuncTracePrintAllocate();
   void setFuncTracePrintAllocate(bool reallyPrint);
 
-
+  bool isDeleteShapeInfo();
+  void setDeleteShapeInfo(bool deleteShapeInfo);
 };
 }  // namespace sd
 

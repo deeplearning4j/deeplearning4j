@@ -33,6 +33,16 @@ public class CpuEnvironment implements Environment {
 
 
     @Override
+    public boolean isDeleteShapeInfo() {
+        return INSTANCE.isDeleteShapeInfo();
+    }
+
+    @Override
+    public void setDeleteShapeInfo(boolean reallyDelete) {
+        INSTANCE.setDeleteShapeInfo(reallyDelete);
+    }
+
+    @Override
     public int blasMajorVersion() {
         return 0;
     }

@@ -58,7 +58,7 @@ class SD_LIB_EXPORT DataTypeConversions {
       samediff::Threads::parallel_for(func, 0, length);
 #endif
 
-    //  delete[] tmp;
+      delete[] tmp;
     }
   }
 
@@ -108,7 +108,7 @@ class SD_LIB_EXPORT DataTypeConversions {
           samediff::Threads::parallel_for(func, 0, length);
 #endif
 
-      //    delete[] tmp;
+          delete[] tmp;
         }
       } break;
       case DOUBLE: {
@@ -132,7 +132,7 @@ class SD_LIB_EXPORT DataTypeConversions {
 
           samediff::Threads::parallel_for(func, 0, length);
 #endif
-       //   delete[] tmp;
+          delete[] tmp;
         }
       } break;
       case HALF: {
@@ -155,7 +155,7 @@ class SD_LIB_EXPORT DataTypeConversions {
 
           samediff::Threads::parallel_for(func, 0, length);
 #endif
-        //  delete[] tmp;
+          delete[] tmp;
         }
       } break;
       default: {

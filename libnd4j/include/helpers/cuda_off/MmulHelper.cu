@@ -366,7 +366,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, NDArray* Y, const double alpha, const double beta,
                              const char outOrder) {
   LongType xLenDim, yLenDim(0);
-  printf("using cublas mmulMxV\n");
 
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV cuda: rank of A array is not equal 2 !");
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))

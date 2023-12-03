@@ -1830,7 +1830,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op) {
-
         Nd4j.getExecutioner().commit();
 
         boolean shapeOverride = false;

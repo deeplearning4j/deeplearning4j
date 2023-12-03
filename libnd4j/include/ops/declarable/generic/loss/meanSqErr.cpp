@@ -154,7 +154,7 @@ DECLARE_SHAPE_FN(mean_sqerr_loss) {
     auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
                                     shape::rank(labelsShapeInfo));
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
   return SHAPELIST(outShapeInfo);
 }

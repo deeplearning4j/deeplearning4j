@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(mergeavg_bp) {
     auto desc = new ShapeDescriptor(
         ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape));
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
 
   return shapeList;

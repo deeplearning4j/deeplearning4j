@@ -56,7 +56,6 @@ import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
 import org.nd4j.graph.ExecutionMode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -718,9 +717,9 @@ public class SameDiff extends SDBaseOps {
 
         }
 
-        Map<String,Integer> reverseMap = new HashMap<>();
+        Map<String,Integer> reverseMap = new LinkedHashMap<>();
         int count = 0;
-        for( Variable v : variables.values()){
+        for( Variable v : variables.values()) {
             reverseMap.put(v.getName(), count++);
         }
 
@@ -5107,6 +5106,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             outer.invokeGraphOn(sameDiff);
+            System.out.println("Done with invoke graph");
             outer.putSubFunction(GRAD_FN_KEY,sameDiff);
             if (debugMode) {
                 //Expect incoming args and outgoing args to be the same
@@ -5861,7 +5861,6 @@ public class SameDiff extends SDBaseOps {
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
     public ByteBuffer asFlatBuffers(long graphId, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) {
-        Nd4j.getExecutioner().commit();
         val bufferBuilder = new FlatBufferBuilder(1024);
         val idCounter = new AtomicInteger(0);
 
@@ -5997,6 +5996,8 @@ public class SameDiff extends SDBaseOps {
             Integer fnId = idxForOps.get(func);
             flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
+
+        System.out.println("Have all ops");
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
         int variablesOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
@@ -7012,32 +7013,6 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
-    /**
-     * Import a frozen Tensorflow graph to a new SameDiff graph.
-     *
-     * @param graphFile The text or binary file containing the graph
-     * @return The imported graph
-     */
-    public static SameDiff importFrozenTF(File graphFile) {
-        return TFGraphMapper.importGraph(graphFile);
-    }
-
-    /**
-     * See {@link #importFrozenTF(File)}
-     */
-    public static SameDiff importFrozenTF(GraphDef graphDef) {
-        return TFGraphMapper.importGraph(graphDef);
-    }
-
-
-    /**
-     * See {@link #importFrozenTF(File)}
-     * <p>
-     * Again, the input can be text or binary.
-     */
-    public static SameDiff importFrozenTF(InputStream graph) {
-        return TFGraphMapper.importGraph(graph);
-    }
 
 
     /**

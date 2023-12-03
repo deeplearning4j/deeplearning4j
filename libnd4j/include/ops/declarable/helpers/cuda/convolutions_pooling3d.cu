@@ -117,10 +117,7 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
         LongType b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
         LongType c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
         sum /= static_cast<T>(
-            a * b * c);  //  /= sd::math::sd_ceil<double,T>(static_cast<double>(dend - dstart) /
-                         //  static_cast<double>(dD)) * sd::math::sd_ceil<double,T>(static_cast<double>(hend - hstart) /
-                         //  static_cast<double>(dH)) * sd::math::sd_ceil<double,T>(static_cast<double>(wend - wstart) /
-                         //  static_cast<double>(dW));   //Accounts for dilation
+            a * b * c); //Accounts for dilation
       } else if (extraParam0 == 1)  // Include padding
         sum /= kProd;
 

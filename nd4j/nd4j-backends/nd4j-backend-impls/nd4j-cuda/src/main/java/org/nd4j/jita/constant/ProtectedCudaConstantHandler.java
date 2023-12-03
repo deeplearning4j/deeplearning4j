@@ -265,22 +265,16 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                 flowController = AtomicAllocator.getInstance().getFlowController();
 
             try {
-                synchronized (this) {
                     if (!buffersCache.containsKey(deviceId)) {
-
-                        // TODO: this op call should be checked
-                        //nativeOps.setDevice(new CudaPointer(deviceId));
-
-                        buffersCache.put(deviceId, new ConcurrentHashMap<ArrayDescriptor, DataBuffer>());
+                        buffersCache.put(deviceId, new ConcurrentHashMap<>());
                         constantOffsets.put(deviceId, new AtomicLong(0));
                         deviceLocks.put(deviceId, new Semaphore(1));
 
                         Pointer cAddr = NativeOpsHolder.getInstance().getDeviceNativeOps().getConstantSpace();
-                        //                    logger.info("constant pointer: {}", cAddr.address() );
 
                         deviceAddresses.put(deviceId, cAddr);
                     }
-                }
+
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

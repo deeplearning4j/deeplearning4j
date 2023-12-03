@@ -35,7 +35,6 @@ import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -106,7 +105,7 @@ public class TestUtils {
 
     private static <T> T serializeDeserializeJava(T object){
         byte[] bytes;
-        try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)){
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(object);
             oos.close();
             bytes = baos.toByteArray();
@@ -116,7 +115,7 @@ public class TestUtils {
         }
 
         T out;
-        try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))){
+        try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
             out = (T)ois.readObject();
         } catch (IOException | ClassNotFoundException e){
             throw new RuntimeException(e);
@@ -303,28 +302,10 @@ public class TestUtils {
             }
 
 
-            if(l.getHelper() != null){
-                throw new IllegalStateException("Did not remove helper for layer: " + l.getClass().getSimpleName());
-            }
         }
     }
 
-    public static void assertHelperPresent(Layer layer){
 
-    }
 
-    public static void assertHelpersPresent(Layer[] layers) throws Exception {
-        for(Layer l : layers){
-            //Don't use instanceof here - there are sub conv subclasses
-            if(l.getClass() == ConvolutionLayer.class || l instanceof SubsamplingLayer || l instanceof BatchNormalization || l instanceof LSTM){
-                Preconditions.checkNotNull(l.getHelper(), l.conf().getLayer().getLayerName());
-            }
-        }
-    }
 
-    public static void assertHelpersAbsent(Layer[] layers) throws Exception {
-        for(Layer l : layers){
-            Preconditions.checkState(l.getHelper() == null, l.conf().getLayer().getLayerName());
-        }
-    }
 }

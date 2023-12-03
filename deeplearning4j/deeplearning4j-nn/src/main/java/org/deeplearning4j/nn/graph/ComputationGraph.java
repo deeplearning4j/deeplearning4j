@@ -422,6 +422,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
 
+    @Override
+    public Updater createUpdater() {
+        return new ComputationGraphUpdater(this);
+    }
+
     /**
      * Initialize the ComputationGraph network
      */
@@ -1050,7 +1055,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * For pretraining use method pretrain.. {@link #pretrain(MultiDataSetIterator)}<br>
      * @param multi Training data (MultiDataSetIterator)
      */
-    public synchronized void fit(MultiDataSetIterator multi) {
+    public  void fit(MultiDataSetIterator multi) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1118,7 +1123,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
-    private synchronized void fitHelper(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+    private  void fitHelper(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
         if (numParams() == 0) {
             return; //Edge case: net with no params: fitting is a no-op
         }
@@ -1707,7 +1712,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param <T> T extends Object
      * @return T instance produced by OutputAdapter
      */
-    public synchronized <T> T output(@NonNull INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
+    public  <T> T output(@NonNull INDArray[] inputs, INDArray[] inputMasks, INDArray[] labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
             if (outputAdapter instanceof ModelAdapter)
                 return ((ModelAdapter<T>) outputAdapter).apply(this, inputs, inputMasks, labelMasks);
@@ -1733,7 +1738,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
      * @return Network output activations
      */
-    public synchronized INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks, MemoryWorkspace outputWorkspace){
+    public  INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks, MemoryWorkspace outputWorkspace){
         try {
             setLayerMaskArrays(inputMasks, labelMasks);
             INDArray[] out = outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false, outputWorkspace);
@@ -1785,7 +1790,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param input       Input to the network
      * @return            Output from the network
      */
-    public synchronized INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
+    public  INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
         try {
             return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs, null);
@@ -1905,7 +1910,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param clearLayers       Whether the layer inputs should be cleared
      * @return Map of activations (including the input), detached from any workspace
      */
-    protected synchronized Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
+    protected  Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                                              int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
                                                                              INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
         if(layerIndex < 0 || layerIndex >= topologicalOrder.length){
@@ -2060,7 +2065,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Map of activations (including the input), in workspace WS_ALL_LAYERS_ACT if workspaces are used (detached
      * otherwise)
      */
-    protected synchronized Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
+    protected  Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
                                                                          FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                                          INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
         if(layerIndex != -1 && (layerIndex < 0 || layerIndex >= topologicalOrder.length)){
@@ -2991,13 +2996,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param initializeIfAbsent If true: create the updater if one is absent. False: return null if absent.
      * @return Updater
      */
-    public ComputationGraphUpdater getUpdater(boolean initializeIfAbsent){
+    public ComputationGraphUpdater getUpdater(boolean initializeIfAbsent) {
         if (solver == null && initializeIfAbsent) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
+            solver.getOptimizer().setUpdater(new ComputationGraphUpdater(this));
         }
         if(solver != null) {
-            return solver.getOptimizer().getComputationGraphUpdater(initializeIfAbsent);
+            return (ComputationGraphUpdater) solver.getOptimizer().getUpdater(initializeIfAbsent);
         }
         return null;
     }
@@ -3009,7 +3014,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (solver == null) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
         }
-        solver.getOptimizer().setUpdaterComputationGraph(updater);
+        solver.getOptimizer().setUpdater(updater);
     }
 
     /**

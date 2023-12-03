@@ -181,32 +181,6 @@ class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         }
     }
 
-    @DisplayName("Test Graves Bidirectional LSTM Forward Pass Helper")
-    @ParameterizedTest
-    @MethodSource("params")
-    void testGravesBidirectionalLSTMForwardPassHelper(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
-        // GravesBidirectionalLSTM.activateHelper() has different behaviour (due to optimizations) when forBackprop==true vs false
-        // But should otherwise provide identical activations
-        Nd4j.getRandom().setSeed(12345);
-        final int nIn = 10;
-        final int layerSize = 15;
-        final int miniBatchSize = 4;
-        final int timeSeriesLength = 7;
-        final NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build()).build();
-        long numParams = conf.getLayer().initializer().numParams(conf);
-        INDArray params = Nd4j.create(1, numParams);
-        final GravesBidirectionalLSTM lstm = (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
-        final INDArray input = Nd4j.rand(new int[] { miniBatchSize, nIn, timeSeriesLength });
-        lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
-        final INDArray fwdPassFalse = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(), lstm.input(), lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS), lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null, false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true, null, CacheMode.NONE, LayerWorkspaceMgr.noWorkspaces(), true).fwdPassOutput;
-        final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(), lstm.input(), lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS), lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null, true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true, null, CacheMode.NONE, LayerWorkspaceMgr.noWorkspaces(), true).fwdPassOutputAsArrays;
-        // I have no idea what the heck this does --Ben
-        for (int i = 0; i < timeSeriesLength; i++) {
-            final INDArray sliceFalse = fwdPassFalse.tensorAlongDimension(i, 1, 0);
-            final INDArray sliceTrue = fwdPassTrue[i];
-            assertTrue(sliceFalse.equals(sliceTrue));
-        }
-    }
 
     static private void reverseColumnsInPlace(final INDArray x) {
         final long N = x.size(1);

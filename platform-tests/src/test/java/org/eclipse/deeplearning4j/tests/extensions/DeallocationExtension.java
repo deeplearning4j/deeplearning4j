@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.tests.extensions;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitioned0;
 import org.junit.jupiter.api.extension.*;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatableReference;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
@@ -51,12 +52,11 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
     private Set<DeallocatableReference> referencesBeforeSet = new LinkedHashSet<>();
     private Map<String,DataBuffer> dataBuffersBeforeSet = new LinkedHashMap<>();
+    private static AtomicBoolean addedAsListener = new AtomicBoolean(false);
     private Set<TestParams>  executed = new HashSet<>();
 
     public DeallocationExtension() {
-        Nd4j.getDeallocatorService().addListener(this);
-        classAllocationHandlers.put(TestTFGraphAllSameDiffPartitioned0.class.getName(), new TFTestAllocationHandler());
-    }
+          }
 
     private String currentTestDisplayName() {
         return System.getProperty(CURRENT_TEST_DISPLAY_NAME, "");
@@ -71,7 +71,7 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        System.out.print("After each");
+     /*   System.out.print("After each");
         Set<TestParams> deallocated = new HashSet<>();
         TestParams testParams = TestParams.builder()
                 .testDisplayName(context.getDisplayName())
@@ -156,8 +156,8 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
         System.clearProperty(CURRENT_TEST_CLASS_PROPERTY);
         System.clearProperty(CURRENT_TEST_METHOD_PROPERTY);
 
-        executed.add(testParams);
-
+        System.out.println("DeallocationExtension: clear after each");
+        executed.add(testParams);*/
     }
 
 
@@ -174,7 +174,14 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        System.out.println("Setting test property  " + testName(context));
+      /*  if(!addedAsListener.get()) {
+            Nd4j.getDeallocatorService().addListener(this);
+            classAllocationHandlers.put(TestTFGraphAllSameDiffPartitioned0.class.getName(), new TFTestAllocationHandler());
+
+            addedAsListener.set(true);
+        }
+         String parentPid = ProcessHandle.current().parent().isPresent() ? String.valueOf(ProcessHandle.current().parent().get().pid()) : "none";
+        System.out.println("beforeEach Setting test property  " + testName(context) + " for pid: " + ProcessHandle.current().pid() + " and parent process pid: " + parentPid);
         System.setProperty(CURRENT_TEST_DISPLAY_NAME,context.getDisplayName());
         System.setProperty(CURRENT_TEST_CLASS_PROPERTY,context.getTestClass().get().getName());
         System.setProperty(CURRENT_TEST_METHOD_PROPERTY,context.getTestMethod().get().getName());
@@ -197,13 +204,13 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
 
         remove.forEach(dataBuffersBeforeSet::remove);
-
-
+        System.out.println("Done with before in PID: " + ProcessHandle.current().pid() + " for test " + context.getDisplayName());
+*/
     }
 
     @Override
     public void registerDataBuffer(DataBuffer reference) {
-        String currMethodName = currentTestMethodName();
+    /*    String currMethodName = currentTestMethodName();
         String currentTestClassName = currentTestClassName();
         String displayName = currentTestDisplayName();
         //handle case where allocations happen before a test is created
@@ -229,52 +236,13 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
             else {
                 dataBuffers.get(testParams).add(reference);
             }
-        }
+        }*/
 
     }
 
     @Override
     public void registerDeallocatable(DeallocatableReference reference) {
-     /*   String currName = currentTestName();
-        String currentTestClassName = currentTestClassName();
-        //handle case where allocations happen before a test is created
-        if(currName.isEmpty()) {
-            if(classAllocationHandlers.containsKey(currentTestClassName)) {
-                if(reference.get() instanceof DataBuffer) {
-                    classAllocationHandlers.get(currentTestClassName).handleDataBuffer((DataBuffer) reference.get());
-                }
-                else
-                    classAllocationHandlers.get(currentTestClassName).handleDeallocatableReference(reference);
-            }
-            else {
-                if(reference.get() instanceof DataBuffer) {
-                    dataBuffersBeforeSet.add((DataBuffer) reference.get());
-                }
-                else {
-                    referencesBeforeSet.add(reference);
 
-                }
-            }
-        } else {
-            if(reference.get() instanceof DataBuffer) {
-                if(!dataBuffers.containsKey(currName)) {
-                    dataBuffers.put(currName,new ArrayList<>());
-                    dataBuffers.get(currName).add((DataBuffer) reference.get());
-                }
-                else {
-                    dataBuffers.get(currName).add((DataBuffer) reference.get());
-                }
-            } else {
-                if(!references.containsKey(currName)) {
-                    references.put(currName,new ArrayList<>());
-                    references.get(currName).add(reference);
-                }
-                else {
-                    references.get(currName).add(reference);
-                }
-            }
-
-        }*/
 
     }
 
@@ -285,8 +253,7 @@ public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecut
 
     @Override
     public void beforeTestExecution(ExtensionContext context) throws Exception {
-        System.out.println("Setting test property  " + testName(context));
-        System.setProperty(CURRENT_TEST_CLASS_PROPERTY,context.getRequiredTestClass().getName());
+
     }
 
 

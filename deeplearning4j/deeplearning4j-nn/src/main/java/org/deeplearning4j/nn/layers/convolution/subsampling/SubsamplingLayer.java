@@ -29,8 +29,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.HelperUtils;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -38,7 +36,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -46,10 +43,8 @@ import java.util.Arrays;
 @Slf4j
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
-    protected SubsamplingHelper helper = null;
     protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
-    public final static String  CUDNN_SUBSAMPLING_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper";
     public SubsamplingLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
         initializeHelper();
@@ -219,10 +214,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //no op
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return helper;
-    }
 
     @Override
     public Gradient gradient() {

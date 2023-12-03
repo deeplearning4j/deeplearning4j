@@ -241,18 +241,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private static boolean isEmpty(DataBuffer buffer, int[] shape) {
         boolean isEmpty = false;
-        if(buffer == null || buffer.length() < 1)
+        if(buffer == null || buffer.length() < 1 || shape == null)
             isEmpty = true;
-        for(int i = 0; i < shape.length; i++) {
-            if(shape[i] == 0)
-                isEmpty = true;
+        else {
+            for (int i = 0; i < shape.length; i++) {
+                if (shape[i] == 0)
+                    isEmpty = true;
+            }
         }
         return isEmpty;
     }
 
     public BaseNDArray(DataBuffer buffer,  DataType dataType, long[] shape, long[] stride, long offset, char ordering) {
-        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride,
+        this.data = offset > 0 ? createBuffer(buffer, offset, Shape.lengthOfBuffer(shape, stride)) : buffer;
+        setShapeInformation(getShapeInfoProvider().createShapeInformation(shape, stride,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering, dataType, false));
         init(shape, stride);
     }
@@ -263,7 +265,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param data
      */
     public BaseNDArray(double[][] data) {
-        this(data, Nd4j.order());
+        this(data, order().charValue());
     }
 
     /**

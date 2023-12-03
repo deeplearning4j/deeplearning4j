@@ -70,8 +70,10 @@ DECLARE_SHAPE_FN(eig) {
   auto output0 = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   auto desc2 = new ShapeDescriptor(dtype_float, ordering, {n1, n1, 2});
   auto output1 =ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-  delete desc;
-  delete desc2;
+  if (Environment::getInstance().isDeleteShapeInfo()) {
+    delete desc;
+    delete desc2;
+  }
   return SHAPELIST(output0, output1);
 }
 

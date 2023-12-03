@@ -379,7 +379,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   auto desc = new ShapeDescriptor(newShapeInfo);
   // assign new shape and new buffer to resulting array
   NDArray result(newBuff,desc , getContext());
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
   const auto resultLen = result.lengthOf();

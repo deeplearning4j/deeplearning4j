@@ -73,8 +73,8 @@ public class LSTMHelpers {
                                                final boolean training, final INDArray originalPrevOutputActivations,
                                                final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                                                final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                                               final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
-                                               final LSTMHelper helper, final CacheMode cacheMode, // cacheMode for layer calling this helper
+                                               final boolean hasPeepholeConnections //True for GravesLSTM, false for LSTM
+                                               , final CacheMode cacheMode, // cacheMode for layer calling this helper
                                                final LayerWorkspaceMgr workspaceMgr, boolean isHelperAllowFallback
                                                ) {
 
@@ -162,7 +162,6 @@ public class LSTMHelpers {
             toReturn.fwdPassOutput = outputActivations;
         }
 
-        //Level1 l1BLAS = Nd4j.getBlasWrapper().level1();
 
         //Input validation: check input data matches nIn
         if (input.size(1) != inputWeights.size(0)) {
@@ -181,32 +180,6 @@ public class LSTMHelpers {
             prevOutputActivations = Nd4j.zeros(input.dataType(), new long[] {miniBatchSize, hiddenLayerSize});
         }
 
-        if (helper != null && (layer.helperCountFail == 0 || !isHelperAllowFallback)) {
-            FwdPassReturn ret = null;
-            try {
-                ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
-                        biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards,
-                        inputWeightKey, maskArray, hasPeepholeConnections, workspaceMgr);
-            }catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-                if(isHelperAllowFallback){
-                    layer.helperCountFail++;
-                    log.warn("MKL/CuDNN execution failed - falling back on built-in implementation",e);
-                } else {
-                    throw new RuntimeException("Error during LSTM MKL/CuDNN helper forward pass - helperAllowFallback() is set to false", e);
-                }
-            }
-
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
             try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.RNN_FF_LOOP_WORKING_MEM)) {
@@ -432,7 +405,6 @@ public class LSTMHelpers {
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
-                    final LSTMHelper helper,
                     final LayerWorkspaceMgr workspaceMgr,
                     final boolean isHelperAllowFallback) {
 
@@ -496,33 +468,7 @@ public class LSTMHelpers {
             rwGradientsGG = rwGradientsOut.get(all(), NDArrayIndex.point(4 * hiddenLayerSize + 2)).reshape(1, recurrentWeights.size(0));
         }
 
-        if (helper != null && (layer.helperCountFail == 0 || !isHelperAllowFallback)) {
-            Pair<Gradient, INDArray> ret = null;
-            try {
-                ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
-                        inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, forwards,
-                        inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews, maskArray,
-                        hasPeepholeConnections, workspaceMgr);
-            }catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
 
-                if(isHelperAllowFallback){
-                    layer.helperCountFail++;
-                    log.warn("MKL/CuDNN execution failed - falling back on built-in implementation",e);
-                } else {
-                    throw new RuntimeException("Error during LSTM MKL/CuDNN helper backprop - helperAllowFallback() is set to false", e);
-                }
-            }
-
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();

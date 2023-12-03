@@ -57,7 +57,7 @@ public class IrisUtils {
             lines = IOUtils.readLines(is);
         }
         List<DataSet> list = new ArrayList<>();
-        INDArray ret = Nd4j.ones(Math.abs(to - from), 4);
+        INDArray ret = to - from > 1 ? Nd4j.ones(Math.abs(to - from), 4) : Nd4j.ones( 4);
         double[][] outcomes = new double[lines.size()][3];
         int putCount = 0;
 

@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -232,7 +233,7 @@ public class TestRnnLayers extends BaseDL4JTest {
 
         for( int i = 0; i < 2; i++) {
 
-            NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
+            ListBuilder lb = new NeuralNetConfiguration.Builder()
 
                     .list()
                     .layer(new SimpleRnn.Builder().nIn(5).nOut(5).dataFormat(rnnDataFormat).build());

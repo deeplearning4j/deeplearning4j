@@ -2319,7 +2319,7 @@ public class Shape {
         }
 
         if (isFortran && cContiguous)
-            return 'a';
+            return 'c';
         else if (isFortran && !cContiguous)
             return 'f';
 

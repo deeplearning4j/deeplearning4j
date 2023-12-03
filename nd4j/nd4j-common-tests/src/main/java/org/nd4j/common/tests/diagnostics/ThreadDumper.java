@@ -17,25 +17,33 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
-package org.deeplearning4j.nn.layers;
+package org.nd4j.common.tests.diagnostics;
 
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-public interface LayerHelper {
+public class ThreadDumper {
 
-    /**
-     * Return the currently allocated memory for the helper.<br>
-     * (a) Excludes: any shared memory used by multiple helpers/layers<br>
-     * (b) Excludes any temporary memory
-     * (c) Includes all memory that persists for longer than the helper method<br>
-     * This is mainly used for debugging and reporting purposes. Returns a map:<br>
-     * Key: The name of the type of memory<br>
-     * Value: The amount of memory<br>
-     *
-     * @return Map of memory, may be null if none is used.
-     */
-    Map<String,Long> helperMemoryUse();
+    public static ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
 
-    boolean checkSupported();
+
+    public static void printThreadDumpsPeriodically(long everyMs) {
+        ses.scheduleAtFixedRate(() -> printDump(), 1, everyMs, TimeUnit.MILLISECONDS);
+
+    }
+
+    public static void printDump() {
+        for (Map.Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
+            System.out.println(entry.getKey() + " " + entry.getKey().getState());
+            for (StackTraceElement ste : entry.getValue()) {
+                System.out.println("\tat " + ste);
+            }
+            System.out.println();
+        }
+    }
+
+
+
 }

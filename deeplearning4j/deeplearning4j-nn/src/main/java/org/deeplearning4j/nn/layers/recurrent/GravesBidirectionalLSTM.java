@@ -82,7 +82,7 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
-                        null, workspaceMgr, layerConf().isHelperAllowFallback());
+                         workspaceMgr, layerConf().isHelperAllowFallback());
 
 
 
@@ -97,7 +97,7 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
-                        null, workspaceMgr, layerConf().isHelperAllowFallback());
+                        workspaceMgr, layerConf().isHelperAllowFallback());
 
         forwardsGradient.setSecond(permuteIfNWC(forwardsGradient.getSecond()));
         backwardsGradient.setSecond(permuteIfNWC(backwardsGradient.getSecond()));
@@ -160,7 +160,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true,
                             forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
@@ -169,7 +169,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
-                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true,
                             forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
             forwardsEval.fwdPassOutput = permuteIfNWC(forwardsEval.fwdPassOutput);
@@ -218,7 +218,7 @@ public class GravesBidirectionalLSTM
             FwdPassReturn ret = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
-                            null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
             ret.fwdPassOutput = permuteIfNWC(ret.fwdPassOutput);
             return ret;
         }

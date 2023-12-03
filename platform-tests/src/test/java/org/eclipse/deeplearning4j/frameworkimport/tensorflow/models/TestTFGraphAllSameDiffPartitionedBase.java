@@ -21,9 +21,7 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow.models;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphTestAllHelper;
-import org.eclipse.deeplearning4j.tests.extensions.FailFast;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.provider.Arguments;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,7 +32,6 @@ import java.util.*;
 import java.util.stream.Stream;
 @Slf4j
 @Tag(TagNames.TENSORFLOW)
-@ExtendWith(FailFast.class)
 public abstract class TestTFGraphAllSameDiffPartitionedBase {
 
     public static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;

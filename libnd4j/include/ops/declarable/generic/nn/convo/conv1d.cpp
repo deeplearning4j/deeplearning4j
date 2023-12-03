@@ -75,10 +75,10 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
                "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(
-        bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-        "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-        oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(
+      bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+      "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
+      oC, bias->rankOf(), bias->lengthOf());
 
   std::vector<LongType> reshapeForInput, reshapeForOutput;
   if (!isNCW) {
@@ -89,16 +89,30 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     reshapeForOutput = {output->sizeAt(0), output->sizeAt(1), 1, output->sizeAt(2)};  // [bS, oC, oW] -> [bS, oC, 1, oW]
   }
 
-  auto inputReshaped = input->reshape(input->ordering(), reshapeForInput);
-  auto outputReshaped = output->reshape(output->ordering(), reshapeForOutput, false);
-  auto weightsReshaped = weights->reshape(
+  auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,true));
+  auto outputReshaped = new NDArray(output->reshape(output->ordering(), reshapeForOutput, true));
+  auto weightsReshaped = new NDArray(weights->reshape(
       weights->ordering(),
-      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});  // [kW, iC, oC] -> [1, kW, iC, oC]
+      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},true));  // [kW, iC, oC] -> [1, kW, iC, oC]
 
   conv2d conv2d;
-  const Status status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {},
-                                           {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-  if (status != Status::OK) return status;
+  if(bias == nullptr) {
+    //note this might look strange but we get a segfault otherwise.
+    //this problem was actually the source of a very strange JVM hang.
+    const Status status = conv2d.execute({inputReshaped, weightsReshaped}, {outputReshaped}, {},
+                                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+
+    output->assign(outputReshaped);
+    if (status != Status::OK) return status;
+
+  } else {
+    const Status status = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {},
+                                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+
+    output->assign(outputReshaped);
+    if (status != Status::OK) return status;
+
+  }
 
 
   return Status::OK;
@@ -144,10 +158,10 @@ DECLARE_SHAPE_FN(conv1d) {
                    : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
 
   if (biasShapeInfo)
-    REQUIRE_TRUE(
-        biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-        "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-        oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(
+      biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+      "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
+      oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizePool2D(oH, oW, 1, kW, 1, sW, 0, pW, 1, dW, 1, iW, paddingMode);
@@ -241,10 +255,10 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
                "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   std::vector<LongType> reshapeForInput, reshapeForGradO;
   if (!isNCW) {
@@ -266,13 +280,21 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
                      false);  // [kW, iC, oC] -> [1, kW, iC, oC]
 
   conv2d_bp conv2dBP;
-  auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped},
-                                 {&gradIReshaped, &gradWReshaped, gradB}, {},
-                                 {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-  if (status != Status::OK) return status;
+  if(bias == nullptr) {
+    //note this might look strange but we get a segfault otherwise.
+    //this problem was actually the source of a very strange JVM hang.
+    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, &gradOReshaped},
+                                   {&gradIReshaped, &gradWReshaped}, {},
+                                   {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+    if (status != Status::OK) return status;
 
-  // ConvolutionUtils::conv2dBP(block, &inputReshaped, &weightsReshaped, bias, &gradOReshaped, &gradIReshaped,
-  // &gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, isNCW, wFormat);
+  } else {
+    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped,bias, &gradOReshaped},
+                                   {&gradIReshaped, &gradWReshaped, gradB}, {},
+                                   {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+    if (status != Status::OK) return status;
+  }
+
 
   return Status::OK;
 }
@@ -337,10 +359,10 @@ DECLARE_SHAPE_FN(conv1d_bp) {
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
                ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
   if (biasShapeInfo)
-    REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-                 "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+               "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   auto gradIshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());

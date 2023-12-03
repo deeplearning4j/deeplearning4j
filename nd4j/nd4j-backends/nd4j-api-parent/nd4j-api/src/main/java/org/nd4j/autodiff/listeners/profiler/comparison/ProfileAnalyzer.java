@@ -184,19 +184,6 @@ public class ProfileAnalyzer {
             }
             events = traceEvents.getTraceEvents().toArray(new TraceEvent[0]);
 
-            //Clean up TF format - sometimes things like "Softmax" are actually profiled as "_MklSoftmax"
-            //And we'll align TF names to SameDiff names
-            for (TraceEvent te : events) {
-                if (TF_PROFILE_ALIASES.containsKey(te.getName())) {
-                    te.setName(TF_PROFILE_ALIASES.get(te.getName()));
-                }
-
-                DifferentialFunction df = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(te.getName());
-                if (df != null) {
-                    te.setName(df.opName());
-                }
-            }
-
 
             if(aggregateTFSubOps) {
                 //For CUDA ops, TF will log sub-ops like:

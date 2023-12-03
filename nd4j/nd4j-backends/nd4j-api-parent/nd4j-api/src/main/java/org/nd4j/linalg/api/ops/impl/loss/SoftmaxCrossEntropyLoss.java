@@ -25,7 +25,6 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyLossBp;
 import org.tensorflow.framework.AttrValue;
@@ -69,9 +68,8 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode,
             GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        super.addArgs();
-        tArguments.add(labelSmoothing);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
+
     }
 
     @Override

@@ -22,12 +22,9 @@ package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -105,7 +102,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
                     continue;
                 }
 
-                NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+                ListBuilder builder = new NeuralNetConfiguration.Builder()
                         .dataType(DataType.DOUBLE)
                         .dist(new NormalDistribution(0,1))
                         .convolutionMode(ConvolutionMode.Same)

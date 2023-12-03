@@ -40,9 +40,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.LossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -62,25 +60,19 @@ import java.util.*;
 @Slf4j
 public class GradientCheckUtil {
 
-    private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
-                    Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
-                                    Activation.ELU.getActivationFunction().getClass(),
-                                    Activation.IDENTITY.getActivationFunction().getClass(),
-                                    Activation.RATIONALTANH.getActivationFunction().getClass(),
-                                    Activation.SIGMOID.getActivationFunction().getClass(),
-                                    Activation.SOFTMAX.getActivationFunction().getClass(),
-                                    Activation.SOFTPLUS.getActivationFunction().getClass(),
-                                    Activation.SOFTSIGN.getActivationFunction().getClass(),
-                                    Activation.TANH.getActivationFunction().getClass());
 
     private GradientCheckUtil() {}
 
+    static {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+    }
 
-    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer){
+
+    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer) {
 
         ILossFunction lfn = null;
         IActivation afn = null;
-        if(outputLayer instanceof BaseOutputLayer){
+        if(outputLayer instanceof BaseOutputLayer) {
             BaseOutputLayer o = (BaseOutputLayer)outputLayer;
             lfn = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)o.layerConf()).getLossFn();
             afn = o.layerConf().getActivationFn();
@@ -99,6 +91,8 @@ public class GradientCheckUtil {
                     + " loss function to avoid spurious gradient check failures");
             ((LossBinaryXENT) lfn).setClipEps(0.0);
         }
+
+        log.info("Done setting clipping");
     }
 
     public enum PrintMode {
@@ -175,12 +169,7 @@ public class GradientCheckUtil {
                                          boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
         Consumer<MultiLayerNetwork> c = null;
         if(rngSeedResetEachIter != null){
-            c = new Consumer<MultiLayerNetwork>() {
-                @Override
-                public void accept(MultiLayerNetwork multiLayerNetwork) {
-                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
-                }
-            };
+            c = multiLayerNetwork -> Nd4j.getRandom().setSeed(rngSeedResetEachIter);
         }
 
         return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
@@ -235,15 +224,7 @@ public class GradientCheckUtil {
                                     "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
-                IActivation activation = bl.getActivationFn();
-                if (activation != null) {
-                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                        log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
-                                        + activation.getClass()
-                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                    }
-                }
+
             }
 
             if (n.getLayer().getIDropout() != null && c.callEachIter == null) {
@@ -269,7 +250,7 @@ public class GradientCheckUtil {
         c.net.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = c.net.gradientAndScore();
 
-        Updater updater = UpdaterCreator.getUpdater(c.net);
+        Updater updater = c.net().createUpdater();
         updater.update(c.net, gradAndScore.getFirst(), 0, 0, c.net.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
@@ -466,15 +447,7 @@ public class GradientCheckUtil {
                                     "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
-                IActivation activation = bl.getActivationFn();
-                if (activation != null) {
-                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                        log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
-                                        + activation.getClass()
-                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                    }
-                }
+
             }
 
             if (lv.getLayerConf().getLayer().getIDropout() != null && c.callEachIter == null) {
@@ -485,8 +458,8 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : c.net.getLayers()){
-            if(l instanceof IOutputLayer){
+        for(Layer l : c.net.getLayers()) {
+            if(l instanceof IOutputLayer) {
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
@@ -638,7 +611,7 @@ public class GradientCheckUtil {
         layer.computeGradientAndScore(mgr);
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)

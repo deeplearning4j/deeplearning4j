@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(repeat) {
 
   auto desc = new ShapeDescriptor(input->dataType(), input->ordering(), outShape);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 }  // namespace ops

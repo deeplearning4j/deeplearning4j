@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -44,7 +45,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected AtomicLong counter = new AtomicLong();
     protected WorkspaceConfiguration defaultConfiguration;
-    protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
+    protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap =ThreadLocal.withInitial(ConcurrentHashMap::new);
 
     // default mode is DISABLED, as in: production mode
     protected SynchronizedObject<DebugMode> debugMode = new SynchronizedObject<>(DebugMode.DISABLED);

@@ -115,7 +115,7 @@ DECLARE_SHAPE_FN(pad) {
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
   ShapeDescriptor *descriptor = new ShapeDescriptor(outShapeInfo);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 

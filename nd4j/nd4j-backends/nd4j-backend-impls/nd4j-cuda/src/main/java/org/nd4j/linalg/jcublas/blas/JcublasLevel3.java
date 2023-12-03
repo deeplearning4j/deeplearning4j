@@ -115,13 +115,7 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        /*
-        val ctx = AtomicAllocator.getInstance().getDeviceContext();
-        val handle = ctx.getCublasHandle();
-        synchronized (handle) {
-            Nd4j.exec(new Mmul(A, B, C, MMulTranspose.builder().transposeA(false).transposeB(false).build()));
-        }
-        */
+
 
         Nd4j.getExecutioner().push();
 

@@ -135,7 +135,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
   }
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), newShape, 4);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   delete[] newShape;
   return ret;
 }

@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.serde;
 
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
 import org.nd4j.linalg.api.ops.impl.loss.bp.BaseLossBp;
@@ -443,15 +444,23 @@ public class FlatBuffersMapper {
         for (int i = 0; i < flatProperties.length; i++) {
             flatProperties[i] = fn.properties(i);
         }
+        DifferentialFunctionClassHolder instance2 = DifferentialFunctionClassHolder.getInstance();
+
+        System.out.println("Mapping proprerties");
         Map<String, Object> props = FlatBuffersMapper
                 .mapFlatPropertiesToFunctionProperties(Arrays.asList(flatProperties));
-
+        System.out.println("Mapped properties");
         if (opType == Type.CUSTOM || opType == Type.LOGIC || opType == Type.UDF) {
+            System.out.println("mapping custom logic udf");
             String opName = fn.opName();
-
+            System.out.println("Obtained op name");
             DifferentialFunction op;
-            Class<?> c = DifferentialFunctionClassHolder.getInstance().customOpClassForHashAndName(opNum, opName);
-
+            System.out.println("Obtained differential function");
+            System.out.println("Diff function class holder 2");
+            DifferentialFunctionClassHolder instance = DifferentialFunctionClassHolder.getInstance();
+            System.out.println("Obtained instance");
+            Class<?> c = instance.customOpClassForHashAndName(opNum, opName);
+            System.out.println("Found op class for op name" + opName);
             Preconditions.checkNotNull(c, "Could not find class for hash %s", opNum);
 
             try {
@@ -460,6 +469,7 @@ public class FlatBuffersMapper {
                 throw new RuntimeException("Error creating differential function instance of type " + c);
             }
 
+            System.out.println("Setting own name " + name);
             op.setOwnName(name);
 
             //Set input SDVariables:
@@ -473,6 +483,8 @@ public class FlatBuffersMapper {
                 ((CustomOp) op).addSArgument(extraStrings);
             }
 
+            System.out.println("Added arguments");
+
             //base loss gets saved as an int argument, ensure that the field is set
             if(op instanceof BaseLoss && extraInteger != null && extraInteger.length > 0) {
                 BaseLoss baseLoss = (BaseLoss) op;
@@ -482,9 +494,13 @@ public class FlatBuffersMapper {
                 baseLossBp.setLossReduce(LossReduce.values()[(int) extraInteger[0]]);
             }
 
+
+            System.out.println("Setting properties");
             op.setPropertiesForFunction(props);
+            System.out.println("Set properties");
             if(op instanceof CustomOp)
                 ((CustomOp) op).configureFromArguments();
+            System.out.println("Configured arguments");
             return op;
         } else {
             Class<?> c = LegacyOpMapper.getLegacyOpClassForId(opType, (int) opNum);
@@ -533,6 +549,7 @@ public class FlatBuffersMapper {
              */
 
             ((DifferentialFunction) op).setPropertiesForFunction(props);
+            System.out.println("Returning op " + op.getClass().getName());
             return (DifferentialFunction) op;
         }
     }
@@ -916,13 +933,16 @@ public class FlatBuffersMapper {
         }
 
         log.trace("Own Name: {}", node.getOwnName());
-        int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
+        int ownId = id != null ? id : idCounter.incrementAndGet();
         String[] outNames = node.outputVariablesNames();
         for (String s : outNames) {
             if (!reverseMap.containsKey(s)) {
                 reverseMap.put(s, ownId);
             }
         }
+
+        log.info("Determined out names for node: {}", node.getOwnName());
+
 
         //Note this is for backwards compatibility.
         //At the api level we standardized on 64 bit ints in c++ but
@@ -945,8 +965,10 @@ public class FlatBuffersMapper {
             dims = new int[0];
         }
 
+        System.out.println("Determining properties for function");
         Map<String, Object> fnProps = node.propertiesForFunction();
         int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
+        System.out.println("Mapped properties to flat properties");
         int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
 
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
@@ -961,6 +983,7 @@ public class FlatBuffersMapper {
         int scopeName = bufferBuilder.createString("");
         int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds != null ? extraStringIds : new int[0]);
         int scalar = 0;
+        System.out.println("Created all various dimensions types etc");
         if (node instanceof ScalarOp) {
             ScalarOp sOp = (ScalarOp) node;
             INDArray s = sOp.scalar();
@@ -968,6 +991,8 @@ public class FlatBuffersMapper {
                 scalar = s.toFlatArray(bufferBuilder);
             }
         }
+
+        log.info("Determined op type node: {}", node.getOwnName());
 
 
         if (node.opType() == null)
@@ -996,6 +1021,7 @@ public class FlatBuffersMapper {
 
         //Control dependencies:
         SameDiffOp sdo = sameDiff.getOps().get(node.getOwnName());
+        log.info("Obtained samediff op for node: {}", node.getOwnName());
 
         int opCds = 0;
         int[] opCdsArr = mapOrNull(sdo.getControlDeps(), bufferBuilder);
@@ -1015,6 +1041,7 @@ public class FlatBuffersMapper {
             cdsFor = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
         }
 
+        log.info("Creating node: {}", node.getOwnName());
 
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
@@ -1044,6 +1071,9 @@ public class FlatBuffersMapper {
                 sArgs3
         );
 
+
+        log.info("Done with node: {}", node.getOwnName());
+        System.out.println(StackTraceUtils.currentStackTraceString());
         return flatNode;
     }
 
@@ -1067,7 +1097,7 @@ public class FlatBuffersMapper {
         return cloneViaSerialize(sd, df, nameToIdxMap);
     }
 
-    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df, Map<String,Integer> nameToIdxMap ){
+    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df, Map<String,Integer> nameToIdxMap) {
         Map<String,Integer> temp2 = new HashMap<>();
         Map<String,Integer> temp3 = new HashMap<>();
         AtomicInteger temp4 = new AtomicInteger();
@@ -1080,9 +1110,17 @@ public class FlatBuffersMapper {
                 temp3,
                 temp4,
                 0);
+
+        System.out.println("Done with buffer finishing");
+
         bufferBuilder.finish(fn);
+        System.out.println("Getting root as flat node");
+
         FlatNode flatNode = FlatNode.getRootAsFlatNode(bufferBuilder.dataBuffer());
+        System.out.println("Done with root as flat node");
+
         DifferentialFunction clone = FlatBuffersMapper.fromFlatNode(flatNode);
+        System.out.println("After clone: " + clone);
         return clone;
     }
 

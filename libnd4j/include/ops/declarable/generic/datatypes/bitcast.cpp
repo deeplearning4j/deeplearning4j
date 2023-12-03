@@ -67,14 +67,14 @@ DECLARE_SHAPE_FN(bitcast) {
   if (shape::length(inShape) == 0) {
     auto desc = new ShapeDescriptor(inShape, newType);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return ret;
   }
   if (inputSize == outputSize) {
     // only type should be changed
     auto desc = new ShapeDescriptor(inShape, newType);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return ret;
   } else if (inputSize > outputSize) {
     // range of output increased by 1 with inputSize / outputSize as last dimension

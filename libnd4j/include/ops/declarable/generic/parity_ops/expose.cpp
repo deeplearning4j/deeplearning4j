@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(expose) {
       auto inShape = inputShape->at(e);
       auto desc = new ShapeDescriptor(inShape);
       shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-      delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     }
   }
 

@@ -27,10 +27,7 @@ import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -83,7 +80,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Twd First Layer")
     void testTwdFirstLayer() throws Exception {
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(0, // 16 filters kernel size 8 stride 4
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(0, // 16 filters kernel size 8 stride 4
         new ConvolutionLayer.Builder(8, 8).stride(4, 4).nOut(16).dropOut(0.5).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, // 32 filters kernel size 4 stride 2
         new ConvolutionLayer.Builder(4, 4).stride(2, 2).nOut(32).dropOut(0.5).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(2, // fully connected with 256 rectified units
         new DenseLayer.Builder().nOut(256).activation(Activation.RELU).weightInit(WeightInit.XAVIER).dropOut(0.5).build()).layer(3, // output layer
@@ -109,7 +106,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         int kernelHeight = 3;
         int kernelWidth = 3;
         DataSet trainInput;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(imageHeight - kernelHeight, 1).stride(1, 1).build()).layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels));
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(imageHeight - kernelHeight, 1).stride(1, 1).build()).layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
@@ -161,7 +158,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
             int kernelHeight = imageHeight;
             int kernelWidth = imageWidth + 1;
             DataSet trainInput;
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, // (img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
+            ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, // (img-kernel+2*padding)/stride + 1: must be >= 1. Therefore: with p=0, kernel <= img size
             new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels));
             MultiLayerConfiguration conf = builder.build();
             MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -185,7 +182,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
             int kernelHeight = imageHeight;
             int kernelWidth = imageWidth;
             DataSet trainInput;
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 0).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
+            ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 0).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
             MultiLayerConfiguration conf = builder.build();
             MultiLayerNetwork model = new MultiLayerNetwork(conf);
             model.init();
@@ -563,7 +560,7 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     private static MultiLayerNetwork getCNNMLNConfig(boolean backprop, boolean pretrain) {
         int outputNum = 10;
         int seed = 123;
-        MultiLayerConfiguration.Builder conf = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 10, 10 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).stride(1, 1).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 1));
+        ListBuilder conf = new NeuralNetConfiguration.Builder().seed(seed).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 10, 10 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).stride(1, 1).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 1));
         MultiLayerNetwork model = new MultiLayerNetwork(conf.build());
         model.init();
         return model;

@@ -387,9 +387,9 @@ public class SubsamplingLayer extends NoParamLayer {
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                 org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
-        protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
-        protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
-        protected int[] padding = new int[] {0, 0};
+        protected int[] kernelSize = {1, 1}; // Same as filter size from the last conv layer
+        protected int[] stride = {2, 2}; // Default is 2. Down-sample by a factor of 2
+        protected int[] padding = {0, 0};
 
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details

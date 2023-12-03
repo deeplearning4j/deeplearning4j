@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(trace) {
   auto desc = new ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return SHAPELIST(result);
 }
 

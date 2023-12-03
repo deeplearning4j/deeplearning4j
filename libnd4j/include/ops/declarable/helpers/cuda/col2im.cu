@@ -38,13 +38,10 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
   const T* col = reinterpret_cast<const T*>(columns);
   T* im = reinterpret_cast<T*>(image);
 
-  __shared__ LongType kH, kW, oH, oW, *sharedMem;
+  __shared__ LongType kH, kW, oH, oW;
   __shared__ LongType imLen;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-
     kH = dH * (colShapeInfo[3] - 1) + 1;
     kW = dW * (colShapeInfo[4] - 1) + 1;
 
@@ -55,7 +52,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * 6;
+  LongType coords[SD_MAX_RANK];
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 

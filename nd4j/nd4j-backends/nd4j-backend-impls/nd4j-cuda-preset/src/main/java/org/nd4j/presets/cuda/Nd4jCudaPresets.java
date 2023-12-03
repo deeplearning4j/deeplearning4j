@@ -148,12 +148,12 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         this.encoding = encoding;
     }
 
-    @Override public void init(ClassProperties properties) {
+    @Override
+    public void init(ClassProperties properties) {
         String platform = properties.getProperty("platform");
         List<String> preloads = properties.get("platform.preload");
         List<String> resources = properties.get("platform.preloadresource");
         boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Functrace on: " + funcTrace);
         // Only apply this at load time since we don't want to copy the CUDA libraries here
         if (!Loader.isLoadLibraries()) {
             return;

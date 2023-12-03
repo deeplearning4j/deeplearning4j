@@ -793,7 +793,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
     private MultiLayerNetwork getNetWithLayer(DataType dataType,Layer layer, CNN2DFormat format, ConvolutionMode cm, InputType inputType) {
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .dataType(dataType)
                 .seed(12345)
                 .convolutionMode(cm)
@@ -833,7 +833,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
     private MultiLayerNetwork getCnnLossNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm){
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .convolutionMode(cm)
                 .list()
@@ -1018,7 +1018,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
         for(CNN2DFormat df : CNN2DFormat.values()) {
             for(int i = 0; i < 4; i++) {
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .list();
                 switch (i){
                     case 0:

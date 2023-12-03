@@ -21,6 +21,24 @@ package org.nd4j.linalg.factory;
 
 public interface Environment {
 
+    /**
+     * Whether to delete shape info descriptors or not.
+     * This is mainly used to control deallocation of
+     * shape info descriptors. Shape info descriptors
+     * are heap allocated because they are often reused
+     * as keys in ConstantSHapeBuffer.
+     * Historically, they used to be deallocated
+     * on the stack. Due to "smart" deallocation
+     * by the stack allocation it would cause random
+     * segfaults depending on how it was used.
+     * This flag allows for debugging of that behavior
+     * while maintaining control over shape descriptor
+     * allocation.
+     * @return
+     */
+    boolean isDeleteShapeInfo();
+    void setDeleteShapeInfo(boolean reallyDelete);
+
     /** BLAS major version number (if applicable) */
     int blasMajorVersion();
     /** BLAS minor version number (if applicable) */

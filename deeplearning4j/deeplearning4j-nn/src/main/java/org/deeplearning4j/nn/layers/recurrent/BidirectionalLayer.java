@@ -33,7 +33,6 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -553,51 +552,6 @@ public class BidirectionalLayer implements RecurrentLayer {
         return ret;
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        LayerHelper f = fwd.getHelper();
-        LayerHelper b = bwd.getHelper();
-        if(f != null || b != null){
-            return new BidirectionalHelper(f,b);
-        }
-        return null;
-    }
-
-    @AllArgsConstructor
-    private static class BidirectionalHelper implements LayerHelper {
-        private final LayerHelper helperFwd;
-        private final LayerHelper helperBwd;
-
-        @Override
-        public Map<String, Long> helperMemoryUse() {
-            Map<String,Long> fwd = (helperFwd != null ? helperFwd.helperMemoryUse() : null);
-            Map<String,Long> bwd = (helperBwd != null ? helperBwd.helperMemoryUse() : null);
-
-            Set<String> keys = new HashSet<>();
-            if(fwd != null)
-                keys.addAll(fwd.keySet());
-            if(bwd != null)
-                keys.addAll(bwd.keySet());
-
-            Map<String,Long> ret = new HashMap<>();
-            for(String s : keys){
-                long sum = 0;
-                if(fwd != null && fwd.containsKey(s)){
-                    sum += fwd.get(s);
-                }
-                if(bwd != null && bwd.containsKey(s)){
-                    sum += bwd.get(s);
-                }
-                ret.put(s, sum);
-            }
-            return ret;
-        }
-
-        @Override
-        public boolean checkSupported() {
-            return true;
-        }
-    }
 
     @Override
     public void close(){

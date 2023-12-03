@@ -151,7 +151,7 @@ DECLARE_SHAPE_FN(gather) {
 
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outputShapeInfo, block.getWorkspace());
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return SHAPELIST(result);
 }
 

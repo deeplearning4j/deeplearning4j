@@ -863,7 +863,7 @@ public class MultiLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Multi Layer Configuration Activation Types")
     void testMultiLayerConfigurationActivationTypes() {
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder().list()
+        ListBuilder builder = new NeuralNetConfiguration.Builder().list()
                 .layer(new LSTM.Builder().nOut(6).build())
                 .layer(new LSTM.Builder().nOut(7).build())
                 .layer(new GlobalPoolingLayer())

@@ -245,6 +245,14 @@ public class ND4JSystemProperties {
      */
     public final static String UDF_NAME_SPACES = "org.nd4j.linalg.api.ops.udf.packages";
 
+
+    /**
+     * Set the  classes to be used in fully qualified format (org.nd4j.ClassName something for example..)
+     * Note this will be checked BEFORE UDF_NAME_SPACES. Pick only 1  to use.
+     * The value should be a comma separated list.
+     */
+    public final static String UDF_CLASSES = "org.nd4j.linalg.api.ops.udf.classes";
+
     /**
      * Sets the number of threads to be used with the deallocator service.
      */

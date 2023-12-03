@@ -57,7 +57,7 @@ void DataBuffer::expand(const uint64_t size) {
 
     cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
 
-    if (_isOwnerSpecial) {
+    if (_isOwnerSpecial && Environment::getInstance().isDeleteSpecial()) {
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
       RELEASE_SPECIAL(isb, _workspace);
     }
@@ -311,7 +311,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 void DataBuffer::setSpecial(void* special, const bool isOwnerSpecial) {
   //note we don't use locks here
   _specialBuffer = special;
-  _isOwnerSpecial = isOwnerSpecial;
+  _isOwnerSpecial = false;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -363,10 +363,9 @@ void DataBuffer::migrate() {
   memory::Workspace* newWorkspace = nullptr;
   void* newBuffer;
   ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
-  auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-  if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpyAsync failed!", res);
+  if (auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice); res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpyAsync failed!", res);
 
-  if (_isOwnerSpecial) {
+  if (_isOwnerSpecial && Environment::getInstance().isDeleteSpecial()) {
     // now we're releasing original buffer
     RELEASE_SPECIAL(_specialBuffer, _workspace);
   }
@@ -417,7 +416,7 @@ DataBuffer DataBuffer::dup() {
   result._primaryBuffer = _primaryBuffer;
   result._specialBuffer = _specialBuffer;
   result._isOwnerPrimary = _isOwnerPrimary;
-  result._isOwnerSpecial = _isOwnerSpecial;
+  result._isOwnerSpecial = false;
   result.allocateBuffers(true);
   result.copyCounters(*this);
   result.copyBufferFrom(*this);

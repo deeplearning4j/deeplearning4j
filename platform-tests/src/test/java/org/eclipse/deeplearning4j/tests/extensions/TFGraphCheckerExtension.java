@@ -52,7 +52,6 @@ public class TFGraphCheckerExtension implements ExecutionCondition {
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-       new TestTFGraphAllSameDiffPartitioned0();
         if (EXECUTE_ONLY_MODELS.isEmpty() && context.getTestClass().get().getName().contains("TFGraph")
                 && !context.getDisplayName().contains("TestTFGraphAllSameDiff")
                 && !context.getDisplayName().equals("runTest(Map, Map, String, File)")) {

@@ -2749,8 +2749,6 @@ ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op,
 
   for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((DataType)dArgs[e]);
 
-  printf("About to process inputs\n");
-
   for (int e = 0; e < numInputShapes; e++) {
     if (inputShapes[e] == nullptr) {
       std::string errorMessage;

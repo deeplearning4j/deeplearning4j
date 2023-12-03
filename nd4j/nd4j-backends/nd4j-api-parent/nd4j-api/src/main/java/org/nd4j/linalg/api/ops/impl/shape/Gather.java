@@ -22,12 +22,9 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
 import onnx.Onnx;
-import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -39,7 +36,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 import static org.nd4j.linalg.api.buffer.DataType.INT32;
-import static org.nd4j.linalg.api.buffer.DataType.INT64;
 
 /**
  * Gather op
@@ -103,7 +99,7 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
     }
 
     @Override

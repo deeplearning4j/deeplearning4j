@@ -158,7 +158,7 @@ DECLARE_SHAPE_FN(log_poisson_loss) {
   else {  // in this case output has the same shape as labels and predictions
     auto desc = new ShapeDescriptor(labelsShapeInfo, outType);
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-    delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
   return SHAPELIST(outShapeInfo);
 }

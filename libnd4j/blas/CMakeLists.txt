@@ -154,7 +154,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     # using Intel C++
-    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O3 -fp-model fast")
+    SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE} -O${SD_OPTIMIZATION_LEVEL} -fp-model fast")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
     set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
@@ -204,7 +204,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU"  AND NOT ${CMAKE_SYSTEM_NAME} 
         endif()
 
         # Set C++ compiler and flags
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -pthread -MT  -Bsymbolic   -lbfd -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -G -lpthread -pthread -MT  -Bsymbolic   -lbfd -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -249,18 +249,8 @@ if(SD_CUDA)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with cxx compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE ${SD_GCC_FUNCTRACE}")
         include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
-        if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
-            message("Experimental mode ENABLED")
-            set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true -allow-unsupported-compiler")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true -allow-unsupported-compiler")
-            set(EXPM " -DSD_EXPERIMENTAL_ENABLED=true")
-        endif()
-
-
         # the only difference for debug mode here is host/device debug symbols
-        set(CMAKE_CUDA_FLAGS_DEBUG " -G -g")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+        set(CMAKE_CUDA_FLAGS_DEBUG " -g")
 
         # we need -fPIC on Linux/GCC
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
@@ -269,10 +259,13 @@ if(SD_CUDA)
             # functrace works for cuda as well as long as the underlying compiler is gcc
             if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
                 # Set C++ compiler and flags
-                set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS} -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                set(CMAKE_CXX_FLAGS   "${CMAKE_CXX_FLAGS}  -g -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic  -lbfd  -rdynamic  -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls  -rdynamic -finstrument-functions -g -O0")
+                # note we need this for cuda to expose DEVICE side debug symbols. -g is only host side.
+                set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo  -G")
+
                 add_compile_definitions(SD_GCC_FUNCTRACE)
             else()
-                set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS}  -fPIC -G -g ")
+                set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC  ")
 
             endif()
         endif()
@@ -317,6 +310,17 @@ if(SD_CUDA)
 
             message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
         endif()
+        # note this looks off. The reason for this is certain kernels
+        # will run with out of resources and use too many registers.
+        # the biggest one being im2col and col2im.
+        # we profiled them using ncu during the tests.
+        # in order to address this we force the compiler to cap the number of registers.
+        # 40 during the profiling seemed to be what saturated the usage.
+        # any more registers than that did not see many returns in usage.
+        # This may need to be tunable in the future.
+        # For the related benchmarks and how they were run
+        # see ../../platform-tests/docs/benchmark.md
+        set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS}  --maxrregcount=40 ")
 
         string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
         if ("${COMPUTE_CMP}" STREQUAL "all")
@@ -683,10 +687,10 @@ elseif(SD_CPU OR SD_AURORA)
         ADD_LIBRARY (${SD_LIBRARY_NAME}_device SHARED ${VEDA_SOURCES})
         target_link_libraries(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_DEPENDENCY_LIBS})
         target_include_directories(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_INCLUDE_DIRS})
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug" )
-            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O0 -g -traceback )
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR "${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O${SD_OPTIMIZATION_LEVEL} -g -traceback )
         else()
-            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O4 -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2)
+            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2)
         endif()
     endif()
 

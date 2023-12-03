@@ -237,7 +237,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * thread while another thread is using the updater for training.
      * @return A copy (duplicate) of the updater state
      */
-    public synchronized INDArray getStateViewArrayCopy(){
+    public  INDArray getStateViewArrayCopy(){
         Nd4j.getExecutioner().commit();
         return updaterStateViewArray.dup();
     }
@@ -258,7 +258,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * @param iteration The current iteration (i.e., number of parameter updates so far)
      * @param batchSize The current minibatch size (number of examples)
      */
-    public synchronized void update(Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
+    public  void update(Gradient gradient, int iteration, int epoch, int batchSize, LayerWorkspaceMgr workspaceMgr) {
 
         //First: check if gradient is standard or external...
         //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array

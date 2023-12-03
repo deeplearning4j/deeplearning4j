@@ -103,9 +103,11 @@ DECLARE_SHAPE_FN(svd) {
     RELEASE(sShapeInfo, block.workspace());
     RELEASE(uShapeInfo, block.workspace());
     RELEASE(vShapeInfo, block.workspace());
-    delete desc1;
-    delete desc2;
-    delete desc3;
+    if (Environment::getInstance().isDeleteShapeInfo()) {
+      delete desc1;
+      delete desc2;
+      delete desc3;
+    }
     return result;
   }
 

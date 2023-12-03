@@ -254,7 +254,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
                 System.out.println("Starting test: " + ws + " - " + i);
 
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH)
                         .inferenceWorkspaceMode(ws)
@@ -327,7 +327,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
                 System.out.println("Starting test: " + ws + " - " + i);
 
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH)
                         .inferenceWorkspaceMode(ws)

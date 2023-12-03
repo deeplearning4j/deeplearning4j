@@ -29,11 +29,19 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
   LongType bufferLen = shape::shapeInfoLength(descriptor->rank());
   auto ret = new LongType[bufferLen];
   ret[0] = descriptor->rank();
-  shape::setOrder(ret, descriptor->order());
+  if(descriptor->rank() > 0) {
+    shape::setShape(ret, descriptor->shape_strides().data());
+    shape::setStride(ret, (descriptor->shape_strides().data() + descriptor->rank()));
+    shape::setOrder(ret, descriptor->order());
+  } else {
+    std::vector<LongType> shape = {0};
+    std::vector<LongType> strides = {1};
+    shape::setShape(ret,shape.data());
+    shape::setStride(ret, strides.data());
+  }
+
   shape::setOffset(ret, 0);
   shape::setElementWiseStride(ret, descriptor->ews());
-  shape::setShape(ret, descriptor->shape_strides().data());
-  shape::setStride(ret, (descriptor->shape_strides().data() + descriptor->rank()));
   shape::setExtra(ret, descriptor->extra());
   return ret;
 }
@@ -67,8 +75,8 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-auto ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shapeOnly,
-                                    memory::Workspace* workspace, bool empty) -> LongType* {
+ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shapeOnly,
+                                    memory::Workspace* workspace, bool empty)  {
   LongType* shapeInfo = nullptr;
 
   if (rank == 0) {  // scalar case
@@ -113,7 +121,7 @@ LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char orde
 }
 
 LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char order, int rank,
-                                            const LongType* shapeOnly, memory::Workspace* workspace) {
+                                        const LongType* shapeOnly, memory::Workspace* workspace) {
   auto shapeInfo2 = new LongType[shape::shapeInfoLength(rank)];
   shapeInfo2[0] = rank;
 
@@ -133,7 +141,7 @@ LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char orde
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order,
-                                             const std::vector<LongType>& shapeOnly, memory::Workspace* workspace) {
+                                         const std::vector<LongType>& shapeOnly, memory::Workspace* workspace) {
   bool isEmpty = false;
   //shape size 1 but 0 can be scalar
   if(shapeOnly.size() > 1)
@@ -155,14 +163,14 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order,
-                                             const std::initializer_list<LongType>& shapeOnly,
-                                             memory::Workspace* workspace) {
+                                         const std::initializer_list<LongType>& shapeOnly,
+                                         memory::Workspace* workspace) {
   return createShapeInfo(dataType, order, std::vector<LongType>(shapeOnly), workspace);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool copyStrides,
-                                           memory::Workspace* workspace) {
+                                       memory::Workspace* workspace) {
   LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), sd::LongType);
 
@@ -175,7 +183,7 @@ LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool c
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo, const DataType dtype,
-                                                  const bool copyStrides, memory::Workspace* workspace) {
+                                              const bool copyStrides, memory::Workspace* workspace) {
   LongType* outShapeInfo = copyShapeInfo(inShapeInfo, copyStrides, workspace);
   ArrayOptions::setExtra(outShapeInfo, ArrayOptions::propertyWithoutDataTypeValue(ArrayOptions::extra(inShapeInfo)));  // set extra value to 0 (like in DataTypeEx::TypeEx
   ArrayOptions::setDataType(outShapeInfo, dtype);
@@ -184,15 +192,15 @@ LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo, const
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo,
-                                                  const LongType* shapeInfoToGetTypeFrom, const bool copyStrides,
-                                                  memory::Workspace* workspace) {
+                                              const LongType* shapeInfoToGetTypeFrom, const bool copyStrides,
+                                              memory::Workspace* workspace) {
   return copyShapeInfoAndType(inShapeInfo, ArrayOptions::dataType(shapeInfoToGetTypeFrom), copyStrides,
-                                             workspace);
+                              workspace);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::createSubArrShapeInfo(const LongType* inShapeInfo, const LongType* dims, const int dimsSize,
-                                                   memory::Workspace* workspace) {
+                                               memory::Workspace* workspace) {
   LongType* subArrShapeInfo = nullptr;
   ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), LongType);
 

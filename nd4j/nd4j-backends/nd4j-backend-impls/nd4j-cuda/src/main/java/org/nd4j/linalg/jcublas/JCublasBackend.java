@@ -106,7 +106,9 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public String buildInfo() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+        String ret =  NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+        ret += "\n PID: " + ProcessHandle.current().pid();
+        return ret;
     }
 
     @Override

@@ -101,7 +101,6 @@ void concat(LaunchContext* context, const std::vector<const NDArray*>& inArrs, N
       inArrs[0]->lengthOf() < 1;
 
   if (luckCase1) {
-    printf("concat luck case\n");
     for (LongType i = 0; i < numInArrs; ++i) {
       luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
       if (!luckCase1) break;

@@ -1437,7 +1437,7 @@ SD_INLINE SD_HOST_DEVICE sd::LongType *shapeOf(sd::LongType *shapeInfo) { return
 
 SD_INLINE SD_HOST_DEVICE void setShape(sd::LongType *shapeInfo, sd::LongType *shape) {
   auto shapeOf = shapeInfo + 1;
-  int rank = shape::rank(shapeInfo);
+  sd::LongType rank = shape::rank(shapeInfo);
   if (rank < 1) {
     shapeOf[0] = 0;
     return;
@@ -1674,6 +1674,14 @@ SD_INLINE SD_HOST char order(const sd::LongType *buffer) {
   if (rank(buffer) < 1) return 'c';
   // FIXME magic numbers
   sd::LongType len = shapeInfoLength(buffer[0]);
+  auto longValidation = buffer[len  - 1];
+  if(longValidation != 99 && longValidation != 102) {
+    std::string errorMessage;
+    errorMessage += "Invalid order from shape descriptor: ";
+    errorMessage += std::to_string(longValidation);
+    errorMessage += "Order should either be 99 (c) or 102 (f)";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   char ret = static_cast<char>(buffer[len - 1]);
   if (ret != 'c' && ret != 'f') {
     std::string errorMessage;
@@ -1692,13 +1700,19 @@ SD_INLINE SD_HOST char order(const sd::LongType *buffer) {
  * for this shape information buffer
  */
 SD_INLINE SD_HOST_DEVICE char setOrder(sd::LongType *buffer, char c) {
+  if(shape::rank(buffer) < 1) {
+    buffer[5] = 'c';
+    return 'c';
+  }
   // FIXME magic numbers
-  if (rank(buffer) > 0 && c != 'c' && c != 'f') {
+  if (length(buffer) > 1 && c != 'c' && c != 'f') {
     std::string errorMessage;
-    errorMessage += "Invalid order from shape descriptor: ";
+    errorMessage += "Invalid order from  descriptor: ";
     errorMessage += std::to_string(c);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+
   int len = shapeInfoLength(buffer[0]);
   buffer[len - 1] = static_cast<sd::LongType>(c);
   return c;

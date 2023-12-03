@@ -424,9 +424,11 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
   auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
   auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
   auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
-  delete desc1;
-  delete desc2;
-  delete desc3;
+  if (Environment::getInstance().isDeleteShapeInfo()) {
+    delete desc1;
+    delete desc2;
+    delete desc3;
+  }
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }
 

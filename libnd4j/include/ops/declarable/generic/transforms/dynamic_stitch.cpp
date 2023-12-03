@@ -81,7 +81,7 @@ DECLARE_SHAPE_FN(dynamic_stitch) {
 
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 }  // namespace ops

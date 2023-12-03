@@ -547,7 +547,7 @@ dim3 getSequenceMaskLaunchDims(int maxIndex,sd::NDArray input) {
 dim3 getCol2imLaunchParams(sd::NDArray im,sd::NDArray col) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (im.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
+  int sharedMem = 256;
   threadsPerBlock = getEnvVariable("GRID_SIZE_COL2IM", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_COL2IM", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_COL2IM", sharedMem);
@@ -555,9 +555,9 @@ dim3 getCol2imLaunchParams(sd::NDArray im,sd::NDArray col) {
 }
 
 dim3 getim2ColLaunchParams(sd::NDArray col) {
-  int threadsPerBlock = 512;
+  int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (col.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  int sharedMem = col.rankOf() * sizeof(sd::LongType) * threadsPerBlock + 256;
+  int sharedMem = 256;
   threadsPerBlock = getEnvVariable("GRID_SIZE_IM2COL", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_IM2COL", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_IM2COL", sharedMem);

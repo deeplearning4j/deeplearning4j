@@ -21,11 +21,12 @@
 package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.tensorflow
 
 
-import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper
+import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.DynamicCustomOp
@@ -34,23 +35,12 @@ import org.nd4j.linalg.profiler.ProfilerConfig
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpRegistryHolder
+import org.nd4j.samediff.frameworkimport.tensorflow.*
 import org.nd4j.samediff.frameworkimport.tensorflow.context.TensorflowMappingContext
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
-import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner
-import org.nd4j.shade.protobuf.TextFormat
 import org.tensorflow.framework.*
-import java.io.File
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
-import java.util.*
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Tag
-import org.nd4j.common.tests.tags.TagNames
-import org.nd4j.samediff.frameworkimport.tensorflow.*
 
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
@@ -70,249 +60,7 @@ class TestTensorflowIR {
 
 
 
-    @Test
-    @Disabled
-    fun manualTest() {
-        val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
-        val parsedGraph = GraphDef.newBuilder()
-        //C:\Users\agibs\.nd4jtests\resnetv2_imagenet_frozen_graph
-        TextFormat.merge(manualGraph,parsedGraph)
-        val textGraph = parsedGraph.build()
-        println(textGraph)
-        val tfImporter = TensorflowFrameworkImporter()
-        //with names [image] and shapes {image=[4, 2, 28, 28, 3]}
-        Nd4j.getEnvironment().isDebug = true
-        Nd4j.getEnvironment().isVerbose = true
-        //TFGraphMapper.importGraph(textGraph)
-        // val inputMap = mapOf("input_1" to Nd4j.zeros(10).castTo(org.nd4j.linalg.api.buffer.DataType.INT32),"input_2" to Nd4j.zeros(1,8).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
-        //val inputMap = mapOf("image" to Nd4j.ones(1,128,128,4))
-        /**
-         * TODO: fix emptyReduce.
-         * When we pass in 2 inputs where input 1 is the dimensions, the results
-         * work. In our model import, it appears that
-         * the empty dimensions aren't being passed down
-         * for int arguments properly.
-         * We need to figure out the difference between specifying 2 input arrays
-         * and ints, that or we need to make it so that arrays can be passed in
-         * for dimensions for each singular reduce op.
-         *
-         * Each op seems to be able to take in dimensions for indices.
-         * It *MIGHT* be better just to pass in dimensions directly.
-         */
-        val inputMap = emptyMap<String,INDArray>()
-        val tensorflowIRGraph = TensorflowIRGraph(textGraph,tensorflowOps,tfImporter.registry)
-        val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toMutableSet()
-        val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, inputMap.keys.toList(), outputList.toList())
-        val importedGraph = TFGraphMapper.importGraph(textGraph)
-        val graph = tfImporter.importFromGraph(textGraph,inputMap)
-        val tfOutput = tfGraphRunner.run(inputMap)
 
-        /**
-         * TODO: UnsortedSegmentSum ,Solution is almost there, need to figure out how to
-         * output correct shape.
-         *
-         * Shape in TF is 5 x 5 but actual real output seems to be 1 x 10.
-         * We need to change the output shape to work like TF does.
-         */
-        val output2 = importedGraph.outputAll(inputMap)
-        val output = graph.outputAll(inputMap)
-
-
-        //assertEquals(tfOutput.keys,outputList)
-        //assertEquals(tfOutput.keys,output2.keys)
-        val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
-        val skipValidation = setOf("parallel_stack/ExpandDims/dim")
-        //assertEquals(output.keys,output2.keys)
-        val notEquals = HashSet<String>()
-        val notEqualsTf = HashSet<String>()
-        names.forEach {
-            val value = output[it]
-            val value2 = output2[it]
-            val tfValue = tfOutput[it]
-            if(value!! != (value2!!)) {
-                val oldOps = importedGraph.ops[it]
-                val newOps = graph.ops[it]
-                val oldVar = importedGraph.variables[it]
-                val newVar = graph.variables[it]
-                notEquals.add(it)
-            }
-
-            if(tfValue!! != (value!!)) {
-                val oldOps = importedGraph.ops[it]
-                val newOps = graph.ops[it]
-                val oldVar = importedGraph.variables[it]
-                val newVar = graph.variables[it]
-                notEqualsTf.add(it)
-            }
-        }
-
-        println(notEquals)
-        println(notEqualsTf)
-        println()
-        // assertEquals(output,output2)
-        //assertEquals(tfOutput,output)
-    }
-
-
-    @Test
-    @Disabled
-    fun manualTestBinary() {
-        val path = "C:\\Users\\agibs\\.nd4jtests\\resnetv2_imagenet_frozen_graph\\resnetv2_imagenet_frozen_graph.pb"
-        val bytes = FileUtils.readFileToByteArray(File(path))
-        val parsedGraph = GraphDef.parseFrom(bytes)
-        val tfImporter = TensorflowFrameworkImporter()
-        //with names [image] and shapes {image=[4, 2, 28, 28, 3]}
-        Nd4j.getEnvironment().isDebug = true
-        Nd4j.getEnvironment().isVerbose = true
-        //TFGraphMapper.importGraph(textGraph)
-        // val inputMap = mapOf("input_1" to Nd4j.zeros(10).castTo(org.nd4j.linalg.api.buffer.DataType.INT32),"input_2" to Nd4j.zeros(1,8).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
-        //val inputMap = mapOf("image" to Nd4j.ones(1,128,128,4))
-        /**
-         * TODO: fix emptyReduce.
-         * When we pass in 2 inputs where input 1 is the dimensions, the results
-         * work. In our model import, it appears that
-         * the empty dimensions aren't being passed down
-         * for int arguments properly.
-         * We need to figure out the difference between specifying 2 input arrays
-         * and ints, that or we need to make it so that arrays can be passed in
-         * for dimensions for each singular reduce op.
-         *
-         * Each op seems to be able to take in dimensions for indices.
-         * It *MIGHT* be better just to pass in dimensions directly.
-         */
-
-
-        //Load data
-        //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
-        var imgFile =
-            File("goldenretriever_rgb224_unnormalized_nchw_INDArray.bin")
-        var img = Nd4j.readBinary(imgFile).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
-        img = img.permute(0, 2, 3, 1).dup() //to NHWC
-
-
-        //Perform inference
-
-        //Resnet v2 - NO external normalization, just resize and center crop
-        // https://github.com/tensorflow/models/blob/d32d957a02f5cffb745a4da0d78f8432e2c52fd4/research/tensorrt/tensorrt.py#L70
-        // https://github.com/tensorflow/models/blob/1af55e018eebce03fb61bba9959a04672536107d/official/resnet/imagenet_preprocessing.py#L253-L256
-
-        val importedGraph = TFGraphMapper.importGraph(parsedGraph)
-
-        //Load labels
-        val labels = labels()
-
-
-        //Perform inference
-        val inputs: List<String> = importedGraph.inputs()
-        assertEquals(1, inputs.size.toLong())
-
-        val out = "softmax_tensor"
-        val m: Map<String, INDArray> = importedGraph.output(Collections.singletonMap(inputs[0], img), out)
-
-        val outArr = m[out]
-
-
-        println("SHAPE: " + Arrays.toString(outArr!!.shape()))
-        println(outArr)
-
-        val argmax = outArr!!.argMax(1)
-
-        //Load labels
-
-        val classIdx = argmax.getInt(0)
-        val className = labels[classIdx]
-        val expClass = "golden retriever"
-        val prob = outArr!!.getDouble(classIdx.toLong())
-
-        println("Predicted class: $classIdx - \"$className\" - probability = $prob")
-        assertEquals(expClass, className)
-
-        val inputMap = Collections.singletonMap(inputs[0], img)
-        val tensorflowIRGraph = TensorflowIRGraph(parsedGraph,tensorflowOps,tfImporter.registry)
-        val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toMutableSet()
-        val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, inputMap.keys.toList(),listOf("batch_normalization/FusedBatchNorm",out))
-        val graph = tfImporter.importFromGraph(parsedGraph,inputMap)
-        val tfOutput = tfGraphRunner.run(inputMap)
-
-        /**
-         * TODO: UnsortedSegmentSum ,Solution is almost there, need to figure out how to
-         * output correct shape.
-         *
-         * Shape in TF is 5 x 5 but actual real output seems to be 1 x 10.
-         * We need to change the output shape to work like TF does.
-         */
-        val output2 = importedGraph.outputAll(inputMap)
-        val output = graph.outputAll(inputMap)
-
-
-        //assertEquals(tfOutput.keys,outputList)
-        //assertEquals(tfOutput.keys,output2.keys)
-        val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
-        val skipValidation = setOf("parallel_stack/ExpandDims/dim")
-        //assertEquals(output.keys,output2.keys)
-        val notEquals = LinkedHashSet<String>()
-        val notEqualsTf = LinkedHashSet<String>()
-        val notEqualsOp = LinkedHashSet<String>()
-        names.forEach {
-            val value = output[it]
-            val value2 = output2[it]
-            val tfValue = tfOutput[it]
-            if(value!! != (value2!!)) {
-                val oldOps = importedGraph.ops[it]
-                val newOps = graph.ops[it]
-                val oldVar = importedGraph.variables[it]
-                val newVar = graph.variables[it]
-                notEquals.add(it)
-            }
-
-            if(tfValue != null && tfValue!! != (value!!)) {
-                val oldOps = importedGraph.ops[it]
-                val newOps = graph.ops[it]
-                val oldVar = importedGraph.variables[it]
-                val newVar = graph.variables[it]
-                notEqualsTf.add(it)
-            }
-
-            val oldOp = importedGraph.ops[it]
-            val newOp = graph.ops[it]
-            if(oldOp != newOp) {
-                notEqualsOp.add(it)
-            }
-
-        }
-
-        println(notEquals)
-        println(notEqualsTf)
-        println("Not equals ops $notEqualsOp")
-        println()
-        // assertEquals(output,output2)
-        //assertEquals(tfOutput,output)
-    }
-
-    @Throws(Exception::class)
-    fun labels(): List<String?> {
-        val labelsFile =
-            File("imagenet_labellist.txt")
-        return FileUtils.readLines(labelsFile, StandardCharsets.UTF_8)
-    }
-
-
-    @Test
-    @Disabled
-    fun manualTest2() {
-        val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
-        val parsedGraph = GraphDef.newBuilder()
-        TextFormat.merge(manualGraph,parsedGraph)
-        val textGraph = parsedGraph.build()
-        println(textGraph)
-        val tfImporter = TensorflowFrameworkImporter()
-        //with names [image] and shapes {image=[4, 2, 28, 28, 3]}
-        val inputs = Nd4j.linspace(1,18816,18816).reshape(4, 2, 28, 28, 3)
-        val importedGraph = TFGraphMapper.importGraph(textGraph)
-        val output = importedGraph.outputAll(emptyMap())
-        println(output.entries.map { (k,v) -> "$k,${v.shapeInfoToString()}" })
-
-    }
 
 
 

@@ -41,6 +41,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public boolean isDeleteShapeInfo() {
+        return e.isDeleteShapeInfo();
+    }
+
+    @Override
+    public void setDeleteShapeInfo(boolean reallyDelete) {
+        e.setDeleteShapeInfo(reallyDelete);
+    }
+
+    @Override
     public int blasMajorVersion() {
         return e.blasMajorVersion();
     }

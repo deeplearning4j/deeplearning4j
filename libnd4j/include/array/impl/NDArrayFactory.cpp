@@ -104,7 +104,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
   std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return result;
 }
 
@@ -136,7 +136,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
       data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return result;
 }
 
@@ -241,7 +241,7 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   res->bufferAsT<T>()[0] = scalar;
 
   res->tickWriteHost();
@@ -306,7 +306,7 @@ NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   NDArray res(buffer,desc , context);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   res.bufferAsT<T>()[0] = scalar;
 
   res.tickWriteHost();
@@ -444,7 +444,7 @@ NDArray* NDArrayFactory::vector(LongType length, const T value, LaunchContext* c
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   auto res = new NDArray(buffer, recast, context);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   if (value == (T)0.0f)
     res->nullify();
   else
@@ -493,7 +493,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
       descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   result.nullify();
 
   return result;
@@ -505,7 +505,7 @@ NDArray NDArrayFactory::create(DataType dtype, LaunchContext* context) {
       std::make_shared<DataBuffer>(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
   auto desc = ShapeDescriptor::scalarDescriptor(dtype);
   NDArray res(buffer, desc, context);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   res.nullify();
 
   return res;
@@ -525,7 +525,7 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* cont
 
   auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
   NDArray res(buffer, desc, context);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   memcpyFromVector<T>(res.buffer(), values);
 
   res.tickWriteHost();
@@ -626,7 +626,8 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
-  delete descriptor;
+ // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
+ // ShapeHelpoer
   return result;
 }
 

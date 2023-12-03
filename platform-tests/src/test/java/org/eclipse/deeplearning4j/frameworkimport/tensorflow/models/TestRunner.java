@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow.models;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.TFGraphTestAllHelper;
-import org.eclipse.deeplearning4j.tests.extensions.DeallocationExtension;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -52,7 +51,6 @@ class TestRunner {
         }
 
 
-        System.out.println("Testing with test name " + System.getProperty(DeallocationExtension.CURRENT_TEST_DISPLAY_NAME));
         Pair<Double, Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());

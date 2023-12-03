@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -271,7 +272,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
         if(lastTimeStep){
             layer = new LastTimeStep(layer);
         }
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .list()
                 .layer(new LSTM.Builder()

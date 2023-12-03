@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -214,7 +215,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                     layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
                 }
 
-                NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
+                ListBuilder conf2 = conf.list().layer(0, layer)
                         .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation)
                                 .nIn(layerSize).nOut(nOut).build())
                         ;

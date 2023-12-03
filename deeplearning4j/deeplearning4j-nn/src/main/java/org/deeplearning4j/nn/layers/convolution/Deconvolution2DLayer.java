@@ -258,12 +258,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         IActivation afn = layerConf().getActivationFn();
 
-        if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn(), training);
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         INDArray activation = afn.getActivation(z, training);
         return activation;

@@ -58,16 +58,11 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
 
   }
   if (input->isEmpty()) {
-    printf("cast: input was empty\n");
     REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
     return Status::OK;
   }
 
-  printf("Assigning new input: %s to data type %s with shape info for input data type being %s and output data type shape info being %s\n",
-         DataTypeUtils::asString(input->dataType()).c_str(),
-         DataTypeUtils::asString(ArrayOptions::dataType(input->shapeInfo())).c_str(),
-         DataTypeUtils::asString(output->dataType()).c_str(),
-         DataTypeUtils::asString(ArrayOptions::dataType(output->shapeInfo())).c_str());
+
   if (!block.isInplace()) output->assign(input);
 
   STORE_RESULT(output);
@@ -92,7 +87,7 @@ DECLARE_SHAPE_FN(cast) {
     }
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     REQUIRE_TRUE(desc->dataType() == ArrayOptions::dataType(ret->at(0)),0,"Data types for cast did not equal!");
-    delete desc;
+     if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return ret;
 
   } else {
@@ -100,7 +95,7 @@ DECLARE_SHAPE_FN(cast) {
     DataType newType = DataTypeUtils::fromInt(it);
     auto desc = new ShapeDescriptor(inShape, newType);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+     if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return ret;
   }
 }

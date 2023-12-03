@@ -45,10 +45,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
@@ -595,6 +594,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.layerWiseConfigurations = layerWiseConfigurations;
     }
 
+    @Override
+    public Updater createUpdater() {
+        return new MultiLayerUpdater(this);
+    }
+
     /**
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
      * This is functionally equivalent to calling {@code init(null, false)}.
@@ -732,9 +736,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         "returned null layer?");
             }
 
-            for (String s : layers[i].conf().variables()) {
-                variables.add(i + "_" + s);
-            }
+            if(variables != null)
+                for (String s : layers[i].conf().variables()) {
+                    variables.add(i + "_" + s);
+                }
         }
 
         // now we init solver & optimizer
@@ -982,7 +987,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param clearInputs       Whether the layer inputs should be cleared
      * @return List of activations (including the input), detached from any workspace
      */
-    protected synchronized List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
+    protected  List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
                                                                        boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
                                                                        INDArray fMask, INDArray lMask, boolean clearInputs) {
         setInput(input);
@@ -1073,7 +1078,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param lMask             Label mask aray. May be null.
      * @return
      */
-    protected synchronized List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
+    protected  List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                                    @NonNull INDArray input, INDArray fMask, INDArray lMask){
         setInput(input);
         setLayerMaskArrays(fMask, lMask);
@@ -1670,7 +1675,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-    private synchronized void fitHelper(DataSetIterator iterator){
+    private  void fitHelper(DataSetIterator iterator){
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
         boolean destructable = false;
@@ -2278,7 +2283,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param featuresMask The mask array for the features (used for variable length time series, etc). May be null.
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
-    public synchronized void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+    public  void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
         try{
             fitHelper(features, labels, featuresMask, labelsMask);
         } catch (OutOfMemoryError e){
@@ -2430,7 +2435,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param outputWorkspace May be null. If not null: the workspace MUST be opened before calling this method.
      * @return The output/activations from the network (either detached or in the specified workspace if provided)
      */
-    public synchronized INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask, MemoryWorkspace outputWorkspace) {
+    public  INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask, MemoryWorkspace outputWorkspace) {
         try {
             return outputOfLayerDetached(train, FwdPassType.STANDARD, layers.length - 1, input, featuresMask, labelsMask, outputWorkspace);
         } catch (OutOfMemoryError e) {
@@ -2451,7 +2456,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param <T> T extends Object
      * @return T instance produced by OutputAdapter
      */
-    public synchronized <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
+    public  <T> T output(@NonNull INDArray inputs, INDArray inputMasks, INDArray labelMasks, @NonNull OutputAdapter<T> outputAdapter) {
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, WS_OUTPUT_MEM)) {
             if (outputAdapter instanceof ModelAdapter)
                 return ((ModelAdapter<T>) outputAdapter).apply(this, new INDArray[]{inputs}, new INDArray[]{ inputMasks}, new INDArray[]{labelMasks});
@@ -2903,7 +2908,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     /**
      * @return The layers in the network
      */
-    public synchronized Layer[] getLayers() {
+    public  Layer[] getLayers() {
         return layers;
     }
 
@@ -2993,10 +2998,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return new Pair<>(maskArray, currentMaskState);
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        throw new UnsupportedOperationException("Not supported");
-    }
 
     //==========
     //Layer methods
@@ -3246,12 +3247,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     public Updater getUpdater(boolean initializeIfReq) {
         if (solver == null && initializeIfReq) {
-            synchronized(this){
                 if(solver == null) {    //May have been created while waiting for lock
                     solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-                    solver.getOptimizer().setUpdater(UpdaterCreator.getUpdater(this));
+                    solver.getOptimizer().setUpdater(createUpdater());
                 }
-            }
+
         }
         if(solver != null) {
             return solver.getOptimizer().getUpdater(initializeIfReq);
@@ -3805,7 +3805,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      *
      * The current epoch count can be obtained using {@code MultiLayerConfiguration.getLayerwiseConfiguration().getEpochCount()}
      */
-    public void incrementEpochCount(){
+    public void incrementEpochCount() {
         layerWiseConfigurations.setEpochCount(layerWiseConfigurations.getEpochCount() + 1);
         synchronizeIterEpochCounts();
     }

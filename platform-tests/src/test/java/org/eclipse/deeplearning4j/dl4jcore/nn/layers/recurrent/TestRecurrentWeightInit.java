@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -44,7 +45,7 @@ public class TestRecurrentWeightInit extends BaseDL4JTest {
         for (boolean rwInit : new boolean[]{false, true}) {
             for (int i = 0; i < 3; i++) {
 
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .weightInit(new UniformDistribution(0, 1))
                         .list();
 

@@ -86,7 +86,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                         recurrentWeights, inputWeights, permuteIfNWC(epsilon), truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true, null,
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true,
                         workspaceMgr, layerConf().isHelperAllowFallback());
 
         weightNoiseParams.clear();
@@ -112,9 +112,6 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                 "3D input expected to RNN layer expected, got " + this.input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
 
-//        if (cacheMode == null)
-//            cacheMode = CacheMode.NONE;
-
         //TODO LSTM cache mode is disabled for now - not passing all tests
         cacheMode = CacheMode.NONE;
 
@@ -131,7 +128,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                         input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
-                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
+                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true,
                         cacheMode, workspaceMgr, layerConf().isHelperAllowFallback());
 
         fwd.fwdPassOutput = permuteIfNWC(fwd.fwdPassOutput);

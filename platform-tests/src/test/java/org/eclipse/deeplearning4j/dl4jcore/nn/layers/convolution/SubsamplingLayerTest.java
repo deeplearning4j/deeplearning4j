@@ -23,6 +23,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -204,7 +205,7 @@ class SubsamplingLayerTest extends BaseDL4JTest {
             int kernelHeight = 3;
             int kernelWidth = 3;
             DataSet trainInput;
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(imageHeight - kernelHeight + 2, // imageHeight-kernelHeight+1 is ok: full height
+            ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(kernelHeight, kernelWidth).stride(1, 1).nOut(2).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(imageHeight - kernelHeight + 2, // imageHeight-kernelHeight+1 is ok: full height
             1).stride(1, 1).build()).layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
             MultiLayerConfiguration conf = builder.build();
             MultiLayerNetwork model = new MultiLayerNetwork(conf);

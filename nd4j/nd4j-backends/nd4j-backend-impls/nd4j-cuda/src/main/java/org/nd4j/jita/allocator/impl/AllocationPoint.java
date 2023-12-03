@@ -132,15 +132,13 @@ public class AllocationPoint {
     }
 
     public CudaContext getCurrentContext() {
-        synchronized (this) {
             return currentContext;
-        }
+
     }
 
     public void setCurrentContext(CudaContext context) {
-        synchronized (this) {
             this.currentContext = context;
-        }
+
     }
 
     public long getNumberOfBytes() {

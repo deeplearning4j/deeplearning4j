@@ -1,3 +1,4 @@
+
 /*
  *  ******************************************************************************
  *  *
@@ -30,7 +31,9 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -43,10 +46,12 @@ import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -88,6 +93,58 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
+    private static ObjectMapper mapper = mapper();
+    private static ObjectMapper mapperYaml = mapperYaml();
+
+
+
+    public static ObjectMapper mapperYaml() {
+        ObjectMapper ret = new ObjectMapper(new YAMLFactory());
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                                                          JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass().equals(MultiLayerConfiguration.class)) {
+                    return new MultiLayerConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+        return ret;
+    }
+
+
+    public static ObjectMapper mapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                                                          JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass().equals(MultiLayerConfiguration.class)) {
+                    return new MultiLayerConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+        return ret;
+    }
 
     public int getEpochCount() {
         return epochCount;
@@ -104,14 +161,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @return JSON representation of NN configuration
      */
     public String toYaml() {
-        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
-        synchronized (mapper) {
-            try {
-                return mapper.writeValueAsString(this);
-            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            return mapperYaml.writeValueAsString(this);
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
+
     }
 
     /**
@@ -121,9 +176,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @return {@link MultiLayerConfiguration}
      */
     public static MultiLayerConfiguration fromYaml(String json) {
-        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
         try {
-            return mapper.readValue(json, MultiLayerConfiguration.class);
+            return mapperYaml.readValue(json, MultiLayerConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -134,16 +188,14 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @return JSON representation of NN configuration
      */
     public String toJson() {
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-        synchronized (mapper) {
-            //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
-            //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
-            try {
-                return mapper.writeValueAsString(this);
-            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+        //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
+        //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
+
     }
 
     /**
@@ -152,17 +204,17 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      * @param json the neural net configuration from json
      * @return {@link MultiLayerConfiguration}
      */
-    public static MultiLayerConfiguration fromJson(String json) {
+    public static  MultiLayerConfiguration fromJson(String json) {
+          ObjectMapper mapper1 = mapper();
         MultiLayerConfiguration conf;
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
-            conf = mapper.readValue(json, MultiLayerConfiguration.class);
+            conf = mapper1.readValue(json, MultiLayerConfiguration.class);
         } catch (InvalidTypeIdException e){
-            if(e.getMessage().contains("@class")){
+            if(e.getMessage().contains("@class")) {
                 try {
                     //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
                     return JsonMappers.getLegacyMapper().readValue(json, MultiLayerConfiguration.class);
-                } catch (InvalidTypeIdException e2){
+                } catch (InvalidTypeIdException e2) {
                     //Check for legacy custom layers: "Could not resolve type id 'CustomLayer' as a subtype of [simple type, class org.deeplearning4j.nn.conf.layers.Layer]: known type ids = [Bidirectional, CenterLossOutputLayer, CnnLossLayer, ..."
                     //1.0.0-beta5: dropping support for custom layers defined in pre-1.0.0-beta format. Built-in layers from these formats still work
                     String msg = e2.getMessage();
@@ -172,7 +224,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                 " layers should be loaded in 1.0.0-beta to 1.0.0-beta4 and saved again, before loading in the current version of DL4J", e);
                     }
                     throw new RuntimeException(e2);
-                } catch (IOException e2){
+                } catch (IOException e2) {
                     throw new RuntimeException(e2);
                 }
             }
@@ -343,7 +395,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     }
 
                     if (weightInit != null) {
-                        final IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
+                        IWeightInit wi = WeightInit.valueOf(weightInit.asText()).getWeightInitFunction(dist);
                         ((BaseLayer) l).setWeightInitFn(wi);
                     }
                 }
@@ -460,189 +512,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     }
 
     @Data
-    public static class Builder {
-
-        private static final int DEFAULT_TBPTT_LENGTH = 20;
-
-        protected List<NeuralNetConfiguration> confs = new ArrayList<>();
-        protected double dampingFactor = 100;
-        protected Map<Integer, InputPreProcessor> inputPreProcessors = new HashMap<>();
-        protected BackpropType backpropType = BackpropType.Standard;
-        protected int tbpttFwdLength = DEFAULT_TBPTT_LENGTH;
-        protected int tbpttBackLength = DEFAULT_TBPTT_LENGTH;
-        protected InputType inputType;
-
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.ENABLED;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.ENABLED;
-        protected CacheMode cacheMode = CacheMode.NONE;
-        protected boolean validateOutputConfig = true;
-        protected boolean validateTbpttConfig = true;
-        protected DataType dataType;
-        protected boolean overrideNinUponBuild = true;
-
-
-        /**
-         * Whether to over ride the nIn
-         * configuration forcibly upon construction.
-         * Default value is true
-         * @param overrideNinUponBuild Whether to over ride the nIn
-         *           configuration forcibly upon construction.
-         * @return builder pattern
-         */
-        public Builder overrideNinUponBuild(boolean overrideNinUponBuild) {
-            this.overrideNinUponBuild = overrideNinUponBuild;
-            return this;
-        }
-
-        /**
-         * Specify the processors.
-         * These are used at each layer for doing things like normalization and
-         * shaping of input.
-         *
-         * @param processor what to use to preProcess the data.
-         * @return builder pattern
-         */
-        public Builder inputPreProcessor(Integer layer, InputPreProcessor processor) {
-            inputPreProcessors.put(layer, processor);
-            return this;
-        }
-
-        public Builder inputPreProcessors(Map<Integer, InputPreProcessor> processors) {
-            this.inputPreProcessors = processors;
-            return this;
-        }
-
-        /**
-         * @deprecated Use {@link NeuralNetConfiguration.Builder#trainingWorkspaceMode(WorkspaceMode)}
-         */
-        @Deprecated
-        public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.trainingWorkspaceMode = workspaceMode;
-            return this;
-        }
-
-        /**
-         * @deprecated Use {@link NeuralNetConfiguration.Builder#inferenceWorkspaceMode(WorkspaceMode)}
-         */
-        @Deprecated
-        public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.inferenceWorkspaceMode = workspaceMode;
-            return this;
-        }
-
-        /**
-         * This method defines how/if preOutput cache is handled:
-         * NONE: cache disabled (default value)
-         * HOST: Host memory will be used
-         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
-         *
-         * @param cacheMode
-         * @return
-         */
-        public Builder cacheMode(@NonNull CacheMode cacheMode) {
-            this.cacheMode = cacheMode;
-            return this;
-        }
-
-        /**
-         * The type of backprop. Default setting is used for most networks (MLP, CNN etc),
-         * but optionally truncated BPTT can be used for training recurrent neural networks.
-         * If using TruncatedBPTT make sure you set both tBPTTForwardLength() and tBPTTBackwardLength()
-         */
-        public Builder backpropType(@NonNull BackpropType type) {
-            this.backpropType = type;
-            return this;
-        }
-
-        /**
-         * When doing truncated BPTT: how many steps should we do?<br>
-         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
-         * See: <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
-         *
-         * @param bpttLength length > 0
-         */
-        public Builder tBPTTLength(int bpttLength) {
-            tBPTTForwardLength(bpttLength);
-            return tBPTTBackwardLength(bpttLength);
-        }
-
-        /**
-         * When doing truncated BPTT: how many steps of forward pass should we do
-         * before doing (truncated) backprop?<br>
-         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
-         * Typically tBPTTForwardLength parameter is same as the tBPTTBackwardLength parameter,
-         * but may be larger than it in some circumstances (but never smaller)<br>
-         * Ideally your training data time series length should be divisible by this
-         * This is the k1 parameter on pg23 of
-         * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
-         *
-         * @param forwardLength Forward length > 0, >= backwardLength
-         */
-        public Builder tBPTTForwardLength(int forwardLength) {
-            this.tbpttFwdLength = forwardLength;
-            return this;
-        }
-
-        /**
-         * When doing truncated BPTT: how many steps of backward should we do?<br>
-         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
-         * This is the k2 parameter on pg23 of
-         * <a href="http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf">http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf</a>
-         *
-         * @param backwardLength <= forwardLength
-         */
-        public Builder tBPTTBackwardLength(int backwardLength) {
-            this.tbpttBackLength = backwardLength;
-            return this;
-        }
-
-        public Builder confs(List<NeuralNetConfiguration> confs) {
-            this.confs = confs;
-            return this;
-        }
-
-        public Builder setInputType(InputType inputType) {
-            this.inputType = inputType;
-            return this;
-        }
-
-        /**
-         * Enabled by default. If enabled, the output layer configuration will be validated, to throw an exception on
-         * likely invalid outputs - such as softmax + nOut=1, or LossMCXENT + Tanh.<br>
-         * If disabled (false) no output layer validation will be performed.<br>
-         * Disabling this validation is not recommended, as the configurations that fail validation usually will
-         * not be able to learn correctly. However, the option to disable this validation is provided for advanced users
-         * when creating non-standard architectures.
-         *
-         * @param validate If true: validate output layer configuration. False: don't validate
-         */
-        public Builder validateOutputLayerConfig(boolean validate) {
-            this.validateOutputConfig = validate;
-            return this;
-        }
-
-        /**
-         * Enabled by default. If enabled, an exception will be throw when using the (invalid) combination of truncated
-         * backpropagation through time (TBPTT) with either a GlobalPoolingLayer or LastTimeStepLayer.<br>
-         * It is possible to disable this validation to allow what is almost certainly an invalid configuration to be used,
-         * however this is not recommended.
-         *
-         * @param validate Whether TBPTT validation should be performed
-         */
-        public Builder validateTbpttConfig(boolean validate){
-            this.validateTbpttConfig = validate;
-            return this;
-        }
-
-        /**
-         * Set the DataType for the network parameters and activations for all layers in the network. Default: Float
-         * @param dataType Datatype to use for parameters and activations
-         */
-        public Builder dataType(@NonNull DataType dataType){
-            this.dataType = dataType;
-            return this;
-        }
-
+    public static class Builder extends BaseBuilder {
 
         public MultiLayerConfiguration build() {
             //Validate BackpropType setting
@@ -656,7 +526,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
                 for( int i = 0; i < confs.size(); i++) {
                     Layer l = confs.get(i).getLayer();
-                    if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer){
+                    if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer) {
                         throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
                                 " cannot be used with layer " + i + " of type " + l.getClass().getName() + ": TBPTT is incompatible with this layer type (which is designed " +
                                 "to process entire sequences at once, and does support the type of sequence segments that TPBTT uses).\n" +
@@ -719,7 +589,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         if(layer instanceof Convolution1DLayer) {
                             if(l instanceof DenseLayer && inputType instanceof InputType.InputTypeRecurrent) {
                                 FeedForwardLayer feedForwardLayer = (FeedForwardLayer) l;
-                                 if(inputType instanceof InputType.InputTypeRecurrent) {
+                                if(inputType instanceof InputType.InputTypeRecurrent) {
                                     InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
                                     feedForwardLayer.setNIn(recurrent.getTimeSeriesLength());
                                 }
