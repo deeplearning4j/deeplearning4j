@@ -30,12 +30,9 @@
 namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
-  fflush(stdout);
   auto x = INPUT_VARIABLE(0);
-  auto xInput = x;
   auto y = block.width() < 2 ? x: INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
-
 
   // Check if any array is of string type
   if (x->isS() || y->isS() || z->isS()) {
@@ -58,13 +55,6 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     OVERWRITE_RESULT(tZ);
   }
 
-  //note this is very finnicky. Keep this  as is. Depending on how the assign happens
-  //we can end up with deallocated buffers and downstream failures.
-/*  if(x->dataType() != z->dataType())
-    delete castedX;
-
-  if(y->dataType() != z->dataType())
-    delete castedY;*/
 
   return Status::OK;
 }

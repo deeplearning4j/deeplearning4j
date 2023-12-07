@@ -226,6 +226,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering) {
+        return super.createUninitialized(dataType, shape, strides, ordering);
+    }
+
+    @Override
     public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
@@ -1095,6 +1100,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new Utf8Buffer(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
+    }
+
+    @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
+        return new NDArray(dataType, shape, strides, currentWorkspace);
     }
 
     @Override

@@ -243,11 +243,6 @@ public class NDArrayStrings {
                     }
 
                     else {
-                        /*
-                        FML: for some reason a view is modifying the output
-                        when toString() is called.The view is created with arr.slice
-                        which then updates the view of the array thus affecting the output.
-                         */
                         INDArray slice = arr.slice(i);
                         sb.append(format(slice, offset, summarize));
                     }

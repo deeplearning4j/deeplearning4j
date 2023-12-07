@@ -4416,6 +4416,21 @@ public class Nd4j {
         return INSTANCE.create(shape, ordering);
     }
 
+
+    /**
+     * Create an array with given shape, stride  and ordering.
+     *
+     * @param dataType data type.
+     * @param shape the shape of the array
+     * @param strides stride, separation of elements in each dimension.
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
+     */
+    public static INDArray createUninitialized(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
+        checkShapeValues(shape);
+        return INSTANCE.createUninitialized(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
     /**
      * Create an array with given shape, stride  and ordering.
      *
@@ -4565,7 +4580,7 @@ public class Nd4j {
     /**
      * See {@link #createUninitializedDetached(DataType, char, long...)} with default ordering.
      */
-    public static INDArray createUninitializedDetached(DataType dataType, long... shape){
+    public static INDArray createUninitializedDetached(DataType dataType, long... shape) {
         return createUninitializedDetached(dataType, order(), shape);
     }
 

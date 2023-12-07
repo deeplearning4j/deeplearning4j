@@ -3480,7 +3480,6 @@ void SD_KERNEL tryPointerKernel(void *p, int len) {
 
   __syncthreads();
 
-  if (threadIdx.x == 0 && blockIdx.x == 0) printf("Pointer check complete: %i\n", b);
 }
 
 void tryPointer(Pointer extra, Pointer p, int len) {

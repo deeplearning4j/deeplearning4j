@@ -843,7 +843,6 @@ public class Shape {
      * @return the double at the specified index
      */
     public static long getOffset(long baseOffset, int[] shape, int[] stride, int... indices) {
-        //int ret =  mappers[shape.length].getOffset(baseOffset, shape, stride, indices);
         if (shape.length != stride.length || indices.length != shape.length)
             throw new IllegalArgumentException("Indexes, shape, and stride must be the same length");
         long offset = baseOffset;
@@ -860,19 +859,33 @@ public class Shape {
     }
 
     /**
-     * Get the offset of the specified indices from the shape info buffer
-     *
-     * @param shapeInformation    Shape information to get the offset for
-     * @param indices             Indices array to get the offset for (must be same length as array rank)
-     * @return                    Buffer offset fo the specified indices
+     * Get an offset for retrieval
+     * from a data buffer
+     * based on the given
+     * shape stride and given indices
+     * @param baseOffset the offset to start from
+     * @param shape the shape of the array
+     * @param stride the stride of the array
+     * @param indices the indices to iterate over
+     * @return the double at the specified index
      */
-    /*public static long getOffset(IntBuffer shapeInformation, int[] indices) {
-        return getOffset(shapeInformation, ArrayUtil.toLongArray(indices));
+    public static long getOffset(long baseOffset, long[] shape, long[] stride, long... indices) {
+        if (shape.length != stride.length || indices.length != shape.length)
+            throw new IllegalArgumentException("Indexes, shape, and stride must be the same length");
+        long offset = baseOffset;
+        for (int i = 0; i < shape.length; i++) {
+            if (indices[i] >= shape[i])
+                throw new IllegalArgumentException(
+                        String.format("J: Index [%d] must not be >= shape[%d]=%d.", i, i, shape[i]));
+            if (shape[i] != 1) {
+                offset += indices[i] * stride[i];
+            }
+        }
+
+        return offset;
     }
 
-    public static long getOffset(LongBuffer shapeInformation, int[] indices) {
-        return getOffset(shapeInformation, ArrayUtil.toLongArray(indices));
-    }*/
+
 
     public static long getOffset(LongBuffer shapeInformation, long... indices) {
         int rank = rank(shapeInformation);

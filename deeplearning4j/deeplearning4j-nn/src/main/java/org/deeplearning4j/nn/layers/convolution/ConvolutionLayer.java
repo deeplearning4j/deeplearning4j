@@ -39,6 +39,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -303,12 +304,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             //TODO: Switch hardcoded state later. For now, convolution is implemented as
             //switch to NCHW then permute back for NWHC
             inWidthHeight =  new int[] {(int) input.size(2), (int) input.size(3)};
-
-       /*     else if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
-                inWidthHeight =  new int[] {(int) input.size(1), (int) input.size(2)};
-            }
-            else
-                 throw new IllegalStateException("No data format configured!");*/
             pad = ConvolutionUtils.getSameModeTopLeftPadding(
                     outSize,
                     inWidthHeight,
@@ -339,7 +334,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.createUninitialized(weights.dataType(), new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
-        long[] permute =  new long[]{0, 3, 4, 5, 1, 2};
+        long[] permute = {0, 3, 4, 5, 1, 2};
         INDArray col2 = col.permute(permute);
         INDArray im2ColIn = input.castTo(col2.dataType());      //No op if already (for example) float
         if (kH > Integer.MAX_VALUE || kW > Integer.MAX_VALUE)
@@ -368,7 +363,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         im2col2d.mmuli(reshapedW, z);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
-        if(layerConf().hasBias()){
+        if(layerConf().hasBias() ){
             z.addiRowVector(bias);
         }
 

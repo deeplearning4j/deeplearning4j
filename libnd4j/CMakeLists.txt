@@ -422,7 +422,7 @@ if(NOT SD_CUDA)
         set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
         configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
         message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
-        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
+        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON  "${CMAKE_GENERATOR}" .
                 RESULT_VARIABLE result
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
 
@@ -531,7 +531,7 @@ if (${HELPERS_onednn})
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
     configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+    execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
@@ -596,7 +596,7 @@ endif()
 
 # Download and unpack flatbuffers at configure time
 configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
 if(result)

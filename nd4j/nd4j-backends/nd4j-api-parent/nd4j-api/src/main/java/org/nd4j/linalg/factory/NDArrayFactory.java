@@ -1088,6 +1088,11 @@ public interface NDArrayFactory {
 
     INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
 
+    default INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering) {
+        return createUninitialized(dataType, shape, strides, ordering, Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread());
+    }
+
+
     /**
      * Create an uninitialized ndArray. Detached from workspace.
      * @param dataType data type. Exceptions will be thrown for UTF8, COMPRESSED and UNKNOWN data types.
@@ -1460,4 +1465,5 @@ public interface NDArrayFactory {
 
     INDArray create(Collection<String> strings, long[] shape, char order);
 
+    INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace);
 }

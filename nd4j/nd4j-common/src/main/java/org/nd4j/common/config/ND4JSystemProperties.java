@@ -260,6 +260,22 @@ public class ND4JSystemProperties {
     public final static String DEALLOCATOR_SERVICE_GC_THREADS = "org.nd4j.deallocator.threads";
 
 
+    /**
+     * Set the priority for the cpu backend.
+     */
+    public final static String BACKEND_PRIORITY_CPU = "org.nd4j.cpu.priority";
+
+    /**
+     * Set the priority for the cuda backend.
+     */
+    public final static String BACKEND_PRIORITY_GPU = "org.nd4j.gpu.priority";
+
+
+    /**
+     * Set the priority for the aurora backend.
+     */
+    public final static String BACKEND_PRIORITY_AURORA = "org.nd4j.aurora.priority";
+
     private ND4JSystemProperties() {
     }
 }

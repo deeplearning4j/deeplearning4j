@@ -53,42 +53,80 @@ public abstract class Nd4jBackend {
 
     static {
         int n = 0;
-        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_CPU);
-        if (s != null && s.length() > 0) {
+        String s2 = System.getProperty(ND4JSystemProperties.BACKEND_PRIORITY_CPU);
+        if (s2 != null && s2.length() > 0) {
             try {
-                n = Integer.parseInt(s);
+                n = Integer.parseInt(s2);
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_CPU);
+
+            if (s != null && s.length() > 0) {
+                try {
+                    n = Integer.parseInt(s);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
+
+
         BACKEND_PRIORITY_CPU = n;
     }
 
     static {
-        int n = 100;
-        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_GPU);
-        if (s != null && s.length() > 0) {
+        int n = 0;
+        String s2 = System.getProperty(ND4JSystemProperties.BACKEND_PRIORITY_GPU);
+        if (s2 != null && s2.length() > 0) {
             try {
-                n = Integer.parseInt(s);
+                n = Integer.parseInt(s2);
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_GPU);
+
+            if (s != null && s.length() > 0) {
+                try {
+                    n = Integer.parseInt(s);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
+
+
         BACKEND_PRIORITY_GPU = n;
     }
 
 
     static {
-        int n = 100;
-        String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_AURORA);
-        if (s != null && s.length() > 0) {
+        int n = 0;
+        String s2 = System.getProperty(ND4JSystemProperties.BACKEND_PRIORITY_AURORA);
+        if (s2 != null && s2.length() > 0) {
             try {
-                n = Integer.parseInt(s);
+                n = Integer.parseInt(s2);
             } catch (NumberFormatException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            String s = System.getenv(ND4JEnvironmentVars.BACKEND_PRIORITY_AURORA);
+
+            if (s != null && s.length() > 0) {
+                try {
+                    n = Integer.parseInt(s);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
         }
-        
+
+
         BACKEND_PRIORITY_AURORA = n;
     }
 

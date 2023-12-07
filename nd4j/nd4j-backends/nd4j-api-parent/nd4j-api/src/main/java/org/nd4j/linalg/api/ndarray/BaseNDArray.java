@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -100,6 +101,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected transient volatile DataBuffer data;
 
     protected transient boolean compressed = false;
+    @Setter
+    protected transient boolean isView = false;
 
     @Getter
     @Setter
@@ -118,6 +121,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     private static final AtomicLong arrayCounter = new AtomicLong(0);
     protected transient long arrayId = arrayCounter.getAndIncrement();
 
+    public BaseNDArray(DataType dataType, long[] shape, long[] strides, MemoryWorkspace currentWorkspace) {
+        this(Nd4j.createBuffer(dataType, ArrayUtil.prodLong(shape), false, currentWorkspace), shape, strides, 0, Nd4j.order());
+    }
+
+    @Override
+    public void setIsView(boolean isView) {
+        this.isView = isView;
+    }
 
     //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
     private static final int[][] tadFinalPermuteDimensions;
@@ -1678,7 +1689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        val z = Nd4j.createUninitialized(this.dataType(), this.shape(), order);
+        val z = Nd4j.createUninitialized(this.dataType(), this.shape(),this.stride(),order());
         z.assign(this);
         return z;
     }
@@ -2188,8 +2199,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         val c2 = (length() < data().length());
         val c3 = (data().originalDataBuffer() != null && data != data.originalDataBuffer());
-
-        return c2 || c3;
+        //note we have a manual isView() to express arrays that might use the
+        //same buffer and technically use the start of the same buffer but do not
+        //actually "own" the buffer
+        return c2 || c3 || isView;
     }
 
     @Override
@@ -3775,17 +3788,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if (order != ordering()) {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
-            ret.setData(dup(order).data());
+            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape,order);
+            ret.setData(toFlattened(order,this).data());
             return ret;
         } else if (this.isEmpty()) {
             INDArray ret = Nd4j.create(this.dataType(), shape);
             return ret;
 
         } else {
-            INDArray ret = this.dup(order);
-            INDArray ret2 =  Nd4j.create(ret.data(), shape);
-            return ret2;
+            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
+            //in this case we need properly duplicate the data. the strides do not match
+            //the new data buffer and will be incorrect.
+            INDArray ravel = toFlattened(this);
+            ret.setData(ravel.data());
+            return ret;
 
         }
     }
@@ -4305,6 +4321,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         char order = Shape.getOrder(outShape, outStrides, -1);
         INDArray out = create(data, outShape, outStrides, offset, order);
+        if(Nd4j.getEnvironment().isDebugAndVerbose()) {
+            //only validate this when we are debugging something.
+            //otherwise we will see too much production overhead
+            long[] lastIndices = new long[out.rank()];
+            for(int i = 0; i < out.rank(); i++) {
+                lastIndices[i] = out.size(i) - 1;
+            }
+
+            long maxOffset = Shape.getOffset(0, outShape, outStrides,lastIndices);
+            if(maxOffset >= out.data().length()) {
+                throw new IllegalStateException("Illegal offset for array of shape " + Arrays.toString(outShape) + " and stride " + Arrays.toString(outStrides) + " with offset " + offset + " and max offset " + maxOffset + " and original shape " + Arrays.toString(shape()) + " and original stride " + Arrays.toString(stride()));
+            }
+
+        }
+
         out.setCloseable(false);
         return out;
     }
@@ -4813,6 +4844,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         char newOrder = Shape.getOrder(newShape, newStride, 1);
         INDArray value = create(data(), newShape, newStride, offset(), newOrder);
         value.setCloseable(false);
+        //for cases like assign/duplication
+        //we need to set this manually since the isView()
+        //does not cover the case where the buffer is reused
+        //but does not own the underlying array.
+        //this can affect cases like duplication where the buffer
+        //may not make a copy
+        value.setIsView(true);
         return value;
     }
 

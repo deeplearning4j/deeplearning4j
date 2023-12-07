@@ -2215,6 +2215,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray permutei(long... rearrange);
 
+    void setIsView(boolean isView);
+
     /**
      * Dimshuffle: an extension of permute that adds the ability
      * to broadcast various dimensions.

@@ -61,6 +61,32 @@ public class ConvolutionUtils {
 
     private ConvolutionUtils() {
     }
+    public static PaddingMode fromConvolutionMode(ConvolutionMode paddingMode) {
+          switch (paddingMode) {
+                case Same:
+                    return PaddingMode.SAME;
+                case Truncate:
+                    return PaddingMode.VALID;
+                case Causal:
+                    return PaddingMode.CAUSAL;
+                default:
+                    throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
+            }
+    }
+
+
+    public static ConvolutionMode fromPaddingMode(PaddingMode paddingMode) {
+        switch (paddingMode) {
+            case SAME:
+                return ConvolutionMode.Same;
+            case VALID:
+                return ConvolutionMode.Truncate;
+            case CAUSAL:
+                return ConvolutionMode.Causal;
+            default:
+                throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
+        }
+    }
 
 
     /**

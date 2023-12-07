@@ -514,7 +514,9 @@ class ConvolutionLayerTest extends BaseDL4JTest {
         deltaOrig.put(new INDArrayIndex[] { NDArrayIndex.point(2), NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all() }, Nd4j.create(new double[][] { { 36, 37, 38 }, { 39, 40, 41 }, { 42, 43, 44 } }));
         deltaOrig.put(new INDArrayIndex[] { NDArrayIndex.point(2), NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all() }, Nd4j.create(new double[][] { { 45, 46, 47 }, { 48, 49, 50 }, { 51, 52, 53 } }));
         INDArray deltaPermute = deltaOrig.permute(1, 0, 2, 3).dup('c');
-        INDArray delta2d = Shape.newShapeNoCopy(deltaPermute, new int[] { depth, miniBatch * outW * outH }, false);
+        assertEquals(deltaPermute, deltaOrig.permute(1, 0, 2, 3));
+        System.out.println("We're running recent code");
+        INDArray delta2d = deltaPermute.reshape(new long[]{depth, miniBatch * outW * outH});
         INDArray exp = Nd4j.create(new double[][] { { 0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26, 36, 37, 38, 39, 40, 41, 42, 43, // depth0
         44 }, { 9, 10, 11, 12, 13, 14, 15, 16, 17, 27, 28, 29, 30, 31, 32, 33, 34, 35, 45, 46, 47, 48, 49, 50, 51, 52, // depth1
         53 } }).castTo(delta2d.dataType());

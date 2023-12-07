@@ -104,6 +104,10 @@ DECLARE_CUSTOM_OP(tile_to_shape_bp, 2, 1, false, 0, -1);
 DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);
 #endif
 
+#if NOT_EXCLUDED(OP_linear_copy)
+DECLARE_CUSTOM_OP(linear_copy, 2, 1, false, 0, 0);
+#endif
+
 #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
 DECLARE_CUSTOM_OP(evaluate_reduction_shape, 2, 1, false, 0, 0);
 #endif

@@ -201,8 +201,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new CudaUtf8Buffer(strings);
-        val list = new ArrayList<String>(strings);
+        val list = new ArrayList<>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
+    }
+
+    @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
+        return new JCublasNDArray(dataType, shape, strides, currentWorkspace);
     }
 
     @Override
@@ -1542,6 +1547,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace) {
         return new JCublasNDArray(Nd4j.createBuffer(dataType, Shape.lengthOf(shape), false), shape, Nd4j.getStrides(shape, ordering), ordering, dataType);
+    }
+
+    @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering) {
+        return super.createUninitialized(dataType, shape, strides, ordering);
     }
 
     @Override
