@@ -209,7 +209,7 @@ public abstract class Nd4jBackend {
 
         else
             throw new NoAvailableBackendException(
-                            "Please ensure that you have an nd4j backend on your classpath. Please see: https://deeplearning4j.konduit.ai/nd4j/backend");
+                            "Please ensure that you have an nd4j backend on your classpath. Please see: https://deeplearning4j.konduit.ai/multi-project/explanation/configuration/backends");
 
         triedDynamicLoad = true;
         //load all the discoverable uris and try to load the backend again
