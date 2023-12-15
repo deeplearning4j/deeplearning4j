@@ -66,7 +66,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext);
         epsNextSubset.assign(epsilon);
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return new Pair<>(new DefaultGradient(), epsNext);
     }
 
 

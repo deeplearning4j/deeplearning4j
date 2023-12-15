@@ -72,19 +72,16 @@ static Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* output1,
   }
 
   if (saved.size() == 0) {
-    sd_printf("ListDiff: search returned no results", "");
     THROW_EXCEPTION("Op validation failed");
   } else {
     auto z0 = output1;
     auto z1 = output2;
 
     if (z0->lengthOf() != saved.size()) {
-      sd_printf("ListDiff: output/actual size mismatch", "");
       THROW_EXCEPTION("Op validation failed");
     }
 
     if (z1->lengthOf() != saved.size()) {
-      sd_printf("ListDiff: output/actual indices size mismatch", "");
       THROW_EXCEPTION("Op validation failed");
     }
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));

@@ -116,8 +116,8 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST SpaceType spaceType(LongType *shapeInfo);
   static SD_HOST_DEVICE SpaceType spaceType(const LongType *shapeInfo);
 
-  static SD_HOST_DEVICE ArrayType arrayType(LongType *shapeInfo);
-  static SD_HOST_DEVICE ArrayType arrayType(const LongType *shapeInfo);
+  static SD_HOST ArrayType arrayType(LongType *shapeInfo);
+  static SD_HOST ArrayType arrayType(const LongType *shapeInfo);
 
   static SD_HOST_DEVICE SparseType sparseType(LongType *shapeInfo);
   static SD_HOST SparseType sparseType(const LongType *shapeInfo);

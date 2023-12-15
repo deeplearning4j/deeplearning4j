@@ -56,7 +56,7 @@ import java.util.*;
 @Slf4j
 public abstract class DefaultOpExecutioner implements OpExecutioner {
 
-    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: https://deeplearning4j.konduit.ai/nd4j/overview#workspaces-scope-panic";
+    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: https://deeplearning4j.konduit.ai/nd4j/reference#workspaces-scope-panic";
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
 
@@ -74,13 +74,19 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
      * @param executioner the op executioner
      */
     public static void execAssign(TransformOp op, OpContext oc, OpExecutioner executioner) {
-        if(op.x().length() == op.z().length() && !Shape.areShapesBroadcastable(op.x().shape(), op.z().shape())) {
-            LinearCopy linearCopy = new LinearCopy();
-            linearCopy.addInputArgument(op.x());
-            linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
-            linearCopy.addOutputArgument(op.z());
-            executioner.exec(linearCopy);
-            return;
+        if(op.x().length() == op.z().length()
+                || (op.x().size(0) == 1 &&
+                op.z().rank() == 1) ||
+                (op.x().rank() == 1 && op.z().rank() == 2
+                        && op.z().size(0) == 1)) {
+           try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+               LinearCopy linearCopy = new LinearCopy();
+               linearCopy.addInputArgument(op.x());
+               linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
+               linearCopy.addOutputArgument(op.z());
+               executioner.exec(linearCopy);
+               return;
+           }
         } else {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
@@ -331,7 +337,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     protected void checkWorkspace(String opName, INDArray array) {
-        if (array.isAttached()) {
+        if (array.isAttached() && !array.isView()) {
             val ws = array.data().getParentWorkspace();
 
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
@@ -353,10 +359,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected void checkForWorkspaces(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
-        int count = 0;
         for (val input: inArgs) {
             checkWorkspace(op.opName(), input);
-            count++;
         }
         for (val output: outArgs)
             checkWorkspace(op.opName(), output);
@@ -376,10 +380,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             checkWorkspace(op.opName(), z);
     }
 
-    public static List<String> allOpenWorkspaces(){
+    public static List<String> allOpenWorkspaces() {
         List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
         List<String> workspaces = new ArrayList<>(l.size());
-        for( MemoryWorkspace ws : l){
+        for(MemoryWorkspace ws : l) {
             if(ws.isScopeActive()) {
                 workspaces.add(ws.getId());
             }

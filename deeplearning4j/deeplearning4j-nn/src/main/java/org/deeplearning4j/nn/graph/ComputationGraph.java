@@ -131,7 +131,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Workspace for working memory for a single layer: forward pass and backward pass
      * Note that this is opened/closed once per op (activate/backpropGradient call)
      */
-    protected static final String WS_LAYER_WORKING_MEM = "WS_LAYER_WORKING_MEM";
+    public static final String WS_LAYER_WORKING_MEM = "WS_LAYER_WORKING_MEM";
     /**
      * Workspace for storing all layers' activations - used only to store activations (layer inputs) as part of backprop
      * Not used for inference
@@ -566,7 +566,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
         i = configuration.getNetworkInputs().size();
-        for(; i<topologicalOrder.length; i++) {
+        for(; i < topologicalOrder.length; i++) {
             String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
 
@@ -1117,7 +1117,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
         try{
             fitHelper(inputs, labels, featureMaskArrays, labelMaskArrays);
-        } catch (OutOfMemoryError e){
+        } catch (OutOfMemoryError e) {
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
@@ -1138,7 +1138,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         update(TaskUtils.buildTask(inputs, labels));
 
         LayerWorkspaceMgr workspaceMgr;
-        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             workspaceMgr = LayerWorkspaceMgr.builder()
@@ -1165,8 +1165,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
             }
 
-            //TODO: cache workspace
-            solver.optimize(workspaceMgr);
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+                ws.setWorkspaceMgr(workspaceMgr);
+
+                //TODO: cache workspace
+                solver.optimize(workspaceMgr);
+            }
+
 
         }
 
@@ -1341,7 +1346,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr){
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         computeGradientAndScore();
     }
 
@@ -1349,7 +1354,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         synchronizeIterEpochCounts();
 
         LayerWorkspaceMgr workspaceMgr;
-        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             workspaceMgr = LayerWorkspaceMgr.builder()
@@ -1373,6 +1378,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+            wsAllActivations.setWorkspaceMgr(workspaceMgr);
+
             Map<String, INDArray> activations = ffToLayerActivationsInWS(true, -1, getOutputLayerIndices(),
                     fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
             if (!trainingListeners.isEmpty()) {
@@ -1407,6 +1414,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
 
                 try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    ws.setWorkspaceMgr(workspaceMgr);
+
                     score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
                 }
 
@@ -1911,8 +1920,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Map of activations (including the input), detached from any workspace
      */
     protected  Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                                             int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
-                                                                             INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
+                                                                 int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
+                                                                 INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
         if(layerIndex < 0 || layerIndex >= topologicalOrder.length){
             throw new IllegalArgumentException("Invalid layer index - index must be >= 0 and < " + topologicalOrder.length
                     + ", got index " + layerIndex);
@@ -1966,7 +1975,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 log.trace("About forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
 
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                wsFFWorking.setWorkspaceMgr(workspaceMgr);
+
                 VertexIndices[] inputsTo = current.getOutputVertices();
 
                 INDArray out;
@@ -2066,8 +2077,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * otherwise)
      */
     protected  Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
-                                                                         FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                                         INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
+                                                             FwdPassType fwdPassType, boolean storeLastForTBPTT,
+                                                             INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
         if(layerIndex != -1 && (layerIndex < 0 || layerIndex >= topologicalOrder.length)){
             throw new IllegalArgumentException("Invalid input index - index must be >= 0 and < " + topologicalOrder.length
                     + ", got index " + layerIndex);
@@ -2092,12 +2103,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
 
-            if(input[0].isAttached()){
+            if(input[0].isAttached()) {
                 //Don't leverage out of async DataMultiSetIterator workspaces
                 workspaceMgr.setNoLeverageOverride(input[0].data().getParentWorkspace().getId());
             }
 
-            if(configuration.getCacheMode() != CacheMode.NONE){
+            if(configuration.getCacheMode() != CacheMode.NONE) {
                 //For now: store cache mode activations in activations workspace
                 workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
@@ -2127,15 +2138,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue;
             }
 
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                wsFFWorking.setWorkspaceMgr(workspaceMgr);
+
                 VertexIndices[] inputsTo = current.getOutputVertices();
 
                 INDArray out;
-                if(current.isInputVertex()){
+                if(current.isInputVertex()) {
                     out = inputs[vIdx];
                 } else {
 
-                    if(fwdPassType == FwdPassType.STANDARD){
+                    if(fwdPassType == FwdPassType.STANDARD) {
                         out = current.doForward(train, workspaceMgr);
                     } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                         if (current.hasLayer()) {
@@ -2354,6 +2367,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 MemoryWorkspace wsActivations = null;
                 if (outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || !isRequiredOutput) {    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
                     wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    wsActivations.setWorkspaceMgr(workspaceMgr);
                     openActivationsWorkspaces.put(wsActivations, workspaceMgr);
                 }
 
@@ -2773,19 +2787,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 Pair<Gradient, INDArray[]> pair;
                 INDArray[] epsilons;
-                try (MemoryWorkspace wsWorkingMem = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)) {
-                    pair = current.doBackward(truncatedBPTT, workspaceMgr);
-                    epsilons = pair.getSecond();
+                pair = current.doBackward(truncatedBPTT, workspaceMgr);
+                epsilons = pair.getSecond();
 
-                    //Validate workspace location for the activation gradients:
-                    //validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, String vertexName, boolean isInputVertex, String op){
-                    for (INDArray epsilon : epsilons) {
-                        if (epsilon != null) {
-                            //May be null for EmbeddingLayer, etc
-                            validateArrayWorkspaces(workspaceMgr, epsilon, ArrayType.ACTIVATION_GRAD, vertexName, false, "Backprop");
-                        }
+                //Validate workspace location for the activation gradients:
+                for (INDArray epsilon : epsilons) {
+                    if (epsilon != null) {
+                        //May be null for EmbeddingLayer, etc
+                        validateArrayWorkspaces(workspaceMgr, epsilon, ArrayType.ACTIVATION_GRAD, vertexName, false, "Backprop");
                     }
                 }
+
 
                 //Inputs to the current GraphVertex:
                 VertexIndices[] inputVertices = current.getInputVertices();
@@ -3209,6 +3221,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Need to feed forward, but not the output layers
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
             //TODO maybe optimize? We only need *some* of the activations in the WS...
+            ws.setWorkspaceMgr(mgr);
+
             ffToLayerActivationsInWS(false, vertices.length - 1, getOutputLayerIndices(), FwdPassType.STANDARD, false,
                     dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays(), false);
 
@@ -3231,6 +3245,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 INDArray scoreCurrLayer;
                 try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    wsFF.setWorkspaceMgr(mgr);
+
                     scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(r, mgr);
                 }
                 if (out == null)
@@ -3338,7 +3354,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return; //No op
 
         if (this.flattenedParams != null && this.flattenedParams.length() == params.length()) {
-            this.flattenedParams.assign(params.reshape(flattenedParams.shape()));
+            this.flattenedParams.assign(params);
             return;
         }
 

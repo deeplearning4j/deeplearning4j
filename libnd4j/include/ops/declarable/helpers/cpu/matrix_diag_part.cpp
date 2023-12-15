@@ -37,7 +37,6 @@ static sd::Status _matrixDiagPart(const NDArray* input, NDArray* output) {
   auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   if (listOut.size() != listDiag.size()) {
-    sd_printf("matrix_diag_part: Input matrix has wrong shape.", "");
     return sd::Status::VALIDATION;
   }
   sd::LongType lastDimension = sd::math::sd_min(input->sizeAt(-2), input->sizeAt(-1));

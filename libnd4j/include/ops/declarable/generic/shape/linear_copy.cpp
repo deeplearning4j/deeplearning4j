@@ -29,14 +29,14 @@ namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(linear_copy, 2, 1, false, 0, 0) {
-  auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0)->cast(output->dataType());
 
-  input->applyPairwiseTransform(pairwise::CopyPws,*input, *output);
+  input.applyPairwiseTransform(pairwise::CopyPws,input, *output);
   return Status::OK;
 }
 
-DECLARE_TYPES(linear_copy) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(linear_copy) { getOpDescriptor()->setAllowedInputTypes(ANY); }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(linear_copy) {

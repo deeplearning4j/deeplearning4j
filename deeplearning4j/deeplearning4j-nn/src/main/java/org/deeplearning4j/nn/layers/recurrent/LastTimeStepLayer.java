@@ -39,12 +39,21 @@ import java.util.Arrays;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+/**
+ * LastTimeStep is a "wrapper" layer: it wraps any RNN layer, and extracts out the last time step during forward pass,
+ * and returns it as a row vector (per example). That is, for 3d (time series) input (with shape [minibatch, layerSize,
+ * timeSeriesLength]), we take the last time step and return it as a 2d array with shape [minibatch, layerSize].<br>
+ * Note that the last time step operation takes into account any mask arrays, if present: thus, variable length time
+ * series (in the same minibatch) are handled as expected here.
+ *
+ * @author Alex Black
+ */
 public class LastTimeStepLayer extends BaseWrapperLayer {
 
     private int[] lastTimeStepIdxs;
     private long[] origOutputShape;
 
-    public LastTimeStepLayer(@NonNull Layer underlying){
+    public LastTimeStepLayer(@NonNull Layer underlying) {
         super(underlying);
     }
 
@@ -59,28 +68,28 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
         boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(underlying.conf().getLayer()) == RNNFormat.NWC;
         INDArray newEps = Nd4j.create(epsilon.dataType(), newEpsShape, 'f');
-        if(lastTimeStepIdxs == null){
+        if(lastTimeStepIdxs == null) {
             //no mask case
             if (nwc){
-                newEps.put(new INDArrayIndex[]{all(), point(origOutputShape[1]-1), all()}, epsilon);
+                newEps.put(new INDArrayIndex[]{all(), point(origOutputShape[1] - 1), all()}, epsilon);
             }
             else{
-                newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2]-1)}, epsilon);
+                newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2] - 1)}, epsilon);
             }
         } else {
             if (nwc){
                 INDArrayIndex[] arr = new INDArrayIndex[]{null, null, all()};
                 //TODO probably possible to optimize this with reshape + scatter ops...
-                for( int i=0; i<lastTimeStepIdxs.length; i++ ){
+                for( int i = 0; i < lastTimeStepIdxs.length; i++) {
                     arr[0] = point(i);
                     arr[1] = point(lastTimeStepIdxs[i]);
                     newEps.put(arr, epsilon.getRow(i));
                 }
             }
-            else{
-                INDArrayIndex[] arr = new INDArrayIndex[]{null, all(), null};
+            else {
+                INDArrayIndex[] arr = {null, all(), null};
                 //TODO probably possible to optimize this with reshape + scatter ops...
-                for( int i=0; i<lastTimeStepIdxs.length; i++ ){
+                for( int i = 0; i < lastTimeStepIdxs.length; i++) {
                     arr[0] = point(i);
                     arr[2] = point(lastTimeStepIdxs[i]);
                     newEps.put(arr, epsilon.getRow(i));

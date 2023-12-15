@@ -34,8 +34,6 @@ using namespace sd::graph;
 class DeclarableOpsTests7 : public NDArrayTests {
  public:
   DeclarableOpsTests7() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 
@@ -43,8 +41,6 @@ template <typename T>
 class TypedDeclarableOpsTests7 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests7() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

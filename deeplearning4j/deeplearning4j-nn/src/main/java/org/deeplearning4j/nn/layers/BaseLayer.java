@@ -87,7 +87,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         Gradient ret = new DefaultGradient();
 
-        if(hasBias()){
+        if(hasBias()) {
             INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
             delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
@@ -318,24 +318,30 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             + W.size(0) + ") " + layerId());
         }
 
-         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, W.dataType(), input.size(0), W.size(1));
-        input.mmuli(W, ret);
+        //scope out of workspaces here to avoid borrow clashes
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            INDArray ret = Nd4j.createUninitialized(W.dataType(), input.size(0), W.size(1));
+            input.mmuli(W, ret);
 
-        INDArray preNorm = ret;
-        if(hasLayerNorm()) {
-            preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
-            Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
+            INDArray preNorm = ret;
+            if(hasLayerNorm()) {
+                preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
+                Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
+            }
+
+            if(hasBias()) {
+                ret.addiRowVector(b);
+            }
+
+            if (maskArray != null) {
+                applyMask(ret);
+            }
+
+            return new Pair<>(ret, preNorm);
+
         }
 
-        if(hasBias()){
-            ret.addiRowVector(b);
-        }
 
-        if (maskArray != null) {
-            applyMask(ret);
-        }
-
-        return new Pair<>(ret, preNorm);
     }
 
     @Override

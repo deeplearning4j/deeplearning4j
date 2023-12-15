@@ -403,7 +403,6 @@ void execBroadcast(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, con
 
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(hZShapeInfo, dimension, dimensionLength);
-
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
     auto hTADOffsets = tadPackX->primaryOffsets();
     auto hTADShapeInfoZ = tadPackZ->primaryShapeInfo();
@@ -1199,7 +1198,7 @@ int freeHost(Pointer pointer) {
 #if defined(SD_ALIGNED_ALLOC)
   free(pointer);
 #else
-  delete[] reinterpret_cast<int8_t *>(pointer);
+  delete reinterpret_cast<int8_t *>(pointer);
 #endif
   return 1L;
 }
@@ -1335,31 +1334,31 @@ void pullRowsGeneric(void *vx, LongType const *hXShapeInfo, void *vz, LongType c
   _threads = math::sd_min<int>(_threads, Environment::getInstance().maxThreads());
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto idx = start; idx < stop; idx++) {
-      auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
-      auto zTadOffsetForBlock = zTadOffsets[idx];
+      for (auto idx = start; idx < stop; idx++) {
+        auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
+        auto zTadOffsetForBlock = zTadOffsets[idx];
 
-      auto rX = hX + xTadOffsetForBlock;
-      auto rZ = hZ + zTadOffsetForBlock;
+        auto rX = hX + xTadOffsetForBlock;
+        auto rZ = hZ + zTadOffsetForBlock;
 
-      if (xEWS == 1 && zEWS == 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType i = 0; i < tadLength; i++) {
-          rZ[i] = rX[i];
-        }
-      } else if (xEWS >= 1 && zEWS >= 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType i = 0; i < tadLength; i++) {
-          rZ[i * zEWS] = rX[i * xEWS];
-        }
-      } else {
-        for (LongType i = 0; i < tadLength; i++) {
-          auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
-          auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
-          hZ[zOffset] = hX[xOffset];
+        if (xEWS == 1 && zEWS == 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType i = 0; i < tadLength; i++) {
+            rZ[i] = rX[i];
+          }
+        } else if (xEWS >= 1 && zEWS >= 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType i = 0; i < tadLength; i++) {
+            rZ[i * zEWS] = rX[i * xEWS];
+          }
+        } else {
+          for (LongType i = 0; i < tadLength; i++) {
+            auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+            auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
+            hZ[zOffset] = hX[xOffset];
+          }
         }
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
@@ -1393,25 +1392,25 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
   auto numTads = shape::length(hXShapeInfo) / tadLength;
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      auto hZ = reinterpret_cast<T *>(targets[i]);
-      auto s = hX + tadOffsets[i];
+      for (auto i = start; i < stop; i++) {
+        auto hZ = reinterpret_cast<T *>(targets[i]);
+        auto s = hX + tadOffsets[i];
 
-      if (zEWS == 1 && tadEWS == 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType j = 0; j < tadLength; j++) {
-          hZ[j] = s[j];
+        if (zEWS == 1 && tadEWS == 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType j = 0; j < tadLength; j++) {
+            hZ[j] = s[j];
+          }
+        } else if (zEWS > 0 && tadEWS > 0) {
+          PRAGMA_OMP_SIMD
+          for (LongType j = 0; j < tadLength; j++) {
+            hZ[j * zEWS] = s[j * tadEWS];
+          }
+        } else {
+          for (LongType j = 0; j < tadLength; j++)
+            hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
         }
-      } else if (zEWS > 0 && tadEWS > 0) {
-        PRAGMA_OMP_SIMD
-        for (LongType j = 0; j < tadLength; j++) {
-          hZ[j * zEWS] = s[j * tadEWS];
-        }
-      } else {
-        for (LongType j = 0; j < tadLength; j++)
-          hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, numTads);
@@ -1482,50 +1481,50 @@ void shuffleGeneric(void **hX, LongType *const *hXShapeInfo, void **dz, LongType
   auto dZ = reinterpret_cast<T **>(dz);
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto f = start; f < stop; f++) {
-      auto hX = reinterpret_cast<T *>(dX[f]);
+      for (auto f = start; f < stop; f++) {
+        auto hX = reinterpret_cast<T *>(dX[f]);
 
-      auto xShapeInfo = hXShapeInfo[f];
-      auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
+        auto xShapeInfo = hXShapeInfo[f];
+        auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
 
-      const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
-      auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-      auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-      auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
+        const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
+        auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+        auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
+        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
 
-      if (shape::rank(xShapeInfo) == 1) {
-        auto xLength = shape::length(xShapeInfo);
-        auto ews = shape::elementWiseStride(xShapeInfo);
-        for (LongType r = 0; r < xLength; r++) {
-          auto swapIdx = shuffleMap[r];
-          if (swapIdx < 0) continue;
+        if (shape::rank(xShapeInfo) == 1) {
+          auto xLength = shape::length(xShapeInfo);
+          auto ews = shape::elementWiseStride(xShapeInfo);
+          for (LongType r = 0; r < xLength; r++) {
+            auto swapIdx = shuffleMap[r];
+            if (swapIdx < 0) continue;
 
-          math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
-        }
-      } else {
-        for (LongType r = 0; r < numTads; r++) {
-          if (shuffleMap[r] < 0) continue;
+            math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
+          }
+        } else {
+          for (LongType r = 0; r < numTads; r++) {
+            if (shuffleMap[r] < 0) continue;
 
-          auto oldOffset = tadOffset[r];
-          auto newOffset = tadOffset[shuffleMap[r]];
+            auto oldOffset = tadOffset[r];
+            auto newOffset = tadOffset[shuffleMap[r]];
 
-          auto rX = hX + oldOffset;
-          auto rY = hX + newOffset;
+            auto rX = hX + oldOffset;
+            auto rY = hX + newOffset;
 
-          if (tadEWS == 1) {
-            for (LongType i = 0; i < tadLength; i++) {
-              math::sd_swap<T>(rX[i], rY[i]);
-            }
-          } else {
-            for (LongType i = 0; i < tadLength; i++) {
-              auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-              math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+            if (tadEWS == 1) {
+              for (LongType i = 0; i < tadLength; i++) {
+                math::sd_swap<T>(rX[i], rY[i]);
+              }
+            } else {
+              for (LongType i = 0; i < tadLength; i++) {
+                auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
+                math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+              }
             }
           }
         }
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, N);
@@ -1840,14 +1839,14 @@ SD_INLINE int estimateThresholdGeneric(Pointer *extraPointers, Pointer hX, int N
   int span = (N / 6) + 8;
 
   auto func = PRAGMA_REDUCE_LONG {
-    int64_t cnt = 0;
-    PRAGMA_OMP_SIMD
-    for (auto e = start; e < stop; e++) {
-      auto v = math::sd_abs<T>(buffer[e]);
-      if (v >= threshold) cnt++;
-    }
+      int64_t cnt = 0;
+      PRAGMA_OMP_SIMD
+      for (auto e = start; e < stop; e++) {
+        auto v = math::sd_abs<T>(buffer[e]);
+        if (v >= threshold) cnt++;
+      }
 
-    return cnt;
+      return cnt;
   };
 
   return samediff::Threads::parallel_long(
@@ -1873,16 +1872,16 @@ LongType const *getShape(ShapeList *list, LongType i) {
 }
 
 void deleteShapeList(Pointer shapeList) {
- // auto list = reinterpret_cast<ShapeList *>(shapeList);
+  // auto list = reinterpret_cast<ShapeList *>(shapeList);
 
- // list->destroy();
- // delete list;
+  // list->destroy();
+  // delete list;
 }
 
 ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputBuffers,
-                                      Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+                                  Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
+                                  int numDArgs) {
 
   graph::VariableSpace varSpace;
   Context block(2, &varSpace);
@@ -1931,9 +1930,9 @@ ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op,
 
 
 ShapeList *calculateOutputShapes2(Pointer *extraPointers, LongType hash, Pointer *inputBuffers,
-                                      Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+                                  Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
+                                  int numDArgs) {
   try {
     auto op = ops::OpRegistrator::getInstance().getOperation(hash);
 
@@ -2098,8 +2097,8 @@ int calculateOutputShapesAndFill(graph::Context *ctx, LongType hash, void **hand
 #endif
 
 ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputShapes,
-                                      int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs,
-                                      int numIArgs) {
+                                  int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs,
+                                  int numIArgs) {
   Context block(1);
   ShapeList inShapes;
 
@@ -2125,8 +2124,8 @@ ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op,
 }
 
 ShapeList *calculateOutputShapes(Pointer *extraPointers, LongType hash, Pointer *inputShapes,
-                                     int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs,
-                                     int numIArgs) {
+                                 int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs,
+                                 int numIArgs) {
   try {
     auto op = ops::OpRegistrator::getInstance().getOperation(hash);
 
@@ -2152,9 +2151,9 @@ Status execCustomOp2(Pointer *extraPointers, LongType hash, Pointer opContext) {
 }
 
 Status realExec(ops::DeclarableOp *op, Pointer *extraPointers, LongType hash, Pointer *inputBuffers,
-                    Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes,
-                    int numOutputs, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
-                    int numBArgs, bool isInplace) {
+                Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes,
+                int numOutputs, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
+                int numBArgs, bool isInplace) {
   if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
   // we're using the same fake nodeId everywhere here
@@ -2225,9 +2224,9 @@ Status realExec(ops::DeclarableOp *op, Pointer *extraPointers, LongType hash, Po
 }
 
 Status execCustomOp(Pointer *extraPointers, LongType hash, Pointer *inputBuffers,
-                        Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes,
-                        int numOutputs, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
-                        int numBArgs, bool isInplace) {
+                    Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes,
+                    int numOutputs, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
+                    int numBArgs, bool isInplace) {
   try {
     auto op = ops::OpRegistrator::getInstance().getOperation(hash);
     return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
@@ -2300,7 +2299,7 @@ static VariablesSet *executeStoredGraphT(Pointer *extraPointers, LongType graphI
 }
 
 graph::VariablesSet *executeStoredGraph(Pointer *extraPointers, LongType graphId, Pointer *inputBuffers,
-                                            Pointer *inputShapes, int *inputIndices, int numInputs) {
+                                        Pointer *inputShapes, int *inputIndices, int numInputs) {
   return nullptr;
 }
 
@@ -2362,9 +2361,9 @@ void deleteGraphState(Pointer state) {
 }
 
 Status execCustomOpWithScope_(Pointer *extraPointers, graph::GraphState *state, LongType opHash,
-                                  LongType *scopes, int numScopes, Pointer *inputBuffers,
-                                  Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
-                                  Pointer *outputShapes, int numOutputs) {
+                              LongType *scopes, int numScopes, Pointer *inputBuffers,
+                              Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
+                              Pointer *outputShapes, int numOutputs) {
   /**
    * That's basically exec, with VariableSpace provided in GraphState:
    * depending on operation (i.e. while of if), different logic executors could be used
@@ -2427,9 +2426,9 @@ Status execCustomOpWithScope_(Pointer *extraPointers, graph::GraphState *state, 
 }
 
 Status execCustomOpWithScope(Pointer *extraPointers, Pointer state, LongType opHash,
-                                 LongType *scopes, int numScopes, Pointer *inputBuffers,
-                                 Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
-                                 Pointer *outputShapes, int numOutputs) {
+                             LongType *scopes, int numScopes, Pointer *inputBuffers,
+                             Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
+                             Pointer *outputShapes, int numOutputs) {
   try {
     return execCustomOpWithScope_(extraPointers, reinterpret_cast<graph::GraphState *>(state), opHash, scopes,
                                   numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
@@ -2690,48 +2689,48 @@ static void _scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs,
                            const LongType *dIndicesShapeInfo) {
   auto hIindexes = reinterpret_cast<I *>(vIindexes);
   auto func = PRAGMA_THREADS_DO {
-    for (int i = 0; i < numOfSubArrs; ++i) {
-      int threadIndex = thread_id;
-      const auto xIndex = hIindexes[i];
-      const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+      for (int i = 0; i < numOfSubArrs; ++i) {
+        int threadIndex = thread_id;
+        const auto xIndex = hIindexes[i];
+        const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
-      if (!isOwner) continue;
+        if (!isOwner) continue;
 
-      NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                       hXShapeInfo);
-      NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                        hYShapeInfo);
+        NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                         hXShapeInfo);
+        NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                          hYShapeInfo);
 
-      if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
-        continue;
-      }
-
-      switch (opCode) {
-        case 0:
-          inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
-          break;
-        case 1:
-          inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
-          break;
-        case 2:
-          inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
-          break;
-        case 3:
-          inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
-          break;
-        case 4:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
-          break;
-        case 5:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
-          break;
-        case 6:
-          inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
-          break;
-        default:
+        if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
           continue;
+        }
+
+        switch (opCode) {
+          case 0:
+            inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
+            break;
+          case 1:
+            inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
+            break;
+          case 2:
+            inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
+            break;
+          case 3:
+            inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
+            break;
+          case 4:
+            inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
+            break;
+          case 5:
+            inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
+            break;
+          case 6:
+            inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
+            break;
+          default:
+            continue;
+        }
       }
-    }
   };
 
   samediff::Threads::parallel_do(func);
@@ -3339,14 +3338,14 @@ void setVedaDeviceLibFolder(std::string path) {
 }
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
-                      (void *, LongType const *, void *, LongType const *, const int, LongType const *,
-                          LongType const *, LongType const *, LongType const *, LongType const *),
-                      SD_COMMON_TYPES);
+(void *, LongType const *, void *, LongType const *, const int, LongType const *,
+LongType const *, LongType const *, LongType const *, LongType const *),
+SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric,
-                      (void *, LongType const *, Pointer *, LongType const *, LongType const *,
-                          LongType const *),
-                      SD_COMMON_TYPES);
+(void *, LongType const *, Pointer *, LongType const *, LongType const *,
+LongType const *),
+SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
-                      (void **, LongType *const *, void **, LongType *const *, int, int *,
-                          LongType *const *, LongType *const *),
-                      SD_COMMON_TYPES);
+(void **, LongType *const *, void **, LongType *const *, int, int *,
+LongType *const *, LongType *const *),
+SD_COMMON_TYPES);

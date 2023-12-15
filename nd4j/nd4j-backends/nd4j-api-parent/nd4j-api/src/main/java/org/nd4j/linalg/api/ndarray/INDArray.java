@@ -25,6 +25,7 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -641,7 +642,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray get(INDArrayIndex... indexes);
 
-    //TODO: revisit after #8166 is resolved.
+
+
+
     /**
      * Return a mask on whether each element matches the given condition
      * @param comp
@@ -650,7 +653,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray match(INDArray comp,Condition condition);
 
-    //TODO: revisit after #8166 is resolved.
+
+
     /**
      * Returns a mask
      * @param comp
@@ -2847,4 +2851,10 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return INDArray unique ID
      */
     long getId();
+
+    default MemoryWorkspace getWorkspace() {
+        if(isEmpty())
+            return null;
+        return data().getParentWorkspace();
+    }
 }

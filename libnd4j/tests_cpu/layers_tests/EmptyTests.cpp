@@ -29,8 +29,6 @@ using namespace sd;
 class EmptyTests : public NDArrayTests {
  public:
   EmptyTests() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

@@ -75,7 +75,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Deallocator deallocator;
 
-    protected String allocationTrace = Nd4j.getEnvironment().isFuncTracePrintAllocate() ?
+    protected String allocationTrace = Nd4j.getEnvironment().isFuncTracePrintAllocate()
+            || Nd4j.getEnvironment().isFuncTracePrintJavaOnly() ?
             StackTraceUtils.currentStackTraceString() : null;
     protected DataType type;
     protected long length;
@@ -2275,13 +2276,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public MemoryWorkspace getParentWorkspace() {
-        if(parentWorkspace != null){
+        if(parentWorkspace != null) {
             return parentWorkspace;
         }
-        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null){
+        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null) {
             return wrappedDataBuffer.getParentWorkspace();
         }
-        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null){
+        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null) {
             return originalBuffer.getParentWorkspace();
         }
         return null;

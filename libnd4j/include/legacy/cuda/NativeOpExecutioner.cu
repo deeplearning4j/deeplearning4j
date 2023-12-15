@@ -690,8 +690,9 @@ void NativeOpExecutioner::execIndexReduce(LaunchContext* lc, int opNum, void con
   auto reductionPointer = lc->getReductionPointer();
   auto allocationPointer = lc->getAllocationPointer();
 
-  if (Environment::getInstance().isDebugAndVerbose()) printf("F2 opType:[%i]\n", opNum);
-
+  if (Environment::getInstance().isDebugAndVerbose()) {
+    printf("F2 opType:[%i]\n", opNum);
+  }
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);
   if (DataTypeUtils::isS(xType) || DataTypeUtils::isS(zType)) {
@@ -710,9 +711,22 @@ void NativeOpExecutioner::execIndexReduce(LaunchContext* lc, int opNum, void con
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::indexreduce::IndexReduce,
-      ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz,
-                           dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer,
-                           reductionPointer, tadShapeInfo, tadOffsets),
+      ::executeIndexReduce(launchDims,
+                           stream,
+                           opNum,
+                           dX,
+                           dXShapeInfo, shape::rank(hXShapeInfo),
+                           extraParams,
+                           dz,
+                           dZShapeInfo,
+                           shape::rank(hZShapeInfo),
+                           dimension,
+                           dimensionLength,
+                           1,
+                           allocationPointer,
+                           reductionPointer,
+                           tadShapeInfo,
+                           tadOffsets),
       SD_COMMON_TYPES, SD_INDEXING_TYPES);
 }
 

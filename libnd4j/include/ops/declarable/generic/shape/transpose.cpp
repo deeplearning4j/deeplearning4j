@@ -97,7 +97,6 @@ DECLARE_SHAPE_FN(transpose) {
     }
 
   if(!isPermuteNecessary) {
-    printf("!isPermuteNecessary\n");
     //note: do not deallocate thhis buffer. they are kept around.
     auto permEvalShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(inputShape->at(0));
     return SHAPELIST(permEvalShapeInfo);
@@ -109,7 +108,6 @@ DECLARE_SHAPE_FN(transpose) {
   if(x->isEmpty()) {
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
   }
-  printf("Returning final permEvalShapeInfo\n");
   auto ret = CONSTANT(permEvalShapeInfo);
   return SHAPELIST(ret);
 }

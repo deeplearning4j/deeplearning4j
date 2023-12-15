@@ -81,7 +81,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] strides = layerConf().getStride();
         int[] pad;
         if (convolutionMode == ConvolutionMode.Same) {
-            int[] outSize = new int[]{(int)epsilon.size(hDim), (int)epsilon.size(wDim)};
+            int[] outSize = {(int)epsilon.size(hDim), (int)epsilon.size(wDim)};
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)inH, (int)inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
@@ -95,7 +95,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[] {
+        int[] args = {
                 (int)kH, (int)kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode,
                 nchw ? 0 : 1 //0 = NCHW; 1 = NHWC

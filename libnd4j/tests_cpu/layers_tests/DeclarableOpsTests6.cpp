@@ -33,8 +33,6 @@ using namespace sd::graph;
 class DeclarableOpsTests6 : public NDArrayTests {
  public:
   DeclarableOpsTests6() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

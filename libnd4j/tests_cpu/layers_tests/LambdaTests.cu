@@ -32,8 +32,6 @@ using namespace sd;
 class LambdaTests : public NDArrayTests {
  public:
   LambdaTests() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

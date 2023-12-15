@@ -36,7 +36,6 @@ BROADCASTABLE_OP_IMPL(realdiv, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
   if (tZ == nullptr) {
-    sd_printf("Failed to execute, null pointer \n",0);
     return Status::KERNEL_FAILURE;
   }
   else if (tZ != z) {

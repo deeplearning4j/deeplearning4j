@@ -29,6 +29,9 @@ public class CudaEnvironment implements Environment {
 
 
     private static final CudaEnvironment INSTANCE = new CudaEnvironment(Nd4jCuda.Environment.getInstance());
+    protected boolean funcTracePrintJavaOnly = false;
+    protected boolean workspaceTrackOpenClose = false;
+    protected int numEventsToKeep = -1;
 
     private final Nd4jCuda.Environment e;
 
@@ -38,6 +41,32 @@ public class CudaEnvironment implements Environment {
 
     protected CudaEnvironment(Nd4jCuda.Environment environment){
         this.e = environment;
+    }
+
+    @Override
+    public int numWorkspaceEventsToKeep() {
+        return numEventsToKeep;
+    }
+
+    @Override
+    public boolean isTrackWorkspaceOpenClose() {
+        return workspaceTrackOpenClose;
+    }
+
+    @Override
+    public void setTrackWorkspaceOpenClose(boolean trackWorkspaceOpenClose) {
+        this.workspaceTrackOpenClose = trackWorkspaceOpenClose;
+
+    }
+
+    @Override
+    public boolean isFuncTracePrintJavaOnly() {
+        return funcTracePrintJavaOnly;
+    }
+
+    @Override
+    public void setFuncTracePrintJavaOnly(boolean reallyTrace) {
+        this.funcTracePrintJavaOnly = reallyTrace;
     }
 
     @Override

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.common.primitives.Pair;
@@ -61,7 +62,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
 
         INDArray inputTemp = input;
-        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC) {
             this.input = input.permute(0, 2, 1);
         }
 
@@ -79,8 +80,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
         weightNoiseParams.clear();
 
-        //epsilon3d = backpropDropOutIfPresent(epsilon3d);
         return new Pair<>(gradAndEpsilonNext.getFirst(), epsilon3d);
+
+
     }
 
     /**{@inheritDoc}
@@ -136,7 +138,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray input = this.input;
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
-                            "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
+                    "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
@@ -158,7 +160,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         }
 
         INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
-        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC) {
             ret = ret.permute(0, 2, 1);
         }
         return ret;
@@ -176,8 +178,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
                 this.maskArray = TimeSeriesUtils.reshape3dTo2d(maskArray, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
             } else {
                 throw new UnsupportedOperationException(
-                                "Invalid mask array: must be rank 2 or 3 (got: rank " + maskArray.rank() + ", shape = "
-                                                + Arrays.toString(maskArray.shape()) + ") " + layerId());
+                        "Invalid mask array: must be rank 2 or 3 (got: rank " + maskArray.rank() + ", shape = "
+                                + Arrays.toString(maskArray.shape()) + ") " + layerId());
             }
         } else {
             this.maskArray = null;
@@ -186,7 +188,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                          int minibatchSize) {
 
         //If the *input* mask array is present and active, we should use it to mask the output
         if (maskArray != null && currentMaskState == MaskState.Active) {
@@ -215,8 +217,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
-                                layerConf().getActivationFn(), maskArray);
+                lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+                        layerConf().getActivationFn(), maskArray);
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 

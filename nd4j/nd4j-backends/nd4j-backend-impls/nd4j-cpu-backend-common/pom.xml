@@ -32,7 +32,8 @@
             <groupId>org.nd4j</groupId>
             <artifactId>libnd4j</artifactId>
             <version>${project.version}</version>
-            <optional>true</optional>
+            <classifier>${dependency.platform}</classifier>
+            <type>zip</type>
         </dependency>
 
     </dependencies>

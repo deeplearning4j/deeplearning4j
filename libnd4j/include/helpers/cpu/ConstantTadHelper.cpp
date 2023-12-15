@@ -110,7 +110,6 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
 
     _cache[deviceId][descriptor] = t;
 
-    delete dimsToExclude;
 
   }
 

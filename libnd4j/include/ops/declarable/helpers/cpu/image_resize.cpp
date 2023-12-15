@@ -893,13 +893,11 @@ sd::Status resizeFunctor(sd::LaunchContext* context, NDArray const* image, int c
     case kResizeLanczos5:
     case kResizeGaussian:
     case kResizeMitchellcubic: {
-      sd_printf("helper::resizeFunctor: only float type is supported by this resize method %i\n", (int)method);
       return Logger::logStatusMsg(Status::BAD_INPUT, "helper::resizeFunctor: only float type supported");
     }
 
 #endif
   }
-  sd_printf("helper::resizeFunctor: Wrong resize method %i\n", (int)method);
   return Logger::logStatusMsg(Status::BAD_INPUT, "helper::resizeFunctor: Wrong resize method");
 }
 

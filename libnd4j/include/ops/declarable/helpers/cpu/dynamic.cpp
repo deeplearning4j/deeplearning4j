@@ -82,11 +82,9 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
       for (sd::LongType i = 0; i < index->lengthOf(); i++) {
         sd::LongType pos = index->e<sd::LongType>(i);
         if (pos < 0) {
-          sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
           return sd::Status::VALIDATION;
         }
         if (pos >= output->lengthOf()) {
-          sd_printf("dynamic_stitch: Index should be less than %i. But %i was given", output->lengthOf(), pos);
           return sd::Status::VALIDATION;
         }
         output->p<T>(pos, data->e<T>(i));
@@ -108,11 +106,9 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
       for (sd::LongType i = 0; i < index->lengthOf(); i++) {
         auto pos = index->e<sd::LongType>(i);
         if (pos < 0) {
-          sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
           return sd::Status::VALIDATION;
         }
         if (pos >= output->lengthOf()) {
-          sd_printf("dynamic_stitch: Index should be less than %i. But %i was given", output->lengthOf(), pos);
           return sd::Status::VALIDATION;
         }
 

@@ -78,7 +78,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
         Integer sameMode = (layerConf().getConvolutionMode() == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[] {
+        int[] args = {
                 kernel[0], kernel[1], kernel[2], strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode,
                 df == Convolution3D.DataFormat.NCDHW ? 0 : 1
@@ -91,7 +91,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
         INDArray[] opInputs;
         INDArray[] opOutputs;
-        if(layerConf().hasBias()){
+        if(layerConf().hasBias()) {
             INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
             opInputs = new INDArray[]{input, weights, bias, delta};
             opOutputs = new INDArray[]{outEps, weightGradView, biasGradView};
@@ -172,7 +172,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
         int sameMode = (cm == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[] {
+        int[] args = {
                 kernel[0], kernel[1], kernel[2], strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode,
                 df == Convolution3D.DataFormat.NCDHW ? 0 : 1

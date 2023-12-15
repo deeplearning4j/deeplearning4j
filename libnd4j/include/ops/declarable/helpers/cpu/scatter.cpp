@@ -51,7 +51,6 @@ sd::LongType checkIndices_(const NDArray& indices, const NDArray& output, const 
       const sd::LongType currentInd = x[shape::getOffset(xShapeInfo, xCoords)];
 
       if (currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
-        printf("checkIndices: out of range element %lld at index %ld \n", currentInd, i);
         ++numOfBadIndx;
       }
     }

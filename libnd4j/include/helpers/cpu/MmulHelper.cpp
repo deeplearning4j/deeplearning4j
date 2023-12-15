@@ -265,10 +265,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     }
     if (pC != C) {
       C->assign(pC);
-      delete pC;
     }
-    if (pA != A) delete pA;
-    if (pB != B) delete pB;
+
   }
 
   return C;
@@ -342,7 +340,6 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
                                         (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
     }
 
-     if (pA != A) delete pA;
   }
 
   return Y;

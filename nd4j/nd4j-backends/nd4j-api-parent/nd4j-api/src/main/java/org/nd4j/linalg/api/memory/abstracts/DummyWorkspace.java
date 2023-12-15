@@ -28,10 +28,16 @@ import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
+import org.nd4j.linalg.workspace.WorkspaceMgr;
 
 public class DummyWorkspace implements MemoryWorkspace {
 
     protected MemoryWorkspace parentWorkspace;
+    protected WorkspaceMgr workspaceMgr;
+    @Override
+    public void setWorkspaceMgr(WorkspaceMgr mgr) {
+        this.workspaceMgr = mgr;
+    }
 
     /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance

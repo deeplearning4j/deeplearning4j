@@ -388,7 +388,6 @@ const LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, memory::W
   LongType* dims = new LongType[rank];
   for (LongType i = 0; i < rank; i++) {
     dims[i] = rank - 1 - i;
-    sd_printf("evalTransposeShapeInfo: dims[%i] = %i\n", i, dims[i]);
   }
 
   auto ret = evalPermShapeInfo(dims, rank, arr, workspace, setContigStrides);
@@ -484,7 +483,6 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
     }
     ShapeDescriptor* descriptor = new ShapeDescriptor(resultShapeInfo);
     resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
-    if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
     return true;
   }
 
@@ -536,9 +534,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
   }
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo);
-  RELEASE(tmpShapeInfo, workspace);
   resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return true;
 }
 
@@ -573,10 +569,8 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
   ArrayOptions::setDataType(tmpShapeInfo, arrays[0]->dataType());
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo);
-  RELEASE(tmpShapeInfo, workspace);
   auto bufferForSHape = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
   resultShapeInfo = const_cast<LongType*>(bufferForSHape->primary());
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return true;
 }
 
@@ -641,9 +635,7 @@ const LongType* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vec
   ArrayOptions::setDataType(newShapeInfo, arr.dataType());
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo);
-  RELEASE(newShapeInfo, workspace);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 

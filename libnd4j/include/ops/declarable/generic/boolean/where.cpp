@@ -113,7 +113,6 @@ DECLARE_SHAPE_FN(Where) {
     if (numOfTrue > 0) {
       LongType* newShape;
       ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-      printf("where: num true is %d\n",numOfTrue);
       newShape[0] = 2;
       newShape[1] = numOfTrue;
       newShape[2] = shape::rank(inShape);

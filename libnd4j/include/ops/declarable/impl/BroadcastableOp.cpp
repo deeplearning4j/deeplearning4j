@@ -101,8 +101,6 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, Context 
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    printf("BroadcastableOp: x data type: %s scalar y dtype: %s dtype %s\n",DataTypeUtils::asString(ArrayOptions::dataType(x)).c_str()
-        , DataTypeUtils::asString(ArrayOptions::dataType(y)).c_str(), DataTypeUtils::asString(dtype).c_str());
     auto desc = new ShapeDescriptor(x, dtype);
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;

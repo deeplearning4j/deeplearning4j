@@ -26,7 +26,9 @@ public class CpuEnvironment implements Environment {
 
 
     private static final CpuEnvironment INSTANCE = new CpuEnvironment(Nd4jCpu.Environment.getInstance());
-
+    protected boolean funcTracePrintJavaOnly = false;
+    protected boolean workspaceTrackOpenClose = false;
+    protected int numEventsToKeep = -1;
     private final Nd4jCpu.Environment e;
 
     public static CpuEnvironment getInstance(){
@@ -38,13 +40,38 @@ public class CpuEnvironment implements Environment {
     }
 
     @Override
+    public int numWorkspaceEventsToKeep() {
+        return numEventsToKeep;
+    }
+
+    @Override
+    public boolean isTrackWorkspaceOpenClose() {
+        return workspaceTrackOpenClose;
+    }
+
+    @Override
+    public void setTrackWorkspaceOpenClose(boolean trackWorkspaceOpenClose) {
+        this.workspaceTrackOpenClose = trackWorkspaceOpenClose;
+    }
+
+    @Override
+    public boolean isFuncTracePrintJavaOnly() {
+        return funcTracePrintJavaOnly;
+    }
+
+    @Override
+    public void setFuncTracePrintJavaOnly(boolean reallyTrace) {
+        this.funcTracePrintJavaOnly = reallyTrace;
+    }
+
+    @Override
     public boolean isDeleteShapeInfo() {
         return e.isDeleteShapeInfo();
     }
 
     @Override
     public void setDeleteShapeInfo(boolean reallyDelete) {
-       e.setDeleteShapeInfo(reallyDelete);
+        e.setDeleteShapeInfo(reallyDelete);
     }
 
     @Override

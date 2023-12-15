@@ -110,7 +110,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected transient boolean released = false;
 
 
-    protected String allocationTrace = Nd4j.getEnvironment().isFuncTracePrintAllocate() ?
+    protected String allocationTrace =  Nd4j.getEnvironment().isFuncTracePrintAllocate()
+            || Nd4j.getEnvironment().isFuncTracePrintJavaOnly() ?
             StackTraceUtils.currentStackTraceString() : null;
 
 
@@ -1689,7 +1690,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        val z = Nd4j.createUninitialized(this.dataType(), this.shape(),this.stride(),order());
+        val z = Nd4j.createUninitialized(this.dataType(), this.shape(),order());
         z.assign(this);
         return z;
     }
@@ -4101,7 +4102,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isVector())
             return Nd4j.pullRows(this, 1, rindices);
         else {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), new long[] {rindices.length, columns()});
+            INDArray ret = Nd4j.createUninitialized(this.dataType(), rindices.length, columns());
             for (int i = 0; i < rindices.length; i++)
                 ret.putRow(i, getRow(rindices[i]));
             return ret;
@@ -4321,6 +4322,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         char order = Shape.getOrder(outShape, outStrides, -1);
         INDArray out = create(data, outShape, outStrides, offset, order);
+        //note we set it as a view from the context of buffer ownership.
+        //this array is not the original buffer owner.
+        out.setIsView(true);
         if(Nd4j.getEnvironment().isDebugAndVerbose()) {
             //only validate this when we are debugging something.
             //otherwise we will see too much production overhead

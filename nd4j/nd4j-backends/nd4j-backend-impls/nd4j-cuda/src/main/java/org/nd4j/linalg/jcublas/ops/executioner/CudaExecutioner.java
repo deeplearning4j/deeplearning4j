@@ -580,9 +580,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 z, (LongPointer) hostZShapeInfo, (LongPointer) zShapeInfo,
                 ((BaseCudaDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
+        if (nativeOps.lastErrorCode() != 0) {
+            //mainly for easier usage during debugging
+            String errorMessage = nativeOps.lastErrorMessage();
+            throw new RuntimeException(errorMessage);
+        }
         profilingConfigurableHookOut(op, null, st);
 
         return op.z();

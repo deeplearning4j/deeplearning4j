@@ -486,8 +486,6 @@ public class OpProfiler {
     }
 
     public void processStackCall(CustomOp op, long timeStart) {
-        //StackTraceElement stack[] = Thread.currentThread().getStackTrace();
-
         long timeSpent = (System.nanoTime() - timeStart) / 1000;
 
         /*

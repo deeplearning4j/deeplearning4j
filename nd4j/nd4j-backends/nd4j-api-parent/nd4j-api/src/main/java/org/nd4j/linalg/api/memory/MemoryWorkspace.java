@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.workspace.WorkspaceMgr;
 
 public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     String DEFAULT_ID = "DefaultWorkspace";
@@ -44,6 +45,14 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
          */
         CIRCULAR,
     }
+
+    /**
+     * Set the workspace manager.
+     * This is only needed for notifications for logging
+     * when this workspace is destroyed/closed.
+     * @param mgr
+     */
+    void setWorkspaceMgr(WorkspaceMgr mgr);
 
     /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance

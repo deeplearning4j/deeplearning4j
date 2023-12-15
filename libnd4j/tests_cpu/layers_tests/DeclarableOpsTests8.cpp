@@ -32,8 +32,6 @@ using namespace sd;
 class DeclarableOpsTests8 : public NDArrayTests {
  public:
   DeclarableOpsTests8() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 
@@ -41,8 +39,6 @@ template <typename T>
 class TypedDeclarableOpsTests8 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests8() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

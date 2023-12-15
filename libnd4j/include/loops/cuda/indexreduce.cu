@@ -8,7 +8,7 @@
  *  See the NOTICE file distributed with this work for additional
  *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT12
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
@@ -211,15 +211,11 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     xLength = shape::length(xShapeInfo);
   }
   __syncthreads();
-
-  if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-    if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
-
     for (sd::LongType i = blockIdxX * blockDim.x + threadIdxX; i < zLen; i += gridDimX * blockDimX) {
       z[i] = static_cast<Z>(reduction.index);
     }
     return;
-  }
+
 
   //ignore this code block
   if (!resultScalar) {
@@ -279,7 +275,6 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     auto n = shape::length(xShapeInfo);
     auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
     if (xElementWiseStride >= 1 && order == 'c') {
-    //  printf("xEleStride > 1 && order == c\n");
       for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
         IndexValue<X> comp{dx[i * xElementWiseStride], i};
         reduction = OpType::update(reduction, comp, extraParams);

@@ -347,7 +347,7 @@ SD_HOST_DEVICE SpaceType ArrayOptions::spaceType(const sd::LongType *shapeInfo) 
   return spaceTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST_DEVICE ArrayType ArrayOptions::arrayType(const sd::LongType *shapeInfo) {
+SD_HOST ArrayType ArrayOptions::arrayType(const sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 

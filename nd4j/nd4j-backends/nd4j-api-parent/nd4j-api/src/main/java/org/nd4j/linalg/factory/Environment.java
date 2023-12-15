@@ -21,6 +21,40 @@ package org.nd4j.linalg.factory;
 
 public interface Environment {
 
+
+    /**
+     * This is the number of {@link WorkspaceUseMetaData} to keep
+     * in the memory manager. The default is -1 (unlimited)
+     * @return
+     */
+    int numWorkspaceEventsToKeep();
+
+    /**
+     * This is a java side environment flag
+     * that controls whether the memory manager records
+     * metadata about workspace usage.
+     *
+     * Note enabling this should only be for tracking down a quick workspace issue
+     * in a very limited setting but should otherwise be turned off.
+     * The metadata captured is very intensive including stack
+     * traces and timestamps.
+     * @return
+     */
+    boolean isTrackWorkspaceOpenClose();
+
+    void setTrackWorkspaceOpenClose(boolean trackWorkspaceOpenClose);
+
+    /**
+     * This is a separate flag from {@link #isFuncTracePrintAllocate()}
+     * that only records java stack traces rather than c++.
+     * This exists due to the amount of overhead that printing c++ stack traces
+     * can cause.
+     * @return
+     */
+    boolean isFuncTracePrintJavaOnly();
+
+    void setFuncTracePrintJavaOnly(boolean reallyTrace);
+
     /**
      * Whether to delete shape info descriptors or not.
      * This is mainly used to control deallocation of

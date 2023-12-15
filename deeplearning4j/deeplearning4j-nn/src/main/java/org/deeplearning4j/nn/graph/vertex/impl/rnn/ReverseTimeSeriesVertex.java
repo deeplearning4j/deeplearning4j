@@ -160,7 +160,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
                 );
 
                 // Put the feature vector to the given destination in the output
-                out.put(new INDArrayIndex[]{
+                out.put(new INDArrayIndex[] {
                                 NDArrayIndex.point(s),
                                 NDArrayIndex.all(),
                                 NDArrayIndex.point(t2)

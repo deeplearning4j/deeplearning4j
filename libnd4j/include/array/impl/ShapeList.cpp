@@ -60,7 +60,7 @@ ShapeList::ShapeList(const std::vector<const LongType*>& shapes) {
 void ShapeList::destroy() {
 
   if (_destroyed) return;
-  if (!_workspace){
+  if (!_workspace) {
     for (int i = 0; i < size(); i++){
      // if (_shapes[i] != nullptr) delete[] _shapes[i];
     }

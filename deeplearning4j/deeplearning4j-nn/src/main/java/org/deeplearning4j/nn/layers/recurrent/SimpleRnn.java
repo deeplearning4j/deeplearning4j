@@ -261,12 +261,12 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 INDArray currOutPreNorm = (forBackprop ? outPreNorm : out).get(all(), all(), point(i));
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
                 Nd4j.getExecutioner().exec(new LayerNorm(currOutPreNorm, gx, b, currOut, true, 1));
-            }else{
+            }else {
                 Nd4j.gemm(currIn, w, currOut, false, false, 1.0, 1.0);  //beta = 1.0 to keep previous contents (bias)
             }
 
             if(i > 0 || prevStepOut != null) {
-                if(hasLayerNorm()){
+                if(hasLayerNorm()) {
                     INDArray currRecPreNorm = forBackprop ? recPreNorm.get(all(), all(), point(i)) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
                     Nd4j.gemm(prevStepOut, rw, currRecPreNorm, false, false, 1.0, 0.0);
                     INDArray recNorm = workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');
@@ -277,7 +277,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 }
             }
 
-            if(forBackprop){
+            if(forBackprop) {
                 outZ.get(all(), all(), point(i)).assign(currOut);
             }
 
@@ -297,7 +297,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             //Mask should be shape [minibatch, tsLength]
             INDArray mask = maskArray.castTo(dataType);
             Nd4j.getExecutioner().exec(new BroadcastMulOp(out, mask, out, 0, 2));
-            if(forBackprop){
+            if(forBackprop) {
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(outZ, mask, outZ, 0, 2));
             }
         }

@@ -159,8 +159,6 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
       }
 
 
-      printf("Sum for tad %d is %f Max is %f\n",i,sum,max);
-
       for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
     }
   };

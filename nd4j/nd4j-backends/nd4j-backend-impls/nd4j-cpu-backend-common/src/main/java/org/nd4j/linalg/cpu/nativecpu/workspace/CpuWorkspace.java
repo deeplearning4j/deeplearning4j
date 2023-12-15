@@ -178,6 +178,8 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         if (isDebug.get())
             log.info("Destroying workspace...");
 
+
+
         val sizez = currentSize.getAndSet(0);
         hostOffset.set(0);
         deviceOffset.set(0);

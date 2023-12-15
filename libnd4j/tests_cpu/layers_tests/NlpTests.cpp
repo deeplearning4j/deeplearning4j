@@ -32,8 +32,6 @@ using namespace sd;
 class NlpTests : public NDArrayTests {
  public:
   NlpTests() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

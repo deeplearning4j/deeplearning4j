@@ -78,7 +78,6 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
 
     @Override
     public MultiLayerConfiguration deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-        System.out.println("Calling MultiLayerConfigurationDeserializer.deserialize with parsing " + jp.getText());
         long charOffsetStart = jp.getCurrentLocation().getCharOffset();
         MultiLayerConfiguration conf = (MultiLayerConfiguration) defaultDeserializer.deserialize(jp, ctxt);
 

@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.memory;
 
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,8 +30,11 @@ import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,6 +60,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
     private ThreadLocal<MemoryWorkspace> workspace = new ThreadLocal<>();
 
     private ThreadLocal<MemoryWorkspace> tempWorkspace = new ThreadLocal<>();
+
 
     /**
      * This method returns
@@ -101,7 +106,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
         val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
         Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
-                        srcBuffer.length() * srcBuffer.getElementSize());
+                srcBuffer.length() * srcBuffer.getElementSize());
 
         PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, srcBuffer.length() * srcBuffer.getElementSize(), MemcpyDirection.HOST_TO_HOST);
     }
@@ -126,7 +131,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
         // not sure if we want to conform autoGcWindow here...
         if (frequency.get() > 0)
             if (freqCounter.incrementAndGet() % frequency.get() == 0
-                            && currentTime > getLastGcTime() + getAutoGcWindow()) {
+                    && currentTime > getLastGcTime() + getAutoGcWindow()) {
                 System.gc();
                 lastGcTime.set(System.currentTimeMillis());
             }

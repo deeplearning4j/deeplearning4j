@@ -105,13 +105,11 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 
     setShapeInfo(desc);
 
-    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
 
   } else {
     auto desc = ShapeBuilders::createShapeInfo(dtype,order,shape);
     auto desc2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(desc2);
-    delete[] desc;
   }
 
   int len = isScalar() ? 1 : lengthOf();
@@ -4995,10 +4993,8 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray &target, cons
   if (target.dataType() != dataType())
     THROW_EXCEPTION(
         "NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
-  printf("reduceAlongDimension same ops\n");
   std::vector<sd::LongType> *copy =  new std::vector<sd::LongType>(*dimensions);
   if (checkTargetShape) {
-    printf("check target shape\n");
     auto newShape =
         ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, false, getContext()->getWorkspace());
     if (!shape::shapeEquals(newShape, target.shapeInfo())) {

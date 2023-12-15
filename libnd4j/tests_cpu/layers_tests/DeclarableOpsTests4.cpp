@@ -32,8 +32,6 @@ using namespace sd::graph;
 class DeclarableOpsTests4 : public NDArrayTests {
  public:
   DeclarableOpsTests4() {
-    printf("\n");
-    fflush(stdout);
 
     ops::adjust_hue op0;
     ops::adjust_saturation op1;
@@ -44,8 +42,6 @@ template <typename T>
 class TypedDeclarableOpsTests4 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests4() {
-    printf("\n");
-    fflush(stdout);
 
     ops::adjust_hue op0;
     ops::adjust_saturation op1;

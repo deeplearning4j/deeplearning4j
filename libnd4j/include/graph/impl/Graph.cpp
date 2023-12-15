@@ -404,7 +404,6 @@ void Graph::addNode(Node *node) {
 
     injectNode(node);
 
-    // sd_logger("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
 
     return;
   } else {
@@ -421,8 +420,6 @@ void Graph::addNode(Node *node) {
       }
 
       // we only can put single input nodes, whose outputs were not mapped yet
-      // if (_mapped->count(node->input()->at(0).first) == 1 && (node->output()->size() == 0 ||
-      // _mapped->count(node->output()->at(0).first) == 0)) {
       if (automapAllowed) {
         auto parent = _mapped->at(node->input()->at(0).first);
         int nLayer = parent->getLayer() + 1;
@@ -439,21 +436,7 @@ void Graph::addNode(Node *node) {
 
         return;
       }
-    } /*else if (node->opType() == OpType_LOGIC && node->opType() == 10) {
-        // Scopes are just being added. They won't be executed on their own anyway.
-
-        int nLayer = _onion->size();
-
-        expandOnion(nLayer);
-        node->setLayer(nLayer);
-        injectNode(node);
-
-        sd_logger("Node_%i mapped Scope to layer_%i; Output: %i;\n", node->id(), node->getLayer(),
-    node->output()->at(0));
-
-        return;
     }
-*/
     // otherwise we're putting it to unmapped space for further sorting
     _unmapped.insert(pair);
     _unmappedMap.emplace_back(pair.first);

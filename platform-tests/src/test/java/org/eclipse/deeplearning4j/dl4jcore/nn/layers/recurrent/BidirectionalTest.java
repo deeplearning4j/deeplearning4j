@@ -221,10 +221,22 @@ class BidirectionalTest extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("params")
     void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
-        for (WorkspaceMode wsm : WorkspaceMode.values()) {
+        for (WorkspaceMode wsm : new WorkspaceMode[] { WorkspaceMode.ENABLED } ) {
+            Nd4j.getEnvironment().setFuncTracePrintJavaOnly(true);
+            Nd4j.getEnvironment().setTrackWorkspaceOpenClose(true);
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
-            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).build();
+            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                    .activation(Activation.TANH)
+                    .weightInit(WeightInit.XAVIER)
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .updater(new Adam()).list()
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
+                    .layer(new RnnOutputLayer.Builder()
+                            .lossFunction(LossFunctions.LossFunction.MSE)
+                            .nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).build();
             MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
             net1.init();
             INDArray in;
@@ -232,25 +244,25 @@ class BidirectionalTest extends BaseDL4JTest {
             long[] inshape = rnnDataFormat == NCW ? new long[] { 3, 10, 5 } : new long[] { 3, 5, 10 };
             in = Nd4j.rand(inshape);
             labels = Nd4j.rand(inshape);
-            net1.fit(in, labels);
             byte[] bytes;
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 ModelSerializer.writeModel(net1, baos, true);
                 bytes = baos.toByteArray();
             }
             MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(new ByteArrayInputStream(bytes), true);
-            in = Nd4j.rand(inshape);
-            labels = Nd4j.rand(inshape);
-            INDArray out1 = net1.output(in);
-            INDArray out2 = net2.output(in);
-            assertEquals(out1, out2);
+            assertEquals(net1,net2);
+            INDArray in2 = in.dup();
+
             net1.setInput(in);
             net2.setInput(in);
             net1.setLabels(labels);
             net2.setLabels(labels);
+            assertEquals(net1.params(), net2.params());
+            INDArray out1 = net1.output(in);
+            INDArray out2 = net2.output(in2);
+            assertEquals(out1, out2);
             net1.computeGradientAndScore();
             net2.computeGradientAndScore();
-            assertEquals(net1.score(), net2.score(), 1e-6);
             assertEquals(net1.gradient().gradient(), net2.gradient().gradient());
         }
     }

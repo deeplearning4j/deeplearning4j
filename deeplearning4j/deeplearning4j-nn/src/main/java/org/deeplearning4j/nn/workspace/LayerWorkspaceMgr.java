@@ -20,6 +20,9 @@
 
 package org.deeplearning4j.nn.workspace;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -33,14 +36,13 @@ import org.nd4j.linalg.workspace.WorkspaceMgr;
 import java.util.*;
 
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
-    public static String CUDNN_WORKSPACE_KEY = "CUDNN_WORKSPACE";
 
     private static LayerWorkspaceMgr NO_WS_IMMUTABLE;
-    static{
+    static {
         Set<ArrayType> all = new HashSet<>();
         Collections.addAll(all, ArrayType.values());
         NO_WS_IMMUTABLE = new LayerWorkspaceMgr(
-                all, Collections.<ArrayType, WorkspaceConfiguration>emptyMap(), Collections.<ArrayType, String>emptyMap());
+                all, Collections.emptyMap(), Collections.emptyMap());
     }
 
     protected Set<String> noLeverageOverride;
@@ -48,29 +50,29 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     @Setter @Getter
     protected Map<String,Pointer> helperWorkspacePointers;
 
-    private LayerWorkspaceMgr(){
+    private LayerWorkspaceMgr() {
 
     }
 
     public LayerWorkspaceMgr(Set<ArrayType> scopeOutOfWs, Map<ArrayType, WorkspaceConfiguration> configMap,
-                             Map<ArrayType, String> workspaceNames){
+                             Map<ArrayType, String> workspaceNames) {
         super(scopeOutOfWs, configMap, workspaceNames);
-        if(configMap != null){
+        if(configMap != null) {
             Preconditions.checkArgument(configMap.keySet().equals(workspaceNames.keySet()),
                     "Keys for config may and workspace names must match");
         }
     }
 
-    public void setNoLeverageOverride(String wsName){
-        if(noLeverageOverride == null){
+    public void setNoLeverageOverride(String wsName) {
+        if(noLeverageOverride == null) {
             noLeverageOverride = new HashSet<>();
         }
         noLeverageOverride.add(wsName);
     }
 
     @Override
-    public INDArray leverageTo(ArrayType arrayType, INDArray array){
-        if(noLeverageOverride != null && array.isAttached() && noLeverageOverride.contains(array.data().getParentWorkspace().getId())){
+    public INDArray leverageTo(ArrayType arrayType, INDArray array) {
+        if(noLeverageOverride != null && array.isAttached() && noLeverageOverride.contains(array.data().getParentWorkspace().getId())) {
             return array;
         }
         return super.leverageTo(arrayType, array);
@@ -78,39 +80,13 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
 
     @Override
     public INDArray validateArrayLocation(@NonNull ArrayType arrayType, @NonNull INDArray array, boolean migrateIfInvalid, boolean exceptionIfDetached) {
-        if(noLeverageOverride != null && array.isAttached() && noLeverageOverride.contains(array.data().getParentWorkspace().getId())){
+        if(noLeverageOverride != null && array.isAttached() && noLeverageOverride.contains(array.data().getParentWorkspace().getId())) {
             return array;   //OK - leverage override
         }
         return super.validateArrayLocation(arrayType, array, migrateIfInvalid, exceptionIfDetached);
     }
 
-    /**
-     * Get the pointer to the helper memory. Usually used for CUDNN workspace memory sharing.
-     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
-     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
-     *
-     * @param key Key for the helper workspace pointer
-     * @param <T> Pointer type
-     * @return Pointer for that key, or null if none exists
-     */
-    public <T extends Pointer> T getHelperWorkspace(String key){
-        return helperWorkspacePointers == null ? null : (T)helperWorkspacePointers.get(key);
-    }
 
-    /**
-     * Set the pointer to the helper memory. Usually used for CuDNN workspace memory sharing.
-     * NOTE: Don't use this method unless you are fully aware of how it is used to manage CuDNN memory!
-     * Will (by design) throw a NPE if the underlying map (set from MultiLayerNetwork or ComputationGraph) is not set.
-     *
-     * @param key   Key for the helper workspace pointer
-     * @param value Pointer
-     */
-    public void setHelperWorkspace(@NonNull String key, Pointer value){
-        if(helperWorkspacePointers == null){
-            helperWorkspacePointers = new HashMap<>();
-        }
-        helperWorkspacePointers.put(key, value);
-    }
 
     public static Builder builder(){
         return new Builder();
@@ -120,7 +96,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
      * @param helperWorkspacePointers Helper pointers - see {@link #getHelperWorkspace(String)} for details
      * @return Workspace manager
      */
-    public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers){
+    public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers) {
         LayerWorkspaceMgr wsm = noWorkspaces();
         wsm.setHelperWorkspacePointers(helperWorkspacePointers);
         return wsm;
@@ -147,9 +123,9 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
          * NOTE: Will not override the configuration for any array types that have already been configured
          * @return Builder
          */
-        public Builder defaultNoWorkspace(){
-            for(ArrayType t : ArrayType.values()){
-                if(!mgr.configMap.containsKey(t)){
+        public Builder defaultNoWorkspace() {
+            for(ArrayType t : ArrayType.values()) {
+                if(!mgr.configMap.containsKey(t)) {
                     mgr.setScopedOutFor(t);
                 }
             }
@@ -163,7 +139,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
          * @param type Array type to set scoped out for
          * @return Builder
          */
-        public Builder noWorkspaceFor(ArrayType type){
+        public Builder noWorkspaceFor(ArrayType type) {
             mgr.setScopedOutFor(type);
             return this;
         }
@@ -172,13 +148,13 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
          * Set the default workspace for all array types to the specified workspace name/configuration
          * NOTE: This will NOT override any settings previously set.
          *
-         * @param workspaceName Name of the workspace to use for all (not set) arrray types
-         * @param configuration Configuration to use for all (not set) arrray types
+         * @param workspaceName Name of the workspace to use for all (not set) array types
+         * @param configuration Configuration to use for all (not set) array types
          * @return Builder
          */
-        public Builder defaultWorkspace(String workspaceName, WorkspaceConfiguration configuration){
-            for(ArrayType t : ArrayType.values()){
-                if(!mgr.configMap.containsKey(t) && !mgr.isScopedOut(t)){
+        public Builder defaultWorkspace(String workspaceName, WorkspaceConfiguration configuration) {
+            for(ArrayType t : ArrayType.values()) {
+                if(!mgr.configMap.containsKey(t) && !mgr.isScopedOut(t)) {
                     with(t, workspaceName, configuration);
                 }
             }
@@ -193,7 +169,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
          * @param configuration Configuration for the specified array type
          * @return Builder
          */
-        public Builder with(ArrayType type, String workspaceName, WorkspaceConfiguration configuration){
+        public Builder with(ArrayType type, String workspaceName, WorkspaceConfiguration configuration) {
             mgr.setConfiguration(type, configuration);
             mgr.setWorkspaceName(type, workspaceName);
             return this;
@@ -204,5 +180,17 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         }
 
     }
-    
+
+    public  List<org.deeplearning4j.nn.workspace.ArrayType> allOpen() {
+        List<org.deeplearning4j.nn.workspace.ArrayType> list = new ArrayList<>();
+        for(org.deeplearning4j.nn.workspace.ArrayType t : org.deeplearning4j.nn.workspace.ArrayType.values()) {
+            String name = this.getWorkspaceName(t);
+            if(name != null && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(name)) {
+                list.add(t);
+            }
+        }
+        return list;
+    }
+
+
 }

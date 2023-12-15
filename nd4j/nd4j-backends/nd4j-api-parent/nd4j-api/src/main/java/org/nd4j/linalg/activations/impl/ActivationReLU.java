@@ -52,7 +52,7 @@ public class ActivationReLU extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        if(negativeSlope != null || threshold != null){
+        if(negativeSlope != null || threshold != null) {
             double t = threshold == null ? 0.0 : threshold;
             double ns = negativeSlope == null ? 0.0 : negativeSlope;
             if(t == 0.0) {
@@ -69,7 +69,7 @@ public class ActivationReLU extends BaseActivationFunction {
         } else {
             Nd4j.getExecutioner().exec(new RectifiedLinear(in, in));
         }
-        if(max != null){
+        if(max != null) {
             Nd4j.exec(new ScalarMin(in, null, in, max));
         }
         return in;

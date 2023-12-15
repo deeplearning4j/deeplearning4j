@@ -63,11 +63,6 @@ NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B, const std::ve
 
   c->reshapei(outShape);
 
-  if (aP != aPR) delete aPR;
-  if (bP != bPR) delete bPR;
-  if (A != aP) delete aP;
-  if (B != bP) delete bP;
-
   return c;
 }
 
@@ -177,13 +172,6 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
     cP->assign(cPR);
   }
 
-  if (aP != aPR) delete aPR;
-  if (bP != bPR) delete bPR;
-  if (a != aP) delete aP;
-  if (b != bP) delete bP;
-
-  if (cP != cPR) delete cPR;
-  if (c != cP) delete cP;
 }
 void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
                            const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
@@ -217,13 +205,6 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     cP->assign(cPR);
   }
 
-  if (aP != aPR) delete aPR;
-  if (bP != bPR) delete bPR;
-  if (a != aP) delete aP;
-  if (b != bP) delete bP;
-
-  if (cP != cPR) delete cPR;
-  if (c != cP) delete cP;
 }
 
 #ifndef __JAVACPP_HACK__
@@ -338,8 +319,6 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 
   NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
-  if (aPR != a) delete aPR;
-  if (bPR != b) delete bPR;
   return result;
 }
 #endif
@@ -377,8 +356,7 @@ NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const 
     NDArray* A2 = new NDArray(A->reshape(A->ordering(), {1, A->lengthOf()}));                       // A{M} -> A2{1,M}
     NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), {1, C->lengthOf()}, false)) : nullptr;  // C{N} -> C2{1,N}
     auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                        // result{1,N}
-    delete A2;
-    delete C2;
+
 
     if (!C) {
       result->reshapei({result->lengthOf()});  // result{1,N} -> result{N}

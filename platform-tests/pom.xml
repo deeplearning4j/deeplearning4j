@@ -78,8 +78,8 @@
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
-        <test.heap.size>6g</test.heap.size>
-        <test.offheap.size>6g</test.offheap.size>
+        <test.heap.size>14g</test.heap.size>
+        <test.offheap.size>14g</test.offheap.size>
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
@@ -542,8 +542,8 @@
                 <cuda.version>12.1</cuda.version>
                 <cudnn.version>8.9</cudnn.version>
                 <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
-                <test.heap.size>6g</test.heap.size>
-                <test.offheap.size>12g</test.offheap.size>
+                <test.heap.size>14g</test.heap.size>
+                <test.offheap.size>14g</test.offheap.size>
                 <surefire.threads>4</surefire.threads>
                 <!-- Uses the new system properties resolution on nd4j backend
        to handle the backend selection. Note this only used to work via

@@ -237,7 +237,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      * thread while another thread is using the updater for training.
      * @return A copy (duplicate) of the updater state
      */
-    public  INDArray getStateViewArrayCopy(){
+    public  INDArray getStateViewArrayCopy() {
         Nd4j.getExecutioner().commit();
         return updaterStateViewArray.dup();
     }
@@ -291,7 +291,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
         }
 
-        if(isMiniBatch()){
+        if(isMiniBatch()) {
             divideByMinibatch(isExternal, gradient, batchSize);
         }
 
@@ -304,17 +304,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         }
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
-        if(getClass() != LayerUpdater.class){
-            //OK for LayerUpdater as this is part of layerwise pretraining
-            workspaceMgr.assertNotOpen(ArrayType.UPDATER_WORKING_MEM, "Updater working memory");
-        }
         for (UpdaterBlock ub : updaterBlocks) {
             if (ub.skipDueToPretrainConfig(this instanceof LayerUpdater)) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.UPDATER_WORKING_MEM)){
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.UPDATER_WORKING_MEM)) {
+                ws.setWorkspaceMgr(workspaceMgr);
                 if (isExternal) {
                     //RL4J etc type case: calculate gradients in 1 net, update them in another
                     ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
@@ -331,7 +328,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         //However, some 'gradients' are actually updates - an example being BatchNorm mean/variance estimates... these
         // shouldn't be modified
 
-        if(!initializedMinibatchDivision){
+        if(!initializedMinibatchDivision) {
             gradientsForMinibatchDivision = getMinibatchDivisionSubsets(getFlattenedGradientsView());
             initializedMinibatchDivision = true;
         }
@@ -342,7 +339,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         } else {
             toDivide = gradientsForMinibatchDivision;
         }
-        for(INDArray arr : toDivide){
+        for(INDArray arr : toDivide) {
             arr.divi(batchSize);
         }
     }
@@ -357,7 +354,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             Set<String> layerParams = t.paramTable(false).keySet();
             Map<String,INDArray> paramTable = t.paramTable(false);
             for(String s : layerParams) {
-                if(t.updaterDivideByMinibatch(s)){
+                if(t.updaterDivideByMinibatch(s)) {
                     long l = paramTable.get(s).length();
                     currentEnd += l;
                 } else {

@@ -23,10 +23,48 @@ package org.nd4j.linalg.workspace;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Environment;
+
+import java.util.List;
+import java.util.Map;
 
 public interface WorkspaceMgr<T extends Enum<T>> {
+
+
+    /**
+     * This will for certain workspaces to stay open during use.
+     * @param types
+     */
+    void keepOpen(T...types);
+
+    /**
+     * This will remove types that should be kept open.
+     * @param types
+     */
+    void removeKeepOpen(T...types);
+
+    Map<String,List<WorkspaceUseMetaData>> eventsByWorkspace();
+
+    /**
+     * This is the event log for the workspace open/close events.
+     * @return
+     */
+    List<WorkspaceUseMetaData> workspaceEventLog();
+
+    /**
+     * Records a  workspace close event
+     * This happens when enabled in environment with
+     * {@link Environment#isTrackWorkspaceOpenClose()}
+     * The storage for the events will vary but is likely just an in memory list.
+     *
+     * @param workspace
+     */
+    void recordWorkspaceClose(MemoryWorkspace workspace);
+    void recordWorkspaceOpen(MemoryWorkspace workspace);
+
 
     /**
      * Set the workspace name for the specified array type
@@ -50,6 +88,10 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * @param configuration Workspace configuration
      */
     void setWorkspace(T arrayType, String wsName, WorkspaceConfiguration configuration);
+
+    void recordWorkspaceBorrow(MemoryWorkspace workspace);
+
+    void closeWorkspace(T... types);
 
     /**
      * Set the workspace configuration for the specified array type
@@ -136,6 +178,8 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * @throws ND4JWorkspaceException If the specified workspace is open
      */
     void assertNotOpen(T arrayType, String msg) throws ND4JWorkspaceException;
+
+    void setCurrentWorkspace(T arrayType);
 
     /**
      * Assert that the current workspace is the one for the specified array type.

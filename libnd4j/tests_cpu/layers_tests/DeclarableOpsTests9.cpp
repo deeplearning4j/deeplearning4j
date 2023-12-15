@@ -34,8 +34,6 @@ using namespace sd;
 class DeclarableOpsTests9 : public NDArrayTests {
  public:
   DeclarableOpsTests9() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

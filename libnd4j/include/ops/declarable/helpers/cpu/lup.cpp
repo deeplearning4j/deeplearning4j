@@ -48,9 +48,7 @@ static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType
         sd::LongType theSecondPos[] = {theSecond, i};
         auto theFirstIndex = shape::getOffset(matrixShape, theFirstPos, 0);
         auto theSecondIndex = shape::getOffset(matrixShape, theSecondPos, 0);
-       printf("swapRows: firstIndex %lld secondIndex %lld matrixBuf firstIndex %f secondIndex %f\n",theFirstIndex,theSecondIndex,matrixBuf[theFirstIndex],matrixBuf[theSecondIndex]);
         math::sd_swap(matrixBuf[theFirstIndex], matrixBuf[theSecondIndex]);
-        printf("AFTER swapRows: firstIndex %lld secondIndex %lld matrixBuf firstIndex %f secondIndex %f\n",theFirstIndex,theSecondIndex,matrixBuf[theFirstIndex],matrixBuf[theSecondIndex]);
 
       }
     };
@@ -214,12 +212,6 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
   for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
     sd::LongType xPos[] = {rowCounter, column};
     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
-    /*
-     * TODO: figure out why indices are different and ensure we test other solve
-     * models
-     */
-    printf("Comparing xIndex %d compound buffer value %f maxValue %f at column %lld\n", xIndex,sd::math::sd_abs(compoundBuffer[xIndex]),maxValue,column);
-
     if (sd::math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
       maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs(compoundBuffer[xIndex]));
       result = rowCounter;
@@ -238,7 +230,6 @@ void processColumns(sd::LongType currentRow, sd::LongType rowNum, T* compoundBuf
       sd::LongType xRow[] = {j, currentRow};
       auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
       compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
-      printf("current row: %lld, row index: %lld, diag index: %lld\n",currentRow,rowIndex,diagIndex);
 
       for (sd::LongType k = currentRow + 1; k < rowNum; k++) {
         sd::LongType yRow[] = {j, k};
@@ -291,20 +282,13 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
     auto compoundShape = compound->shapeInfo();
     auto permutationShape = permutation->shapeInfo();
     for (sd::LongType i = 0; i < rowNum - 1; i++) {
-      printf("Running argmax col with i %lld\n",i);
       auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
       if (pivotIndex < 0) {
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
-      printf("BEFORE pivot index at i %lld is %lld Swapping %lld with %lld\n",i,pivotIndex,
-             permutationBuf[shape::getIndexOffset(i, permutationShape)],
-             permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
 
       math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
                     permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
-      printf("AFTER pivot index at i %lld is %lld Swapping %lld with %lld\n",i,pivotIndex,
-             permutationBuf[shape::getIndexOffset(i, permutationShape)],
-             permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
 
 
       swapRows(compoundBuf, compoundShape, i, pivotIndex);

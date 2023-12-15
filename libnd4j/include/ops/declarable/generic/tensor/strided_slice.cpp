@@ -88,7 +88,6 @@ struct StridedSliceDenseSpec {
           this->final_shape_gather_indices.emplace_back(kNewAxis);
         } else {
           if (full_index == this->begin.size()) {
-            sd_printf("Index out of range: %i out of %i\n", full_index, this->dims);
             return false;
           }
 
@@ -187,7 +186,6 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     };
 
     if (shrink_i && stride_idx <= 0) {
-      sd_printf("StridedSlice: only stride 1 allowed on non-range indexing\n", e);
       return false;
     }
 
@@ -493,7 +491,6 @@ DECLARE_SHAPE_FN(strided_slice) {
     return SHAPELIST(newShape);
   }
 
-  printf("strided slice: empty case\n");
   std::vector<LongType> retShape = {0};
   return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape),retShape));
 }

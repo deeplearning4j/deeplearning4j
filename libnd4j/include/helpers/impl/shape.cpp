@@ -57,8 +57,6 @@ SD_LIB_EXPORT SD_HOST const char *shapeToString(const sd::LongType *shapeInfo, c
   }
 
   shapeInfoString += " ";
-  printf("Determining stride shape info to string call\n");
-  fflush(stdout);
   sd::LongType *stride = shape::stride(shapeInfo);
   shapeInfoString += (" Stride: ");
   for (int i = 0; i < rank; i++) {

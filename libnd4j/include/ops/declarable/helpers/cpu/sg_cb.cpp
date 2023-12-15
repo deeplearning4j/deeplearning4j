@@ -996,7 +996,6 @@ void cbow(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDA
             trainWords,minLearningRate,iterations),
         SD_NATIVE_FLOAT_TYPES);
   } else if (context.rankOf() == 2 && indices.rankOf() == 2) {
-    sd_printf("CBOW: context rank %i, indices rank %i\n", context.rankOf(), indices.rankOf());
     BUILD_SINGLE_SELECTOR(
         xType, cbowBatchExec_,
         (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, context, lockedWords, target, ngStarter,

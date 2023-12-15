@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -132,7 +133,7 @@ public class TimeSeriesUtils {
      */
     public static INDArray reshapeCnnMaskToTimeSeriesMask(INDArray timeSeriesMaskAsCnnMask, int minibatchSize) {
         Preconditions.checkArgument(timeSeriesMaskAsCnnMask.rank() == 4 || timeSeriesMaskAsCnnMask.size(1) != 1 ||
-                timeSeriesMaskAsCnnMask.size(2) != 1 || timeSeriesMaskAsCnnMask.size(3) != 1,
+                        timeSeriesMaskAsCnnMask.size(2) != 1 || timeSeriesMaskAsCnnMask.size(3) != 1,
                 "Expected rank 4 mask with shape [mb*seqLength, 1, 1, 1]. Got rank %s mask array with shape %s",
                 timeSeriesMaskAsCnnMask.rank(), timeSeriesMaskAsCnnMask.shape());
 
@@ -154,8 +155,8 @@ public class TimeSeriesUtils {
     public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (perOutputTimeSeriesMask.rank() != 3) {
             throw new IllegalArgumentException(
-                            "Cannot reshape per output mask: rank is not 3 (is: " + perOutputTimeSeriesMask.rank()
-                                            + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape()) + ")");
+                    "Cannot reshape per output mask: rank is not 3 (is: " + perOutputTimeSeriesMask.rank()
+                            + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape()) + ")");
         }
 
         return reshape3dTo2d(perOutputTimeSeriesMask, workspaceMgr, arrayType);
@@ -224,7 +225,7 @@ public class TimeSeriesUtils {
             return null;
         }
 
-        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)){
+        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)) {
             in = in.dup('f');
         }
 
@@ -253,27 +254,28 @@ public class TimeSeriesUtils {
      * @return Reversed activations
      */
     public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-        if(in == null){
+        if(in == null) {
             return null;
         }
 
-        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)) {
-            in = workspaceMgr.dup(arrayType, in, 'f');
-        }
+        in = in.dup('f');
 
         if (in.size(2) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
         int[] idxs = new int[(int) in.size(2)];
-        int j=0;
-        for( int i = idxs.length-1; i >= 0; i--) {
+        int j = 0;
+        for (int i = idxs.length - 1; i >= 0; i--) {
             idxs[j++] = i;
         }
 
-        INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
+        INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
 
         INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
-        return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
+        return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
+
+
+
     }
 
     /**
