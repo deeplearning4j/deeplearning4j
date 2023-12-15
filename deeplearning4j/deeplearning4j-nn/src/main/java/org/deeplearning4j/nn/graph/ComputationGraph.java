@@ -103,6 +103,9 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.deeplearning4j.nn.workspace.ArrayType.*;
+import static org.deeplearning4j.nn.workspace.ArrayType.FF_CACHE;
+
 @Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
@@ -1165,12 +1168,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
             }
 
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-                ws.setWorkspaceMgr(workspaceMgr);
+            solver.optimize(workspaceMgr);
 
-                //TODO: cache workspace
-                solver.optimize(workspaceMgr);
-            }
 
 
         }
@@ -1372,6 +1371,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
+        workspaceMgr.keepOpen(ArrayType.values());
+
         boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
         FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE : FwdPassType.STANDARD);
         synchronizeIterEpochCounts();
@@ -1391,7 +1392,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             calcBackpropGradients(false,false);
 
-            workspaceMgr.assertCurrentWorkspace(ArrayType.ACTIVATIONS, null);
 
             //Score: sum of the scores for the various output layers...
             double r = calcRegularizationScore(true);
@@ -1437,6 +1437,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(GraphVertex gv : vertices){
             gv.clear();
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        workspaceMgr.closeWorkspace(
+                toClose);
+        workspaceMgr.closeWorkspace(toClose);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
     }
 
 
@@ -1945,7 +1960,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
 
-            if(features[0].isAttached()){
+            if(features[0].isAttached()) {
                 //Don't leverage out of async DataMultiSetIterator workspaces
                 workspaceMgr.setNoLeverageOverride(features[0].data().getParentWorkspace().getId());
             }
@@ -1955,7 +1970,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         Map<String, INDArray> activations = new HashMap<>();
 
         //Add the inputs:
-        for( int i=0; i<features.length; i++){
+        for( int i = 0; i < features.length; i++) {
             activations.put(configuration.getNetworkInputs().get(i), features[i]);
         }
 
@@ -1971,88 +1986,101 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue;
             }
 
-            if(traceLog){
+            if(traceLog) {
                 log.trace("About forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
 
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                wsFFWorking.setWorkspaceMgr(workspaceMgr);
+            workspaceMgr.keepOpen(ArrayType.values());
 
-                VertexIndices[] inputsTo = current.getOutputVertices();
 
-                INDArray out;
-                if(current.isInputVertex()){
-                    out = inputs[vIdx];
-                } else {
+            VertexIndices[] inputsTo = current.getOutputVertices();
 
-                    if(fwdPassType == FwdPassType.STANDARD) {
-                        //Standard feed-forward case
-                        out = current.doForward(train, workspaceMgr);
-                    } else if(fwdPassType == FwdPassType.RNN_TIMESTEP){
-                        if (current.hasLayer()) {
-                            //Layer
-                            INDArray input = current.getInputs()[0];
-                            Layer l = current.getLayer();
-                            if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
-                            }  else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
-                                RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
-                                out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
-                            } else if (l instanceof MultiLayerNetwork) {
-                                out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
-                            } else {
-                                //non-recurrent layer
-                                out = current.doForward(train, workspaceMgr);
-                            }
+            INDArray out;
+            if(current.isInputVertex()) {
+                out = inputs[vIdx];
+            } else {
+
+                if(fwdPassType == FwdPassType.STANDARD) {
+                    //Standard feed-forward case
+                    out = current.doForward(train, workspaceMgr);
+                } else if(fwdPassType == FwdPassType.RNN_TIMESTEP){
+                    if (current.hasLayer()) {
+                        //Layer
+                        INDArray input = current.getInputs()[0];
+                        Layer l = current.getLayer();
+                        if (l instanceof RecurrentLayer) {
+                            out = ((RecurrentLayer) l).rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                        }  else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer){
+                            RecurrentLayer rl = ((RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying());
+                            out = rl.rnnTimeStep(reshapeTimeStepInput(input), workspaceMgr);
+                        } else if (l instanceof MultiLayerNetwork) {
+                            out = ((MultiLayerNetwork) l).rnnTimeStep(reshapeTimeStepInput(input));
                         } else {
-                            //GraphNode
-                            out = current.doForward(train, workspaceMgr);
-                        }
-                    } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
-                        if (current.hasLayer()) {
-                            Layer l = current.getLayer();
-                            if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train, storeLastForTBPTT, workspaceMgr);
-                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
-                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
-                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
-                            } else if (l instanceof MultiLayerNetwork) {
-                                List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
-                                        current.getInputs()[0], train, storeLastForTBPTT);
-                                out = temp.get(temp.size() - 1);
-                            } else {
-                                //non-recurrent layer
-                                out = current.doForward(train, workspaceMgr);
-                            }
-                        } else {
+                            //non-recurrent layer
                             out = current.doForward(train, workspaceMgr);
                         }
                     } else {
-                        throw new IllegalArgumentException("Unsupported forward pass type for this method: " + fwdPassType);
+                        //GraphNode
+                        out = current.doForward(train, workspaceMgr);
                     }
-                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
-                }
-                activations.put(current.getVertexName(), out);
-
-                if(inputsTo != null) {  //May be null for output vertices (which don't feed into any other vertices)
-                    for (VertexIndices v : inputsTo) {
-                        //Note that we don't have to do anything special here: the activations are always detached in
-                        // this method
-                        int inputToIndex = v.getVertexIndex();
-                        int vIdxEdge = v.getVertexEdgeNumber();
-                        vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
+                    if (current.hasLayer()) {
+                        Layer l = current.getLayer();
+                        if (l instanceof RecurrentLayer) {
+                            out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train, storeLastForTBPTT, workspaceMgr);
+                        } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                            RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                            out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
+                        } else if (l instanceof MultiLayerNetwork) {
+                            List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
+                                    current.getInputs()[0], train, storeLastForTBPTT);
+                            out = temp.get(temp.size() - 1);
+                        } else {
+                            //non-recurrent layer
+                            out = current.doForward(train, workspaceMgr);
+                        }
+                    } else {
+                        out = current.doForward(train, workspaceMgr);
                     }
+                } else {
+                    throw new IllegalArgumentException("Unsupported forward pass type for this method: " + fwdPassType);
                 }
+                validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
+            }
+            activations.put(current.getVertexName(), out);
 
-                if(clearLayers) {
-                    current.clear();
+            if(inputsTo != null) {  //May be null for output vertices (which don't feed into any other vertices)
+                for (VertexIndices v : inputsTo) {
+                    //Note that we don't have to do anything special here: the activations are always detached in
+                    // this method
+                    int inputToIndex = v.getVertexIndex();
+                    int vIdxEdge = v.getVertexEdgeNumber();
+                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
                 }
             }
 
-            if(traceLog){
+            if(clearLayers) {
+                current.clear();
+            }
+
+
+            if(traceLog) {
                 log.trace("Completed forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        workspaceMgr.closeWorkspace(
+                toClose);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
         return activations;
     }
@@ -2116,7 +2144,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         boolean traceLog = log.isTraceEnabled();
-
+        workspaceMgr.keepOpen(ArrayType.values());
         Map<String, INDArray> activations = new HashMap<>();
         //Do forward pass according to the topological ordering of the network
         int stopIndex;
@@ -2138,66 +2166,78 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 continue;
             }
 
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                wsFFWorking.setWorkspaceMgr(workspaceMgr);
 
-                VertexIndices[] inputsTo = current.getOutputVertices();
+            VertexIndices[] inputsTo = current.getOutputVertices();
 
-                INDArray out;
-                if(current.isInputVertex()) {
-                    out = inputs[vIdx];
-                } else {
+            INDArray out;
+            if(current.isInputVertex()) {
+                out = inputs[vIdx];
+            } else {
 
-                    if(fwdPassType == FwdPassType.STANDARD) {
-                        out = current.doForward(train, workspaceMgr);
-                    } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
-                        if (current.hasLayer()) {
-                            Layer l = current.getLayer();
-                            if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
-                                        storeLastForTBPTT, workspaceMgr);
-                            } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
-                                RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
-                                out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
-                            } else if (l instanceof MultiLayerNetwork) {
-                                List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
-                                        current.getInputs()[0], train, storeLastForTBPTT);
-                                out = temp.get(temp.size() - 1);
-                            } else {
-                                //non-recurrent layer
-                                out = current.doForward(train, workspaceMgr);
-                            }
+                if(fwdPassType == FwdPassType.STANDARD) {
+                    out = current.doForward(train, workspaceMgr);
+                } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
+                    if (current.hasLayer()) {
+                        Layer l = current.getLayer();
+                        if (l instanceof RecurrentLayer) {
+                            out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], train,
+                                    storeLastForTBPTT, workspaceMgr);
+                        } else if(l instanceof org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer && ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying() instanceof RecurrentLayer) {
+                            RecurrentLayer rl = (RecurrentLayer) ((org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer)l).getUnderlying();
+                            out = rl.rnnActivateUsingStoredState(current.getInputs()[0], train,storeLastForTBPTT, workspaceMgr);
+                        } else if (l instanceof MultiLayerNetwork) {
+                            List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
+                                    current.getInputs()[0], train, storeLastForTBPTT);
+                            out = temp.get(temp.size() - 1);
                         } else {
+                            //non-recurrent layer
                             out = current.doForward(train, workspaceMgr);
                         }
                     } else {
-                        throw new IllegalStateException("FwdPassType not supported for this method: " + fwdPassType);
+                        out = current.doForward(train, workspaceMgr);
                     }
-
-                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
-                }
-                activations.put(current.getVertexName(), out);
-
-                if(inputsTo != null) {
-                    //Can be null for output layers
-                    for (VertexIndices v : inputsTo) {
-                        //Note that we don't have to do anything special here: the activations are always detached in
-                        // this method
-                        int inputToIndex = v.getVertexIndex();
-                        int vIdxEdge = v.getVertexEdgeNumber();
-                        vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
-                    }
+                } else {
+                    throw new IllegalStateException("FwdPassType not supported for this method: " + fwdPassType);
                 }
 
-                if(clearInputs) {
-                    current.clear();
+                validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
+            }
+            activations.put(current.getVertexName(), out);
+
+            if(inputsTo != null) {
+                //Can be null for output layers
+                for (VertexIndices v : inputsTo) {
+                    //Note that we don't have to do anything special here: the activations are always detached in
+                    // this method
+                    int inputToIndex = v.getVertexIndex();
+                    int vIdxEdge = v.getVertexEdgeNumber();
+                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
                 }
             }
+
+            if(clearInputs) {
+                current.clear();
+            }
+
 
             if(traceLog){
                 log.trace("Completed forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        workspaceMgr.closeWorkspace(
+                toClose);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
         return activations;
     }
 
@@ -2362,28 +2402,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                //Open the relevant workspace for the activations.
-                //Note that this will be closed only once the current vertex's activations have been consumed
-                MemoryWorkspace wsActivations = null;
-                if (outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || !isRequiredOutput) {    //Open WS if (a) no external/output WS (if present, it's already open), or (b) not being placed in external/output WS
-                    wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
-                    wsActivations.setWorkspaceMgr(workspaceMgr);
-                    openActivationsWorkspaces.put(wsActivations, workspaceMgr);
-                }
 
-                //Note that because we're opening activation workspaces not in any defined order (i.e., workspace
-                // use isn't simply nested), we'll manually override the previous workspace setting. Otherwise, when we
-                // close these workspaces, the "current" workspace may be set to the incorrect one
-                if (wsActivations != null)
-                    wsActivations.setPreviousWorkspace(initialWorkspace);
-
-                int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];
-                if (outputWorkspace == null || outputWorkspace instanceof DummyWorkspace || (wsActivations != null && !outputWorkspace.getId().equals(wsActivations.getId()))) {
-                    if (closeAtEndIteraton[closeableAt] == null) {
-                        closeAtEndIteraton[closeableAt] = new ArrayList<>();
-                    }
-                    closeAtEndIteraton[closeableAt].add(wsActivations);
-                }
+                workspaceMgr.keepOpen(ArrayType.values());
 
 
                 try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
@@ -2505,23 +2525,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                //Close any activations workspaces that we no longer require
-                //Note that activations workspaces can be closed only once the corresponding output activations have
-                // been fully consumed
-                if (closeAtEndIteraton[i] != null) {
-                    for (MemoryWorkspace wsAct : closeAtEndIteraton[i]) {
-                        wsAct.close();
-                        LayerWorkspaceMgr canNowReuse = openActivationsWorkspaces.remove(wsAct);
-                        freeWorkspaceManagers.add(canNowReuse);
-                    }
-                }
             }
         } catch (Throwable t2) {
             t = t2;
         } finally {
             //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
             //Though if stopIndex < numLayers, some might still be open
-            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
+            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()) {
                 while (ws.isScopeActive()) {
                     //Edge case here: seems that scoping out can increase the tagScope of the current WS
                     //and if we hit an exception during forward pass, we aren't guaranteed to call close a sufficient
@@ -2546,14 +2556,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new RuntimeException("Error during neural network forward pass", t);
             }
 
-            if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
-                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
-            } else {
-                Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
-                        "at end of outputOfLayerDetached, but ");
-                outputWorkspace.setPreviousWorkspace(outputPrevious);
-            }
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        for(LayerWorkspaceMgr workspaceMgr : allWorkspaceManagers)
+            workspaceMgr.closeWorkspace(toClose);
+        Nd4j.getMemoryManager().setCurrentWorkspace(outputPrevious);
+
 
         return outputs;
     }
@@ -2615,13 +2632,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             consumed by all layers
          */
 
-        if(externalEpsilons == null || externalEpsilons.length == 0 && configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE){
-            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "Expected workspace WS_ALL_LAYERS_ACT to be active and open" +
-                    " in calcBackpropGradients when workspace mode is not set to NONE");
-        }
+
+
 
         //Validate the network configuration for external errors - no output layers
-        if(externalEpsilons != null && externalEpsilons.length > 0){
+        if(externalEpsilons != null && externalEpsilons.length > 0) {
             List<String> outputLayers = configuration.getNetworkOutputs();
             for(String s : outputLayers ){
                 GraphVertex gv = getVertex(s);
@@ -2736,6 +2751,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
+
+                for(LayerWorkspaceMgr layerWorkspaceMgr : allWorkspaceManagers) {
+                    layerWorkspaceMgr.keepOpen(ArrayType.values());
+                }
 
                 if (current.isOutputVertex()) {
                     //Two reasons for a vertex to be an output vertex:
@@ -2853,15 +2872,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     log.trace("Completed backprop: {} (\"{}\") - {}", i, vertexName, current.getClass().getSimpleName());
                 }
             }
-        } catch (Throwable t2){
+        } catch (Throwable t2) {
             t = t2;
         } finally {
             //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
-            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
+            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()) {
                 try{
                     ws.close();
-                } catch (Throwable t2){
-                    if(t != null){
+                } catch (Throwable t2) {
+                    if(t != null) {
                         log.error("Encountered second exception while trying to close workspace after initial exception");
                         log.error("Original exception:", t);
                         throw t2;
@@ -2871,7 +2890,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(t != null){
-                if(t instanceof RuntimeException){
+                if(t instanceof RuntimeException) {
                     throw ((RuntimeException)t);
                 }
                 throw new RuntimeException("Error during neural network backpropagation calculation", t);
@@ -2886,7 +2905,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         this.gradient = gradient;
 
-        if(truncatedBPTT && clearTbpttState){
+        if(truncatedBPTT && clearTbpttState) {
             rnnClearPreviousState();
         }
 
@@ -2896,6 +2915,22 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 gv.clear();
             }
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        for(LayerWorkspaceMgr workspaceMgr : allWorkspaceManagers)
+            workspaceMgr.closeWorkspace(
+                    toClose);
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
+
     }
 
     @Override
@@ -3129,7 +3164,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 getOutputLayerIndices(), dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(),dataSet.getLabelsMaskArrays(), false);
 
         //Need to feed forward, but not the output layers
-        try(WorkspacesCloseable ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS,ArrayType.FF_WORKING_MEM,ArrayType.RNN_FF_LOOP_WORKING_MEM)){
+        try(WorkspacesCloseable ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS,ArrayType.FF_WORKING_MEM,ArrayType.RNN_FF_LOOP_WORKING_MEM)) {
 
             INDArray[] labels = dataSet.getLabels();
             setLabels(labels);

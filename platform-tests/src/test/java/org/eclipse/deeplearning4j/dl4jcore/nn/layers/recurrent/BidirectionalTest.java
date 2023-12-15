@@ -310,7 +310,7 @@ class BidirectionalTest extends BaseDL4JTest {
         for (WorkspaceMode wsm : WorkspaceMode.values()) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
-            Bidirectional.Mode[] modes = new Bidirectional.Mode[] { Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD, Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL };
+            Bidirectional.Mode[] modes = { Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD, Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL };
             long[] inshape = rnnDataFormat == NCW ? new long[] { 3, 10, 6 } : new long[] { 3, 6, 10 };
             INDArray in = Nd4j.rand(inshape);
             for (Bidirectional.Mode m : modes) {
