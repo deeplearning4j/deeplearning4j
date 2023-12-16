@@ -571,8 +571,6 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                     INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
                     double exp = exampleSingleScore.getDouble(0);
                     double act = exampleScores.getDouble(i);
-
-                    //                    System.out.println(i + "\t" + exp + "\t" + act);
                     assertEquals(exp, act, 1e-6);
                 }
             }
@@ -581,18 +579,41 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
 
     @Test
-    public void testReverse(){
-
+    public void testReverse() {
         for(char c : new char[]{'f','c'}) {
 
             INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10, Nd4j.dataType()).reshape('f', 3, 5, 10).dup(c);
             INDArray inMask = Nd4j.linspace(1, 30, 30, Nd4j.dataType()).reshape('f', 3, 10).dup(c); //Minibatch, TS length
+           /*
+           Equivalent numpy test:
+                    import numpy as np
 
+                    def test_reverse():
+                        for c in ['F', 'C']:
+                            in_ = np.linspace(1, 3 * 5 * 10, 3 * 5 * 10).reshape((3, 5, 10), order=c)
+                            in_mask = np.linspace(1, 30, 30).reshape((3, 10), order=c)
+
+                            in_reverse_exp = in_[:,:,::-1]  # Reverse along the last axis
+                            in_mask_reverse_exp = np.zeros_like(in_mask)
+
+                            for i in range(in_mask.shape[1]):
+                                in_mask_reverse_exp[:,i] = in_mask[:,-i-1]
+
+                            in_reverse = in_[:,:,::-1]  # Reverse along the last axis
+                            in_mask_reverse = in_mask[:,::-1]  # Reverse along the last axis
+
+                            assert np.array_equal(in_reverse_exp, in_reverse)
+                            assert np.array_equal(in_mask_reverse_exp, in_mask_reverse)
+
+                    test_reverse()
+            */
             INDArray inReverseExp = reverseTimeSeries(in);
-            INDArray inMaskReverseExp = Nd4j.create(inMask.shape());
-            for (int i = 0; i < inMask.size(1); i++) {
-                inMaskReverseExp.putColumn(i, inMask.getColumn(inMask.size(1) - i - 1));
-            }
+            //verified with numpy: numpy.flip(..) is the equivalent numpy operation.
+            float[][] array = {{28, 25, 22, 19, 16, 13, 10, 7, 4, 1},
+                    {29, 26, 23, 20, 17, 14, 11, 8, 5, 2},
+                    {30, 27, 24, 21, 18, 15, 12, 9, 6, 3}};
+            INDArray inMaskReverseExp = Nd4j.create(array);
+
 
             INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
             INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
@@ -607,8 +628,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
     /**
      * CPU ONLY VERSION FOR TESTING
      */
-    public static INDArray reverseTimeSeries(INDArray in){
-        if(in == null){
+    public static INDArray reverseTimeSeries(INDArray in) {
+        if(in == null) {
             return null;
         }
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');

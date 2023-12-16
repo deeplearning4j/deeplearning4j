@@ -1206,6 +1206,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
 
+        MemoryWorkspace old = Nd4j.getMemoryManager().getCurrentWorkspace();
+
         WorkspaceMode wsm = train ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode();
         if(wsm == WorkspaceMode.NONE) {
             mgrEven = LayerWorkspaceMgr.noWorkspaces();
@@ -1274,15 +1276,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                 }
 
-                if (i == layerIndex) {
-                    if (outputWorkspace != null && !(outputWorkspace instanceof DummyWorkspace)) {
-                        //Place activations in user-specified workspace
-                        mgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
-                    } else {
-                        //Final activations: should be detached
-                        mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
-                    }
-                }
 
                 if (fwdPassType == FwdPassType.STANDARD) {
                     //Standard feed-forward case
@@ -1337,8 +1330,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
 
                 layers[i].clear();
-                //Validation: Exception if invalid (bad layer implementation)
-                validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
 
                 if (wsActCloseNext != null) {
                     wsActCloseNext.close();
@@ -1351,11 +1342,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
-                //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
-                //Hence: put inputs in working memory -> set back to default for next use of workspace mgr
-                if (i == 0 && wsm != WorkspaceMode.NONE) {
-                    mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG);            //Inputs should always be in the previous WS
-                }
 
 
             }
@@ -1411,11 +1397,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 UPDATER_WORKING_MEM,
                 FF_CACHE
         };
+        INDArray ret =  input.detach();
+
         mgrEven.closeWorkspace(
                 toClose);
         mgrOdd.closeWorkspace(toClose);
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        return input.detach();
+        Nd4j.getMemoryManager().setCurrentWorkspace(old);
+        return ret;
     }
 
     private INDArray reshapeTimeStepInput(INDArray input) {

@@ -221,7 +221,7 @@ class BidirectionalTest extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("params")
     void testSerialization(RNNFormat rnnDataFormat,Nd4jBackend backend) throws Exception {
-        for (WorkspaceMode wsm : new WorkspaceMode[] { WorkspaceMode.ENABLED } ) {
+        for (WorkspaceMode wsm : WorkspaceMode.values()) {
             Nd4j.getEnvironment().setFuncTracePrintJavaOnly(true);
             Nd4j.getEnvironment().setTrackWorkspaceOpenClose(true);
             log.info("*** Starting workspace mode: " + wsm);
@@ -312,26 +312,37 @@ class BidirectionalTest extends BaseDL4JTest {
             Nd4j.getRandom().setSeed(12345);
             Bidirectional.Mode[] modes = { Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD, Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL };
             long[] inshape = rnnDataFormat == NCW ? new long[] { 3, 10, 6 } : new long[] { 3, 6, 10 };
-            INDArray in = Nd4j.rand(inshape);
+            INDArray in = Nd4j.rand(inshape).castTo(DataType.DOUBLE);
             for (Bidirectional.Mode m : modes) {
-                MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.TANH).weightInit(WeightInit.XAVIER).trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm).updater(new Adam()).list().layer(new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).build();
+                MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE).activation(Activation.TANH)
+                        .weightInit(WeightInit.XAVIER)
+                        .trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm)
+                        .updater(new Adam()).list()
+                        .layer(new Bidirectional(m, new SimpleRnn.Builder()
+                                .nIn(10).nOut(10).dataFormat(rnnDataFormat).build())).build();
                 MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
                 net1.init();
-                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).activation(Activation.TANH).weightInit(WeightInit.XAVIER).updater(new Adam()).list().layer(new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).build();
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE).activation(Activation.TANH)
+                        .weightInit(WeightInit.XAVIER)
+                        .updater(new Adam()).list().layer(new SimpleRnn.Builder()
+                                .nIn(10).nOut(10)
+                                .dataFormat(rnnDataFormat).build()).build();
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2.clone());
                 net2.init();
                 MultiLayerNetwork net3 = new MultiLayerNetwork(conf2.clone());
                 net3.init();
-                net2.setParam("0_W", net1.getParam("0_fW"));
-                net2.setParam("0_RW", net1.getParam("0_fRW"));
-                net2.setParam("0_b", net1.getParam("0_fb"));
-                net3.setParam("0_W", net1.getParam("0_bW"));
-                net3.setParam("0_RW", net1.getParam("0_bRW"));
-                net3.setParam("0_b", net1.getParam("0_bb"));
+                net2.setParam("0_W", net1.getParam("0_fW").dup());
+                net2.setParam("0_RW", net1.getParam("0_fRW").dup());
+                net2.setParam("0_b", net1.getParam("0_fb").dup());
+                net3.setParam("0_W", net1.getParam("0_bW").dup());
+                net3.setParam("0_RW", net1.getParam("0_bRW").dup());
+                net3.setParam("0_b", net1.getParam("0_bb").dup());
                 INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
                 INDArray out1 = net1.output(in);
                 INDArray out2 = net2.output(in);
-                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(inReverse), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
+                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(inReverse.dup()), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
                 INDArray outExp;
                 switch(m) {
                     case ADD:
@@ -352,22 +363,22 @@ class BidirectionalTest extends BaseDL4JTest {
                 assertEquals(outExp, out1,m.toString());
                 // Check gradients:
                 if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
-                    INDArray eps = Nd4j.rand(inshape);
+                    INDArray eps = Nd4j.rand(inshape).castTo(DataType.DOUBLE);
                     INDArray eps1;
                     if (m == Bidirectional.Mode.CONCAT) {
                         eps1 = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, eps, eps);
                     } else {
-                        eps1 = eps;
+                        eps1 = eps.dup();
                     }
-                    net1.setInput(in);
-                    net2.setInput(in);
-                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat));
-                    net1.feedForward(true, false);
-                    net2.feedForward(true, false);
-                    net3.feedForward(true, false);
-                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
-                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
-                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat), LayerWorkspaceMgr.noWorkspaces());
+                    net1.setInput(in.dup());
+                    net2.setInput(in.dup());
+                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in.dup(), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat).dup());
+                    List<INDArray> net1FF = net1.feedForward(true, false);
+                    List<INDArray> net2FF = net2.feedForward(true, false);
+                    List<INDArray> net3FF = net3.feedForward(true, false);
+                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1.dup(), LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps.dup(), LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps.dup(), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat), LayerWorkspaceMgr.noWorkspaces());
                     Gradient g1 = p1.getFirst();
                     Gradient g2 = p2.getFirst();
                     Gradient g3 = p3.getFirst();

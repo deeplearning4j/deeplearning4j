@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -241,8 +242,8 @@ public class TimeSeriesUtils {
         return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
     }
 
-    public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType, RNNFormat dataFormat){
-        if (dataFormat == RNNFormat.NCW){
+    public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType, RNNFormat dataFormat) {
+        if (dataFormat == RNNFormat.NCW) {
             return reverseTimeSeries(in, workspaceMgr, arrayType);
         }
         return reverseTimeSeries(in.permute(0, 2, 1), workspaceMgr, arrayType).permute(0, 2, 1);
@@ -283,11 +284,11 @@ public class TimeSeriesUtils {
      * @param mask Mask to reverse along time dimension
      * @return Mask after reversing
      */
-    public static INDArray reverseTimeSeriesMask(INDArray mask){
+    public static INDArray reverseTimeSeriesMask(INDArray mask) {
         if(mask == null){
             return null;
         }
-        if(mask.rank() == 3){
+        if(mask.rank() == 3) {
             //Should normally not be used - but handle the per-output masking case
             return reverseTimeSeries(mask);
         } else if(mask.rank() != 2){
@@ -299,7 +300,7 @@ public class TimeSeriesUtils {
             throw new ND4JArraySizeException();
         int[] idxs = new int[(int) mask.size(1)];
         int j=0;
-        for( int i=idxs.length-1; i>=0; i--){
+        for( int i=idxs.length-1; i >= 0; i--) {
             idxs[j++] = i;
         }
 
@@ -312,29 +313,25 @@ public class TimeSeriesUtils {
      * @param mask Mask to reverse along time dimension
      * @return Mask after reversing
      */
-    public static INDArray reverseTimeSeriesMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
-        if(mask == null){
+    public static INDArray reverseTimeSeriesMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        if(mask == null) {
             return null;
         }
+
+
+
         if(mask.rank() == 3) {
             //Should normally not be used - but handle the per-output masking case
             return reverseTimeSeries(mask, workspaceMgr, arrayType);
-        } else if(mask.rank() != 2){
+        } else if(mask.rank() != 2) {
             throw new IllegalArgumentException("Invalid mask rank: must be rank 2 or 3. Got rank " + mask.rank()
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-        if (mask.size(1) > Integer.MAX_VALUE)
-            throw new ND4JArraySizeException();
-        int[] idxs = new int[(int) mask.size(1)];
-        int j=0;
-        for( int i=idxs.length-1; i>=0; i--){
-            idxs[j++] = i;
-        }
 
-        INDArray ret = workspaceMgr.createUninitialized(arrayType, mask.dataType(), new long[]{mask.size(0), idxs.length}, 'f');
-
-        return Nd4j.pullRows(mask, ret, 0, idxs);
+        Reverse reverse = new Reverse(mask,workspaceMgr.create(arrayType, mask.dataType(), mask.shape(), 'f'), 1);
+        INDArray result2 = Nd4j.getExecutioner().exec(reverse)[0];
+        return result2;
 
     }
 
