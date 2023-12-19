@@ -209,7 +209,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return activateHelper(null, training, false, workspaceMgr).getFirst();
     }
 

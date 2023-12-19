@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import static org.deeplearning4j.util.TimeSeriesUtils.reverseTimeSeries;
 import static org.junit.jupiter.api.Assertions.*;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
@@ -615,7 +616,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
             INDArray inMaskReverseExp = Nd4j.create(array);
 
 
-            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+            INDArray inReverse = reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
             INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
             assertEquals(inReverseExp, inReverse);
@@ -625,21 +626,4 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
 
 
-    /**
-     * CPU ONLY VERSION FOR TESTING
-     */
-    public static INDArray reverseTimeSeries(INDArray in) {
-        if(in == null) {
-            return null;
-        }
-        INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
-        CustomOp op = DynamicCustomOp.builder("reverse")
-                .addIntegerArguments(2)
-                .addInputs(in)
-                .addOutputs(out)
-                .callInplace(false)
-                .build();
-        Nd4j.getExecutioner().exec(op);
-        return out;
-    }
 }

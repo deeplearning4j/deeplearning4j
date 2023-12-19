@@ -156,8 +156,6 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     @Override
     public void setScopedOutFor(@NonNull T arrayType) {
         scopeOutOfWs.add(arrayType);
-        configMap.remove(arrayType);
-        workspaceNames.remove(arrayType);
     }
 
     @Override
@@ -316,7 +314,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         if(scopeOutOfWs.contains(arrayType)) {
             //Array is supposed to be detached (no workspace)
             boolean ok = !array.isAttached();
-            if(!ok){
+            if(!ok) {
                 if(migrateIfInvalid) {
                     log.trace("Migrating array of type " + arrayType + " to workspace " + getWorkspaceName(arrayType));
                     return leverageTo(arrayType, array);
@@ -363,9 +361,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     /**
-     * TODO:  revisit this
-     * to see what effects
-     * workspace.close()
+        * This method creates INDArray of specified dataType and shape, and puts it into Workspace, if any.
      * has with respect to the java deallocator service.
      *
      * All crashes now seem to be induced by java side free calls.
@@ -405,6 +401,21 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long[] shape, char order) {
         enforceExistsAndActive(arrayType);
         if(keepTypesOpen.contains(arrayType)) {
+            String workspaceName = getWorkspaceName(arrayType);
+            if(workspaceName != null) {
+                MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceName);
+                //since we keep scopes open and there is no guarantee the  current array maybe of this workspace
+                //we ensure it is with leverage
+                INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
+                if(ws != ret.getWorkspace()) {
+                    return leverageTo(arrayType,ret);
+                }
+            } else { //scope out of  workspaces when nothing found
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    return Nd4j.createUninitialized(dataType, shape, order);
+                }
+            }
+
             return Nd4j.createUninitialized(dataType, shape, order);
 
         } else {
@@ -418,9 +429,28 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     @Override
     public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order) {
         enforceExistsAndActive(arrayType);
-        if (keepTypesOpen.contains(arrayType))
+        if (keepTypesOpen.contains(arrayType)) {
+            String workspaceName = getWorkspaceName(arrayType);
+            if(workspaceName != null) {
+                MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceName);
+                //since we keep scopes open and there is no guarantee the  current array maybe of this workspace
+                //we ensure it is with leverage
+                if(ws != toDup.getWorkspace()) {
+                    return leverageTo(arrayType,toDup.dup(order));
+                }
+            } else if(workspaceName == null) {
+                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    return toDup.dup(order);
+                }
+            }
+            else {
+                MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceName);
+                return leverageTo(arrayType,toDup.dup(order));
+
+            }
+
             return toDup.dup(order);
-        else {
+        }  else {
             try (MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
                 return toDup.dup(order);
             }

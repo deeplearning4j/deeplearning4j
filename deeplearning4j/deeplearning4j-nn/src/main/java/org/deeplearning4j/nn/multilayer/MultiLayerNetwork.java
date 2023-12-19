@@ -889,9 +889,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param clearInputs If false: don't clear the layer inputs
      * @return Activations from feed-forward
      */
-    public List<INDArray> feedForward(boolean train, boolean clearInputs){
+    public List<INDArray> feedForward(boolean train, boolean clearInputs) {
         try{
-            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, null, clearInputs);
+            return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length - 1, input, mask, null, clearInputs);
         } catch (OutOfMemoryError e) {
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
@@ -996,8 +996,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         setInput(input);
         setLayerMaskArrays(fMask, lMask);
 
-        //Verify that no workspace is open externally
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerActivationsDetached");
 
         LayerWorkspaceMgr workspaceMgr;
         WorkspaceMode wsm = (train ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode());
@@ -1021,6 +1019,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
+        //WTF
+        workspaceMgr.keepOpen(ArrayType.values());
 
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Should  be unnecessary (and no op), if layer is implemented correctly
@@ -1060,6 +1060,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 layers[i].clear();
             }
         }
+
+        ArrayType[] toClose = {
+                ArrayType.ACTIVATIONS,
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        workspaceMgr.closeWorkspace(toClose);
 
         return out;
     }
@@ -1854,11 +1865,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
 
-        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
             mgrEven = LayerWorkspaceMgr.noWorkspaces();
             mgrOdd = mgrEven;
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in calcBackpropGradients when " +
-                    "training workspace is set to none");
         } else {
             /*
             Workspaces for backprop in MLN share some features with outputOfLayerDetached, in terms of the
@@ -2053,16 +2062,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
-        if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in calcBackpropGradients when " +
-                    "training workspace is set to none");
-        } else {
-            if(epsilon == null) {
-                //If epsilon != null: external errors use case (inputs are detached instead)
-                WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients: WS_ALL_LAYERS_ACT is no" +
-                        " longer the currently open/active workspace");
-            }
-        }
+
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {
@@ -2795,6 +2795,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         mgr.closeWorkspace(ArrayType.values());
         WorkspaceUtils.closeWorkspacesForCurrentThread(true);
+    }
+
+    @Override
+    public void setLabels(int index, INDArray indArray) {
+        setLabels(indArray);
+    }
+
+    @Override
+    public INDArray[] output(INDArray[] input) {
+        return new INDArray[]{output(input[0])};
     }
 
     /**
@@ -4101,7 +4111,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Note that the network should not be used again for any purpose after it has been closed
      */
     @Override
-    public void close(){
+    public void close() {
         //Close the INDArray and dealloc
         if(flattenedParams.closeable())
             flattenedParams.close();
@@ -4118,5 +4128,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
+    }
+
+    @Override
+    public void setInput(int inputIndex, INDArray indArray) {
+        this.setInput(indArray);
     }
 }

@@ -237,4 +237,15 @@ public interface Model {
 
 
     void close();
+
+    void setInput(int inputIndex, INDArray indArray);
+
+    void computeGradientAndScore();
+
+
+    void setLabels(int index, INDArray indArray);
+
+    INDArray[] output(INDArray[] input);
+
+
 }

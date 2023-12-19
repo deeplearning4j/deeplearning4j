@@ -175,7 +175,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
             return this;
         }
 
-        public LayerWorkspaceMgr build(){
+        public LayerWorkspaceMgr build() {
             return mgr;
         }
 

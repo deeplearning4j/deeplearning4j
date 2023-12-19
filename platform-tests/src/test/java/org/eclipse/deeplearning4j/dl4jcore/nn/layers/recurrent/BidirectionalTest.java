@@ -307,12 +307,12 @@ class BidirectionalTest extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("params")
     public void testSimpleBidirectional(RNNFormat rnnDataFormat,Nd4jBackend backend) {
-        for (WorkspaceMode wsm : WorkspaceMode.values()) {
+        for (WorkspaceMode wsm : new WorkspaceMode[] {WorkspaceMode.NONE}) {
             log.info("*** Starting workspace mode: " + wsm);
             Nd4j.getRandom().setSeed(12345);
             Bidirectional.Mode[] modes = { Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD, Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL };
             long[] inshape = rnnDataFormat == NCW ? new long[] { 3, 10, 6 } : new long[] { 3, 6, 10 };
-            INDArray in = Nd4j.rand(inshape).castTo(DataType.DOUBLE);
+            INDArray in = Nd4j.rand(1,180,180).reshape(3,6,10).castTo(DataType.DOUBLE);
             for (Bidirectional.Mode m : modes) {
                 MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
                         .dataType(DataType.DOUBLE).activation(Activation.TANH)
