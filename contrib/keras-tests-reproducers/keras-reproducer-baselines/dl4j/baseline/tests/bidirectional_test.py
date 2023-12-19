@@ -17,6 +17,9 @@ class BidirectionalModelManager(ModelManager):
         inshape = (3, 10, 6)
         input_array = np.linspace(0, 1, num=np.prod(inshape), dtype=np.float32)
         in_ = tf.constant(input_array.reshape(inshape))
+        self.set_inputs('model0', [in_])
+        self.set_inputs('model1', [in_])
+        self.set_inputs('model2', [in_])
 
 
     def model_builder(self) -> None:
@@ -25,17 +28,18 @@ class BidirectionalModelManager(ModelManager):
             model.add(Bidirectional(
                 SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
                           recurrent_initializer=GlorotNormal())))
-            model.compile(loss='mean_squared_error', optimizer=Adam())
+            model.compile(loss=tf.keras.losses.MeanSquaredError(), optimizer=Adam())
             self.add_model('model0', model)
 
             # 'model1'
             model = Sequential()
             model.add(SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
                                 recurrent_initializer=GlorotNormal()))
-            model.compile(loss='mean_squared_error', optimizer=Adam())
+            model.compile(loss=tf.keras.losses.MeanSquaredError(), optimizer=Adam())
             self.add_model('model1', model)
 
             model3 = Sequential()
             model3.add(SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
                                  recurrent_initializer=GlorotNormal()))
-            model3.compile(loss='mean_squared_error', optimizer=Adam())
+            model3.compile(loss=tf.keras.losses.MeanSquaredError(), optimizer=Adam())
+            self.add_model('model2', model)

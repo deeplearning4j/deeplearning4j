@@ -46,7 +46,7 @@ class ModelManager(abc.ABC):
         if not model_state:
             raise ValueError(f"Model not found for model: {model_name}")
 
-        model_state.outputs = model_state.model.predict(model_state.inputs)
+        model_state.outputs = model_state.model(model_state.inputs)
 
     def compute_gradients(self, model_name: str) -> None:
         model_state = self.models.get(model_name)
@@ -57,6 +57,8 @@ class ModelManager(abc.ABC):
                 with tf.GradientTape() as tape:
                     tape.watch(model_state.model.trainable_variables)
                     predictions = model_state.model(input_, training=True)
+                    # keras can technically accept strings but we expect an instance of a loss here
+                    assert type(model_state.model.loss) is not str
                     loss = model_state.model.loss(tf.zeros_like(predictions), predictions)
                 grads = tape.gradient(loss, model_state.model.trainable_variables)
                 model_state.gradients.append(grads)
