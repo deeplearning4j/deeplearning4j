@@ -3,6 +3,8 @@ import os
 from typing import Dict, List
 import tensorflow as tf
 import numpy as np
+from keras import Sequential, Model
+from keras.engine.functional import Functional
 
 
 class ModelState:
@@ -30,7 +32,6 @@ class ModelManager(abc.ABC):
     def set_default_inputs(self) -> None:
         pass
 
-
     def compute_all_gradients(self) -> None:
         for model_name in self.models.keys():
             self.compute_gradients(model_name)
@@ -38,6 +39,7 @@ class ModelManager(abc.ABC):
     def compute_all_outputs(self) -> None:
         for model_name in self.models.keys():
             self.compute_outputs(model_name)
+
     def set_inputs(self, model_name: str, inputs: List[tf.Tensor]) -> None:
         self.models[model_name].inputs = inputs
 
@@ -53,10 +55,9 @@ class ModelManager(abc.ABC):
         model_state.gradients = []
         inputs = model_state.inputs
         if inputs is not None:
-            for input_ in inputs:
                 with tf.GradientTape() as tape:
                     tape.watch(model_state.model.trainable_variables)
-                    predictions = model_state.model(input_, training=True)
+                    predictions = model_state.model(inputs, training=True)
                     # keras can technically accept strings but we expect an instance of a loss here
                     assert type(model_state.model.loss) is not str
                     loss = model_state.model.loss(tf.zeros_like(predictions), predictions)
@@ -78,3 +79,16 @@ class ModelManager(abc.ABC):
                 np.save(os.path.join(model_dir, f"{model_name}_output_{i}.npy"), output)
                 for j, grad in enumerate(gradients_):
                     np.save(os.path.join(model_dir, f"{model_name}_gradient_{j}.npy"), grad.numpy())
+
+            # note this is fairly simplistic, all we want to do here
+            # is have a human readable way of knowing what the model is without
+            # a bunch of json and hdf5 complexity
+            if type(model_state.model) is Sequential:
+                with open(os.path.join(model_dir, "model_type.txt"), 'w') as f:
+                    f.write('Sequential')
+            elif type(model_state.model) is Functional:
+                with open(os.path.join(model_dir, "model_type.txt"), 'w') as f:
+                    f.write('Functional')
+            elif type(model_state.model) is Model:
+                with open(os.path.join(model_dir, "model_type.txt"), 'w') as f:
+                    f.write('Model')

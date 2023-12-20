@@ -27,6 +27,7 @@ import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.TrainingConfig;
+import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -70,6 +71,11 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         if (conf != null)
             cacheMode = conf.getCacheMode();
         this.dataType = dataType;
+    }
+
+    @Override
+    public Updater createUpdater() {
+        return Layer.super.createUpdater();
     }
 
     @Override
@@ -316,6 +322,16 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Type.FEED_FORWARD;
     }
 
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return null;
+    }
+
+    @Override
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return null;
+    }
+
     /**
      * The number of parameters for the model
      *
@@ -363,6 +379,11 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public INDArray getMaskArray() {
         return maskArray;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+
     }
 
 
@@ -432,5 +453,25 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public void close(){
         //No-op for individual layers
+    }
+
+    @Override
+    public void setInput(int inputIndex, INDArray indArray) {
+
+    }
+
+    @Override
+    public void computeGradientAndScore() {
+
+    }
+
+    @Override
+    public void setLabels(int index, INDArray indArray) {
+        Layer.super.setLabels(index, indArray);
+    }
+
+    @Override
+    public INDArray[] output(INDArray[] input) {
+        return Layer.super.output(input);
     }
 }

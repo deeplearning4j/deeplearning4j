@@ -324,10 +324,26 @@ public class KerasModelUtils {
 
                         if (kerasVersion == 2 && layer instanceof KerasBidirectional) {
                             String backwardAttributes = baseAttributes.replace("forward", "backward");
+                            String[] split = backwardAttributes.split("/");
+                            StringBuilder stringBuilder = new StringBuilder();
+                            for(int i = 0; i < split.length - 1; i++) {
+                                if(i < split.length - 1)
+                                    stringBuilder.append(split[i]).append("/");
+                            }
+
+                            //note: this used to be somewhat hardcoded
+                            //now we dynamically check for the group name
+                            //underneath instead.
+                            StringBuilder parentGroup = new StringBuilder();
+                            parentGroup.append(rootPrefix );
+                            parentGroup.append(stringBuilder);
+
+                            List<String> groups = weightsArchive.getGroups(parentGroup.toString());
+                            parentGroup.append(groups.get(0));
                             INDArray forwardParamValue = weightsArchive.readDataSet(layerParamName,
                                     rootPrefix + baseAttributes);
                             INDArray backwardParamValue = weightsArchive.readDataSet(
-                                    layerParamName, rootPrefix + backwardAttributes);
+                                    layerParamName, parentGroup.toString());
                             weights.put("forward_" + paramName, forwardParamValue);
                             weights.put("backward_" + paramName, backwardParamValue);
                         } else {

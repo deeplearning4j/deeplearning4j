@@ -39,7 +39,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     private static final long serialVersionUID = -7369482676002469854L;
     private double maskingValue;
 
-    public MaskZeroLayer(@NonNull Layer underlying, double maskingValue){
+    public MaskZeroLayer(@NonNull Layer underlying, double maskingValue) {
         super(underlying);
         this.maskingValue = maskingValue;
     }

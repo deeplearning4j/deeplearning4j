@@ -238,14 +238,24 @@ public interface Model {
 
     void close();
 
-    void setInput(int inputIndex, INDArray indArray);
+    default void setInput(int inputIndex, INDArray indArray) {
+        throw new UnsupportedOperationException();
+    }
 
-    void computeGradientAndScore();
+    default void computeGradientAndScore() {
+        throw new UnsupportedOperationException();
+    }
 
 
-    void setLabels(int index, INDArray indArray);
 
-    INDArray[] output(INDArray[] input);
+    //note we do this mostly because layers won't need this most of the time.
+    default void setLabels(int index, INDArray indArray)  {
+        throw new UnsupportedOperationException();
+    }
+
+    default INDArray[] output(INDArray[] input) {
+        throw new UnsupportedOperationException();
+    }
 
 
 }

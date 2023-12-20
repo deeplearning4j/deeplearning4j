@@ -8,6 +8,7 @@ from tests.bidirectional_test import BidirectionalModelManager
 managers = [
     BidirectionalModelManager()
 ]
+
 def main():
     parser = argparse.ArgumentParser(description='Save ModelManager subclasses.')
     parser.add_argument('--output_dir', type=str, required=True,
@@ -26,11 +27,6 @@ def main():
         model_manager.compute_all_gradients()
         model_manager.save_all(args.output_dir)
 
-    # Save all the models
-        for model_name, model_state in model_manager.models.items():
-            save_dir = os.path.join(args.output_dir, model_name)
-            os.makedirs(save_dir, exist_ok=True)
-            model_state.model.save(os.path.join(save_dir, f"{model_name}.h5"))
 
 if __name__ == "__main__":
     main()

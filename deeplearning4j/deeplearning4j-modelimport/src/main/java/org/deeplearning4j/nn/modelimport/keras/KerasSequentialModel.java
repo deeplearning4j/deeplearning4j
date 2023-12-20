@@ -94,12 +94,13 @@ public class KerasSequentialModel extends KerasModel {
         // "config" is now an object containing a "name" and "layers", the latter contain the same data as before.
         // This change only affects Sequential models.
         List<Object> layerList;
-        try {
+        if(modelConfig.get(config.getModelFieldConfig()) instanceof List) {
             layerList = (List<Object>) modelConfig.get(config.getModelFieldConfig());
-        } catch (Exception e) {
+        } else {
             HashMap layerMap = (HashMap<String, Object>) modelConfig.get(config.getModelFieldConfig());
             layerList =  (List<Object>) layerMap.get("layers");
         }
+
 
         Pair<Map<String, KerasLayer>, List<KerasLayer>> layerPair =
                 prepareLayers(layerList);

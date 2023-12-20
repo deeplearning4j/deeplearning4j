@@ -1223,7 +1223,7 @@ public class ArrayUtil {
      * @return the product of this array
      */
     public static int prod(int... mult) {
-        if (mult.length < 1)
+        if (mult == null || mult.length < 1)
             return 0;
         int ret = 1;
         for (int i = 0; i < mult.length; i++)
