@@ -3400,7 +3400,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray slice(long slice, int dimension) {
         Nd4j.getCompressor().autoDecompress(this);
-
+        if(dimension < 0)
+            dimension += rank();
         long slices = size(dimension);
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);

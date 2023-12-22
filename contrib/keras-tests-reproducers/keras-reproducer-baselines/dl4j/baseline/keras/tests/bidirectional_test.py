@@ -4,7 +4,7 @@ from keras.layers import Bidirectional, SimpleRNN
 from keras.losses import MeanSquaredError
 from keras.optimizers import Adam
 
-from dl4j.baseline.model_manager import ModelManager
+from dl4j.baseline.keras.model_manager import ModelManager
 
 import numpy as np
 import tensorflow as tf
@@ -29,7 +29,7 @@ class BidirectionalModelManager(ModelManager):
         model = Sequential()
         model.add(Input(shape=(10, 6)))
         model.add(Bidirectional(
-            SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
+            SimpleRNN(10, use_bias=False,return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
                       recurrent_initializer=GlorotNormal())))
         model.compile(loss=MeanSquaredError(), optimizer=Adam())
         self.add_model('model0', model)
@@ -38,13 +38,13 @@ class BidirectionalModelManager(ModelManager):
         model1 = Sequential()
         model1.add(Input(shape=(10, 6)))
         model1.add(SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
-                            recurrent_initializer=GlorotNormal()))
+                            recurrent_initializer=GlorotNormal(),use_bias=False))
         model1.compile(loss=MeanSquaredError(), optimizer=Adam())
         self.add_model('model1', model1)
 
         model3 = Sequential()
         model3.add(Input(shape=(10, 6)))
         model3.add(SimpleRNN(10, return_sequences=True, activation='tanh', kernel_initializer=GlorotNormal(),
-                             recurrent_initializer=GlorotNormal()))
+                             recurrent_initializer=GlorotNormal(),use_bias=False))
         model3.compile(loss=MeanSquaredError(), optimizer=Adam())
         self.add_model('model2', model3)

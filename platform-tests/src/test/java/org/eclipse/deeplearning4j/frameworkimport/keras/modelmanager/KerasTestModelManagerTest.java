@@ -19,23 +19,27 @@
  */
 package org.eclipse.deeplearning4j.frameworkimport.keras.modelmanager;
 
-import org.eclipse.deeplearning4j.modelimport.keras.ModelManager;
+import org.eclipse.deeplearning4j.modelimport.keras.BaseKerasModelTest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.nd4j.linalg.factory.Nd4j;
 
-public class ModelManagerTest {
+public class KerasTestModelManagerTest extends BaseKerasModelTest {
+
+
+    @BeforeEach
+    public void before() throws Exception {
+        init();
+    }
 
     @Test
     public void testBidirectional() throws Exception {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        ModelManager modelManager = new ModelManager("/home/agibsonccc/Documents/GitHub/deeplearning4j/contrib/keras-tests-reproducers/keras-reproducer-baselines/dl4j/baseline/bidirectional_tests");
-        modelManager.loadModels();
-        System.out.println("Running models");
-        modelManager.runModels();
-     /*   modelManager.runModels();
-        modelManager.compareOutputs();
-        modelManager.compareGradients();*/
+        runTests();
     }
 
+    @Override
+    public String[] modelTestNames() {
+        return new String[]{
+                "BidirectionalModelManager"
+        };
+    }
 }

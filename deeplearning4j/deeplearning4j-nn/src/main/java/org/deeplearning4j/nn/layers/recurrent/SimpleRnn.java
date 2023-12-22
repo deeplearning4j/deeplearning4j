@@ -118,8 +118,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         INDArray dldzNext = null;
         long end;
-        if(tbpttBackLength > 0){
-            end = Math.max(0, tsLength-tbpttBackLength);
+        if(tbpttBackLength > 0) {
+            end = Math.max(0, tsLength - tbpttBackLength);
         } else {
             end = 0;
         }
@@ -231,7 +231,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
-        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
+        INDArray b = layerConf().isUseBias() ? getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr) : null;
         INDArray g = (hasLayerNorm() ? getParamWithNoise(SimpleRnnParamInitializer.GAIN_KEY, training, workspaceMgr) : null);
         INDArray gx = (g != null ? g.get(interval(0, 0, true), interval(0, nOut)) : null);
         INDArray gr = (g != null ? g.get(interval(0, 0, true), interval(nOut, nOut * 2)) : null);
@@ -246,7 +246,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         //TODO implement 'mmul across time' optimization
 
-        if(!hasLayerNorm()) {
+        if(!hasLayerNorm() && layerConf().isUseBias()) {
             //Minor performance optimization: do the "add bias" first:
             Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, b, out, 1));
         }
@@ -255,19 +255,19 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         for( int i = 0; i < tsLength; i++) {
             //out = activationFn(in*w + last*rw + bias)
-            INDArray currOut = out.get(all(), all(), point(i)); //F order
-            INDArray currIn = input.get(all(), all(), point(i));
+            INDArray currOut = out.slice(i,-1); //F order
+            INDArray currIn = input.slice(i,-1).dup('f');
             if(hasLayerNorm()) {
                 INDArray currOutPreNorm = (forBackprop ? outPreNorm : out).get(all(), all(), point(i));
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
                 Nd4j.getExecutioner().exec(new LayerNorm(currOutPreNorm, gx, b, currOut, true, 1));
             }else {
-                Nd4j.gemm(currIn, w, currOut, false, false, 1.0, 1.0);  //beta = 1.0 to keep previous contents (bias)
+                currIn.mmul(w,currOut);
             }
 
             if(i > 0 || prevStepOut != null) {
                 if(hasLayerNorm()) {
-                    INDArray currRecPreNorm = forBackprop ? recPreNorm.get(all(), all(), point(i)) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
+                    INDArray currRecPreNorm = forBackprop ? recPreNorm.slice(i,-1) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
                     Nd4j.gemm(prevStepOut, rw, currRecPreNorm, false, false, 1.0, 0.0);
                     INDArray recNorm = workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');
                     Nd4j.getExecutioner().exec(new LayerNorm(currRecPreNorm, gr, recNorm, true, 1));

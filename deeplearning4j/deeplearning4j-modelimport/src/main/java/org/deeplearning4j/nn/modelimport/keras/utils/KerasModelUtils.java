@@ -309,14 +309,14 @@ public class KerasModelUtils {
                     KerasLayer layer = layers.get(layerName);
 
 
-                    if (layerParamNames.size() != layer.getNumParams())
-                        if (kerasVersion == 2
-                                && layer instanceof KerasBidirectional && 2 * layerParamNames.size() != layer.getNumParams())
-                            throw new InvalidKerasConfigurationException(
-                                    "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
-                                            + " trainable params (named " + layerName + ")");
+                    //note we used to have bidirectional specific validation here.
+                    //it assumed that a bias always existed. This isn't the case
+                    //and would rnns without biases to fail.
                     Map<String, INDArray> weights = new HashMap<>();
 
+                    /**
+                     * TODO: check what weights are being read. Do we have the wrong file or something?
+                     */
 
                     for (String layerParamName : layerParamNames) {
                         String paramName = KerasModelUtils.findParameterName(layerParamName, layerFragments);

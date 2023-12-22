@@ -124,7 +124,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public double calcRegularizationScore(boolean backpropParamsOnly){
+    public double calcRegularizationScore(boolean backpropParamsOnly ){
         return fwd.calcRegularizationScore(backpropParamsOnly) + bwd.calcRegularizationScore(backpropParamsOnly);
     }
 
@@ -392,10 +392,10 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
         Map<String,INDArray> m = new LinkedHashMap<>();
-        for(Map.Entry<String,INDArray> e : fwd.paramTable(backpropParamsOnly).entrySet()){
+        for(Map.Entry<String,INDArray> e : fwd.paramTable(backpropParamsOnly).entrySet()) {
             m.put(BidirectionalParamInitializer.FORWARD_PREFIX + e.getKey(), e.getValue());
         }
-        for(Map.Entry<String,INDArray> e : bwd.paramTable(backpropParamsOnly).entrySet()){
+        for(Map.Entry<String,INDArray> e : bwd.paramTable(backpropParamsOnly).entrySet()) {
             m.put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
         return m;
@@ -413,7 +413,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        for(Map.Entry<String,INDArray> e : paramTable.entrySet()){
+        for(Map.Entry<String,INDArray> e : paramTable.entrySet()) {
             setParam(e.getKey(), e.getValue());
         }
     }
@@ -550,7 +550,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
 
     @Override
-    public void close(){
+    public void close() {
         //No-op for individual layers
     }
 }

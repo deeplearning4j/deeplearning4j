@@ -17,15 +17,15 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.eclipse.deeplearning4j.modelimport.keras;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
-import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -33,22 +33,25 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class ModelManager {
-    protected String directoryPath;
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ModelTestCase {
+
     protected Map<String, List<INDArray>> inputs = new HashMap<>();
     protected Map<String, List<INDArray>> outputs = new HashMap<>();
-    protected Map<String, List<INDArray>> gradients = new HashMap<>();
-    protected Map<String,Model> models = new HashMap<>();
+    protected Map<String, Model> models = new HashMap<>();
     protected Map<String, List<INDArray>> computedOutputs = new HashMap<>();
-    protected Map<String, List<INDArray>> computedGradients = new HashMap<>();
+    protected Map<String,List<Boolean>> outputsEquals = new HashMap<>();
+    private String testName;
+    protected File testDirectory;
 
-    public ModelManager(String directoryPath) {
-        this.directoryPath = directoryPath;
-        File dir = new File(directoryPath);
-        if (!dir.exists() || !dir.isDirectory()) {
-            throw new IllegalArgumentException("Invalid directoryPath: " + directoryPath);
-        }
-        File[] subDirs = dir.listFiles(File::isDirectory);
+
+
+    public ModelTestCase(File testDirectory,String testName) {
+        this.testDirectory = testDirectory;
+        File[] subDirs = testDirectory.listFiles();
         for (File modelDir : Objects.requireNonNull(subDirs)) {
             String modelName = modelDir.getName(); // Directory name is used as modelName
             File[] npyFiles = modelDir.listFiles((d, name) -> name.endsWith(".npy"));
@@ -62,35 +65,19 @@ public class ModelManager {
                 throw new RuntimeException("Unable to load inputs/outputs for model: " + modelName, e);
             }
         }
-
     }
 
-    public void loadModels() throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException, Exception {
-        for(File modelDir : new File(directoryPath).listFiles()) {
-            String modelType = FileUtils.readFileToString(new File(modelDir, "model_type.txt"), "UTF-8");
-            File modelFile = new File(modelDir, "model.h5");
-            switch (modelType) {
-                case "Sequential":
-                    models.put(modelDir.getName(), KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath(), false));
-                    break;
-                case "Model":
-                    models.put(modelDir.getName(), KerasModelImport.importKerasModelAndWeights(modelFile.getAbsolutePath()));
-                    break;
-                case "Functional":
-                    models.put(modelDir.getName(), KerasModelImport.importKerasModelAndWeights(modelFile.getAbsolutePath()));
-                    break;
-                default:
-                    throw new Exception("Unknown model type: " + modelType);
-            }
-        }
-    }
-
+    /**
+     * Loads all models in the test directory
+     * @param names
+     * @throws IOException
+     */
     public void loadInputsOutputs(String... names) throws IOException {
         for (String name : names) {
             String modelName = name.split("_")[0];
             String type = name.split("_")[1];
             int index = Integer.parseInt(name.replace(".npy","").split("_")[2]);
-            File modelDir = new File(directoryPath, modelName);
+            File modelDir = new File(testDirectory, modelName);
             INDArray array = Nd4j.createFromNpyFile(new File(modelDir, name));
             switch (type) {
                 case "input":
@@ -105,12 +92,7 @@ public class ModelManager {
                     }
                     fillListAtIndex(outputs.get(modelName), index, array);
                     break;
-                case "gradient":
-                    if (!gradients.containsKey(modelName)) {
-                        gradients.put(modelName, new ArrayList<>());
-                    }
-                    fillListAtIndex(gradients.get(modelName), index, array);
-                    break;
+
             }
         }
 
@@ -131,10 +113,11 @@ public class ModelManager {
         return outputs;
     }
 
-    public Map<String, List<INDArray>> getGradients() {
-        return gradients;
-    }
-
+    /**
+     * Compute outputs for a given model.
+     * @param model the model to compute.
+     * @throws Exception
+     */
     public void computeOutputAndGradient(Model model) throws Exception {
         for (String modelName : models.keySet()) {
             List<INDArray> modelInputs = inputs.get(modelName);
@@ -152,46 +135,17 @@ public class ModelManager {
                 model.setLabels(i, Nd4j.zerosLike(expectedOutputs.get(i)));
             }
 
-
-
             // Set input and label then compute derivative and scores
             INDArray[] outputs = model.output(modelInputs.toArray(new INDArray[0]));
             this.computedOutputs.put(modelName, Arrays.asList(outputs));
-            //model.computeGradientAndScore();
-
-            // Cache model's gradients
-            Gradient gradients = model.gradient();
-            List<INDArray> grads = new ArrayList<>();
-
-            for (String varName : gradients.gradientForVariable().keySet()) {
-                grads.add(gradients.getGradientFor(varName));
-            }
-            for(int i = 0; i < grads.size(); i++) {
-                computedGradients.put(modelName + "_gradient_" + i, grads);
-            }
-
         }
     }
 
 
-    public boolean compareOutputs(Model model) throws Exception {
-        double epsilon = 1e-6;
-
-        for (String modelName : models.keySet()) {
-            List<INDArray> modelOutputs = outputs.get(modelName);
-            List<INDArray> computedOutputs = this.computedOutputs.get(modelName);
-            for (int i = 0; i < modelOutputs.size(); i++) {
-                INDArray loadedOutput = modelOutputs.get(i);
-                INDArray computedOutput = computedOutputs.get(i);
-                INDArray diff = loadedOutput.sub(computedOutput).mul(loadedOutput.sub(computedOutput));
-                if (diff.sumNumber().doubleValue() > epsilon)
-                    return false;
-            }
-        }
-        return true;
-    }
-
-
+    /**
+     * Run all models.
+     * @throws Exception
+     */
     public void runModels() throws Exception {
         for (String modelName : models.keySet()) {
             Model model = models.get(modelName);
@@ -201,33 +155,42 @@ public class ModelManager {
 
     public void compareOutputs() throws  Exception {
         for (String modelName : models.keySet()) {
-            Model model = models.get(modelName);
+            Model model = this.models.get(modelName);
             computeOutputAndGradient(model);
             List<INDArray> modelOutputs = outputs.get(modelName);
             List<INDArray> computedOutputs = this.computedOutputs.get(modelName);
+            outputsEquals.put(modelName, new ArrayList<>());
             for (int i = 0; i < modelOutputs.size(); i++) {
                 INDArray loadedOutput = modelOutputs.get(i);
                 INDArray computedOutput = computedOutputs.get(i);
+                outputsEquals.get(modelName).add(loadedOutput.equalsWithEps(computedOutput,1e-6));
                 System.out.println("Loaded output: " + loadedOutput);
                 System.out.println("Computed output: " + computedOutput);
             }
         }
     }
 
-    public boolean compareGradients() throws Exception {
-        double epsilon = 1e-6;
 
-        for (String modelName : models.keySet()) {
-            List<INDArray> modelGradients = gradients.get(modelName);
-            List<INDArray> computedGradients = this.computedGradients.get(modelName);
-            for (int i = 0; i < modelGradients.size(); i++) {
-                INDArray loadedGradient = modelGradients.get(i);
-                INDArray computedGradient = computedGradients.get(i);
-                INDArray diff = loadedGradient.sub(computedGradient).mul(loadedGradient.sub(computedGradient));
-                if (diff.sumNumber().doubleValue() > epsilon)
-                    return false;
+    public void loadModels() throws Exception {
+        for(File modelDir : testDirectory.listFiles()) {
+            String modelType = FileUtils.readFileToString(new File(modelDir, "model_type.txt"), "UTF-8");
+            File modelFile = new File(modelDir, "model.h5");
+            Map<String,Model> models = new HashMap<>();
+            switch (modelType) {
+                case "Sequential":
+                    models.put(modelDir.getName(), KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath(), false));
+                    break;
+                case "Model":
+                    models.put(modelDir.getName(), KerasModelImport.importKerasModelAndWeights(modelFile.getAbsolutePath()));
+                    break;
+                case "Functional":
+                    models.put(modelDir.getName(), KerasModelImport.importKerasModelAndWeights(modelFile.getAbsolutePath()));
+                    break;
+                default:
+                    throw new Exception("Unknown model type: " + modelType);
             }
         }
-        return true;
     }
+
+
 }

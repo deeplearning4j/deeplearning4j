@@ -41,11 +41,13 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     protected IWeightInit weightInitFnRecurrent;
     protected RNNFormat rnnDataFormat;
+    protected boolean useBias = true;
 
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
         this.weightInitFnRecurrent = builder.weightInitFnRecurrent;
         this.rnnDataFormat = builder.rnnDataFormat;
+        this.useBias = builder.useBias;
     }
 
     @Override
@@ -86,6 +88,12 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     @Getter
     @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+
+        /**
+         * If true (default = true): include bias parameters in the model.
+         */
+        protected boolean useBias = true;
 
         /**
          * Set the format of data expected by the RNN. NCW = [miniBatchSize, size, timeSeriesLength],

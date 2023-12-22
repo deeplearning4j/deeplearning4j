@@ -320,11 +320,6 @@ public class KerasLayer {
 
             /* Check for parameters in layer for which we don't have weights. */
             paramsInLayer.removeAll(paramsInKerasLayer);
-            if (!paramsInLayer.isEmpty()) {
-                String joinedParamsInLayer = StringUtils.join(paramsInLayer, ", ");
-                throw new InvalidKerasConfigurationException(
-                        msg + "(no stored weights for parameters: " + joinedParamsInLayer + ")");
-            }
 
             /* Check for parameters NOT in layer for which we DO have weights. */
             paramsInKerasLayer.removeAll(layer.paramTable().keySet());
@@ -338,6 +333,9 @@ public class KerasLayer {
             for (String paramName : layer.paramTable().keySet()) {
                 try {
                     long[] dl4jWeights = layer.paramTable().get(paramName).shape();
+                    if(!weights.containsKey(paramName)) {
+                        throw new IllegalArgumentException("No weights found for parameter " + paramName + " in layer " + kerasLayerName);
+                    }
                     long[] kerasWeights = weights.get(paramName).shape();
                     INDArray variable = this.weights.get(paramName);
                     if(!Arrays.equals(dl4jWeights,kerasWeights) &&
