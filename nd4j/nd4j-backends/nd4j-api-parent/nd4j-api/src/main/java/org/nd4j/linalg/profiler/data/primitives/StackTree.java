@@ -23,6 +23,10 @@ package org.nd4j.linalg.profiler.data.primitives;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.nd4j.common.com.scalified.tree.TraversalAction;
+import org.nd4j.common.com.scalified.tree.TreeNode;
+import org.nd4j.common.com.scalified.tree.multinode.LinkedMultiTreeNode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,47 +34,64 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class StackTree {
-    protected Map<String, StackNode> basement = new HashMap<>();
+
+    private TreeNode<StackTraceElement> root;
+    private TreeNode<StackTraceElement> lastNodeAdded;
     protected AtomicLong eventsCount = new AtomicLong(0);
-    protected Map<StackDescriptor, ComparableAtomicLong> branches = new HashMap<>();
     @Getter
     protected StackDescriptor lastDescriptor;
 
     public StackTree() {
         //
+
     }
 
     public String renderTree(boolean displayCounts) {
         StringBuilder builder = new StringBuilder();
 
-        // we'll always have single entry here, but let's keep loop here
-        for (StackNode cNode : basement.values()) {
-            cNode.traverse(0, displayCounts);
-        }
+        TraversalAction<TreeNode<StackTraceElement>> action = new TraversalAction<TreeNode<StackTraceElement>>() {
+            @Override
+            public void perform(TreeNode<StackTraceElement> node) {
+                builder.append(StringUtils.repeat('\t',node.level()));
+                builder.append(node.data().toString() + "\n");
+            }
 
+            @Override
+            public boolean isCompleted() {
+                return false; // return true in order to stop traversing
+            }
+        };
+
+
+        root.traversePreOrder(action);
         return builder.toString();
     }
 
-    public void consumeStackTrace(@NonNull StackDescriptor descriptor) {
-        consumeStackTrace(descriptor, 1);
-    }
 
     public void consumeStackTrace(@NonNull StackDescriptor descriptor, long increment) {
         eventsCount.incrementAndGet();
 
         lastDescriptor = descriptor;
 
-        if (!branches.containsKey(descriptor))
-            branches.put(descriptor, new ComparableAtomicLong(0));
+        if(root == null) {
+            root = new LinkedMultiTreeNode<>(descriptor.getStackTrace()[0]);
+            lastNodeAdded = root;
+        }
+        //traverse the stack trace looking for the node first
+        //linking each element from the previous index
+        //we can't just add it to the root
+        //because we need to traverse the stack trace
 
-        branches.get(descriptor).incrementAndGet();
 
-        String entry = descriptor.getEntryName();
-        if (!basement.containsKey(entry))
-            basement.put(entry, new StackNode(entry));
-
-        // propagate stack trace across tree
-        basement.get(entry).consume(descriptor, 0, increment);
+        for(int i = 1; i < descriptor.getStackTrace().length; i++) {
+            StackTraceElement element = descriptor.getStackTrace()[i];
+            TreeNode<StackTraceElement> node = root.find(element);
+            if(node == null) {
+                node = new LinkedMultiTreeNode<>(element);
+                lastNodeAdded.add(node);
+                lastNodeAdded = node;
+            }
+        }
     }
 
     public long getTotalEventsNumber() {
@@ -78,12 +99,11 @@ public class StackTree {
     }
 
     public int getUniqueBranchesNumber() {
-        return branches.size();
+        return 1;
     }
 
     public void reset() {
-        basement.clear();
+        root = null;
         eventsCount.set(0);
-        branches.clear();
     }
 }

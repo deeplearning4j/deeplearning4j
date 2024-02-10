@@ -32,8 +32,13 @@ import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 @Slf4j
 public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
+
     public CpuWorkspaceManager() {
         super();
+    }
+
+    public CpuWorkspaceManager(@NonNull WorkspaceConfiguration defaultConfiguration) {
+        super(defaultConfiguration);
     }
 
     protected MemoryWorkspace newWorkspace(WorkspaceConfiguration configuration) {

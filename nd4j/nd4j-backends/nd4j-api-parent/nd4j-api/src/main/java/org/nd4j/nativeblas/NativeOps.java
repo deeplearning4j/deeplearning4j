@@ -1340,14 +1340,12 @@ public interface NativeOps {
                                       PointerPointer specialShapeInfo);
 
 
-
-    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-    void setShapeBuffer( LongPointer inputShapeData, int dt, LongPointer bufferToSet);
-    void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-    void setShapeBuffer( LongBuffer inputShapeData, int dt, LongBuffer bufferToSet);
-    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/, boolean isEmpty/*=false*/);
-    void setShapeBuffer( long[] inputShapeData, int dt, long[] bufferToSet);
-
+     void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/,@Cast("bool") boolean isEmpty/*=false*/,@Cast("bool") boolean isView/*=false*/);
+     void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet);
+     void setShapeBuffer(@Cast("sd::LongType*") LongBuffer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/,@Cast("bool") boolean isEmpty/*=false*/,@Cast("bool") boolean isView/*=false*/);
+     void setShapeBuffer(@Cast("sd::LongType*") LongBuffer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongBuffer bufferToSet);
+     void setShapeBuffer(@Cast("sd::LongType*") long[] inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") long[] bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/,@Cast("bool") boolean isEmpty/*=false*/,@Cast("bool") boolean isView/*=false*/);
+     void setShapeBuffer(@Cast("sd::LongType*") long[] inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") long[] bufferToSet);
 
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);

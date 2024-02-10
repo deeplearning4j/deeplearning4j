@@ -134,7 +134,6 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnn3DPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.util.IdentityLayer;
-import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
 import org.deeplearning4j.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.preprocessors.ReshapePreprocessor;
@@ -213,7 +212,7 @@ public class DTypeTests extends BaseDL4JTest {
         for (ClassPath.ClassInfo ci : info) {
             Class<?> clazz = DL4JClassLoading.loadClassByName(ci.getName());
 
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || TFOpLayer.class == clazz) {
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface()) {
                 // Skip TFOpLayer here - dtype depends on imported model dtype
                 continue;
             }

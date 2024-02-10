@@ -65,12 +65,6 @@ import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.heartbeat.Heartbeat;
-import org.nd4j.linalg.heartbeat.reports.Environment;
-import org.nd4j.linalg.heartbeat.reports.Event;
-import org.nd4j.linalg.heartbeat.reports.Task;
-import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
-import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
@@ -431,17 +425,6 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertTrue(prediction.get(0) != null);
     }
 
-    @Test
-    @Disabled
-    @DisplayName("Test Cid")
-    void testCid() throws Exception {
-        System.out.println(EnvironmentUtils.buildCId());
-        Environment environment = EnvironmentUtils.buildEnvironment();
-        environment.setSerialVersionID(EnvironmentUtils.buildCId());
-        Task task = TaskUtils.buildTask(Nd4j.create(new double[] { 1, 2, 3, 4, 5, 6 }, new long[] { 1, 6 }));
-        Heartbeat.getInstance().reportEvent(Event.STANDALONE, environment, task);
-        Thread.sleep(25000);
-    }
 
     @Test
     @DisplayName("Test Output")

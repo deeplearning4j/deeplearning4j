@@ -49,6 +49,16 @@ public class DummyWorkspace implements MemoryWorkspace {
         return null;
     }
 
+    @Override
+    public void setAssociatedEnumType(Enum enumType) {
+
+    }
+
+    @Override
+    public Enum getAssociatedEnumType() {
+        return null;
+    }
+
     /**
      * This method returns Id of this workspace
      *

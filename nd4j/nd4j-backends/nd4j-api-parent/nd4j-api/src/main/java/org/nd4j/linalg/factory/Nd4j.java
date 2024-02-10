@@ -173,71 +173,7 @@ public class Nd4j {
      */
     public static final NDImage image = new NDImage();
 
-    /**
-     * Bitwise namespace - operations related to bitwise manipulation of arrays
-     */
-    public static NDBitwise bitwise() {
-        return bitwise;
-    }
 
-    /**
-     * Math namespace - general mathematical operations
-     */
-    public static NDMath math() {
-        return math;
-    }
-
-
-    /**
-     * Linalg namespace - operations related to linear algebra (lapack operations)
-     */
-    public static NDBase base() { return base; }
-
-    /**
-     * Linalg namespace - operations related to linear algebra (lapack operations)
-     */
-    public static NDLinalg linalg() { return linalg; }
-
-
-    /**
-     * Random namespace - (pseudo) random number generation methods
-     */
-    public static NDRandom random() {
-        return random;
-    }
-
-    /**
-     * Neural network namespace - operations related to neural networks
-     */
-    public static NDNN nn() {
-        return nn;
-    }
-
-    /**
-     * Loss function namespace - operations related to loss functions.
-     */
-    public static NDLoss loss() { return loss; }
-
-    /**
-     * Convolutional network namespace - operations related to convolutional neural networks
-     */
-    public static NDCNN cnn(){
-        return cnn;
-    }
-
-    /**
-     * Recurrent neural network namespace - operations related to recurrent neural networks
-     */
-    public static NDRNN rnn(){
-        return rnn;
-    }
-
-    /**
-     * Image namespace - operations related to images
-     */
-    public static NDImage image(){
-        return image;
-    }
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";
     private final static String CONVOLUTION_OPS = "convops";
@@ -312,6 +248,72 @@ public class Nd4j {
         fallbackMode = new AtomicBoolean(false);
         Nd4j nd4j = new Nd4j();
         nd4j.initContext();
+    }
+
+    /**
+     * Bitwise namespace - operations related to bitwise manipulation of arrays
+     */
+    public static NDBitwise bitwise() {
+        return bitwise;
+    }
+
+    /**
+     * Math namespace - general mathematical operations
+     */
+    public static NDMath math() {
+        return math;
+    }
+
+
+    /**
+     * Linalg namespace - operations related to linear algebra (lapack operations)
+     */
+    public static NDBase base() { return base; }
+
+    /**
+     * Linalg namespace - operations related to linear algebra (lapack operations)
+     */
+    public static NDLinalg linalg() { return linalg; }
+
+
+    /**
+     * Random namespace - (pseudo) random number generation methods
+     */
+    public static NDRandom random() {
+        return random;
+    }
+
+    /**
+     * Neural network namespace - operations related to neural networks
+     */
+    public static NDNN nn() {
+        return nn;
+    }
+
+    /**
+     * Loss function namespace - operations related to loss functions.
+     */
+    public static NDLoss loss() { return loss; }
+
+    /**
+     * Convolutional network namespace - operations related to convolutional neural networks
+     */
+    public static NDCNN cnn(){
+        return cnn;
+    }
+
+    /**
+     * Recurrent neural network namespace - operations related to recurrent neural networks
+     */
+    public static NDRNN rnn(){
+        return rnn;
+    }
+
+    /**
+     * Image namespace - operations related to images
+     */
+    public static NDImage image(){
+        return image;
     }
 
 
@@ -1637,6 +1639,27 @@ public class Nd4j {
     }
 
 
+    /**
+     * Create a buffer based on the data opType
+     * @param data the data to create the buffer with
+     * @return
+     */
+    public static DataBuffer createBuffer(String[] data) {
+        return DATA_BUFFER_FACTORY_INSTANCE.createTypedBuffer(data, DataType.UTF8);
+    }
+
+    /**
+     * Create a buffer based on the dataType.
+     * The data type must be a valid string data type such as:
+     * {@link DataType#UTF8} {@link DataType#UTF16}
+     * {@link DataType#UTF32}
+     * @param data the data to create the buffer with
+     * @param dataType the opType to create the buffer with
+     * @return
+     */
+    public static DataBuffer createTypedBuffer(String[] data,DataType dataType) {
+        return DATA_BUFFER_FACTORY_INSTANCE.createTypedBuffer(data, dataType);
+    }
 
 
     /**
@@ -4191,6 +4214,23 @@ public class Nd4j {
         return INSTANCE.create(data, newShape, newStride, offset, ordering);
     }
 
+
+    /**
+     * See {@link #create(DataBuffer data, long[], long[], long, long, char )}
+     */
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering,long ews,boolean isView) {
+        checkShapeValues(newShape);
+        return INSTANCE.create(data, newShape, newStride, offset,ews, ordering,isView);
+    }
+
+    /**
+     * See {@link #create(DataBuffer data, long[], long[], long, long, char )}
+     */
+    public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering,boolean isView) {
+        checkShapeValues(newShape);
+        return INSTANCE.create(data,newShape,newStride,offset,newStride[newStride.length - 1],ordering,isView);
+    }
+
     /**
      * See {@link #create(DataBuffer data, long[], long[], long, long, char )}
      */
@@ -4991,7 +5031,8 @@ public class Nd4j {
             dimension += toConcat[0].rank();
         }
 
-        return INSTANCE.concat(dimension, toConcat);
+        INDArray ret =  INSTANCE.concat(dimension, toConcat);
+        return ret;
     }
 
     /**
@@ -5255,7 +5296,6 @@ public class Nd4j {
     @SuppressWarnings({"unchecked", "Duplicates"})
     public void initWithBackend(Nd4jBackend backend) {
         VersionCheck.checkVersions();
-
         try {
             if (System.getProperties().getProperty("backends") != null
                     && !System.getProperties().getProperty("backends").contains(backend.getClass().getName())) {

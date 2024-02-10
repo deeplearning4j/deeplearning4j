@@ -36,7 +36,7 @@
 #include <cstring>
 
 #include "system/pairwise_util.h"
-
+#ifndef __JAVACPP_HACK__
 namespace shape {
 
 /**
@@ -479,6 +479,13 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *stride(const sd::LongType *buffer);
  * Compute the length of the given shape
  */
 SD_LIB_EXPORT SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInfo);
+
+
+/**
+ * Whether the given shape info buffer
+ * is a view or not.
+ */
+SD_LIB_EXPORT SD_HOST_DEVICE bool isView(const sd::LongType *shapeInfo);
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType length(const sd::LongType *shapeInfo);
 
@@ -2558,5 +2565,5 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadElementWiseStride(sd::LongType *sh
 }
 
 }  // namespace shape
-
+#endif
 #endif /* SHAPE_H_ */

@@ -97,7 +97,8 @@ SD_HOST const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagS
       ARRAY_UTF32,
       ARRAY_EXTRAS,
       ARRAY_UNSIGNED,
-      ARRAY_HAS_PADDED_BUFFER
+      ARRAY_HAS_PADDED_BUFFER,
+      ARRAY_IS_VIEW
   };
 
   const char* flagsStrings[] = {
@@ -124,7 +125,8 @@ SD_HOST const char *ArrayOptions::enumerateSetFlagsForFlags(const LongType flagS
       "ARRAY_UTF32",
       "ARRAY_EXTRAS",
       "ARRAY_UNSIGNED",
-      "ARRAY_HAS_PADDED_BUFFER"
+      "ARRAY_HAS_PADDED_BUFFER",
+      "ARRAY_IS_VIEW"
   };
 
   std::string flags;
@@ -351,11 +353,17 @@ SD_HOST ArrayType ArrayOptions::arrayType(const sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
-SD_HOST_DEVICE ArrayType ArrayOptions::arrayType(sd::LongType *shapeInfo) {
+SD_HOST ArrayType ArrayOptions::arrayType(sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
+SD_HOST bool ArrayOptions::isView(sd::LongType *shapeInfo) {
+  return hasPropertyBitSet(shapeInfo, ARRAY_IS_VIEW);
+}
 
+SD_HOST void ArrayOptions::toggleIsView(sd::LongType *shapeInfo) {
+    togglePropertyBit(shapeInfo, ARRAY_IS_VIEW);
+}
 
 SD_HOST bool ArrayOptions::togglePropertyBit(sd::LongType *shapeInfo, LongType property) {
   return togglePropertyBitForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], property);
@@ -569,6 +577,7 @@ SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, c
       dataType == sd::DataType::UINT64) {
     ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_UNSIGNED);
     extraStorage = ret;
+    return extraStorage;
   }
 
 

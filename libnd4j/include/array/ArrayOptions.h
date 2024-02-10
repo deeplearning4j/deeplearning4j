@@ -34,6 +34,10 @@
 
 #include <initializer_list>
 #include <vector>
+
+
+//notice how each flag value is multiplied by 2
+//if they are too close in value values will clash.
 #define ARRAY_SPARSE 2
 #define ARRAY_COMPRESSED 4
 #define ARRAY_EMPTY 8
@@ -89,6 +93,9 @@
 
 // flag for arrays with padded buffer
 #define ARRAY_HAS_PADDED_BUFFER (1 << 25)
+//flags for when array has a view or not
+#define ARRAY_IS_VIEW 33554432
+
 
 #define DEFAULT_FLAG 0
 
@@ -118,6 +125,9 @@ class SD_LIB_EXPORT ArrayOptions {
 
   static SD_HOST ArrayType arrayType(LongType *shapeInfo);
   static SD_HOST ArrayType arrayType(const LongType *shapeInfo);
+
+  static SD_HOST bool isView(LongType *shapeInfo);
+  static SD_HOST void toggleIsView(LongType *shapeInfo);
 
   static SD_HOST_DEVICE SparseType sparseType(LongType *shapeInfo);
   static SD_HOST SparseType sparseType(const LongType *shapeInfo);

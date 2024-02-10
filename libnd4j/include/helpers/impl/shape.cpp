@@ -43,7 +43,7 @@ SD_LIB_EXPORT SD_HOST const char *shapeToString(const sd::LongType *shapeInfo, c
     shapeInfoString += "Rank: ";
     shapeInfoString += std::to_string(rank);
     auto ret = new std::string(shapeInfoString.c_str());
-    return shapeInfoString.c_str();
+    return ret->c_str();
   }
 
   shapeInfoString += " Rank ";
@@ -235,16 +235,27 @@ SD_LIB_EXPORT SD_HOST sd::LongType tadLength(const sd::LongType *shapeInfo, cons
   }
 }
 
-#ifndef SD_CUDA
+/**
+ * Length of a tad given
+ * the shape information
+ */
+
+SD_LIB_EXPORT SD_HOST_DEVICE bool isEmpty(const sd::LongType *shapeInfo) {
+  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+}
 
 /**
  * Length of a tad given
  * the shape information
  */
 
-SD_LIB_EXPORT SD_HOST bool isEmpty(const sd::LongType *shapeInfo) {
-  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+SD_LIB_EXPORT SD_HOST_DEVICE bool isView(const sd::LongType *shapeInfo) {
+  return ((shape::extra(shapeInfo) & ARRAY_IS_VIEW) == ARRAY_IS_VIEW);
 }
+
+#ifndef SD_CUDA
+
+
 
 SD_LIB_EXPORT SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
   sd::LongType rank = shape::rank(shapeBuffer);

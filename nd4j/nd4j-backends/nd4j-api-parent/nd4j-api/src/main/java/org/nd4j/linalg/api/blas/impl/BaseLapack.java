@@ -88,7 +88,7 @@ public abstract class BaseLapack implements Lapack {
             throw new ND4JArraySizeException();
 
         byte uplo = (byte) (lower ? 'L' : 'U'); // upper or lower part of the factor desired ?
-        int n = (int) A.columns();
+        int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());
@@ -132,8 +132,8 @@ public abstract class BaseLapack implements Lapack {
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        int m = (int) A.rows();
-        int n = (int) A.columns();
+        int m = A.rows();
+        int n = A.columns();
 
         INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
                         Nd4j.getShapeInfoProvider().createShapeInformation(new long[] {1, 1}, A.dataType()).getFirst());

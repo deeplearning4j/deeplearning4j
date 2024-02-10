@@ -276,6 +276,17 @@ public class ND4JSystemProperties {
      */
     public final static String BACKEND_PRIORITY_AURORA = "org.nd4j.aurora.priority";
 
+
+    /**
+     * Related to nd4j array events.
+     * When determining the point of invocation or point of origin:
+     * aka the points where the ndarray event was triggered
+     * or the originating call site that kicked off the event
+     * These properties represent patterns of regexes to exclude
+     * from scanning when detrermining where the ndarray event was triggered.
+     */
+    public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
+
     private ND4JSystemProperties() {
     }
 }

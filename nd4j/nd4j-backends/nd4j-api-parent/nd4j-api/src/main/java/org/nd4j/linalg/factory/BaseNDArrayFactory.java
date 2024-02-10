@@ -187,8 +187,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     @Override
-    public INDArray create(int[] ints, int[] ints1, int[] stride, long offset) {
-        return create(Nd4j.createBuffer(ints), ints1, stride, offset);
+    public INDArray create(int[] ints, int[] shape, int[] stride, long offset) {
+        return create(Nd4j.createBuffer(ints), shape, stride, offset);
     }
 
     @Override

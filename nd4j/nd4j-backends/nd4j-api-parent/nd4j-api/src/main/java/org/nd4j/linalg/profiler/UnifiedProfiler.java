@@ -42,6 +42,8 @@ public class UnifiedProfiler {
 
     private static final UnifiedProfiler INSTANCE = new UnifiedProfiler();
 
+
+
     protected UnifiedProfiler() {
 
     }
@@ -69,7 +71,6 @@ public class UnifiedProfiler {
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
         EventLogger.getInstance().setEnabled(true);
-        OpContextTracker.getInstance().setEnabled(true);
     }
 
     public void stop() {
@@ -85,17 +86,6 @@ public class UnifiedProfiler {
         Nd4j.getExecutioner().setProfilingConfig(profilerConfig);
         OpProfiler.getInstance().setConfig(profilerConfig);
         EventLogger.getInstance().setEnabled(false);
-        OpContextTracker.getInstance().setEnabled(false);
-
-
-    }
-
-    /**
-     * Information about op contexts.
-     * @return
-     */
-    public String opContextInfo() {
-        return OpContextTracker.getInstance().printStats(false);
     }
 
     /**
@@ -128,7 +118,6 @@ public class UnifiedProfiler {
         stringBuilder.append(AllocationsTracker.getInstance().memoryInfo());
         stringBuilder.append(MemoryTracker.getInstance().memoryPerDevice());
         stringBuilder.append(bandwidthInfo());
-        stringBuilder.append(OpContextTracker.getInstance().printStats(false));
         return stringBuilder.toString();
     }
 

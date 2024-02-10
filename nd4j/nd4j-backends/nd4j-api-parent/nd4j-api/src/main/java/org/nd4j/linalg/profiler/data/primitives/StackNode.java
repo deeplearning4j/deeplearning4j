@@ -42,23 +42,23 @@ public class StackNode implements Comparable<StackNode> {
         return entries.values();
     }
 
-    public void traverse(int ownLevel, boolean displayCounts) {
-        StringBuilder builder = new StringBuilder();
-
+    public String traverse(int ownLevel, boolean displayCounts,StringBuilder stringBuilder) {
+        if(stringBuilder == null)
+            stringBuilder = new StringBuilder();
         for (int x = 0; x < ownLevel; x++) {
-            builder.append("   ");
+            stringBuilder.append("   ");
         }
 
-        builder.append("").append(nodeURI);
+        stringBuilder.append("").append(nodeURI);
 
         if (displayCounts)
-            builder.append("  ").append(counter.get()).append(" us");
+            stringBuilder.append("  ").append(counter.get()).append(" us");
 
-        System.out.println(builder.toString());
 
         for (StackNode node : entries.values()) {
-            node.traverse(ownLevel + 1, displayCounts);
+            stringBuilder.append(node.traverse(ownLevel + 1, displayCounts,stringBuilder));
         }
+        return stringBuilder.toString();
     }
 
     public void consume(@NonNull StackDescriptor descriptor, int lastLevel) {

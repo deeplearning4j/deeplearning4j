@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
-import org.deeplearning4j.nn.modelimport.keras.layers.KerasTFOpLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.attention.KerasAttentionLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
@@ -331,7 +330,8 @@ public class KerasLayerUtils {
         } else if (conf instanceof Keras2LayerConfiguration) {
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration) conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())) {
-                layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
+                //this was never really tested/worked better to remove/redo
+                throw new UnsupportedKerasConfigurationException("Tensorflow op layers are not supported yet.");
             }
         }
         if (layer == null) {

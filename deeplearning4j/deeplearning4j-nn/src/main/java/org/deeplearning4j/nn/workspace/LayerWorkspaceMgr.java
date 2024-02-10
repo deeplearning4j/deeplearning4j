@@ -20,18 +20,15 @@
 
 package org.deeplearning4j.nn.workspace;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.guava.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.workspace.BaseWorkspaceMgr;
-import org.nd4j.linalg.workspace.WorkspaceMgr;
+import org.nd4j.shade.guava.base.Preconditions;
 
 import java.util.*;
 
@@ -102,11 +99,11 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return wsm;
     }
 
-    public static LayerWorkspaceMgr noWorkspaces(){
+    public static LayerWorkspaceMgr noWorkspaces() {
         return builder().defaultNoWorkspace().build();
     }
 
-    public static LayerWorkspaceMgr noWorkspacesImmutable(){
+    public static LayerWorkspaceMgr noWorkspacesImmutable() {
         return NO_WS_IMMUTABLE;
     }
 

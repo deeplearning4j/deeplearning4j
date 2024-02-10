@@ -21,5 +21,6 @@ package org.nd4j.linalg.profiler.data.eventlogger;
 
 public enum EventType {
     ALLOCATION,
-    DEALLOCATION
+    DEALLOCATION,
+    OP_EXECUTION
 }

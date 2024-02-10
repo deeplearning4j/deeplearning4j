@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -35,10 +34,8 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CpuOpContext extends BaseOpContext implements OpContext, Deallocatable {
@@ -54,19 +51,12 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     public CpuOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().allocateOpContext(this);
-        }
 
     }
 
     @Override
     public void close() {
      //   purge();
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().deallocateContext(this);
-            Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
-        }
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
     }
@@ -165,9 +155,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_in.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateInput(array,this);
-            }
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
@@ -186,9 +173,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateOutput(array,this);
-            }
         }
 
         PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);

@@ -1183,6 +1183,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-toolchains-plugin</artifactId>
+                        <version>3.1.0</version>
                     </plugin>
                 </plugins>
             </build>
@@ -1392,32 +1393,5 @@
             </properties>
         </profile>
 
-        <profile>
-            <id>cuda</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            <property>
-               <name>libnd4j.chip</name>
-                <value>cuda</value>
-            </property>
-            </activation>
-            <modules>
-                <module>libnd4j</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>cpu</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>!cuda</value>
-                </property>
-            </activation>
-            <modules>
-                <module>libnd4j</module>
-            </modules>
-        </profile>
     </profiles>
 </project>

@@ -2625,7 +2625,7 @@ void convertTypes(Pointer *extras, int srcType, Pointer hX, LongType N, int dstT
 
 
 
-void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
+void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) {
   if(inputShapeData == nullptr)
     THROW_EXCEPTION("setShapeBuffer: inputShapeData is null");
 
@@ -2647,7 +2647,19 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,isEmpty ? ARRAY_EMPTY : 0);
+  sd::LongType extra =  ArrayOptions::defaultFlag();
+  if(isEmpty) {
+    extra = ArrayOptions::setPropertyBitForFlagsValue(extra, ARRAY_EMPTY);
+  }
+
+  if(isView) {
+    extra = ArrayOptions::setPropertyBitForFlagsValue(extra,ARRAY_IS_VIEW);
+  }
+
+  extra = ArrayOptions::setDataTypeValue(extra,dt);
+
+
+  auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,extra);
 
   auto buffer = descriptor.toShapeInfo();
   for(LongType i = 0; i < len; i++) {

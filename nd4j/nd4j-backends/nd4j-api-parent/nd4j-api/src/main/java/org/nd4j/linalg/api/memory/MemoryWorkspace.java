@@ -62,6 +62,24 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     WorkspaceConfiguration getWorkspaceConfiguration();
 
     /**
+     * This method sets asn associated enum type
+     * to be used for logging purposes.
+     * This is mainly used with deeplearning4j's
+     * ArrayType and the dl4j network workspaces
+     * but can easily be used with any enum based type specified in the
+     * super class.
+     * @param enumType the enum type to use
+     */
+    void setAssociatedEnumType(Enum enumType);
+
+    /**
+     * This method returns associated enum type, if any
+     * @return
+     */
+    Enum getAssociatedEnumType();
+
+
+    /**
      * This method returns Type of this workspace
      *
      * @return

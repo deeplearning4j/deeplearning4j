@@ -155,7 +155,6 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
   if(isEmpty && !ArrayOptions::hasPropertyBitSet(ret, ARRAY_EMPTY)) {
     THROW_EXCEPTION("Shape builders: empty was specified was true but shape info returned false");
   } else if(!isEmpty && ArrayOptions::hasPropertyBitSet(ret, ARRAY_EMPTY)) {
-    //TODO: this was triggering.
     THROW_EXCEPTION("Shape builders: empty was specified was false but shape info returned true");
   }
   return ret;

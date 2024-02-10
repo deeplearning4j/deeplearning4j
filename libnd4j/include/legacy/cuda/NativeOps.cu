@@ -3938,19 +3938,19 @@ void setVedaDeviceLibFolder(std::string path){
 }
 
 
-void setShapeBuffer(LongType *inputShapeData, DataType dt, LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
+void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) {
   if(inputShapeData == nullptr)
     THROW_EXCEPTION("setShapeBuffer: inputShapeData is null");
 
   if(bufferToSet == nullptr)
     THROW_EXCEPTION("setShapeBuffer: bufferToSet is null");
-  LongType rank = inputShapeData[0];
+  LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     THROW_EXCEPTION("Invalid rank for shape buffer.");
   std::vector<LongType> shape;
   std::vector<LongType> strides;
   //shape, stride, data type
-  for (LongType i = 1; i < rank * 2 + 1; i++) {
+  for(LongType i = 1; i < rank * 2 + 1; i++) {
     if(i <= rank) {
       shape.push_back(inputShapeData[i]);
     } else if(shape.size() == rank) {
@@ -3963,7 +3963,7 @@ void setShapeBuffer(LongType *inputShapeData, DataType dt, LongType *bufferToSet
   auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,isEmpty ? ARRAY_EMPTY : 0);
 
   auto buffer = descriptor.toShapeInfo();
-  for (LongType i = 0; i < len; i++) {
+  for(LongType i = 0; i < len; i++) {
     bufferToSet[i] = buffer[i];
   }
 
@@ -3972,8 +3972,6 @@ void setShapeBuffer(LongType *inputShapeData, DataType dt, LongType *bufferToSet
 
   delete[] buffer;
 }
-
-
 
 void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, Pointer * buffer, Pointer * shapeInfo,
                                 Pointer * specialBuffer, Pointer * specialShapeInfo) {

@@ -72,7 +72,9 @@ public enum DataType {
     UINT16,
     UINT32,
     UINT64,
-    UNKNOWN;
+    UNKNOWN,
+    UTF16,
+    UTF32;
 
     public static final DataType FLOAT16 = DataType.HALF;
     public static final DataType INT32 = DataType.INT;
@@ -105,6 +107,9 @@ public enum DataType {
             case 13: return UINT32;
             case 14: return UINT64;
             case 17: return BFLOAT16;
+            case 50: return UTF8;
+            case 51: return UTF16;
+            case 52: return UTF32;
             case 100: return DataType.UNKNOWN;
             default: throw new UnsupportedOperationException("Unknown data type: [" + type + "]");
         }
@@ -126,6 +131,8 @@ public enum DataType {
             case UINT64: return 14;
             case BFLOAT16: return 17;
             case UTF8: return 50;
+            case UTF16: return 51;
+            case UTF32: return 52;
             default: throw new UnsupportedOperationException("Non-covered data type: [" + this + "]");
         }
     }
@@ -170,6 +177,8 @@ public enum DataType {
             case UBYTE:
             case BOOL:
             case UTF8:
+            case UTF16:
+            case UTF32:
             case COMPRESSED:
             case UINT16:
             case UINT32:
@@ -200,6 +209,8 @@ public enum DataType {
             case UBYTE:
             case BOOL:
             case UTF8:
+            case UTF16:
+            case UTF32:
             case COMPRESSED:
             case UINT16:
             case UINT32:
@@ -233,6 +244,8 @@ public enum DataType {
             case BOOL:
                 return 1;
             case UTF8:
+            case UTF16:
+            case UTF32:
             case COMPRESSED:
             case UNKNOWN:
             default:
@@ -240,6 +253,11 @@ public enum DataType {
         }
     }
 
+    /**
+     * Returns the data type for a given numpy type
+     * @param numpyDtypeName the numpy type name
+     * @return the data type for the given numpy type
+     */
     public static DataType fromNumpy(String numpyDtypeName) {
         switch (numpyDtypeName.toLowerCase()) {
             case "bool": return BOOL;

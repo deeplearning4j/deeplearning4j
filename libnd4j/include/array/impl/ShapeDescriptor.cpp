@@ -185,7 +185,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape info cannot be null!");
   }
 
-  int rankVal = shape::rank(shapeInfo);
+  sd::LongType rankVal = shape::rank(shapeInfo);
 
   if(rankVal < 0 || rankVal > SD_MAX_RANK) {
     std::string errorMessage;
@@ -205,6 +205,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     THROW_EXCEPTION(errorMessage.c_str());
 
   }
+
   _ews = shape::elementWiseStride(shapeInfo);
   _rank = rankVal;
   _extraProperties = shape::extra(shapeInfo);

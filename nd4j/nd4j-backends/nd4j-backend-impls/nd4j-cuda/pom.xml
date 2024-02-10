@@ -53,6 +53,12 @@
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
             <artifactId>nd4j-cuda-12.1-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -63,15 +69,6 @@
             <version>${dependency.version}</version>
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <classifier>${dependency.platform}</classifier>
-
-            <type>zip</type>
         </dependency>
 
         <dependency>
@@ -100,69 +97,8 @@
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <trimStackTrace>false</trimStackTrace>
-                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
-                    <forkCount>${cpu.core.count}</forkCount>
-                    <reuseForks>false</reuseForks>
-                    <environmentVariables>
-                        <LD_LIBRARY_PATH>
-                            ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
-                        </LD_LIBRARY_PATH>
-                    </environmentVariables>
-                    <testSourceDirectory>src/test/java</testSourceDirectory>
-                    <includes>
-                        <include>*.java</include>
-                    </includes>
-                    <systemPropertyVariables>
-                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
-                        </org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>
-                            org.nd4j.linalg.jcublas.JCublasBackend
-                        </org.nd4j.linalg.tests.backendstorun>
-                    </systemPropertyVariables>
-                    <!--
-                        Maximum heap size was set to 6g, as a minimum required value for tests run.
-                        Depending on a build machine, default value is not always enough.
-                    -->
-                    <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}
-                    </argLine>
 
-                </configuration>
-            </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>javacpp-parser</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <skipMain>${javacpp.parser.skip}</skipMain>
-                            <includes>
-                                <include>org/nd4j/linalg/jcublas/bindings/**.java</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -285,6 +221,36 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/linalg/nativecpu/bindings/*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <compilerArgs>
+                        <arg>--add-exports</arg>
+                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                        <arg>--add-opens</arg>
+                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
 
         </plugins>

@@ -2028,13 +2028,13 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
 ////////////////////////////////////////////////////////////////////////
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 const void *NDArray::buffer() const {
-  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 void *NDArray::buffer() {
-  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
+  return _buffer != nullptr && _buffer->primary() != nullptr ? static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

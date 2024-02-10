@@ -298,7 +298,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr){
         if(training && !dropoutApplied && layerConf().getIDropout() != null) {
             INDArray result;
-            if(inputModificationAllowed){
+            if(inputModificationAllowed) {
                 result = input;
             } else {
                 result = workspaceMgr.createUninitialized(ArrayType.INPUT, input.dataType(), input.shape(), input.ordering());
@@ -428,9 +428,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     public void assertInputSet(boolean backprop) {
         if(input == null){
-            if(backprop){
+            if(backprop) {
                 throw new IllegalStateException("Cannot perform backprop in layer " + getClass().getSimpleName()
-                        + ": layer input field is not set");
+                        + ": layer input field is not set. In order to set this input, ensure we call feedForward(...) or activate(...) first. Ensure clearInput (the second boolean argument) is false. like feedForward(input,false)");
             } else {
                 throw new IllegalStateException("Cannot perform forward pass in layer " + getClass().getSimpleName()
                         + ": layer input field is not set");

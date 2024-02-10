@@ -51,12 +51,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Basic Nd4j workspace implementation
+ */
 @Slf4j
+
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter
     protected int deviceId;
     @Getter
     protected Long threadId;
+
+    //mainly used with layerworkspace manager and for logging
+    //types
+    @Getter
+    @Setter
+    protected Enum associatedEnumType;
 
     protected Type workspaceType = Type.SCOPED;
 
@@ -73,7 +83,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected MemoryManager memoryManager;
     protected WorkspaceMgr workspaceMgr;
-
     protected AtomicBoolean isLearning = new AtomicBoolean(true);
     protected AtomicBoolean isUsed = new AtomicBoolean(true);
 
@@ -609,7 +618,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Override
     public void close() {
         if(workspaceMgr != null) {
-            workspaceMgr.recordWorkspaceClose(this);
+            workspaceMgr.recordWorkspaceClose(this, this.associatedEnumType);
         }
         // first we check if this workspace was borrowed. if yes - just close without reset.
         if (isBorrowed.get()) {

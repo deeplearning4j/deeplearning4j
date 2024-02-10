@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -47,9 +48,13 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Optional;
-import org.nd4j.linalg.profiler.OpProfiler;
-import org.nd4j.linalg.profiler.ProfilerConfig;
+import org.nd4j.linalg.profiler.*;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
+import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
+import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 
 import java.util.*;
 
@@ -57,11 +62,13 @@ import java.util.*;
 public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: https://deeplearning4j.konduit.ai/nd4j/reference#workspaces-scope-panic";
+    public static Nd4jEventLog eventLog = new DefaultNd4jEventLog();
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
 
     protected AtomicBoolean verbose = new AtomicBoolean(false);
     protected AtomicBoolean debug = new AtomicBoolean(false);
+
 
     public DefaultOpExecutioner() {}
 
@@ -74,19 +81,20 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
      * @param executioner the op executioner
      */
     public static void execAssign(TransformOp op, OpContext oc, OpExecutioner executioner) {
-        if(op.x().length() == op.z().length()
+        if((op.x().length() == op.z().length()
                 || (op.x().size(0) == 1 &&
                 op.z().rank() == 1) ||
                 (op.x().rank() == 1 && op.z().rank() == 2
-                        && op.z().size(0) == 1)) {
-           try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-               LinearCopy linearCopy = new LinearCopy();
-               linearCopy.addInputArgument(op.x());
-               linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
-               linearCopy.addOutputArgument(op.z());
-               executioner.exec(linearCopy);
-               return;
-           }
+                        && op.z().size(0) == 1)) && !op.x().isView() &&
+                !op.z().isView()) {
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                LinearCopy linearCopy = new LinearCopy();
+                linearCopy.addInputArgument(op.x());
+                linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
+                linearCopy.addOutputArgument(op.z());
+                executioner.exec(linearCopy);
+                return;
+            }
         } else {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
@@ -437,6 +445,42 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Deprecated
     public void profilingHookOut(Op op, OpContext oc, long timeStart) {
+        if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            op.z().addEvent(NDArrayEvent.builder()
+                    .ndArrayEventType(NDArrayEventType.BEFORE_OP_OUTPUT)
+                    .stackTrace(Thread.currentThread().getStackTrace())
+                    .build());
+
+            if(op.x() != null) {
+                INDArray arr = op.x();
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .childArrayId(arr.getId())
+                        .parentWorkspace(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .ndArrayEventType(NDArrayEventType.OP_INPUT)
+                        .arrayWriteCreationStackTrace(arr.allocationTrace())
+                        .build();
+                arr.addEvent(event);
+
+
+            }
+
+            if(op.y() != null) {
+                INDArray arr = op.y();
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .childArrayId(arr.getId())
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .ndArrayEventType(NDArrayEventType.OP_INPUT)
+                        .arrayWriteCreationStackTrace(arr.allocationTrace())
+                        .build();
+                arr.addEvent(event);
+
+            }
+
+        }
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -467,10 +511,49 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
         }
+
+        if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            op.z().addEvent(NDArrayEvent.builder()
+                    .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
+                    .stackTrace(Thread.currentThread().getStackTrace())
+                    .build());
+        }
+
+    }
+
+    @Override
+    public Nd4jEventLog getNd4jEventLog() {
+        return eventLog;
     }
 
     @Deprecated
     public void profilingHookOut(CustomOp op, OpContext oc, long timeStart) {
+        if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            for(val arr: op.outputArguments()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .ndArrayEventType(NDArrayEventType.BEFORE_OP_OUTPUT)
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .childArrayId(arr.getId())
+                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build();
+                arr.addEvent(event);
+            }
+
+            for(val arr : op.inputArguments()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .childArrayId(arr.getId())
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .ndArrayEventType(NDArrayEventType.OP_INPUT)
+                        .arrayWriteCreationStackTrace(arr.allocationTrace())
+                        .build();
+                arr.addEvent(event);
+
+            }
+
+        }
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -496,6 +579,20 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             default:
                 break;
         }
+
+        if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            for(val arr: op.outputArguments()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .childArrayId(arr.getId())
+                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build();
+                arr.addEvent(event);
+            }
+        }
+
     }
 
 
@@ -503,25 +600,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : Arrays.asList(op.x(),op.y());
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
 
-
-        for (val arr: inArgs) {
-            if(arr == null)
-                continue;
-
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Input arguments was closed before call");
-
-
-        }
-        for (val arr: outArgs) {
-            if(arr == null)
-                continue;
-
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Output arguments was closed before call");
-        }
-        if (OpProfiler.getInstance().getConfig() == null)
-            return System.nanoTime();
+        logOpArrayEventsIfNeccessary(op,inArgs ,outArgs, NDArrayEventType.BEFORE_OP_INPUT, NDArrayEventType.BEFORE_OP_OUTPUT);
 
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
                 OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
@@ -531,6 +610,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
             checkForWorkspaces(op, oc);
         }
+
+        logOpArrayEventsIfNeccessary(op,inArgs ,outArgs, NDArrayEventType.OP_INPUT, NDArrayEventType.OP_OUTPUT);
 
         return System.nanoTime();
     }
@@ -547,19 +628,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                     Arrays.toString(arg), Arrays.toString(differentialFunction.outputVariablesNames()));
         }
 
-        for (val arr: inArgs) {
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Input arguments was closed before call");
-
-
-        }
-        for (val arr: outArgs) {
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Output arguments was closed before call");
-        }
-        if (OpProfiler.getInstance().getConfig() == null)
-            return System.nanoTime();
-
+        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.BEFORE_OP_INPUT ,NDArrayEventType.BEFORE_OP_OUTPUT);
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
                 OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
             OpProfiler.getInstance().processOpCall(op);
@@ -569,90 +638,155 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             checkForWorkspaces(op, oc);
         }
 
+        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+
         return System.nanoTime();
     }
 
     public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
         Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
 
-        if (OpProfiler.getInstance().getConfig() == null) {
-            return System.nanoTime();
+        if (OpProfiler.getInstance().getConfig() != null) {
+            if (OpProfiler.getInstance().getConfig().isStackTrace() ||
+                    OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+                OpProfiler.getInstance().processOpCall(op);
+            }
+
+            if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
+                OpProfiler.getInstance().processOpCall(op, tadBuffers);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
+                checkForWorkspaces(op, null);
+            }
+
         }
 
-
-        if (OpProfiler.getInstance().getConfig().isStackTrace() ||
-                OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
-            OpProfiler.getInstance().processOpCall(op);
-        }
-
-        if (OpProfiler.getInstance().getConfig().isNotOptimalTAD()) {
-            OpProfiler.getInstance().processOpCall(op, tadBuffers);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-            checkForWorkspaces(op, null);
-        }
-
+        logOpArrayEventsIfNeccessary(op,Arrays.asList(op.x(),op.y()),Arrays.asList(op.z()), NDArrayEventType.BEFORE_OP_INPUT, NDArrayEventType.BEFORE_OP_OUTPUT);
 
         return System.nanoTime();
-    }
 
+    }
 
     public void profilingConfigurableHookOut(Op op, OpContext oc, long timeStart) {
         Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
-
-        if (OpProfiler.getInstance().getConfig() == null) {
-            return;
-        }
-        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
-            OpProfiler.getInstance().processStackCall(op, timeStart);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
-            OpProfiler.getInstance().timeOpCall(op, timeStart);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op, oc);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op, oc);
-        }
-        if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
-            if (op.z() != null) {
-                INDArrayStatistics stat = inspectArray(op.z());
-                OpProfiler.getInstance().setStatistics(stat);
-                log.info("Op name: {}; Z shapeInfo: {}; Statistics: min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
-                        op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
-                        stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
-                        stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : Arrays.asList(op.x(),op.y());
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
+        if(OpProfiler.getInstance().getConfig() != null) {
+            if(OpProfiler.getInstance().getConfig().isStackTrace()) {
+                OpProfiler.getInstance().processStackCall(op, timeStart);
             }
+            if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+                OpExecutionerUtil.checkForNaN(op, oc);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+                OpExecutionerUtil.checkForInf(op, oc);
+            }
+            if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
+                if (op.z() != null) {
+                    INDArrayStatistics stat = inspectArray(op.z());
+                    OpProfiler.getInstance().setStatistics(stat);
+                    log.info("Op name: {}; Z shapeInfo: {}; Statistics: min:{} max:{} mean:{} stdev:{} pos:{}, neg:{} zero:{} inf:{} nan:{}",
+                            op.opName(), op.z().shapeInfoJava(), stat.getMinValue(), stat.getMaxValue(), stat.getMeanValue(),
+                            stat.getStdDevValue(), stat.getCountPositive(), stat.getCountNegative(),
+                            stat.getCountZero(), stat.getCountInf(), stat.getCountNaN());
+                }
+            }
+
         }
-
-
 
         if (Nd4j.getExecutioner().isVerbose()) {
             if (op.z() != null)
                 log.info("Op name: {}; Z shapeInfo: {}; Z values: {}", op.opName(), op.z().shapeInfoJava(), firstX(op.z(), 10));
         }
+
+
+
+        logOpArrayEventsIfNeccessary(op,inArgs ,outArgs, NDArrayEventType.OP_INPUT, NDArrayEventType.OP_OUTPUT);
+
+    }
+
+    private  void logOpArrayEventsIfNeccessary(Op op, List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType eventType, NDArrayEventType outputEventType) {
+        logArrays(inArgs, outArgs,eventType,outputEventType);
     }
 
     public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
         Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
 
-        if (OpProfiler.getInstance().getConfig() == null)
-            return;
+        if (OpProfiler.getInstance().getConfig() != null) {
 
-        if (OpProfiler.getInstance().getConfig().isStackTrace()) {
-            OpProfiler.getInstance().processStackCall(op, timeStart);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
-            OpProfiler.getInstance().timeOpCall(op, timeStart);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op, oc);
-        }
-        if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op, oc);
+            if (OpProfiler.getInstance().getConfig().isStackTrace()) {
+                OpProfiler.getInstance().processStackCall(op, timeStart);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
+                OpProfiler.getInstance().timeOpCall(op, timeStart);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
+                OpExecutionerUtil.checkForNaN(op, oc);
+            }
+            if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
+                OpExecutionerUtil.checkForInf(op, oc);
+            }
         }
 
+        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+
+    }
+
+    private void logCustomOpArrayEventIfNeccessary(CustomOp op, List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType inputEvenType, NDArrayEventType outputEventType) {
+        logArrays(inArgs, outArgs,inputEvenType,outputEventType);
+    }
+
+    private static void logArrays(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType eventType, NDArrayEventType outputEventType) {
+        for (val arr: inArgs) {
+            if(arr == null)
+                continue;
+
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Input arguments was closed before call");
+
+            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .childArrayId(arr.getId())
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .ndArrayEventType(eventType)
+                        .arrayWriteCreationStackTrace(arr.allocationTrace())
+                        .build();
+                arr.addEvent(event);
+            }
+
+        }
+        for (val arr: outArgs) {
+            if(arr == null)
+                continue;
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Output arguments was closed before call");
+
+            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                //add 1 event for each input to the output marking it as a parent
+                for(val input : inArgs) {
+                    if(input == null)
+                        continue;
+                    NDArrayEvent event = NDArrayEvent.builder()
+                            .stackTrace(Thread.currentThread().getStackTrace())
+                            .childArrayId(arr.getId())
+                            .dataAtEvent(NDArrayMetaData.from(arr))
+                            .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                            .ndArrayEventType(outputEventType)
+                            .parentArrayId(input.getId())
+                            .arrayWriteCreationStackTrace(arr.allocationTrace())
+                            .build();
+                    arr.addEvent(event);
+                }
+
+            }
+        }
     }
 
     /**
@@ -982,6 +1116,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArrayStatistics inspectArray(INDArray array) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty,boolean isView) {
         throw new UnsupportedOperationException();
     }
 

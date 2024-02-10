@@ -22,12 +22,10 @@ package org.nd4j.linalg.cpu.nativecpu.ops;
 
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,11 +45,6 @@ public class CpuOpContextDeallocator implements Deallocator {
                     .objectAllocationType(ObjectAllocationType.OP_CONTEXT)
                     .associatedWorkspace(Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread().getId())
                     .build();
-
-        }
-
-        if(OpContextTracker.getInstance().isEnabled()) {
-            ctxId = ctx.id();
         }
 
     }
@@ -69,10 +62,6 @@ public class CpuOpContextDeallocator implements Deallocator {
             logEvent.setEventTimeMs(System.currentTimeMillis());
             logEvent.setThreadName(Thread.currentThread().getName());
             EventLogger.getInstance().log(logEvent);
-        }
-
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().deallocateContext(ctxId);
         }
 
         //NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);

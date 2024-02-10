@@ -20,7 +20,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
@@ -39,19 +39,25 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-import static org.nd4j.linalg.indexing.NDArrayIndex.*;
+import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 public class BidirectionalLayer implements RecurrentLayer {
 
     private NeuralNetConfiguration conf;
+    @Getter
     private Layer fwd;
+    @Getter
     private Layer bwd;
 
     private Bidirectional layerConf;
@@ -64,6 +70,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     private INDArray outFwd;
     private INDArray outBwd;
 
+
     public BidirectionalLayer(@NonNull NeuralNetConfiguration conf, @NonNull Layer fwd, @NonNull Layer bwd, @NonNull INDArray paramsView) {
         this.conf = conf;
         this.fwd = fwd;
@@ -72,9 +79,10 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.paramsView = paramsView;
     }
 
-    private RNNFormat getRNNDataFormat(){
+    private RNNFormat getRNNDataFormat() {
         return layerConf.getRNNDataFormat();
     }
+
     @Override
     public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Cannot RnnTimeStep bidirectional layers");
@@ -124,7 +132,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public double calcRegularizationScore(boolean backpropParamsOnly ){
+    public double calcRegularizationScore(boolean backpropParamsOnly) {
         return fwd.calcRegularizationScore(backpropParamsOnly) + bwd.calcRegularizationScore(backpropParamsOnly);
     }
 
@@ -137,53 +145,46 @@ public class BidirectionalLayer implements RecurrentLayer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray eFwd;
         INDArray eBwd;
-        boolean permute = getRNNDataFormat() == RNNFormat.NWC && epsilon.rank() == 3;
-        if (permute){
-            epsilon = epsilon.permute(0, 2, 1);
-        }
+
         val n = epsilon.size(1) / 2;
-        switch (layerConf.getMode()){
+        epsilon = epsilon.dup(epsilon.ordering());
+        switch (layerConf.getMode()) {
             case ADD:
-                eFwd = epsilon;
-                eBwd = epsilon;
+                eFwd = epsilon.dup();
+                eBwd = epsilon.dup();
                 break;
             case MUL:
-                eFwd = epsilon.dup(epsilon.ordering()).muli(outBwd);
-                eBwd = epsilon.dup(epsilon.ordering()).muli(outFwd);
+                eFwd = epsilon.mul(outBwd);
+                eBwd = epsilon.mul(outFwd);
                 break;
             case AVERAGE:
-                eFwd = epsilon.dup(epsilon.ordering()).muli(0.5);
+                eFwd = epsilon.mul(0.5);
                 eBwd = eFwd;
                 break;
             case CONCAT:
-                eFwd = epsilon.get(all(), interval(0,n), all());
-                eBwd = epsilon.get(all(), interval(n, 2*n), all());
+                eFwd = epsilon.get(all(), interval(0, n), all()).dup('f');
+                eBwd = epsilon.get(all(), interval(n, 2 * n), all()).dup('f');
                 break;
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
 
-        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd, workspaceMgr, ArrayType.BP_WORKING_MEM);
+        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd, workspaceMgr, ArrayType.BP_WORKING_MEM, getRNNDataFormat());
 
-        if (permute){
-            eFwd = eFwd.permute(0, 2, 1);
-            eBwd = eBwd.permute(0, 2, 1);
-        }
-        Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
-        Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
 
+        Pair<Gradient, INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
+        Pair<Gradient, INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
         Gradient g = new DefaultGradient(gradientView);
-        for(Map.Entry<String,INDArray> e : g1.getFirst().gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> e : g1.getFirst().gradientForVariable().entrySet()) {
             g.gradientForVariable().put(BidirectionalParamInitializer.FORWARD_PREFIX + e.getKey(), e.getValue());
         }
-        for(Map.Entry<String,INDArray> e : g2.getFirst().gradientForVariable().entrySet()){
+        for (Map.Entry<String, INDArray> e : g2.getFirst().gradientForVariable().entrySet()) {
             g.gradientForVariable().put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        INDArray g2Right = permute ? g2.getRight().permute(0, 2, 1): g2.getRight();
+        INDArray g2Right = g2.getRight();
         INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2Right, workspaceMgr, ArrayType.BP_WORKING_MEM);
-        g2Reversed = permute? g2Reversed.permute(0, 2, 1): g2Reversed;
-        INDArray epsOut = g1.getRight().addi(g2Reversed);
+        INDArray epsOut = g1.getRight().add(g2Reversed);
         epsOut = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsOut);
 
         return new Pair<>(g, epsOut);
@@ -195,38 +196,35 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
-        boolean permute = getRNNDataFormat() == RNNFormat.NWC && out1.rank() == 3;
-        if(permute){
-            out1 = out1.permute(0, 2, 1);
-            out2 = out2.permute(0, 2, 1);
-        }
+
         //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
-        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM, getRNNDataFormat());
+
+
         INDArray ret = null;
         switch (layerConf.getMode()) {
             case ADD:
-                ret = out1.addi(out2);
+                ret = out1.add(out2);
                 break;
             case MUL:
                 //TODO may be more efficient ways than this...
                 this.outFwd = out1.detach();
                 this.outBwd = out2.detach();
+                ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, out1).muli(out2);
                 break;
             case AVERAGE:
-                ret = out1.addi(out2).muli(0.5);
+                ret = out1.add(out2).muli(0.5);
                 break;
             case CONCAT:
-                ret = Nd4j.concat(1, out1, out2);
+                int concatDim = 1;
+                ret = Nd4j.concat(concatDim, out1.detach(), out2.detach());
                 break;
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
 
-        if (permute) {
-            ret = ret.permute(0, 2, 1);
-        }
 
-        ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
+        ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, ret);
 
         return ret;
 
@@ -312,7 +310,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.paramsView = params;
         val n = params.length();
         fwd.setParamsViewArray(params.get(interval(0, 0, true), interval(0, n)));
-        bwd.setParamsViewArray(params.get(interval(0, 0, true), interval(n, 2*n)));
+        bwd.setParamsViewArray(params.get(interval(0, 0, true), interval(n, 2 * n)));
     }
 
     @Override
@@ -328,7 +326,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         this.gradientView = gradients;
         val n = gradients.length() / 2;
-        INDArray g1 = gradients.get(interval(0,n));
+        INDArray g1 = gradients.get(interval(0, n));
         INDArray g2 = gradients.get(interval(n, 2 * n));
         fwd.setBackpropGradientsViewArray(g1);
         bwd.setBackpropGradientsViewArray(g2);
@@ -377,7 +375,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public INDArray getParam(String param) {
         String sub = param.substring(1);
-        if(param.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
+        if (param.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)) {
             return fwd.getParam(sub);
         } else {
             return bwd.getParam(sub);
@@ -391,11 +389,11 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        Map<String,INDArray> m = new LinkedHashMap<>();
-        for(Map.Entry<String,INDArray> e : fwd.paramTable(backpropParamsOnly).entrySet()) {
+        Map<String, INDArray> m = new LinkedHashMap<>();
+        for (Map.Entry<String, INDArray> e : fwd.paramTable(backpropParamsOnly).entrySet()) {
             m.put(BidirectionalParamInitializer.FORWARD_PREFIX + e.getKey(), e.getValue());
         }
-        for(Map.Entry<String,INDArray> e : bwd.paramTable(backpropParamsOnly).entrySet()) {
+        for (Map.Entry<String, INDArray> e : bwd.paramTable(backpropParamsOnly).entrySet()) {
             m.put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
         return m;
@@ -404,7 +402,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public boolean updaterDivideByMinibatch(String paramName) {
         String sub = paramName.substring(1);
-        if(paramName.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
+        if (paramName.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)) {
             return fwd.updaterDivideByMinibatch(paramName);
         } else {
             return bwd.updaterDivideByMinibatch(paramName);
@@ -413,7 +411,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        for(Map.Entry<String,INDArray> e : paramTable.entrySet()) {
+        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
             setParam(e.getKey(), e.getValue());
         }
     }
@@ -421,7 +419,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public void setParam(String key, INDArray val) {
         String sub = key.substring(1);
-        if(key.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)){
+        if (key.startsWith(BidirectionalParamInitializer.FORWARD_PREFIX)) {
             fwd.setParam(sub, val);
         } else {
             bwd.setParam(sub, val);
@@ -495,9 +493,10 @@ public class BidirectionalLayer implements RecurrentLayer {
             input = input.permute(0, 2, 1);
         }
         INDArray reversed = TimeSeriesUtils.reverseTimeSeries(input);
-        if (getRNNDataFormat() == RNNFormat.NWC){
+        if (getRNNDataFormat() == RNNFormat.NWC) {
             reversed = reversed.permute(0, 2, 1);
         }
+
         bwd.setInput(reversed, layerWorkspaceMgr);
     }
 
@@ -542,7 +541,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
-        Pair<INDArray,MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
+        Pair<INDArray, MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
         bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO
                 currentMaskState, minibatchSize);
         return ret;

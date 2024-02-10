@@ -75,9 +75,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Deallocator deallocator;
 
-    protected String allocationTrace = Nd4j.getEnvironment().isFuncTracePrintAllocate()
-            || Nd4j.getEnvironment().isFuncTracePrintJavaOnly() ?
-            StackTraceUtils.currentStackTraceString() : null;
+
     protected DataType type;
     protected long length;
 

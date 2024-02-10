@@ -28,15 +28,43 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.io.Serializable;
 import java.nio.LongBuffer;
 import java.util.List;
+
+import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.string.NDArrayStrings;
 
 public interface INDArray extends Serializable, AutoCloseable {
+
+
+    /**
+     * The underlying event log for all ndarrays.
+     * @return
+     */
+    Nd4jEventLog log();
+
+    /**
+     * Adds an ndarray event to the log.
+     * @param event
+     */
+    void addEvent(NDArrayEvent event);
+
+    List<NDArrayEvent> writeEvents();
+    /**
+     * When an INDArray is created and {@link Environment#isFuncTracePrintAllocate()}
+     * or {@link Environment#isFuncTracePrintJavaOnly()} is true, the stack trace will be recorded.
+     * is true, the stack trace will be recorded and saved as a string on the array object.
+     *
+     * @return
+     */
+    StackTraceElement[] allocationTrace();
+
     /**
      * Returns the shape information debugging information
      * @return the shape information.

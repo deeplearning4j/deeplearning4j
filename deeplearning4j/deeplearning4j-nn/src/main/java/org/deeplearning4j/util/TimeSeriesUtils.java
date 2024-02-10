@@ -222,7 +222,7 @@ public class TimeSeriesUtils {
      * @return Reversed activations
      */
     public static INDArray reverseTimeSeries(INDArray in) {
-        if(in == null){
+        if(in == null) {
             return null;
         }
 
@@ -236,7 +236,7 @@ public class TimeSeriesUtils {
             idxs[j++] = i;
         }
 
-        INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
+        INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
 
         INDArray outReshape = Nd4j.pullRows(inReshape, 0, idxs, 'f');
         return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
@@ -259,7 +259,9 @@ public class TimeSeriesUtils {
             return null;
         }
 
-        in = in.dup('f');
+        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)) {
+            in = workspaceMgr.dup(arrayType, in, 'f');
+        }
 
         if (in.size(2) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
@@ -268,12 +270,15 @@ public class TimeSeriesUtils {
         for (int i = idxs.length - 1; i >= 0; i--) {
             idxs[j++] = i;
         }
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(arrayType)) {
+            INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
 
-        INDArray inReshape = in.reshape('f', in.size(0) * in.size(1), in.size(2));
+            INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
+            Nd4j.pullRows(inReshape, outReshape, 0, idxs);
+            INDArray ret =  outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
+            return ret;
+        }
 
-        INDArray outReshape = workspaceMgr.create(arrayType, in.dataType(), new long[]{inReshape.size(0), idxs.length}, 'f');
-        Nd4j.pullRows(inReshape, outReshape, 0, idxs);
-        return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
 
 
 

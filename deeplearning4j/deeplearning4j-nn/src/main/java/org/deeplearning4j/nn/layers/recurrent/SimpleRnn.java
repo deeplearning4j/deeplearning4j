@@ -41,6 +41,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.primitives.Quad;
 
+import java.util.UUID;
+
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn> {
@@ -83,12 +85,14 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
+        INDArray epsilon2 = epsilon;
         if(epsilon.ordering() != 'f' || !Shape.hasDefaultStridesForShape(epsilon))
-            epsilon = epsilon.dup('f');
+            epsilon2 = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon, 'f');
+
 
         val nOut = layerConf().getNOut();
 
-        INDArray input = this.input.castTo(dataType);   //No-op if correct type
+        INDArray input = this.input.castTo(dataType).dup('f');   //No-op if correct type
         input = permuteIfNWC(input);
 
         //First: Do forward pass to get gate activations and Zs
@@ -114,7 +118,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         val tsLength = input.size(2);
 
-        INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'f');
+        INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'f');
 
         INDArray dldzNext = null;
         long end;
@@ -123,23 +127,45 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         } else {
             end = 0;
         }
-        epsilon = permuteIfNWC(epsilon);
-        for( long i = tsLength - 1; i >= end; i--) {
-            INDArray dldaCurrent = epsilon.get(all(), all(), point(i)).dup();
-            INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
+        INDArray permutedEpsilon = permuteIfNWC(epsilon2);
+        epsilon2 =  permutedEpsilon;
+
+        backwardLoop(workspaceMgr, tsLength, end, epsilon2, p, input, epsOut, dldzNext, rw, rwg, a, gg, gxg, bg, gx, b, wg, w, grg, gr);
+
+        weightNoiseParams.clear();
+
+        Gradient grad = new DefaultGradient(gradientsFlattened);
+        grad.gradientForVariable().put(SimpleRnnParamInitializer.WEIGHT_KEY, wg);
+        grad.gradientForVariable().put(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, rwg);
+        grad.gradientForVariable().put(SimpleRnnParamInitializer.BIAS_KEY, bg);
+        if(hasLayerNorm()) {
+            grad.gradientForVariable().put(SimpleRnnParamInitializer.GAIN_KEY, gg);
+        }
+
+        epsOut = backpropDropOutIfPresent(epsOut);
+        epsOut = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD,permuteIfNWC(epsOut));
+
+        return new Pair<>(grad, epsOut);
+    }
+
+    private void backwardLoop(LayerWorkspaceMgr workspaceMgr, long tsLength, long end, INDArray epsilon2, Quad<INDArray, INDArray, INDArray, INDArray> p, INDArray input, INDArray epsOut, INDArray dldzNext, INDArray rw, INDArray rwg, IActivation a, INDArray gg, INDArray gxg, INDArray bg, INDArray gx, INDArray b, INDArray wg, INDArray w, INDArray grg, INDArray gr) {
+        for(long i = tsLength - 1; i >= end; i--) {
+            INDArray dldaCurrent = epsilon2.get(all(), all(), point(i)).dup('f');
+            INDArray aCurrent = p.getFirst().get(all(), all(), point(i)).dup('f');
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
             INDArray nCurrent = (hasLayerNorm() ? p.getThird().get(all(), all(), point(i)) : null);
             INDArray rCurrent = (hasLayerNorm() ? p.getFourth().get(all(), all(), point(i)) : null);
-            INDArray inCurrent = input.get(all(), all(), point(i));
+            INDArray inCurrent = input.get(all(), all(), point(i)).dup('f');
             INDArray epsOutCurrent = epsOut.get(all(), all(), point(i));
 
-            if(dldzNext != null){
+            if(dldzNext != null) {
                 //Backprop the component of dL/da (for current time step) from the recurrent connections
                 Nd4j.gemm(dldzNext, rw, dldaCurrent, false, true, 1.0, 1.0);
 
                 //Recurrent weight gradients:
                 Nd4j.gemm(aCurrent, dldzNext, rwg, true, false, 1.0, 1.0);
             }
+
             INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent).getFirst();
 
             //Handle masking
@@ -160,10 +186,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.getExecutioner().exec(new LayerNormBp(nCurrent, gx, b, dldzCurrent, dldnCurrent, ggCur, bgCur, true, 1));
                 gxg.addi(ggCur);
                 bg.addi(bgCur);
-            }else{
+            }else {
                 dldnCurrent = dldzCurrent;
                 //Bias gradients
-                bg.addi(dldzCurrent.sum(0));
+                INDArray dldZAdd = dldzCurrent.sum(0);
+                bg.addi(dldZAdd);
             }
 
             //weight gradients:
@@ -173,12 +200,12 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             Nd4j.gemm(dldnCurrent, w, epsOutCurrent, false, true, 1.0, 0.0);
 
             // propagate epsilon to previous iteration
-            if(hasLayerNorm() && i > end){
+            if(hasLayerNorm() && i > end) {
                 dldzNext = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, dldzCurrent.dataType(), dldzCurrent.shape());
                 INDArray ggCur = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, gg.dataType(), grg.shape());
                 Nd4j.getExecutioner().exec(new LayerNormBp(rCurrent, gr, dldzCurrent, dldzNext, ggCur, true, 1));
                 grg.addi(ggCur);
-            }else{
+            } else {
                 dldzNext = dldzCurrent;
             }
 
@@ -187,20 +214,6 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 epsOutCurrent.muliColumnVector(maskCol);
             }
         }
-
-        weightNoiseParams.clear();
-
-        Gradient grad = new DefaultGradient(gradientsFlattened);
-        grad.gradientForVariable().put(SimpleRnnParamInitializer.WEIGHT_KEY, wg);
-        grad.gradientForVariable().put(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, rwg);
-        grad.gradientForVariable().put(SimpleRnnParamInitializer.BIAS_KEY, bg);
-        if(hasLayerNorm()) {
-            grad.gradientForVariable().put(SimpleRnnParamInitializer.GAIN_KEY, gg);
-        }
-
-        epsOut = backpropDropOutIfPresent(epsOut);
-        epsOut = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,permuteIfNWC(epsOut));
-        return new Pair<>(grad, epsOut);
     }
 
     @Override
@@ -213,7 +226,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         return activateHelper(null, training, false, workspaceMgr).getFirst();
     }
 
-    private Quad<INDArray,INDArray,INDArray, INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
+    private Quad<INDArray,INDArray,INDArray, INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
         Preconditions.checkState(input.rank() == 3,
                 "3D input expected to RNN layer expected, got " + input.rank());
@@ -236,10 +249,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray gx = (g != null ? g.get(interval(0, 0, true), interval(0, nOut)) : null);
         INDArray gr = (g != null ? g.get(interval(0, 0, true), interval(nOut, nOut * 2)) : null);
 
-        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, w.dataType(), new long[]{m, nOut, tsLength}, 'f');
-        INDArray outZ = (forBackprop ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape()) : null);
-        INDArray outPreNorm = (forBackprop && hasLayerNorm() ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape(), 'f') : null);
-        INDArray recPreNorm = (forBackprop && hasLayerNorm() ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape(), 'f') : null);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, w.dataType(), new long[]{m, nOut, tsLength}, 'f');
+        INDArray outZ = (forBackprop ? workspaceMgr.create(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape()) : null);
+        INDArray outPreNorm = (forBackprop && hasLayerNorm() ? workspaceMgr.create(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape(), 'f') : null);
+        INDArray recPreNorm = (forBackprop && hasLayerNorm() ? workspaceMgr.create(ArrayType.BP_WORKING_MEM, w.dataType(), out.shape(), 'f') : null);
 
         if(input.ordering() != 'f' || Shape.strideDescendingCAscendingF(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
@@ -255,8 +268,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         for( int i = 0; i < tsLength; i++) {
             //out = activationFn(in*w + last*rw + bias)
-            INDArray currOut = out.slice(i,-1); //F order
-            INDArray currIn = input.slice(i,-1).dup('f');
+            INDArray currOut = out.get(all(), all(), point(i)).dup('f'); //F order
+            INDArray currIn = input.get(all(), all(), point(i)).dup('f');
             if(hasLayerNorm()) {
                 INDArray currOutPreNorm = (forBackprop ? outPreNorm : out).get(all(), all(), point(i));
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
@@ -267,12 +280,12 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
             if(i > 0 || prevStepOut != null) {
                 if(hasLayerNorm()) {
-                    INDArray currRecPreNorm = forBackprop ? recPreNorm.slice(i,-1) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
+                    INDArray currRecPreNorm = forBackprop ? recPreNorm.get(all(), all(), point(i)) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
                     Nd4j.gemm(prevStepOut, rw, currRecPreNorm, false, false, 1.0, 0.0);
                     INDArray recNorm = workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');
                     Nd4j.getExecutioner().exec(new LayerNorm(currRecPreNorm, gr, recNorm, true, 1));
                     currOut.addi(recNorm);
-                }else {
+                } else {
                     Nd4j.gemm(prevStepOut, rw, currOut, false, false, 1.0, 1.0);    //beta = 1.0 to keep previous contents
                 }
             }
@@ -307,8 +320,13 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             outPreNorm = permuteIfNWC(outPreNorm);
             recPreNorm = permuteIfNWC(recPreNorm);
         }
-        return new Quad<>(out != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,out) : null, outZ != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,outZ) : null,
+
+
+
+        Quad<INDArray,INDArray,INDArray,INDArray> ret =  new Quad<>(out != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,out) : null, outZ != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,outZ) : null,
                 outPreNorm != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,outPreNorm) : null, recPreNorm != null ? workspaceMgr.dup(ArrayType.ACTIVATIONS,recPreNorm) : null);
+
+        return ret;
     }
 
 

@@ -46,6 +46,11 @@ public class StackAggregator {
         incrementCount(1);
     }
 
+    public void incrementCount(StackTraceElement[] stackTrace) {
+        StackDescriptor descriptor = new StackDescriptor(stackTrace);
+        tree.consumeStackTrace(descriptor, 1);
+    }
+
     public void incrementCount(long time) {
         StackDescriptor descriptor = new StackDescriptor(Thread.currentThread().getStackTrace());
         tree.consumeStackTrace(descriptor, time);

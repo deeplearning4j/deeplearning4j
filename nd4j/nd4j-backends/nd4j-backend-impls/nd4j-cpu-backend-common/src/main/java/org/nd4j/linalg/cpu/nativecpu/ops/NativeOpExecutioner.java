@@ -228,6 +228,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
+        long st = profilingConfigurableHookIn(op, oc);
         op.validateDataTypes(oc);
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
@@ -257,8 +258,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
 
-        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null)
+        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
+            profilingConfigurableHookOut(op, oc, st);
             return op.noOp();
+        }
 
         /**
          * This is the result array.
@@ -314,7 +317,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pair<DataBuffer, DataBuffer> yTadBuffers = null;
 
 
-        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         /**
          * Note because dimension arrays don't change,
@@ -386,7 +388,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                             null, null, null, null);
-                } catch (Throwable t){
+                } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
                 }
@@ -463,6 +465,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
+
+        profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
 
@@ -1778,7 +1782,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
         long[] merged = new long[Shape.shapeInfoLength(shape.length)];
         DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
         merged[0] = shape.length;
@@ -1797,10 +1801,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         Shape.setElementWiseStride(merged,(int) elementWiseStride);
         LongPointer longPointer = new LongPointer(merged);
-        loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
+        loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty,isView);
         longPointer.deallocate();
         longPointer.releaseReference();
         return ret;
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+        return createShapeInfo(shape,stride,elementWiseStride,order,dtype,empty,false);
     }
 
     @Override

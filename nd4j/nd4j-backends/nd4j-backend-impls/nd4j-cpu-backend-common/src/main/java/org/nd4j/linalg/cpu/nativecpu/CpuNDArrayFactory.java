@@ -31,9 +31,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
-import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
-import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
-import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.*;
 import org.nd4j.common.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -121,7 +119,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
-    private static String cpuBinaryLevelToName(int level){
+    private static String cpuBinaryLevelToName(int level) {
         switch (level){
             case 3:
                 return "AVX512";
@@ -132,6 +130,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             default:
                 return "Generic x86";
         }
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, boolean isView) {
+        return new NDArray(data,newShape,newStride,offset,ews,ordering,isView);
     }
 
     @Override
@@ -685,7 +688,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if(ret == null){
             ret = Nd4j.createUninitialized(source.dataType(), shape, order);
         } else {
-            if(!Arrays.equals(shape, destination.shape())){
+            if(!Arrays.equals(shape, destination.shape())) {
                 throw new IllegalStateException("Cannot pull rows into destination array: expected destination array of" +
                         " shape " + Arrays.toString(shape) + " but got destination array of shape " + Arrays.toString(destination.shape()));
             }

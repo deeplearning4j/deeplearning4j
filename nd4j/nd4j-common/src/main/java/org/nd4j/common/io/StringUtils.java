@@ -60,6 +60,13 @@ public abstract class StringUtils {
         }
     }
 
+
+    public static String repeat(char ch,int n) {
+        char[] chars = new char[n];
+        Arrays.fill(chars, ch);
+        return new String(chars);
+    }
+
     public static boolean hasText(String str) {
         return hasText((CharSequence) str);
     }

@@ -1570,6 +1570,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, boolean isView) {
+        return new JCublasNDArray(data, newShape, newStride, offset, ews, ordering, data.dataType(), isView);
+    }
+
+    @Override
     public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
         return new JCublasNDArray(data, newShape, newStride, offset, ordering, dataType);
     }

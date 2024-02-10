@@ -35,12 +35,24 @@ public class CudaEnvironment implements Environment {
 
     private final Nd4jCuda.Environment e;
 
+    protected boolean logNDArrayWrites = false;
+
     public static CudaEnvironment getInstance(){
         return INSTANCE;
     }
 
     protected CudaEnvironment(Nd4jCuda.Environment environment){
         this.e = environment;
+    }
+
+    @Override
+    public void setLogNDArrayEvents(boolean logNDArrayEvents) {
+        this.logNDArrayWrites = logNDArrayEvents;
+    }
+
+    @Override
+    public boolean isLogNDArrayEvents() {
+        return logNDArrayWrites;
     }
 
     @Override

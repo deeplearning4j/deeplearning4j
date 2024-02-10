@@ -2871,6 +2871,8 @@ public class ArrayUtil {
     }
 
 
+
+
     /**
      * Create a backwards copy of the given array
      *
@@ -3043,6 +3045,33 @@ public class ArrayUtil {
         for (int i = 0; i < arr.length; i++) {
             System.arraycopy(arr[i], 0, ret, count, arr[i].length);
             count += arr[i].length;
+        }
+        return ret;
+    }
+
+    public static String[] flatten(String[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0)
+            return new String[0];
+        String[] ret = new String[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
+        return ret;
+    }
+
+    public static String[] flatten(String[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new String[0];
+        String[] ret = new String[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
         }
         return ret;
     }
@@ -3299,6 +3328,9 @@ public class ArrayUtil {
         }
         return ret;
     }
+
+
+
 
     public static long[] flatten(long[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )

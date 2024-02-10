@@ -167,9 +167,10 @@ public interface CustomOp  {
     if (list.isEmpty())
      throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-    for (LongShapeDescriptor shape : list)
-     addOutputArgument(Nd4j.create(shape, false));
-
+    for (LongShapeDescriptor shape : list) {
+     INDArray newOut = Nd4j.create(shape, false);
+     addOutputArgument(newOut);
+    }
     shapeOverride = true;
    } catch (ND4JIllegalStateException e) {
     throw e;

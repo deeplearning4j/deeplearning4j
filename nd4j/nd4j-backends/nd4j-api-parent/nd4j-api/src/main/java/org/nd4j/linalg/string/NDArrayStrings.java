@@ -37,8 +37,8 @@ public class NDArrayStrings {
 
     public static final String EMPTY_ARRAY_STR = "[]";
 
-    private static final String[] OPEN_BRACKETS =  new String[]{"", "[", "[[", "[[[", "[[[[", "[[[[[", "[[[[[[", "[[[[[[[", "[[[[[[[["};
-    private static final String[] CLOSE_BRACKETS = new String[]{"", "]", "]]", "]]]", "]]]]", "]]]]]", "]]]]]]", "]]]]]]]", "]]]]]]]]"};
+    private static final String[] OPEN_BRACKETS = {"", "[", "[[", "[[[", "[[[[", "[[[[[", "[[[[[[", "[[[[[[[", "[[[[[[[["};
+    private static final String[] CLOSE_BRACKETS = {"", "]", "]]", "]]]", "]]]]", "]]]]]", "]]]]]]", "]]]]]]]", "]]]]]]]]"};
 
     /**
      * The default number of elements for printing INDArrays (via NDArrayStrings or INDArray.toString)
@@ -204,7 +204,7 @@ public class NDArrayStrings {
             } else if (arr.isB()) {
                 long arrElement = arr.getLong(0);
                 return OPEN_BRACKETS[fRank] + (arrElement == 0 ? "false" : "true") + CLOSE_BRACKETS[fRank];
-            } else if (arr.dataType() == DataType.UTF8){
+            } else if (arr.dataType() == DataType.UTF8) {
                 String s = arr.getString(0);
                 return OPEN_BRACKETS[fRank] + "\"" + s.replaceAll("\n","\\n") + "\"" + CLOSE_BRACKETS[fRank];
             } else
@@ -262,6 +262,9 @@ public class NDArrayStrings {
     }
 
     private String vectorToString(INDArray arr, boolean summarize) {
+        if(arr.isEmpty()) {
+          return "";
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         //this case covers [0] ane ensures the buffer isn't empty (null data)
@@ -293,7 +296,7 @@ public class NDArrayStrings {
                 } else if (arr.isB()) {
                     long arrElement = arr.getLong(i);
                     sb.append(String.format("%1$" + padding + "s", arrElement == 0 ? "false" : "true"));
-                } else if(arr.dataType() == DataType.UTF8){
+                } else if(arr.dataType() == DataType.UTF8) {
                     String s = arr.getString(i);
                     s = "\"" + s.replaceAll("\n", "\\n") + "\"";
                     sb.append(s);

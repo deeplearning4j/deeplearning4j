@@ -28,11 +28,22 @@ public class CpuEnvironment implements Environment {
     protected boolean funcTracePrintJavaOnly = false;
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
+    protected boolean logNDArrayWrites = false;
 
     public static CpuEnvironment getInstance(){
         return INSTANCE;
     }
 
+
+    @Override
+    public void setLogNDArrayEvents(boolean logNDArrayEvents) {
+        this.logNDArrayWrites = logNDArrayEvents;
+    }
+
+    @Override
+    public boolean isLogNDArrayEvents() {
+        return logNDArrayWrites;
+    }
 
     @Override
     public int numWorkspaceEventsToKeep() {

@@ -21,7 +21,6 @@
 package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.cuda.cudart.cudaDeviceProp;
 import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;

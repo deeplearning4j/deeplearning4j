@@ -205,16 +205,4 @@
 
     </build>
 
-    <profiles>
-        <profile>
-            <id>cuda</id>
-            <activation>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>cuda</value>
-                </property>
-            </activation>
-        </profile>
-
-    </profiles>
 </project>

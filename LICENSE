@@ -375,10 +375,8 @@ Apache License, Version 2.0
 
 ##########################
 
-Kuromoji Code
-
-Codebase: deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-japanese/src/main/java/com/atilika/kuromoji/
-
-Copyright (c) 2010-2015 Atilika Inc. and contributors. All rights reserved.
-
-Apache License, Version 2.0
+##########################
+Copyright 2016 Scalified <http://www.scalified.com>
+src/main/java/org/nd4j/common/com/scalified/tree
+https://github.com/Scalified/tree
+##########################

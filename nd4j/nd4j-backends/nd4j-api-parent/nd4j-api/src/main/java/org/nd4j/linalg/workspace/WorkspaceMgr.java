@@ -23,13 +23,9 @@ package org.nd4j.linalg.workspace;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
-
-import java.util.List;
-import java.util.Map;
 
 public interface WorkspaceMgr<T extends Enum<T>> {
 
@@ -46,13 +42,7 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      */
     void removeKeepOpen(T...types);
 
-    Map<String,List<WorkspaceUseMetaData>> eventsByWorkspace();
 
-    /**
-     * This is the event log for the workspace open/close events.
-     * @return
-     */
-    List<WorkspaceUseMetaData> workspaceEventLog();
 
     /**
      * Records a  workspace close event
@@ -61,9 +51,17 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * The storage for the events will vary but is likely just an in memory list.
      *
      * @param workspace
+     * @param type
      */
-    void recordWorkspaceClose(MemoryWorkspace workspace);
-    void recordWorkspaceOpen(MemoryWorkspace workspace);
+    void recordWorkspaceClose(MemoryWorkspace workspace, T type);
+
+    /**
+     * Records a workspace open event
+     *
+     * @param workspace the workspace to record
+     * @param arrayType
+     */
+    void recordWorkspaceOpen(MemoryWorkspace workspace, T arrayType);
 
 
     /**
@@ -89,7 +87,9 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      */
     void setWorkspace(T arrayType, String wsName, WorkspaceConfiguration configuration);
 
-    void recordWorkspaceBorrow(MemoryWorkspace workspace);
+    void recordWorkspaceBorrow(MemoryWorkspace workspace, T type);
+
+    void recordWorkspaceSet(MemoryWorkspace workspace, T type);
 
     void closeWorkspace(T... types);
 
@@ -237,7 +237,7 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     /**
      * Create an uninitialized array in the specified array type's workspace (or detached if none is specified).
-     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#createUninitialized(int)} (int...)}, other than the array location
+     * Equivalent to {@link org.nd4j.linalg.factory.Nd4j#createUninitialized(long)} (int...)}, other than the array location
      * @param arrayType Array type
      * @param dataType  Data type of the created array
      * @param shape     Shape

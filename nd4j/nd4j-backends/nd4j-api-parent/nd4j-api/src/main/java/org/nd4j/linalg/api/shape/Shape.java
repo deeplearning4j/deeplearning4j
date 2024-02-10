@@ -3313,7 +3313,7 @@ public class Shape {
         throw new RuntimeException("setOrder called");
     }
 
-    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty,boolean isView) {
         boolean isEmpty = empty;
         if (!empty)
             for (val v:shape) {
@@ -3323,7 +3323,12 @@ public class Shape {
                 }
             }
 
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty);
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty, isView);
+    }
+
+
+    public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
+      return createShapeInformation(shape, stride, elementWiseStride, order, dataType, empty, false);
     }
 
 
@@ -3711,7 +3716,7 @@ public class Shape {
                 shape, stride);
         //Length is simply 1 + the buffer index of the last element
         long length = 1;
-        for(int i=0; i<shape.length; i++ ){
+        for(int i=0; i<shape.length; i++) {
             length += (shape[i]-1) * stride[i];
         }
         return length;
@@ -3947,4 +3952,6 @@ public class Shape {
         long options = Shape.options(dataBuffer);
         return ArrayOptionsHelper.dataType(options);
     }
+
+
 }

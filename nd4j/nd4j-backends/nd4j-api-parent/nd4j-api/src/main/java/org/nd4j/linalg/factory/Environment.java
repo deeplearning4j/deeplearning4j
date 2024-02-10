@@ -1,3 +1,5 @@
+
+
 /*
  *  ******************************************************************************
  *  *
@@ -19,7 +21,35 @@
  */
 package org.nd4j.linalg.factory;
 
+/**
+ * This interface describes environment for ND4J.
+ * It's used to control memory, profiling, debugging and other options.
+ * It's also used to store backend-specific information, like BLAS version, etc
+ * <p>
+ *     PLEASE NOTE: This interface is NOT supposed to be used by users directly.
+ * </p>
+ *
+ *
+ *
+ */
 public interface Environment {
+
+
+    /**
+     * Sets whether to write ndarray log events or not.
+     * @param logNDArrayEvents the logNDArrayWrites to set
+     */
+    void setLogNDArrayEvents(boolean logNDArrayEvents);
+
+
+    /**
+     * Returns whether to add write events
+     * to ndarrays. A write event is an event
+     * where an array is the output of an operation
+     * or a put operation happens.
+     * @return
+     */
+    boolean isLogNDArrayEvents();
 
 
     /**

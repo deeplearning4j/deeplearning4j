@@ -138,7 +138,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
-        if(!setLayerInput){
+        if(!setLayerInput) {
             applyPreprocessorAndSetInput(workspaceMgr);
         }
 
@@ -261,7 +261,7 @@ public class LayerVertex extends BaseGraphVertex {
                     + layer.getClass().getSimpleName());
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
-        if(!setLayerInput){
+        if(!setLayerInput) {
             applyPreprocessorAndSetInput(workspaceMgr);
         }
 

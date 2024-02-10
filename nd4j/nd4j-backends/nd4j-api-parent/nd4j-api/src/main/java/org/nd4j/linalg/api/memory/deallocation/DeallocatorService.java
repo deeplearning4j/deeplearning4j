@@ -28,7 +28,6 @@ import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpContextTracker;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.*;
@@ -227,12 +226,6 @@ public class DeallocatorService {
 
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                allocated.incrementCount(deallocatable.getClass().getName(),1.0);
-                referenceTypes.put(deallocatable.getUniqueId(),deallocatable.getClass().getName());
-
-            }
-
             if(!getListeners().isEmpty() && deallocatable instanceof DataBuffer) {
                 registerDataBufferToListener((DataBuffer) deallocatable);
             }
@@ -283,11 +276,6 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            if(OpContextTracker.getInstance().isEnabled()) {
-                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                                referenceTypes.remove(reference.getId());
-                            }
-
                             if(listeners.isEmpty()) {
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
@@ -333,12 +321,8 @@ public class DeallocatorService {
     }
 
     public void updateDeallocationCount(long deallocatableId) {
-        if(OpContextTracker.getInstance().isEnabled() && referenceTypes.containsKey(deallocatableId)) {
+        if( referenceTypes.containsKey(deallocatableId)) {
             deallocated.incrementCount(referenceTypes.get(deallocatableId), 1.0);
-            if(referenceTypes.get(deallocatableId).contains("Context")) {
-                OpContextTracker.getInstance().deallocateContext(deallocatableId);
-            }
-
             referenceTypes.remove(deallocatableId);
 
 
