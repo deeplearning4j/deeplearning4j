@@ -29,6 +29,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * A breakdown of {@link NDArrayEvent}
+ * by stack trace element.
+ * This is used for comparing
+ * the breakdown of events by stack trace element
+ * and comparing them.
+ */
 public class NDArrayEventMultiMethodStackTraceBreakdown extends ConcurrentHashMap<String,NDArrayEventStackTraceBreakDown> {
 
 

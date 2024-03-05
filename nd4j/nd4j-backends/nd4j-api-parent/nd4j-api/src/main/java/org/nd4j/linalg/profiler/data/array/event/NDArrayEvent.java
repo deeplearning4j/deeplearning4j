@@ -108,11 +108,6 @@ public class NDArrayEvent implements Serializable {
         );
     }
 
-
-
-
-
-
     /**
      * Render events by session and line number.
      * This map is created using {@link Nd4jEventLog#arrayEventsByMethod(String, String, boolean)}
@@ -196,7 +191,7 @@ public class NDArrayEvent implements Serializable {
      * Break down events that occur
      * in a given class and method
      * with the given event type.
-     * This is a short cut method for calling
+     * This is a shortcut method for calling
      * {@Link #groupedEvents(String, String, NDArrayEventType, List, List, boolean)}
      * followed by {@link NDArrayEventDictionary#stackTraceBreakdowns()}
      *

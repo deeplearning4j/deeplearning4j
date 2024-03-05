@@ -59,7 +59,12 @@ public class NDArrayMetaData implements Serializable {
     }
 
 
-
+    /**
+     * Create an array of {@link NDArrayMetaData}
+     * from the given list
+     * @param arr the array to create the metadata from
+     * @return
+     */
     public static NDArrayMetaData[] fromArr(List<INDArray> arr) {
         List<INDArray> convert = new ArrayList<>();
         for(int i = 0; i < arr.size(); i++) {
@@ -75,6 +80,12 @@ public class NDArrayMetaData implements Serializable {
         return ret;
     }
 
+    /**
+     * Creates a singular array of {@link NDArrayMetaData}
+     * from the given array
+     * @param arr the array to create the metadata from
+     * @return the array of metadata
+     */
     public static NDArrayMetaData[] fromArr(INDArray arr) {
         return new NDArrayMetaData[] {from(arr)};
     }

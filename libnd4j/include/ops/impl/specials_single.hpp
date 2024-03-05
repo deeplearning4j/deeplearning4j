@@ -87,7 +87,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
 
   if (copyCase1) {
-    printf("concat copy case 1\n");
     // copyCase1:
     // in this case:
     // When NdArrays follow the same order and unit elementwise stride and
@@ -130,7 +129,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   }
   bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
   if (copyCase2) {
-    printf("concat copy case 2\n");
     // copyCase2:
     // in this case:
     // when NDArrays follow the same order (here it is done for the "c" "the last index is fast" order)

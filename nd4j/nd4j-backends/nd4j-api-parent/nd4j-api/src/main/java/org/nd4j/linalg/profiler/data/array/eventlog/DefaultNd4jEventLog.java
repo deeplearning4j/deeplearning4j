@@ -22,18 +22,14 @@ package org.nd4j.linalg.profiler.data.array.eventlog;
 import org.nd4j.common.collection.NamedTables;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.data.array.*;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.dict.BreakDownComparison;
 import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventDictionary;
-import org.nd4j.linalg.profiler.data.array.summary.SummaryOfArrayEvents;
 import org.nd4j.linalg.profiler.data.array.registry.ArrayRegistry;
 import org.nd4j.linalg.profiler.data.array.registry.DefaultArrayRegistry;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
-import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,16 +58,12 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     private Map<Long,List<WorkspaceUseMetaData>> workspaceEvents;
 
     private ArrayRegistry arrayRegistry;
-    private Map<Long, List<ArrayDataRevisionSnapshot>> arrayDataRevisionSnapshotMap;
-    private Map<Long,INDArray> snapshotLatestRevision;
 
     private NamedTables<String,Integer,StackTraceElement> stackTracePointOfEvent;
     public DefaultNd4jEventLog() {
         events = new ConcurrentHashMap<>();
         workspaceEvents = new ConcurrentHashMap<>();
         arrayRegistry = new DefaultArrayRegistry();
-        arrayDataRevisionSnapshotMap = new ConcurrentHashMap<>();
-        snapshotLatestRevision = new ConcurrentHashMap<>();
         stackTracePointOfEvent = new NamedTables<>();
     }
 
@@ -139,38 +131,6 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
         if(!stackTracePointOfEvent.get(stackTraceElement.getClassName()).contains(stackTraceElement.getMethodName(),stackTraceElement.getLineNumber())) {
             stackTracePointOfEvent.get(stackTraceElement.getClassName()).put(stackTraceElement.getMethodName(),stackTraceElement.getLineNumber(),stackTraceElement);
         }
-    }
-
-
-    @Override
-    public Map<Long,List<ArrayDataRevisionSnapshot>> snapshotData() {
-        return arrayDataRevisionSnapshotMap;
-    }
-
-
-    @Override
-    public List<SummaryOfArrayEvents> eventsForIds(List<Long> ids) {
-        List<SummaryOfArrayEvents> ret = new ArrayList<>();
-        for(Long id : ids) {
-            ret.add(eventsForArrayId(id));
-        }
-        return ret;
-    }
-    @Override
-    public SummaryOfArrayEvents eventsForArrayId(long id) {
-        return SummaryOfArrayEvents.builder()
-                .arrayId(id)
-                .ndArrayEvents(this.ndArrayEventsForId(id))
-                .workspaceUseMetaData(workspaceEvents.get(id))
-                .arrayDataRevisionSnapshots(arrayDataRevisionSnapshotsForId(id))
-                .build();
-    }
-
-    @Override
-    public List<ArrayDataRevisionSnapshot> arrayDataRevisionSnapshotsForId(long id) {
-        if(!arrayDataRevisionSnapshotMap.containsKey(id))
-            return new ArrayList<>();
-        return arrayDataRevisionSnapshotMap.get(id);
     }
 
 
@@ -249,34 +209,6 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     @Override
     public Map<Long, List<NDArrayEvent>> ndarrayEvents() {
         return events;
-    }
-
-
-    @Override
-    public List<NDArrayEvent> arrayEventsForParentId(long id) {
-        if(events.containsKey(id))
-            return new ArrayList<>(new HashSet<>(events.get(id)).stream()
-                    .filter(input -> anyEqual(Longs.toArray(Arrays.stream(input.getParentDataAtEvent())
-                            .map(input2 -> input2.getId())
-                            .collect(Collectors.toList())),id))
-                    .collect(Collectors.toList()));
-        return new ArrayList<>();
-    }
-
-    private boolean anyEqual(long[] ids,long idTest) {
-        for(long id : ids) {
-            if(id == idTest)
-                return true;
-        }
-        return false;
-    }
-
-    @Override
-    public List<NDArrayEvent> eventsForArrayChildId(long id) {
-        if(events.containsKey(id))
-            return new ArrayList<>(new HashSet<>(events.get(id)).stream().filter(input -> input.getDataAtEvent().getId() == id)
-                    .collect(Collectors.toList()));
-        return new ArrayList<>();
     }
 
     @Override

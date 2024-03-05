@@ -420,27 +420,6 @@ class BidirectionalTest extends BaseDL4JTest {
         INDArray out1 = net1.output(in);
 
 
-        if(!outExp.equals(out1)) {
-            Map<String, Set<EventDifference>> stringSetMap = NDArrayEvent.eventDifferences(
-                    "org.deeplearning4j.nn.layers.recurrent.SimpleRnn",
-                    new String[]{"activateHelper"},
-                    295, StackTraceQueryFilters.builder()
-                            .exclude(Arrays.asList())
-                            .build(), StackTraceQueryFilters.builder()
-                            .exclude(Arrays.asList(
-                            ))
-                            .build());
-            Set<EventDifference> eventDifferences = stringSetMap.get("activateHelper");
-            EventDifference stream = eventDifferences.stream().findFirst().get();
-            List<Pair<NDArrayEvent, NDArrayEvent>> pairs = stream.getDifferences().get(0);
-            Pair<NDArrayEvent, NDArrayEvent> ndArrayEventNDArrayEventPair = pairs.get(0);
-            Nd4jEventLog nd4jEventLog = Nd4j.getExecutioner().getNd4jEventLog();
-            BreakDownComparison breakDownComparison = nd4jEventLog.compareEventsFor(ndArrayEventNDArrayEventPair.getFirst().getParentDataAtEvent()[0].getId()
-                    , ndArrayEventNDArrayEventPair.getSecond().getParentDataAtEvent()[0].getId());
-            System.out.println();
-
-        }
-
         assertEquals(outExp, out1, mode.toString());
         // Check gradients:
         if (mode == Bidirectional.Mode.ADD || mode == Bidirectional.Mode.CONCAT) {
@@ -467,10 +446,6 @@ class BidirectionalTest extends BaseDL4JTest {
             Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
 
 
-
-
-
-
             Gradient g1 = p1.getFirst();
             Gradient g2 = p2.getFirst();
             Gradient g3 = p3.getFirst();
@@ -485,33 +460,6 @@ class BidirectionalTest extends BaseDL4JTest {
                 assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));
                 assertEquals(g2.gradientForVariable().get("0_RW"), g1.gradientForVariable().get("0_fRW"));
                 assertEquals(g2.gradientForVariable().get("0_b"), g1.gradientForVariable().get("0_fb"));
-                if(!g3.gradientForVariable().get("0_W").equals(g1.gradientForVariable().get("0_bW"))) {
-                    Map<String, Set<EventDifference>> stringSetMap = NDArrayEvent.eventDifferences(
-                            "org.deeplearning4j.nn.layers.recurrent.SimpleRnn",
-                            new String[]{"activateHelper"},
-                            295, StackTraceQueryFilters.builder()
-                                    .exclude(StackTraceQuery.ofLineNumbers(BidirectionalTest.class.getName(),
-                                            "testSimpleBidirectional",
-                                            400, 401, 399, 447, 440, 441, 442, 443))
-                                    .build(), StackTraceQueryFilters.builder()
-                                    .exclude(Arrays.asList(
-                                            StackTraceQuery.builder()
-                                                    .className("org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer")
-                                                    .methodName("backpropGradient")
-                                                    .lineNumber(175)
-                                                    .build()
-                                    ))
-                                    .build());
-                    Set<EventDifference> eventDifferences = stringSetMap.get("activateHelper");
-                    EventDifference stream = eventDifferences.stream().findFirst().get();
-                    List<Pair<NDArrayEvent, NDArrayEvent>> pairs = stream.getDifferences().get(0);
-                    Pair<NDArrayEvent, NDArrayEvent> ndArrayEventNDArrayEventPair = pairs.get(0);
-                    Nd4jEventLog nd4jEventLog = Nd4j.getExecutioner().getNd4jEventLog();
-                    BreakDownComparison breakDownComparison = nd4jEventLog.compareEventsFor(ndArrayEventNDArrayEventPair.getFirst().getParentDataAtEvent()[0].getId()
-                            , ndArrayEventNDArrayEventPair.getSecond().getParentDataAtEvent()[0].getId());
-                    System.out.println();
-
-                }
                 assertEquals(g3.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_bW"));
                 assertEquals(g3.gradientForVariable().get("0_RW"), g1.gradientForVariable().get("0_bRW"));
                 assertEquals(g3.gradientForVariable().get("0_b"), g1.gradientForVariable().get("0_bb"));

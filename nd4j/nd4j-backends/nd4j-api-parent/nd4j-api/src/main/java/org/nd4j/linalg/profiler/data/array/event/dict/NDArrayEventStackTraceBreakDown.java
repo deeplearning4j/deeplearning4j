@@ -34,59 +34,6 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
 
 
 
-    public String displayStackTraceHierarchy() {
-        Iterator<Triple<StackTraceElement, StackTraceElement, StackTraceElement>> tripleIterator = enumerateEntries();
-        StringBuilder ret = new StringBuilder();
-        while(tripleIterator.hasNext()) {
-            Triple<StackTraceElement,StackTraceElement,StackTraceElement> next = tripleIterator.next();
-            StackTraceElement row = next.getFirst();
-            StackTraceElement column = next.getSecond();
-            StackTraceElement value = next.getThird();
-            ret.append("\n" + row + "\n");
-            ret.append("\t" + column + "\n");
-            ret.append("\t\t" + value + "\n\n\n");
-        }
-
-        return ret.toString();
-    }
-
-
-
-    public List<NDArrayEvent> getEvents(StackTraceLookupKey row,
-                                        StackTraceLookupKey column,
-                                        StackTraceLookupKey value) {
-        return getEvents(StackTraceElementCache.lookup(row),StackTraceElementCache.lookup(column),StackTraceElementCache.lookup(value));
-    }
-
-
-    public Set<StackTraceElement> possiblePointsOfInvocation() {
-        Set<StackTraceElement> ret = new HashSet<>();
-        for(StackTraceElement tableKey : keySet()) {
-            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
-            for(StackTraceElement row : table.rowKeySet()) {
-                ret.add(row);
-            }
-        }
-        return ret;
-    }
-
-
-    public Set<StackTraceElement> possiblePointsOfOrigin() {
-        Set<StackTraceElement> ret = new HashSet<>();
-        for(StackTraceElement tableKey : keySet()) {
-            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
-            for(StackTraceElement row : table.rowKeySet()) {
-                for(StackTraceElement column : table.columnKeySet()) {
-                    for(NDArrayEvent event : table.get(row,column)) {
-                        ret.add(event.getPointOfOrigin());
-
-                    }
-                }
-            }
-        }
-        return ret;
-    }
-
     public List<NDArrayEvent> getEvents(StackTraceElement tableKey,
                                         StackTraceElement row,
                                         StackTraceElement column) {
@@ -122,9 +69,11 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
     }
 
 
-
-
-
+    /**
+     * Compare the breakdown for the given arguments
+     * @param breakdownArgs the breakdown arguments to compare
+     * @return
+     */
     public  BreakDownComparison compareBreakDown(BreakdownArgs breakdownArgs) {
         StackTraceElement targetTable = StackTraceElementCache.lookup(breakdownArgs.getPointOfOrigin());
         StackTraceElement compTable = StackTraceElementCache.lookup(breakdownArgs.getCompPointOfOrigin());
@@ -169,14 +118,4 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
                 .build();
     }
 
-    public Set<StackTraceElement> possibleParentPointsOfInvocation() {
-        Set<StackTraceElement> ret = new HashSet<>();
-        for(StackTraceElement tableKey : keySet()) {
-            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
-            for(StackTraceElement column : table.columnKeySet()) {
-                ret.add(column);
-            }
-        }
-        return ret;
-    }
 }

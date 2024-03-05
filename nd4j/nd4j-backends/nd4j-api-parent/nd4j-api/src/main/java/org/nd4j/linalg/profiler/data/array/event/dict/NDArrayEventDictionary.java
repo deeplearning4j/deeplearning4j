@@ -31,6 +31,21 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * A dictionary for storing {@link NDArrayEvent}
+ * instances. This dictionary is organized by
+ * the point of origin by default. This means that
+ * the point of origin is the key and the value is
+ * a map of the point of invocation to the list of events
+ * for that point of invocation.
+ * This dictionary can also be organized by the point of invocation
+ * which means that the point of invocation is the key and the value
+ * is a map of the point of origin to the list of events for that point of origin.
+ * This dictionary can also be organized by the point of invocation
+ * which means that the point of invocation is the key and the value
+ * is a map of the point of origin to the list of events for that point of origin.
+ *
+ */
 public class NDArrayEventDictionary extends ConcurrentHashMap<StackTraceElement,Map<StackTraceElement,List<NDArrayEvent>>> {
 
     private boolean organizeByPointOfInvocation = false;
@@ -188,6 +203,12 @@ public class NDArrayEventDictionary extends ConcurrentHashMap<StackTraceElement,
     }
 
 
+    /**
+     * Get all events for a given point of origin
+     * @param pointOfOrigin the point of origin to get events for
+     * @param eventType the event type to get
+     * @return the events for the given point of origin
+     */
     public List<NDArrayEvent> eventsForOrigin(StackTraceElement pointOfOrigin, NDArrayEventType eventType) {
         if (organizeByPointOfInvocation) {
             List<NDArrayEvent> ret = new ArrayList<>();
@@ -226,6 +247,12 @@ public class NDArrayEventDictionary extends ConcurrentHashMap<StackTraceElement,
 
     }
 
+    /**
+     * Get all events for a given point of invocation
+     * @param pointOfInvocation the point of invocation to get events for
+     * @param eventType the event type to get
+     * @return the events for the given point of invocation
+     */
     public List<NDArrayEvent> eventsForInvocation(StackTraceElement pointOfInvocation, NDArrayEventType eventType) {
         if (organizeByPointOfInvocation) {
             List<NDArrayEvent> ret = new ArrayList<>();

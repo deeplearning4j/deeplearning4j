@@ -22,12 +22,10 @@ package org.nd4j.linalg.profiler.data.array.eventlog;
 import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
-import org.nd4j.linalg.profiler.data.array.*;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.dict.BreakDownComparison;
 import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventDictionary;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
-import org.nd4j.linalg.profiler.data.array.summary.SummaryOfArrayEvents;
 import org.nd4j.linalg.profiler.data.array.registry.ArrayRegistry;
 
 import java.util.ArrayList;
@@ -100,22 +98,21 @@ public interface Nd4jEventLog {
      */
     List<NDArrayEvent> arrayEventsForStackTracePoint(String className,String methodName,int lineNumber);
 
-    default List<ArrayDataRevisionSnapshot> arrayDataRevisionSnapshotsFor(INDArray arr) {
-        return arrayDataRevisionSnapshotsForId(arr.getId());
-    }
 
+    /**
+     * Returns the related {@link NDArrayEvent}
+     * @param className the class name to get the event for
+     * @param methodName the method name to get the event for
+     * @param lineNumber
+     * @return
+     */
     StackTraceElement lookupPointOfEvent(String className, String methodName, int lineNumber);
 
+    /**
+     * Add a stack trace point of event
+     * @param stackTraceElement
+     */
     void addStackTracePointOfEvent(StackTraceElement stackTraceElement);
-
-    Map<Long,List<ArrayDataRevisionSnapshot>> snapshotData();
-
-    List<SummaryOfArrayEvents> eventsForIds(List<Long> ids);
-
-    SummaryOfArrayEvents eventsForArrayId(long id);
-
-    List<ArrayDataRevisionSnapshot> arrayDataRevisionSnapshotsForId(long id);
-
 
 
     /**
@@ -184,25 +181,6 @@ public interface Nd4jEventLog {
      * @return
      */
     Map<Long, List<NDArrayEvent>> ndarrayEvents();
-
-
-    /**
-     * Returns all events with this array as a parent id.
-     * A parent id is an id of an array that was used to create
-     * a view. The field used to search for this is {@link NDArrayEvent#getParentArrayId()}
-     * @param id the id of the parent array
-     * @return
-     */
-    List<NDArrayEvent> arrayEventsForParentId(long id );
-
-    /**
-     * Returns all events with this array as a child id.
-     * A child id is an id of an array that was created from a view.
-     * The field used to search for this is {@link NDArrayEvent#getChildArrayId()}
-     * @param id the id of the child array
-     * @return the list of events for the given child id
-     */
-    List<NDArrayEvent> eventsForArrayChildId(long id);
 
 
     /**
