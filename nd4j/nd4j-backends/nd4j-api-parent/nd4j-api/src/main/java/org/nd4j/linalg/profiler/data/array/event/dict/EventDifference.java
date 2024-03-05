@@ -17,43 +17,27 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.profiler.data.stacktrace;
+package org.nd4j.linalg.profiler.data.array.event.dict;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class StackTraceLookupKey implements Serializable  {
+@NoArgsConstructor
+public class EventDifference {
 
-    private String className;
-    private String methodName;
-    private int lineNumber;
+    @Builder.Default
+    private List<List<Pair<NDArrayEvent,NDArrayEvent>>> differences = new ArrayList<>();
+    @Builder.Default
+    private List<List<BreakDownComparison>> comparisonBreakDowns = new ArrayList<>();
 
-
-    public static StackTraceLookupKey of(StackTraceElement element) {
-        return StackTraceLookupKey.builder()
-                .className(element.getClassName())
-                .methodName(element.getMethodName())
-                .lineNumber(element.getLineNumber())
-                .build();
-    }
-
-    public static StackTraceElement stackTraceElementOf(StackTraceLookupKey key) {
-        return StackTraceElementCache.lookup(key);
-    }
-
-    public static StackTraceLookupKey of(String className, String methodName, int lineNumber) {
-        return StackTraceLookupKey.builder()
-                .className(className)
-                .methodName(methodName)
-                .lineNumber(lineNumber)
-                .build();
-    }
 }

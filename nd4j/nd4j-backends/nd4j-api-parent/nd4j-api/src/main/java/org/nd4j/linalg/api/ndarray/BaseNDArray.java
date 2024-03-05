@@ -23,7 +23,6 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
@@ -174,7 +173,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public List<NDArrayEvent> writeEvents() {
-        return log().ndArrayEventsFor(arrayId);
+        return log().ndArrayEventsForId(arrayId);
     }
 
     @Override
@@ -211,6 +210,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(descriptor.isEmpty() ? null :
                         Nd4j.createBuffer(descriptor.length())
                 , descriptor.getShape(), descriptor.getStride(), 0, descriptor.getOrder(), descriptor.dataType());
+    }
+
+    public static boolean callingToString() {
+        return callingToString.get();
     }
 
     /**
@@ -300,13 +303,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void logCreationFromConstructor() {
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
+            NDArrayMetaData metaData = NDArrayMetaData.from(this);
             Nd4j.getExecutioner().getNd4jEventLog().registry().register(this);
             Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(arrayId, NDArrayEvent.builder()
-                    .childArrayId(arrayId)
-                    .dataAtEvent(NDArrayMetaData.from(this))
+                    .dataAtEvent(metaData)
+                    .parentDataAtEvent(new NDArrayMetaData[]{metaData})
                     .ndArrayEventType(NDArrayEventType.ARRAY_CREATION)
                     .stackTrace(Thread.currentThread().getStackTrace())
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(getWorkspace()))
                     .build());
         }
     }
@@ -1195,12 +1198,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         toTad.setCloseable(false);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .parentArrayId(arrayId)
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(toTad.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
-                    .childArrayId(toTad.getId())
+                    .dataAtEvent(NDArrayMetaData.from(toTad))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             toTad.addEvent(event);
@@ -1496,13 +1496,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             callingToString.set(false);
         }
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
+            NDArrayMetaData metaData = NDArrayMetaData.from(this);
             NDArrayEvent event = NDArrayEvent.builder()
-                    .parentArrayId(arrayId)
-                    .childArrayId(arrayId)
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(getWorkspace()))
                     .ndArrayEventType(eventType)
-                    .dataAtEvent(NDArrayMetaData.from(this))
-                    .arrayWriteCreationStackTrace(allocationTrace)
+                    .dataAtEvent(metaData)
+                    .parentDataAtEvent(new NDArrayMetaData[]{metaData})
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             addEvent(event);
@@ -1852,15 +1850,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     protected void logBeforeViewCreationIfNeccessary() {
-        logEventIfNeccessary(NDArrayEventType.BEFORE_VIEW_CREATION);
+        if(Nd4j.getEnvironment().isLogNDArrayEvents() && !BaseNDArray.callingToString()) {
+            NDArrayMetaData metaData = NDArrayMetaData.from(this);
+            NDArrayEvent ndArrayEvent = NDArrayEvent.builder()
+                    .ndArrayEventType(NDArrayEventType.BEFORE_VIEW_CREATION)
+                    .dataAtEvent(metaData)
+                    .parentDataAtEvent(new NDArrayMetaData[]{metaData})
+                    .stackTrace(Thread.currentThread().getStackTrace())
+                    .build();
+            addEvent(ndArrayEvent);
+        }
     }
     protected void logViewCreationIfNeccessary() {
         logEventIfNeccessary(NDArrayEventType.VIEW_CREATION);
     }
 
-    protected void logArrayCreationIfNeccessary() {
-        logEventIfNeccessary(NDArrayEventType.ARRAY_CREATION);
-    }
 
     @Override
     public INDArray dup(char order) {
@@ -1877,16 +1881,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        val z = Nd4j.create(this.dataType(), this.shape(),order());
+        val z = Nd4j.create(this.dataType(), this.shape(),order);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
+            NDArrayMetaData metaData = NDArrayMetaData.from(this);
             NDArrayEvent event = NDArrayEvent.builder()
-                    .childArrayId(z.getId())
-                    .parentArrayId(arrayId)
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(z.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
                     .dataAtEvent(NDArrayMetaData.from(z))
+                    .parentDataAtEvent(new NDArrayMetaData[]{metaData})
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             z.addEvent(event);
@@ -1968,7 +1969,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         autoProcessScalarCall();
         Nd4j.getCompressor().autoDecompress(this);
         Preconditions.checkState(!isEmpty(), "Unable to get value from empty array");
-        logBeforeViewCreationIfNeccessary();
         for (int i = 0; i < indices.length; i++) {
             if (indices[i] < 0)
                 indices[i] += rank();
@@ -1986,7 +1986,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
         }
         double ret =  Shape.getDouble(this, indices);
-        logViewCreationIfNeccessary();
 
 
         return ret;
@@ -2252,12 +2251,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
-                        .childArrayId(ret.getId())
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
                         .dataAtEvent(NDArrayMetaData.from(ret))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -2276,14 +2272,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
-                        .childArrayId(ret.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
+                        .dataAtEvent(NDArrayMetaData.from(ret))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -2329,13 +2320,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
                         .dataAtEvent(NDArrayMetaData.from(concat))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(concat.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
-                        .childArrayId(concat.getId())
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 concat.addEvent(event);
@@ -2397,7 +2384,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        logBeforePutIfNeccessary();
         boolean isSpecifiedIndex = false;
         for(INDArrayIndex idx : indices) {
             if(idx instanceof SpecifiedIndex) {
@@ -2408,7 +2394,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(!isSpecifiedIndex) {
             INDArray get = get(indices);
-            return get.assign(element);
+            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .dataAtEvent(NDArrayMetaData.from(get))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(Arrays.asList(this,element)))
+                        .ndArrayEventType(NDArrayEventType.BEFORE_PUT)
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build();
+                get.addEvent(event);
+            }
+
+            INDArray ret =  get.assign(element);
+            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .dataAtEvent(NDArrayMetaData.from(get))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(Arrays.asList(this,element,ret)))
+                        .ndArrayEventType(NDArrayEventType.PUT)
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build();
+                get.addEvent(event);
+            }
+
+            return ret;
+
         } else {
             //Can't get a view, so we'll do it in subsets instead
             // This is inefficient, but it is correct...
@@ -2449,10 +2457,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     sourceIndices[dims[i]] = NDArrayIndex.point(iterationIdxs[i]);
                 }
 
+                INDArray get = get(destinationIndices);
+                INDArray elementGet = element.get(sourceIndices);
+                if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                    NDArrayEvent event = NDArrayEvent.builder()
+                            .dataAtEvent(NDArrayMetaData.from(get))
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(Arrays.asList(this,element,elementGet)))
+                            .ndArrayEventType(NDArrayEventType.BEFORE_PUT)
+                            .stackTrace(Thread.currentThread().getStackTrace())
+                            .build();
+                    get.addEvent(event);
+                }
+
                 get(destinationIndices).assign(element.get(sourceIndices));
+                if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                    NDArrayEvent event = NDArrayEvent.builder()
+                            .dataAtEvent(NDArrayMetaData.from(get))
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(Arrays.asList(this,element,elementGet)))
+                            .ndArrayEventType(NDArrayEventType.PUT)
+                            .stackTrace(Thread.currentThread().getStackTrace())
+                            .build();
+                    get.addEvent(event);
+                }
             }
 
-            logPutIfNeccessary();
             return this;
 
         }
@@ -2564,13 +2592,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .parentArrayId(arrayId)
                     .dataAtEvent(NDArrayMetaData.from(ret))
-                    .childArrayId(ret.getId())
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             ret.addEvent(event);
@@ -3761,13 +3785,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray ret =  Nd4j.createArrayFromShapeBuffer(buffer, shape);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .parentArrayId(arrayId)
                     .dataAtEvent(NDArrayMetaData.from(ret))
-                    .childArrayId(ret.getId())
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             ret.addEvent(event);
@@ -4102,15 +4122,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (reshapeAttempt != null) {
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                String toStringFull = reshapeAttempt.toStringFull();
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
                         .dataAtEvent(NDArrayMetaData.from(reshapeAttempt))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(reshapeAttempt.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
-                        .childArrayId(reshapeAttempt.getId())
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 reshapeAttempt.addEvent(event);
@@ -4133,13 +4148,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret.setData(toFlattened(order,this).data());
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
-                        .childArrayId(ret.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .dataAtEvent(NDArrayMetaData.from(ret))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -4150,13 +4161,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray ret = Nd4j.create(this.dataType(), shape);
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .childArrayId(ret.getId())
-                        .parentArrayId(arrayId)
                         .dataAtEvent(NDArrayMetaData.from(ret))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -4172,13 +4179,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             ret.setData(ravel.data());
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .childArrayId(ravel.getId())
-                        .parentArrayId(arrayId)
                         .dataAtEvent(NDArrayMetaData.from(ret))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -4707,12 +4710,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
                 if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                     NDArrayEvent event = NDArrayEvent.builder()
-                            .childArrayId(out.getId())
                             .dataAtEvent(NDArrayMetaData.from(out))
-                            .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(out.getWorkspace()))
-                            .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                             .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                            .parentArrayCreationStackTrace(allocationTrace)
                             .stackTrace(Thread.currentThread().getStackTrace())
                             .build();
                     addEvent(event);
@@ -4733,13 +4733,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray out =  Nd4j.create(data, outShape, outStrides,offset,order,true);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .parentArrayId(arrayId)
-                    .childArrayId(out.getId())
                     .dataAtEvent(NDArrayMetaData.from(out))
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(out.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build();
             out.addEvent(event);
@@ -4779,13 +4775,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray ret =  Nd4j.pullRows(this, 0, cindices, this.ordering());
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
                         .dataAtEvent(NDArrayMetaData.from(ret))
-                        .childArrayId(ret.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -4802,12 +4794,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .parentArrayId(arrayId)
-                        .childArrayId(ret.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.PUT)
-                        .parentArrayCreationStackTrace(allocationTrace)
                         .stackTrace(Thread.currentThread().getStackTrace())
                         .build();
                 ret.addEvent(event);
@@ -5310,12 +5298,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         value.setCloseable(false);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             value.log().addToNDArrayLog(value.getId(), NDArrayEvent.builder()
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(value.getWorkspace()))
-                    .parentArrayId(getId())
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .dataAtEvent(NDArrayMetaData.from(value))
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
                     .build());
         }
@@ -5719,9 +5704,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
             Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(getId(),
                     NDArrayEvent.builder()
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                             .stackTrace(Thread.currentThread().getStackTrace())
-                            .childArrayId(getId())
-                            .parentArrayId(getId())
                             .dataAtEvent(NDArrayMetaData.from(this))
                             .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_DETACH)
                             .build());
@@ -5832,12 +5816,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException {
         WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            NDArrayMetaData data = NDArrayMetaData.from(this);
             Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(getId(),
                     NDArrayEvent.builder()
+                            .parentDataAtEvent(new NDArrayMetaData[]{data})
                             .stackTrace(Thread.currentThread().getStackTrace())
-                            .childArrayId(getId())
-                            .parentArrayId(getId())
-                            .dataAtEvent(NDArrayMetaData.from(this))
+                            .dataAtEvent(data)
                             .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
                             .build());
         }
@@ -6097,13 +6081,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray ret = Nd4j.empty(dataType);
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
-                        .childArrayId(ret.getId())
-                        .arrayWriteCreationStackTrace(ret.allocationTrace())
-                        .parentArrayCreationStackTrace(allocationTrace)
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                         .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .parentArrayId(arrayId)
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(ret.getWorkspace()))
-                        .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
                         .build();
                 ret.addEvent(event);
             }
@@ -6112,12 +6091,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .childArrayId(result.getId())
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .dataAtEvent(NDArrayMetaData.from(result))
-                    .arrayWriteCreationStackTrace(result.allocationTrace())
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .ndArrayEventType(NDArrayEventType.BEFORE_VIEW_CREATION)
-                    .parentArrayId(arrayId)
                     .build();
             result.addEvent(event);
         }
@@ -6125,14 +6101,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
-                    .childArrayId(result.getId())
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .dataAtEvent(NDArrayMetaData.from(result))
-                    .arrayWriteCreationStackTrace(result.allocationTrace())
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(result.getWorkspace()))
-                    .parentWorkspace(WorkspaceUseMetaData.from(getWorkspace()))
-                    .parentArrayId(arrayId)
                     .build();
             result.addEvent(event);
         }
@@ -6198,10 +6169,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new ND4JIllegalStateException("Can't release this INDArray");
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
             Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(arrayId, NDArrayEvent.builder()
-                    .childArrayId(arrayId)
-                    .parentArrayId(arrayId)
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
                     .ndArrayEventType(NDArrayEventType.CLOSE)
-                    .parentArrayCreationStackTrace(allocationTrace)
                     .dataAtEvent(NDArrayMetaData.from(this))
                     .stackTrace(allocationTrace)
 

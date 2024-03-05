@@ -79,6 +79,11 @@ public class WorkspaceUseMetaData {
                 .build();
     }
 
+
+    public static WorkspaceUseMetaData[] fromArr(MemoryWorkspace workspace) {
+        return new WorkspaceUseMetaData[] {from(workspace)};
+    }
+
     /**
      * Returns an empty meta data
 

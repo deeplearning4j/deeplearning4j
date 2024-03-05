@@ -25,10 +25,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Data
@@ -54,6 +51,23 @@ public class StackTraceQuery implements Serializable {
 
     private static Map<String, Pattern> cachedPatterns = new HashMap<>();
 
+
+    public boolean filter(StackTraceElement stackTraceElement) {
+        return StackTraceQuery.stackTraceElementMatchesCriteria(Arrays.asList(this),stackTraceElement,lineNumber);
+    }
+
+
+    public static List<StackTraceQuery> ofLineNumbers(String className,String methodName,int...lineNumbers) {
+        List<StackTraceQuery> ret = new ArrayList<>();
+        for(int i = 0; i < lineNumbers.length; i++) {
+            ret.add(StackTraceQuery.builder()
+                    .className(className)
+                    .methodName(methodName)
+                    .lineNumber(lineNumbers[i]).build());
+        }
+
+        return ret;
+    }
 
     /**
      * Create a list of queries
@@ -110,6 +124,10 @@ public class StackTraceQuery implements Serializable {
      * @return true if the stack trace element matches the given criteria
      */
     public static boolean stackTraceElementMatchesCriteria(List<StackTraceQuery> queries, StackTraceElement line, int j) {
+        if(queries == null || queries.isEmpty()) {
+            return false;
+        }
+
         for (StackTraceQuery query : queries) {
             //allow -1 on line number to mean any line number  also allow methods that are unspecified to mean any method
             //also check for the line count occurrence -1 means any
@@ -138,9 +156,16 @@ public class StackTraceQuery implements Serializable {
     }
 
     private static boolean isClassNameMatch(String query, StackTraceQuery query1, String line) {
+        if(query1 != null && query != null && query1.isRegexMatch()) {
+            if(query != null && !cachedPatterns.containsKey(query)) {
+                cachedPatterns.put(query, Pattern.compile(query));
+            }
+        }
+
         boolean classNameMatch = (query == null || query.isEmpty()) ||
                 (query1.isExactMatch() ? line.equals(query) : line.contains(query)) ||
-                (query1.isRegexMatch() ? line.matches(query) : line.contains(query));
+                (query1.isRegexMatch() ? cachedPatterns.get(query).matcher(line).matches() : line.contains(query));
+
         return classNameMatch;
     }
 

@@ -24,16 +24,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.profiler.data.array.*;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
+import org.nd4j.linalg.profiler.data.array.event.dict.BreakDownComparison;
 import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventDictionary;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.summary.SummaryOfArrayEvents;
-import org.nd4j.linalg.profiler.data.array.watch.WatchCriteria;
 import org.nd4j.linalg.profiler.data.array.registry.ArrayRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An NDArrayEventLog is a log of {@link NDArrayEvent}
@@ -50,6 +49,24 @@ import java.util.Set;
  * @author Adam Gibson
  */
 public interface Nd4jEventLog {
+
+    /**
+     * Compare the events for two arrays
+     * @param arrId the array id to compare
+     * @param arrIdComp the array id to compare
+     * @return the comparison of the two arrays
+     */
+    BreakDownComparison compareEventsFor(long arrId, long arrIdComp);
+
+    /**
+     * Compare the events for two arrays
+     * @param arr the array to compare
+     * @param arrComp the array to compare
+     * @return the comparison of the two arrays
+     */
+    default BreakDownComparison compareEventsFor(INDArray arr, INDArray arrComp) {
+        return compareEventsFor(arr.getId(), arrComp.getId());
+    }
 
     /**
      * Returns the {@link NDArrayEvent}
@@ -93,65 +110,13 @@ public interface Nd4jEventLog {
 
     Map<Long,List<ArrayDataRevisionSnapshot>> snapshotData();
 
-    Set<Long> watched();
-
-    Map<Long, SummaryOfArrayEvents> arrayEventsSummaryForWatched();
-
     List<SummaryOfArrayEvents> eventsForIds(List<Long> ids);
 
     SummaryOfArrayEvents eventsForArrayId(long id);
 
     List<ArrayDataRevisionSnapshot> arrayDataRevisionSnapshotsForId(long id);
 
-    List<WatchCriteria> watchCriteria();
 
-    void stopWatching(WatchCriteria... watchCriteria);
-
-    /**
-     * Stop Watch an ndarray
-     * based on the {@link INDArray#getId()}
-     *
-     * @param watch
-     */
-    default void stopWatching(INDArray watch) {
-        stopWatching(watch.getId());
-    }
-
-    /**
-     * Stop watching an ndarray
-     * based on the {@link INDArray#getId()}
-     *
-     * @param id the id of the array to stop watching
-     */
-    void stopWatching(long id);
-
-
-
-    /**
-     * Watch ndarrays that fulfill a set of criteria.
-     * based on teh {@link WatchCriteria}
-     * events logged will monitor array ids
-     * coming through that fulfill the specified criteria.
-     *
-     * Criteria are accumulated.
-     * @param watchCriteria
-     */
-    void watchWithCriteria(WatchCriteria... watchCriteria);
-
-    /**
-     * Returns all events for a given id.
-     *
-     * @param watch  the id to get the events for
-     */
-    default void watchNDArrayWithId(INDArray watch) {
-        watchNDArrayWithId(watch.getId());
-    }
-
-    /**
-     *  Watch an ndarray based on the {@link INDArray#getId()}
-     * @param id
-     */
-    void watchNDArrayWithId(long id);
 
     /**
      * Return workspaces with a particular {@link org.nd4j.linalg.api.memory.WorkspaceUseMetaData.EventTypes}
@@ -160,57 +125,6 @@ public interface Nd4jEventLog {
      * @return the list of workspaces for the given event type
      */
     List<WorkspaceUseMetaData> workspacesWhere(WorkspaceUseMetaData.EventTypes eventType);
-
-    /**
-     * Returns all events with a closed "child" array
-     * which in this case will be the array itself
-     * where a workspace was closed or an array was closed
-     * when the array was used.
-     * @return
-     */
-    List<NDArrayEvent> eventsWithClosedChildWorkspacesOrArrays();
-
-    /**
-     * Returns all events with a closed "parent" array
-     * which in this case will be an array where a view was created
-     * and had descendenant arrays created from it.
-     * where a workspace was closed or an array was closed
-     * when the array was used.
-     * @return
-     */
-    List<NDArrayEvent> eventsWithClosedParentWorkspacesOrArrays();
-
-    /**
-     * Returns all events with a given workspace event type
-     * for the parent workspace.
-     * @param eventType the event type to filter by
-     * @return the list of events for the given workspace event type
-     */
-    List<NDArrayEvent> eventsWithParentWorkspaceEventType(WorkspaceUseMetaData.EventTypes eventType);
-
-    /**
-     * Returns all events with a given workspace event type
-     * for the child workspace.
-     * @param eventType the event type to filter by
-     * @return the list of events for the given workspace event type
-     */
-    List<NDArrayEvent> eventsWithChildWorkspaceEventType(WorkspaceUseMetaData.EventTypes eventType);
-
-    /**
-     * Returns all events with a given workspace type
-     * for the child workspace.
-     * @param workspaceType the workspace type to filter by
-     * @return the list of events for the given workspace type
-     */
-    List<NDArrayEvent> eventsWithChildWorkspace(Enum workspaceType);
-
-    /**
-     * Returns all events with a given workspace type
-     * for the parent workspace.
-     * @param workspaceType the workspace type to filter by
-     * @return the list of events for the given workspace type
-     */
-    List<NDArrayEvent> eventsWithParentWorkspace(Enum workspaceType);
 
     /**
      * Returns all events with a given workspace type
@@ -241,25 +155,6 @@ public interface Nd4jEventLog {
      * @param <T> the type of the meta data
      */
     <T> void  recordWorkspaceEvent(WorkspaceUseMetaData workspaceUseMetaData);
-
-    /**
-     * Record a workspace event
-     *
-     * @param event the event to record
-     */
-    void registerDataUpdatesAsNeeded(NDArrayEvent event);
-
-    void registerDataUpdatesAsNeeded(WorkspaceUseMetaData workspaceUseMetaData);
-
-    /**
-     * Register data updates as needed
-     * based on the {@link WorkspaceUseMetaData}
-     * and {@link NDArrayEvent}
-
-     * @param workspaceUseMetaData the meta data to register
-     * @param event the event to register
-     */
-    void registerDataUpdatesAsNeeded(WorkspaceUseMetaData workspaceUseMetaData, NDArrayEvent event);
 
     /**
      * Returns the parents for a given id
@@ -310,14 +205,30 @@ public interface Nd4jEventLog {
     List<NDArrayEvent> eventsForArrayChildId(long id);
 
 
+    /**
+     * Returns all events with this array as a child id.
+     * A child id is an id of an array that was created from a view.
+     * @return
+     */
     ArrayRegistry registry();
+
+    /**
+     * Returns all events with this array as a child id.
+     * A child id is an id of an array that was created from a view.
+     *
+     * @param arr
+     * @return
+     */
+    default List<NDArrayEvent> ndarrayEventsFor(INDArray arr) {
+        return this.ndArrayEventsForId(arr.getId());
+    }
 
     /**
      * Returns all events for a given id.
      * @param id
      * @return
      */
-    default List<NDArrayEvent> ndArrayEventsFor(long id) {
+    default List<NDArrayEvent> ndArrayEventsForId(long id) {
         return ndarrayEvents().get(id);
     }
 
@@ -328,7 +239,7 @@ public interface Nd4jEventLog {
      * @return
      */
     default List<NDArrayEvent> ndArrayEventsForType(long id, NDArrayEventType type) {
-        List<NDArrayEvent> events = ndArrayEventsFor(id);
+        List<NDArrayEvent> events = ndArrayEventsForId(id);
         events.removeIf(e -> e.getNdArrayEventType() != type);
         return events;
     }
@@ -350,21 +261,6 @@ public interface Nd4jEventLog {
             addStackTracePointOfEvent(event.getPointOfInvocation());
         }
 
-        if(watchCriteria() != null && !watchCriteria().isEmpty()) {
-            for(WatchCriteria watchCriteria : watchCriteria()) {
-                if(watchCriteria.fulfillsCriteria(event)) {
-                    if(event.getChildArrayId() >= 0) {
-                        watchNDArrayWithId(event.getChildArrayId());
-                    }
-                    if(event.getParentArrayId() >= 0) {
-                        watchNDArrayWithId(event.getParentArrayId());
-                    }
-
-                    registerDataUpdatesAsNeeded(event);
-
-                }
-            }
-        }
 
     }
 

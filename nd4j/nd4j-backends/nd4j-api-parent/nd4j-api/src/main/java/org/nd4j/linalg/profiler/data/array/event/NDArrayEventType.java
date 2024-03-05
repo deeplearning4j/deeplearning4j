@@ -56,5 +56,55 @@ public enum NDArrayEventType {
     CLOSE
     ,ARRAY_WORKSPACE_LEVERAGE,
     ARRAY_WORKSPACE_DETACH,
-    ARRAY_CREATION
+    ARRAY_CREATION;
+
+
+    /**
+     * Returns true if the given event type
+     * has an after event
+     * The following event types will have
+     * after types:
+     * {@link NDArrayEventType#BEFORE_OP_INPUT}
+     * {@link NDArrayEventType#BEFORE_OP_OUTPUT}
+     * {@link NDArrayEventType#BEFORE_PUT}
+     * {@link NDArrayEventType#BEFORE_VIEW_CREATION}
+     * @param eventType the event type to check
+     * @return
+     */
+    public static boolean hasAfter(NDArrayEventType eventType) {
+        switch (eventType) {
+            case BEFORE_OP_INPUT:
+            case BEFORE_OP_OUTPUT:
+            case BEFORE_PUT:
+            case BEFORE_VIEW_CREATION:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Returns the after type as denoted by
+     * {@link #hasAfter(NDArrayEventType)}
+     * This denotes the closing of an execution scope
+     * reflecting the before and after state of an array
+     * as well as the events in between.
+     * @param eventType the event type to get the after type for
+     * @return
+     */
+    public static NDArrayEventType afterFor(NDArrayEventType eventType) {
+        switch (eventType) {
+            case BEFORE_OP_INPUT:
+                return OP_INPUT;
+            case BEFORE_OP_OUTPUT:
+                return OP_OUTPUT;
+            case BEFORE_PUT:
+                return PUT;
+            case BEFORE_VIEW_CREATION:
+                return VIEW_CREATION;
+            default:
+                throw new IllegalArgumentException("Illegal event type " + eventType);
+        }
+    }
+
 }

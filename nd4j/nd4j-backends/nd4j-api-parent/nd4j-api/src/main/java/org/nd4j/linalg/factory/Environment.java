@@ -53,6 +53,22 @@ public interface Environment {
 
 
     /**
+     * This method returns whether to truncate ndarray
+     * metadata strings or not when {@link #isLogNDArrayEvents()}
+     * is true.
+     * @return
+     */
+    boolean isTruncateNDArrayLogStrings();
+
+    /**
+     * This method sets whether to truncate
+     * ndarray long strings when {@link #isLogNDArrayEvents()}
+     * is true
+     * @param truncateLogStrings
+     */
+    void setTruncateLogStrings(boolean truncateLogStrings);
+
+    /**
      * This is the number of {@link WorkspaceUseMetaData} to keep
      * in the memory manager. The default is -1 (unlimited)
      * @return

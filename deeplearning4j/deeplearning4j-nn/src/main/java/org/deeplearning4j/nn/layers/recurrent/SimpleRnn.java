@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.primitives.Quad;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 
 import java.util.UUID;
 
@@ -92,7 +93,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         val nOut = layerConf().getNOut();
 
-        INDArray input = this.input.castTo(dataType).dup('f');   //No-op if correct type
+        INDArray input = this.input.castTo(dataType);   //No-op if correct type
         input = permuteIfNWC(input);
 
         //First: Do forward pass to get gate activations and Zs
@@ -150,8 +151,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     private void backwardLoop(LayerWorkspaceMgr workspaceMgr, long tsLength, long end, INDArray epsilon2, Quad<INDArray, INDArray, INDArray, INDArray> p, INDArray input, INDArray epsOut, INDArray dldzNext, INDArray rw, INDArray rwg, IActivation a, INDArray gg, INDArray gxg, INDArray bg, INDArray gx, INDArray b, INDArray wg, INDArray w, INDArray grg, INDArray gr) {
         for(long i = tsLength - 1; i >= end; i--) {
-            INDArray dldaCurrent = epsilon2.get(all(), all(), point(i)).dup('f');
-            INDArray aCurrent = p.getFirst().get(all(), all(), point(i)).dup('f');
+            INDArray dldaCurrent = epsilon2.get(all(), all(), point(i));
+            INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
             INDArray nCurrent = (hasLayerNorm() ? p.getThird().get(all(), all(), point(i)) : null);
             INDArray rCurrent = (hasLayerNorm() ? p.getFourth().get(all(), all(), point(i)) : null);
@@ -166,7 +167,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.gemm(aCurrent, dldzNext, rwg, true, false, 1.0, 1.0);
             }
 
-            INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent).getFirst();
+            INDArray dldzCurrent = a.backprop(zCurrent, dldaCurrent).getFirst();
 
             //Handle masking
             INDArray maskCol = null;
@@ -236,12 +237,14 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
+
         INDArray input = this.input.castTo(dataType);    //No-op if correct type
         input = permuteIfNWC(input);
         val m = input.size(0);
         val tsLength = input.size(2);
         val nOut = layerConf().getNOut();
 
+        workspaceMgr.keepOpen(ArrayType.ACTIVATIONS,ArrayType.BP_WORKING_MEM);
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
         INDArray b = layerConf().isUseBias() ? getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr) : null;
@@ -268,13 +271,13 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         for( int i = 0; i < tsLength; i++) {
             //out = activationFn(in*w + last*rw + bias)
-            INDArray currOut = out.get(all(), all(), point(i)).dup('f'); //F order
-            INDArray currIn = input.get(all(), all(), point(i)).dup('f');
+            INDArray currOut = out.get(all(), all(), point(i)); //F order
+            INDArray currIn = input.get(all(), all(), point(i));
             if(hasLayerNorm()) {
                 INDArray currOutPreNorm = (forBackprop ? outPreNorm : out).get(all(), all(), point(i));
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
                 Nd4j.getExecutioner().exec(new LayerNorm(currOutPreNorm, gx, b, currOut, true, 1));
-            }else {
+            } else {
                 currIn.mmul(w,currOut);
             }
 
@@ -291,7 +294,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             }
 
             if(forBackprop) {
-                outZ.get(all(), all(), point(i)).assign(currOut);
+                outZ.put(new INDArrayIndex[]{all(), all(), point(i)},currOut);
             }
 
             a.getActivation(currOut, training);

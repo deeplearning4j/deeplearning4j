@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -86,15 +86,13 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 op.z().rank() == 1) ||
                 (op.x().rank() == 1 && op.z().rank() == 2
                         && op.z().size(0) == 1)) && !op.x().isView() &&
-                !op.z().isView()) {
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                LinearCopy linearCopy = new LinearCopy();
-                linearCopy.addInputArgument(op.x());
-                linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
-                linearCopy.addOutputArgument(op.z());
-                executioner.exec(linearCopy);
-                return;
-            }
+                !op.z().isView() && op.x().ordering() == op.z().ordering()) {
+            LinearCopy linearCopy = new LinearCopy();
+            linearCopy.addInputArgument(op.x());
+            linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
+            linearCopy.addOutputArgument(op.z());
+            executioner.exec(linearCopy);
+
         } else {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
@@ -446,35 +444,46 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     @Deprecated
     public void profilingHookOut(Op op, OpContext oc, long timeStart) {
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-            op.z().addEvent(NDArrayEvent.builder()
+            INDArray x = op.x() != null ? op.x() : oc.getInputArray(0);
+            INDArray y = op.y() != null ? op.y() : oc.getInputArrays().size() >  1 ? oc.getInputArray(1) : null;
+            INDArray z = op.z() != null ? op.z() : oc.getOutputArray(0);
+
+            List<INDArray> inArgs = new ArrayList<>();
+            if(x != null) {
+                inArgs.add(x);
+            }
+
+            if(y != null) {
+                inArgs.add(y);
+            }
+
+            z.addEvent(NDArrayEvent.builder()
+                    .dataAtEvent(NDArrayMetaData.from(z))
+                    .parentDataAtEvent(NDArrayMetaData.fromArr(inArgs))
                     .ndArrayEventType(NDArrayEventType.BEFORE_OP_OUTPUT)
                     .stackTrace(Thread.currentThread().getStackTrace())
                     .build());
 
-            if(op.x() != null) {
-                INDArray arr = op.x();
+            if(x != null) {
+                INDArray arr = x;
                 NDArrayEvent event = NDArrayEvent.builder()
                         .stackTrace(Thread.currentThread().getStackTrace())
-                        .childArrayId(arr.getId())
-                        .parentWorkspace(WorkspaceUseMetaData.from(arr.getWorkspace()))
                         .dataAtEvent(NDArrayMetaData.from(arr))
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(arr))
                         .ndArrayEventType(NDArrayEventType.OP_INPUT)
-                        .arrayWriteCreationStackTrace(arr.allocationTrace())
                         .build();
                 arr.addEvent(event);
 
 
             }
 
-            if(op.y() != null) {
-                INDArray arr = op.y();
+            if(y != null) {
+                INDArray arr =  y;
                 NDArrayEvent event = NDArrayEvent.builder()
                         .stackTrace(Thread.currentThread().getStackTrace())
-                        .childArrayId(arr.getId())
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(arr))
                         .dataAtEvent(NDArrayMetaData.from(arr))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
                         .ndArrayEventType(NDArrayEventType.OP_INPUT)
-                        .arrayWriteCreationStackTrace(arr.allocationTrace())
                         .build();
                 arr.addEvent(event);
 
@@ -513,10 +522,27 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-            op.z().addEvent(NDArrayEvent.builder()
-                    .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
-                    .stackTrace(Thread.currentThread().getStackTrace())
-                    .build());
+            INDArray z = op.z() != null ? op.z() : oc.getOutputArray(0);
+            INDArray x = op.x() != null ? op.x() : oc.getInputArray(0);
+            INDArray y = op.y() != null ? op.y() : oc.getInputArrays().size() >  1 ? oc.getInputArray(1) : null;
+            if(x != null) {
+                op.z().addEvent(NDArrayEvent.builder()
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(x))
+                        .dataAtEvent(NDArrayMetaData.from(z))
+                        .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build());
+            }
+
+            if(y != null) {
+                op.z().addEvent(NDArrayEvent.builder()
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(y))
+                        .dataAtEvent(NDArrayMetaData.from(z))
+                        .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .build());
+            }
+
         }
 
     }
@@ -529,29 +555,31 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     @Deprecated
     public void profilingHookOut(CustomOp op, OpContext oc, long timeStart) {
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-            for(val arr: op.outputArguments()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .ndArrayEventType(NDArrayEventType.BEFORE_OP_OUTPUT)
-                        .dataAtEvent(NDArrayMetaData.from(arr))
-                        .childArrayId(arr.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                arr.addEvent(event);
-            }
-
             for(val arr : op.inputArguments()) {
                 NDArrayEvent event = NDArrayEvent.builder()
                         .stackTrace(Thread.currentThread().getStackTrace())
-                        .childArrayId(arr.getId())
+                        .parentDataAtEvent(NDArrayMetaData.fromArr(arr))
                         .dataAtEvent(NDArrayMetaData.from(arr))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
                         .ndArrayEventType(NDArrayEventType.OP_INPUT)
-                        .arrayWriteCreationStackTrace(arr.allocationTrace())
                         .build();
                 arr.addEvent(event);
 
             }
+
+            for(val arr: op.outputArguments()) {
+                for(val inputArr : op.inputArguments()) {
+                    NDArrayEvent event = NDArrayEvent.builder()
+                            .ndArrayEventType(NDArrayEventType.BEFORE_OP_OUTPUT)
+                            .dataAtEvent(NDArrayMetaData.from(arr))
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(inputArr))
+                            .stackTrace(Thread.currentThread().getStackTrace())
+                            .build();
+                    arr.addEvent(event);
+                }
+
+            }
+
+
 
         }
         switch (profilingMode) {
@@ -582,23 +610,70 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
         if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
             for(val arr: op.outputArguments()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
-                        .dataAtEvent(NDArrayMetaData.from(arr))
-                        .childArrayId(arr.getId())
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                arr.addEvent(event);
+                for(val inputArr : op.inputArguments()) {
+                    NDArrayEvent event = NDArrayEvent.builder()
+                            .ndArrayEventType(NDArrayEventType.OP_OUTPUT)
+                            .dataAtEvent(NDArrayMetaData.from(arr))
+                            .parentDataAtEvent(NDArrayMetaData.fromArr(inputArr))
+                            .stackTrace(Thread.currentThread().getStackTrace())
+                            .build();
+                    arr.addEvent(event);
+                }
+
             }
         }
 
     }
 
+    public static List<INDArray> inputArrsFromOp(Op op,OpContext opContext) {
+        if(opContext != null && !opContext.getInputArrays().isEmpty()) {
+            return opContext.getInputArrays();
+        } else {
+            if(op.x() != null && op.y() != null)
+                return Arrays.asList(op.x(),op.y());
+            else if(op.x() != null)
+                return Collections.singletonList(op.x());
+            else if(op.y() != null)
+                return Collections.singletonList(op.y());
+            else
+                return Collections.emptyList();
+        }
+    }
+
+    public static List<INDArray> outputArrsFromOp(Op op,OpContext opContext) {
+        if(opContext != null && !opContext.getOutputArrays().isEmpty()) {
+            return opContext.getOutputArrays();
+        } else {
+            if(op.z() != null)
+                return Collections.singletonList(op.z());
+            else if(op.y() != null)
+                return Collections.singletonList(op.y());
+            else if(op.x() != null)
+                return Collections.singletonList(op.x());
+            else
+                return Collections.emptyList();
+        }
+    }
+
+    public static List<INDArray> inputsFromOp(CustomOp customOp,OpContext opContext) {
+        if(opContext != null && !opContext.getInputArrays().isEmpty()) {
+            return opContext.getInputArrays();
+        } else {
+            return customOp.inputArguments();
+        }
+    }
+
+    public static List<INDArray> outputsFromOp(CustomOp customOp,OpContext opContext) {
+        if(opContext != null && !opContext.getOutputArrays().isEmpty()) {
+            return opContext.getOutputArrays();
+        } else {
+            return customOp.outputArguments();
+        }
+    }
 
     public long profilingConfigurableHookIn(Op op, OpContext oc) {
-        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : Arrays.asList(op.x(),op.y());
-        List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
+        List<INDArray> inArgs = inputArrsFromOp(op,oc);
+        List<INDArray> outArgs = outputArrsFromOp(op,oc);
 
         logOpArrayEventsIfNeccessary(op,inArgs ,outArgs, NDArrayEventType.BEFORE_OP_INPUT, NDArrayEventType.BEFORE_OP_OUTPUT);
 
@@ -617,8 +692,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingConfigurableHookIn(CustomOp op, OpContext oc) {
-        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
-        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+        List<INDArray> inArgs = inputsFromOp(op,oc);
+        List<INDArray> outArgs = outputsFromOp(op,oc);
         Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
         if(isDebug() && isVerbose()) {
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
@@ -628,7 +703,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                     Arrays.toString(arg), Arrays.toString(differentialFunction.outputVariablesNames()));
         }
 
-        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.BEFORE_OP_INPUT ,NDArrayEventType.BEFORE_OP_OUTPUT);
+        logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.BEFORE_OP_INPUT ,NDArrayEventType.BEFORE_OP_OUTPUT);
         if (OpProfiler.getInstance().getConfig().isStackTrace() ||
                 OpProfiler.getInstance().getConfig().isCheckElapsedTime()) {
             OpProfiler.getInstance().processOpCall(op);
@@ -638,7 +713,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             checkForWorkspaces(op, oc);
         }
 
-        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+        logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
 
         return System.nanoTime();
     }
@@ -661,7 +736,9 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
         }
 
-        logOpArrayEventsIfNeccessary(op,Arrays.asList(op.x(),op.y()),Arrays.asList(op.z()), NDArrayEventType.BEFORE_OP_INPUT, NDArrayEventType.BEFORE_OP_OUTPUT);
+        List<INDArray> inputs = inputArrsFromOp(op,null);
+        List<INDArray> outputs = outputArrsFromOp(op,null);
+        logOpArrayEventsIfNeccessary(op,inputs,outputs, NDArrayEventType.BEFORE_OP_INPUT, NDArrayEventType.BEFORE_OP_OUTPUT);
 
         return System.nanoTime();
 
@@ -669,8 +746,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     public void profilingConfigurableHookOut(Op op, OpContext oc, long timeStart) {
         Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
-        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : Arrays.asList(op.x(),op.y());
-        List<INDArray> outArgs = oc != null ? oc.getOutputArrays(): Arrays.asList(op.x(),op.y());
+        List<INDArray> inArgs = inputArrsFromOp(op,oc);
+        List<INDArray> outArgs = outputArrsFromOp(op,oc);
         if(OpProfiler.getInstance().getConfig() != null) {
             if(OpProfiler.getInstance().getConfig().isStackTrace()) {
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -714,8 +791,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
         Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
-        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
-        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+        List<INDArray> inArgs = inputsFromOp(op,oc);
+        List<INDArray> outArgs = outputsFromOp(op,oc);
 
         if (OpProfiler.getInstance().getConfig() != null) {
 
@@ -733,15 +810,16 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             }
         }
 
-        logCustomOpArrayEventIfNeccessary(op, inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
+        logCustomOpArrayEventIfNeccessary(inArgs, outArgs,NDArrayEventType.OP_INPUT , NDArrayEventType.OP_OUTPUT);
 
     }
 
-    private void logCustomOpArrayEventIfNeccessary(CustomOp op, List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType inputEvenType, NDArrayEventType outputEventType) {
+    private void logCustomOpArrayEventIfNeccessary(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType inputEvenType, NDArrayEventType outputEventType) {
         logArrays(inArgs, outArgs,inputEvenType,outputEventType);
     }
 
     private static void logArrays(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType eventType, NDArrayEventType outputEventType) {
+        List<NDArrayMetaData> inArgsMeta = new ArrayList<>();
         for (val arr: inArgs) {
             if(arr == null)
                 continue;
@@ -749,16 +827,16 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");
 
-            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !BaseNDArray.callingToString()) {
+                NDArrayMetaData ndArrayMetaData = NDArrayMetaData.from(arr);
                 NDArrayEvent event = NDArrayEvent.builder()
                         .stackTrace(Thread.currentThread().getStackTrace())
-                        .childArrayId(arr.getId())
-                        .dataAtEvent(NDArrayMetaData.from(arr))
-                        .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                        .parentDataAtEvent(new NDArrayMetaData[]{ndArrayMetaData})
+                        .dataAtEvent(ndArrayMetaData)
                         .ndArrayEventType(eventType)
-                        .arrayWriteCreationStackTrace(arr.allocationTrace())
                         .build();
                 arr.addEvent(event);
+                inArgsMeta.add(ndArrayMetaData);
             }
 
         }
@@ -768,22 +846,15 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
 
-            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-                //add 1 event for each input to the output marking it as a parent
-                for(val input : inArgs) {
-                    if(input == null)
-                        continue;
-                    NDArrayEvent event = NDArrayEvent.builder()
-                            .stackTrace(Thread.currentThread().getStackTrace())
-                            .childArrayId(arr.getId())
-                            .dataAtEvent(NDArrayMetaData.from(arr))
-                            .childWorkspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
-                            .ndArrayEventType(outputEventType)
-                            .parentArrayId(input.getId())
-                            .arrayWriteCreationStackTrace(arr.allocationTrace())
-                            .build();
-                    arr.addEvent(event);
-                }
+            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !BaseNDArray.callingToString()) {
+                NDArrayEvent event = NDArrayEvent.builder()
+                        .stackTrace(Thread.currentThread().getStackTrace())
+                        .parentDataAtEvent(inArgsMeta.toArray(new NDArrayMetaData[0]))
+                        .dataAtEvent(NDArrayMetaData.from(arr))
+                        .ndArrayEventType(outputEventType)
+                        .build();
+                arr.addEvent(event);
+
 
             }
         }

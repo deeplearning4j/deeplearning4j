@@ -69,7 +69,7 @@ public class SummaryOfArrayEvents implements Serializable {
     public boolean hasDeallocatedValues() {
         if(ndArrayEvents != null) {
             for (NDArrayEvent ndArrayEvent : ndArrayEvents) {
-                if (ndArrayEvent.getDataAtEvent() != null && ndArrayEvent.getDataAtEvent().dataHasDeallocatioValues())
+                if (ndArrayEvent.getDataAtEvent() != null && ndArrayEvent.getDataAtEvent().dataHasDeallocationValues())
                     return true;
             }
 

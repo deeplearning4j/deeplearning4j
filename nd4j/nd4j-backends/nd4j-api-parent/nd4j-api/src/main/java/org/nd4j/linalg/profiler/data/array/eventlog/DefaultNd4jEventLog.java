@@ -26,14 +26,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.array.*;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
+import org.nd4j.linalg.profiler.data.array.event.dict.BreakDownComparison;
 import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventDictionary;
-import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.summary.SummaryOfArrayEvents;
-import org.nd4j.linalg.profiler.data.array.watch.WatchCriteria;
 import org.nd4j.linalg.profiler.data.array.registry.ArrayRegistry;
 import org.nd4j.linalg.profiler.data.array.registry.DefaultArrayRegistry;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
+import org.nd4j.shade.guava.primitives.Longs;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,10 +60,8 @@ import static java.util.stream.Collectors.groupingBy;
 public class DefaultNd4jEventLog implements Nd4jEventLog {
     private Map<Long,List<NDArrayEvent>> events;
     private Map<Long,List<WorkspaceUseMetaData>> workspaceEvents;
-    private List<WatchCriteria> watchCriteria;
 
     private ArrayRegistry arrayRegistry;
-    private Set<Long> watched;
     private Map<Long, List<ArrayDataRevisionSnapshot>> arrayDataRevisionSnapshotMap;
     private Map<Long,INDArray> snapshotLatestRevision;
 
@@ -71,15 +69,20 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     public DefaultNd4jEventLog() {
         events = new ConcurrentHashMap<>();
         workspaceEvents = new ConcurrentHashMap<>();
-        watched = new HashSet<>();
         arrayRegistry = new DefaultArrayRegistry();
-        watchCriteria = new ArrayList<>();
         arrayDataRevisionSnapshotMap = new ConcurrentHashMap<>();
         snapshotLatestRevision = new ConcurrentHashMap<>();
         stackTracePointOfEvent = new NamedTables<>();
     }
 
 
+
+    @Override
+    public BreakDownComparison compareEventsFor(long arrId, long arrIdComp) {
+        List<NDArrayEvent> testBasicTraversal = ndArrayEventsForId(arrId);
+        List<NDArrayEvent> testBasicTraversal2 = ndArrayEventsForId(arrIdComp);
+        return BreakDownComparison.builder().first(testBasicTraversal).second(testBasicTraversal2).build();
+    }
 
     @Override
     public NDArrayEventDictionary arrayEventsByMethod(String className, String methodName, boolean organizeByInvocation) {
@@ -144,23 +147,6 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
         return arrayDataRevisionSnapshotMap;
     }
 
-    @Override
-    public Set<Long> watched() {
-        return watched;
-    }
-
-
-    @Override
-    public Map<Long, SummaryOfArrayEvents> arrayEventsSummaryForWatched() {
-        if(watched == null || watched.isEmpty())
-            return new HashMap<>();
-        Map<Long,SummaryOfArrayEvents> ret = new HashMap<>();
-        for(Long id : watched) {
-            ret.put(id,eventsForArrayId(id));
-        }
-
-        return ret;
-    }
 
     @Override
     public List<SummaryOfArrayEvents> eventsForIds(List<Long> ids) {
@@ -174,7 +160,7 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     public SummaryOfArrayEvents eventsForArrayId(long id) {
         return SummaryOfArrayEvents.builder()
                 .arrayId(id)
-                .ndArrayEvents(this.ndArrayEventsFor(id))
+                .ndArrayEvents(this.ndArrayEventsForId(id))
                 .workspaceUseMetaData(workspaceEvents.get(id))
                 .arrayDataRevisionSnapshots(arrayDataRevisionSnapshotsForId(id))
                 .build();
@@ -187,52 +173,6 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
         return arrayDataRevisionSnapshotMap.get(id);
     }
 
-    @Override
-    public List<WatchCriteria> watchCriteria() {
-        return watchCriteria;
-    }
-
-    @Override
-    public void stopWatching(WatchCriteria... watchCriteria) {
-        for(WatchCriteria criteria : watchCriteria) {
-            this.watchCriteria.remove(criteria);
-        }
-    }
-
-    @Override
-    public void stopWatching(long id) {
-        watched.remove(id);
-    }
-
-
-    @Override
-    public void watchWithCriteria(WatchCriteria... watchCriteria) {
-        for(WatchCriteria criteria : watchCriteria) {
-            this.watchCriteria.add(criteria);
-        }
-
-    }
-
-    /**
-     *  Watch an ndarray for changes.
-     *  Automatically adds events to the log
-     *  reflecting changes over time to the given array.
-     * @param watch the ndarray to watch
-     *
-     */
-    @Override
-    public void watchNDArrayWithId(INDArray watch) {
-        //whenever an event is logged check for when an array has been changed
-        //outside of events logged. Track this based on the value at a timestamp.
-        watched.add(watch.getId());
-        arrayRegistry.register(watch);
-    }
-
-    @Override
-    public void watchNDArrayWithId(long id) {
-        watched.add(id);
-
-    }
 
     @Override
     public List<WorkspaceUseMetaData> workspacesWhere(WorkspaceUseMetaData.EventTypes eventType) {
@@ -240,43 +180,15 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
                 .stream().flatMap(Collection::stream).filter(input -> input.getEventType() == eventType).collect(Collectors.toList());
     }
 
-    @Override
-    public List<NDArrayEvent> eventsWithClosedChildWorkspacesOrArrays() {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getNdArrayEventType() ==
-                        NDArrayEventType.CLOSE ||
-                        input.getChildWorkspaceUseMetaData() != null && input.getChildWorkspaceUseMetaData().getEventType() == WorkspaceUseMetaData.EventTypes.CLOSE)
-                .collect(Collectors.toList());
+
+    private boolean anyEqual(Enum workspaceType,WorkspaceUseMetaData[] metaData) {
+        for(WorkspaceUseMetaData workspaceUseMetaData : metaData) {
+            if(workspaceUseMetaData.getAssociatedEnum() == workspaceType)
+                return true;
+        }
+        return false;
     }
 
-    @Override
-    public List<NDArrayEvent> eventsWithClosedParentWorkspacesOrArrays() {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getNdArrayEventType() ==
-                        NDArrayEventType.CLOSE ||
-                        input.getParentWorkspace() != null && input.getParentWorkspace().getEventType() == WorkspaceUseMetaData.EventTypes.CLOSE)
-                .collect(Collectors.toList());
-    }
-
-
-    @Override
-    public List<NDArrayEvent> eventsWithParentWorkspaceEventType(WorkspaceUseMetaData.EventTypes eventType) {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getParentWorkspace() != null && input.getParentWorkspace().getEventType() == eventType).collect(Collectors.toList());
-    }
-    @Override
-    public List<NDArrayEvent> eventsWithChildWorkspaceEventType(WorkspaceUseMetaData.EventTypes eventType) {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getChildWorkspaceUseMetaData() != null && input.getChildWorkspaceUseMetaData().getEventType() == eventType).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<NDArrayEvent> eventsWithChildWorkspace(Enum workspaceType) {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getChildWorkspaceUseMetaData() != null &&
-                input.getChildWorkspaceUseMetaData().getAssociatedEnum() == workspaceType).collect(Collectors.toList());
-    }
-
-    @Override
-    public List<NDArrayEvent> eventsWithParentWorkspace(Enum workspaceType) {
-        return events.values().stream().flatMap(Collection::stream).filter(input -> input.getParentWorkspace() != null &&
-                input.getParentWorkspace().getAssociatedEnum() == workspaceType).collect(Collectors.toList());
-    }
 
     @Override
     public List<WorkspaceUseMetaData> workspaceByTypeWithEventType(Enum type, WorkspaceUseMetaData.EventTypes eventType) {
@@ -285,7 +197,8 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
 
     @Override
     public List<WorkspaceUseMetaData> workspacesByType(Enum type) {
-        return workspaceEvents.values().stream().flatMap(Collection::stream).filter(input -> input.getAssociatedEnum() == type).collect(Collectors.toList());
+        return workspaceEvents.values().stream().flatMap(Collection::stream).filter(input -> input.getAssociatedEnum() == type)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -303,57 +216,6 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
         if (!workspaceEvents.containsKey(workspaceUseMetaData.getUniqueId()))
             workspaceEvents.put(workspaceUseMetaData.getUniqueId(), new ArrayList<>());
         workspaceEvents.get(workspaceUseMetaData.getUniqueId()).add(workspaceUseMetaData);
-        registerDataUpdatesAsNeeded(workspaceUseMetaData);
-    }
-
-    @Override
-    public void registerDataUpdatesAsNeeded(NDArrayEvent event) {
-        registerDataUpdatesAsNeeded(null,event);
-    }
-    @Override
-    public void registerDataUpdatesAsNeeded(WorkspaceUseMetaData workspaceUseMetaData) {
-        registerDataUpdatesAsNeeded(workspaceUseMetaData,null);
-    }
-
-    @Override
-    public void registerDataUpdatesAsNeeded(WorkspaceUseMetaData workspaceUseMetaData, NDArrayEvent event) {
-        for (Long arrayId : watched) {
-            if (arrayRegistry.contains(arrayId)) {
-                INDArray array = arrayRegistry.lookup(arrayId);
-                if (array != null) {
-                    List<ArrayDataRevisionSnapshot> arrayDataRevisionSnapshotList = arrayDataRevisionSnapshotMap.get(arrayId);
-
-                    if(arrayDataRevisionSnapshotList == null) {
-                        String data = array.toStringFull();
-                        arrayDataRevisionSnapshotList = new ArrayList<>();
-                        arrayDataRevisionSnapshotMap.put(arrayId,arrayDataRevisionSnapshotList);
-                        ArrayDataRevisionSnapshot arrayDataRevisionSnapshot1 = ArrayDataRevisionSnapshot.builder()
-                                .arrayId(arrayId)
-                                .data(data)
-                                .timeStamp(System.currentTimeMillis())
-                                .lastEvent(event)
-                                .workspaceUseMetaData(workspaceUseMetaData)
-                                .build();
-                        arrayDataRevisionSnapshotList.add(arrayDataRevisionSnapshot1);
-                    } else {
-                        ArrayDataRevisionSnapshot arrayDataRevisionSnapshot = arrayDataRevisionSnapshotList.get(arrayDataRevisionSnapshotList.size() - 1);
-                        INDArray previousSnapshot = snapshotLatestRevision.get(arrayId);
-                        if(!array.equals(previousSnapshot)) {
-                            ArrayDataRevisionSnapshot arrayDataRevisionSnapshot1 = ArrayDataRevisionSnapshot.builder()
-                                    .arrayId(arrayId)
-                                    .data(array.toStringFull())
-                                    .timeStamp(System.currentTimeMillis())
-                                    .lastEvent(event)
-                                    .workspaceUseMetaData(workspaceUseMetaData)
-                                    .build();
-                            arrayDataRevisionSnapshotList.add(arrayDataRevisionSnapshot1);
-                        }
-                    }
-
-                }
-            }
-
-        }
     }
 
     @Override
@@ -362,7 +224,7 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
             return new ArrayList<>();
         Set<Long> ret = new HashSet<>();
         for(NDArrayEvent event : events.get(id)) {
-            ret.add(event.getParentArrayId());
+            ret.addAll(Arrays.stream(event.getParentDataAtEvent()).map(input -> input.getId()).collect(Collectors.toList()));
         }
         return new ArrayList<>(ret);
     }
@@ -373,7 +235,7 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
             return new ArrayList<>();
         Set<Long> ret = new HashSet<>();
         for(NDArrayEvent event : events.get(id)) {
-            ret.add(event.getChildArrayId());
+            ret.add(event.getDataAtEvent().getId());
         }
         return new ArrayList<>(ret);
     }
@@ -393,15 +255,26 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     @Override
     public List<NDArrayEvent> arrayEventsForParentId(long id) {
         if(events.containsKey(id))
-            return new ArrayList<>(new HashSet<>(events.get(id)).stream().filter(input -> input.getParentArrayId() == id)
+            return new ArrayList<>(new HashSet<>(events.get(id)).stream()
+                    .filter(input -> anyEqual(Longs.toArray(Arrays.stream(input.getParentDataAtEvent())
+                            .map(input2 -> input2.getId())
+                            .collect(Collectors.toList())),id))
                     .collect(Collectors.toList()));
         return new ArrayList<>();
+    }
+
+    private boolean anyEqual(long[] ids,long idTest) {
+        for(long id : ids) {
+            if(id == idTest)
+                return true;
+        }
+        return false;
     }
 
     @Override
     public List<NDArrayEvent> eventsForArrayChildId(long id) {
         if(events.containsKey(id))
-            return new ArrayList<>(new HashSet<>(events.get(id)).stream().filter(input -> input.getChildArrayId() == id)
+            return new ArrayList<>(new HashSet<>(events.get(id)).stream().filter(input -> input.getDataAtEvent().getId() == id)
                     .collect(Collectors.toList()));
         return new ArrayList<>();
     }

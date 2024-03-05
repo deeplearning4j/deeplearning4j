@@ -32,6 +32,8 @@ public class CpuEnvironment implements Environment {
     private final Nd4jCpu.Environment e;
     protected boolean logNDArrayWrites = false;
 
+    protected boolean truncateNDArrayLongStrings = false;
+
     public static CpuEnvironment getInstance(){
         return INSTANCE;
     }
@@ -48,6 +50,16 @@ public class CpuEnvironment implements Environment {
     @Override
     public boolean isLogNDArrayEvents() {
         return logNDArrayWrites;
+    }
+
+    @Override
+    public boolean isTruncateNDArrayLogStrings() {
+        return truncateNDArrayLongStrings;
+    }
+
+    @Override
+    public void setTruncateLogStrings(boolean truncateLogStrings) {
+        this.truncateNDArrayLongStrings = truncateLogStrings;
     }
 
     @Override

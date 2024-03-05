@@ -25,10 +25,7 @@ import org.nd4j.linalg.profiler.data.stacktrace.StackTraceElementCache;
 import org.nd4j.linalg.profiler.data.stacktrace.StackTraceLookupKey;
 import org.nd4j.shade.guava.collect.Table;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTraceElement, Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>>> {
@@ -59,6 +56,35 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
                                         StackTraceLookupKey column,
                                         StackTraceLookupKey value) {
         return getEvents(StackTraceElementCache.lookup(row),StackTraceElementCache.lookup(column),StackTraceElementCache.lookup(value));
+    }
+
+
+    public Set<StackTraceElement> possiblePointsOfInvocation() {
+        Set<StackTraceElement> ret = new HashSet<>();
+        for(StackTraceElement tableKey : keySet()) {
+            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
+            for(StackTraceElement row : table.rowKeySet()) {
+                ret.add(row);
+            }
+        }
+        return ret;
+    }
+
+
+    public Set<StackTraceElement> possiblePointsOfOrigin() {
+        Set<StackTraceElement> ret = new HashSet<>();
+        for(StackTraceElement tableKey : keySet()) {
+            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
+            for(StackTraceElement row : table.rowKeySet()) {
+                for(StackTraceElement column : table.columnKeySet()) {
+                    for(NDArrayEvent event : table.get(row,column)) {
+                        ret.add(event.getPointOfOrigin());
+
+                    }
+                }
+            }
+        }
+        return ret;
     }
 
     public List<NDArrayEvent> getEvents(StackTraceElement tableKey,
@@ -105,7 +131,9 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
         StackTraceElement targetRow = StackTraceElementCache.lookup(breakdownArgs.getCommonPointOfInvocation());
         StackTraceElement targetColumn = StackTraceElementCache.lookup(breakdownArgs.getCommonParentOfInvocation());
 
-        if(targetTable == null || compTable == null || targetRow == null || targetColumn == null) {
+        //note comparing the same table is also a no op
+        if(targetTable == null || compTable == null || targetRow == null || targetColumn == null
+                ||targetTable ==  compTable) {
             return BreakDownComparison.empty();
         }
 
@@ -125,10 +153,6 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
 
 
         if(!targetTableRow.containsKey(targetColumn) || !compTableRow.containsKey(targetColumn)) {
-            StringBuilder stringBuilder1 = new StringBuilder();
-            stringBuilder1.append("First table: " + targetTableRow + "\n");
-            stringBuilder1.append("Second table: " + compTableRow + "\n");
-            stringBuilder.append("Unable to compare data. The following table results were found:\n");
             return  BreakDownComparison.empty();
         }
 
@@ -145,4 +169,14 @@ public class NDArrayEventStackTraceBreakDown extends ConcurrentHashMap<StackTrac
                 .build();
     }
 
+    public Set<StackTraceElement> possibleParentPointsOfInvocation() {
+        Set<StackTraceElement> ret = new HashSet<>();
+        for(StackTraceElement tableKey : keySet()) {
+            Table<StackTraceElement, StackTraceElement, List<NDArrayEvent>> table = get(tableKey);
+            for(StackTraceElement column : table.columnKeySet()) {
+                ret.add(column);
+            }
+        }
+        return ret;
+    }
 }

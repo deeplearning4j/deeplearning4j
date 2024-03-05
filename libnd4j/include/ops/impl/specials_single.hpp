@@ -87,6 +87,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   bool copyCase1 = numOfInArrs > 1 ? copyCaseEws1 & shapeExtendedWithOnes : copyCaseEws1;
 
   if (copyCase1) {
+    printf("concat copy case 1\n");
     // copyCase1:
     // in this case:
     // When NdArrays follow the same order and unit elementwise stride and
@@ -129,6 +130,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
   }
   bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
   if (copyCase2) {
+    printf("concat copy case 2\n");
     // copyCase2:
     // in this case:
     // when NDArrays follow the same order (here it is done for the "c" "the last index is fast" order)
@@ -150,7 +152,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
     std::vector<InputArgsCase2<T>> inputArgs;
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
-      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
+      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), static_cast<sd::LongType>(inArrs[i]->lengthOf()) / static_cast<sd::LongType>(times)};
       inputArgs.push_back(input);
     }
 
@@ -176,6 +178,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     return;
   }
 
+  printf("concat general case\n");
   // TODO: optimize the other cases to be NEC friendly as well
   // general case
   auto func = PRAGMA_THREADS_FOR {

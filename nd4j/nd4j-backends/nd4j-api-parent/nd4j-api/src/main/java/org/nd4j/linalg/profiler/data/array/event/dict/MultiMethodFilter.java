@@ -17,43 +17,28 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.profiler.data.stacktrace;
+package org.nd4j.linalg.profiler.data.array.event.dict;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
 
-import java.io.Serializable;
+import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class StackTraceLookupKey implements Serializable  {
-
-    private String className;
-    private String methodName;
-    private int lineNumber;
-
-
-    public static StackTraceLookupKey of(StackTraceElement element) {
-        return StackTraceLookupKey.builder()
-                .className(element.getClassName())
-                .methodName(element.getMethodName())
-                .lineNumber(element.getLineNumber())
-                .build();
+@NoArgsConstructor
+public class MultiMethodFilter {
+    private List<StackTraceQuery> pointOfOriginFilters;
+    private List<StackTraceQuery> pointOfInvocationFilters;
+    private List<StackTraceQuery> parentPointOfInvocationFilters;
+    private boolean onlyIncludeDifferences;
+    private boolean inclusionFilter;
+    public static boolean isEmpty(MultiMethodFilter filter) {
+        return filter == null || (filter.getPointOfOriginFilters() == null && filter.getPointOfInvocationFilters() == null && filter.getParentPointOfInvocationFilters() == null);
     }
 
-    public static StackTraceElement stackTraceElementOf(StackTraceLookupKey key) {
-        return StackTraceElementCache.lookup(key);
-    }
-
-    public static StackTraceLookupKey of(String className, String methodName, int lineNumber) {
-        return StackTraceLookupKey.builder()
-                .className(className)
-                .methodName(methodName)
-                .lineNumber(lineNumber)
-                .build();
-    }
 }

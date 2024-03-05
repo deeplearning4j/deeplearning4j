@@ -49,7 +49,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -79,12 +78,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.DisplayName;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
-import org.nd4j.linalg.profiler.data.array.event.dict.BreakDownComparison;
-import org.nd4j.linalg.profiler.data.array.event.dict.BreakdownArgs;
-import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventStackTraceBreakDown;
-import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
-import org.nd4j.linalg.profiler.data.stacktrace.StackTraceLookupKey;
+import org.nd4j.linalg.profiler.data.array.event.dict.*;
+import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
+import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQueryFilters;
 
 @Slf4j
 @DisplayName("Bidirectional Test")
@@ -97,7 +94,7 @@ class BidirectionalTest extends BaseDL4JTest {
         List<Arguments> args = new ArrayList<>();
         for (Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
             for (RNNFormat rnnFormat : new RNNFormat[]{NWC, NCW}) {
-                for (WorkspaceMode workspaceMode : new WorkspaceMode[] {WorkspaceMode.NONE}) {
+                for (WorkspaceMode workspaceMode : new WorkspaceMode[] {WorkspaceMode.ENABLED}) {
                     for (Bidirectional.Mode mode :new Bidirectional.Mode[] { Bidirectional.Mode.CONCAT,Bidirectional.Mode.ADD,Bidirectional.Mode.MUL,
                             Bidirectional.Mode.AVERAGE}) {
                         args.add(Arguments.of(rnnFormat, mode, workspaceMode, nd4jBackend));
@@ -359,9 +356,6 @@ class BidirectionalTest extends BaseDL4JTest {
     public void testSimpleBidirectional(RNNFormat rnnDataFormat, Bidirectional.Mode mode, WorkspaceMode workspaceMode, Nd4jBackend backend) {
         log.info("*** Starting workspace mode: " + workspaceMode);
         Nd4j.getRandom().setSeed(12345);
-        Nd4j.getEnvironment().setLogNDArrayEvents(true);
-        Nd4j.getEnvironment().setFuncTracePrintJavaOnly(true);
-
 
         long[] inshape = rnnDataFormat == NCW ? new long[]{3, 10, 6} : new long[]{3, 6, 10};
         INDArray in1 = Nd4j.linspace(1, 180, 180);
@@ -399,10 +393,10 @@ class BidirectionalTest extends BaseDL4JTest {
         assertEquals(net1.getParam("0_bRW"), net3.getParam("0_RW"));
         assertEquals(net1.getParam("0_bb"), net3.getParam("0_b"));
         INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
-        INDArray out1 = net1.output(in);
         INDArray out2 = net2.output(in);
         INDArray out3Pre = net3.output(inReverse);
         INDArray out3 = TimeSeriesUtils.reverseTimeSeries(out3Pre, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
+
 
         INDArray outExp;
         switch (mode) {
@@ -423,7 +417,29 @@ class BidirectionalTest extends BaseDL4JTest {
         }
 
 
+        INDArray out1 = net1.output(in);
 
+
+        if(!outExp.equals(out1)) {
+            Map<String, Set<EventDifference>> stringSetMap = NDArrayEvent.eventDifferences(
+                    "org.deeplearning4j.nn.layers.recurrent.SimpleRnn",
+                    new String[]{"activateHelper"},
+                    295, StackTraceQueryFilters.builder()
+                            .exclude(Arrays.asList())
+                            .build(), StackTraceQueryFilters.builder()
+                            .exclude(Arrays.asList(
+                            ))
+                            .build());
+            Set<EventDifference> eventDifferences = stringSetMap.get("activateHelper");
+            EventDifference stream = eventDifferences.stream().findFirst().get();
+            List<Pair<NDArrayEvent, NDArrayEvent>> pairs = stream.getDifferences().get(0);
+            Pair<NDArrayEvent, NDArrayEvent> ndArrayEventNDArrayEventPair = pairs.get(0);
+            Nd4jEventLog nd4jEventLog = Nd4j.getExecutioner().getNd4jEventLog();
+            BreakDownComparison breakDownComparison = nd4jEventLog.compareEventsFor(ndArrayEventNDArrayEventPair.getFirst().getParentDataAtEvent()[0].getId()
+                    , ndArrayEventNDArrayEventPair.getSecond().getParentDataAtEvent()[0].getId());
+            System.out.println();
+
+        }
 
         assertEquals(outExp, out1, mode.toString());
         // Check gradients:
@@ -450,61 +466,9 @@ class BidirectionalTest extends BaseDL4JTest {
             Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
             Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
 
-            /**
-             * TODO: go a step further and break down all data within the events by direct comparison.
-             * Currently, the data structure here shows the above 3 methods
-             * and breaks down all events of the given type specified below in a nested hierarchy.
-             *
-             * Next we want to be able to ask the question "what is different for every event based on the direct same
-             * points of comparison?
-             *
-             * We also want the ability to directly specify what stack trace elements to do a comparison over.
-             * Ideally, the events should be the same number
-             * so we can directly compare different code paths.
-             *
-             *
-             * We may need to go a step further and allow filtering by different method types.
-             * This theoretically could be done with stack trace query.
-             */
-            NDArrayEventStackTraceBreakDown dict = NDArrayEvent.stacktraceBreakDowns(
-                    "org.deeplearning4j.nn.layers.recurrent.SimpleRnn", "backwardLoop",
-                    NDArrayEventType.OP_OUTPUT,
-                    null,
-                    new ArrayList<>(StackTraceQuery.ofClassPatterns(
-                            true,
-                            "org.junit.*",
-                            "com.intellij.*",
-                            "java.*",
-                            "jdk.internal.*",
-                            "java.base.*")), false);
 
 
 
-            Iterator<Triple<StackTraceElement, StackTraceElement, StackTraceElement>> tripleIterator = dict.enumerateEntries();
-            while(tripleIterator.hasNext()) {
-                Triple<StackTraceElement, StackTraceElement, StackTraceElement> triple = tripleIterator.next();
-                StackTraceElement first = triple.getFirst();
-                StackTraceElement second = triple.getSecond();
-                StackTraceElement third = triple.getThird();
-                List<NDArrayEvent> events = dict.getEvents(first, second, third);
-                System.out.println("Getting events for " + first + " " + second + " " + third + " " + events.size());
-            }
-
-
-            BreakdownArgs breakdownArgs = BreakdownArgs.builder()
-                    .pointOfOrigin(StackTraceLookupKey.of("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.BidirectionalTest", "testSimpleBidirectional", 449))
-                    .compPointOfOrigin(StackTraceLookupKey.of("org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent.BidirectionalTest", "testSimpleBidirectional", 451))
-                    .commonPointOfInvocation(StackTraceLookupKey.of("org.deeplearning4j.nn.layers.recurrent.SimpleRnn", "backwardLoop", 163))
-                    .commonParentOfInvocation(StackTraceLookupKey.of("org.deeplearning4j.nn.multilayer.MultiLayerNetwork", "calcBackpropGradients", 1963))
-                    .eventsToExclude(Arrays.asList(StackTraceQuery.builder()
-                                    .className("org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer")
-                                    .lineNumber(176)
-                                    .methodName("backpropGradient")
-                            .build()))
-                    .build();
-
-
-            BreakDownComparison breakDownComparison = dict.compareBreakDown(breakdownArgs);
 
 
             Gradient g1 = p1.getFirst();
@@ -521,6 +485,33 @@ class BidirectionalTest extends BaseDL4JTest {
                 assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));
                 assertEquals(g2.gradientForVariable().get("0_RW"), g1.gradientForVariable().get("0_fRW"));
                 assertEquals(g2.gradientForVariable().get("0_b"), g1.gradientForVariable().get("0_fb"));
+                if(!g3.gradientForVariable().get("0_W").equals(g1.gradientForVariable().get("0_bW"))) {
+                    Map<String, Set<EventDifference>> stringSetMap = NDArrayEvent.eventDifferences(
+                            "org.deeplearning4j.nn.layers.recurrent.SimpleRnn",
+                            new String[]{"activateHelper"},
+                            295, StackTraceQueryFilters.builder()
+                                    .exclude(StackTraceQuery.ofLineNumbers(BidirectionalTest.class.getName(),
+                                            "testSimpleBidirectional",
+                                            400, 401, 399, 447, 440, 441, 442, 443))
+                                    .build(), StackTraceQueryFilters.builder()
+                                    .exclude(Arrays.asList(
+                                            StackTraceQuery.builder()
+                                                    .className("org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer")
+                                                    .methodName("backpropGradient")
+                                                    .lineNumber(175)
+                                                    .build()
+                                    ))
+                                    .build());
+                    Set<EventDifference> eventDifferences = stringSetMap.get("activateHelper");
+                    EventDifference stream = eventDifferences.stream().findFirst().get();
+                    List<Pair<NDArrayEvent, NDArrayEvent>> pairs = stream.getDifferences().get(0);
+                    Pair<NDArrayEvent, NDArrayEvent> ndArrayEventNDArrayEventPair = pairs.get(0);
+                    Nd4jEventLog nd4jEventLog = Nd4j.getExecutioner().getNd4jEventLog();
+                    BreakDownComparison breakDownComparison = nd4jEventLog.compareEventsFor(ndArrayEventNDArrayEventPair.getFirst().getParentDataAtEvent()[0].getId()
+                            , ndArrayEventNDArrayEventPair.getSecond().getParentDataAtEvent()[0].getId());
+                    System.out.println();
+
+                }
                 assertEquals(g3.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_bW"));
                 assertEquals(g3.gradientForVariable().get("0_RW"), g1.gradientForVariable().get("0_bRW"));
                 assertEquals(g3.gradientForVariable().get("0_b"), g1.gradientForVariable().get("0_bb"));

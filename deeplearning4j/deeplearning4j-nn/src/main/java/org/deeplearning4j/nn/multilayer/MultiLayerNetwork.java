@@ -1012,6 +1012,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 workspaceMgr.setScopedOutFor(ArrayType.INPUT);
             }
         }
+
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
         workspaceMgr.keepOpen(ArrayType.values());
 
@@ -1397,9 +1398,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         };
         INDArray ret =  input.detach();
 
-        mgrEven.closeWorkspace(
-                toClose);
-        mgrOdd.closeWorkspace(toClose);
+
         Nd4j.getMemoryManager().setCurrentWorkspace(old);
         return ret;
     }

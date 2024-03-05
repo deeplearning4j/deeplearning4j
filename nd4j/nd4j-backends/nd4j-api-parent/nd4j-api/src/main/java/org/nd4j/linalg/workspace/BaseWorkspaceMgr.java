@@ -312,8 +312,6 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
                 Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(array.getId(),
                         NDArrayEvent.builder()
                                 .stackTrace(Thread.currentThread().getStackTrace())
-                                .childArrayId(array.getId())
-                                .parentArrayId(array.getId())
                                 .dataAtEvent(NDArrayMetaData.from(array))
                                 .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
                                 .build());

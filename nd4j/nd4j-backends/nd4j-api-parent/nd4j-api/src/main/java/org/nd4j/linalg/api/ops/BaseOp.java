@@ -463,9 +463,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if (dimensions == null || dimensions.length == 0)
             dimensions = new long[]{Integer.MAX_VALUE};
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            this.dimensionz = Shape.ndArrayDimFromLong(dimensions);
-        }
+        this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+
     }
 
     public long[] dimensionsArr() {

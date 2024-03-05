@@ -24,14 +24,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
 import org.nd4j.common.config.ND4JSystemProperties;
-import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
-import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventDictionary;
-import org.nd4j.linalg.profiler.data.array.event.dict.NDArrayEventStackTraceBreakDown;
+import org.nd4j.linalg.profiler.data.array.event.dict.*;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.stacktrace.StackTraceElementCache;
 import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
+import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQueryFilters;
 
 import java.io.Serializable;
 import java.util.*;
@@ -41,41 +39,19 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @Builder
-public class NDArrayEvent implements Serializable  {
+public class NDArrayEvent implements Serializable {
 
     private StackTraceElement[] stackTrace;
     private static final AtomicLong arrayCounter = new AtomicLong(0);
 
-    /**
-     * When {@link Environment#isFuncTracePrintJavaOnly()} is true,
-     * this will be recorded on PUT calls only. WHen working with op execution
-     * we will have this information.
-     */
-    private StackTraceElement[] arrayWriteCreationStackTrace;
-    //for views
-    private StackTraceElement[] parentArrayCreationStackTrace;
     private NDArrayEventType ndArrayEventType;
-    /**
-     * This is mainly for view creation.
-     * When arrays are created, they are given an id.
-     * When creating a view the parent array is the
-     * array the view was derived from.
-     */
-    @Builder.Default
-    private long parentArrayId = -1;
-    @Builder.Default
-    private long childArrayId = -1;
     private NDArrayMetaData dataAtEvent;
-    private WorkspaceUseMetaData childWorkspaceUseMetaData;
-    private WorkspaceUseMetaData parentWorkspace;
+    private NDArrayMetaData[] parentDataAtEvent;
     @Builder.Default
     private long eventTimeStamp = System.nanoTime();
     private StackTraceElement pointOfInvocation;
     private StackTraceElement pointOfOrigin;
-    private List<StackTraceElement> parentPointOfInvocation;
-    private String scopeName;
-    @Builder.Default
-    private int scopeIndex = -1;
+    private Set<StackTraceElement> parentPointOfInvocation;
 
     public final static List<StackTraceQuery> invalidPointOfInvocationClasses = StackTraceQuery.ofClassPatterns(
             false,
@@ -97,24 +73,19 @@ public class NDArrayEvent implements Serializable  {
     @Builder.Default
     private long eventId = -1;
 
-    public NDArrayEvent(final StackTraceElement[] stackTrace, final StackTraceElement[] arrayWriteCreationStackTrace,
-                        final StackTraceElement[] parentArrayCreationStackTrace, final NDArrayEventType ndArrayEventType,
-                        final long parentArrayId,
-                        final long childArrayId, final NDArrayMetaData dataAtEvent,
-                        final WorkspaceUseMetaData childWorkspaceUseMetaData, final WorkspaceUseMetaData parentWorkspace,
-                        final long eventTimeStamp, final StackTraceElement pointOfInvocation,
+    public NDArrayEvent(final StackTraceElement[] stackTrace,
+                        final NDArrayEventType ndArrayEventType,
+                        final NDArrayMetaData dataAtEvent,
+                        NDArrayMetaData[] parentDataAtEvent,
+                        final long eventTimeStamp,
+                        final StackTraceElement pointOfInvocation,
                         final StackTraceElement pointOfOrigin,
-                        final List<StackTraceElement> parentPointOfInvocation,
-                        String scopeName,int scopeIndex,long eventId) {
+                        final Set<StackTraceElement> parentPointOfInvocation,
+                        long eventId) {
         this.stackTrace = stackTrace;
-        this.arrayWriteCreationStackTrace = arrayWriteCreationStackTrace;
-        this.parentArrayCreationStackTrace = parentArrayCreationStackTrace;
         this.ndArrayEventType = ndArrayEventType;
-        this.parentArrayId = parentArrayId;
-        this.childArrayId = childArrayId;
         this.dataAtEvent = dataAtEvent;
-        this.childWorkspaceUseMetaData = childWorkspaceUseMetaData;
-        this.parentWorkspace = parentWorkspace;
+        this.parentDataAtEvent = parentDataAtEvent;
         this.eventTimeStamp = eventTimeStamp;
         this.pointOfInvocation = pointOfInvocation(stackTrace);
         this.pointOfOrigin = pointOfOrigin(stackTrace);
@@ -138,57 +109,20 @@ public class NDArrayEvent implements Serializable  {
     }
 
 
-    /**
-     * A getter for a {@link StackTraceElement} array
-     * that can handle grouping functions by wrapping the
-     * array in a {@link StackTraceKey} that uses the to string of the
-     * stack trace element array as the key.
-     * @return
-     */
-    public StackTraceKey getStackTraceKey() {
-        return new StackTraceKey(stackTrace);
-    }
 
-    /**
-     * Render events by session and line number.
-     * This map is created using {@link Nd4jEventLog#arrayEventsByMethod(String, String, boolean)}
-     *
-     * @param className             the class name to render
-     * @param methodName            the method name to get the grouped events for.,
-     * @param eventType             the event type to render
-     * @param classesPackagesToSkip the classes and packages to skip, these are regular expressions typically of the form
-     *                              package name: .*package_name.* or class name: .*ClassName.*
-     * @param globalSkips           the global skips to apply to all stack trace elements. If any element matches the stack trace avoid rendering.
-     * @param organizeByInvocation
-     * @return the rendered events by session and line number
-     */
-    public static NDArrayEventDictionary groupedEvents(
-            String className,
-            String methodName,
-            NDArrayEventType eventType,
-            List<StackTraceQuery> classesPackagesToSkip,
-            List<StackTraceQuery> globalSkips, boolean organizeByInvocation) {
-        return groupedEvents(Nd4j.getExecutioner().getNd4jEventLog().arrayEventsByMethod(className,methodName, organizeByInvocation),
-                eventType,classesPackagesToSkip,globalSkips);
 
-    }
+
 
     /**
      * Render events by session and line number.
      * This map is created using {@link Nd4jEventLog#arrayEventsByMethod(String, String, boolean)}
      * The class name and method are implicit in the returned map and thus only sorted by line number.
+     *
      * @param eventsBySessionAndLineNumber the events to render
-     * @param eventType the event type to render
-     * @param classesPackagesToSkip the classes and packages to skip, these are regular expressions typically of the form
-     *                              package name: .*package_name.* or class name: .*ClassName.*
-     * @param globalSkips the global skips to apply to all stack trace elements. If any element matches the stack trace avoid rendering.
      * @return the rendered events by session and line number
      */
     public static NDArrayEventDictionary groupedEvents(
-            NDArrayEventDictionary eventsBySessionAndLineNumber,
-            NDArrayEventType eventType,
-            List<StackTraceQuery> classesPackagesToSkip,
-            List<StackTraceQuery> globalSkips) {
+            NDArrayEventDictionary eventsBySessionAndLineNumber) {
         NDArrayEventDictionary ret = new NDArrayEventDictionary();
         //sorted by line number with each map being the session index and the list of events
         for(val entry : eventsBySessionAndLineNumber.entrySet()) {
@@ -196,8 +130,6 @@ public class NDArrayEvent implements Serializable  {
                 for(val entry1 : entry.getValue().entrySet()) {
                     //filter by relevant event type
                     entry1.getValue().stream()
-                            .filter(input -> !shouldSkipEvent(eventType, globalSkips, input))
-                            .filter(input -> !shouldSkipEvent(eventType, classesPackagesToSkip, input))
                             .collect(Collectors.groupingBy(NDArrayEvent::getPointOfOrigin)).entrySet().stream()
                             .forEach(entry2 -> {
                                 Map<StackTraceElement,List<NDArrayEvent>> differencesGrouped = new LinkedHashMap<>();
@@ -267,42 +199,39 @@ public class NDArrayEvent implements Serializable  {
      * This is a short cut method for calling
      * {@Link #groupedEvents(String, String, NDArrayEventType, List, List, boolean)}
      * followed by {@link NDArrayEventDictionary#stackTraceBreakdowns()}
-     * @param className the class name to break down
-     * @param methodName the method name to break down
-     * @param eventType the event type to break down
-     * @param classesPackagesToSkip the classes and packages to skip, these are regular expressions typically of the form
-     * @param globalSkips the global skips to apply to all stack trace elements. If any element matches the stack trace avoid rendering.
+     *
+     * @param className            the class name to break down
+     * @param methodName           the method name to break down
      * @param organizeByInvocation whether to organize by invocation or not
      * @return
      */
-    public static NDArrayEventStackTraceBreakDown stacktraceBreakDowns(String className,
-                                                                       String methodName,
-                                                                       NDArrayEventType eventType,
-                                                                       List<StackTraceQuery> classesPackagesToSkip,
-                                                                       List<StackTraceQuery> globalSkips, boolean organizeByInvocation) {
-        return groupedEvents(Nd4j.getExecutioner().getNd4jEventLog().arrayEventsByMethod(className,methodName, organizeByInvocation),
-                eventType,classesPackagesToSkip,globalSkips).stackTraceBreakdowns();
-    }
+    public static NDArrayEventMultiMethodStackTraceBreakdown stacktraceBreakDowns(String className,
+                                                                                  String[] methodName,
+                                                                                  boolean organizeByInvocation) {
 
-
-    private static boolean shouldSkipEvent(NDArrayEventType eventType, List<StackTraceQuery> globalSkips, NDArrayEvent input) {
-        if(globalSkips == null || globalSkips.isEmpty())
-            return input.getNdArrayEventType() == eventType;
-        else {
-            return input.getNdArrayEventType() == eventType && !
-                    StackTraceQuery.stackTraceFillsAnyCriteria(globalSkips, input.getStackTrace());
+        NDArrayEventMultiMethodStackTraceBreakdown breakDowns = new NDArrayEventMultiMethodStackTraceBreakdown();
+        for(String method : methodName) {
+            NDArrayEventDictionary ndArrayEventDictionary = groupedEvents(Nd4j.getExecutioner().getNd4jEventLog()
+                    .arrayEventsByMethod(className,
+                            method,
+                            organizeByInvocation)
+            );
+            NDArrayEventStackTraceBreakDown ndArrayEventStackTraceBreakDown = ndArrayEventDictionary.stackTraceBreakdowns();
+            breakDowns.put(method,ndArrayEventStackTraceBreakDown);
         }
-
+        return breakDowns;
     }
+
+
 
     /**
      * Parent of invocation is an element of the stack trace
      * with a different class altogether.
      * The goal is to be able to segment what is calling a method within the same class.
-     * @param elements
+     * @param elements the elements to get the parent of invocation for
      * @return
      */
-    public static List<StackTraceElement> parentOfInvocation(StackTraceElement[] elements,StackTraceElement pointOfOrigin,StackTraceElement pointOfInvocation) {
+    public static Set<StackTraceElement> parentOfInvocation(StackTraceElement[] elements,StackTraceElement pointOfOrigin,StackTraceElement pointOfInvocation) {
         if(elements == null || elements.length < 1)
             return null;
 
@@ -315,13 +244,13 @@ public class NDArrayEvent implements Serializable  {
         }
 
         if(pointOfInvocationIndex <= 0) {
-            return Arrays.asList(elements);
+            return new HashSet<>(Arrays.asList(elements));
         }
 
         if(pointOfInvocationIndex < 0)
             throw new IllegalArgumentException("Invalid stack trace. Point of invocation not found!");
         int pointOfOriginIndex = -1;
-        List<StackTraceElement> ret = new ArrayList<>();
+        Set<StackTraceElement> ret = new HashSet<>();
         //loop backwards to find the first non nd4j class
         for(int i = pointOfInvocationIndex + 1; i < elements.length; i++) {
             StackTraceElement element = elements[i];
@@ -334,7 +263,7 @@ public class NDArrayEvent implements Serializable  {
         }
 
         if(pointOfOriginIndex < 0) {
-            return Arrays.asList(elements);
+            return new HashSet<>(Arrays.asList(elements));
         }
         //this is  what we'll call the "interesting parents", we need to index
         //by multiple parents in order to capture the different parts of the stack tree that could be applicable.
@@ -356,8 +285,68 @@ public class NDArrayEvent implements Serializable  {
 
 
     /**
+     * Returns a map of event differences for a given stack frame.
      *
-     * @param elements
+     * @param stackTraceBaseClass      the base class to compare against
+     * @param stackTraceBaseMethod     the base method to compare against
+     * @param stackTraceBaseLineNumber the line number to compare against
+     * @param pointOfOriginFilters     the point of origin filters
+     * @param eventFilters             the event filters
+     * @return a map of event differences for a given stack frame
+     */
+    public static Map<String,Set<EventDifference>> eventDifferences(String stackTraceBaseClass,
+                                                                    String[] stackTraceBaseMethod,
+                                                                    int stackTraceBaseLineNumber,
+                                                                    StackTraceQueryFilters pointOfOriginFilters,
+                                                                    StackTraceQueryFilters eventFilters) {
+
+        Map<String, Set<BreakDownComparison>> stringSetMap = comparisonsForStackFrame(stackTraceBaseClass, stackTraceBaseMethod, stackTraceBaseLineNumber, pointOfOriginFilters, eventFilters);
+        Map<String,Set<EventDifference>> ret = new LinkedHashMap<>();
+        for(val entry : stringSetMap.entrySet()) {
+            Set<EventDifference> differences = new LinkedHashSet<>();
+            for(val comparison : entry.getValue()) {
+                EventDifference eventDifference = comparison.calculateDifference();
+                differences.add(eventDifference);
+            }
+
+            ret.put(entry.getKey(),differences);
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Returns a map of comparisons for a given stack frame.
+     *
+     * @param stackTraceBaseClass      the base class to compare against
+     * @param stackTraceBaseMethod     the base method to compare against
+     * @param stackTraceBaseLineNumber the line number to compare against
+     * @param pointOfOriginFilters     the point of origin filters
+     * @param eventFilters             the event filters
+     * @return a map of comparisons for a given stack frame
+     */
+    public static Map<String,Set<BreakDownComparison>> comparisonsForStackFrame(String stackTraceBaseClass,
+                                                                                String[] stackTraceBaseMethod,
+                                                                                int stackTraceBaseLineNumber,
+                                                                                StackTraceQueryFilters pointOfOriginFilters,
+                                                                                StackTraceQueryFilters eventFilters) {
+        NDArrayEventMultiMethodStackTraceBreakdown dict = stacktraceBreakDowns(
+                stackTraceBaseClass,
+                stackTraceBaseMethod,
+                false);
+
+        Map<String, Set<BreakDownComparison>> activateHelper = dict.comparisonsForStackFrame(
+                stackTraceBaseClass,
+                stackTraceBaseMethod
+                , stackTraceBaseLineNumber,pointOfOriginFilters,eventFilters);
+        return activateHelper;
+    }
+
+
+    /**
+     * Point of origin is the first non nd4j class in the stack trace.
+     * @param elements the elements to get the point of origin for
      * @return
      */
     public static StackTraceElement pointOfOrigin(StackTraceElement[] elements) {
@@ -397,6 +386,7 @@ public class NDArrayEvent implements Serializable  {
 
         return elements[pointOfInvocationIndex];
     }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -406,20 +396,6 @@ public class NDArrayEvent implements Serializable  {
         if(stackTrace != null) {
             sb.append("-----------------------------------------\n");
             sb.append("StackTrace: " + stackTrace + "\n");
-            sb.append("-----------------------------------------\n");
-
-        }
-
-        if(arrayWriteCreationStackTrace != null) {
-            sb.append("-----------------------------------------\n");
-            sb.append("Array Write Creation Stack Trace: " + arrayWriteCreationStackTrace + "\n");
-            sb.append("-----------------------------------------\n");
-
-        }
-
-        if(parentArrayCreationStackTrace != null) {
-            sb.append("-----------------------------------------\n");
-            sb.append("Parent Array Creation Stack Trace: " + parentArrayCreationStackTrace + "\n");
             sb.append("-----------------------------------------\n");
 
         }

@@ -24,9 +24,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Data
@@ -38,9 +42,11 @@ public class NDArrayMetaData implements Serializable {
     private DataType dataType;
     private long[] jvmShapeInfo;
     private long id;
+    private StackTraceElement[] allocationTrace;
+    private WorkspaceUseMetaData workspaceUseMetaData;
+    private String dataBuffer;
 
-
-    public boolean dataHasDeallocatioValues() {
+    public boolean dataHasDeallocationValues() {
         //detect patterns in data like e-323 (very small or large numbers) exponents with 3 digits
         //need to detect both negative and positive exponents
         //
@@ -52,10 +58,42 @@ public class NDArrayMetaData implements Serializable {
         return NDArrayMetaData.builder().build();
     }
 
+
+
+    public static NDArrayMetaData[] fromArr(List<INDArray> arr) {
+        List<INDArray> convert = new ArrayList<>();
+        for(int i = 0; i < arr.size(); i++) {
+            if(arr != null) {
+                convert.add(arr.get(i));
+            }
+        }
+
+        NDArrayMetaData[] ret = new NDArrayMetaData[convert.size()];
+        for(int i = 0; i < convert.size(); i++) {
+            ret[i] = from(convert.get(i));
+        }
+        return ret;
+    }
+
+    public static NDArrayMetaData[] fromArr(INDArray arr) {
+        return new NDArrayMetaData[] {from(arr)};
+    }
+
+    /**
+     * Create an {@link NDArrayMetaData} from an {@link INDArray}
+     * note that when creating this data all data will be stored on heap.
+     * This logging is very expensive and is mainly for use to track down subtle
+     * issues like underlying views changing.
+     * @param arr the array to create the metadata from
+     * @return
+     */
     public static NDArrayMetaData from(INDArray arr) {
         return NDArrayMetaData.builder()
-                .data(arr.toStringFull())
+                .workspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
+                .allocationTrace(arr.allocationTrace())
+                .data(Nd4j.getEnvironment().isTruncateNDArrayLogStrings() ? arr.toString() : arr.toStringFull())
                 .dataType(arr.dataType())
+                .dataBuffer(arr.data().toString())
                 .jvmShapeInfo(arr.shapeInfoJava())
                 .id(arr.getId())
                 .build();
