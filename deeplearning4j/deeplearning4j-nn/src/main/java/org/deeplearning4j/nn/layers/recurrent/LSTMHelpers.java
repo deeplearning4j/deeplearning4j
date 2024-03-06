@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -685,31 +684,10 @@ public class LSTMHelpers {
 
 
     public static LayerMemoryReport getMemoryReport(AbstractLSTM lstmLayer, InputType inputType) {
-        boolean isGraves = lstmLayer instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM;
-        return getMemoryReport(isGraves, lstmLayer, inputType);
+        return getMemoryReport(false, lstmLayer, inputType);
     }
 
-    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
-        LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
 
-        //Double everything for bidirectional
-        Map<CacheMode, Long> fixedTrain = new HashMap<>();
-        Map<CacheMode, Long> varTrain = new HashMap<>();
-        Map<CacheMode, Long> cacheFixed = new HashMap<>();
-        Map<CacheMode, Long> cacheVar = new HashMap<>();
-        for (CacheMode cm : CacheMode.values()) {
-            fixedTrain.put(cm, 2 * r.getWorkingMemoryFixedTrain().get(cm));
-            varTrain.put(cm, 2 * r.getWorkingMemoryVariableTrain().get(cm));
-            cacheFixed.put(cm, 2 * r.getCacheModeMemFixed().get(cm));
-            cacheVar.put(cm, 2 * r.getCacheModeMemVariablePerEx().get(cm));
-        }
-
-        return new LayerMemoryReport.Builder(r.getLayerName(), r.getClass(), r.getInputType(), r.getOutputType())
-                .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
-                .workingMemory(2 * r.getWorkingMemoryFixedInference(),
-                        2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
-                .cacheMemory(cacheFixed, cacheVar).build();
-    }
 
     public static LayerMemoryReport getMemoryReport(boolean isGraves,
                                                     org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType) {

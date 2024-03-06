@@ -1427,22 +1427,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        for(GraphVertex gv : vertices){
+        for(GraphVertex gv : vertices) {
             gv.clear();
         }
 
-        ArrayType[] toClose = {
-                ArrayType.ACTIVATIONS,
-                FF_WORKING_MEM,
-                BP_WORKING_MEM,
-                RNN_FF_LOOP_WORKING_MEM,
-                RNN_BP_LOOP_WORKING_MEM,
-                UPDATER_WORKING_MEM,
-                FF_CACHE
-        };
-        workspaceMgr.closeWorkspace(
-                toClose);
-        workspaceMgr.closeWorkspace(toClose);
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
     }
@@ -2368,7 +2356,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                workspaceMgr.keepOpen(ArrayType.values());
+                workspaceMgr.keepOpen(ArrayType.INPUT,ACTIVATIONS,FF_WORKING_MEM,RNN_FF_LOOP_WORKING_MEM);
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 //Is this one of the layers/vertices that we want the output for?
@@ -2394,8 +2382,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-
-                workspaceMgr.keepOpen(ArrayType.values());
 
                 VertexIndices[] inputsTo = current.getOutputVertices();
 

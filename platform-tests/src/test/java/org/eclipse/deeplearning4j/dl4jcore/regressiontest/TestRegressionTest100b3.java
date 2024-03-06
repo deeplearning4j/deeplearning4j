@@ -129,7 +129,7 @@ public class TestRegressionTest100b3 extends BaseDL4JTest {
     @Test
     public void testLSTM() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_100b3.bin");
+        File f = Resources.asFile("regression_testing/100b3/LSTMCharModelingExample_100b3.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         LSTM l0 = (LSTM) net.getLayer(0).conf().getLayer();
@@ -158,13 +158,13 @@ public class TestRegressionTest100b3 extends BaseDL4JTest {
         assertEquals(50, net.getLayerWiseConfigurations().getTbpttFwdLength());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_Output_100b3.bin");
+        File f2 = Resources.asFile("regression_testing/100b3/LSTMCharModelingExample_Output_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b3/GravesLSTMCharModelingExample_Input_100b3.bin");
+        File f3 = Resources.asFile("regression_testing/100b3/LSTMCharModelingExample_Input_100b3.bin");
         try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
             in = Nd4j.read(dis);
         }

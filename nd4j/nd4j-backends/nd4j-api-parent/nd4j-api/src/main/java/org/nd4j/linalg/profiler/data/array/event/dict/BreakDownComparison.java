@@ -202,6 +202,8 @@ public class BreakDownComparison implements Serializable {
      * @return
      */
     public static Map<NDArrayEventType,List<NDArrayEvent>> executionScopes(List<NDArrayEvent> events) {
+        if(events == null)
+            throw new IllegalArgumentException("Events must not be null");
         return events.stream().collect(Collectors.groupingBy(NDArrayEvent::getNdArrayEventType));
     }
 

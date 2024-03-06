@@ -1903,6 +1903,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 mgrOdd.assertCurrentWorkspace(ArrayType.INPUT, "calcBackPropGradients workspace must be the INPUT type");
             }
         }
+
         mgrEven.setHelperWorkspacePointers(helperWorkspaces);
         mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
@@ -1916,7 +1917,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
          * Typical literature contains most trivial case for the error calculation: wT * weights
          * This interpretation transpose a few things to get mini batch because ND4J is rows vs columns organization for params
          */
-        int numLayers = getnLayers();
         //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
         LinkedList<Triple<String, INDArray, Character>> gradientList = new LinkedList<>();
 
@@ -2053,6 +2053,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for (Triple<String, INDArray, Character> triple : gradientList) {
             gradient.setGradientFor(triple.getFirst(), triple.getSecond(), triple.getThird());
         }
+
 
         return new Pair<>(gradient, currPair.getSecond());
     }

@@ -98,7 +98,7 @@ class OutputLayerTest extends BaseDL4JTest {
                 }
             }
         }
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).build();
         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
         mln.init();
         INDArray out2d = mln.feedForward(input).get(2);
@@ -108,7 +108,7 @@ class OutputLayerTest extends BaseDL4JTest {
         INDArray preout = mln.output(input);
         assertArrayEquals(preout.shape(), new long[] { miniBatchSize * timeSeriesLength, nOut });
         // As above, but for RnnOutputLayer. Expect all activations etc. to be 3d
-        MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).build();
+        MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).build();
         MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
         mln.init();
         INDArray out3d = mlnRnn.feedForward(input).get(2);
@@ -150,12 +150,12 @@ class OutputLayerTest extends BaseDL4JTest {
                 }
             }
             INDArray labels2d = proc.backprop(labels3d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).inputPreProcessor(1, new RnnToFeedForwardPreProcessor()).build();
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
             INDArray out2d = mln.feedForward(input).get(2);
             INDArray out3d = proc.preProcess(out2d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
-            MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).build();
+            MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list().layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).dist(new NormalDistribution(0, 1)).activation(Activation.TANH).updater(new NoOp()).build()).layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).dist(new NormalDistribution(0, 1)).updater(new NoOp()).build()).build();
             MultiLayerNetwork mlnRnn = new MultiLayerNetwork(confRnn);
             mlnRnn.init();
             INDArray outRnn = mlnRnn.feedForward(input).get(2);

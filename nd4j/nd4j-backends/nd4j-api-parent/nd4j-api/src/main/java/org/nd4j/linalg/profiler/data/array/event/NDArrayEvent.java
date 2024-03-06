@@ -95,18 +95,38 @@ public class NDArrayEvent implements Serializable {
         StackTraceElementCache.storeStackTrace(stackTrace);
     }
 
-    private static List<StackTraceQuery> queryForProperties() {
-        if(System.getProperties().containsKey(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS)) {
-            return StackTraceQuery.ofClassPatterns(true,
-                    System.getProperty(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS).split(","));
-        }
-        return StackTraceQuery.ofClassPatterns(true,
-                "org.junit.*",
-                "com.intellij.*",
-                "java.*",
-                "jdk.*"
-        );
+
+    /**
+     * Group a list of events by type.
+     * @param events the events to group
+     * @return the grouped events
+     */
+    public static  Map<NDArrayEventType,List<NDArrayEvent>> groupEventsByType(List<NDArrayEvent> events) {
+        return events.stream().collect(Collectors.groupingBy(NDArrayEvent::getNdArrayEventType));
     }
+
+    /**
+     * Group a list of events by point of origin.
+     * @param events the events to group
+     * @return the grouped events
+     */
+    public static NDArrayEventDictionary groupByPointOfOrigin(List<NDArrayEvent> events) {
+        NDArrayEventDictionary ret = new NDArrayEventDictionary();
+        for(val event : events) {
+            if(!ret.containsKey(event.getPointOfOrigin())) {
+                ret.put(event.getPointOfOrigin(),new HashMap<>());
+            }
+
+            if(!ret.get(event.getPointOfOrigin()).containsKey(event.getPointOfInvocation())) {
+                ret.get(event.getPointOfOrigin()).put(event.getPointOfInvocation(),new ArrayList<>());
+            }
+            ret.get(event.getPointOfOrigin()).get(event.getPointOfInvocation()).add(event);
+        }
+
+        return ret;
+    }
+
+
 
     /**
      * Render events by session and line number.
@@ -380,6 +400,20 @@ public class NDArrayEvent implements Serializable {
         }
 
         return elements[pointOfInvocationIndex];
+    }
+
+
+    private static List<StackTraceQuery> queryForProperties() {
+        if(System.getProperties().containsKey(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS)) {
+            return StackTraceQuery.ofClassPatterns(true,
+                    System.getProperty(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS).split(","));
+        }
+        return StackTraceQuery.ofClassPatterns(true,
+                "org.junit.*",
+                "com.intellij.*",
+                "java.*",
+                "jdk.*"
+        );
     }
 
     @Override

@@ -80,7 +80,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .updater(new Sgd(0.1)).seed(12345).list()
-                            .layer(0, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                            .layer(0, new LSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(2)
                                             .nOut(1).activation(Activation.TANH).build())
                             .build();
@@ -312,7 +312,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -375,7 +375,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -391,7 +391,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf2 =
                                         new NeuralNetConfiguration.Builder().seed(12345L).list()
-                                                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                                        .layer(0, new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                                         .dist(new NormalDistribution(0, 1))
                                                                         .updater(new NoOp()).build())
@@ -434,149 +434,6 @@ public class TestVariableLengthTS extends BaseDL4JTest {
     }
 
 
-    @Test
-    public void testMaskingBidirectionalRnn() {
-        //Idea: mask some of the time steps, like [1,1,1,0,0]. We expect the activations for the first 3 time steps
-        // to be the same as if we'd just fed in [1,1,1] for that example
-
-        Nd4j.getRandom().setSeed(12345);
-
-        int nIn = 4;
-        int layerSize = 3;
-        int nOut = 3;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                        .activation(Activation.TANH).list()
-                        .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build())
-                        .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
-                        .layer(2, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                        .nIn(layerSize).nOut(nOut).build())
-                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-
-        int tsLength = 5;
-        int minibatch = 3;
-
-        INDArray input = Nd4j.rand(new int[] {minibatch, nIn, tsLength});
-        INDArray labels = Nd4j.rand(new int[] {minibatch, nOut, tsLength});
-        INDArray featuresMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
-
-        INDArray labelsMask = featuresMask.dup();
-
-        net.setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray outMasked = net.output(input);
-
-        net.clearLayerMaskArrays();
-
-        //Check forward pass:
-        for (int i = 0; i < minibatch; i++) {
-            INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, tsLength - i)};
-            INDArray expExampleOut = net.output(input.get(idx));
-            INDArray actualExampleOut = outMasked.get(idx);
-            //            System.out.println(i);
-            assertEquals(expExampleOut, actualExampleOut);
-        }
-
-        //Also: check the score examples method...
-        DataSet ds = new DataSet(input, labels, featuresMask, labelsMask);
-        INDArray exampleScores = net.scoreExamples(ds, false);
-        assertArrayEquals(new long[] {minibatch, 1}, exampleScores.shape()); //One score per time series (added over each time step)
-
-        for (int i = 0; i < minibatch; i++) {
-            INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
-                            NDArrayIndex.interval(0, tsLength - i)};
-            DataSet dsSingle = new DataSet(input.get(idx), labels.get(idx));
-
-            INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
-            double exp = exampleSingleScore.getDouble(0);
-            double act = exampleScores.getDouble(i);
-
-            //            System.out.println(i + "\t" + exp + "\t" + act);
-            assertEquals(exp, act, 1e-6);
-        }
-    }
-
-
-
-    @Test
-    public void testMaskingLstmAndBidirectionalLstmGlobalPooling() {
-        //Idea: mask some of the time steps, like [1,1,1,0,0]. We expect the activations out of the global pooling
-        // to be the same as if we'd just fed in the in the present (1s) time steps only
-
-        Nd4j.getRandom().setSeed(12345);
-
-        int nIn = 2;
-        int layerSize = 4;
-        int nOut = 3;
-
-        PoolingType[] poolingTypes = new PoolingType[] {PoolingType.SUM, PoolingType.AVG, PoolingType.MAX};
-
-        boolean[] isBidirectional = new boolean[] {false, true};
-
-        for (boolean bidirectional : isBidirectional) {
-            for (PoolingType pt : poolingTypes) {
-
-//                System.out.println("Starting test: bidirectional = " + bidirectional + ", poolingType = " + pt);
-
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
-                                .activation(Activation.TANH).list().layer(0, bidirectional
-                                                ? new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize).build()
-                                                : new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).build())
-                                .layer(1, bidirectional
-                                                ? new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize)
-                                                                .build()
-                                                : new GravesLSTM.Builder().nIn(layerSize).nOut(layerSize).build())
-                                .layer(2, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                                .layer(3, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                                .nIn(layerSize).nOut(nOut).build())
-                                .build();
-
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
-
-
-                int tsLength = 5;
-                int minibatch = 3;
-
-                INDArray input = Nd4j.rand(new int[] {minibatch, nIn, tsLength});
-                INDArray labels = Nd4j.rand(new int[] {minibatch, nOut});
-                INDArray featuresMask = Nd4j.create(new double[][] {{1, 1, 1, 1, 1}, {1, 1, 1, 1, 0}, {1, 1, 1, 0, 0}});
-
-
-                net.setLayerMaskArrays(featuresMask, null);
-                INDArray outMasked = net.output(input);
-                net.clearLayerMaskArrays();
-
-                for (int i = 0; i < minibatch; i++) {
-                    INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(0, tsLength - i)};
-                    INDArray inputSubset = input.get(idx);
-                    INDArray expExampleOut = net.output(inputSubset);
-                    INDArray actualExampleOut = outMasked.getRow(i, true);
-                    //                    System.out.println(i);
-                    assertEquals(expExampleOut, actualExampleOut);
-                }
-
-                //Also: check the score examples method...
-                DataSet ds = new DataSet(input, labels, featuresMask, null);
-                INDArray exampleScores = net.scoreExamples(ds, false);
-                for (int i = 0; i < minibatch; i++) {
-                    INDArrayIndex[] idx = new INDArrayIndex[] {NDArrayIndex.interval(i, i, true), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(0, tsLength - i)};
-                    DataSet dsSingle = new DataSet(input.get(idx), labels.getRow(i,true));
-
-                    INDArray exampleSingleScore = net.scoreExamples(dsSingle, false);
-                    double exp = exampleSingleScore.getDouble(0);
-                    double act = exampleScores.getDouble(i);
-                    assertEquals(exp, act, 1e-6);
-                }
-            }
-        }
-    }
 
 
     @Test

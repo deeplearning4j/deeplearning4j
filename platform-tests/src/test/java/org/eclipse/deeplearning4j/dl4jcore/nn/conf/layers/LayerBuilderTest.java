@@ -158,8 +158,8 @@ class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Graves LSTM")
-    void testGravesLSTM() throws Exception {
-        GravesLSTM glstm = new GravesLSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
+    void testLSTM() throws Exception {
+        LSTM glstm = new LSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
         checkSerialization(glstm);
         assertEquals(glstm.getForgetGateBiasInit(), 1.5, 0.0);
         assertEquals(glstm.getNIn(), numIn);
@@ -167,16 +167,6 @@ class LayerBuilderTest extends BaseDL4JTest {
         assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
     }
 
-    @Test
-    @DisplayName("Test Graves Bidirectional LSTM")
-    void testGravesBidirectionalLSTM() throws Exception {
-        final GravesBidirectionalLSTM glstm = new GravesBidirectionalLSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
-        checkSerialization(glstm);
-        assertEquals(1.5, glstm.getForgetGateBiasInit(), 0.0);
-        assertEquals(glstm.getNIn(), numIn);
-        assertEquals(glstm.getNOut(), numOut);
-        assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
-    }
 
     @Test
     @DisplayName("Test Embedding Layer")

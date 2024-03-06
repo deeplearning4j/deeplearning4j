@@ -212,7 +212,8 @@ public class TimeSeriesUtils {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
         INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return workspaceMgr.leverageTo(arrayType, reshaped.permute(0, 2, 1));
+        INDArray permuted = reshaped.permute(0, 2, 1);
+        return workspaceMgr.leverageTo(arrayType,permuted);
     }
 
     /**

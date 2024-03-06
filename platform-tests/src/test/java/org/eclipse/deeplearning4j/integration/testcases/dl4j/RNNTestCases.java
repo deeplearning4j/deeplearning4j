@@ -110,7 +110,7 @@ public class RNNTestCases {
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
                 int nOut = iter.totalOutcomes();
 
-                int lstmLayerSize = 200;					//Number of units in each GravesLSTM layer
+                int lstmLayerSize = 200;					//Number of units in each LSTM layer
                 int tbpttLength = 50;                       //Length for truncated backpropagation through time. i.e., do parameter updates ever 50 characters
 
                 ListBuilder listBuilder = new NeuralNetConfiguration.Builder()
@@ -307,7 +307,7 @@ public class RNNTestCases {
     }
 
     /**
-     * Similar to test case 1 - but using GravesLSTM + bidirectional wrapper + min/max scaler normalizer
+     * Similar to test case 1 - but using LSTM + bidirectional wrapper + min/max scaler normalizer
      */
     protected static class RnnCsvSequenceClassificationTestCase2 extends RnnCsvSequenceClassificationTestCase1 {
         protected RnnCsvSequenceClassificationTestCase2() {

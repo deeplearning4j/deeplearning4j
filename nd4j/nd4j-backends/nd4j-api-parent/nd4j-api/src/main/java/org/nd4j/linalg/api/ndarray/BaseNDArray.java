@@ -5276,6 +5276,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray permute(long... rearrange) {
         Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
                 " got arguments %s for rank %s array. Number of arguments must equal array rank", rearrange, rank());
+        logBeforeViewCreationIfNeccessary();
         Nd4j.getCompressor().autoDecompress(this);
         boolean alreadyInOrder = true;
         int rank = jvmShapeInfo.rank;

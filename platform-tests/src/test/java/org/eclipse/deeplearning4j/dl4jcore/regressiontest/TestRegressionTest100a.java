@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -93,53 +92,6 @@ public class TestRegressionTest100a extends BaseDL4JTest {
     }
 
 
-    @Test
-    public void testGravesLSTM() throws Exception {
-
-        File f = Resources.asFile("regression_testing/100a/GravesLSTMCharModelingExample_100a.bin");
-        MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
-
-        GravesLSTM l0 = (GravesLSTM) net.getLayer(0).conf().getLayer();
-        assertEquals(new ActivationTanH(), l0.getActivationFn());
-        assertEquals(200, l0.getNOut());
-        assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
-        Assertions.assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
-        assertEquals(new RmsProp(0.1), l0.getIUpdater());
-
-        GravesLSTM l1 = (GravesLSTM) net.getLayer(1).conf().getLayer();
-        assertEquals(new ActivationTanH(), l1.getActivationFn());
-        assertEquals(200, l1.getNOut());
-        assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
-        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l1));
-        assertEquals(new RmsProp(0.1), l1.getIUpdater());
-
-        RnnOutputLayer l2 = (RnnOutputLayer) net.getLayer(2).conf().getLayer();
-        assertEquals(new ActivationSoftmax(), l2.getActivationFn());
-        assertEquals(77, l2.getNOut());
-        assertEquals(new WeightInitXavier(), l2.getWeightInitFn());
-        assertEquals(new WeightDecay(0.001, false), TestUtils.getWeightDecayReg(l0));
-        assertEquals(new RmsProp(0.1), l0.getIUpdater());
-
-        assertEquals(BackpropType.TruncatedBPTT, net.getLayerWiseConfigurations().getBackpropType());
-        assertEquals(50, net.getLayerWiseConfigurations().getTbpttBackLength());
-        assertEquals(50, net.getLayerWiseConfigurations().getTbpttFwdLength());
-
-        INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100a/GravesLSTMCharModelingExample_Output_100a.bin");
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
-            outExp = Nd4j.read(dis);
-        }
-
-        INDArray in;
-        File f3 = Resources.asFile("regression_testing/100a/GravesLSTMCharModelingExample_Input_100a.bin");
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
-            in = Nd4j.read(dis);
-        }
-
-        INDArray outAct = net.output(in);
-
-        assertEquals(outExp, outAct);
-    }
 
     @Test
     public void testVae() throws Exception {

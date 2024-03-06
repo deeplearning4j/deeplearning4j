@@ -68,9 +68,7 @@ public class TestMemoryReports extends BaseDL4JTest {
         l.add(new Pair<>(new LossLayer.Builder().build(), InputType.feedForward(20)));
 
         //RNN layers:
-        l.add(new Pair<>(new GravesLSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
         l.add(new Pair<>(new LSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
-        l.add(new Pair<>(new GravesBidirectionalLSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
         l.add(new Pair<>(new RnnOutputLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
 
         return l;

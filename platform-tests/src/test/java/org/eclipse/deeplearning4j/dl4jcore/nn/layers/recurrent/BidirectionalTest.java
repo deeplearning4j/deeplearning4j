@@ -29,8 +29,6 @@ import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationConditio
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
@@ -80,8 +78,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.dict.*;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
-import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
-import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQueryFilters;
 
 @Slf4j
 @DisplayName("Bidirectional Test")
@@ -106,249 +102,11 @@ class BidirectionalTest extends BaseDL4JTest {
     }
 
 
-    @DisplayName("Compare Implementations")
-    @ParameterizedTest
-    @MethodSource("params")
-    void compareImplementations(RNNFormat rnnDataFormat, Bidirectional.Mode mode, WorkspaceMode workspaceMode, Nd4jBackend backend) {
-        // Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
-        // Note that GravesBidirectionalLSTM implements ADD mode only
-        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .trainingWorkspaceMode(workspaceMode).inferenceWorkspaceMode(workspaceMode).updater(new Adam())
-                .list().layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder()
-                        .nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
-                .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
-                .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat)
-                        .nIn(10).nOut(10).build()).build();
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER).trainingWorkspaceMode(workspaceMode)
-                .inferenceWorkspaceMode(workspaceMode).updater(new Adam()).list()
-                .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
-                .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
-                .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                        .dataFormat(rnnDataFormat).nIn(10).nOut(10).build()).build();
-        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
-        net1.init();
-        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-        net2.init();
-        assertEquals(net1.numParams(), net2.numParams());
-        for (int i = 0; i < 3; i++) {
-            int n1 = (int) net1.getLayer(i).numParams();
-            int n2 = (int) net2.getLayer(i).numParams();
-            assertEquals(n1, n2);
-        }
-        // Assuming exact same layout here...
-        net2.setParams(net1.params());
-        INDArray in;
-        if (rnnDataFormat == NCW) {
-            in = Nd4j.rand(3, 10, 5);
-        } else {
-            in = Nd4j.rand(3, 5, 10);
-        }
-        INDArray out1 = net1.output(in);
-        INDArray out2 = net2.output(in);
-        assertEquals(out1, out2);
-        INDArray labels;
-        if (rnnDataFormat == NCW) {
-            labels = Nd4j.rand(3, 10, 5);
-        } else {
-            labels = Nd4j.rand(3, 5, 10);
-        }
-        net1.setInput(in);
-        net1.setLabels(labels);
-        net2.setInput(in);
-        net2.setLabels(labels);
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
-        // Ensure scores are equal:
-        assertEquals(net1.score(), net2.score(), 1e-6);
-        // Ensure gradients are equal:
-        Gradient g1 = net1.gradient();
-        Gradient g2 = net2.gradient();
-        assertEquals(g1.gradient(), g2.gradient());
-        // Ensure updates are equal:
-        MultiLayerUpdater u1 = (MultiLayerUpdater) net1.getUpdater();
-        MultiLayerUpdater u2 = (MultiLayerUpdater) net2.getUpdater();
-        assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-        u1.update(net1, g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
-        u2.update(net2, g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
-        assertEquals(g1.gradient(), g2.gradient());
-        assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-        // Ensure params are equal, after fitting
-        net1.fit(in, labels);
-        net2.fit(in, labels);
-        INDArray p1 = net1.params();
-        INDArray p2 = net2.params();
-        assertEquals(p1, p2);
 
-    }
 
-    @DisplayName("Compare Implementations Comp Graph")
-    @ParameterizedTest
-    @MethodSource("params")
-    void compareImplementationsCompGraph(RNNFormat rnnDataFormat, Bidirectional.Mode mode, WorkspaceMode workspaceMode, Nd4jBackend backend) {
-        // for(WorkspaceMode wsm : WorkspaceMode.values()) {
-        log.info("*** Starting workspace mode: " + workspaceMode);
-        // Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params
-        // Note that GravesBidirectionalLSTM implements ADD mode only
-        ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .updater(new Adam()).trainingWorkspaceMode(workspaceMode)
-                .inferenceWorkspaceMode(workspaceMode)
-                .graphBuilder().addInputs("in")
-                .layer("0", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "in")
-                .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "0")
-                .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build(), "1")
-                .setOutputs("2").build();
 
-        ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                .updater(new Adam()).trainingWorkspaceMode(workspaceMode).inferenceWorkspaceMode(workspaceMode)
-                .graphBuilder().addInputs("in")
-                .layer("0", new GravesBidirectionalLSTM
-                        .Builder().nIn(10).nOut(10).build(), "in")
-                .layer("1", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "0")
-                .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build(), "1").setOutputs("2").build();
-        ComputationGraph net1 = new ComputationGraph(conf1);
-        net1.init();
-        ComputationGraph net2 = new ComputationGraph(conf2);
-        net2.init();
-        assertEquals(net1.numParams(), net2.numParams());
-        for (int i = 0; i < 3; i++) {
-            int n1 = (int) net1.getLayer(i).numParams();
-            int n2 = (int) net2.getLayer(i).numParams();
-            assertEquals(n1, n2);
-        }
-        // Assuming exact same layout here...
-        net2.setParams(net1.params());
-        INDArray in = Nd4j.rand(new int[]{3, 10, 5});
-        INDArray out1 = net1.outputSingle(in);
-        INDArray out2 = net2.outputSingle(in);
-        assertEquals(out1, out2);
-        INDArray labels = Nd4j.rand(new int[]{3, 10, 5});
-        net1.setInput(0, in);
-        net1.setLabels(labels);
-        net2.setInput(0, in);
-        net2.setLabels(labels);
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
-        // Ensure scores are equal:
-        assertEquals(net1.score(), net2.score(), 1e-6);
-        // Ensure gradients are equal:
-        Gradient g1 = net1.gradient();
-        Gradient g2 = net2.gradient();
-        assertEquals(g1.gradient(), g2.gradient());
-        // Ensure updates are equal:
-        ComputationGraphUpdater u1 = net1.getUpdater();
-        ComputationGraphUpdater u2 = net2.getUpdater();
-        assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-        u1.update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
-        u2.update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
-        assertEquals(g1.gradient(), g2.gradient());
-        assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-        // Ensure params are equal, after fitting
-        net1.fit(new DataSet(in, labels));
-        net2.fit(new DataSet(in, labels));
-        INDArray p1 = net1.params();
-        INDArray p2 = net2.params();
-        assertEquals(p1, p2);
 
-    }
 
-    @DisplayName("Test Serialization")
-    @ParameterizedTest
-    @MethodSource("params")
-    void testSerialization(RNNFormat rnnDataFormat, Bidirectional.Mode mode, WorkspaceMode workspaceMode, Nd4jBackend backend) throws Exception {
-        Nd4j.getEnvironment().setFuncTracePrintJavaOnly(true);
-        Nd4j.getEnvironment().setTrackWorkspaceOpenClose(true);
-        log.info("*** Starting workspace mode: " + workspaceMode);
-        Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                .activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
-                .trainingWorkspaceMode(workspaceMode)
-                .inferenceWorkspaceMode(workspaceMode)
-                .updater(new Adam()).list()
-                .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
-                .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
-                .layer(new RnnOutputLayer.Builder()
-                        .lossFunction(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).dataFormat(rnnDataFormat).build()).build();
-        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
-        net1.init();
-        INDArray in;
-        INDArray labels;
-        long[] inshape = rnnDataFormat == NCW ? new long[]{3, 10, 5} : new long[]{3, 5, 10};
-        in = Nd4j.rand(inshape);
-        labels = Nd4j.rand(inshape);
-        byte[] bytes;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            ModelSerializer.writeModel(net1, baos, true);
-            bytes = baos.toByteArray();
-        }
-        MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(new ByteArrayInputStream(bytes), true);
-        assertEquals(net1, net2);
-        INDArray in2 = in.dup();
-
-        net1.setInput(in);
-        net2.setInput(in);
-        net1.setLabels(labels);
-        net2.setLabels(labels);
-        assertEquals(net1.params(), net2.params());
-        INDArray out1 = net1.output(in);
-        INDArray out2 = net2.output(in2);
-        assertEquals(out1, out2);
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
-        assertEquals(net1.gradient().gradient(), net2.gradient().gradient());
-
-    }
-
-    @DisplayName("Test Serialization Comp Graph")
-    @ParameterizedTest
-    @MethodSource("params")
-    void testSerializationCompGraph(RNNFormat rnnDataFormat, Bidirectional.Mode mode, WorkspaceMode workspaceMode, Nd4jBackend backend) throws Exception {
-        log.info("*** Starting workspace mode: " + workspaceMode);
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
-                .trainingWorkspaceMode(workspaceMode)
-                .inferenceWorkspaceMode(workspaceMode)
-                .updater(new Adam())
-                .graphBuilder().addInputs("in")
-                .layer("0", new Bidirectional(Bidirectional.Mode.ADD,
-                        new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()), "in")
-                .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10)
-                        .dataFormat(rnnDataFormat).build()), "0")
-                .layer("2", new RnnOutputLayer.Builder()
-                        .lossFunction(LossFunctions.LossFunction.MSE)
-                        .dataFormat(rnnDataFormat).nIn(10).nOut(10).build(), "1").setOutputs("2").build();
-        ComputationGraph net1 = new ComputationGraph(conf1);
-        net1.init();
-        long[] inshape = (rnnDataFormat == NCW) ? new long[]{3, 10, 5} : new long[]{3, 5, 10};
-        INDArray in = Nd4j.rand(inshape);
-        INDArray labels = Nd4j.rand(inshape);
-        net1.fit(new DataSet(in, labels));
-        byte[] bytes;
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            ModelSerializer.writeModel(net1, baos, true);
-            bytes = baos.toByteArray();
-        }
-        ComputationGraph net2 = ModelSerializer.restoreComputationGraph(new ByteArrayInputStream(bytes), true);
-        in = Nd4j.rand(inshape);
-        labels = Nd4j.rand(inshape);
-        INDArray out1 = net1.outputSingle(in);
-        INDArray out2 = net2.outputSingle(in);
-        assertEquals(out1, out2);
-        net1.setInput(0, in);
-        net2.setInput(0, in);
-        net1.setLabels(labels);
-        net2.setLabels(labels);
-        net1.computeGradientAndScore();
-        net2.computeGradientAndScore();
-        assertEquals(net1.score(), net2.score(), 1e-6);
-        assertEquals(net1.gradient().gradient(), net2.gradient().gradient());
-
-    }
 
     @DisplayName("Test Simple Bidirectional")
     @ParameterizedTest
@@ -524,7 +282,7 @@ class BidirectionalTest extends BaseDL4JTest {
                 outExp = out2.add(out3).muli(0.5);
                 break;
             case CONCAT:
-                outExp = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, out2, out3);
+                outExp = Nd4j.concat(1, out2, out3);
                 break;
             default:
                 throw new RuntimeException();
@@ -535,7 +293,7 @@ class BidirectionalTest extends BaseDL4JTest {
             INDArray eps = Nd4j.rand(inshape).castTo(DataType.DOUBLE);
             INDArray eps1;
             if (mode == Bidirectional.Mode.CONCAT) {
-                eps1 = Nd4j.concat((rnnDataFormat == NCW) ? 1 : 2, eps, eps);
+                eps1 = Nd4j.concat(1, eps, eps);
             } else {
                 eps1 = eps;
             }
@@ -564,19 +322,4 @@ class BidirectionalTest extends BaseDL4JTest {
 
     }
 
-    @DisplayName("Test Issue 5472")
-    @MethodSource("params")
-    @ParameterizedTest
-    void testIssue5472(RNNFormat rnnDataFormat,Bidirectional.Mode mode,WorkspaceMode workspaceMode,Nd4jBackend backend) {
-        // https://github.com/eclipse/deeplearning4j/issues/5472
-        int in = 2;
-        int out = 2;
-        ComputationGraphConfiguration.GraphBuilder builder = new NeuralNetConfiguration.Builder().updater(new Adam(0.01)).activation(Activation.RELU).graphBuilder().addInputs("IN").setInputTypes(InputType.recurrent(in)).addLayer("AUTOENCODER", new VariationalAutoencoder.Builder().encoderLayerSizes(64).decoderLayerSizes(64).nOut(7).pzxActivationFunction(Activation.IDENTITY).reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID.getActivationFunction())).build(), "IN").addLayer("RNN", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nOut(128).build()), "AUTOENCODER").addLayer("OUT", new RnnOutputLayer.Builder().nOut(out).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "RNN").setOutputs("OUT");
-        ComputationGraph net = new ComputationGraph(builder.build());
-        net.init();
-        MultiDataSetIterator iterator = new SingletonMultiDataSetIterator(new MultiDataSet(Nd4j.create(10, in, 5), Nd4j.create(10, out, 5)));
-        EarlyStoppingConfiguration.Builder b = new EarlyStoppingConfiguration.Builder<>().epochTerminationConditions(new MaxEpochsTerminationCondition(10)).scoreCalculator(new DataSetLossCalculator(iterator, true)).evaluateEveryNEpochs(1).modelSaver(new InMemoryModelSaver<>());
-        EarlyStoppingGraphTrainer earlyStoppingGraphTrainer = new EarlyStoppingGraphTrainer(b.build(), net, iterator, null);
-        earlyStoppingGraphTrainer.fit();
-    }
 }

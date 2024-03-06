@@ -253,9 +253,7 @@ public class ConfClassLoading {
                 SpaceToDepth.class,
                 BatchToSpace.class,
                 DepthToSpace.class,
-
-                DepthwiseConvolution2D.class,
-                GravesBidirectionalLSTM.class);
+                DepthwiseConvolution2D.class);
     }
 
 

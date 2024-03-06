@@ -48,6 +48,35 @@ import java.util.Map;
  */
 public interface Nd4jEventLog {
 
+
+    /**
+     * Sets the {@link #secondAccumulatedEvents()}
+     * to null.
+     */
+    void clearSecondaryAccumulatedLog();
+
+    /**
+     * Returns the secondary accumulate log
+     * for recording a set of events. This is for
+     * recording a set of events that are triggered
+     * triggered by the user. This is as described in
+     * {@link #setSecondaryAccumulateLog(List)}
+     * @return
+     */
+    List<NDArrayEvent> secondAccumulatedEvents();
+
+    /**
+     * Sets a secondary accumulate log
+     * for recording a set of events. This is for
+     * recording a set of events that are triggered
+     * triggered by the user. When a user sets a list,
+     * the events will also be added to this list as well
+     * when {@link #addToNDArrayLog(long, NDArrayEvent)}
+     * is called.
+     * @param events the events to set
+     */
+    void setSecondaryAccumulateLog(List<NDArrayEvent> events);
+
     /**
      * Compare the events for two arrays
      * @param arrId the array id to compare
@@ -237,6 +266,10 @@ public interface Nd4jEventLog {
         //to further analyze where arrays are created.
         if(event.getPointOfInvocation() != null) {
             addStackTracePointOfEvent(event.getPointOfInvocation());
+        }
+
+        if(secondAccumulatedEvents() != null) {
+            secondAccumulatedEvents().add(event);
         }
 
 

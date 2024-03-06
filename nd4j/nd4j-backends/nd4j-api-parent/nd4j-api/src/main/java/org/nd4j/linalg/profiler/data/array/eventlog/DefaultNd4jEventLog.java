@@ -59,6 +59,7 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
 
     private ArrayRegistry arrayRegistry;
 
+    private List<NDArrayEvent> secondaryEvents;
     private NamedTables<String,Integer,StackTraceElement> stackTracePointOfEvent;
     public DefaultNd4jEventLog() {
         events = new ConcurrentHashMap<>();
@@ -68,6 +69,20 @@ public class DefaultNd4jEventLog implements Nd4jEventLog {
     }
 
 
+    @Override
+    public void clearSecondaryAccumulatedLog() {
+        this.secondaryEvents = null;
+    }
+
+    @Override
+    public List<NDArrayEvent> secondAccumulatedEvents() {
+        return secondaryEvents;
+    }
+
+    @Override
+    public void setSecondaryAccumulateLog(List<NDArrayEvent> events) {
+        this.secondaryEvents = events;
+    }
 
     @Override
     public BreakDownComparison compareEventsFor(long arrId, long arrIdComp) {

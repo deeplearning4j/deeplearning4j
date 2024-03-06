@@ -195,66 +195,6 @@ public class TestRegressionTest060 extends BaseDL4JTest {
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize, Nd4j.dataType()).reshape(numParams), net.getUpdater().getStateViewArray());
     }
 
-    @Test
-    public void regressionTestLSTM1() throws Exception {
 
-        File f = Resources.asFile("regression_testing/060/060_ModelSerializer_Regression_LSTM_1.zip");
 
-        MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
-
-        MultiLayerConfiguration conf = net.getLayerWiseConfigurations();
-        assertEquals(3, conf.getConfs().size());
-
-        GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
-        assertEquals("tanh", l0.getActivationFn().toString());
-        assertEquals(3, l0.getNIn());
-        assertEquals(4, l0.getNOut());
-        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
-        assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
-
-        GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getConf(1).getLayer();
-        assertEquals("softsign", l1.getActivationFn().toString());
-        assertEquals(4, l1.getNIn());
-        assertEquals(4, l1.getNOut());
-        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
-        assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
-
-        RnnOutputLayer l2 = (RnnOutputLayer) conf.getConf(2).getLayer();
-        assertEquals(4, l2.getNIn());
-        assertEquals(5, l2.getNOut());
-        assertEquals("softmax", l2.getActivationFn().toString());
-        assertTrue(l2.getLossFn() instanceof LossMCXENT);
-    }
-
-    @Test
-    public void regressionTestCGLSTM1() throws Exception {
-
-        File f = Resources.asFile("regression_testing/060/060_ModelSerializer_Regression_CG_LSTM_1.zip");
-
-        ComputationGraph net = ModelSerializer.restoreComputationGraph(f, true);
-
-        ComputationGraphConfiguration conf = net.getConfiguration();
-        assertEquals(3, conf.getVertices().size());
-
-        GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
-        assertEquals("tanh", l0.getActivationFn().toString());
-        assertEquals(3, l0.getNIn());
-        assertEquals(4, l0.getNOut());
-        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
-        assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
-
-        GravesBidirectionalLSTM l1 =
-                        (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
-        assertEquals("softsign", l1.getActivationFn().toString());
-        assertEquals(4, l1.getNIn());
-        assertEquals(4, l1.getNOut());
-        assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
-        assertEquals(1.5, l1.getGradientNormalizationThreshold(), 1e-5);
-
-        RnnOutputLayer l2 = (RnnOutputLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
-        assertEquals(4, l2.getNIn());
-        assertEquals(5, l2.getNOut());
-        assertEquals("softmax", l2.getActivationFn().toString());
-        assertTrue(l2.getLossFn() instanceof LossMCXENT);
-    }
 }

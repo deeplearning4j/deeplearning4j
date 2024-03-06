@@ -164,20 +164,6 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
-    @Test
-    @DisplayName("Test Transfer Global Pool")
-    void testTransferGlobalPool() {
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(0.1)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in").addLayer("blstm1", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).activation(Activation.TANH).build(), "in").addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1").addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool").addLayer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE).build(), "dense").setOutputs("out").build();
-        ComputationGraph g = new ComputationGraph(conf);
-        g.init();
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).build();
-        ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration).removeVertexKeepConnections("out").setFeatureExtractor("dense").addLayer("out", new OutputLayer.Builder().updater(new Adam(0.1)).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(5).build(), "dense").build();
-        ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in").addLayer("blstm1", new FrozenLayer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).activation(Activation.TANH).build()), "in").addLayer("pool", new FrozenLayer(new GlobalPoolingLayer.Builder().build()), "blstm1").addLayer("dense", new FrozenLayer(new DenseLayer.Builder().nIn(10).nOut(10).build()), "pool").addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX).updater(new Adam(0.1)).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "dense").setOutputs("out").build();
-        ComputationGraph modelExpected = new ComputationGraph(confExpected);
-        modelExpected.init();
-        // assertEquals(confExpected, graph.getConfiguration());
-        assertEquals(confExpected.toJson(), graph.getConfiguration().toJson());
-    }
 
     @Test
     @DisplayName("Test Object Overrides")
