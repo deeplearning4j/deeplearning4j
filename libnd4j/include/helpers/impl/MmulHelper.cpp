@@ -399,9 +399,17 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     permut[rank - 2] = rank - 1;
     permut[rank - 1] = rank - 2;
 
-    if (transX) xT = new NDArray(x->permute(permut));
+    //transpose can affect the input data. We shouldn't mutate that.
+    //note we dup here to avoid manipulating the reference
+    if (transX) {
+      NDArray *permuted = new NDArray(x->dup(x->ordering()).permute(permut));
+      xT = permuted;
+    }
 
-    if (transY) yT = new NDArray(y->permute(permut));
+    if (transY) {
+      NDArray *permuted = new NDArray(y->dup(y->ordering()).permute(permut));
+      yT = permuted;
+    }
 
   }
 
@@ -409,12 +417,14 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
       yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
 
     if (xRank == 1 && yRank == 2) {  // reduce vector-matrix to matrix-matrix case
-      xT = new NDArray(x->reshape(x->ordering(),
-                                  {1, x->lengthOf()}));  // please note x is not transposed in this case (since xRank=1)
+      //note we dup to avoid mutating input data
+      NDArray *xReshape = new NDArray(x->dup().reshape(xT->ordering(), {1, xT->lengthOf()}));
+      xT = xReshape;  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
 
     mmul(xT, yT, zT, alpha, beta);
+
   } else {  // rest cases -  batched mmul
 
     const int batchRank = xRank - 2;
@@ -423,7 +433,6 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
     const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
 
-    // PRAGMA_OMP_PARALLEL_FOR
     for (LongType i = 0; i < numOfSubArrs; ++i) {
       auto xSubArr = (*xT)(i, dimsToExclude);
       auto ySubArr = (*yT)(i, dimsToExclude);

@@ -81,40 +81,24 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
      * @param executioner the op executioner
      */
     public static void execAssign(TransformOp op, OpContext oc, OpExecutioner executioner) {
-        if((op.x().length() == op.z().length()
-                || (op.x().size(0) == 1 &&
-                op.z().rank() == 1) ||
-                (op.x().rank() == 1 && op.z().rank() == 2
-                        && op.z().size(0) == 1)) && !op.x().isView() &&
-                !op.z().isView() && op.x().ordering() == op.z().ordering()) {
-            LinearCopy linearCopy = new LinearCopy();
-            linearCopy.addInputArgument(op.x());
-            linearCopy.addInputArgument(Nd4j.createFromArray(op.z().shape()));
-            linearCopy.addOutputArgument(op.z());
-            executioner.exec(linearCopy);
-
-        } else {
-            org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
-            DifferentialFunction differentialFunction = (DifferentialFunction) op;
-            op2.setSameDiff(differentialFunction.getSameDiff());
-            if(oc == null) {
-                if(Nd4j.getEnvironment().isDebugAndVerbose() && op.x().isView()) {
-                    log.warn("Assign op running on a view. This may cause issues with the underlying buffer being modified and the view not seeing these changes");
-                }
-                op2.addBArgument(op.x().isView());
-                op2.addInputArgument(op.x());
-                if(op.y() != null)
-                    op2.addInputArgument(op.y());
-                else op2.addInputArgument(op.x());
-                op2.addOutputArgument(op.z());
-                INDArray[] result = executioner.exec(op2);
-            } else {
-                executioner.exec(op2, oc);
-
+        org.nd4j.linalg.api.ops.impl.transforms.custom.Assign op2 = new org.nd4j.linalg.api.ops.impl.transforms.custom.Assign();
+        DifferentialFunction differentialFunction = (DifferentialFunction) op;
+        op2.setSameDiff(differentialFunction.getSameDiff());
+        if(oc == null) {
+            if(Nd4j.getEnvironment().isDebugAndVerbose() && op.x().isView()) {
+                log.warn("Assign op running on a view. This may cause issues with the underlying buffer being modified and the view not seeing these changes");
             }
+            op2.addBArgument(op.x().isView());
+            op2.addInputArgument(op.x());
+            if(op.y() != null)
+                op2.addInputArgument(op.y());
+            else op2.addInputArgument(op.x());
+            op2.addOutputArgument(op.z());
+            INDArray[] result = executioner.exec(op2);
+        } else {
+            executioner.exec(op2, oc);
 
         }
-
 
     }
 

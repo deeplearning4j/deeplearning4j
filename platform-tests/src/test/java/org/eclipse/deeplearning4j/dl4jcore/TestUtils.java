@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestUtils {
 
-    public static MultiLayerNetwork testModelSerialization(MultiLayerNetwork net){
+    public static MultiLayerNetwork testModelSerialization(MultiLayerNetwork net) {
 
         MultiLayerNetwork restored;
         try {
@@ -67,7 +67,7 @@ public class TestUtils {
 
             assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
             assertEquals(net.params(), restored.params());
-        } catch (IOException e){
+        } catch (IOException e) {
             //Should never happen
             throw new RuntimeException(e);
         }
@@ -149,11 +149,11 @@ public class TestUtils {
         return arr;
     }
 
-    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength){
+    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength) {
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random());
     }
 
-    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, long rngSeed){
+    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, long rngSeed) {
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random(rngSeed));
     }
 

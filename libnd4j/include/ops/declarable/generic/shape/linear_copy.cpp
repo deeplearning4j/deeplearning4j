@@ -30,9 +30,9 @@ namespace ops {
 
 CUSTOM_OP_IMPL(linear_copy, 2, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
-  auto input = INPUT_VARIABLE(0)->cast(output->dataType());
+  auto input = INPUT_VARIABLE(0);
 
-  input.applyPairwiseTransform(pairwise::CopyPws,input, *output);
+  input->applyPairwiseTransform(pairwise::CopyPws,*input, *output);
   return Status::OK;
 }
 

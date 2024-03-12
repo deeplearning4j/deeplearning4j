@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
@@ -1194,7 +1195,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long offset = offset() + tadInfo.getSecond().getLong(index);
         val ews = shapeInfo.getLong(jShapeInfo[0] * 2 + 2);
         char tadOrder = (char) shapeInfo.getInt(jShapeInfo[0] * 2 + 3);
-        val toTad = Nd4j.create(data(), shape, stride, offset, ews, tadOrder);
+        val toTad = Nd4j.create(data,shape,stride,offset,tadOrder,ews,true);
         toTad.setCloseable(false);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
@@ -5826,8 +5827,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                             .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
                             .build());
         }
-        if (!isAttached())
-            return this;
 
         if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id)) {
             if(enforceExistence) {
@@ -6089,7 +6088,15 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             return ret;
         }
-        val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());
+
+
+
+        Cast cast = new Cast();
+        cast.addDArgument(dataType);
+        cast.addInputArgument(this);
+        Nd4j.getExecutioner().exec(cast);
+
+        INDArray result = cast.getOutputArgument(0);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
                     .parentDataAtEvent(NDArrayMetaData.fromArr(this))
@@ -6098,16 +6105,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     .build();
             result.addEvent(event);
         }
-        result.assign(this);
 
-        if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-            NDArrayEvent event = NDArrayEvent.builder()
-                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                    .dataAtEvent(NDArrayMetaData.from(result))
-                    .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                    .build();
-            result.addEvent(event);
-        }
+
 
         logViewCreationIfNeccessary();
         return result;

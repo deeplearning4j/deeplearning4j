@@ -1672,6 +1672,7 @@ void NDArray::setShapeInfo(LongType *shapeInfo) {
       THROW_EXCEPTION("Set shape info buffer was corrupt. Please check for deallocation.");
 
     _dataType = ArrayOptions::dataType(_shapeInfo);
+
     if (ArrayOptions::arrayType(_shapeInfo) == EMPTY)
       _length = 0;
     else
@@ -1708,7 +1709,7 @@ void NDArray::setShapeInfo(LongType *shapeInfo, const DataType dtype) {
 char NDArray::ordering() const { return shape::order(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isView() const { return _isView; }
+bool NDArray::isView() const { return shape::isView(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
 LongType *NDArray::shapeOf() const { return shape::shapeOf(_shapeInfo); }

@@ -193,7 +193,7 @@ public class LSTMHelpers {
             cacheEnter(training, cacheMode, workspaceMgr);
 
             //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
-            INDArray ifogActivations = miniBatchData.mmul(inputWeights); //Shape: [miniBatch,4*layerSize]
+            INDArray ifogActivations = miniBatchData.mmul(inputWeights.dup('f')); //Shape: [miniBatch,4*layerSize]
             cacheExit(training, cacheMode, workspaceMgr);
 
             Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
@@ -268,7 +268,7 @@ public class LSTMHelpers {
                     toReturn.ga[time] = inputModGateActivations.dup('f');
                     cacheExit(training, cacheMode, workspaceMgr);
                 } else {
-                    toReturn.ga[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputModGateActivations);
+                    toReturn.ga[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, inputModGateActivations);
                 }
             }
 
@@ -314,12 +314,11 @@ public class LSTMHelpers {
             cacheEnter(training, cacheMode, workspaceMgr);
             //LSTM unit outputs:
             INDArray currMemoryCellActivation;
-            try (MemoryWorkspace none = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                currMemoryCellActivation = workspaceMgr.dup(ArrayType.FF_WORKING_MEM, currentMemoryCellState, 'f');
-                currMemoryCellActivation = afn.getActivation(currMemoryCellActivation, training);   // now inside the workspace
+            currMemoryCellActivation = workspaceMgr.dup(ArrayType.FF_WORKING_MEM, currentMemoryCellState, 'f');
+            currMemoryCellActivation = afn.getActivation(currMemoryCellActivation, training);   // now inside the workspace
 
 
-            }
+
 
 
             cacheExit(training, cacheMode, workspaceMgr);
@@ -343,6 +342,10 @@ public class LSTMHelpers {
                 currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
                 currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
             }
+
+            currentMemoryCellState = workspaceMgr.leverageTo(ArrayType.FF_WORKING_MEM, currentMemoryCellState); //TODO optimize, without the leverage
+
+
 
             if (forBackprop) {
                 toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
@@ -677,7 +680,7 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut);
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
-        return new Pair<>(retGradient, epsilonNext);
+        return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,epsilonNext));
 
 
     }

@@ -1107,7 +1107,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
-        return new NDArray(dataType, shape, strides, currentWorkspace);
+        return new NDArray(dataType,shape,strides,0,ordering,currentWorkspace);
     }
 
     @Override

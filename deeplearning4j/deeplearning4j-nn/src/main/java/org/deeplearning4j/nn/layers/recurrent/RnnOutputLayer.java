@@ -75,7 +75,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
 
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
-        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC) {
             epsilon3d = epsilon3d.permute(0, 2, 1);
         }
         weightNoiseParams.clear();
@@ -126,7 +126,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         INDArray labels = this.labels;
-        if (labels.rank() == 3){
+        if (labels.rank() == 3) {
             labels = (layerConf().getRnnDataFormat() == RNNFormat.NWC) ? labels.permute(0, 2, 1) : labels;
             return TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, arrayType);
         }

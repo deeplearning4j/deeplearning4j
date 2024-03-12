@@ -319,27 +319,26 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
         //scope out of workspaces here to avoid borrow clashes
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            INDArray ret = Nd4j.createUninitialized(W.dataType(), input.size(0), W.size(1));
-            input.mmuli(W, ret);
+        INDArray ret = workspaceMgr.create(ArrayType.ACTIVATIONS,W.dataType(), input.size(0), W.size(1));
+        input.mmuli(W, ret);
 
-            INDArray preNorm = ret;
-            if(hasLayerNorm()) {
-                preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
-                Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
-            }
-
-            if(hasBias()) {
-                ret.addiRowVector(b);
-            }
-
-            if (maskArray != null) {
-                applyMask(ret);
-            }
-
-            return new Pair<>(ret, preNorm);
-
+        INDArray preNorm = ret;
+        if(hasLayerNorm()) {
+            preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
+            Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
         }
+
+        if(hasBias()) {
+            ret.addiRowVector(b);
+        }
+
+        if (maskArray != null) {
+            applyMask(ret);
+        }
+
+        return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,ret), workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,preNorm));
+
+
 
 
     }

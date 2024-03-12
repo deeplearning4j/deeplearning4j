@@ -310,16 +310,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.UPDATER_WORKING_MEM)) {
-                ws.setWorkspaceMgr(workspaceMgr);
-                if (isExternal) {
-                    //RL4J etc type case: calculate gradients in 1 net, update them in another
-                    ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
-                } else {
-                    //Standard case
-                    ub.update(iteration, epoch);
-                }
+            if (isExternal) {
+                //RL4J etc type case: calculate gradients in 1 net, update them in another
+                ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
+            } else {
+                //Standard case
+                ub.update(iteration, epoch);
             }
+
         }
     }
 
@@ -334,7 +332,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         }
 
         List<INDArray> toDivide;
-        if(isExternal){
+        if(isExternal) {
             toDivide = getMinibatchDivisionSubsets(gradient.gradient());
         } else {
             toDivide = gradientsForMinibatchDivision;

@@ -255,7 +255,18 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool isView(const sd::LongType *shapeInfo) {
 
 #ifndef SD_CUDA
 
+SD_LIB_EXPORT SD_HOST_DEVICE void setStrideConst(sd::LongType *buffer, const sd::LongType *strides) {
+  auto stridesRet = buffer + (1 + rank(buffer));
+  int rank = shape::rank(buffer);
+  if (rank < 1) {
+    buffer[2] = 0;
+    return;
+  }
+  for (int i = 0; i < rank; i++) {
+    stridesRet[i] = strides[i];
+  }
 
+}
 
 SD_LIB_EXPORT SD_HOST bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
   sd::LongType rank = shape::rank(shapeBuffer);

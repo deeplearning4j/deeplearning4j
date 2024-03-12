@@ -89,15 +89,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
         return new Builder();
     }
 
-    /**
-     * @param helperWorkspacePointers Helper pointers - see {@link #getHelperWorkspace(String)} for details
-     * @return Workspace manager
-     */
-    public static LayerWorkspaceMgr noWorkspaces(Map<String,Pointer> helperWorkspacePointers) {
-        LayerWorkspaceMgr wsm = noWorkspaces();
-        wsm.setHelperWorkspacePointers(helperWorkspacePointers);
-        return wsm;
-    }
+
 
     public static LayerWorkspaceMgr noWorkspaces() {
         return builder().defaultNoWorkspace().build();

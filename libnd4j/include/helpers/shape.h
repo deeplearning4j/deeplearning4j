@@ -1206,10 +1206,11 @@ SD_INLINE SD_HOST_DEVICE sd::LongType coords2index(const sd::LongType *shapeInfo
 SD_INLINE SD_HOST_DEVICE sd::LongType getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
   char order = shape::order(shapeInfo);
   const sd::LongType ews = elementWiseStride(shapeInfo);
+  bool isView = shape::isView(shapeInfo);
   if (order == 'c') {
-    if (ews == 1) return index;
-    if (ews > 1) return ews * index;
-    if (ews <= 0) {  // not contiguous enough for EWS
+    if (ews == 1 && !isView) return index;
+    if (ews > 1 && !isView) return ews * index;
+    if (ews <= 0 || isView) {  // not contiguous enough for EWS
       sd::LongType coords[SD_MAX_RANK];
       index2coords(index, shapeInfo, coords);
       auto getOffset = shape::getOffset(shapeInfo, coords, 0);
@@ -1576,6 +1577,7 @@ SD_INLINE SD_HOST_DEVICE ShapeInformation *infoFromBuffer(sd::LongType *buffer) 
   return info;
 }
 
+
 SD_INLINE SD_HOST_DEVICE void setStride(sd::LongType *buffer, sd::LongType *strides) {
   auto stridesRet = buffer + (1 + rank(buffer));
   int rank = shape::rank(buffer);
@@ -1587,6 +1589,8 @@ SD_INLINE SD_HOST_DEVICE void setStride(sd::LongType *buffer, sd::LongType *stri
     stridesRet[i] = strides[i];
   }
 }
+
+SD_HOST_DEVICE void setStrideConst(sd::LongType *buffer, const sd::LongType *strides);
 
 /**
  * Returns the stride portion of an information

@@ -317,7 +317,12 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
                                 .build());
             }
 
-            return array;
+            if(!DISABLE_LEVERAGE) {
+                if(scopeOutOfWs.contains(arrayType)) {
+                    return array.detach();
+                }
+                return array.leverageTo(getWorkspaceName(arrayType), true);
+            }
         }
 
         validateConfig(arrayType);
@@ -470,9 +475,9 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
                 ws.setAssociatedEnumType(arrayType);
                 //since we keep scopes open and there is no guarantee the  current array maybe of this workspace
                 //we ensure it is with leverage
-                if(ws != toDup.getWorkspace()) {
-                    return leverageTo(arrayType,toDup.dup(order));
-                }
+                INDArray ret =  leverageTo(arrayType,toDup.dup(order));
+                return ret;
+
             } else if(workspaceName == null) {
                 try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     return toDup.dup(order);
@@ -484,7 +489,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
             }
 
-            return toDup.dup(order);
+
         }  else {
             try (MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
                 return toDup.dup(order);

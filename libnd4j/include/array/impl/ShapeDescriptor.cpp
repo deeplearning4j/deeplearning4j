@@ -223,6 +223,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   }
 
   else if (_rank > 0 && !shape::isEmpty(shapeInfo)) {
+    fflush(stdout);
     _shape_strides.resize(2 * _rank);
     auto _strides = _shape_strides.data() + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
@@ -230,8 +231,8 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     for (LongType e = 0; e < _rank; e++) {
       _shape_strides[e] = shapePtr[e];
       _shape_strides[e + _rank] = stridePtr[e];
-
     }
+
     //validate construction of the shape descriptor. This is to prevent flag regressions when modifying
     //_extraProperties.
     //ensure that we only validate this for array size > 1
@@ -297,6 +298,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtype
   if(dtypeOverride == UNKNOWN)
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   _dataType = dtypeOverride;
+  _order = shape::order(shapeInfo);
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }

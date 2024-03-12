@@ -168,7 +168,7 @@ public class GradientCheckUtil {
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
         Consumer<MultiLayerNetwork> c = null;
-        if(rngSeedResetEachIter != null){
+        if(rngSeedResetEachIter != null) {
             c = multiLayerNetwork -> Nd4j.getRandom().setSeed(rngSeedResetEachIter);
         }
 
@@ -179,7 +179,7 @@ public class GradientCheckUtil {
     public static boolean checkGradients(MLNConfig c) {
 
         //Basic sanity checks on input:
-        if (c.epsilon <= 0.0 || c.epsilon > 0.1)
+          if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if (c.maxRelError <= 0.0 || c.maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + c.maxRelError);
@@ -199,7 +199,7 @@ public class GradientCheckUtil {
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != c.net.params().dataType()){
+        if(netDataType != c.net.params().dataType()) {
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
                     + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
@@ -235,8 +235,8 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : c.net.getLayers()){
-            if(l instanceof IOutputLayer){
+        for(Layer l : c.net.getLayers()) {
+            if(l instanceof IOutputLayer) {
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
@@ -244,7 +244,7 @@ public class GradientCheckUtil {
         c.net.setInput(c.input);
         c.net.setLabels(c.labels);
         c.net.setLayerMaskArrays(c.inputMask, c.labelMask);
-        if(c.callEachIter != null){
+        if(c.callEachIter != null) {
             c.callEachIter.accept(c.net);
         }
         c.net.computeGradientAndScore();
@@ -263,7 +263,7 @@ public class GradientCheckUtil {
         val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         Map<String,Integer> stepSizeForParam;
-        if(c.subset){
+        if(c.subset) {
             stepSizeForParam = new HashMap<>();
             stepSizeForParam.put(paramNames.get(0), (int) Math.max(1, paramTable.get(paramNames.get(0)).length() / c.maxPerParam));
         } else {
@@ -274,7 +274,7 @@ public class GradientCheckUtil {
             paramEnds[i] = paramEnds[i - 1] + n;
             if(c.subset){
                 long ss = n / c.maxPerParam;
-                if(ss == 0){
+                if(ss == 0) {
                     ss = n;
                 }
 
@@ -311,7 +311,6 @@ public class GradientCheckUtil {
             }
             String paramName = paramNames.get(currParamNameIdx);
             if(c.excludeParams != null && c.excludeParams.contains(paramName)){
-//                log.info("Skipping parameters for parameter name: {}", paramName);
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
@@ -319,7 +318,7 @@ public class GradientCheckUtil {
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
             params.putScalar(i, origValue + c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scorePlus = c.net.score(ds, true);
@@ -373,7 +372,7 @@ public class GradientCheckUtil {
             }
 
             long step;
-            if(c.subset){
+            if(c.subset) {
                 step = stepSizeForParam.get(paramName);
                 if(i + step > paramEnds[currParamNameIdx]+1){
                     step = paramEnds[currParamNameIdx]+1 - i;

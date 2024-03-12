@@ -75,16 +75,37 @@ LoopKind::Kind LoopKind::deduceKindOfLoopXZ(const LongType* xShapeInfo, const Lo
   const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp) || zOrder == 'c';
   const bool shapesSame = shape::shapeEquals(xShapeInfo, zShapeInfo);
 
-  if (xEws == 1 && zEws == 1 && xOrder == zOrder && (shapesSame || xOrder == 'c')) return EWS1;
-  if (xEws > 0 && zEws > 0 && ((xOrder == zOrder && (shapesSame || xOrder == 'c')) || (xVectorOrC && zVectorOrC)))
+  if (xEws == 1 && zEws == 1 && xOrder == zOrder && (shapesSame || xOrder == 'c') && !shape::isView(xShapeInfo) && !shape::isView(zShapeInfo)) {
+    return EWS1;
+  }
+  if (xEws > 0 && zEws > 0
+      && ((xOrder == zOrder && (shapesSame || xOrder == 'c'))
+          || (xVectorOrC && zVectorOrC)) && !shape::isView(xShapeInfo)
+          && !shape::isView(zShapeInfo)) {
     return EWSNONZERO;
-  if (xRank == 1 && shapesSame) return RANK1;
-  if (xRank == 2 && shapesSame) return RANK2;
-  if (xRank == 3 && shapesSame) return RANK3;
-  if (xRank == 4 && shapesSame) return RANK4;
-  if (xRank == 5 && shapesSame) return RANK5;
-  if (xEws > 0 && xVectorOrC) return X_EWSNONZERO;
-  if (zEws > 0 && zVectorOrC) return Z_EWSNONZERO;
+  }
+  if (xRank == 1 && shapesSame) {
+    return RANK1;
+  }
+  if (xRank == 2 && shapesSame) {
+    return RANK2;
+  }
+  if (xRank == 3 && shapesSame) {
+    return RANK3;
+  }
+  if (xRank == 4 && shapesSame) {
+    return RANK4;
+  }
+  if (xRank == 5 && shapesSame) {
+    return RANK5;
+  }
+  if (xEws > 0 && xVectorOrC && !shape::isView(xShapeInfo)) {
+    return X_EWSNONZERO;
+  }
+  if (zEws > 0 && zVectorOrC && !shape::isView(zShapeInfo)) {
+    return Z_EWSNONZERO;
+  }
+
   return COMMON;
 }
 

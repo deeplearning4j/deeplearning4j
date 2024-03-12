@@ -31,7 +31,7 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
   ret[0] = descriptor->rank();
   if(descriptor->rank() > 0) {
     shape::setShape(ret, descriptor->shape_strides().data());
-    shape::setStride(ret, (descriptor->shape_strides().data() + descriptor->rank()));
+    shape::setStrideConst(ret, descriptor->stridesPtr());
     shape::setOrder(ret, descriptor->order());
   } else {
     std::vector<LongType> shape = {0};

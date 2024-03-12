@@ -717,9 +717,9 @@ SD_LIB_HIDDEN void reduceDefault(memory::Workspace* workspace, const X* x, const
 template <typename X, typename Z, typename E>
 template <typename OpType>
 SD_LIB_HIDDEN void ReductionLoops<X, Z, E>::loopReduce(memory::Workspace* workspace, const X* x,
-                                                           const LongType* xShapeInfo, Z* z,
-                                                           const LongType* zShapeInfo, const LongType* dims,
-                                                           E* extraParams) {
+                                                       const LongType* xShapeInfo, Z* z,
+                                                       const LongType* zShapeInfo, const LongType* dims,
+                                                       E* extraParams) {
   const LongType xRank = shape::rank(xShapeInfo);
   const LongType zRank = shape::rank(zShapeInfo);
 
@@ -751,8 +751,8 @@ SD_LIB_HIDDEN void ReductionLoops<X, Z, E>::loopReduce(memory::Workspace* worksp
 template <typename X, typename Z, typename E>
 template <typename OpType>
 SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const LongType* xShapeInfo, Z* z,
-                                                              const LongType* zShapeInfo, E* extraParams,
-                                                              LongType threadId, LongType numThreads) {
+                                                          const LongType* zShapeInfo, E* extraParams,
+                                                          LongType threadId, LongType numThreads) {
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
   if(xShapeInfo == nullptr) {
     THROW_EXCEPTION("Input x shape info was null!");
@@ -772,11 +772,11 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
 
 
-
   const LongType* xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
+
 
 
   switch (kindOfLoop) {
@@ -801,7 +801,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
       //*********************************************//
     case LoopKind::Z_EWSNONZERO: {
-
       const LongType zEws = shape::elementWiseStride(zShapeInfo);
       LongType castXShapeInfo[SD_MAX_RANK];
       const bool canCastX = DataTypeUtils::castShapeInfo<LongType>(xShapeInfo, castXShapeInfo);
@@ -948,8 +947,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 template <typename X, typename Z>
 template <typename OpType>
 void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, const X* y,
-                                            const LongType* yShapeInfo, Z* z, const LongType* zShapeInfo,
-                                            LongType* dims, int dimsLen, Z* extraParameters, int64_t start, int64_t stop) {
+                                        const LongType* yShapeInfo, Z* z, const LongType* zShapeInfo,
+                                        LongType* dims, int dimsLen, Z* extraParameters, int64_t start, int64_t stop) {
   // both tads have same shape, however strides and ews may differ
 
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),
@@ -1218,10 +1217,10 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
 template <typename X, typename Z>
 template <typename OpType>
 void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInfo, const X* y,
-                                               const LongType* yShapeInfo, Z* z, const LongType* zShapeInfo,
-                                               const LongType* xTadShapeInfo, const LongType* xTadOffsets,
-                                               const LongType* yTadShapeInfo, const LongType* yTadOffsets,
-                                               Z* extraParameters, int64_t start, int64_t stop) {
+                                           const LongType* yShapeInfo, Z* z, const LongType* zShapeInfo,
+                                           const LongType* xTadShapeInfo, const LongType* xTadOffsets,
+                                           const LongType* yTadShapeInfo, const LongType* yTadOffsets,
+                                           Z* extraParameters, int64_t start, int64_t stop) {
   // both tads have same shape, however strides and ews may differ
 
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),

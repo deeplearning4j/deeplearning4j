@@ -162,6 +162,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
       printf("No strides to be filled for rank 0\n");
       return;
     }
+
     // double checks if the _rank and _shape_strides are set correctly before filling strides
     if (_rank + _rank == _shape_strides.size()) {
       auto _shape = _shape_strides.data();

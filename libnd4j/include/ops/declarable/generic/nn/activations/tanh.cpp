@@ -47,6 +47,7 @@ CONFIGURABLE_OP_IMPL(tanh_bp, 2, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto epsilon = INPUT_VARIABLE(1);
 
+
   auto z = OUTPUT_VARIABLE(0);
   helpers::tanhDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;

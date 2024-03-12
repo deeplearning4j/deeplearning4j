@@ -131,6 +131,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(f != CNN2DFormat.NCHW){
             z = z.permute(0,3,1,2); //NHWC to NCHW
         }
+
+        /**
+         * TODO: figure out why tanh_bp seems to get different values.
+         * Z and epsilon are the same on both sides but somehow the tanh derivative
+         * result is different. It looks like some sort of a view case.
+         *
+         * SOme of the issues have been incorrect ordering but that doesn't appear to be the case here.
+         *
+         * Recompiling for views to see if the general case is required here.
+         */
         delta = afn.backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
 
@@ -192,59 +202,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             epsNext = epsNext.permute(0,2,3,1); //NCHW to NHWC
         }
 
-        //print all inputs and outputs and method name
-        System.out.println("ConvolutionLayer backpropGradient:");
-        System.out.println("input:");
-        System.out.println(Arrays.toString(this.input.shape()));
-        System.out.println(Arrays.toString(this.input.dup().data().asFloat()));
-        System.out.println("weights:");
-        System.out.println(Arrays.toString(weights.shape()));
-        System.out.println(Arrays.toString(weights.dup().data().asFloat()));
-        System.out.println("bias:");
-        System.out.println(Arrays.toString(bias.shape()));
-        System.out.println(Arrays.toString(bias.dup().data().asFloat()));
-        System.out.println("epsilon:");
-        System.out.println(Arrays.toString(epsilon.shape()));
-        System.out.println(Arrays.toString(epsilon.dup().data().asFloat()));
-        System.out.println("preOut:");
-        System.out.println(Arrays.toString(z.shape()));
-        System.out.println(Arrays.toString(z.dup().data().asFloat()));
-        System.out.println("delta:");
-        System.out.println(Arrays.toString(delta.shape()));
-
-        System.out.println(Arrays.toString(delta.dup().data().asFloat()));
-        System.out.println("im2col2d:");
-        System.out.println(Arrays.toString(im2col2d.shape()));
-
-        System.out.println(Arrays.toString(im2col2d.dup().data().asFloat()));
-        System.out.println("weightGradView2df:");
-        System.out.println(Arrays.toString(weightGradView2df.shape()));
-
-        System.out.println(Arrays.toString(weightGradView2df.dup().data().asFloat()));
-        System.out.println("epsNext2d:");
-        System.out.println(Arrays.toString(epsNext2d.shape()));
-
-        System.out.println(Arrays.toString(epsNext2d.dup().data().asFloat()));
-        System.out.println("eps6d:");
-        System.out.println(Arrays.toString(eps6d.shape()));
-
-        System.out.println(Arrays.toString(eps6d.dup().data().asFloat()));
-        System.out.println("epsNextOrig:");
-
-        System.out.println(Arrays.toString(epsNextOrig.shape()));
-        System.out.println(Arrays.toString(epsNextOrig.dup().data().asFloat()));
-        System.out.println("epsNext:");
-        System.out.println(Arrays.toString(epsNext.shape()));
-
-        System.out.println(Arrays.toString(epsNext.dup().data().asFloat()));
-        System.out.println("retGradient:");
-        System.out.println(Arrays.toString(retGradient.gradientForVariable().get(ConvolutionParamInitializer.WEIGHT_KEY).shape()));
-
-        System.out.println(Arrays.toString(retGradient.gradientForVariable().get(ConvolutionParamInitializer.WEIGHT_KEY).dup().data().asFloat()));
-        System.out.println(Arrays.toString(retGradient.gradientForVariable().get(ConvolutionParamInitializer.BIAS_KEY).shape()));
-
-        System.out.println(Arrays.toString(retGradient.gradientForVariable().get(ConvolutionParamInitializer.BIAS_KEY).dup().data().asFloat()));
-        System.out.println("end of ConvolutionLayer backpropGradient");
 
 
         return new Pair<>(retGradient, epsNext);
@@ -435,7 +392,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
 
-        return new Pair<>(z, forBackprop ? im2col2d : null);
+        return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,z), forBackprop ? im2col2d : null);
     }
 
     @Override

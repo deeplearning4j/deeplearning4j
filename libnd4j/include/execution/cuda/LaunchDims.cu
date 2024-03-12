@@ -705,7 +705,6 @@ dim3 getBetaInc(int maxIter,int length,int dataTypeSize) {
   int blocksPerGrid = length;
   int sharedMem = 2 * dataTypeSize * threadsPerBlock + 128;
 
-  sd_printf("threadsPerBlock: %i, blocksPerGrid: %i, sharedMem: %i\n",threadsPerBlock,blocksPerGrid,sharedMem);
 
   threadsPerBlock = getEnvVariable("GRID_SIZE_BETA_INC", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_BETA_INC", blocksPerGrid);
@@ -743,7 +742,6 @@ dim3 getGatherLinear(int numSubArrs) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_GATHER", threadsPerBlock);
   numBlocks = getEnvVariable("BLOCK_SIZE_GATHER", numBlocks);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_GATHER", sharedMem);
-  printf("gather linear numBlocks %d threadsPerBlock %d sharedMem %d\n",numBlocks,threadsPerBlock,sharedMem);
   return dim3(threadsPerBlock,numBlocks,sharedMem);
 }
 

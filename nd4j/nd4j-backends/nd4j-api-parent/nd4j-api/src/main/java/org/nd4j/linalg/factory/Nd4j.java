@@ -629,7 +629,7 @@ public class Nd4j {
         if (initialize)
             return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
         else
-            return createUninitialized(descriptor.dataType(), descriptor.getShape(), descriptor.getOrder());
+            return createUninitialized(descriptor.dataType(), descriptor.getShape(),descriptor.getStride(), descriptor.getOrder());
     }
 
     /**
@@ -4228,7 +4228,7 @@ public class Nd4j {
      */
     public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering,boolean isView) {
         checkShapeValues(newShape);
-        return INSTANCE.create(data,newShape,newStride,offset,newStride[newStride.length - 1],ordering,isView);
+        return INSTANCE.create(data,newShape,newStride,offset,-1,ordering,isView);
     }
 
     /**

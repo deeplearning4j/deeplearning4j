@@ -86,6 +86,9 @@ DECLARE_SHAPE_FN(cast) {
       THROW_EXCEPTION(errorMessage.c_str());
     }
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
+    if(desc->order() != shape::order(inShape)) {
+      THROW_EXCEPTION("Order of the new shape descriptor is not equal to the order of the input shape descriptor!");
+    }
     REQUIRE_TRUE(desc->dataType() == ArrayOptions::dataType(ret->at(0)),0,"Data types for cast did not equal!");
      if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return ret;

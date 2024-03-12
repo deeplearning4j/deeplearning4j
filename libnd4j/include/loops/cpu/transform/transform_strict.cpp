@@ -46,7 +46,6 @@ void SD_HOST TransformStrict<X>::exec(const void *vx, const sd::LongType *xShape
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<X *>(vz);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
-
   sd::TransformLoops<X, X, X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId,
                                                               numThreads);
 }

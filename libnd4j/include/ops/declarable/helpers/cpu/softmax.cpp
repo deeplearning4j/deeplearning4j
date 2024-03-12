@@ -147,8 +147,6 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
 
       //print tad:
 
-      for (sd::LongType j = 0; j < tadLen; ++j) printf("TAD: %d index: %d %f tad length: %d\n",i,j,inBuff[j],tadLen);
-
       PRAGMA_OMP_SIMD_MAX_2(max)
       for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[j]);
       PRAGMA_OMP_SIMD_SUM(sum)

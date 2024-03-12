@@ -420,7 +420,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (input.size(0) > Integer.MAX_VALUE)
                 throw new ND4JArraySizeException();
             outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0),
-                    LayerWorkspaceMgr.noWorkspaces(helperWorkspaces));
+                    LayerWorkspaceMgr.noWorkspaces());
         }
 
         layer.fit(outputOfPrevLayer, workspaceMgr);
@@ -829,7 +829,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
         try {
-            LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces(helperWorkspaces);   //TODO
+            LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();
 
             INDArray res = input;
             for (int l = from; l <= to; l++) {
@@ -1115,8 +1115,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
-        }
-        workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
+        }workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
+        workspaceMgr.keepOpen(INPUT, ACTIVATIONS, FF_WORKING_MEM, RNN_FF_LOOP_WORKING_MEM);
 
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
@@ -1124,7 +1124,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         boolean traceLog = log.isTraceEnabled();
         for( int i = 0; i <= layerIndex; i++) {
             if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
+                input = workspaceMgr.dup(ArrayType.ACTIVATIONS,getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr));
                 //Validation: Exception if invalid (bad preprocessor implementation)
                 validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
             }
@@ -1276,7 +1276,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
 
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
+                    input = mgr.dup(ACTIVATIONS,getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr));
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                 }
@@ -2580,8 +2580,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         mgr.setHelperWorkspacePointers(helperWorkspaces);
 
-        INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
-                data.getFeaturesMaskArray(), data.getLabelsMaskArray(), null);
+        INDArray inputToOutputLayer = outputOfLayerDetached(
+                training,
+                FwdPassType.STANDARD,
+                layers.length-  2,
+                data.getFeatures(),
+                data.getFeaturesMaskArray(),
+                data.getLabelsMaskArray(), null);
 
         if (data.getFeatures().size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
@@ -2760,8 +2765,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.gradient = (pair == null ? null : pair.getFirst());
 
         //Calculate score
-        double r = calcRegularizationScore(true);
-        score = ((IOutputLayer) getOutputLayer()).computeScore(r, true, mgr);
+        double r = calcRegularizationScore(true);score = ((IOutputLayer) getOutputLayer()).computeScore(r, true, mgr);
 
 
         //Listeners
@@ -2776,9 +2780,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         //Clear the post noise/dropconnect parameters on the output layer
         getOutputLayer().clearNoiseWeightParams();
-
-        mgr.closeWorkspace(ArrayType.values());
-        WorkspaceUtils.closeWorkspacesForCurrentThread(true);
     }
 
     @Override

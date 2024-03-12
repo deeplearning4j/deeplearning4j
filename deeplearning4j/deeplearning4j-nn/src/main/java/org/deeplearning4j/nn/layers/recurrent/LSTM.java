@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.common.base.Preconditions;
@@ -139,7 +140,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                 LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false,
                 forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
-        fwd.fwdPassOutput = permuteIfNWC(fwd.fwdPassOutput);
+        fwd.fwdPassOutput = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,permuteIfNWC(fwd.fwdPassOutput));
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;

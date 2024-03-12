@@ -228,8 +228,6 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                         + outputActivation + ", l2=" + l2 + ", l1=" + l1;
                 if (PRINT_RESULTS) {
                     System.out.println(testName);
-//                    for (int j = 0; j < mln.getnLayers(); j++)
-//                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
@@ -244,9 +242,13 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
     @Test
     public void testGradientLSTMEdgeCases() {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         //Edge cases: T=1, miniBatchSize=1, both
         int[] timeSeriesLength = {1, 5, 1};
         int[] miniBatchSize = {7, 1, 1};
+
+        Nd4j.getRandom().setSeed(42);
 
         int nIn = 3;
         int layerSize = 4;
@@ -258,10 +260,9 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
             for (int i = 0; i < timeSeriesLength.length; i++) {
 
-                Random r = new Random(12345L);
                 INDArray input = Nd4j.rand(DataType.DOUBLE, miniBatchSize[i], nIn, timeSeriesLength[i]);
 
-                INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize[i], nOut, timeSeriesLength[i]);
+                INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize[i], nOut, timeSeriesLength[i],42);
 
                 Layer layer;
                 if (graves) {
