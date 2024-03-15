@@ -22,6 +22,7 @@
 #include <helpers/BitwiseUtils.h>
 #include <ops/declarable/helpers/toggle_bits.h>
 
+
 namespace sd {
 namespace ops {
 namespace helpers {

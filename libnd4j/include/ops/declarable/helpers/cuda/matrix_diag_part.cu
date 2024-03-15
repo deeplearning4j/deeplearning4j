@@ -1,3 +1,4 @@
+
 /* ******************************************************************************
  *
  *
@@ -28,6 +29,7 @@
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
 #include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {

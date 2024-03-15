@@ -32,6 +32,7 @@
 #include <types/float16.h>
 #include <types/types.h>
 
+
 using namespace simdOps;
 
 namespace functions {

@@ -355,8 +355,8 @@ int DeclarableOp::prepareOutputs(Context &ctx) {
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch first case");
           }
 
-          if (shape::isEmpty(out) != shape::isEmpty(shape)) {
-            sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmpty(out), shape::isEmpty(shape));
+          if (shape::isEmptyConst(out) != shape::isEmptyConst(shape)) {
+            sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmptyConst(out), shape::isEmptyConst(shape));
 
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
           }
@@ -388,36 +388,36 @@ int DeclarableOp::prepareOutputs(Context &ctx) {
             if (eShapeInfoString != aShapeInfoString) {
               delete outSha;
               std::string errorMessage;
-                  errorMessage += "OP PREPARE OUTPUTS: Op name: ";
-                        errorMessage += getOpName()->c_str();
-                        errorMessage += " Failed to set output for op context. Expected vs provided shapes mismatch ";
-                        errorMessage += eShape;
-                        errorMessage += " vs ";
-                        errorMessage += aShape;
-                        errorMessage += " at index ";
-                        errorMessage += std::to_string(idx);
-                        errorMessage += " with expected shape info ";
-                        errorMessage += eShapeInfoString;
-                        errorMessage += " and output shape info ";
-                        errorMessage += aShapeInfoString;
-                        errorMessage += ". Conditions, shapeEquals: ";
-                        errorMessage += std::to_string(shapeEquals);
-                        errorMessage += ", array empty: ";
-                        errorMessage += std::to_string(arrayEmpty);
-                        errorMessage += "\n";
-                        errorMessage += "Expected shape info: ";
-                        errorMessage += eShapeInfoString;
-                        errorMessage += "\n";
-                        errorMessage += "Provided shape info: ";
-                        errorMessage += aShapeInfoString;
-                        errorMessage += "\n";
-                        errorMessage += "Expected shape: ";
-                        errorMessage += eShape;
-                        errorMessage += "\n";
-                        errorMessage += "Provided shape: ";
-                        errorMessage += aShape;
-                        errorMessage += "\n";
-                        THROW_EXCEPTION(errorMessage.c_str());
+              errorMessage += "OP PREPARE OUTPUTS: Op name: ";
+              errorMessage += getOpName()->c_str();
+              errorMessage += " Failed to set output for op context. Expected vs provided shapes mismatch ";
+              errorMessage += eShape;
+              errorMessage += " vs ";
+              errorMessage += aShape;
+              errorMessage += " at index ";
+              errorMessage += std::to_string(idx);
+              errorMessage += " with expected shape info ";
+              errorMessage += eShapeInfoString;
+              errorMessage += " and output shape info ";
+              errorMessage += aShapeInfoString;
+              errorMessage += ". Conditions, shapeEquals: ";
+              errorMessage += std::to_string(shapeEquals);
+              errorMessage += ", array empty: ";
+              errorMessage += std::to_string(arrayEmpty);
+              errorMessage += "\n";
+              errorMessage += "Expected shape info: ";
+              errorMessage += eShapeInfoString;
+              errorMessage += "\n";
+              errorMessage += "Provided shape info: ";
+              errorMessage += aShapeInfoString;
+              errorMessage += "\n";
+              errorMessage += "Expected shape: ";
+              errorMessage += eShape;
+              errorMessage += "\n";
+              errorMessage += "Provided shape: ";
+              errorMessage += aShape;
+              errorMessage += "\n";
+              THROW_EXCEPTION(errorMessage.c_str());
 
             }
           }
@@ -465,7 +465,7 @@ bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t),desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
@@ -473,7 +473,7 @@ bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
     std::shared_ptr<DataBuffer> buffer =
         std::make_shared<DataBuffer>(len * sizeof(int8_t), desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
 
   return true;
@@ -791,6 +791,16 @@ Status DeclarableOp::execute(Context *block) {
     }
   }
 
+  //TODO: add dup() and input check here, add for other execute methods as well.
+  std::vector<NDArray> inputsToCheck;
+  if(Environment::getInstance().isCheckInputChange()) {
+    for(int i = 0; i < block->width(); i++) {
+      auto array = block->array(i);
+      inputsToCheck.push_back(array->dup());
+
+    }
+  }
+
   // if we don't have platform-specific helper - invoke generic implementation
 #if defined(HAVE_VEDA)
   // try to sync if we have incomplete buffers
@@ -830,6 +840,23 @@ Status DeclarableOp::execute(Context *block) {
 
   if (!hasHelper) status = this->validateAndExecute(*block);
 #endif
+
+  if(Environment::getInstance().isCheckInputChange()) {
+    for(int i = 0; i < block->width(); i++) {
+      auto array = block->array(i);
+      if(!array->equalsTo(&inputsToCheck[i])) {
+        std::string errorMessage;
+        errorMessage += "Input array ";
+        errorMessage += std::to_string(i);
+        errorMessage += " has been changed after execution of op ";
+        errorMessage += this->getOpName()->c_str();
+        errorMessage += "\n";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+    }
+  }
+
   // optionally saving execution time
   if (Environment::getInstance().isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
@@ -845,8 +872,8 @@ Status DeclarableOp::execute(Context *block) {
       auto p = fp->profile();
       if (p != nullptr) {
         LongType memoryAfter = block->workspace() == nullptr
-                                   ? 0L
-                                   : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
+                               ? 0L
+                               : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
         LongType memoryUsed = memoryAfter - memoryBefore;
         p->nodeById(block->nodeId())->setPreparationTime(prepTime);
         p->nodeById(block->nodeId())->setExecutionTime(outerTime);
@@ -1150,19 +1177,19 @@ Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::ve
 
 template <>
 Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<double> tArgs) {
+                             std::initializer_list<double> tArgs) {
   return execute(inputs, outputs, tArgs, std::vector<LongType>(), std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
 Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<DataType> dArgs) {
+                             std::initializer_list<DataType> dArgs) {
   return execute(inputs, outputs, std::vector<double>(), std::vector<LongType>(), std::vector<bool>(), dArgs);
 }
 
 template <>
 Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<float> tArgs) {
+                             std::initializer_list<float> tArgs) {
   std::vector<double> realArgs;
   for (auto v : tArgs) realArgs.emplace_back(v);
 
@@ -1172,13 +1199,13 @@ Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::ve
 
 template <>
 Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<LongType> iArgs) {
+                             std::initializer_list<LongType> iArgs) {
   return execute(inputs, outputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<DataType>());
 }
 
 template <>
 Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std::vector<NDArray *> &outputs,
-                                 std::initializer_list<int> iArgs) {
+                             std::initializer_list<int> iArgs) {
   std::vector<LongType> realArgs;
   for (auto v : iArgs) realArgs.emplace_back(v);
 

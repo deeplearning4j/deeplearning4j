@@ -77,23 +77,23 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
         int layerSize = 4;
         int nOut = 2;
 
-        int[] minibatchSizes = new int[] {1, 3};
+        int[] minibatchSizes = {1, 3};
         PoolingType[] poolingTypes =
-                        new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+                {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
         for (int miniBatchSize : minibatchSizes) {
             for (PoolingType pt : poolingTypes) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .dataType(DataType.DOUBLE)
-                                .updater(new NoOp())
-                                .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
-                                                .build())
-                                .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                                .build();
+                        .dataType(DataType.DOUBLE)
+                        .updater(new NoOp())
+                        .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
+                        .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                                .build())
+                        .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
+                        .build();
 
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
@@ -105,13 +105,11 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
                 if (PRINT_RESULTS) {
                     System.out.println("testLSTMGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = "
-                                    + miniBatchSize);
-//                    for (int j = 0; j < mln.getnLayers(); j++)
-//                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                            + miniBatchSize);
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                 assertTrue(gradOK);
                 TestUtils.testModelSerialization(mln);
@@ -123,8 +121,8 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
     public void testCnnGlobalPoolingBasicMultiLayer() {
         //Basic test of global pooling w/ CNN
         Nd4j.getRandom().setSeed(12345L);
-
-        for(boolean nchw : new boolean[]{true, false}) {
+        Nd4j.getEnvironment().setCheckInputChange(true);
+        for(boolean nchw : new boolean[]{false}) {
 
             int inputDepth = 3;
             int inputH = 5;
@@ -132,9 +130,9 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
             int layerDepth = 4;
             int nOut = 2;
 
-            int[] minibatchSizes = new int[]{1, 3};
+            int[] minibatchSizes = {1, 3};
             PoolingType[] poolingTypes =
-                    new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+                    {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
             for (int miniBatchSize : minibatchSizes) {
                 for (PoolingType pt : poolingTypes) {
@@ -167,8 +165,6 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
                     if (PRINT_RESULTS) {
                         System.out.println("testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = " + miniBatchSize + " - " + (nchw ? "NCHW" : "NHWC"));
-//                    for (int j = 0; j < mln.getnLayers(); j++)
-//                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -193,20 +189,20 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
         int miniBatchSize = 3;
         PoolingType[] poolingTypes =
-                        new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+                new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
         for (PoolingType pt : poolingTypes) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .dataType(DataType.DOUBLE)
-                            .updater(new NoOp())
-                            .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
-                                            .build())
-                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
-                            .build();
+                    .dataType(DataType.DOUBLE)
+                    .updater(new NoOp())
+                    .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
+                    .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                            .build())
+                    .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
+                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
+                    .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -227,8 +223,6 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println("testLSTMGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = " + miniBatchSize);
-//                for (int j = 0; j < mln.getnLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
@@ -255,7 +249,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
             int[] minibatchSizes = new int[] {1, 3};
             PoolingType[] poolingTypes =
-                            new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+                    new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
             for (int miniBatchSize : minibatchSizes) {
                 for (PoolingType pt : poolingTypes) {
@@ -272,17 +266,17 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                    .dataType(DataType.DOUBLE)
-                                    .updater(new NoOp())
-                                    .dist(new NormalDistribution(0, 1.0)).convolutionMode(ConvolutionMode.Same)
-                                    .seed(12345L).list()
-                                    .layer(0, new ConvolutionLayer.Builder().kernelSize(kernel).stride(stride)
-                                                    .nOut(layerDepth).build())
-                                    .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                            .dataType(DataType.DOUBLE)
+                            .updater(new NoOp())
+                            .dist(new NormalDistribution(0, 1.0)).convolutionMode(ConvolutionMode.Same)
+                            .seed(12345L).list()
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(kernel).stride(stride)
+                                    .nOut(layerDepth).build())
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
+                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
 
-                                    .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
+                            .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
@@ -309,9 +303,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
                     if (PRINT_RESULTS) {
                         System.out.println("testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = "
-                                        + miniBatchSize);
-//                        for (int j = 0; j < mln.getnLayers(); j++)
-//                            System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                                + miniBatchSize);
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)

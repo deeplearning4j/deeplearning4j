@@ -38,8 +38,18 @@ public class CpuEnvironment implements Environment {
         return INSTANCE;
     }
 
-    protected CpuEnvironment(Nd4jCpu.Environment environment){
+    protected CpuEnvironment(Nd4jCpu.Environment environment) {
         this.e = environment;
+    }
+
+    @Override
+    public boolean isCheckInputChange() {
+        return e.isCheckInputChange();
+    }
+
+    @Override
+    public void setCheckInputChange(boolean reallyCheck) {
+        e.setCheckInputChange(reallyCheck);
     }
 
     @Override

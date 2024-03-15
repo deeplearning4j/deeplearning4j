@@ -40,7 +40,7 @@ DECLARE_SYN(zeros_like, zeros_as);
 DECLARE_SHAPE_FN(zeros_as) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
     if(shape::rank(in) < 1) {
       return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(dtype));
 

@@ -2462,7 +2462,7 @@
     for (int e = 0; e < opLimit; e++) {                                                                               \
       int inputShapeIdx = block.width() < opLimit ? 0 : e;                                                            \
       auto shapeInfo = inputShape->at(inputShapeIdx);                                                                 \
-      if(shape::isEmpty(shapeInfo)) {                                                                                 \
+      if(shape::isEmptyConst(shapeInfo)) {                                                                                 \
            std::vector<sd::LongType> shape2;                                                                          \
              if(shape::rank(shapeInfo) < 1)                                                                           \
                   shape2.push_back(0);                                                                                \

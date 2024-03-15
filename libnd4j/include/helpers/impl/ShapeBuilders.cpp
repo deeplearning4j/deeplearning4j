@@ -37,7 +37,7 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
     std::vector<LongType> shape = {0};
     std::vector<LongType> strides = {1};
     shape::setShape(ret,shape.data());
-    shape::setStride(ret, strides.data());
+    shape::setStrideConst(ret, strides.data());
   }
 
   shape::setOffset(ret, 0);

@@ -23,6 +23,7 @@
 #include <loops/special_kernels.h>
 #include <ops/declarable/helpers/flatten.h>
 
+
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////

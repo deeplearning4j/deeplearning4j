@@ -376,7 +376,6 @@ if(SD_CUDA)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/impl/*.cpp ../include/loops/*.h)
         file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
-        file(GLOB_RECURSE HELPERS_CPP  false   ../include/helpers/impl/shape.cpp )
         file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
                 ../include/ops/impl/compilation_units/*.cpp.in)
 

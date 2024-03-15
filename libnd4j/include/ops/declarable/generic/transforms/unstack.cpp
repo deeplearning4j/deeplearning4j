@@ -58,7 +58,7 @@ DECLARE_SHAPE_FN(unstack) {
   auto dim = INT_ARG(0);
   const LongType numTads = block.numI() > 1 ? I_ARG(1) : shape::shapeOf(inShapeInfo)[dim];
   if (dim < 0) dim += shape::rank(inShapeInfo);
-  if(!shape::isEmpty(inShapeInfo)) {
+  if(!shape::isEmptyConst(inShapeInfo)) {
     REQUIRE_TRUE(dim < inShapeInfo[0], 0,
                  "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0],
                  dim);

@@ -81,7 +81,7 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
     maxOutputSize = boxSize;
   }
 
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
     std::vector<LongType> shape = {maxOutputSize};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }

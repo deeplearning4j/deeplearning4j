@@ -29,6 +29,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
@@ -230,8 +231,8 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
                                                       void *extraParams, void *vreductionBuffer, void *z,
                                                       const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
                                                       const sd::LongType *dims) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -271,8 +272,8 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
                                                           const sd::LongType *hZShapeInfo,sd::LongType *dimension,
                                                           sd::LongType dimensionLength, void *reductionBuffer,
                                                           const sd::LongType *tadOnlyShapeInfo) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 

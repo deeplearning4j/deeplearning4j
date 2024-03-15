@@ -1371,61 +1371,56 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         synchronizeIterEpochCounts();
 
         //Calculate activations (which are stored in each layer, and used in backprop)
-        try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-            wsAllActivations.setWorkspaceMgr(workspaceMgr);
 
-            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, -1, getOutputLayerIndices(),
-                    fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
-            if (!trainingListeners.isEmpty()) {
-                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
-                    }
-                }
-            }
-            calcBackpropGradients(false,false);
-
-
-            //Score: sum of the scores for the various output layers...
-            double r = calcRegularizationScore(true);
-
-            score = 0.0;
-            int outNum = 0;
-            for (String s : configuration.getNetworkOutputs()) {
-                GraphVertex gv = verticesMap.get(s);
-                if(gv instanceof LayerVertex) {
-                    //At this point: the input to the output layer might not be set on the layer itself - just the vertex
-                    LayerVertex lv = (LayerVertex) gv;
-                    if(!lv.isSetLayerInput()) {
-                        lv.applyPreprocessorAndSetInput(workspaceMgr);
-                    }
-                }
-                Layer vertexLayer = gv.getLayer();
-                if (vertexLayer instanceof FrozenLayerWithBackprop) {
-                    vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
-                }
-                vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
-
-                try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                    ws.setWorkspaceMgr(workspaceMgr);
-
-                    score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
-                }
-
-                //Only want to add l1/l2 component once...
-                r = 0.0;
-                outNum++;
-            }
-
-            //Listeners
-            if (!trainingListeners.isEmpty()) {
-                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onBackwardPass(this);
-                    }
+        Map<String, INDArray> activations = ffToLayerActivationsInWS(true, -1, getOutputLayerIndices(),
+                fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
+        if (!trainingListeners.isEmpty()) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
                 }
             }
         }
+        calcBackpropGradients(false,false);
+
+
+        //Score: sum of the scores for the various output layers...
+        double r = calcRegularizationScore(true);
+
+        score = 0.0;
+        int outNum = 0;
+        for (String s : configuration.getNetworkOutputs()) {
+            GraphVertex gv = verticesMap.get(s);
+            if(gv instanceof LayerVertex) {
+                //At this point: the input to the output layer might not be set on the layer itself - just the vertex
+                LayerVertex lv = (LayerVertex) gv;
+                if(!lv.isSetLayerInput()) {
+                    lv.applyPreprocessorAndSetInput(workspaceMgr);
+                }
+            }
+            Layer vertexLayer = gv.getLayer();
+            if (vertexLayer instanceof FrozenLayerWithBackprop) {
+                vertexLayer = ((FrozenLayerWithBackprop) vertexLayer).getInsideLayer();
+            }
+            vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
+
+            score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
+
+
+            //Only want to add l1/l2 component once...
+            r = 0.0;
+            outNum++;
+        }
+
+        //Listeners
+        if (!trainingListeners.isEmpty()) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onBackwardPass(this);
+                }
+            }
+        }
+
 
         for(GraphVertex gv : vertices) {
             gv.clear();
@@ -1888,7 +1883,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         } catch (ND4JWorkspaceException e){
             String clazz;
             GraphVertex v = verticesMap.get(vertexName);
-            if(v instanceof LayerVertex){
+            if(v instanceof LayerVertex) {
                 clazz = v.getLayer().getClass().getSimpleName();
             } else {
                 clazz = v.getClass().getSimpleName();
@@ -2050,17 +2045,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        ArrayType[] toClose = {
-                ArrayType.ACTIVATIONS,
-                FF_WORKING_MEM,
-                BP_WORKING_MEM,
-                RNN_FF_LOOP_WORKING_MEM,
-                RNN_BP_LOOP_WORKING_MEM,
-                UPDATER_WORKING_MEM,
-                FF_CACHE
-        };
-        workspaceMgr.closeWorkspace(
-                toClose);
+
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
         return activations;
@@ -2201,22 +2186,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
 
-            if(traceLog){
+            if(traceLog) {
                 log.trace("Completed forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
         }
 
-        ArrayType[] toClose = {
-                ArrayType.ACTIVATIONS,
-                FF_WORKING_MEM,
-                BP_WORKING_MEM,
-                RNN_FF_LOOP_WORKING_MEM,
-                RNN_BP_LOOP_WORKING_MEM,
-                UPDATER_WORKING_MEM,
-                FF_CACHE
-        };
-        workspaceMgr.closeWorkspace(
-                toClose);
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
         return activations;
@@ -3174,12 +3148,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
-            INDArray scoreCurrLayer;
-            try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                wsFF.setWorkspaceMgr(mgr);
+            INDArray scoreCurrLayer;;
 
-                scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(r, mgr);
-            }
+            scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(r, mgr);
+
             if (out == null)
                 out = scoreCurrLayer.detach();
             else

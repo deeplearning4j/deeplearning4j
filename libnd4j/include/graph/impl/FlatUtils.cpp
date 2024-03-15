@@ -43,7 +43,7 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
   auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
   // empty arrays is special case, nothing to restore here
-  if (shape::isEmpty(newShape)) {
+  if (shape::isEmptyConst(newShape)) {
      delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }

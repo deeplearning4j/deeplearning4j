@@ -390,9 +390,12 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
   if (z->isEmpty()) return;
 
-  NDArray *xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
+  NDArray xT = *x;
+  NDArray yT = *y;
+  NDArray zT = *z;
 
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
+    printf("Redoing transpose\n");
     const int rank = xRank >= yRank ? xRank : yRank;
     std::vector<LongType> permut(rank);
     for (int i = 0; i < rank - 2; ++i) permut[i] = i;
@@ -402,13 +405,11 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     //transpose can affect the input data. We shouldn't mutate that.
     //note we dup here to avoid manipulating the reference
     if (transX) {
-      NDArray *permuted = new NDArray(x->dup(x->ordering()).permute(permut));
-      xT = permuted;
+      xT = x->permute(permut).dup(x->ordering());
     }
 
     if (transY) {
-      NDArray *permuted = new NDArray(y->dup(y->ordering()).permute(permut));
-      yT = permuted;
+      yT = y->permute(permut).dup(y->ordering());
     }
 
   }
@@ -418,12 +419,14 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
     if (xRank == 1 && yRank == 2) {  // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
-      NDArray *xReshape = new NDArray(x->dup().reshape(xT->ordering(), {1, xT->lengthOf()}));
+      NDArray xReshape = x->dup().reshape(xT.ordering(), {1, xT.lengthOf()});
       xT = xReshape;  // please note x is not transposed in this case (since xRank=1)
-      zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
+      zT =z->reshape(z->ordering(), {1, z->lengthOf()});
     }
 
-    mmul(xT, yT, zT, alpha, beta);
+    xT.printIndexedBuffer("xT:");
+    yT.printIndexedBuffer("yT:");
+    mmul(&xT, &yT, &zT, alpha, beta);
 
   } else {  // rest cases -  batched mmul
 
@@ -431,12 +434,12 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     std::vector<LongType> dimsToExclude(batchRank);
     for (int i = 0; i < batchRank; ++i) dimsToExclude[i] = i;
 
-    const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
+    const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT.shapeInfo(), dimsToExclude);
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      auto xSubArr = (*xT)(i, dimsToExclude);
-      auto ySubArr = (*yT)(i, dimsToExclude);
-      auto zSubArr = (*zT)(i, dimsToExclude);
+      auto xSubArr = (xT)(i, dimsToExclude);
+      auto ySubArr = (yT)(i, dimsToExclude);
+      auto zSubArr = (zT)(i, dimsToExclude);
       mmul(&xSubArr, &ySubArr, &zSubArr, alpha, beta);
     }
   }

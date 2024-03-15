@@ -23,6 +23,7 @@
 
 #include <execution/cuda/LaunchDims.h>
 
+
 namespace sd {
 static LongType SD_DEVICE __noinline__ getIndexOffset_(LongType index, LongType const* shapeInfo) {
   return shape::getIndexOffset(index, shapeInfo);

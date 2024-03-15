@@ -45,9 +45,7 @@
 #include <loops/transform_strict.h>
 #include <types/types.h>
 #include <array/DataTypeUtils.h>
-
 #include <vector>
-
 #ifdef _OPENMP
 #include <helpers/ConstantTadHelper.h>
 #include <omp.h>

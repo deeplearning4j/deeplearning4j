@@ -416,33 +416,6 @@ if(NOT SD_CUDA)
         set(OPENBLAS_LIBRARIES openblas)
     endif()
 
-    # building cpu_features
-    if (SD_X86_BUILD)
-        add_definitions(-DCPU_FEATURES=true)
-        set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
-        configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
-        message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
-        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON  "${CMAKE_GENERATOR}" .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-
-        if(result)
-            message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
-        endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-        if(result)
-            message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
-        endif()
-
-        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
-                ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
-                EXCLUDE_FROM_ALL)
-        set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
-        include_directories(${CPUF_SOURCE_DIR}/include)
-        set(CPU_FEATURES cpu_features)
-    endif()
 endif()
 
 

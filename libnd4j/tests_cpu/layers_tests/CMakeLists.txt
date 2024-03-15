@@ -185,7 +185,7 @@ if (SD_CPU OR SD_AURORA)
     endif()
 
     add_executable(runtests ${TEST_SOURCES})
-    target_link_libraries(runtests samediff_obj   ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${BLAS_LIBRARIES} ${CPU_FEATURES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
+    target_link_libraries(runtests samediff_obj   ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${BLAS_LIBRARIES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
 elseif(SD_CUDA)
 
     add_executable(runtests ${TEST_SOURCES})

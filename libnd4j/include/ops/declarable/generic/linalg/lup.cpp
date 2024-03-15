@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(lu) {
 
   auto shapeVector = ShapeUtils::shapeAsVector(in);
 
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
 
     auto luP = ShapeBuilders::createShapeInfo(dtype, shape::order(in), shapeVector.size() - 1, shapeVector.data(),
                                               block.workspace(), true);

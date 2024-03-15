@@ -263,6 +263,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
                                         pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double)beta,
                                         pC->bufferAsT<double>(), ldc);
     }
+
     if (pC != C) {
       C->assign(pC);
     }

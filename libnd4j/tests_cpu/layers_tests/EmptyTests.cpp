@@ -39,7 +39,7 @@ TEST_F(EmptyTests, Test_Create_Empty_1) {
   ASSERT_EQ(0, empty->lengthOf());
   ASSERT_TRUE(empty->buffer() == nullptr);
 
-  ASSERT_TRUE(shape::isEmpty(empty->shapeInfo()));
+  ASSERT_TRUE(shape::isEmptyConst(empty->shapeInfo()));
 
   delete empty;
 }
@@ -51,7 +51,7 @@ TEST_F(EmptyTests, Test_Create_Empty_2) {
   ASSERT_EQ(0, empty.lengthOf());
   ASSERT_TRUE(empty.buffer() == nullptr);
 
-  ASSERT_TRUE(shape::isEmpty(empty.shapeInfo()));
+  ASSERT_TRUE(shape::isEmptyConst(empty.shapeInfo()));
   ASSERT_TRUE(empty.isEmpty());
 }
 

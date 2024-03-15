@@ -26,6 +26,7 @@
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -234,7 +235,7 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfo
 
     auto iShapeInfo = iShapeInfos[e];
     auto numTads = numTadsPerInput[e];
-    if (shape::isEmpty(iShapeInfo)) continue;
+    if (shape::isEmptyConst(iShapeInfo)) continue;
 
     auto iLength = shape::length(iShapeInfo);
     auto zLength = shape::length(zTadShapeInfo);

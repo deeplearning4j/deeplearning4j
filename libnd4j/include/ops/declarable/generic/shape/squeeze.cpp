@@ -139,7 +139,7 @@ DECLARE_SHAPE_FN(squeeze) {
     return shapeList;
   }
 
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
     if(shape::rank(in) < 1) {
       shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(in)));
       return shapeList;

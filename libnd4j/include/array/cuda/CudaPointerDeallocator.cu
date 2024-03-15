@@ -24,10 +24,10 @@
 #include <array/CudaPointerDeallocator.h>
 #include <iostream>
 
+
 namespace sd {
 
 void CudaPointerDeallocator::release(void *ptr) {
-  printf("Calling cuda free\n");
   cudaFree(ptr);
 }
 

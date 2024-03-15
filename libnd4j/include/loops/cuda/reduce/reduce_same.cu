@@ -231,8 +231,8 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
                                                    void *extraParams, void *vreductionBuffer, void *z,
                                                    const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
                                                    const sd::LongType *dims) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<X>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -273,8 +273,8 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStre
                                                        sd::LongType const *hZShapeInfo, long long int *dimension,
                                                        sd::LongType dimensionLength, void *reductionBuffer,
                                                        sd::LongType const *tadOnlyShapeInfo) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<X>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 

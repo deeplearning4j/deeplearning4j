@@ -49,12 +49,12 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, Context 
   } else
     dtype = BOOL;
 
-  if (shape::isEmpty(x) || shape::isEmpty(y)) {
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
     // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmpty(x) && shape::rank(x) == 0)
-        || (shape::isEmpty(y) && shape::rank(y) == 0)
-        || (shape::isEmpty(x) && shape::rank(x) == 1 && shape::shapeOf(x)[0] == 0)
-        ||  (shape::isEmpty(y) && shape::rank(y) == 1 && shape::shapeOf(y)[0] == 0)) {
+    if ((shape::isEmptyConst(x) && shape::rank(x) == 0)
+        || (shape::isEmptyConst(y) && shape::rank(y) == 0)
+        || (shape::isEmptyConst(x) && shape::rank(x) == 1 && shape::shapeOf(x)[0] == 0)
+        ||  (shape::isEmptyConst(y) && shape::rank(y) == 1 && shape::shapeOf(y)[0] == 0)) {
       std::vector<LongType> vecShape;
       auto xShape = shape::shapeOf(x);
       for(int i = 0; i < shape::rank(x); i++)

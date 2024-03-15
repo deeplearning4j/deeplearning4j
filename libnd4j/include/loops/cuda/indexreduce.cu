@@ -29,6 +29,7 @@
 #include "../indexreduce.h"
 #include "../legacy_ops.h"
 
+
 using namespace simdOps;
 
 template <typename X, typename Z>

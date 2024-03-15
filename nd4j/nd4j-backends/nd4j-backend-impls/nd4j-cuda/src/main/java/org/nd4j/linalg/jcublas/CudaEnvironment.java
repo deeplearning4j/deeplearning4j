@@ -46,6 +46,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public boolean isCheckInputChange() {
+        return e.isCheckInputChange();
+    }
+
+    @Override
+    public void setCheckInputChange(boolean reallyCheck) {
+        e.setCheckInputChange(reallyCheck);
+    }
+
+    @Override
     public void setLogNDArrayEvents(boolean logNDArrayEvents) {
         this.logNDArrayWrites = logNDArrayEvents;
     }
@@ -53,6 +63,16 @@ public class CudaEnvironment implements Environment {
     @Override
     public boolean isLogNDArrayEvents() {
         return logNDArrayWrites;
+    }
+
+    @Override
+    public boolean isTruncateNDArrayLogStrings() {
+        return false;
+    }
+
+    @Override
+    public void setTruncateLogStrings(boolean truncateLogStrings) {
+
     }
 
     @Override

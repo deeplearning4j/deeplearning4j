@@ -103,7 +103,7 @@ DECLARE_SHAPE_FN(lstsq) {
   auto rank = shapeOf.size();
   shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<LongType>(-1));
 
-  if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
+  if (shape::isEmptyConst(in0) || shape::isEmptyConst(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty
   }
   auto resShape = ConstantShapeHelper::getInstance().createShapeInfo(
@@ -125,7 +125,7 @@ DECLARE_SHAPE_FN(solve_ls) {
   auto rank = shapeOf.size();
   shapeOf[rank - 2] = shape::sizeAt(in0, static_cast<LongType>(-1));
 
-  if (shape::isEmpty(in0) || shape::isEmpty(in1)) {
+  if (shape::isEmptyConst(in0) || shape::isEmptyConst(in1)) {
     shapeOf[rank - 1] = 0;  // set output shape to empty
   }
   auto resShape = ConstantShapeHelper::getInstance().createShapeInfo(

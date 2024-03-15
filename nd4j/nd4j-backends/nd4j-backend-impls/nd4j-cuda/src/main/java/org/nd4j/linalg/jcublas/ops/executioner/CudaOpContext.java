@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
 import java.util.Arrays;
@@ -58,9 +57,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     public CudaOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().allocateOpContext(this);
-        }
     }
 
     @Override
@@ -120,10 +116,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_in.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateInput(array,this);
-            }
-
             array.setCloseable(false);
         }
 
@@ -143,9 +135,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateOutput(array,this);
-            }
             array.setCloseable(false);
         }
 
@@ -257,10 +246,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         super.purge();
         nativeOps.ctxPurge(context);
 
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().deallocateContext(this);
-            Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
-        }
+        Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
+
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
 

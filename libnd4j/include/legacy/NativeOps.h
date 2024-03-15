@@ -45,7 +45,6 @@
 #include <helpers/DebugInfo.h>
 #include <memory/MemoryCounter.h>
 #include <ops/declarable/OpRegistrator.h>
-
 typedef sd::InteropDataBuffer OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 

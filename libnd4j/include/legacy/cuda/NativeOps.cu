@@ -37,6 +37,7 @@
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 
+
 #include <curand.h>
 #include <helpers/DebugHelper.h>
 
@@ -581,12 +582,12 @@ void execReduceFloat(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, L
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloatScalar(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special() ,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
@@ -606,12 +607,12 @@ void execReduceSame(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSameScalar(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr: dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr: dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo)  ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo)  ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
@@ -649,14 +650,14 @@ void execReduceSame2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, L
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSame(&lc,
                                         opNum,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                         hXShapeInfo,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams,
-                                        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                         zShapeInfoH,
-                                        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -697,13 +698,13 @@ void execReduceLong2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, L
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceLong(&lc, opNum,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                         hXShapeInfo,
-                                        shape::isEmpty(hXShapeInfo) ?  nullptr : dbX->special(),
+                                        shape::isEmptyConst(hXShapeInfo) ?  nullptr : dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams, dbZ->primary(),
                                         zShapeInfoH,
-                                        shape::isEmpty(zShapeInfoH) ? nullptr : dbZ->special(),
+                                        shape::isEmptyConst(zShapeInfoH) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -743,10 +744,10 @@ void execReduceLong(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
         xType, zType, functions::reduce::ReduceLongFunction,
         ::execReduceScalar(launchDims,
                            stream, opNum,
-                           shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+                           shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), hXShapeInfo,
                            extraParams,
-                           shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+                           shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), hXShapeInfo,
                            nullptr,
                            0,
@@ -792,13 +793,13 @@ void execReduceBool2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, L
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceBool(&lc,
                                         opNum,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                         hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParams,
-                                        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                         zShapeInfoH,
-                                        shape::isEmpty(zShapeInfoH) ? nullptr :  dbZ->special(),
+                                        shape::isEmptyConst(zShapeInfoH) ? nullptr :  dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -838,10 +839,10 @@ void execReduceBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
         ::execReduceScalar(launchDims,
                            stream,
                            opNum,
-                           shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+                           shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), hXShapeInfo,
                            extraParams,
-                           shape::isEmpty(hZShapeInfo) ? nullptr :dbZ->special(),
+                           shape::isEmptyConst(hZShapeInfo) ? nullptr :dbZ->special(),
                            dZShapeInfo,
                            hZShapeInfo,
                            nullptr,
@@ -888,14 +889,14 @@ void execIndexReduce(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, L
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduce(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
         extraParams,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
         (LongType *)dbDimension->special(), dimensionLength, tadPack->specialShapeInfo(), tadPack->specialOffsets());
 
@@ -945,14 +946,14 @@ void execReduceFloat2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloat(&lc,
                                          opNum,
-                                         shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                         shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                          hXShapeInfo,
-                                         shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+                                         shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                          extraParams,
                                          dbZ->primary(),
                                          zShapeInfoH,
-                                         shape::isEmpty(zShapeInfoH) ? nullptr :  dbZ->special(),
+                                         shape::isEmptyConst(zShapeInfoH) ? nullptr :  dbZ->special(),
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                          dims->data(), dims->size());
 
@@ -982,14 +983,14 @@ void execIndexReduceScalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduceScalar(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
         extraParams,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
@@ -1011,13 +1012,13 @@ void execTransformSame(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformSame(&lc, opNum,
-                                           shape::isEmpty(hXShapeInfo) ? nullptr :dbX->primary(),
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr :dbX->primary(),
                                            hXShapeInfo,
-                                           shape::isEmpty(hXShapeInfo) ?  nullptr : dbX->special(),
+                                           shape::isEmptyConst(hXShapeInfo) ?  nullptr : dbX->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                           shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                            hZShapeInfo,
-                                           shape::isEmpty(hZShapeInfo)  ? nullptr : dbZ->special() ,
+                                           shape::isEmptyConst(hZShapeInfo)  ? nullptr : dbZ->special() ,
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                            extraParams, tadShapeInfo, tadOffsets);
 
@@ -1041,13 +1042,13 @@ void execTransformBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformBool(&lc,
                                            opNum,
-                                           shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                            hXShapeInfo,
-                                           shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                           shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                            hZShapeInfo,
-                                           shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                            extraParams,
                                            tadShapeInfo,
@@ -1072,13 +1073,13 @@ void execTransformAny(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, 
                      reinterpret_cast<int *>(extraPointers[6]));
     NativeOpExecutioner::execTransformAny(&lc,
                                           opNum,
-                                          shape::isEmpty(hXShapeInfo) ? nullptr :dbX->primary(),
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr :dbX->primary(),
                                           hXShapeInfo,
-                                          shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                          shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                           hZShapeInfo,
-                                          shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special() ,
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special() ,
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                           extraParams, nullptr, nullptr);
 
@@ -1102,13 +1103,13 @@ void execTransformStrict(Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformStrict(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
         tadShapeInfo, tadOffsets);
 
@@ -1135,13 +1136,13 @@ void execTransformFloat(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     NativeOpExecutioner::execTransformFloat(
         &lc,
         opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special() ,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
         tadShapeInfo,
         tadOffsets);
@@ -1693,8 +1694,8 @@ void pullRows(Pointer *extraPointers, OpaqueDataBuffer *dbX, LongType const *xSh
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
                           (launchDims,
                               stream,
-                              shape::isEmpty(xShapeInfo) ? nullptr : dbX->special(),
-                              shape::isEmpty(zShapeInfo) ? nullptr :  dbZ->special() ,
+                              shape::isEmptyConst(xShapeInfo) ? nullptr : dbX->special(),
+                              shape::isEmptyConst(zShapeInfo) ? nullptr :  dbZ->special() ,
                               n, indexes, tadShapeInfo, tadOffsets,
                               zTadShapeInfo, zTadOffsets),
                           SD_COMMON_TYPES);
@@ -1815,14 +1816,14 @@ void execSummaryStats(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execSummaryStats(&lc,
                                           opNum,
-                                          shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                           hXShapeInfo,
-                                          shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                           extraParams,
-                                          shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                           hZShapeInfo,
-                                          shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                           biasCorrected);
 
@@ -1850,14 +1851,14 @@ void execSummaryStatsTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execSummaryStats(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
         extraParams,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
         reinterpret_cast<LongType *>(dbDimension->special()), dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
 
@@ -1879,18 +1880,18 @@ void execReduce3(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongT
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3(&lc,
                                      opNum,
-                                     shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                     shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                      hXShapeInfo,
-                                     shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+                                     shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                      extraParams,
-                                     shape::isEmpty(hYShapeInfo) ? nullptr : dbY->primary(),
+                                     shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
                                      hYShapeInfo,
-                                     shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+                                     shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-                                     shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                     shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                      hZShapeInfo,
-                                     shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+                                     shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
@@ -1925,34 +1926,34 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
     if (tadLength == yLength || tadLength == xLength) {
       NativeOpExecutioner::execReduce3(
           &lc, opNum,
-          shape::isEmpty(hXShapeInfo) ? nullptr: dbX->primary(),
+          shape::isEmptyConst(hXShapeInfo) ? nullptr: dbX->primary(),
           hXShapeInfo,
-          shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbY->primary(),
           hYShapeInfo,
-          shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-          shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
           hZShapeInfo,
-          shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
           dimension, dimensionLength,
           tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
     } else
       NativeOpExecutioner::execReduce3TAD(
           &lc, opNum,
-          shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
           hXShapeInfo,
-          shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+          shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
           extraParams,
-          shape::isEmpty(hYShapeInfo) ? nullptr : dbY->primary(),
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
           hYShapeInfo,
-          shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-          shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
           hZShapeInfo,
-          shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), dimension, dimensionLength,
           tadOnlyShapeInfo, yTadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 
@@ -1974,16 +1975,16 @@ void execReduce3Scalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3Scalar(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special() ,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbY->primary(),
         hYShapeInfo,
-        shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
@@ -2004,17 +2005,17 @@ void execScalarBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
         hScalarShapeInfo,
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalar->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(), extraParams);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalar});
@@ -2042,18 +2043,18 @@ void execScalarBoolTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
         extraParams,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalars->primary(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->primary(),
         hScalarShapeInfo,
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalars->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(),
         dimension, dimensionLength,
         tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
@@ -2076,17 +2077,17 @@ void execScalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongTy
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalar(
         &lc, opNum,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
         hScalarShapeInfo,
-        shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalar->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(), extraParams);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalar});
@@ -2132,11 +2133,11 @@ void execScalarTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lon
         xType, functions::scalar::ScalarTransform,
         ::executeCudaAlongDimension(
             launchDims, stream, opNum,
-            shape::isEmpty(hXShapeInfo) ? nullptr :  dbX->special(),
+            shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
             ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-            shape::isEmpty(hZShapeInfo) ? nullptr :  dbZ->special(),
+            shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
             ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-            shape::isEmpty(hScalarShapeInfo) ? nullptr : dbScalars->special(),
+            shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->special(),
             extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES);
 #endif
@@ -2169,8 +2170,8 @@ void execRandom(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueData
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(&lc, opNum, stateHost,
-                                    shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
-                                    shape::isEmpty(hZShapeInfo) ? nullptr :dbZ->special(),
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr :dbZ->special(),
                                     ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                     extraArguments);
 
@@ -2191,13 +2192,13 @@ void execRandom2(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueDat
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(
         &lc, opNum, stateHost,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
         hXShapeInfo,
-        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
         hZShapeInfo,
-        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraArguments);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
@@ -2216,14 +2217,14 @@ void execRandom3(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueDat
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
-                                    hXShapeInfo, shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                    hXShapeInfo, shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                     ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                    shape::isEmpty(hYShapeInfo) ? nullptr : dbY->primary(), hYShapeInfo,
-                                    shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+                                    shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(), hYShapeInfo,
+                                    shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
                                     ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-                                    shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
-                                    shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                     ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                     extraArguments);
 
@@ -2332,7 +2333,7 @@ void tear(Pointer *extras, OpaqueDataBuffer *dbX, LongType const *xShapeInfo, Lo
     BUILD_SINGLE_SELECTOR(
         xType, tearKernelGeneric,
         (launchDims, stream,
-            shape::isEmpty(xShapeInfo) ? nullptr :  dbX->special(),
+            shape::isEmptyConst(xShapeInfo) ? nullptr :  dbX->special(),
             dXShapeInfo,
             targets,
             zShapeInfo,
@@ -2448,18 +2449,18 @@ void execReduce3All(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lo
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3All(&lc, opNum,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
                                         hXShapeInfo,
-                                        shape::isEmpty(hXShapeInfo) ? nullptr : dbX->special(),
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
                                         extraParamsVals,
-                                        shape::isEmpty(hYShapeInfo) ? nullptr : dbY->primary(),
+                                        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
                                         hYShapeInfo,
-                                        shape::isEmpty(hYShapeInfo) ? nullptr : dbY->special(),
+                                        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-                                        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
                                         hZShapeInfo,
-                                        shape::isEmpty(hZShapeInfo) ? nullptr : dbZ->special(),
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                         reinterpret_cast<LongType *>(dbDimension->special()),
                                         dimensionLength, xTadShapeInfo,
@@ -2530,7 +2531,7 @@ void sortByKey(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
+    if (shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) return;
 
     if (xLength != yLength) THROW_EXCEPTION("sortByKey: keys and values must have the same size");
 
@@ -2590,7 +2591,7 @@ void sortByValue(Pointer *extraPointers, void *x, LongType const *xShapeInfo, vo
     auto xType = ArrayOptions::dataType(yShapeInfo);
     auto yType = ArrayOptions::dataType(xShapeInfo);
 
-    if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
+    if (shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) return;
 
     if (xLength != yLength) THROW_EXCEPTION("sortByValue: keys and values must have the same size");
 

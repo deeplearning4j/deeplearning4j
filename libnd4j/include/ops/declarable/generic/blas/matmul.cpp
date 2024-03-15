@@ -148,7 +148,7 @@ DECLARE_SHAPE_FN(matmul) {
 
   // we just pick the higher data type out of X and Y
   auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
-  if(shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) {
+  if(shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) {
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(xShapeInfo),zShapeOnly));
   }
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtypeZ, zOrder, zShapeOnly);

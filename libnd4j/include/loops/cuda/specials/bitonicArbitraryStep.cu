@@ -22,6 +22,7 @@
 //
 #include <ops/specials_cuda.h>
 
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy,

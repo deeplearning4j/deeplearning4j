@@ -25,6 +25,7 @@
 
 #include "helpers/DebugHelper.h"
 
+
 #define HS_MAX_EXP 6.0f
 
 namespace sd {

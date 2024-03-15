@@ -160,7 +160,7 @@ DECLARE_SHAPE_FN(concat) {
 
   for (LongType i = 0; i < numOfInArrs; i++) {
     if (shape::rank(inputShape->at(i)) <= 1) {
-      if(shape::isEmpty(inputShape->at(i))) {
+      if(shape::isEmptyConst(inputShape->at(i))) {
         int isScalar = shape::isScalar(inputShape->at(i));
         int len = isScalar ? 1 : shape::length(inputShape->at(i));
         newDim += len;
@@ -178,7 +178,7 @@ DECLARE_SHAPE_FN(concat) {
       }
 
     } else {
-      if(!shape::isEmpty(inputShape->at(i))) {
+      if(!shape::isEmptyConst(inputShape->at(i))) {
         numOfNonEmptyArrs++;
         if(firstNonEmptyShapeIdx < 0)
           firstNonEmptyShapeIdx = i;
@@ -244,13 +244,6 @@ DECLARE_SHAPE_FN(concat) {
       return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
-
-
-    /*
-     * TODO: handle case with [1,1]
-     * concatneated to n x 1
-     * test case is already entered.
-     */
     auto currShape = shape::shapeOf(outShapeInfo);
     currShape[axis] = newDim;
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
@@ -260,13 +253,6 @@ DECLARE_SHAPE_FN(concat) {
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     return SHAPELIST(result);
   }
-
-
-
-
-
-
-
 
 }
 

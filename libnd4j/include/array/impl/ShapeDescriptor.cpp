@@ -210,7 +210,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   _rank = rankVal;
   _extraProperties = shape::extra(shapeInfo);
 
-  if(_rank > 0 && shape::isEmpty(shapeInfo)) {
+  if(_rank > 0 && shape::isEmptyConst(shapeInfo)) {
     _shape_strides.resize(2 * _rank);
     auto _strides = _shape_strides.data() + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
@@ -222,7 +222,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
 
   }
 
-  else if (_rank > 0 && !shape::isEmpty(shapeInfo)) {
+  else if (_rank > 0 && !shape::isEmptyConst(shapeInfo)) {
     fflush(stdout);
     _shape_strides.resize(2 * _rank);
     auto _strides = _shape_strides.data() + _rank;
@@ -269,7 +269,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
       }
     }
 
-  } else if(!shape::isEmpty(shapeInfo)) {  // Handle scalar case
+  } else if(!shape::isEmptyConst(shapeInfo)) {  // Handle scalar case
     _shape_strides.resize(2); // Since we're setting shape and stride
     _shape_strides[0] = 0;    // Shape for scalar
     _shape_strides[1] = 1;    // Stride for scalar

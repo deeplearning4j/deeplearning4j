@@ -36,6 +36,19 @@ public interface Environment {
 
 
     /**
+     * If true exceptions will be thrown when an input is changed
+     * during ops that are not in place.
+     * Note the overhead here can be significant.
+     * Inputs are verified by duplicating the inputs and checking
+     * for equality.
+     * This defaults to false.
+     * @return
+     */
+    boolean isCheckInputChange();
+
+    void setCheckInputChange(boolean reallyCheck);
+
+    /**
      * Sets whether to write ndarray log events or not.
      * @param logNDArrayEvents the logNDArrayWrites to set
      */

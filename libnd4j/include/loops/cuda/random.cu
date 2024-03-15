@@ -25,6 +25,7 @@
 #include <system/common.h>
 #include <system/op_boilerplate.h>
 
+
 using namespace randomOps;
 
 template <typename T, typename OpClass>

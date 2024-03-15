@@ -109,7 +109,7 @@ DECLARE_SHAPE_FN(non_max_suppression) {
   }
 
 
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
     std::vector<LongType> shape = {maxOutputSize};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }
@@ -180,7 +180,7 @@ CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(non_max_suppression_v3) {
   auto in = inputShape->at(0);
-  if(shape::isEmpty(in)) {
+  if(shape::isEmptyConst(in)) {
     std::vector<LongType> shape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
   }

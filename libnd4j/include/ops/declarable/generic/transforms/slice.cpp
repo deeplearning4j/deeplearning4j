@@ -123,7 +123,7 @@ DECLARE_TYPES(slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode
 
 DECLARE_SHAPE_FN(slice) {
   auto inShape = inputShape->at(0);
-  if(shape::isEmpty(inShape)) {
+  if(shape::isEmptyConst(inShape)) {
     std::vector<LongType> emptyShape = {0};
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), emptyShape));
   }

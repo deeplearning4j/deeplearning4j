@@ -26,6 +26,8 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <execution/cuda/DeviceValidator.h>
+
+
 using namespace simdOps;
 
 

@@ -123,7 +123,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
   if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY
-      && !shape::isView(xShapeInfo) && !shape::isView(yShapeInfo) && !shape::isView(zShapeInfo)) {
+      && !shape::isViewConst(xShapeInfo) && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
              !sameShapesXY) {  // not same shape
@@ -131,8 +131,8 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
   } else {
 
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
-        shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo) && !shape::isView(xShapeInfo)
-        &&  !shape::isView(yShapeInfo) && !shape::isView(zShapeInfo)) {
+        shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo) && !shape::isViewConst(xShapeInfo)
+        &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
@@ -159,8 +159,8 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[zOffset] = OpType::op(x[offset], y[yOffset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)
-               && !shape::isView(xShapeInfo)
-               && !shape::isView(yShapeInfo) && !shape::isView(zShapeInfo)) {
+               && !shape::isViewConst(xShapeInfo)
+               && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);

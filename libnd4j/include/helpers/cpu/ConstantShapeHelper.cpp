@@ -26,7 +26,6 @@
 #include <helpers/ShapeBuilders.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/logger.h>
-
 namespace sd {
 
 

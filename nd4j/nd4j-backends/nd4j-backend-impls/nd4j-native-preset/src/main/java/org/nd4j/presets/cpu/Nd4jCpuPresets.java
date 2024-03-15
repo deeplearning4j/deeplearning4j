@@ -85,8 +85,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "array/ShapeList.h",
                 "system/type_boilerplate.h",
                 "system/op_boilerplate.h",
-                //"enum_boilerplate.h",
-                //"op_enums.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",

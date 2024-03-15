@@ -36,9 +36,9 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, Cont
   auto y = inputShape->size() > 1 ? inputShape->at(1) : x;
   DataType dtype = BOOL;
 
-  if (shape::isEmpty(x) || shape::isEmpty(y)) {
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
     // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
+    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) || (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
       std::vector<LongType> vecShape;
       auto xShape = shape::shapeOf(x);
       for(int i = 0; i < shape::rank(x); i++)

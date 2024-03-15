@@ -28,6 +28,7 @@
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 
+
 namespace sd {
 namespace ops {
 

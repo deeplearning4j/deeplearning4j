@@ -147,7 +147,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
   ops::strided_slice op;
   auto result = op.calculateOutputShape(inputShapes, *block);  // execute({ones, &b, &e, &s}, {}, {0, 1, 0, 0, 0});
   ASSERT_EQ(result->size(), 1);
-  ASSERT_TRUE(shape::isEmpty(result->at(0)));
+  ASSERT_TRUE(shape::isEmptyConst(result->at(0)));
   // ASSERT_EQ(exp, *z);
   delete block;
   delete result;

@@ -43,7 +43,7 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
   const sd::LongType length = shape::length(xShapeInfo);
   auto xEws = shape::elementWiseStride(xShapeInfo);
 
-  if (shape::isEmpty(xShapeInfo)) {
+  if (shape::isEmptyConst(xShapeInfo)) {
     z[0] = OpType::startingValue(x);
     return;
   }

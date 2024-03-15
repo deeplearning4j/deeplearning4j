@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(gather) {
 
   LongType inputRank = shape::rank(inputShapeInfo);
   if (axis < 0) axis += inputRank;
-  bool isEmpty = shape::isEmpty(inputShapeInfo);
+  bool isEmpty = shape::isEmptyConst(inputShapeInfo);
 
   if (block.width() > 1) {
     auto indicesShapeInfo = inputShape->at(1);

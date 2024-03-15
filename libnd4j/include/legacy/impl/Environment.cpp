@@ -195,6 +195,9 @@ Environment::Environment() {
 #endif
 }
 
+bool Environment::isCheckInputChange() { return _checkInputChange.load(); }
+void Environment::setCheckInputChange(bool reallyCheck) { _checkInputChange.store(reallyCheck); }
+
 bool Environment::isDeleteShapeInfo() { return deleteShapeInfo; }
 void Environment::setDeleteShapeInfo(bool reallyDelete) { deleteShapeInfo = reallyDelete; }
 
@@ -351,7 +354,7 @@ void Environment::setFuncTracePrintDeallocate(bool reallyPrint) {
   this->funcTracePrintDeallocate = reallyPrint;
 }
 
-const char* Environment::getVedaDeviceDir(){
+const char* Environment::getVedaDeviceDir() {
 #if !defined(HAVE_VEDA)
   return nullptr;
 #else

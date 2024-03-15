@@ -154,7 +154,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
 
 
     @Test
-    public void testCompGraphMultiInput(){
+    public void testCompGraphMultiInput() {
         //Validate nets where the one output array is used as the input to multiple layers...
         Nd4j.getRandom().setSeed(12345);
         int mb = 3;
@@ -183,6 +183,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
         INDArray[] in = new INDArray[]{Nd4j.rand(mb, 5)};
         INDArray[] l = new INDArray[]{TestUtils.randomOneHot(mb, 5)};
 
+        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(in)
                 .labels(l).callEachIter(new Consumer<ComputationGraph>() {
                     @Override

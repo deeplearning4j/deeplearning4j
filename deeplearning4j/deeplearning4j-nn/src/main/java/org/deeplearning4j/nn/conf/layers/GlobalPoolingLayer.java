@@ -131,7 +131,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if(inputType.getType() == InputType.Type.CNN){
+        if(inputType.getType() == InputType.Type.CNN) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             if(c.getFormat() == CNN2DFormat.NCHW){
                 poolingDimensions = new int[]{2,3};

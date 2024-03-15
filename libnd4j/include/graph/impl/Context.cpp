@@ -443,9 +443,9 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeIn
 
   bool isString = ArrayOptions::dataType(newShapeInfoCast) == UTF8 || ArrayOptions::dataType(newShapeInfoCast) == UTF16 ||
                   ArrayOptions::dataType(newShapeInfoCast) == UTF32;
-  if(isString || shape::isEmpty(newShapeInfoCast) || dataBuffer->getDataBuffer()->getDataType() == INT8) return;
+  if(isString || shape::isEmptyConst(newShapeInfoCast) || dataBuffer->getDataBuffer()->getDataType() == INT8) return;
   if (dataBuffer != nullptr) {
-    if (!shape::isEmpty(newShapeInfoCast)) {
+    if (!shape::isEmptyConst(newShapeInfoCast)) {
       if (dataBuffer->dataBuffer() != nullptr) {
 
         //opaque/interop data buffers are created with int8 on purpose and therefore will be excluded from validation here.
@@ -515,7 +515,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmpty(newShapeInfoCast)) {
+  if (dataBuffer != nullptr && !shape::isEmptyConst(newShapeInfoCast)) {
     auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
     if(!DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast)) && !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())) {
       THROW_EXCEPTION("Invalid data type for new shape info");
@@ -542,7 +542,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   auto primary = shapeInfoCast->primary();
   auto newShapeInfoCast = reinterpret_cast<const LongType *>(primary);
   auto newShapeCast2 = const_cast<LongType *>(newShapeInfoCast);
-  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmpty(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
+  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmptyConst(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
     std::string errorMessage;
     errorMessage += std::string("Shape Buffer at index ");
     errorMessage += std::to_string(index);

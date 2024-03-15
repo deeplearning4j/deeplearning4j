@@ -26,6 +26,7 @@
 #include "../legacy_ops.h"
 #include "../scalar_int.h"
 
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////

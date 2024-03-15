@@ -30,6 +30,7 @@
 #include <system/common.h>
 #include <types/types.h>
 
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
@@ -222,8 +223,8 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
                                                       void *extraParams, void *vreductionBuffer, void *z,
                                                       const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
                                                       const sd::LongType *dims) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -236,7 +237,7 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(dim3 launchDims, cudaStrea
 
     // scalar assign
     scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hZShapeInfo,
-                                                                   z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
+                                                        z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
     sd::DebugHelper::checkErrorCode(stream, "reduceBoolDim empty(...) failed");
   } else {
     const sd::LongType zRank = shape::rank(hZShapeInfo);
@@ -262,8 +263,8 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateScalar(dim3 launchDims, cudaS
                                                           const sd::LongType *hZShapeInfo, sd::LongType *dimension,
                                                           sd::LongType dimensionLength, void *reductionBuffer,
                                                           const sd::LongType *tadOnlyShapeInfo) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -305,7 +306,7 @@ SD_HOST void ReduceBoolFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_
                                                     const sd::LongType *hZShapeInfo, const sd::LongType *dims) {
   if (shape::length(hZShapeInfo) == 1) {
     execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
-                                               dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
+                     dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_TT(intermediateXD,
                          PARAMS(launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z,

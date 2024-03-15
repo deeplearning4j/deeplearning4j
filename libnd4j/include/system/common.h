@@ -80,7 +80,7 @@
 #include <unordered_map>
 #define SD_MAP_IMPL std::unordered_map
 #define SD_LOOPS_INLINED
-#define SD_INLINE __attribute__((always_inline)) inline
+#define SD_INLINE  inline
 #elif __CUDACC__
 #include <unordered_map>
 #define SD_MAP_IMPL std::unordered_map

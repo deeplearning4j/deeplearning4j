@@ -171,7 +171,7 @@ NDArray* NDArrayList::stack() {
   int rank = shape::rank(inShapeInfo);
   NDArray* array = nullptr;
 
-  if (shape::isEmpty(inShapeInfo)) {
+  if (shape::isEmptyConst(inShapeInfo)) {
     switch (rank) {
       case 0: {
         if (numElements == 1) {
@@ -190,7 +190,7 @@ NDArray* NDArrayList::stack() {
         new NDArray(shape::order(inShapeInfo), outShape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
   }
 
-  if(inputs[0] != nullptr && !shape::isEmpty(inputs[0]->shapeInfo()))
+  if(inputs[0] != nullptr && !shape::isEmptyConst(inputs[0]->shapeInfo()))
     ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
 
   return array;

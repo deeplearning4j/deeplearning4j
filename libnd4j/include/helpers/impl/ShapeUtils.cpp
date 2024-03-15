@@ -528,7 +528,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
   updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo),
                        shape::order(maxShapeInfo));
 
-  if (shape::isEmpty(max) || shape::isEmpty(min)) {
+  if (shape::isEmptyConst(max) || shape::isEmptyConst(min)) {
     ArrayOptions::setPropertyBit(tmpShapeInfo, ARRAY_EMPTY);
     memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(LongType));
   }

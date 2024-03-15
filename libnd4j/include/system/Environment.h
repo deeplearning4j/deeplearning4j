@@ -57,7 +57,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> deleteSpecial{true};
   std::atomic<bool> deletePrimary{true};
   std::atomic<bool> deleteShapeInfo{true};
-
+  std::atomic<bool> _checkInputChange{false};
   // these fields hold defaults
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
   std::atomic<int64_t> _maxTotalSpecialMemory{-1};
@@ -111,6 +111,14 @@ class SD_LIB_EXPORT Environment {
   void setDeleteSpecial(bool reallyDelete);
   bool isDeletePrimary();
   void setDeletePrimary(bool reallyDelete);
+
+  /**
+   * Checks whether immutable ops changed their inputs by
+   * duplicating each input and ensuring they're still equal after the op runs.
+   * @return
+   */
+  bool isCheckInputChange();
+  void setCheckInputChange(bool reallyCheck);
 
   bool isVerbose();
   void setVerbose(bool reallyVerbose);

@@ -1709,7 +1709,7 @@ void NDArray::setShapeInfo(LongType *shapeInfo, const DataType dtype) {
 char NDArray::ordering() const { return shape::order(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::isView() const { return shape::isView(_shapeInfo); }
+bool NDArray::isView() const { return shape::isViewConst(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
 LongType *NDArray::shapeOf() const { return shape::shapeOf(_shapeInfo); }

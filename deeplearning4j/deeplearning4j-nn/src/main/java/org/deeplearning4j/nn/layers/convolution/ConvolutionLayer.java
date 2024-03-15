@@ -132,15 +132,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z = z.permute(0,3,1,2); //NHWC to NCHW
         }
 
-        /**
-         * TODO: figure out why tanh_bp seems to get different values.
-         * Z and epsilon are the same on both sides but somehow the tanh derivative
-         * result is different. It looks like some sort of a view case.
-         *
-         * SOme of the issues have been incorrect ordering but that doesn't appear to be the case here.
-         *
-         * Recompiling for views to see if the general case is required here.
-         */
+
         delta = afn.backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
 
@@ -148,7 +140,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Note: due to the permute in preOut, and the fact that we essentially do a preOut.muli(epsilon), this reshape
         // should be zero-copy; only possible exception being sometimes with the "identity" activation case
-        INDArray delta2d = delta.reshape('c', new long[] {outDepth, miniBatch * outH * outW}); //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
+        INDArray delta2d = delta.reshape('c', outDepth, miniBatch * outH * outW); //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
 
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,channels,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
@@ -163,6 +155,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
         }
 
+        /**
+         * TODO:
+         * both im2col2d and delta2d are fine.
+         * It seems like the general 2d case in matmul
+         * has some sort of an issue.
+         *
+         * One thing noticeable is the EWS in M2.1 is 0
+         * while it's 1 here.
+         *
+         * THese issues are usually view related.
+         */
         //Calculate weight gradients, using cc->c mmul.
         //weightGradView2df is f order, but this is because it's transposed from c order
         //Here, we are using the fact that AB = (B^T A^T)^T; output here (post transpose) is in c order, not usual f order

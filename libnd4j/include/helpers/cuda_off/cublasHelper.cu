@@ -34,6 +34,7 @@
 
 #endif
 
+
 namespace sd {
 std::mutex CublasHelper::_mutex;
 

@@ -383,7 +383,7 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor
   }
 }
 
-#endif
+
 
 NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
     : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {}
@@ -6512,3 +6512,5 @@ template SD_LIB_EXPORT NDArray operator/<NDArray, const NDArray &, void>(NDArray
 template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
 
 }
+
+#endif

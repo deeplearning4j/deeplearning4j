@@ -32,6 +32,7 @@
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
 
+
 namespace sd {
 void DataBuffer::expand(const uint64_t size) {
   if (size > _lenInBytes) {

@@ -299,7 +299,7 @@ public class GradientCheckUtil {
         DataSet ds = new DataSet(c.input, c.labels, c.inputMask, c.labelMask);
         int currParamNameIdx = 0;
 
-        if(c.excludeParams != null && !c.excludeParams.isEmpty()){
+        if(c.excludeParams != null && !c.excludeParams.isEmpty()) {
             log.info("NOTE: parameters will be skipped due to config: {}", c.excludeParams);
         }
 
@@ -310,7 +310,7 @@ public class GradientCheckUtil {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
-            if(c.excludeParams != null && c.excludeParams.contains(paramName)){
+            if(c.excludeParams != null && c.excludeParams.contains(paramName)) {
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
