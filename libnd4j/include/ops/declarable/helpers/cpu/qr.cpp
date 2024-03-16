@@ -86,7 +86,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     z = std::move(qQ);
   }
   resQ.assign(q[0]);  //
-                      //        MmulHelper::matmul(&q[0], matrix, &resR, false, false);
+
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
     MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false);  // use mmulMxM?

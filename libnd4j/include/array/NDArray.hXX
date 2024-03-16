@@ -74,6 +74,12 @@ SD_INLINE void registerUse(const std::vector<const NDArray *> &writeList,
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray &other) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const NDArray &other) - constructor 1\n");
+    fflush(stdout);
+  }
+
+
   _context = other._context;
   _offset = 0;
   setShapeInfo(other.shapeInfo());
@@ -90,6 +96,12 @@ NDArray::NDArray(const NDArray &other) {
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context) - constructor 2\n");
+    fflush(stdout);
+  }
+
+
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
@@ -122,6 +134,12 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
                  sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data, sd::DataType dtype, sd::LaunchContext *context) - constructor 3\n");
+    fflush(stdout);
+  }
+
+
   if (shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   if(dtype == DataType::UNKNOWN) {
@@ -169,6 +187,12 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const
 
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext *context) - constructor 4\n");
+    fflush(stdout);
+  }
+
+
   _context = context;
   _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
@@ -200,6 +224,12 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
 ////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context, const bool isBuffAlloc) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 5\n");
+    fflush(stdout);
+  }
+
+
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
@@ -216,6 +246,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
 
 NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context, const bool isBuffAlloc, const bool isView, sd::LongType offset) {
+  printf("NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc, const bool isView, sd::LongType offset) - constructor 6\n");
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
@@ -236,6 +267,12 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
 NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const bool copyStrides,
                  sd::LaunchContext *context, const bool nullify) {
+
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const bool copyStrides, sd::LaunchContext *context, const bool nullify) - constructor 7\n");
+    fflush(stdout);
+  }
+
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor: can't be initialized without shapeinfo");
 
   if (shapeInfo[0] < 0 || shapeInfo[0] > SD_MAX_RANK) {
@@ -276,6 +313,12 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
 ////////////////////////////////////////////////////////////////////////
 // scalar constructor
 NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isScalar) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isScalar) - constructor 8\n");
+    fflush(stdout);
+  }
+
+
   _context = context;
   _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
@@ -294,6 +337,12 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
 //////////////////////////////////////////////////////////////////////////
 // move constructor
 NDArray::NDArray(NDArray &&other) noexcept {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(NDArray &&other) - constructor 9\n");
+    fflush(stdout);
+  }
+
+
   _isView = other._isView;
   _buffer = other._buffer;
   _shapeInfoBuffer = other._shapeInfoBuffer;
@@ -312,6 +361,9 @@ NDArray::NDArray(NDArray &&other) noexcept {
 ////////////////////////////////////////////////////////////////////////
 // constructor, create empty array at given workspace
 NDArray::NDArray(sd::LaunchContext *context) {
+  printf("NDArray::NDArray(sd::LaunchContext *context) - constructor 10\n");
+  fflush(stdout);
+
   _buffer = std::make_shared<DataBuffer>();
   _shapeInfoBuffer = nullptr;
   _shapeInfo = nullptr;
@@ -325,13 +377,26 @@ NDArray::NDArray(sd::LaunchContext *context) {
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set
 // dtype as array type
 NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchContext *context, const bool nullify)
-    : NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {}
+    : NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchContext *context, const bool nullify) - constructor 11\n");
+    fflush(stdout);
+  }
+
+
+}
 
 #ifndef __JAVACPP_HACK__
 
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                  sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc, const bool isView,
                  sd::LongType offset) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc, const bool isView, sd::LongType offset) - constructor 12\n");
+    fflush(stdout);
+  }
+
+
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
@@ -348,6 +413,12 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
 
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd::LaunchContext *context,
                  const sd::LongType offset) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - constructor 13\n");
+    fflush(stdout);
+  }
+
+
   _context = context;
   _offset = offset;
   setShapeInfo(shapeInfo);
@@ -362,6 +433,12 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd
 
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor, sd::LaunchContext *context,
                  const sd::LongType offset) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor, sd::LaunchContext *context, const sd::LongType offset) - constructor 14\n");
+    fflush(stdout);
+  }
+
+
   _context = context;
   _offset = offset;
   if(descriptor->dataType() == DataType::UNKNOWN) {
@@ -384,13 +461,25 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, ShapeDescriptor *descriptor
 }
 
 
-
 NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
-    : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {}
+    : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 15\n");
+    fflush(stdout);
+  }
+
+
+}
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
 NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 16\n");
+    fflush(stdout);
+  }
+
+
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor: can't be initialized without shapeinfo !");
 
   if ((int)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32 !");
@@ -417,6 +506,12 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
 // we suppose the content of both (device and host) buffers is identical
 NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
                  const bool isBuffAlloc, const bool isBuffDAlloc) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc, const bool isBuffDAlloc) - constructor 17\n");
+    fflush(stdout);
+  }
+
+
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor cuda: can't be initialized without shapeinfo");
 
   sd::LongType rank = shapeInfo[0];
@@ -436,6 +531,12 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
 //////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape,
                  sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<sd::LongType> &shape, sd::LaunchContext *context) - constructor 18\n");
+    fflush(stdout);
+  }
+
+
   if (shape.empty()) {
     THROW_EXCEPTION("NDArray constructor: input shape is empty !");
   }
@@ -454,6 +555,12 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
 /////////////////////////////////////////////////////////////////////////
 // u16 string constructors
 NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::LaunchContext *context) - constructor 19\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dtype)) {
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
   }
@@ -503,6 +610,12 @@ NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::Launch
 /////////////////////////////////////////////////////////////////////////
 // u32 string constructors
 NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::LaunchContext *context) - constructor 20\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dtype)) {
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
   }
@@ -551,6 +664,12 @@ NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::Launch
 /////////////////////////////////////////////////////////////////////////
 // u8 string constructors
 NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *context) - constructor 21\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dtype)) {
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
   }
@@ -601,6 +720,12 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 // constructors for vector of  strings
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string,
                  const sd::DataType dataType, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string, const sd::DataType dataType, sd::LaunchContext *context) - constructor 22\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dataType)) {
     std::string errorMessage;
     errorMessage += "NDArray::NDArray: invalid DataType, only string dataTypes have to be used";
@@ -677,6 +802,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::string> &string,
                  const sd::DataType dataType, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::string> &string, const sd::DataType dataType, sd::LaunchContext *context) - constructor 23\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dataType))
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
@@ -737,6 +868,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u16string> &string, sd::DataType dtype,
                  sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u16string> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 24\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
@@ -799,6 +936,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &string,
                  sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 25\n");
+    fflush(stdout);
+
+  }
+
   if (!DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
@@ -864,6 +1007,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype,
                  sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 26\n");
+    fflush(stdout);
+  }
+
+
   if (!DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
@@ -926,6 +1075,10 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
 /////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &string,
                  sd::DataType dtype, sd::LaunchContext *context) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 27\n");
+    fflush(stdout);
+  }
 
 
   int len = isScalar() ? 1 : lengthOf();

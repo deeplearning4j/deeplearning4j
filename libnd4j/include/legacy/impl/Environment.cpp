@@ -56,7 +56,7 @@ Environment::Environment() {
   _maxThreads = std::thread::hardware_concurrency();
   _maxMasterThreads = _maxThreads.load();
   deleteShapeInfo = deleteShapeInfo.load();
-
+  _logNDArrayEvenuts.store(false);
 #ifndef ANDROID
   const char *omp_threads = std::getenv("OMP_NUM_THREADS");
   if (omp_threads != nullptr) {
@@ -194,6 +194,15 @@ Environment::Environment() {
 
 #endif
 }
+
+
+/**
+ * When log ndarray events is set,
+ * more logging will happen around ndarrays such as what constructors are being called.
+ * @return
+ */
+bool Environment::isLogNDArrayEvents() { return _logNDArrayEvenuts.load(); }
+void Environment::setLogNDArrayEvents(bool logNDArrayEvents) { _logNDArrayEvenuts.store(logNDArrayEvents); }
 
 bool Environment::isCheckInputChange() { return _checkInputChange.load(); }
 void Environment::setCheckInputChange(bool reallyCheck) { _checkInputChange.store(reallyCheck); }

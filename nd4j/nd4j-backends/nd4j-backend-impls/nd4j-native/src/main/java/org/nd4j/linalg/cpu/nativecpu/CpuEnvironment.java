@@ -30,7 +30,6 @@ public class CpuEnvironment implements Environment {
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
     private final Nd4jCpu.Environment e;
-    protected boolean logNDArrayWrites = false;
 
     protected boolean truncateNDArrayLongStrings = false;
 
@@ -54,12 +53,12 @@ public class CpuEnvironment implements Environment {
 
     @Override
     public void setLogNDArrayEvents(boolean logNDArrayEvents) {
-        this.logNDArrayWrites = logNDArrayEvents;
+        e.setLogNDArrayEvents(logNDArrayEvents);
     }
 
     @Override
     public boolean isLogNDArrayEvents() {
-        return logNDArrayWrites;
+        return e.isLogNDArrayEvents();
     }
 
     @Override

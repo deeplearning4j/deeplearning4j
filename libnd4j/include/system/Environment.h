@@ -58,6 +58,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> deletePrimary{true};
   std::atomic<bool> deleteShapeInfo{true};
   std::atomic<bool> _checkInputChange{false};
+  std::atomic<bool> _logNDArrayEvenuts{false};
   // these fields hold defaults
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
   std::atomic<int64_t> _maxTotalSpecialMemory{-1};
@@ -94,6 +95,18 @@ class SD_LIB_EXPORT Environment {
   int _blasPatchVersion = 0;
 
   static Environment& getInstance();
+
+
+  /**
+   * When log ndarray evens is true in c++ (it's mostly a java feature)
+   * certain features of ndarray logging will trigger such as what ndarray constructors are being called.
+   *  A great use case for this is for detecting subtle changes in ndarrays like move constructor calls
+   *  which  can cause the underlying data to change.
+   * @return
+   */
+  bool isLogNDArrayEvents();
+
+  void setLogNDArrayEvents(bool logNDArrayEvents);
 
   /**
    * This is mainly for debugging. This toggles

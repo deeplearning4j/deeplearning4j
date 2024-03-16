@@ -33,6 +33,10 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 // default constructor
 DataBuffer::DataBuffer() {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer() default constructor\n");
+    fflush(stdout);
+  }
   _primaryBuffer = nullptr;
   _specialBuffer = nullptr;
   _lenInBytes = 0;
@@ -54,7 +58,10 @@ DataBuffer::DataBuffer() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 DataBuffer::DataBuffer(const DataBuffer& other) {
-
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
+    fflush(stdout);
+  }
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
@@ -84,7 +91,11 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
-
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print(
+        "DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) constructor\n");
+    fflush(stdout);
+  }
   _primaryBuffer = primary;
   _specialBuffer = special;
   _lenInBytes = lenInBytes;
@@ -114,6 +125,13 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary,
                        memory::Workspace* workspace)
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
+
+
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
+    fflush(stdout);
+  }
+
   if(primary != nullptr)
     syncToSpecial(true);
 
@@ -130,6 +148,10 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
 // copies data from hostBuffer to own memory buffer
 DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes,
                        memory::Workspace* workspace) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
+    fflush(stdout);
+  }
   if (hostBuffer == nullptr)
     THROW_EXCEPTION("DataBuffer constructor: can't be initialized with nullptr host buffer !");
   if (lenInBytes == 0) THROW_EXCEPTION("DataBuffer constructor: can't be initialized with zero length !");
@@ -160,6 +182,10 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace,
                        const bool allocBoth) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
+    fflush(stdout);
+  }
   _dataType = dataType;
   _workspace = workspace;
   _lenInBytes = lenInBytes;
@@ -191,6 +217,10 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 ////////////////////////////////////////////////////////////////////////
 // move constructor
 DataBuffer::DataBuffer(DataBuffer&& other) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
+    fflush(stdout);
+  }
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
@@ -221,6 +251,10 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
+    fflush(stdout);
+  }
   if (this == &other) return *this;
 
   deleteBuffers();
@@ -244,9 +278,13 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
 DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
+  if(Environment::getInstance().isLogNDArrayEvents()) {
+    sd_print("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
+    fflush(stdout);
+  }
   if (this == &other) return *this;
 
-   deleteBuffers();
+  deleteBuffers();
 
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
@@ -313,13 +351,13 @@ void DataBuffer::allocatePrimary() {
         if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
           throw allocation_exception::build("Requested amount exceeds HOST device limits",
                                             memory::MemoryCounter::getInstance().deviceLimit(deviceId),
-                                                getLenInBytes());
+                                            getLenInBytes());
       } else {
         // in heterogenuous mode we validate against device group
         if (!memory::MemoryCounter::getInstance().validateGroup(memory::MemoryType::HOST, getLenInBytes()))
           throw allocation_exception::build(
               "Requested amount exceeds HOST group limits",
-                                            memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes());
+              memory::MemoryCounter::getInstance().groupLimit(memory::MemoryType::HOST), getLenInBytes());
       }
     }
 
