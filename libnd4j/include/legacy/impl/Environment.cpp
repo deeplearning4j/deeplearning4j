@@ -196,6 +196,9 @@ Environment::Environment() {
 }
 
 
+void Environment::setLogNativeNDArrayCreation(bool reallyLog) { _logNativeNDArrayCreation.store(reallyLog); }
+bool Environment::isLogNativeNDArrayCreation() { return _logNativeNDArrayCreation.load(); }
+
 /**
  * When log ndarray events is set,
  * more logging will happen around ndarrays such as what constructors are being called.

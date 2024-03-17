@@ -276,7 +276,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         validateInputRank();
-
+        INDArray inputOrig = input;
         INDArray input = this.input.castTo(dataType);
         if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
             input = input.permute(0,3,1,2).dup(); //NHWC to NCHW

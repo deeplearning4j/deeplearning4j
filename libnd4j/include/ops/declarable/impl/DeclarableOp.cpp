@@ -791,7 +791,6 @@ Status DeclarableOp::execute(Context *block) {
     }
   }
 
-  //TODO: add dup() and input check here, add for other execute methods as well.
   std::vector<NDArray> inputsToCheck;
   if(Environment::getInstance().isCheckInputChange()) {
     for(int i = 0; i < block->width(); i++) {
@@ -841,9 +840,28 @@ Status DeclarableOp::execute(Context *block) {
   if (!hasHelper) status = this->validateAndExecute(*block);
 #endif
 
-  if(Environment::getInstance().isCheckInputChange()) {
+  //validate when inputs are changed when they shouldn't be
+  if(Environment::getInstance().isCheckInputChange() && !this->getOpDescriptor()->allowsInplace()) {
     for(int i = 0; i < block->width(); i++) {
       auto array = block->array(i);
+      bool arrayInOutputs = false;
+      for(int j = 0 ; j < numOutputs; j++) {
+        //only test for underlying buffer, note there are
+        //a  limited number of ways to figure this out.
+        //this is a best effort way to determine if we're looking at the same underlying input
+        //the reason we have to test this way is when an array is passed down from java
+        //we usually create a new ndarray and wrap the existing buffer.
+        //due to this wrapping we can't directly just compare ndarray objects.
+        if(array->buffer() == block->outputArray(j)->buffer()) {
+          arrayInOutputs = true;
+          break;
+        }
+      }
+
+      if(arrayInOutputs) {
+        continue;
+      }
+
       if(!array->equalsTo(&inputsToCheck[i])) {
         std::string errorMessage;
         errorMessage += "Input array ";
@@ -925,9 +943,6 @@ Status DeclarableOp::execute(Context *block) {
       }
 
       auto shape = ShapeUtils::shapeAsString(array);
-      bool isEmpty = array->isEmpty();
-      bool isScalar = array->isScalar();
-      int lengthOf = array->lengthOf();
       LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());

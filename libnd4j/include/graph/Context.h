@@ -248,6 +248,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   bool isTraining();
   bool isInference();
 
+  NDArray* outputArray(int idx);
 };
 }  // namespace graph
 }  // namespace sd

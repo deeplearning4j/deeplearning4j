@@ -33,8 +33,8 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 // default constructor
 DataBuffer::DataBuffer() {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer() default constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer() default constructor\n");
     fflush(stdout);
   }
   _primaryBuffer = nullptr;
@@ -58,8 +58,8 @@ DataBuffer::DataBuffer() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 DataBuffer::DataBuffer(const DataBuffer& other) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
     fflush(stdout);
   }
   _lenInBytes = other._lenInBytes;
@@ -91,8 +91,8 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print(
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf(
         "DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
@@ -127,8 +127,8 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
 
 
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
 
@@ -148,8 +148,8 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
 // copies data from hostBuffer to own memory buffer
 DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes,
                        memory::Workspace* workspace) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
   }
   if (hostBuffer == nullptr)
@@ -182,8 +182,8 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace,
                        const bool allocBoth) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
   }
   _dataType = dataType;
@@ -217,8 +217,8 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 ////////////////////////////////////////////////////////////////////////
 // move constructor
 DataBuffer::DataBuffer(DataBuffer&& other) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
     fflush(stdout);
   }
   _primaryBuffer = other._primaryBuffer;
@@ -251,8 +251,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
     fflush(stdout);
   }
   if (this == &other) return *this;
@@ -278,8 +278,8 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
 DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
-  if(Environment::getInstance().isLogNDArrayEvents()) {
-    sd_print("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    printf("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
     fflush(stdout);
   }
   if (this == &other) return *this;
@@ -415,32 +415,32 @@ void DataBuffer::printPrimaryAllocationStackTraces() {
   Printer p2;
 
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    sd_print("Beginning printing for allocation part of deallocation event deletePrimary\n");
+    printf("Beginning printing for allocation part of deallocation event deletePrimary\n");
     if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
       p2.print(*allocationStackTracePrimary);
     else {
-      sd_print("No stack trace available for deletePrimary\n");
+      printf("No stack trace available for deletePrimary\n");
     }
-    sd_print("End printing for allocation part of deallocation event deletePrimary\n");
+    printf("End printing for allocation part of deallocation event deletePrimary\n");
 
 
 
-    sd_print("Beginning printing for creation part of deallocation event deletePrimary\n");
+    printf("Beginning printing for creation part of deallocation event deletePrimary\n");
     if(creationStackTrace != nullptr && creationStackTrace->size() > 0)
       p2.print(*creationStackTrace);
     else {
-      sd_print("No creation stack trace available for deletePrimary\n");
+      printf("No creation stack trace available for deletePrimary\n");
     }
-    sd_print("End printing for creation part of deallocation event deletePrimary\n");
+    printf("End printing for creation part of deallocation event deletePrimary\n");
   }
 
   if(Environment::getInstance().isFuncTracePrintDeallocate()) {
-    sd_print("Beginning printing for deallocation event deletePrimary\n");
+    printf("Beginning printing for deallocation event deletePrimary\n");
     StackTrace deallocTrace;
     deallocTrace.load_here();
     sd_printf("Deleting primary databuffer of length %d and type %s\n", getLenInBytes(), DataTypeUtils::asString(getDataType()).c_str());
     p2.print(deallocTrace);
-    sd_print("End printing for deallocation event deletePrimary\n");
+    printf("End printing for deallocation event deletePrimary\n");
 
   }
 #endif

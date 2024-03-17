@@ -121,8 +121,7 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
     public void testCnnGlobalPoolingBasicMultiLayer() {
         //Basic test of global pooling w/ CNN
         Nd4j.getRandom().setSeed(12345L);
-        Nd4j.getEnvironment().setCheckInputChange(true);
-        for(boolean nchw : new boolean[]{false}) {
+        for(boolean nchw : new boolean[]{true,false}) {
 
             int inputDepth = 3;
             int inputH = 5;

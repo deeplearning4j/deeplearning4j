@@ -1369,10 +1369,9 @@ class SD_LIB_EXPORT NDArray {
   template <typename T>
   SD_INLINE T t(const LongType i, const LongType j, const LongType k, const LongType w) const;
 
-  /**
-   *  default destructor
-   */
-  ~NDArray() noexcept = default;
+
+  ~NDArray();
+
 
   /**
    *  set _shapeInfo

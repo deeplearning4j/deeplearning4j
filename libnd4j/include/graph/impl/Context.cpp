@@ -304,6 +304,23 @@ bool Context::isValueAvailable(int idx) {
 
 NDArray *Context::getNDArray(int idx) { return array(idx); }
 
+
+NDArray *Context::outputArray(int idx) {
+  // we check for fastpath first
+  if (!_fastpath_out.empty() && _fastpath_out.size() > idx) {
+    return _fastpath_out[idx];
+  }
+
+  std::string errorMessage;
+  errorMessage += std::string("Context::outputArray: Fastpath is empty");
+  errorMessage += std::string(" Index: ");
+  errorMessage += std::to_string(idx);
+  errorMessage += std::string(" Fastpath size: ");
+  errorMessage += std::to_string(_fastpath_out.size());
+
+  THROW_EXCEPTION(errorMessage.c_str());
+}
+
 NDArray *Context::array(int idx) {
   // we check for fastpath first
   if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {

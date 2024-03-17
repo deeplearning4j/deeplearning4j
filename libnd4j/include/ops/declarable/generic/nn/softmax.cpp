@@ -37,7 +37,6 @@ DECLARE_TYPES(softmax) {
 CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
   const int rank = input->rankOf();
   const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 

@@ -124,7 +124,7 @@ DECLARE_SHAPE_FN(matmul) {
   auto yShapeInfo = inputShape->at(1);
 
 
-    const int iSize = (int)block.getIArguments()->size();
+  const int iSize = (int)block.getIArguments()->size();
   int transX = iSize > 0 ? INT_ARG(0) : 0;
   int transY = iSize > 1 ? INT_ARG(1) : 0;
   const int transZ = iSize > 2 ? INT_ARG(2) : 0;

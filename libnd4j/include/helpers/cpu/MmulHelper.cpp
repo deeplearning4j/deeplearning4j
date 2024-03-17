@@ -262,6 +262,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
       BlasHelper::getInstance().dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double)alpha,
                                         pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double)beta,
                                         pC->bufferAsT<double>(), ldc);
+
     }
 
     if (pC != C) {
