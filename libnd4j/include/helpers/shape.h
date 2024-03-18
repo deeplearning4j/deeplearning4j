@@ -1357,6 +1357,31 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, s
   return ret;
 }
 
+
+
+//////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, const sd::LongType *dimsToExclude,
+                                         const sd::LongType dimsSize, sd::LongType *outShapeInfo) {
+  outShapeInfo[0] = inShapeInfo[0] - dimsSize;
+
+  for (sd::LongType j = 0, k = 0, i = 0; i < inShapeInfo[0]; ++i) {
+    if (j < dimsSize && i == dimsToExclude[j]) {
+      ++j;
+      continue;
+    }
+
+    shapeOf(outShapeInfo)[k] = shapeOf(inShapeInfo)[i];
+    stride(outShapeInfo)[k++] = stride(inShapeInfo)[i];
+  }
+  outShapeInfo[2 * outShapeInfo[0] + 1] = 0;
+  sd::ArrayOptions::copyDataType(outShapeInfo, inShapeInfo);                         // type
+  setElementWiseStride(outShapeInfo, elementWiseStride(inShapeInfo));  // ews
+  outShapeInfo[2 * outShapeInfo[0] + 3] = order(inShapeInfo);                 // order
+}
+
 /**
  * calculates the offset for a tensor
  * @param index
