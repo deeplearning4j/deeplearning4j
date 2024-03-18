@@ -158,8 +158,14 @@ public class GradientCheckUtil {
     @Deprecated
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
-        return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
-                .exitOnFirstError(exitOnFirstError).input(input).labels(labels));
+        return checkGradients(new MLNConfig().net(mln)
+                .epsilon(epsilon)
+                .maxRelError(maxRelError)
+                .minAbsoluteError(minAbsoluteError)
+                .print(PrintMode.FAILURES_ONLY)
+                .exitOnFirstError(exitOnFirstError)
+                .input(input)
+                .labels(labels));
     }
 
     @Deprecated
@@ -285,7 +291,7 @@ public class GradientCheckUtil {
         }
 
         if(c.print == PrintMode.ALL) {
-            int i=0;
+            int i = 0;
             for (Layer l : c.net.getLayers()) {
                 Set<String> s = l.paramTable().keySet();
                 log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
@@ -304,7 +310,7 @@ public class GradientCheckUtil {
         }
 
         INDArray params = c.net.params(); //Assumption here: params is a view that we can modify in-place
-        for (long i = 0; i < nParams; ) {
+        for (long i = 0; i < nParams;) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
@@ -374,7 +380,7 @@ public class GradientCheckUtil {
             long step;
             if(c.subset) {
                 step = stepSizeForParam.get(paramName);
-                if(i + step > paramEnds[currParamNameIdx]+1){
+                if(i + step > paramEnds[currParamNameIdx] + 1) {
                     step = paramEnds[currParamNameIdx]+1 - i;
                 }
             } else {
@@ -391,7 +397,7 @@ public class GradientCheckUtil {
         return totalNFailures == 0;
     }
 
-    public static boolean checkGradients(GraphConfig c){
+    public static boolean checkGradients(GraphConfig c) {
         //Basic sanity checks on input:
         if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");

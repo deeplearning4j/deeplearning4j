@@ -278,7 +278,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.gemm(currIn, w, currOutPreNorm, false, false, 1.0, 0.0);
                 Nd4j.getExecutioner().exec(new LayerNorm(currOutPreNorm, gx, b, currOut, true, 1));
             } else {
-                currIn.mmul(w,currOut);
+                Nd4j.gemm(currIn, w, currOut, false, false, 1.0, 1.0);  //beta = 1.0 to keep previous contents (bias)
             }
 
             if(i > 0 || prevStepOut != null) {

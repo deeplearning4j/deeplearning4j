@@ -41,12 +41,8 @@ BROADCASTABLE_OP_IMPL(assign, 0, 0) {
     return Status::OK;
   }
 
-  printf("before casted x\n");
   NDArray *castedX = x->dataType() == z->dataType() ? x : new NDArray(x->cast(z->dataType()));
-  printf("after casted x\n");
-  printf("before casted y\n");
   NDArray *castedY = y->dataType() == z->dataType() ? y : new NDArray(y->cast(z->dataType()));
-  printf("after casted y\n");
 
   ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
   ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
