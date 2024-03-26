@@ -42,6 +42,16 @@ public class CudaEnvironment implements Environment {
         this.e = environment;
     }
 
+
+    @Override
+    public boolean isLogNativeNDArrayCreation() {
+        return e.isLogNativeNDArrayCreation();
+    }
+
+    @Override
+    public void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation) {
+        e.setLogNativeNDArrayCreation(logNativeNDArrayCreation);
+    }
     @Override
     public boolean isCheckInputChange() {
         return e.isCheckInputChange();

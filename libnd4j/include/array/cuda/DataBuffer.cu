@@ -338,6 +338,28 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 }
 
 /////////////////////////
+
+void DataBuffer::memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src) {
+  if (src._lenInBytes > dst._lenInBytes)
+    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
+
+  int res = 0;
+  if (src.isSpecialActual()) {
+    res = cudaMemcpyAsync(dst->_specialBuffer, src->_specialBuffer, src.getLenInBytes(), cudaMemcpyDeviceToDevice,
+                          *LaunchContext::defaultContext()->getCudaStream());
+  } else if (src.isPrimaryActual()) {
+    res = cudaMemcpyAsync(dst->_specialBuffer, src->_primaryBuffer, src->getLenInBytes(), cudaMemcpyHostToDevice,
+                          *LaunchContext::defaultContext()->getCudaStream());
+  }
+
+  if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
+
+  res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+  if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: streamSync failed!", res);
+
+  dst->writeSpecial();
+}
+
 void DataBuffer::memcpy(const DataBuffer& dst, const DataBuffer& src) {
   if (src._lenInBytes > dst._lenInBytes)
     THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");

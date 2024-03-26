@@ -226,8 +226,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-  _isOwnerPrimary = false;
-  _isOwnerSpecial = false;
+  _isOwnerPrimary = other._isOwnerPrimary;
+  _isOwnerSpecial = other._isOwnerSpecial;
   _deviceId.store(other._deviceId);
 
   copyCounters(other);

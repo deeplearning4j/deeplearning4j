@@ -223,7 +223,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         if (mode == ConvolutionMode.Same) {
             outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
-            int[] inSize = new int[]{inD, inH, inW};
+            int[] inSize = {inD, inH, inW};
             pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize,
                     inSize, kernel, strides, dilation);
         } else {

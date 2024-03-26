@@ -109,13 +109,13 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
 
         Gradient retGradient = new DefaultGradient();
-        if(layerConf().hasBias()){
+        if(layerConf().hasBias()) {
             retGradient.setGradientFor(DeconvolutionParamInitializer.BIAS_KEY, biasGradView);
         }
         retGradient.setGradientFor(DeconvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
 
-        return new Pair<>(retGradient, outEps);
+        return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,outEps));
     }
 
     protected INDArray preOutput(boolean training , LayerWorkspaceMgr workspaceMgr) {
@@ -192,7 +192,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return output;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,output);
     }
 
     @Override

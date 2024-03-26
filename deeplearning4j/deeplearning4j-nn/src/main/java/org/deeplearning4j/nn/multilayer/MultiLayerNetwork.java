@@ -1129,7 +1129,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
             }
 
-            if(traceLog){
+            if(traceLog) {
                 log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
             }
 

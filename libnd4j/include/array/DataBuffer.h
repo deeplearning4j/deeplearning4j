@@ -148,7 +148,6 @@ class SD_LIB_EXPORT DataBuffer {
   void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const LongType offsetThis = 0,
                       const LongType offsetOther = 0);
 
-  static void memcpy(const DataBuffer &dst, const DataBuffer &src);
 
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
@@ -172,6 +171,8 @@ class SD_LIB_EXPORT DataBuffer {
   void printSpecialAllocationTraces();
   DataBuffer  dup();
   void printHostDevice();
+  static void memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src);
+  static void memcpy(const DataBuffer dst, const DataBuffer src);
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

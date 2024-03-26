@@ -40,7 +40,9 @@
 #include <memory/MemoryRegistrator.h>
 #include <memory/Workspace.h>
 #include <system/op_boilerplate.h>
-
+//controls precision when printing to strings on floats see:
+//https://stackoverflow.com/questions/11989374/floating-point-format-for-stdostream
+#include <iomanip>
 namespace sd {
 
 template <>
@@ -434,9 +436,9 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, sd::LongType *shapeInfo, sd
   _offset = offset;
   setShapeInfo(shapeInfo);
   _buffer = buffer;
-  if(buffer != nullptr)
+  if(buffer != nullptr) {
     _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
-  else {
+  } else {
     _isView = false;
     _length = 0;
   }
@@ -1158,11 +1160,11 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 
 
 //google test print statement
-static void sd_printormatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
+static void sd_printformatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
   // adapted sd_printormatted function
   if(arr.isScalar()) {
     if (arr.isR())
-      os << arr.e<float>(0) << "\n";
+      os << arr.e<double>(0) << "\n";
     else if (arr.isZ())
       os << arr.e<sd::LongType>(0) << "\n";
     else if (arr.isB())
@@ -1177,7 +1179,7 @@ static void sd_printormatted(std::ostream& os, const sd::NDArray& arr, sd::LongT
     os << "[ ";
     for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
       if (arr.isR())
-        os << arr.e<float>(i) << ", ";
+        os << arr.e<double>(i) << ", ";
       else if (arr.isZ())
         os << arr.e<sd::LongType>(i) << ", ";
       else if (arr.isB())
@@ -1201,7 +1203,9 @@ static void sd_printormatted(std::ostream& os, const sd::NDArray& arr, sd::LongT
       for (sd::LongType col = 0; col < cols; col++) {
         if (col > 0) os << ", ";
         if (arr.isR()) {
-          os << arr.e<float>(row, col);
+          //set precision to allow higher precision
+          os << std::fixed << std::setw(11) << std::setprecision(15)
+                                << std::setfill('0') << arr.e<double>(row, col);
         } else if (arr.isZ()) {
           os << arr.e<sd::LongType>(row, col);
         } else if (arr.isB()) {
@@ -1224,7 +1228,7 @@ static void sd_printormatted(std::ostream& os, const sd::NDArray& arr, sd::LongT
     restCount = ShapeUtils::getNumOfSubArrs(arr.shapeInfo(), {0});
     for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
       NDArray subArr = arr(arrIndex, {0});
-      sd_printormatted(os, subArr, depth + 1, limit);
+      sd_printformatted(os, subArr, depth + 1, limit);
       if (arrIndex < restCount - 1) {
         for (sd::LongType i = 1; i < arr.rankOf(); ++i) os << "\n";
         for (sd::LongType i = 0; i < depth - 2; ++i) os << " ";
@@ -1235,7 +1239,7 @@ static void sd_printormatted(std::ostream& os, const sd::NDArray& arr, sd::LongT
 }
 
 std::ostream& operator<<(std::ostream &os,  const NDArray& arr) {
-  sd_printormatted(os, arr, 0, -1);
+  sd_printformatted(os, arr, 0, -1);
   return os;
 }
 
@@ -1254,7 +1258,7 @@ std::ostream& NDArray::operator<<(std::ostream &os) {
     if (isZ()) {
       os << e<sd::LongType>(0) << "\n";
     } else if (isR()) {
-      os << e<float>(0) << "\n";
+      os << e<double>(0) << "\n";
     } else if (isB()) {
       os << (e<bool>(0) ? "true" : "false") << "\n";
     } else if (isS()) {
@@ -1264,7 +1268,8 @@ std::ostream& NDArray::operator<<(std::ostream &os) {
     os << "[ ";
     for (sd::LongType i = 0; i < lengthOf(); ++i) {
       if (isR())
-        os << e<float>(i) << ", ";
+        os << std::fixed << std::setw(11) << std::setprecision(15)
+           << std::setfill('0') <<  e<double>(i) << ", ";
       else if (isZ())
         os << e<sd::LongType>(i) << ", ";
       else if (isB())
@@ -1277,7 +1282,7 @@ std::ostream& NDArray::operator<<(std::ostream &os) {
   } else {
     if(isEmpty())
       THROW_EXCEPTION("NULL buffer found but shape is not empty.");
-    sd_printormatted(os, *this, 1,lengthOf());
+    sd_printformatted(os, *this, 1, lengthOf());
   }
   return os;
 }
@@ -1343,7 +1348,8 @@ template <typename T>
 std::string NDArray::toStringValue(T value) {
   std::ostringstream os;
   // throw the value into the string stream
-  os << value;
+  os << std::fixed << std::setw(11) << std::setprecision(15)
+                        << std::setfill('0') <<  value;
   // convert the string stream into a string and return
   return os.str();
 }
@@ -1363,7 +1369,8 @@ template <>
 std::string NDArray::toStringValue(bfloat16 value) {
   std::ostringstream os;
   // throw the value into the string stream
-  os << (float)value;
+  os <<  std::fixed << std::setw(11) << std::setprecision(15)
+                        << std::setfill('0') <<   (float)value;
   // convert the string stream into a string and return
   return os.str();
 }
@@ -1374,7 +1381,7 @@ std::string NDArray::asIndexedString(sd::LongType limit) {
   os << "[";
   if (limit < 1 || limit > this->lengthOf()) limit = this->lengthOf();
   for (sd::LongType e = 0; e < limit; e++) {
-    os << toStringValue(this->e<float>(e));
+    os << toStringValue(this->e<double>(e));
     if (e < limit - 1) os << ", ";
   }
   os << "]";
@@ -1389,7 +1396,7 @@ std::string NDArray::asString(sd::LongType limit) {
   if (limit < 1 || limit > this->lengthOf()) limit = this->lengthOf();
   for (sd::LongType e = 0; e < limit; e++) {
     if (this->isR())
-      os << toStringValue(this->e<float>(e));
+      os << toStringValue(this->e<double>(e));
     else if (this->isZ())
       os << toStringValue(this->e<sd::LongType>(e));
     else if (this->isB())
@@ -1571,6 +1578,7 @@ bool NDArray::isBroadcastableTo(const NDArray &other) const {
 // This method assigns values of given NDArray to this one
 void NDArray::assign(const NDArray &other, bool allowParallelism) {
   if (this == &other) {
+    sd_print("NDArray::assign: this == &other\n");
     return;
   }
 
@@ -2463,9 +2471,9 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank) const & {
   // evaluate shapeInfo for output (permuted) array ret
   auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
-  NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
-  ret->_isView = true;
-  return *ret;
+  NDArray ret = NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
+  ret._isView = true;
+  return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2476,11 +2484,15 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank) && {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<LongType> &dimensions) const & {
+  if(dimensions.size() < 1)
+    return *this;
   return permute(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<LongType> &dimensions) && {
+  if(dimensions.size() < 1)
+    return *this;
   this->permutei(dimensions);
   return std::move(*this);
 }

@@ -1038,6 +1038,7 @@
                         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
+                        <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>

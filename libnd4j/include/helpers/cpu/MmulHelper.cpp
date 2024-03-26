@@ -278,12 +278,20 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 // MXN x N = M
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
                              const char outOrder) {
-  if (X->dataType() != A->dataType())
-    throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), X->dataType());
-
-  if (Y != nullptr && X->dataType() != Y->dataType())
-    throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), Y->dataType());
-
+  if (X->dataType() != A->dataType()) {
+    std::string errorMessage;
+    errorMessage = "mmulMxV expects all data types to be the same";
+    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (Y != nullptr && X->dataType() != Y->dataType()) {
+    std::string errorMessage;
+    errorMessage = "mmulMxV expects all data types to be the same";
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    errorMessage += "Y: " + DataTypeUtils::asString(Y->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   sd::LongType xLenDim, yLenDim(0);
 
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
@@ -350,12 +358,20 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
 NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
-  if (X->dataType() != Y->dataType())
-    throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Y->dataType());
-
-  if (Z != nullptr && X->dataType() != Z->dataType())
-    throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Z->dataType());
-
+  if (X->dataType() != Y->dataType()) {
+    std::string errorMessage;
+    errorMessage = "Dot expects all data types to be the same";
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    errorMessage += "Y: " + DataTypeUtils::asString(Y->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (Z != nullptr && X->dataType() != Z->dataType()) {
+    std::string errorMessage;
+    errorMessage = "Dot expects all data types to be the same";
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    errorMessage += "Z: " + DataTypeUtils::asString(Z->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   sd::LongType xLenDim(0), yLenDim(0);
 
   if (!shape::isCommonVector(X->shapeInfo(), xLenDim))

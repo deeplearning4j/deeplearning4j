@@ -784,7 +784,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
     case LoopKind::EWS1: {
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       LongType start = span.startX(), stop = span.stopX();
-      for (LongType i = start; i < stop; i++) z[i] = OpType::op(x[i], extraParams);
+      for (LongType i = start; i < stop; i++) z[i] = static_cast<Z>(OpType::op(x[i], extraParams));
 
     } break;
 
@@ -795,7 +795,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       LongType start = span.startX(), stop = span.stopX();
-      for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], extraParams);
+      for (auto i = start; i < stop; i++) z[i * zEws] = static_cast<Z>(OpType::op(x[i * xEws], extraParams));
 
     } break;
 
@@ -811,12 +811,12 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       if (zEws > 1) {
         for (auto i = start; i < stop; i++) {
           const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
-          z[i * zEws] = OpType::op(x[xOffset], extraParams);
+          z[i * zEws] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       } else {
         for (auto i = start; i < stop; i++) {
           const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
-          z[i] = OpType::op(x[xOffset], extraParams);
+          z[i] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       }
 
@@ -827,7 +827,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
       for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
-        z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
+        z[i0 * zStride[0]] = static_cast<Z>(OpType::op(x[i0 * xStride[0]], extraParams));
       }
     } break;
 
@@ -845,7 +845,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
         auto x0 = i0 * xStride[0];
 
         for (auto i1 = span.startY(); i1 < span.stopY(); ++i1) {
-          z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
+          z[z0 + i1 * zStride[1]] = static_cast<Z>(OpType::op(x[x0 + i1 * xStride[1]], extraParams));
 
         }
       }
@@ -866,8 +866,9 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
           auto z0 = i0 * zStride[0] + i1 * zStride[1];
           auto x0 = i0 * xStride[0] + i1 * xStride[1];
 
-          for (LongType i2 = 0; i2 < uXShape2; ++i2)
-            z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+          for (LongType i2 = 0; i2 < uXShape2; ++i2) {
+            z[z0 + i2 * zStride[2]] = static_cast<Z>(OpType::op(x[x0 + i2 * xStride[2]], extraParams));
+          }
         }
 
     } break;
@@ -889,7 +890,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
             auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
 
             for (LongType i3 = 0; i3 < uXShape3; ++i3)
-              z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
+              z[z0 + i3 * zStride[3]] =static_cast<Z>(OpType::op(x[x0 + i3 * xStride[3]], extraParams));
           }
 
     } break;
@@ -916,7 +917,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
               auto x1 = x0 + i3 * xStride[3];
 
               for (LongType i4 = 0; i4 < uXShape4; ++i4)
-                z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
+                z[z1 + i4 * zStride[4]] = static_cast<Z>(OpType::op(x[x1 + i4 * xStride[4]], extraParams));
             }
           }
 
@@ -935,7 +936,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       for (auto i = span.startX(); i < span.stopX(); i++) {
         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-        z[zOffset] = OpType::op(x[xOffset], extraParams);
+        z[zOffset] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
       }
 
 

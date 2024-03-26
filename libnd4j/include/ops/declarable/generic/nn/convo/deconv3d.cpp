@@ -69,6 +69,8 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
                                              indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kD, kH, kW, oC, iC);
+
+  std::vector<LongType> emptyPermute = {};
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM DECONV3D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -81,11 +83,11 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
   if (!isNCDHW) output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
-  std::vector<LongType> colPermut;
+  std::vector<LongType> colPermute;
   if (1 == wFormat)
-    colPermut = {1, 2, 3, 4, 0, 5, 6, 7};
+    colPermute = {1, 2, 3, 4, 0, 5, 6, 7};
   else
-    colPermut = {2, 3, 4, 1, 0, 5, 6, 7};
+    colPermute = {2, 3, 4, 1, 0, 5, 6, 7};
 
   if (isSameMode)  // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not
     // deconv) forward pass
@@ -97,8 +99,14 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   // [kD, kH, kW, oC, iC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
   // [iC, oC, kD, kH, kW] x [bS, iD, iH, iW, iC] = [oC, kD, kH, kW, bS, iD, iH, iW]
   // [iC, kD, kH, kW, oC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
-  MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC},
-                            colPermut);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
+  MmulHelper::tensorDot2(weights,
+                         input,
+                         &columns,
+                         {indWiC},
+                         {indIOioC},
+                         emptyPermute,
+                         emptyPermute,
+                         colPermute);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
 
   ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, kD, kH, kW, iD, iH, iW] is de-convoluted to [bS, oC, oD, oH, oW]
@@ -292,12 +300,15 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   else if (2 == wFormat)
     gradWAxes = {0, 4, 1, 2, 3};
 
+
+  std::vector<LongType> emptyPermute;
+
   // ----- calculation of gradW ----- //
   auto columns = NDArrayFactory::create(input->ordering(), {bS, oC, kD, kH, kW, iD, iH, iW}, input->dataType(),
                                         block.launchContext());
-  ConvolutionUtils::vol2col(block, *gradO, columns, sD, sH, sW, pD, pH, pW, dD, dH,
+  ConvolutionUtils::vol2col(block, gradO, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, oD, oH, oW] is deconvoluted to [bS, oC, kD, kH, kW, iD, iH, iW]
-  MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 5, 6, 7},
+  MmulHelper::tensorDot2(input, &columns, gradW, inputAxesForDot, {0, 5, 6, 7},emptyPermute,emptyPermute,
                         gradWAxes);  // [bS, iC, iD, iH, iW]/[bS, iD, iH, iW, iC] x [bS, oC, kD, kH, kW, iD, iH, iW] =
   // [iC, oC, kD, kH, kW]
 

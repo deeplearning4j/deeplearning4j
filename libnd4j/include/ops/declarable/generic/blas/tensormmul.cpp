@@ -48,7 +48,6 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
   for (LongType e = 0; e < axe0_size; e++) axes_0[e] = INT_ARG(e + 1);
   for (LongType e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
-  sd_verbose("axe0: %i; axe1: %i;\n", axes_0.size(), axes_1.size());
 
   MmulHelper::tensorDot(a, b, c, axes_0, axes_1);
   return Status::OK;

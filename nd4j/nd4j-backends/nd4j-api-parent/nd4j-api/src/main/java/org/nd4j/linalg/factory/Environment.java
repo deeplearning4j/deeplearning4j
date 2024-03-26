@@ -36,6 +36,17 @@ public interface Environment {
 
 
     /**
+     * Set this to true to
+     * trigger logging of native c++ ndarray constructors.
+     * Use this to debug behavior of individual ops
+     * with confusing pointer issues like outputs not
+     * updating due to some views being created.
+     * @return
+     */
+    boolean isLogNativeNDArrayCreation();
+    void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation);
+
+    /**
      * If true exceptions will be thrown when an input is changed
      * during ops that are not in place.
      * Note the overhead here can be significant.

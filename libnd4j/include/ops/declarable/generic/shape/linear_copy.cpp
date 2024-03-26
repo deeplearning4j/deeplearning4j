@@ -31,8 +31,7 @@ namespace ops {
 CUSTOM_OP_IMPL(linear_copy, 2, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
   auto input = INPUT_VARIABLE(0);
-
-  input->applyPairwiseTransform(pairwise::CopyPws,*input, *output);
+  DataBuffer::memcpyPointer(output->dataBuffer(), input->dataBuffer());
   return Status::OK;
 }
 
@@ -40,6 +39,8 @@ DECLARE_TYPES(linear_copy) { getOpDescriptor()->setAllowedInputTypes(ANY); }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(linear_copy) {
+  if(block.outputWidth() > 0)
+    return SHAPELIST(OUTPUT_VARIABLE(0)->shapeInfo());
   auto input = INPUT_VARIABLE(0);
   auto shape = INPUT_VARIABLE(1);
   ShapeDescriptor *desc = new ShapeDescriptor(input->dataType(), shape::order(input->shapeInfo()), shape->getBufferAsVector<LongType>());

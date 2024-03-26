@@ -84,13 +84,13 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 
   sd_debug("MKL-DNN is not used for conv3dnew!\n", 0);
 
-  std::vector<LongType> permutForOutput;
-
-  if (isNCDHW)
-    permutForOutput = {0, 2, 3, 4, 1};  // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
-  else
+  std::vector<LongType> permuteForOutput;
+  std::vector<sd::LongType> permuteOut;
+  if (isNCDHW) {
+    permuteForOutput = {0, 2, 3, 4, 1};  // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
+  } else {
     input = new NDArray(input->permute({0, 4, 1, 2, 3}));
-
+  }
   std::vector<LongType> wAxes;
   if (0 == wFormat)
     wAxes = {3, 0, 1, 2};
@@ -100,16 +100,24 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     wAxes = {4, 1, 2, 3};
 
   NDArray columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, input->dataType(), block.launchContext());
-  ConvolutionUtils::vol2col(block, *input, columns, sD, sH, sW, pD, pH, pW, dD, dH,
+  ConvolutionUtils::vol2col(block, input, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]
   // [bS, iC, kD, kH, kW, oD, oH, oW] x [kD, kH, kW, iC, oC] = [bS, oD, oH, oW, oC]
   // [bS, iC, kD, kH, kW, oD, oH, oW] x [oC, iC, kD, kH, kW] = [bS, oD, oH, oW, oC]
   // [bS, iC, kD, kH, kW, oD, oH, oW] x [oC, kD, kH, kW, iC] = [bS, oD, oH, oW, oC]
-  MmulHelper::tensorDot(&columns, weights, output, {1, 2, 3, 4}, wAxes, permutForOutput);
 
-  if (bias)
+
+  std::vector<sd::LongType> permuteAb = {};
+
+
+  /*
+   *  {1,2,3,4}, wAxes, permutForOutput
+   */
+  MmulHelper::tensorDot2(&columns, weights, output, {1,2,3,4}, wAxes, permuteAb, permuteAb, permuteForOutput);
+
+  if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCDHW);
-
+  }
   if (!isNCDHW) delete input;
 
   return Status::OK;
@@ -282,48 +290,59 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
   sd_debug("MKL-DNN is not used for conv3dnew_bp!\n", 0);
 
   std::vector<LongType> gradOaxesForDot;
+  std::vector<LongType> emptyPermute = {};
+
+
 
   if (!isNCDHW) {
     gradOaxesForDot = {0, 1, 2, 3};                        // bS, oD, oH, oW
     input = new NDArray(input->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
     gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    emptyPermute = {};
   } else {
     gradOaxesForDot = {0, 2, 3, 4};  // bS, oD, oH, oW
   }
 
-  std::vector<LongType> wPermut, colPermut;
+  std::vector<LongType> wPermute, colPermute;
 
   if (0 == wFormat) {
-    wPermut = {3, 0, 1, 2, 4};
-    colPermut = {2, 3, 4, 1, 0, 5, 6, 7};
+    wPermute = {3, 0, 1, 2, 4};
+    colPermute = {2, 3, 4, 1, 0, 5, 6, 7};
   } else if (1 == wFormat) {
-    wPermut = {1, 2, 3, 4, 0};
-    colPermut = {1, 2, 3, 4, 0, 5, 6, 7};
+    wPermute = {1, 2, 3, 4, 0};
+    colPermute = {1, 2, 3, 4, 0, 5, 6, 7};
   } else {
-    wPermut = {4, 1, 2, 3, 0};
-    colPermut = {2, 3, 4, 1, 0, 5, 6, 7};
+    wPermute = {4, 1, 2, 3, 0};
+    colPermute = {2, 3, 4, 1, 0, 5, 6, 7};
   }
 
   // ----- calculation of gradW and gradB ----- //
   NDArray columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, input->dataType(), block.launchContext());
-  ConvolutionUtils::vol2col(block, *input, columns, sD, sH, sW, pD, pH, pW, dD, dH,
+  ConvolutionUtils::vol2col(block, input, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]
-  MmulHelper::tensorDot(
-      &columns, gradO, gradW, {0, 5, 6, 7}, gradOaxesForDot,
-      wPermut);  // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
+
+  std::vector<sd::LongType> permuteOutput;
+  MmulHelper::tensorDot2(
+      &columns,
+      gradO,
+      gradW,
+      {0, 5, 6, 7},
+      gradOaxesForDot, emptyPermute, emptyPermute,
+      wPermute);  // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
 
   //----- calculation of gradO -----//
   if (gradB) {
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}, false));
     gradO->reduceAlongDimension(reduce::Sum, *gradB, &gradOaxesForDot);  // sum over bS oD oH oW
-     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
+
+    if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 
   //----- calculation of gradI -----//
   // [kD, kH, kW, iC, oC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
   // [oC, iC, kD, kH, kW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
   // [oC, kD, kH, kW, iC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
-  MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, colPermut);
+  MmulHelper::tensorDot2(weights, gradO, &columns, {indWoC}, {indIOioC}, emptyPermute, emptyPermute, colPermute);
   ConvolutionUtils::col2vol(block, columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
 

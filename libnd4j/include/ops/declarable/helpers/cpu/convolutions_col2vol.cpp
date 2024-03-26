@@ -79,9 +79,9 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
                       volRow = (-pH + kRow * dH) + colH * sH;
                       volCol = (-pW + kCol * dW) + colW * sW;
 
-                      if (volDep >= 0 && volDep < iD &&
-                          volRow >= 0 && volRow < iH &&
-                          volCol >= 0 && volCol < iW) {
+                      if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) &&
+                          static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) &&
+                          static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
 
                         auto colIndex = b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 +
                                         kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
