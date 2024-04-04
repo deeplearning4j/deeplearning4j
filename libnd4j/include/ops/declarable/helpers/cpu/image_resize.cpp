@@ -854,7 +854,6 @@ sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray const* image,
     case kResizeArea:
       return resizeAreaFunctor(context, image, width, height, alignCorners, output);
   }
-  sd_printf("helper::resizeImagesFunctor: Wrong resize method %i\n", (int)method);
   return Logger::logStatusMsg(Status::BAD_INPUT, "helper::resizeImagesFunctor: Wrong resize method");
 }
 // ------------------------------------------------------------------------------------------------------------------ //

@@ -31,8 +31,13 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& thir
 
   if (this->lengthOf() != second.lengthOf() || this->lengthOf() != third.lengthOf() || !this->isSameShape(second) ||
       !this->isSameShape(third)) {
-    sd_printf("applyTriplewiseLambda requires all operands to have the same shape\n", "");
-    THROW_EXCEPTION("Shapes mismatch");
+    std::string errorMessage;
+    errorMessage += "applyTriplewiseLambda requires all operands to have the same shape\n";
+    errorMessage += "this shape: " + ShapeUtils::shapeAsString(this->shapeInfo()) + "\n";
+    errorMessage += "second shape: " + ShapeUtils::shapeAsString(second.shapeInfo()) + "\n";
+    errorMessage += "third shape: " + ShapeUtils::shapeAsString(third.shapeInfo()) + "\n";
+    errorMessage += "target shape: " + ShapeUtils::shapeAsString(target.shapeInfo()) + "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto f = this->bufferAsT<T>();

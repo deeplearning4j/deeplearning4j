@@ -49,12 +49,6 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   }
 
 
-  //print list shape:
-  for (int e = 0; e < list.shape().size(); e++) {
-    printf("List shape element %d\n",list.shape().at(e));
-  }
-
-
   auto s = list.stack();
   if(!output.isEmpty() && s != nullptr && !s->isEmpty())
     output.assign(s);

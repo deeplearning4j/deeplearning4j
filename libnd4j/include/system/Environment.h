@@ -58,6 +58,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> deletePrimary{true};
   std::atomic<bool> deleteShapeInfo{true};
   std::atomic<bool> _checkInputChange{false};
+  std::atomic<bool> _checkOutputChange{false};
   std::atomic<bool> _logNDArrayEvenuts{false};
   std::atomic<bool> _logNativeNDArrayCreation{false};
   // these fields hold defaults
@@ -132,6 +133,17 @@ class SD_LIB_EXPORT Environment {
   void setDeleteSpecial(bool reallyDelete);
   bool isDeletePrimary();
   void setDeletePrimary(bool reallyDelete);
+
+
+  /**
+   * Checks whether the outputs of the op have changed
+   * by duplicating them before and after the op runs
+   * if it doesn't change it throws an exception.
+   * @return
+   */
+  bool isCheckOutputChange();
+
+  void setCheckOutputChange(bool reallyCheck);
 
   /**
    * Checks whether immutable ops changed their inputs by

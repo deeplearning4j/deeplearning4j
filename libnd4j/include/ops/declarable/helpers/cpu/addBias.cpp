@@ -28,7 +28,7 @@
 #include <execution/Threads.h>
 #include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/addBias.h>
-
+#include <helpers/ShapeUtils.h>
 #include <cmath>
 #include <memory>
 #include <stdexcept>
@@ -363,8 +363,6 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
   auto b = bias.bufferAsT<Y>();
   const sd::LongType rank = x_shapeInfo[0];
   auto bases = &(x_shapeInfo[1]);
-  auto x_strides = &(x_shapeInfo[rank + 1]);
-  auto z_strides = &(z_shapeInfo[rank + 1]);
   const bool inplaceOp = (x == z);
   const bool same_order = inplaceOp || (input.ordering() == output.ordering());
   const bool channel_atTheEnd = !isNCHW;
@@ -385,8 +383,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
 
   if (same_order && same_stride) {
     isContinuous = shape::elementWiseStride(x_shapeInfo) == 1 && shape::elementWiseStride(z_shapeInfo) == 1;
-    // check_continuity(order, bases, x_strides, rank);
-  }  // if ( sameOrder && same_stride)
+  }
 
   bool treat_as_lastC = false;
   //
@@ -603,6 +600,9 @@ void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bia
 BUILD_DOUBLE_TEMPLATE(template void addBias_,
                       (const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW), SD_FLOAT_TYPES,
                       SD_FLOAT_TYPES);
+
+
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

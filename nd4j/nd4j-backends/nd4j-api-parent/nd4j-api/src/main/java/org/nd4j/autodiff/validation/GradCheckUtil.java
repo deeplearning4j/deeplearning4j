@@ -103,8 +103,8 @@ public class GradCheckUtil {
         }
 
         Set<String> fnOutputs = new HashSet<>();
-        for(DifferentialFunction f : sd.ops()){
-            for(SDVariable s : f.outputVariables()){
+        for(DifferentialFunction f : sd.ops()) {
+            for(SDVariable s : f.outputVariables()) {
                 fnOutputs.add(s.name());
             }
         }
@@ -141,7 +141,7 @@ public class GradCheckUtil {
 
 
         Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
-
+        Map<String,INDArray> outputs = sd.output(placeholderValues, new ArrayList<>(fnOutputs));
 
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()) {
@@ -210,7 +210,7 @@ public class GradCheckUtil {
                     List<Integer> sorted = new ArrayList<>(set);
                     Collections.sort(sorted);
 
-                    for(Integer i : sorted){
+                    for(Integer i : sorted) {
                         long[] pos = Shape.ind2subC(shape, i);
                         l.add(pos);
                     }
@@ -255,7 +255,7 @@ public class GradCheckUtil {
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig + eps);
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);
                 for(INDArray arr : m.values()) {
                     scorePlus += arr.sumNumber().doubleValue();
                 }
@@ -324,7 +324,7 @@ public class GradCheckUtil {
         log.info("GradCheckUtil.checkGradients(): " + totalCount + " params checked, " + nPass + " passed, "
                 + totalNFailures + " failed. Largest relative error = " + maxError);
 
-        if(debugMode && !debugBefore){
+        if(debugMode && !debugBefore) {
             sd.disableDebugging();
         }
 

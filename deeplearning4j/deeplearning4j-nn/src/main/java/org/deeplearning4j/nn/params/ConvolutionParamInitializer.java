@@ -70,7 +70,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     public List<String> paramKeys(Layer layer) {
         ConvolutionLayer layerConf =
                 (ConvolutionLayer) layer;
-        if(layerConf.hasBias()){
+        if(layerConf.hasBias()) {
             return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
         } else {
             return weightKeys(layer);
@@ -86,7 +86,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     public List<String> biasKeys(Layer layer) {
         ConvolutionLayer layerConf =
                 (ConvolutionLayer) layer;
-        if(layerConf.hasBias()){
+        if(layerConf.hasBias()) {
             return Collections.singletonList(BIAS_KEY);
         } else {
             return Collections.emptyList();
@@ -108,7 +108,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         ConvolutionLayer layer = (ConvolutionLayer) conf.getLayer();
         if (layer.getKernelSize().length != 2) throw new IllegalArgumentException("Filter size must be == 2");
 
-        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<String, INDArray>());
+        Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<>());
 
         ConvolutionLayer layerConf =
                         (ConvolutionLayer) conf.getLayer();
@@ -116,7 +116,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         val nOut = layerConf.getNOut();
 
         INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
-        if(layer.hasBias()){
+        if(layer.hasBias()) {
             //Standard case
             INDArray biasView = paramsViewReshape.get( NDArrayIndex.interval(0, nOut));
             INDArray weightView = paramsViewReshape.get( NDArrayIndex.interval(nOut, numParams(conf)));

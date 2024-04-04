@@ -52,8 +52,8 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
@@ -69,10 +69,10 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
                "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(
-        bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-        "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-        oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(
+      bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+      "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
+      oC, bias->rankOf(), bias->lengthOf());
 
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                            wFormat);
@@ -96,8 +96,8 @@ DECLARE_SHAPE_FN(conv2d) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
@@ -132,10 +132,10 @@ DECLARE_SHAPE_FN(conv2d) {
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
                ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
   if (biasShapeInfo)
-    REQUIRE_TRUE(
-        biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-        "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-        oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(
+      biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+      "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
+      oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
@@ -179,8 +179,8 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
   auto gradO = block.width() > 3
-                   ? INPUT_VARIABLE(3)
-                   : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+               ? INPUT_VARIABLE(3)
+               : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
   auto gradI = OUTPUT_NULLIFIED(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
   auto gradW = OUTPUT_NULLIFIED(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
@@ -197,8 +197,8 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   REQUIRE_TRUE(input->rankOf() == 4, 0,
                "CUSTOM CONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -230,10 +230,10 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
                "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   ConvolutionUtils::conv2dBP(block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW,
                              isSameMode, isNCHW, wFormat);
@@ -246,8 +246,8 @@ DECLARE_SHAPE_FN(conv2d_bp) {
   auto weightsShapeInfo = inputShape->at(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
   auto gradOShapeInfo = block.width() > 3
-                            ? inputShape->at(3)
-                            : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+                        ? inputShape->at(3)
+                        : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
   const LongType rank = 4;
 
@@ -257,11 +257,12 @@ DECLARE_SHAPE_FN(conv2d_bp) {
   REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0,
                "CUSTOM CONV2D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weightsShapeInfo[0]);
-  REQUIRE_TRUE(
-      gradOShapeInfo[0] == rank, 0,
-      "CUSTOM CONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
-      rank, gradOShapeInfo[0]);
-
+  if(gradOShapeInfo[0] > 0) {
+    REQUIRE_TRUE(
+        gradOShapeInfo[0] == rank, 0,
+        "CUSTOM CONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
+        rank, gradOShapeInfo[0]);
+  }
   const LongType kH = INT_ARG(0);                                               // filter(kernel) height
   const LongType kW = INT_ARG(1);                                               // filter(kernel) width
   const LongType sH = INT_ARG(2);                                               // strides height
@@ -273,8 +274,8 @@ DECLARE_SHAPE_FN(conv2d_bp) {
   const int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   const int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType indIOioC, indIiH, indOoH, indWoC(0 == wFormat ? 3 : 0);
   if (!isNCHW) {
@@ -299,19 +300,22 @@ DECLARE_SHAPE_FN(conv2d_bp) {
   std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
-  REQUIRE_TRUE(
-      ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,
-      "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
-      ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
-               "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
-               ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
+  if(gradOShapeInfo[0] > 0) {
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,
+                 "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString(expectedGradOShape).c_str(),
+                 ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
+
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
+                 "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
+                 ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
+                 ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
+  }
   if (biasShapeInfo)
-    REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-                 "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
+               "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
+               "%i instead !",
+               oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
   auto gradIshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());
@@ -346,8 +350,8 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   const int rank = gradO->rankOf();
 
@@ -425,8 +429,8 @@ DECLARE_SHAPE_FN(conv2d_input_bp) {
   const int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   const int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   int indIOioC, indIiH, indWoC(0 == wFormat ? 3 : 0), indOoH;
   if (!isNCHW) {

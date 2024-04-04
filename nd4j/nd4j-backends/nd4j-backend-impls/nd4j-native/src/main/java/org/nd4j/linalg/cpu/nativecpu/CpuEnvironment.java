@@ -51,6 +51,19 @@ public class CpuEnvironment implements Environment {
         e.setLogNativeNDArrayCreation(logNativeNDArrayCreation);
     }
 
+
+
+
+    @Override
+    public boolean isCheckOutputChange() {
+        return e.isCheckOutputChange();
+    }
+
+    @Override
+    public void setCheckOutputChange(boolean reallyCheck) {
+        e.setCheckOutputChange(reallyCheck);
+    }
+
     @Override
     public boolean isCheckInputChange() {
         return e.isCheckInputChange();

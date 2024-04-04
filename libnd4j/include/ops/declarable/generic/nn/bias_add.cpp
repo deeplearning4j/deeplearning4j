@@ -83,18 +83,10 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
   auto gradB = OUTPUT_VARIABLE(1);
 
-  const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
-  const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
-
-  gradI->assign(gradO);
-
-  std::vector<LongType> channel;
-  channel.push_back(channelDim);
-  auto dims = ShapeUtils::evalDimsToExclude(gradO->rankOf(), 1,channel.data());
-  gradO->reduceAlongDimension(reduce::Sum, *gradB, dims);
-  delete dims;
+  helpers::addBiasBp(block, input, gradO, gradI, gradB);
   return Status::OK;
 }
+
 DECLARE_SYN(BiasAddGrad, biasadd_bp);
 
 ////////////////////////////////////////////////////////////////////
@@ -114,6 +106,7 @@ DECLARE_SHAPE_FN(biasadd_bp) {
 DECLARE_TYPES(biasadd_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
+
 
 }  // namespace ops
 }  // namespace sd

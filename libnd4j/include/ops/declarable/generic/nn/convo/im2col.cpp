@@ -130,7 +130,7 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
 
   LaunchContext* ctx = block.launchContext();
   // FIXME:: all helpers should accept NDArray
-  helpers::col2im(*ctx, *gradAtOutput, *z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
+  helpers::col2im(*ctx, gradAtOutput, z, strideY, strideX, pH, pW, imgH, imgW, dY, dX);
 
   return Status::OK;
 }

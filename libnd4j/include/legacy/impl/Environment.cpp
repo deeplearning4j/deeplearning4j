@@ -196,6 +196,14 @@ Environment::Environment() {
 }
 
 
+bool Environment::isCheckOutputChange() {
+  return _checkOutputChange.load();
+}
+
+void Environment::setCheckOutputChange(bool reallyCheck) {
+  _checkOutputChange.store(reallyCheck);
+}
+
 void Environment::setLogNativeNDArrayCreation(bool reallyLog) { _logNativeNDArrayCreation.store(reallyLog); }
 bool Environment::isLogNativeNDArrayCreation() { return _logNativeNDArrayCreation.load(); }
 

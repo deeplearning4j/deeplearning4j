@@ -526,7 +526,7 @@
             <properties>
                 <org.nd4j.cpu.priority>10000</org.nd4j.cpu.priority>
                 <org.nd4j.gpu.priority>0</org.nd4j.gpu.priority>
-
+                <org.nd4j.noarraygc>true</org.nd4j.noarraygc>
             </properties>
         </profile>
         <profile>

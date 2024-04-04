@@ -37,79 +37,149 @@ enum PoolingType {
 
 class SD_LIB_HIDDEN ConvolutionUtils {
  public:
+
+
+
   static inline void calcOutSizePool2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW, const LongType sH, const LongType sW,
-                                       const LongType pH, const LongType pW, const LongType dH, const LongType dW, const LongType iH,
+                                       LongType pH,  LongType pW, const LongType dH, const LongType dW, const LongType iH,
                                        const LongType iW, const LongType paddingMode) {
     if (paddingMode == 0) {  // valid
-      // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-      // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
-      oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
-      oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     } else if (paddingMode == 1) {  // same
-      oH = static_cast<LongType>(math::sd_ceil<double, double>(iH * 1. / sH));
-      oW = static_cast<LongType>(math::sd_ceil<double, double>(iW * 1. / sW));
-    } else {                   // causal
-      oH = (iH - 1) / sH + 1;  // 2*pH = (kH-1)*dH
-      oW = (iW - 1) / sW + 1;
+      oH = (iH + sH - 1) / sH;
+      oW = (iW + sW - 1) / sW;
+
+      // Calculate the padding needed to achieve the same output size
+      LongType paddingNeededH = ((oH - 1) * sH + (kH - 1) * dH + 1 - iH) / 2;
+      LongType paddingNeededW = ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2;
+
+      // Update the padding values
+      pH = paddingNeededH;
+      pW = paddingNeededW;
+
+      // Recalculate the output height and width with the updated padding
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+    } else {  // causal
+      // Update the padding values for causal convolution
+      pH = (kH - 1) * dH;
+      pW = (kW - 1) * dW;
+
+      // Calculate the output height and width with the updated padding
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     }
+
+
   }
 
   static inline void calcOutSizePool3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,
-                                       const LongType sD, const LongType sH, const LongType sW, const LongType pD, const LongType pH,
-                                       const LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
+                                       const LongType sD, const LongType sH, const LongType sW,  LongType pD,  LongType pH,
+                                       LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
                                        const LongType iH, const LongType iW, const int paddingMode) {
     if (paddingMode == 0) {  // valid
-      oD = (iD - ((kD - 1) * dD + 1) + 2 * pD) / sD + 1;
-      oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
-      oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
+      oD = (iD + 2 * pD - (kD - 1) * dD - 1) / sD + 1;
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     } else if (paddingMode == 1) {  // same
-      oD = (int)sd::math::sd_ceil<double, double>(iD * 1. / sD);
-      oH = (int)sd::math::sd_ceil<double, double>(iH * 1. / sH);
-      oW = (int)sd::math::sd_ceil<double, double>(iW * 1. / sW);
+      oD = (iD + sD - 1) / sD;
+      oH = (iH + sH - 1) / sH;
+      oW = (iW + sW - 1) / sW;
 
+      // Calculate the padding needed to achieve the same output size
+      LongType paddingNeededD = ((oD - 1) * sD + (kD - 1) * dD + 1 - iD) / 2;
+      LongType paddingNeededH = ((oH - 1) * sH + (kH - 1) * dH + 1 - iH) / 2;
+      LongType paddingNeededW = ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2;
+
+      // Update the padding values
+      pD = paddingNeededD;
+      pH = paddingNeededH;
+      pW = paddingNeededW;
+
+      // Recalculate the output depth, height, and width with the updated padding
+      oD = (iD + 2 * pD - (kD - 1) * dD - 1) / sD + 1;
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     } else {  // causal
-      oD = (iD - 1) / sD + 1;
-      oH = (iH - 1) / sH + 1;  // 2*pH = (kH-1)*dH
-      oW = (iW - 1) / sW + 1;
+      // Update the padding values for causal convolution
+      pD = (kD - 1) * dD;
+      pH = (kH - 1) * dH;
+      pW = (kW - 1) * dW;
+
+      // Calculate the output depth, height, and width with the updated padding
+      oD = (iD + 2 * pD - (kD - 1) * dD - 1) / sD + 1;
+      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
     }
   }
 
   static inline void calcPadding2D(LongType& pH, LongType& pW, LongType oH, LongType oW, LongType iH, LongType iW, LongType kH, LongType kW, LongType sH, LongType sW,
                                    LongType dH, LongType dW, const int paddingMode = 1 /* default is same mode*/) {
-    if (paddingMode == 0)  // valid
-      return;
-
-    if (paddingMode == 1) {  // same
-
+    if (paddingMode == 0) {  // valid
+      pH = 0;
+      pW = 0;
+    } else if (paddingMode == 1) {  // same
       const int eKH = (kH - 1) * dH + 1;
       const int eKW = (kW - 1) * dW + 1;
 
-      pH = ((oH - 1) * sH + eKH - iH) /
-           2;  // Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+      pH = ((oH - 1) * sH + eKH - iH) / 2;
       pW = ((oW - 1) * sW + eKW - iW) / 2;
+
+      // Handle odd padding cases
+      int padBottomH = (oH - 1) * sH + eKH - iH - pH;
+      int padBottomW = (oW - 1) * sW + eKW - iW - pW;
+
+      // Adjust padding to ensure symmetry
+      if (padBottomH != pH) {
+        oH -= 1;
+        pH = ((oH - 1) * sH + eKH - iH) / 2;
+      }
+      if (padBottomW != pW) {
+        oW -= 1;
+        pW = ((oW - 1) * sW + eKW - iW) / 2;
+      }
     } else {  // causal
       pH = (kH - 1) * dH;
       pW = (kW - 1) * dW;
     }
   }
 
-  static inline void calcPadding3D(LongType& pD, LongType& pH, LongType& pW, const LongType oD, const LongType oH, const LongType oW, const LongType iD,
+  static inline void calcPadding3D(LongType& pD, LongType& pH, LongType& pW,  LongType oD,  LongType oH,  LongType oW, const LongType iD,
                                    const LongType iH, const LongType iW, const LongType kD, const LongType kH, const LongType kW, const LongType sD,
                                    const LongType sH, const LongType sW, const LongType dD, const LongType dH, const LongType dW,
                                    const int paddingMode = 1 /* default is same mode*/) {
-    if (paddingMode == 0)  // valid
-      return;
-
-    if (paddingMode == 1) {  // same
-
+    if (paddingMode == 0) {  // valid
+      pD = 0;
+      pH = 0;
+      pW = 0;
+    } else if (paddingMode == 1) {  // same
       const int eKD = (kD - 1) * dD + 1;
       const int eKH = (kH - 1) * dH + 1;
       const int eKW = (kW - 1) * dW + 1;
 
       pD = ((oD - 1) * sD + eKD - iD) / 2;
-      pH = ((oH - 1) * sH + eKH - iH) /
-           2;  // Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+      pH = ((oH - 1) * sH + eKH - iH) / 2;
       pW = ((oW - 1) * sW + eKW - iW) / 2;
+
+      // Handle odd padding cases
+      int padBackD = (oD - 1) * sD + eKD - iD - pD;
+      int padBottomH = (oH - 1) * sH + eKH - iH - pH;
+      int padBottomW = (oW - 1) * sW + eKW - iW - pW;
+
+      // Adjust padding to ensure symmetry
+      if (padBackD != pD) {
+        oD -= 1;
+        pD = ((oD - 1) * sD + eKD - iD) / 2;
+      }
+      if (padBottomH != pH) {
+        oH -= 1;
+        pH = ((oH - 1) * sH + eKH - iH) / 2;
+      }
+      if (padBottomW != pW) {
+        oW -= 1;
+        pW = ((oW - 1) * sW + eKW - iW) / 2;
+      }
     } else {  // causal
       pD = (kD - 1) * dD;
       pH = (kH - 1) * dH;
@@ -119,13 +189,13 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   // calculation of output height and width in 2D deconvolution procedure
   static inline void calcOutSizeDeconv2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW, const LongType sH, const LongType sW,
-                                         const LongType pH, const LongType pW, const LongType dH, const LongType dW, const LongType iH,
+                                         LongType pH,  LongType pW, const LongType dH, const LongType dW, const LongType iH,
                                          const LongType iW, const int paddingMode) {
     if (paddingMode) {
       oH = sH * iH;
       oW = sW * iW;
     } else {
-      const int ekH = (kH - 1) * dH + 1;
+      const LongType ekH = (kH - 1) * dH + 1;
       const int ekW = (kW - 1) * dW + 1;
 
       oH = sH * (iH - 1) + ekH - 2 * pH;
@@ -135,21 +205,21 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   // calculation of output height and width in 3D deconvolution procedure
   static inline void calcOutSizeDeconv3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,
-                                         const LongType sD, const LongType sH, const LongType sW, const LongType pD, const LongType pH,
-                                         const LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
+                                         const LongType sD, const LongType sH, const LongType sW,  LongType pD,  LongType pH,
+                                         LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
                                          const LongType iH, const LongType iW, const int paddingMode) {
-    if (paddingMode) {
-      oD = sD * iD;
-      oH = sH * iH;
-      oW = sW * iW;
-    } else {
-      const int ekD = (kD - 1) * dD + 1;
-      const int ekH = (kH - 1) * dH + 1;
-      const int ekW = (kW - 1) * dW + 1;
-
-      oD = sD * (iD - 1) + ekD - 2 * pD;
-      oH = sH * (iH - 1) + ekH - 2 * pH;
-      oW = sW * (iW - 1) + ekW - 2 * pW;
+    if (paddingMode == 1) {  // same
+      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - 2 * pD;
+      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - 2 * pH;
+      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - 2 * pW;
+    } else if (paddingMode == 2) {  // causal
+      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - pD;
+      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - pH;
+      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - pW;
+    } else {  // valid
+      oD = sD * (iD - 1) + dD * (kD - 1) + 1;
+      oH = sH * (iH - 1) + dH * (kH - 1) + 1;
+      oW = sW * (iW - 1) + dW * (kW - 1) + 1;
     }
   }
 
@@ -246,7 +316,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kH, const LongType kW, const LongType iC,
-                                                      const LongType oC) {
+                                                  const LongType oC) {
     if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
@@ -255,7 +325,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kD, const LongType kH, const LongType kW,
-                                                      const LongType iC, const LongType oC) {
+                                                  const LongType iC, const LongType oC) {
     if (0 == wFormat) return std::vector<LongType>({kD, kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kD, kH, kW});

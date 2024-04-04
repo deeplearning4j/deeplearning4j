@@ -340,9 +340,9 @@ else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
     endif()
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
-
+    # note on ftls model: https://github.com/microsoft/mimalloc/issues/147 tsanitize sometimes throws errors
     if (SD_SANITIZE)
-        set(SANITIZE_FLAGS " -Wall -Wextra -fPIE  -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
+        set(SANITIZE_FLAGS " -Wall -Wextra -fPIE   -lpthread -ftls-model=local-dynamic -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
         message("Using sanitizers: ${SD_SANITIZERS} - note you can not use both thread and address sanitizer at the same time. Be careful what sanitizers you specify.
          FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
          FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow")

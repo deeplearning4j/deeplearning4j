@@ -87,7 +87,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         INDArray wg = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
                 gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY),
                 getRnnDataFormat());
-        INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
+        INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
         INDArray input = this.input.castTo(dataType);
         if(layerConf().getRnnDataFormat() == RNNFormat.NWC) {
             input = input.permute(0,2,1); //NHWC to NCHW
@@ -105,6 +105,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             outputArrs = new INDArray[]{epsOut, wg};
         }
 
+
         Conv1DDerivative op = new Conv1DDerivative(inputArrs, outputArrs, conf);
         Nd4j.exec(op);
 
@@ -116,7 +117,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         if (getRnnDataFormat() == RNNFormat.NWC) {
             epsOut = epsOut.permute(0, 2, 1);
         }
-        return new Pair<>(retGradient, epsOut);
+        return new Pair<>(retGradient, workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,epsOut));
     }
 
     @Override
@@ -177,7 +178,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             output = output.permute(0,2,1);
         }
 
-        return new Pair<>(output, null);
+        return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,output), null);
     }
 
 

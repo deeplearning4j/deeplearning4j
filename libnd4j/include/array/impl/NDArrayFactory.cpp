@@ -39,7 +39,6 @@ namespace sd {
 SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, LaunchContext* context) {
   auto status = shapeDescriptor->validate();
   if (status != SHAPE_DESC_OK) {
-    sd_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status);
     THROW_EXCEPTION("NDArrayFactory::create: invalid ShapeDescriptor ");
   }
   LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());

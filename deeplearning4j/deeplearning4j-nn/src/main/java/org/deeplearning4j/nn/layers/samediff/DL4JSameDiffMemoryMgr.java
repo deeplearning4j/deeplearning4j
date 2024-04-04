@@ -51,16 +51,16 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
         String wsName = detached ? outputWs : workingMemoryWs;
         WorkspaceConfiguration wsConf = detached ? confOutput : confWorking;
 
-        if(wsName == null){
+        if(wsName == null) {
             //Scoped out
             INDArray ret = Nd4j.createUninitializedDetached(dataType, shape);
             Preconditions.checkState(!ret.isAttached(), "Returned array should be detached");
             return ret;
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
-            try (MemoryWorkspace mw = ws.notifyScopeBorrowed()) {
-                return Nd4j.createUninitialized(dataType, shape);
-            }
+            ws.notifyScopeBorrowed();
+            return Nd4j.createUninitialized(dataType, shape);
+
         }
     }
 

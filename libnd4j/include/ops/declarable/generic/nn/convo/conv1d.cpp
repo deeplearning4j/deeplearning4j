@@ -89,33 +89,34 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     reshapeForOutput = {output->sizeAt(0), output->sizeAt(1), 1, output->sizeAt(2)};  // [bS, oC, oW] -> [bS, oC, 1, oW]
   }
 
-  auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,true));
-  auto outputReshaped = new NDArray(output->reshape(output->ordering(), reshapeForOutput, true));
+  auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,false));
+  auto outputReshaped = new NDArray(output->reshape(output->ordering(), reshapeForOutput, false));
   auto weightsReshaped = new NDArray(weights->reshape(
       weights->ordering(),
-      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},true));  // [kW, iC, oC] -> [1, kW, iC, oC]
+      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},false));  // [kW, iC, oC] -> [1, kW, iC, oC]
+
+
 
   conv2d conv2d;
+  Status ret = Status::OK;
   if(bias == nullptr) {
     //note this might look strange but we get a segfault otherwise.
     //this problem was actually the source of a very strange JVM hang.
-    const Status status = conv2d.execute({inputReshaped, weightsReshaped}, {outputReshaped}, {},
-                                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+    ret = conv2d.execute({inputReshaped, weightsReshaped}, {outputReshaped}, {},
+                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
 
     output->assign(outputReshaped);
-    if (status != Status::OK) return status;
 
   } else {
-    const Status status = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {},
-                                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+    ret = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {},
+                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
 
     output->assign(outputReshaped);
-    if (status != Status::OK) return status;
 
   }
 
 
-  return Status::OK;
+  return ret;
 }
 
 DECLARE_SHAPE_FN(conv1d) {
@@ -220,10 +221,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   REQUIRE_TRUE(weights->rankOf() == rank, 0,
                "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weights->rankOf());
-  REQUIRE_TRUE(
-      gradO->rankOf() == rank, 0,
-      "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
-      rank, gradO->rankOf());
 
   int indIOioC, indIiW, indWoC(0 == wFormat ? 2 : 0);
   if (!isNCW) {
@@ -241,16 +238,11 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
 
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, 1, kW, 1, sW, 0, pW, 1, dW, 1, iW, paddingMode);
-
   std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoW, 0, indIOioC, indIiW});
   std::vector<LongType> expectedWeightsShape =
       0 == wFormat ? std::vector<LongType>({kW, iC, oC})
                    : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
-  REQUIRE_TRUE(
-      gradO->isSameShape(expectedGradOShape), 0,
-      "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
-      ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -260,43 +252,89 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
                "%i instead !",
                oC, bias->rankOf(), bias->lengthOf());
 
+
   std::vector<LongType> reshapeForInput, reshapeForGradO;
   if (!isNCW) {
-    reshapeForInput = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};  // [bS, iW, iC] -> [bS, 1, iW, iC]
-    reshapeForGradO = {gradO->sizeAt(0), 1, gradO->sizeAt(1), gradO->sizeAt(2)};  // [bS, oW, oC] -> [bS, 1, oW, oC]
+    if(!gradO->isScalar()) {
+      reshapeForGradO = {gradO->sizeAt(0), 1, gradO->sizeAt(1), gradO->sizeAt(2)};  // [bS, oW, oC] -> [bS, 1, oW, oC]
+      reshapeForInput = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};  // [bS, iW, iC] -> [bS, 1, iW, iC]
+    } else {
+      reshapeForGradO = {input->sizeAt(0),  input->sizeAt(1), input->sizeAt(2),1};  // [bS, oW, oC] -> [bS, 1, oW, oC]
+      reshapeForInput = {input->sizeAt(0),  input->sizeAt(1), input->sizeAt(2),1};  // [bS, iW, iC] -> [bS, 1, iW, iC]
+
+    }
   } else {
-    reshapeForInput = {input->sizeAt(0), input->sizeAt(1), 1, input->sizeAt(2)};  // [bS, iC, iW] -> [bS, iC, 1, iW]
-    reshapeForGradO = {gradO->sizeAt(0), gradO->sizeAt(1), 1, gradO->sizeAt(2)};  // [bS, oC, oW] -> [bS, oC, 1, oW]
+    if (!gradO->isScalar()) {
+      reshapeForGradO = {gradO->sizeAt(0), gradO->sizeAt(1), 1, gradO->sizeAt(2)};  // [bS, oC, oW] -> [bS, oC, 1, oW]
+      reshapeForInput = {input->sizeAt(0), input->sizeAt(1), 1, input->sizeAt(2)};  // [bS, iC, iW] -> [bS, iC, 1, iW]
+    } else {
+      reshapeForGradO = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};  // [bS, oW, oC] -> [bS, 1, oW, oC]
+      reshapeForInput = {input->sizeAt(0), 1, input->sizeAt(1), input->sizeAt(2)};  // [bS, iW, iC] -> [bS, 1, iW, iC]
+    }
   }
 
-  auto inputReshaped = input->reshape(input->ordering(), reshapeForInput);
-  auto gradIReshaped = gradI->reshape(gradI->ordering(), reshapeForInput, false);
-  auto gradOReshaped = gradO->reshape(gradO->ordering(), reshapeForGradO);
-  auto weightsReshaped = weights->reshape(
+  auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,false));
+  auto gradIReshaped = !gradO->isScalar() ? new NDArray(gradI->reshape(gradI->ordering(), reshapeForInput, false)) : gradI;
+  auto gradOReshaped = !gradO->isScalar() ? new NDArray(gradO->reshape(gradO->ordering(), reshapeForGradO,false)) : gradO;
+  auto weightsReshaped =  new NDArray(weights->reshape(
       weights->ordering(),
-      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});  // [kW, iC, oC] -> [1, kW, iC, oC]
+      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},false));  // [kW, iC, oC] -> [1, kW, iC, oC]
   auto gradWReshaped =
-      gradW->reshape(gradW->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},
-                     false);  // [kW, iC, oC] -> [1, kW, iC, oC]
+      !gradO->isScalar() ? new NDArray(gradW->reshape(gradW->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},
+                                                      false)) : gradW;  // [kW, iC, oC] -> [1, kW, iC, oC]
+  gradW->printIndexedBuffer("GRAD W RESHAPED:");
+  Status ret = Status::OK;
 
   conv2d_bp conv2dBP;
   if(bias == nullptr) {
-    //note this might look strange but we get a segfault otherwise.
-    //this problem was actually the source of a very strange JVM hang.
-    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, &gradOReshaped},
-                                   {&gradIReshaped, &gradWReshaped}, {},
-                                   {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-    if (status != Status::OK) return status;
+    if(gradO->isScalar()) {
+      gradIReshaped->assign(gradO);
+      gradWReshaped->assign(gradO);
+    } else {
+      std::vector<NDArray *> inputs = {inputReshaped, weightsReshaped, gradOReshaped};
+      std::vector<NDArray *> outputs = {gradIReshaped, gradWReshaped};
+      //note this might look strange but we get a segfault otherwise.
+      //this problem was actually the source of a very strange JVM hang.
+      ret = conv2dBP.execute(inputs,
+                             outputs, {},
+                             {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+
+    }
+
 
   } else {
-    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped,bias, &gradOReshaped},
-                                   {&gradIReshaped, &gradWReshaped, gradB}, {},
-                                   {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
-    if (status != Status::OK) return status;
+    if(gradO->isScalar()) {
+      gradIReshaped->assign(gradO);
+      gradWReshaped->assign(gradO);
+      gradB->assign(gradO);
+    } else {
+      std::vector<NDArray *> inputs = {inputReshaped, weightsReshaped,bias, gradOReshaped};
+      std::vector<NDArray *> outputs = {gradIReshaped, gradWReshaped, gradB};
+
+      ret = conv2dBP.execute(inputs,
+                             outputs, {},
+                             {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, !isNCW, wFormat}, {});
+    }
+
   }
 
+  if(gradIReshaped->buffer() != gradI->buffer()) {
+    gradI->assign(gradIReshaped);
+  }
+  if(gradWReshaped->buffer() != gradW->buffer()) {
+    gradW->assign(gradWReshaped);
+  }
 
-  return Status::OK;
+  if(bias != nullptr) {
+    if(gradB->buffer() != gradB->buffer()) {
+      gradB->assign(gradB);
+    }
+  }
+
+  gradW->printIndexedBuffer("GRAD W RESHAPED AFTER:");
+
+
+  return ret;
 }
 
 DECLARE_SHAPE_FN(conv1d_bp) {
@@ -314,10 +352,6 @@ DECLARE_SHAPE_FN(conv1d_bp) {
   REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0,
                "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weightsShapeInfo[0]);
-  REQUIRE_TRUE(
-      gradOShapeInfo[0] == rank, 0,
-      "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
-      rank, gradOShapeInfo[0]);
 
   LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                                          // strides width
@@ -350,10 +384,6 @@ DECLARE_SHAPE_FN(conv1d_bp) {
   std::vector<LongType> expectedWeightsShape =
       0 == wFormat ? std::vector<LongType>({kW, iC, oC})
                    : (1 == wFormat ? std::vector<LongType>({oC, iC, kW}) : std::vector<LongType>({oC, kW, iC}));
-  REQUIRE_TRUE(
-      ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,
-      "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
-      ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
                "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
@@ -364,8 +394,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
                "%i instead !",
                oC, biasShapeInfo[0], shape::length(biasShapeInfo));
 
-  auto gradIshapeInfo =
-      ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());
+  auto gradIshapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());
   auto gradWshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
 

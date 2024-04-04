@@ -800,6 +800,16 @@ Status DeclarableOp::execute(Context *block) {
     }
   }
 
+  std::vector<NDArray> outputsToCheck;
+  if(Environment::getInstance().isCheckOutputChange()) {
+    for(int i = 0; i < numOutputs; i++) {
+      auto array = block->fastpath_out()[i];
+      outputsToCheck.push_back(array->dup());
+    }
+
+    printf("outputs to check %d\n", outputsToCheck.size());
+  }
+
   // if we don't have platform-specific helper - invoke generic implementation
 #if defined(HAVE_VEDA)
   // try to sync if we have incomplete buffers
@@ -872,6 +882,28 @@ Status DeclarableOp::execute(Context *block) {
         THROW_EXCEPTION(errorMessage.c_str());
       }
 
+    }
+  }
+
+  if(Environment::getInstance().isCheckOutputChange()) {
+    printf("Checking output change on num output arrays: %d\n", outputsToCheck.size());
+    for (int i = 0; i < outputsToCheck.size(); i++) {
+      auto array = block->outputArray(i);
+      if(array == nullptr || array->isEmpty()) {
+        continue;
+      }
+
+      if (array->equalsTo(&outputsToCheck[i])) {
+        std::string errorMessage;
+        errorMessage += "Output array ";
+        errorMessage += std::to_string(i);
+        errorMessage += " has not been changed after execution of op ";
+        errorMessage += this->getOpName()->c_str();
+        errorMessage += "\n";
+        THROW_EXCEPTION(errorMessage.c_str());
+      } else {
+        printf("Array at %d is not equal\n", i);
+      }
     }
   }
 

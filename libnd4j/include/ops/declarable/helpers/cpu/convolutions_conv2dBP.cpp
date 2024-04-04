@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
+
+#include <ops/declarable/helpers/addBias.h>
 #if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 
 namespace sd {
@@ -36,7 +38,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
                       const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat) {
-  // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   // bias    [oC]
   // gradO   [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
@@ -76,37 +78,42 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
   }
 
-  std::vector<sd::LongType> wPermut, colPermut;
+  std::vector<sd::LongType> wPermute, colPermute;
 
   if (0 == wFormat) {
-    wPermut = {2, 0, 1, 3};
-    colPermut = {2, 3, 1, 0, 4, 5};
+    wPermute = {2, 0, 1, 3};
+    colPermute = {2, 3, 1, 0, 4, 5};
   } else if (1 == wFormat) {
-    wPermut = {1, 2, 3, 0};
-    colPermut = {1, 2, 3, 0, 4, 5};
+    wPermute = {1, 2, 3, 0};
+    colPermute = {1, 2, 3, 0, 4, 5};
   } else {
-    wPermut = {3, 1, 2, 0};
-    colPermut = {2, 3, 1, 0, 4, 5};
+    wPermute = {3, 1, 2, 0};
+    colPermute = {2, 3, 1, 0, 4, 5};
   }
+  std::vector<sd::LongType> emptyPerm = {};
 
   NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-
+  columns.nullify();
   // ----- calculation of gradW ----- //
   if (gradW) {
     auto ctx = block.launchContext();
     helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(
-                        0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    sd::MmulHelper::tensorDot(
-        &columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
-        wPermut);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+                    NDArrayFactory::create<double>(
+                        0., input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    sd::MmulHelper::tensorDot2(
+        &columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,emptyPerm,emptyPerm,
+        wPermute);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
   }
 
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}));
-    gradO->reduceAlongDimension(reduce::Sum, *gradBR, &gradOaxesForDot);  // sum over bS, oH, oW
+    if (gradB->rankOf() >= 2) {
+      gradBR = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()},false));
+    }
+    std::vector<sd::LongType> axes = {0, indOoH, indOoH + 1};
+    gradO->reduceAlongDimension(reduce::Sum, *gradBR, &axes);  // sum over bS, oH, oW
+
     if (gradBR != gradB) delete gradBR;
   }
 
@@ -114,15 +121,14 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   // [kH, kW, iC, oC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
   // [oC, iC, kH, kW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, bS, oH, oW]
   // [oC, kH, kW, iC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
-  sd::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, colPermut);
-
-  helpers::col2im(*block.launchContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
+  sd::MmulHelper::tensorDot2(weights, gradO, &columns, {indWoC}, {indIOioC},emptyPerm,emptyPerm, colPermute);
+  helpers::col2im(*block.launchContext(), &columns, gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
-  if (!isNCHW) {
+/*  if (!isNCHW) {
     delete input;
     delete gradI;
-  }
+  }*/
 }
 
 void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,

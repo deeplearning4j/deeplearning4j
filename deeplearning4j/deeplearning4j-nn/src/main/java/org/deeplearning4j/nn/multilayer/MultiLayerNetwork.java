@@ -622,7 +622,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         DataType netDtype = getLayerWiseConfigurations().getDataType();
         if(parameters != null && parameters.dataType() != netDtype){
             Preconditions.checkState(parameters.rank() == 2 && parameters.size(0) == 1, "Invalid parameters array: should be rank 2 with shape [1,numParams]. Got %ndShape", parameters);
-            if(cloneParametersArray){
+            if(cloneParametersArray) {
                 try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     parameters = parameters.castTo(netDtype);
                 }
@@ -2567,7 +2567,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         WorkspaceMode wsm = (training ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode());
         LayerWorkspaceMgr mgr;
-        if(wsm == WorkspaceMode.NONE){
+        if(wsm == WorkspaceMode.NONE) {
             mgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             mgr = LayerWorkspaceMgr.builder()

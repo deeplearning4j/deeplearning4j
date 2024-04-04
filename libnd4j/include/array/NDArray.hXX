@@ -395,6 +395,10 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::Laun
    *  default destructor
  */
 NDArray::~NDArray() {
+  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    sd_print("NDArray::~NDArray() - destructor\n");
+    fflush(stdout);
+  }
   //delete the buffer ONLY if we own it
 
   //note we don't delete shape buffers here, as they are managed by constant shape buffers
@@ -1163,9 +1167,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
 static void sd_printformatted(std::ostream& os, const sd::NDArray& arr, sd::LongType depth, sd::LongType limit) {
   // adapted sd_printormatted function
   if(arr.isScalar()) {
-    if (arr.isR())
-      os << arr.e<double>(0) << "\n";
-    else if (arr.isZ())
+    if (arr.isR()) {
+      if(arr.dataType() == sd::DataType::DOUBLE)
+        os << arr.e<double>(0) << "\n";
+      else
+        os << arr.e<float>(0) << "\n";
+    } else if (arr.isZ())
       os << arr.e<sd::LongType>(0) << "\n";
     else if (arr.isB())
       os << (arr.e<bool>(0) ? "true" : "false") << "\n";
@@ -1178,9 +1185,12 @@ static void sd_printformatted(std::ostream& os, const sd::NDArray& arr, sd::Long
   if (arr.rankOf() == 1) {
     os << "[ ";
     for (sd::LongType i = 0; i < arr.lengthOf(); ++i) {
-      if (arr.isR())
-        os << arr.e<double>(i) << ", ";
-      else if (arr.isZ())
+      if (arr.isR()) {
+        if(arr.dataType() == sd::DataType::DOUBLE)
+          os << arr.e<double>(i) << ", ";
+        else
+          os << arr.e<float>(i) << ", ";
+      } else if (arr.isZ())
         os << arr.e<sd::LongType>(i) << ", ";
       else if (arr.isB())
         os << (arr.e<bool>(i) ? "true" : "false") << ", ";
@@ -1205,7 +1215,7 @@ static void sd_printformatted(std::ostream& os, const sd::NDArray& arr, sd::Long
         if (arr.isR()) {
           //set precision to allow higher precision
           os << std::fixed << std::setw(11) << std::setprecision(15)
-                                << std::setfill('0') << arr.e<double>(row, col);
+             << std::setfill('0') << arr.e<double>(row, col);
         } else if (arr.isZ()) {
           os << arr.e<sd::LongType>(row, col);
         } else if (arr.isB()) {
@@ -1349,7 +1359,7 @@ std::string NDArray::toStringValue(T value) {
   std::ostringstream os;
   // throw the value into the string stream
   os << std::fixed << std::setw(11) << std::setprecision(15)
-                        << std::setfill('0') <<  value;
+     << std::setfill('0') <<  value;
   // convert the string stream into a string and return
   return os.str();
 }
@@ -1370,7 +1380,7 @@ std::string NDArray::toStringValue(bfloat16 value) {
   std::ostringstream os;
   // throw the value into the string stream
   os <<  std::fixed << std::setw(11) << std::setprecision(15)
-                        << std::setfill('0') <<   (float)value;
+     << std::setfill('0') <<   (float)value;
   // convert the string stream into a string and return
   return os.str();
 }
@@ -2107,7 +2117,11 @@ void NDArray::printBuffer(const char *msg, sd::LongType limit, const bool sync) 
   if (this->isR()) {
     for (sd::LongType e = 0; e < limit; e++) {
       if (e) sd_print(", ");
-      sd_printf("%f", this->e<float>(e));
+      if(this->dataType() == sd::DataType::DOUBLE) {
+        sd_printf("%f", this->e<double>(e));
+      }  else {
+        sd_printf("%f", this->e<float>(e));
+      }
     }
   } else if (this->isZ()) {
     for (sd::LongType e = 0; e < limit; e++) {
@@ -2171,7 +2185,7 @@ void NDArray::printLinearBuffer() const {
   fflush(stdout);
 }
 //////////////////////////////////////////////////////////////////////////
-static void sd_printormatted(NDArray const *arr, LongType depth, LongType limit) {
+static void sd_printFormatted(NDArray const *arr, LongType depth, LongType limit) {
   if (arr->rankOf() == 1) {
     sd_print("[ ");
     for (sd::LongType i = 0; i < arr->lengthOf(); ++i) {
@@ -2221,7 +2235,7 @@ static void sd_printormatted(NDArray const *arr, LongType depth, LongType limit)
     restCount = ShapeUtils::getNumOfSubArrs(arr->shapeInfo(), {0});
     for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
       NDArray subArr = (*arr)(arrIndex, {0});
-      sd_printormatted(&subArr, depth + 1, limit);
+      sd_printFormatted(&subArr, depth + 1, limit);
       if (arrIndex < restCount - 1) {
         for (sd::LongType i = 1; i < arr->rankOf(); ++i) sd_print("\n");
         for (sd::LongType i = 0; i < depth - 2; ++i) sd_print(" ");
@@ -2564,7 +2578,6 @@ template <typename T>
 const T *NDArray::bufferAsT() const {
   // FIXME: do we REALLY want sync here?
   // syncToHost();
-
   return reinterpret_cast<const T *>(buffer());
 }
 
@@ -3249,10 +3262,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray &other,
       THROW_EXCEPTION(
           "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast "
           "operation !");
-    if (!shape::equalsTypesAndShapesSoft(target.shapeInfo(), newShapeInfo))
-      THROW_EXCEPTION("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
   }
-
   sd::LongType const *xShapeInfoH = shapeInfo();
   sd::LongType const *yShapeInfoH = other.shapeInfo();
   sd::LongType const *xShapeInfoD = specialShapeInfo();
@@ -4329,7 +4339,6 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
     synchronize("NDArray::equalsTo");
 
     if (tmp.e<sd::LongType>(0) != 0) {
-      sd_print("Returning failure\n");
       return false;
     }
 

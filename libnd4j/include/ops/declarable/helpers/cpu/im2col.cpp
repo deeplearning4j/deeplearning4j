@@ -61,75 +61,40 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
-  if (shape::order(imShapeBuffer) == 'c' && shape::order(colShapeBuffer) == 'c' &&
-      shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
-    auto func = PRAGMA_THREADS_FOR_2D {
-      for (sd::LongType b = start_x; b < stop_x; b++) {
-        for (sd::LongType c = start_y; c < stop_y; c++) {
-          for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
-            for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
-              for (sd::LongType colH = 0; colH < oH; ++colH) {
-                for (sd::LongType colW = 0; colW < oW; ++colW) {
-                  sd::LongType imRow = (-pH + kRow * dH) + colH * sH;
-                  sd::LongType imCol = (-pW + kCol * dW) + colW * sW;
+  auto func = PRAGMA_THREADS_FOR_2D {
+    T* col;
+    T const* im;
+    sd::LongType imRow, imCol;
 
-                  auto col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
-                             colH * colStride4 + colW * colStride5;
+    for (auto b = start_x; b < stop_x; b += inc_x) {
+      for (auto colH = start_y; colH < stop_y; colH += inc_y) {
+        for (sd::LongType colW = 0; colW < oW; ++colW) {
+          for (sd::LongType c = 0; c < iC; ++c) {
+            for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
+              for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
+                imRow = (-pH + kRow * dH) + colH * sH;
+                imCol = (-pW + kCol * dW) + colW * sW;
 
-                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
-                      static_cast<LongType>(imRow) < 0 ||
-                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
-                      static_cast<LongType>(imCol) < 0)
-                    *col = zeroPadVal;
-                  else {
-                    auto im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
-                    *col = *im;
-                  }
+                col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
+                      colH * colStride4 + colW * colStride5;
+                if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
+                    static_cast<LongType>(imRow) < 0 ||
+                    static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
+                    static_cast<LongType>(imCol) < 0)
+                  *col = zeroPadVal;
+                else {
+                  im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                  *col = static_cast<T>(*im);
                 }
               }
             }
           }
         }
       }
-    };
+    }
+  };
 
-    samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
-  } else {
-    auto func = PRAGMA_THREADS_FOR_2D {
-      T* col;
-      T const* im;
-      sd::LongType imRow, imCol;
-
-      for (auto b = start_x; b < stop_x; b += inc_x) {
-        for (auto colH = start_y; colH < stop_y; colH += inc_y) {
-          for (sd::LongType colW = 0; colW < oW; ++colW) {
-            for (sd::LongType c = 0; c < iC; ++c) {
-              for (sd::LongType kRow = 0; kRow < kH; ++kRow) {
-                for (sd::LongType kCol = 0; kCol < kW; ++kCol) {
-                  imRow = (-pH + kRow * dH) + colH * sH;
-                  imCol = (-pW + kCol * dW) + colW * sW;
-
-                  col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
-                        colH * colStride4 + colW * colStride5;
-                  if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
-                      static_cast<LongType>(imRow) < 0 ||
-                      static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
-                      static_cast<LongType>(imCol) < 0)
-                    *col = zeroPadVal;
-                  else {
-                    im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
-                    *col = *im;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
-  }
+  samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
 void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW, const LongType sH,

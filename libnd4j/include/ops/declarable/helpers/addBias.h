@@ -32,6 +32,9 @@ namespace helpers {
 SD_LIB_HIDDEN void addBias(graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output,
                            const bool isNCHW);
 
+SD_LIB_HIDDEN void addBiasBp(graph::Context& block, const NDArray* input, const NDArray* gradO, NDArray* gradI,
+                              NDArray* gradB);
+
 }
 }  // namespace ops
 }  // namespace sd

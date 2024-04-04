@@ -122,10 +122,8 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Cnn 1 D With Cropping 1 D")
     void testCnn1DWithCropping1D() {
-        Nd4j.getEnvironment().setDeletePrimary(false);
-        Nd4j.getEnvironment().setDeleteSpecial(false);
         System.out.println("In testCnn1DWithCropping1D()");
-
+        Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
         Nd4j.getRandom().setSeed(1337);
         int[] minibatchSizes = { 1, 3 };
         int length = 7;
@@ -155,7 +153,23 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                             }
                         }
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new Cropping1D.Builder(cropping).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .dataType(DataType.DOUBLE)
+                                .updater(new NoOp())
+                                .dist(new NormalDistribution(0, 1))
+                                .convolutionMode(ConvolutionMode.Same).list()
+                                .layer(new Convolution1DLayer.Builder()
+                                        .hasBias(false)
+                                        .activation(afn).kernelSize(kernel).stride(stride)
+                                        .padding(padding).nOut(convNOut1).build())
+                                .layer(new Cropping1D.Builder(cropping).build())
+                                .layer(new Convolution1DLayer.Builder().activation(afn)
+                                        .hasBias(false)
+                                        .kernelSize(kernel).stride(stride).padding(padding)
+                                        .nOut(convNOut2).build())
+                                .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                                .setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                         assertEquals(conf, c2);
@@ -175,17 +189,14 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Cnn 1 D With Zero Padding 1 D")
     void testCnn1DWithZeroPadding1D() {
-        Nd4j.getEnvironment().setDeletePrimary(false);
-        Nd4j.getEnvironment().setDeleteSpecial(false);
-        Nd4j.getRandom().setSeed(1337);
-
-        int[] minibatchSizes = { 13 };
+        Nd4j.getRandom().setSeed(42);
+        int[] minibatchSizes = { 1,3 };
         int length = 7;
         int convNIn = 2;
         int convNOut1 = 3;
         int convNOut2 = 4;
         int finalNOut = 4;
-        int[] kernels = { 4 };
+        int[] kernels = { 1,2,4 };
         int stride = 1;
         int pnorm = 2;
         int padding = 0;
@@ -209,13 +220,39 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 labels.putScalar(new int[] { i, i % finalNOut, j }, 1.0);
                             }
                         }
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list().layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut1).build()).layer(new ZeroPadding1DLayer.Builder(zeroPadding).build()).layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel).stride(stride).padding(padding).nOut(convNOut2).build()).layer(new ZeroPadding1DLayer.Builder(0).build()).layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(finalNOut).build()).setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
+                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                .seed(42)
+                                .dataType(DataType.DOUBLE)
+                                .updater(new NoOp())
+                                .dist(new NormalDistribution(0, 1))
+                                .convolutionMode(ConvolutionMode.Same).list()
+                                .layer(new Convolution1DLayer.Builder()
+                                        .activation(afn)
+                                        .hasBias(false)
+                                        .kernelSize(kernel)
+                                        .stride(stride)
+                                        .padding(padding)
+                                        .nOut(convNOut1).build())
+                                .layer(new ZeroPadding1DLayer.Builder(zeroPadding).build())
+                                .layer(new Convolution1DLayer.Builder()
+                                        .activation(afn)
+                                        .kernelSize(kernel)
+                                        .hasBias(false)
+                                        .stride(stride)
+                                        .padding(padding).nOut(convNOut2).build())
+                                .layer(new ZeroPadding1DLayer.Builder(0).build())
+                                .layer(new Subsampling1DLayer.Builder(poolingType)
+                                        .kernelSize(kernel).stride(stride)
+                                        .padding(padding).pnorm(pnorm).build())
+                                .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                                .setInputType(InputType.recurrent(convNIn, length, RNNFormat.NCW)).build();
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
                         assertEquals(conf, c2);
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                        Nd4j.getRandom().setSeed(42);
                         net.init();
-
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                         assertTrue(gradOK,msg);
 
@@ -229,7 +266,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Cnn 1 D With Subsampling 1 D")
     void testCnn1DWithSubsampling1D() {
-      
+
         Nd4j.getRandom().setSeed(12345);
 
         int[] minibatchSizes = { 1, 3 };
@@ -279,7 +316,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Cnn 1 d With Masking")
     void testCnn1dWithMasking() {
-        
+
 
         int length = 12;
         int convNIn = 2;

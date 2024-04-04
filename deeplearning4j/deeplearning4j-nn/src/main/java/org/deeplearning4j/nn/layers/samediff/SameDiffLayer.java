@@ -89,12 +89,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            if (sameDiff == null) {
-                doInit();
-            }
+        if (sameDiff == null) {
+            doInit();
         }
-
 
 
 
@@ -103,7 +100,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         Map<String,INDArray> phMap = new HashMap<>();
         phMap.put(INPUT_KEY, input);
-        if(maskArray != null){
+        if(maskArray != null) {
             phMap.put(MASK_KEY, maskArray);
         } else {
             phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
@@ -141,7 +138,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         sameDiff.clearPlaceholders(true);
         sameDiff.clearOpInputs();
 
-        return result;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,result);
     }
 
 
@@ -153,14 +150,12 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         INDArray dLdIn;
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            if (sameDiff == null) {
-                doInit();
-            }
-            if (!sameDiff.hasGradientFunction()) {
-                //Create when scoped out, to ensure any arrays are not in WS
-                sameDiff.createGradFunction(INPUT_KEY);
-            }
+        if (sameDiff == null) {
+            doInit();
+        }
+        if (!sameDiff.hasGradientFunction()) {
+            //Create when scoped out, to ensure any arrays are not in WS
+            sameDiff.createGradFunction(INPUT_KEY);
         }
         //Configure memory management for SameDiff instance - use DL4J workspaces
         Map<Long,InferenceSession> sessionMap = sameDiff.getFunction("grad").getSessions();
@@ -299,41 +294,40 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     protected void doInit() {
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
-            sameDiff = SameDiff.create();
-            //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
-            sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
-            Map<String, INDArray> p = paramTable();
+        org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+        sameDiff = SameDiff.create();
+        //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
+        sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
+        Map<String, INDArray> p = paramTable();
 
-            long[] inputShape = input.shape().clone();
-            inputShape[0] = -1;
-            SDVariable inputVar = sameDiff.placeHolder(INPUT_KEY, dataType, inputShape);
-            Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
-            Map<String, SDVariable> params = new LinkedHashMap<>();
-            for (String s : paramShapes.keySet()) {
-                val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, dataType, ps);
-                params.put(s, v);
-            }
-
-            long[] maskShape = ArrayUtil.nTimes((long)inputShape.length, -1);
-            SDVariable mask = sameDiff.placeHolder(MASK_KEY, dataType, maskShape);
-
-            SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
-            Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
-            outputVar = layerOutput;
-
-            for (Map.Entry<String, INDArray> e : p.entrySet()) {
-                sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
-            }
-
-            //Define the function for external errors:
-            fn = SameDiffUtils.externalErrors(sameDiff, null,layerOutput);
-            fn.outputVariable();
-
-            this.outputKey = outputVar.name();
+        long[] inputShape = input.shape().clone();
+        inputShape[0] = -1;
+        SDVariable inputVar = sameDiff.placeHolder(INPUT_KEY, dataType, inputShape);
+        Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
+        Map<String, SDVariable> params = new LinkedHashMap<>();
+        for (String s : paramShapes.keySet()) {
+            val ps = paramShapes.get(s);
+            SDVariable v = sameDiff.var(s, dataType, ps);
+            params.put(s, v);
         }
+
+        long[] maskShape = ArrayUtil.nTimes((long)inputShape.length, -1);
+        SDVariable mask = sameDiff.placeHolder(MASK_KEY, dataType, maskShape);
+
+        SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, params, mask);
+        Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
+        outputVar = layerOutput;
+
+        for (Map.Entry<String, INDArray> e : p.entrySet()) {
+            sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
+        }
+
+        //Define the function for external errors:
+        fn = SameDiffUtils.externalErrors(sameDiff, null,layerOutput);
+        fn.outputVariable();
+
+        this.outputKey = outputVar.name();
+
     }
 
     @Override

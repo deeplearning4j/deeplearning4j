@@ -167,7 +167,7 @@ DECLARE_CONFIGURABLE_OP(betainc, 3, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_biasadd)
 DECLARE_CUSTOM_OP(biasadd, 2, 1, true, 0, 0);
-DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
+DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0)
 #endif
 
 /**

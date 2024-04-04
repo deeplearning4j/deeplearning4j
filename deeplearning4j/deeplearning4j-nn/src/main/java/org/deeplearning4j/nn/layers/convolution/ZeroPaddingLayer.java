@@ -80,7 +80,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         epsNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsNext);
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return new Pair<>(new DefaultGradient(), epsNext);
     }
 
 
@@ -110,7 +110,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     NDArrayIndex.all()}, input);
         }
 
-        return out;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
     }
 
     @Override

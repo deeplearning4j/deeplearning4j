@@ -278,7 +278,7 @@ public class GradientCheckUtil {
         for (int i = 1; i < paramEnds.length; i++) {
             val n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
-            if(c.subset){
+            if(c.subset) {
                 long ss = n / c.maxPerParam;
                 if(ss == 0) {
                     ss = n;

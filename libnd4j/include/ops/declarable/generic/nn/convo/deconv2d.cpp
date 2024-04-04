@@ -96,7 +96,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   // NHWC: [iC, kH, kW, oC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
   MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, colPermut);
   LaunchContext* ctx = block.launchContext();
-  helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH,
+  helpers::col2im(*ctx, &columns, output, sH, sW, pH, pW, oH, oW, dH,
                   dW);  // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
 
   //----- add biases if required -----//
@@ -283,10 +283,11 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.launchContext());
 
   LaunchContext* ctx = block.launchContext();
+  std::vector<LongType> emptyPermute;
   helpers::im2col(
       *ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
-  MmulHelper::tensorDot(input, &columns, gradW, inputAxes, {0, 4, 5},
+  MmulHelper::tensorDot2(input, &columns, gradW, inputAxes, {0, 4, 5},emptyPermute,emptyPermute,
                         gradWAxes);  // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
   // ----- calculation of gradB ----- //

@@ -25,6 +25,8 @@
 
 namespace sd {
 namespace graph {
+
+
 Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
   _variableSpace = variableSpace;
   _dataType = prototype->dataType();
@@ -442,7 +444,6 @@ void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, voi
                              const void *specialShapeInfo) {
   if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  sd_print("Using void * setOutput array\n");
   auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
 
   _fastpath_out[index] = array;

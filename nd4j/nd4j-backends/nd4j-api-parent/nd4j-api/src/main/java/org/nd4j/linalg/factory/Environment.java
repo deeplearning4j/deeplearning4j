@@ -47,6 +47,19 @@ public interface Environment {
     void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation);
 
     /**
+     * If true exceptions will be thrown when an output is NOT changed
+     * during ops that are not in place.
+     * Note the overhead here can be significant.
+     * Inputs are verified by duplicating the inputs and checking
+     * for equality.
+     * This defaults to false.
+     * @return
+     */
+    boolean isCheckOutputChange();
+
+    void setCheckOutputChange(boolean reallyCheck);
+
+    /**
      * If true exceptions will be thrown when an input is changed
      * during ops that are not in place.
      * Note the overhead here can be significant.
