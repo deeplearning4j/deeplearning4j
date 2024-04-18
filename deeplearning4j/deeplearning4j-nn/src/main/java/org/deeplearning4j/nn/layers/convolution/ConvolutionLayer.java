@@ -137,6 +137,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         ctx.addIntermediateResult(im2col2d);
 
         INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
+        CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
 
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
                 .config(Conv2DConfig.builder()
@@ -146,7 +147,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         .kW((int) kernel[1])
                         .sH((int) strides[0])
                         .sW((int) strides[1])
-                        .weightsFormat(WeightsFormat.OIYX)
+                        .weightsFormat(ConvolutionUtils.getWeightFormat(format))
                         .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
                         .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
                         .build())
@@ -215,12 +216,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         long miniBatch = input.size(0);
-        long outDepth = weights.size(0);
-        long inDepth = weights.size(1);
+        long outDepth = layerConf().getNOut();
+        long inDepth = layerConf().getNIn();
 
-        long kH = weights.size(2);
-        long kW = weights.size(3);
+        long kH = layerConf().getKernelSize()[0];
+        long kW = layerConf().getKernelSize()[1];
 
+        CNN2DFormat format = ConvolutionUtils.getFormatForLayer(layerConf());
 
         Conv2DConfig config = Conv2DConfig.builder()
                 .dH(layerConf().getDilation()[0])
@@ -231,9 +233,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 .sW(layerConf().getStride()[1])
                 .pH(layerConf().getPadding()[0])
                 .pW(layerConf().getPadding()[1])
-                .weightsFormat(WeightsFormat.OIYX)
+                .weightsFormat(ConvolutionUtils.getWeightFormat(format))
                 .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(layerConf().getConvolutionMode()))
-                .dataFormat(ConvolutionUtils.getFormatForLayer(layerConf()).name())
+                .dataFormat(format.name())
                 .build();
 
         //initialize a context and inject it for pulling out the im2col forward pass.

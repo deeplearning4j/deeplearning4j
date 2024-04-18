@@ -188,18 +188,37 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
   const auto K = A->sizeAt(1);
   const auto N = B->sizeAt(1);
 
-  if (C != nullptr && C->rankOf() != 2)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: rank of C array is not equal 2 !");
-  if (B->sizeAt(0) != K) THROW_EXCEPTION("MmulHelper::mmulMxM: B array has wrong number of rows !");
-  if (C != nullptr && C->sizeAt(0) != M)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: C array has wrong number of rows !");
-  if (C != nullptr && C->sizeAt(1) != N)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: C array has wrong number of columns !");
-
-  if (C == nullptr)
+  if (C != nullptr && C->rankOf() != 2) {
+    std::string errorMessage;
+    errorMessage = "mmulMxM expects rank of C array to be equal 2";
+    errorMessage += " C: " + DataTypeUtils::asString(C->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (B->sizeAt(0) != K) {
+    std::string errorMessage;
+    errorMessage = "mmulMxM expects B array has the same number of rows as A has columns ";
+    errorMessage += " A: " + std::to_string(B->sizeAt(0));
+    errorMessage += " B: " + std::to_string(K);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (C != nullptr && C->sizeAt(0) != M) {
+    std::string errorMessage;
+    errorMessage = "mmulMxM expects C array has the same number of rows as A";
+    errorMessage += " A: " + std::to_string(C->sizeAt(0));
+    errorMessage += " C: " +  std::to_string(M);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (C != nullptr && C->sizeAt(1) != N) {
+    std::string errorMessage;
+    errorMessage = "mmulMxM expects C array has the same number of columns as B" ;
+    errorMessage += " B : " + std::to_string(C->sizeAt(1));
+    errorMessage +=  "C : " + std::to_string(N);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (C == nullptr) {
     C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
-
+  }
   if (C->isEmpty()) return C;
 
   const auto aType = A->dataType();
@@ -294,18 +313,40 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   }
   sd::LongType xLenDim, yLenDim(0);
 
-  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
-  if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
-    THROW_EXCEPTION("MmulHelper::mmulMxV: X array must be vector !");
-
+  if (A->rankOf() != 2)  {
+    std::string errorMessage;
+    errorMessage = "MmulHelper::mmulMxV: rank of A array is not equal 2";
+    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (!shape::isCommonVector(X->shapeInfo(), xLenDim)) {
+    std::string errorMessage;
+    errorMessage += "MmulHelper::mmulMxV: X array must be vector !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   const auto M = A->sizeAt(0);
   const auto N = A->sizeAt(1);
 
-  if (Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim))
-    THROW_EXCEPTION("MmulHelper::mmulMxV: Y array must be vector !");
-  if (X->lengthOf() != N) THROW_EXCEPTION("MmulHelper::mmulMxV: X vector has wrong length !");
-  if (Y != nullptr && Y->lengthOf() != M) THROW_EXCEPTION("MmulHelper::mmulMxV: Y array has wrong length !");
 
+  if (Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim)) {
+    std::string errorMessage;
+    errorMessage = "MmulHelper::mmulMxV: Y array must be vector !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (X->lengthOf() != N) {
+    std::string errorMessage;
+    errorMessage = "MmulHelper::mmulMxV: X vector has wrong length !";
+    errorMessage += " A: " + std::to_string(M) + " x " + std::to_string(N);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (Y != nullptr && Y->lengthOf() != M) {
+    std::string errorMessage;
+    errorMessage = "MmulHelper::mmulMxV: Y array has wrong length ! ";
+    errorMessage += " A: " + std::to_string(M) + " x " + std::to_string(N);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   if (Y == nullptr)
     Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
                     A->getContext());

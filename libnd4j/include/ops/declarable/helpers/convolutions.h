@@ -40,6 +40,97 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
 
 
+  static inline LongType outputHeight(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 3);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 1);
+    }
+  }
+
+  static inline LongType outputWidth(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 4);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 2);
+    }
+  }
+
+  static inline LongType inputWidth(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 3);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 2);
+    }
+  }
+
+  static inline LongType inputHeight(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 2);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 1);
+    }
+  }
+
+  static inline LongType  inChannels(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 1);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 3);
+    }
+  }
+
+  static inline LongType outChannels(const LongType *inputShapeInfo,bool nchw) {
+    if(nchw) {
+      return shape::sizeAt(inputShapeInfo, 1);
+    } else {
+      return shape::sizeAt(inputShapeInfo, 3);
+    }
+  }
+
+  static inline LongType sizeOfOutChannels(const LongType *shapeInfo,LongType weightsFormat) {
+    // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+    if (weightsFormat == 0) {
+      return shape::sizeAt(shapeInfo, 3);
+    } else if (weightsFormat == 1) {
+      return shape::sizeAt(shapeInfo, 0);
+    } else {
+      return shape::sizeAt(shapeInfo, 0);
+    }
+  }
+
+  static inline LongType sizeOfInChannels(const LongType *shapeInfo,LongType weightsFormat) {
+    // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+    if (weightsFormat == 0) {
+      return shape::sizeAt(shapeInfo, 2);
+    } else if (weightsFormat == 1) {
+      return shape::sizeAt(shapeInfo, 1);
+    } else {
+      return shape::sizeAt(shapeInfo, 3);
+    }
+  }
+  static inline LongType sizeOfKw(const LongType *shapeInfo,LongType weightFormat) {
+    // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+    if (weightFormat == 0) {
+      return shape::sizeAt(shapeInfo, 1);
+    } else if (weightFormat == 1) {
+      return shape::sizeAt(shapeInfo, 3);
+    } else {
+      return shape::sizeAt(shapeInfo, 2);
+    }
+  }
+
+  static inline LongType sizeOfKh(const LongType *shapeInfo,LongType weightFormat) {
+    // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+    if (weightFormat == 0) {
+      return shape::sizeAt(shapeInfo, 0);
+    } else if (weightFormat == 1) {
+      return shape::sizeAt(shapeInfo, 2);
+    } else {
+      return shape::sizeAt(shapeInfo, 1);
+    }
+  }
+
   static inline LongType calcOutDimConv(const LongType inputDim, const LongType kernelDim, const LongType stride,
                                         const LongType padding, const LongType dilation, const int paddingMode) {
     LongType outputDim;
@@ -319,6 +410,11 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kH, const LongType kW, const LongType iC,
                                                   const LongType oC) {
+
+    /*
+     *
+     *  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+     * */
     if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});

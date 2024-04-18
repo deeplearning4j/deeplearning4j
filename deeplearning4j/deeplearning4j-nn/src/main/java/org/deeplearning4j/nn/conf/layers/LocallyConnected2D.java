@@ -189,9 +189,6 @@ public class LocallyConnected2D extends SameDiffLayer {
         long ndims = kernel.length;
         long[] spatialDimensions = LongStream.range(0, ndims).toArray();
         boolean nchw = format == CNN2DFormat.NCHW;
-        if (!nchw)
-            layerInput = layerInput.permute(0, 3, 1, 2);
-
 
         SDVariable[] xs = new SDVariable[Math.toIntExact(Arrays.stream(outputSize).reduce(1, (a, b) -> a * b))];
         long[][] outputAxesTicks = new long[(int) ndims][];

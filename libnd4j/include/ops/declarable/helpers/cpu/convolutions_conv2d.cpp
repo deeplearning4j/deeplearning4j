@@ -52,30 +52,44 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   // paddingMode 0-VALID, 1-SAME
   // isNCHW      1-NCHW,  0-NHWC
 
-  LongType bS, iC, iH, iW, oC, oH,
-      oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
-  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
-                                             indIiH, indWiC, indWoC, indWkH, indOoH);
+  LongType bS = input->sizeAt(0);
+  LongType   iC = ConvolutionUtils::inChannels(input->shapeInfo(), isNCHW);
+  LongType   iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW);
+  LongType    iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
+  LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
+  LongType    oH = ConvolutionUtils::outputHeight(output->shapeInfo(), isNCHW);
+  LongType   oW = ConvolutionUtils::outputWidth(output->shapeInfo(),isNCHW);  // batch size, input channels, input height/width, output channels, output height/width;
+
+
+
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
 
-  std::vector<sd::LongType> permutForOutput;
+  std::vector<sd::LongType> permuteForOutput;
 
   if (isNCHW)
-    permutForOutput = {0, 3, 1, 2};  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    permuteForOutput = {0, 3, 1, 2};  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   else
     input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
 
-  std::vector<sd::LongType> wAxes;
-  if (0 == wFormat)
-    wAxes = {0, 1, 2};
-  else if (1 == wFormat)
-    wAxes = {2, 3, 1};
-  else
-    wAxes = {1, 2, 3};
+  std::vector<sd::LongType> aAxes;
+  if (0 == wFormat) {
+    aAxes = {3, 4, 5};
+  } else if (1 == wFormat) {
+    aAxes = {5, 3, 4};
+  } else {
+    aAxes = {4, 5, 3};
+  }
 
+  std::vector<sd::LongType> wAxes;
+  if (0 == wFormat) {
+    wAxes = {0, 1, 2};
+  } else if (1 == wFormat) {
+    wAxes = {2, 3, 1};
+  }  else {
+    wAxes = {1, 2, 3};
+  }
   NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
   NDArray *colP = new NDArray(col.permute({0, 5, 3, 4, 1, 2}));  // {bS, iC, kH, kW, oH, oW}
 
@@ -89,8 +103,8 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   //used for backward pass.
   block.pushIntermediateResult(colP);
   std::vector<sd::LongType> emptyPermute = {};
-  MmulHelper::tensorDot2(&col, weights, &mmulResult, {3, 4, 5}, wAxes,emptyPermute,emptyPermute,
-                        emptyPermute);  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
+  MmulHelper::tensorDot2(&col, weights, &mmulResult,aAxes, wAxes,emptyPermute,emptyPermute,
+                         emptyPermute);  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
 
 
@@ -98,7 +112,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   //----- assign outTemp to output  -----//
   if (isNCHW) {
     mmulResult.reshapei({bS, oH, oW, oC});
-    mmulResult.permutei(permutForOutput);
+    mmulResult.permutei(permuteForOutput);
   }
 
   output->assign(mmulResult);

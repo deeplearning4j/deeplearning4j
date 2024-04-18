@@ -135,7 +135,7 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
                             const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                             std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
                             std::vector<LongType>& permuteCt) {
-
+  
 
   // check whether permutation is required
   NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt));

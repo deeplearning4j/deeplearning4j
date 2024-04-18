@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
@@ -62,16 +63,16 @@ public class ConvolutionUtils {
     private ConvolutionUtils() {
     }
     public static PaddingMode fromConvolutionMode(ConvolutionMode paddingMode) {
-          switch (paddingMode) {
-                case Same:
-                    return PaddingMode.SAME;
-                case Truncate:
-                    return PaddingMode.VALID;
-                case Causal:
-                    return PaddingMode.CAUSAL;
-                default:
-                    throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
-            }
+        switch (paddingMode) {
+            case Same:
+                return PaddingMode.SAME;
+            case Truncate:
+                return PaddingMode.VALID;
+            case Causal:
+                return PaddingMode.CAUSAL;
+            default:
+                throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
+        }
     }
 
 
@@ -129,6 +130,37 @@ public class ConvolutionUtils {
         return new int[]{ defaultValue ,defaultValue};
     }
 
+    public static WeightsFormat getWeightFormat(CNN2DFormat format) {
+        return format == CNN2DFormat.NCHW ? WeightsFormat.OIYX : WeightsFormat.YXIO;
+    }
+
+
+    public static long[] getWeightShape1d(WeightsFormat weightsFormat, long kernelSize, long inputDepth, long outputDepth) {
+        switch(weightsFormat) {
+            case OIYX:
+                return new long[]{outputDepth, inputDepth, kernelSize,1};
+            case YXIO:
+                return new long[]{inputDepth, kernelSize, 1,outputDepth};
+            case OYXI:
+                return new long[]{outputDepth, kernelSize,1, inputDepth};
+            default:
+                throw new IllegalArgumentException("Unknown weights format: " + weightsFormat);
+        }
+    }
+
+    public static long[] getWeightShape(WeightsFormat weightsFormat,long[] kernelSize,long inputDepth,long outputDepth) {
+        switch(weightsFormat) {
+            case OIYX:
+                return new long[]{outputDepth, inputDepth, kernelSize[0], kernelSize[1]};
+            case YXIO:
+                return new long[]{kernelSize[0], kernelSize[1],inputDepth, outputDepth};
+            case OYXI:
+                return new long[]{outputDepth, kernelSize[0], kernelSize[1], inputDepth};
+            default:
+                throw new IllegalArgumentException("Unknown weights format: " + weightsFormat);
+        }
+    }
+
     /**
      * Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
      */
@@ -152,7 +184,7 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static long[] getDeconvolutionOutputSizeLong(INDArray inputData, long[] kernel, long[] strides, long[] padding,
-                                                   ConvolutionMode convolutionMode, long[] dilation, CNN2DFormat format) {
+                                                        ConvolutionMode convolutionMode, long[] dilation, CNN2DFormat format) {
         boolean nchw = format == CNN2DFormat.NCHW;
         int hDim = nchw ? 2 : 1;
         int wDim = nchw ? 3 : 2;
@@ -190,8 +222,8 @@ public class ConvolutionUtils {
      */
     public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                                    ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
-      return Arrays.stream(getDeconvolutionOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
-              convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
+        return Arrays.stream(getDeconvolutionOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
     }
 
 
@@ -210,7 +242,7 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static long[] getDeconvolution3DOutputSizeLong(INDArray inputData, long[] kernel, long[] strides, long[] padding, long[] dilation,
-                                                      ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+                                                          ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
 
         long hIn, wIn, dIn;
         if(dataFormat == Convolution3D.DataFormat.NCDHW){
@@ -254,10 +286,10 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static int[] getDeconvolution3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, int[] dilation,
-                                                      ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+                                                     ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
 
-      return Arrays.stream(getDeconvolution3DOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
-              toLongArray(dilation), convolutionMode, dataFormat)).mapToInt(Math::toIntExact).toArray();
+        return Arrays.stream(getDeconvolution3DOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                toLongArray(dilation), convolutionMode, dataFormat)).mapToInt(Math::toIntExact).toArray();
     }
 
 
@@ -523,9 +555,9 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static int[] getOutputSize(INDArray inputShape, int[] kernel, int[] strides, int[] padding,
-                                       ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
-       return Arrays.stream(getOutputSizeLong(inputShape.shape(), toLongArray(kernel), toLongArray(strides), toLongArray(padding),
-               convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
+                                      ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
+        return Arrays.stream(getOutputSizeLong(inputShape.shape(), toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
     }
 
 
@@ -1265,7 +1297,7 @@ public class ConvolutionUtils {
      * @return Reduced mask
      */
     public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm) {
-      return cnn1dMaskReductionLong(in, kernel, stride, padding, dilation, cm);
+        return cnn1dMaskReductionLong(in, kernel, stride, padding, dilation, cm);
     }
 
     /**

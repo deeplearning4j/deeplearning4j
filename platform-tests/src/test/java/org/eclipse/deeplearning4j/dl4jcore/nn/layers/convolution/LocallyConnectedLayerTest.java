@@ -151,7 +151,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                                             .kernelSize(2, 2).nOut(5).build(), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out");
-                            b.setInputTypes(InputType.convolutional(8, 8, 1));
+                            b.setInputTypes(InputType.convolutional(8, 8, 1,CNN2DFormat.NHWC));
                             in = new INDArray[] { Nd4j.rand(networkDtype, 2, 1, 8, 8) };
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;

@@ -58,22 +58,6 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
 
-  LongType bS, iC, iH, iW, oC, oH,
-      oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
-  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
-                                             indIiH, indWiC, indWoC, indWkH, indOoH);
-
-  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
-  REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
-               "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
-  if (bias)
-  REQUIRE_TRUE(
-      bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-      "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-      oC, bias->rankOf(), bias->lengthOf());
-
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                            wFormat);
 
@@ -95,13 +79,13 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType dW = INT_ARG(7);                                               // dilations width
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
-  int wFormat = block.getIArguments()->size() > 10
-                ? INT_ARG(10)
-                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+  LongType wFormat = block.getIArguments()->size() > 10
+                     ? INT_ARG(10)
+                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
-
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(ConvolutionUtils::sizeOfKh(weightsShapeInfo,wFormat));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(ConvolutionUtils::sizeOfKw(weightsShapeInfo,wFormat));  // filter(kernel) width
+  printf("kH is %lld and kW is %lld\n", kH, kW);
   const int rank = 4;  // 4
 
   REQUIRE_TRUE(inputShapeInfo[0] == rank, 0,
@@ -111,31 +95,40 @@ DECLARE_SHAPE_FN(conv2d) {
                "CUSTOM CONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                weightsShapeInfo[0]);
 
-  LongType indIOioC, indIiH, indWoC(0 == wFormat ? 3 : 0);
-  if (!isNCHW) {
-    indIOioC = 3;
-    indIiH = 1;
-  } else {
-    indIOioC = 1;
-    indIiH = 2;
-  }
+
 
   const LongType bS = inputShapeInfo[1];             // batch size
-  const LongType iH = inputShapeInfo[indIiH + 1];    // input height
-  const LongType iW = inputShapeInfo[indIiH + 2];    // input width
-  const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
-  const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
+  const LongType iH = ConvolutionUtils::inputHeight(inputShapeInfo,isNCHW == 0);    // input height
+  const LongType iW = ConvolutionUtils::inputWidth(inputShapeInfo,isNCHW == 0);    // input width
+  const LongType iC = ConvolutionUtils::inChannels(inputShapeInfo,isNCHW == 0);  // input channels
+  const LongType oC = ConvolutionUtils::sizeOfOutChannels(weightsShapeInfo,wFormat);  // output channels
 
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
-  REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
-               "CUSTOM CONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
-               ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
-               ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
-  if (biasShapeInfo)
-  REQUIRE_TRUE(
-      biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-      "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !",
-      oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+  if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
+    std::string errorMessage;
+    errorMessage += "CUSTOM CONV2D OP: wrong shape of weights array, expected is ";
+    errorMessage += ShapeUtils::shapeAsString(expectedWeightsShape);
+    errorMessage += ", but got ";
+    errorMessage += ShapeUtils::shapeAsString(weightsShapeInfo);
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+
+  if (biasShapeInfo) {
+    if(biasShapeInfo[0] > 2 || oC != shape::length(biasShapeInfo)) {
+      std::string errorMessage;
+      errorMessage += "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, ";
+      errorMessage += std::to_string(oC);
+      errorMessage += ", but got ";
+      errorMessage += std::to_string(biasShapeInfo[0]);
+      errorMessage += ", ";
+      errorMessage += std::to_string(shape::length(biasShapeInfo));
+      errorMessage += " instead !";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+  }
 
   LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
