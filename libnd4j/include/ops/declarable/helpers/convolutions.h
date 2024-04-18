@@ -40,37 +40,29 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
 
 
-  static inline void calcOutSizePool2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW, const LongType sH, const LongType sW,
-                                       LongType pH,  LongType pW, const LongType dH, const LongType dW, const LongType iH,
-                                       const LongType iW, const LongType paddingMode) {
+  static inline LongType calcOutDimConv(const LongType inputDim, const LongType kernelDim, const LongType stride,
+                                        const LongType padding, const LongType dilation, const int paddingMode) {
+    LongType outputDim;
+    const LongType dilatedKernelDim = (kernelDim - 1) * dilation + 1;
+
     if (paddingMode == 0) {  // valid
-      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+      outputDim = (inputDim + 2 * padding - dilatedKernelDim) / stride + 1;
     } else if (paddingMode == 1) {  // same
-      oH = (iH + sH - 1) / sH;
-      oW = (iW + sW - 1) / sW;
-
-      // Calculate the padding needed to achieve the same output size
-      LongType paddingNeededH = ((oH - 1) * sH + (kH - 1) * dH + 1 - iH) / 2;
-      LongType paddingNeededW = ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2;
-
-      // Update the padding values
-      pH = paddingNeededH;
-      pW = paddingNeededW;
-
-      // Recalculate the output height and width with the updated padding
-      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+      outputDim = (inputDim + stride - 1) / stride;
     } else {  // causal
-      // Update the padding values for causal convolution
-      pH = (kH - 1) * dH;
-      pW = (kW - 1) * dW;
-
-      // Calculate the output height and width with the updated padding
-      oH = (iH + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
-      oW = (iW + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+      const LongType causalPadding = (kernelDim - 1) * dilation;
+      outputDim = (inputDim + 2 * causalPadding - dilatedKernelDim) / stride + 1;
     }
 
+    return outputDim;
+  }
+
+  static inline void calcOutSizePool2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW,
+                                       const LongType sH, const LongType sW, const LongType pH, const LongType pW,
+                                       const LongType dH, const LongType dW, const LongType iH, const LongType iW,
+                                       const int paddingMode) {
+    oH = calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
+    oW = calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
 
   }
 
@@ -188,19 +180,29 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   // calculation of output height and width in 2D deconvolution procedure
-  static inline void calcOutSizeDeconv2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW, const LongType sH, const LongType sW,
-                                         LongType pH,  LongType pW, const LongType dH, const LongType dW, const LongType iH,
-                                         const LongType iW, const int paddingMode) {
-    if (paddingMode) {
-      oH = sH * iH;
-      oW = sW * iW;
-    } else {
-      const LongType ekH = (kH - 1) * dH + 1;
-      const int ekW = (kW - 1) * dW + 1;
+  static inline LongType calcOutDimDeconv(const LongType inputDim, const LongType kernelDim, const LongType stride,
+                                          const LongType padding, const LongType dilation, const int paddingMode) {
+    LongType outputDim;
+    const LongType dilatedKernelDim = (kernelDim - 1) * dilation + 1;
 
-      oH = sH * (iH - 1) + ekH - 2 * pH;
-      oW = sW * (iW - 1) + ekW - 2 * pW;
+    if (paddingMode == 0) {  // valid
+      outputDim = stride * (inputDim - 1) + dilatedKernelDim - 2 * padding;
+    } else if (paddingMode == 1) {  // same
+      outputDim = stride * inputDim;
+    } else {  // causal
+      const LongType causalPadding = (kernelDim - 1) * dilation;
+      outputDim = stride * (inputDim - 1) + dilatedKernelDim - 2 * causalPadding;
     }
+
+    return outputDim;
+  }
+
+  static inline void calcOutSizeDeconv2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW,
+                                         const LongType sH, const LongType sW, const LongType pH, const LongType pW,
+                                         const LongType dH, const LongType dW, const LongType iH, const LongType iW,
+                                         const int paddingMode) {
+    oH = calcOutDimDeconv(iH, kH, sH, pH, dH, paddingMode);
+    oW = calcOutDimDeconv(iW, kW, sW, pW, dW, paddingMode);
   }
 
   // calculation of output height and width in 3D deconvolution procedure

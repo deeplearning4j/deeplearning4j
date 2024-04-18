@@ -26,7 +26,9 @@
 
 namespace sd {
 InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) {
-  _dataBuffer = std::make_shared<DataBuffer>(*dataBuffer.getDataBuffer().get());
+  if(dataBuffer._dataBuffer->getDataType() == DataType::UNKNOWN)
+        THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer has unknown data type");
+  _dataBuffer = dataBuffer.dataBuffer();
 
   // offset is always absolute to the original buffer
   _offset = offset;
@@ -37,18 +39,25 @@ InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t len
   }
 }
 
-InteropDataBuffer::InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer) { _dataBuffer = std::make_shared<DataBuffer>(*databuffer.get()); }
+InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) { _dataBuffer = databuffer; }
 
 InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) {
   if (lenInBytes == 0) {
-    _dataBuffer = std::make_shared<DataBuffer>();
-    _dataBuffer->setDataType(dtype);
+    _dataBuffer = nullptr;
+    this->_dataType = dtype;
 
   } else {
     //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
-    _dataBuffer = std::make_shared<DataBuffer>(lenInBytes, dtype, nullptr, allocateBoth);
+    _dataBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
 
   }
+}
+
+
+void InteropDataBuffer::printDbAllocationTrace() {
+  if(_dataBuffer == nullptr)
+    return;
+  _dataBuffer->printAllocationTrace();
 }
 
 void InteropDataBuffer::markOwner(bool owner) {
@@ -57,10 +66,10 @@ void InteropDataBuffer::markOwner(bool owner) {
   this->_dataBuffer->_isOwnerSpecial = owner;
 }
 
-std::shared_ptr<DataBuffer> InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }
+DataBuffer * InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }
 
-std::shared_ptr<DataBuffer> InteropDataBuffer::dataBuffer() {
-  if(_dataBuffer == nullptr || _dataBuffer.get() == nullptr)
+DataBuffer * InteropDataBuffer::dataBuffer() {
+  if(_dataBuffer == nullptr || _dataBuffer == nullptr)
     return nullptr;
   return _dataBuffer;
 }
@@ -101,8 +110,8 @@ void InteropDataBuffer::setOffset(uint64_t offset) { _offset = offset; }
 
 int InteropDataBuffer::deviceId() const { return _dataBuffer->deviceId(); }
 
-int InteropDataBuffer::useCount() const{
-  return _dataBuffer.use_count();
+int InteropDataBuffer::useCount() const {
+  return 1;
 }
 
 void InteropDataBuffer::registerSpecialUse(const std::vector<const InteropDataBuffer*>& writeList,

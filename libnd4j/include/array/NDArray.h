@@ -158,7 +158,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  pointer on DataBuffer buffers in cpu/device memory
    */
-  std::shared_ptr<DataBuffer> _buffer = std::make_shared<DataBuffer>();
+  DataBuffer *_buffer = nullptr;
 
   /**
    *  buffers offset, it is the same both for cpu and device buffers
@@ -199,7 +199,7 @@ class SD_LIB_EXPORT NDArray {
   int _deviceId = AffinityManager::currentDeviceId();
 
   template <typename T>
-  std::string toStringValue(T value);
+  std::string*  toStringValue(T value);
 
  public:
   NDArray() = default;
@@ -210,13 +210,13 @@ class SD_LIB_EXPORT NDArray {
    *  do not allocate memory, memory for array is passed from outside
    */
 #ifndef __JAVACPP_HACK__
-  NDArray(std::shared_ptr<DataBuffer> buffer,  ShapeDescriptor *descriptor,
+  NDArray(DataBuffer *  buffer,  ShapeDescriptor *descriptor,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(std::shared_ptr<DataBuffer> buffer, LongType *shapeInfo,
+  NDArray(DataBuffer *  buffer, LongType *shapeInfo,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(std::shared_ptr<DataBuffer> buffer, char order, const std::vector<LongType> &shape,
+  NDArray(DataBuffer *  buffer, char order, const std::vector<LongType> &shape,
           LaunchContext *context = LaunchContext::defaultContext());
 
   /**
@@ -492,8 +492,8 @@ class SD_LIB_EXPORT NDArray {
   LaunchContext *getContext() const { return _context; }
 
 #ifndef __JAVACPP_HACK__
-  SD_INLINE std::shared_ptr<DataBuffer> getDataBuffer() const;
-  SD_INLINE std::shared_ptr<DataBuffer> dataBuffer();
+  SD_INLINE DataBuffer * getDataBuffer() const;
+  SD_INLINE DataBuffer *  dataBuffer();
 #endif
 
   /**
@@ -627,8 +627,8 @@ class SD_LIB_EXPORT NDArray {
    */
   void printIndexedBuffer(const char *msg = nullptr, LongType limit = -1) const;
 
-  std::string asIndexedString(LongType limit = -1);
-  std::string asString(LongType limit = -1);
+  std::string * asIndexedString(LongType limit = -1);
+  std::string * asString(LongType limit = -1);
 
   /**
    *  this method assigns values of given array to this one
@@ -1611,7 +1611,7 @@ class SD_LIB_EXPORT NDArray {
   NDArray(void *buffer, const char order, const std::vector<LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
 #ifndef __JAVACPP_HACK__
-  NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<LongType> &shape, DataType dtype,
+  NDArray(DataBuffer *  buffer, const char order, const std::vector<LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
 #endif
 
@@ -2019,10 +2019,10 @@ T NDArray::t(const LongType i, const LongType j, const LongType k, const LongTyp
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
-std::shared_ptr<DataBuffer> NDArray::getDataBuffer() const { return _buffer; }
+DataBuffer * NDArray::getDataBuffer() const { return _buffer; }
 
 ////////////////////////////////////////////////////////////////////////
-std::shared_ptr<DataBuffer> NDArray::dataBuffer() { return _buffer; }
+DataBuffer * NDArray::dataBuffer() { return _buffer; }
 #endif
 
 ////////////////////////////////////////////////////////////////////////

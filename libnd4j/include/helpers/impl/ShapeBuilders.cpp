@@ -30,7 +30,7 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
   auto ret = new LongType[bufferLen];
   ret[0] = descriptor->rank();
   if(descriptor->rank() > 0) {
-    shape::setShape(ret, descriptor->shape_strides().data());
+    shape::setShape(ret, descriptor->shape_strides());
     shape::setStrideConst(ret, descriptor->stridesPtr());
     shape::setOrder(ret, descriptor->order());
   } else {

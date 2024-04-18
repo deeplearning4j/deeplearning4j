@@ -44,7 +44,7 @@ import java.util.Map;
 public class Upsampling2D extends BaseUpsamplingLayer {
 
     @JsonDeserialize(using = LegacyIntArrayDeserializer.class)
-    protected int[] size;
+    protected long[] size;
     protected CNN2DFormat format = CNN2DFormat.NCHW;
 
     protected Upsampling2D(UpsamplingBuilder builder) {
@@ -165,7 +165,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
          *
          * @param size upsampling size in height and width dimensions
          */
-        public Builder size(int[] size) {
+        public Builder size(long[] size) {
             this.setSize(size);
             return this;
         }
@@ -177,8 +177,8 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int... size) {
-            this.size = ValidationUtils.validate2NonNegative(size, false, "size");
+        public void setSize(long... size) {
+            this.size = ValidationUtils.validate2NonNegativeLong(size, false, "size");
         }
     }
 

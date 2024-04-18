@@ -60,9 +60,13 @@
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
         <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
          FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
-         FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow
+         FOR ADDRESS USE: address,float-divide-by-zero,float-cast-overflow
+          FOR UNDEFINED USE: undefined,float-divide-by-zero,float-cast-overflow
+         Note that address and undefined can't be used at the same time.
+         An address memory overlap will occur otherwise.
+         See: https://github.com/google/sanitizers/issues/856
          -->
-        <libnd4j.sanitizers>thread,undefined,float-divide-by-zero,float-cast-overflow</libnd4j.sanitizers>
+        <libnd4j.sanitizers>address,</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>

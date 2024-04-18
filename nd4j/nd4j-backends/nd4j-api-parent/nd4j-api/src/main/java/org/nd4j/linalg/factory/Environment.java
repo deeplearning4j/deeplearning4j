@@ -35,6 +35,7 @@ package org.nd4j.linalg.factory;
 public interface Environment {
 
 
+
     /**
      * Set this to true to
      * trigger logging of native c++ ndarray constructors.

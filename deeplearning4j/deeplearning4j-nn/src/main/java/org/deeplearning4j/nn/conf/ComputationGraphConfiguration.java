@@ -549,7 +549,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * layer types such as convolutional -> dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
      *                                  activation sizes
-     * @param overrideInputs            whether to forcibly over ride inputs when
+     * @param overrideInputs            whether to forcibly override inputs when
      *                                  setting inputs
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
@@ -1233,7 +1233,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
 
-        private ComputationGraphConfiguration buildConfig(){
+        private ComputationGraphConfiguration buildConfig() {
             //Validate BackpropType setting
             if((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT){
                 log.warn("Truncated backpropagation through time lengths have been configured with values " + tbpttFwdLength
@@ -1312,7 +1312,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig) {
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
-                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
+                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()) {
                     GraphVertex gv = e.getValue();
                     Layer l = (gv instanceof LayerVertex ? ((LayerVertex)gv).getLayerConf().getLayer() : null);
                     if(gv instanceof LastTimeStepVertex || (l != null && (l instanceof LastTimeStep || l instanceof GlobalPoolingLayer))){

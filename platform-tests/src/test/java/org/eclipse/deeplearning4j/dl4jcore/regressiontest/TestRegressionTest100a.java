@@ -141,8 +141,8 @@ public class TestRegressionTest100a extends BaseDL4JTest {
         assertEquals(new ActivationIdentity(), cl.getActivationFn());
         assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
         assertEquals(new WeightInitXavier(), cl.getWeightInitFn());
-        assertArrayEquals(new int[]{1,1}, cl.getKernelSize());
-        assertArrayEquals(new int[]{1,1}, cl.getKernelSize());
+        assertArrayEquals(new long[]{1,1}, cl.getKernelSize());
+        assertArrayEquals(new long[]{1,1}, cl.getKernelSize());
 
         INDArray outExp;
         File f2 = Resources.asFile("regression_testing/100a/HouseNumberDetection_Output_100a.bin");

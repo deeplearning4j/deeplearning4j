@@ -102,9 +102,9 @@ public class NDArrayMetaData implements Serializable {
         return NDArrayMetaData.builder()
                 .workspaceUseMetaData(WorkspaceUseMetaData.from(arr.getWorkspace()))
                 .allocationTrace(arr.allocationTrace())
-                .data(Nd4j.getEnvironment().isTruncateNDArrayLogStrings() ? arr.toString() : arr.toStringFull())
+                .data(arr.isEmpty() ? "[]" : Nd4j.getEnvironment().isTruncateNDArrayLogStrings() ? arr.toString() : arr.toStringFull())
                 .dataType(arr.dataType())
-                .dataBuffer(arr.data().toString())
+                .dataBuffer(arr.isEmpty() ? "[]" : arr.data().toString())
                 .jvmShapeInfo(arr.shapeInfoJava())
                 .id(arr.getId())
                 .build();

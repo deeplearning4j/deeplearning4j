@@ -58,7 +58,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
 
   static ConstantShapeHelper& getInstance();
 
-  ~ConstantShapeHelper() {}
+  ~ConstantShapeHelper();
   ConstantShapeBuffer* bufferForShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
   ConstantShapeBuffer* bufferForShapeInfo(ShapeDescriptor *descriptor);
   ConstantShapeBuffer* bufferForShapeInfo(const LongType* shapeInfo);
@@ -111,7 +111,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
 
     return total;
   }
-  ConstantShapeBuffer* storeAndWrapBuffer(LongType* buffer, ShapeDescriptor* descriptor);
+  ConstantShapeBuffer* storeAndWrapBuffer(ShapeDescriptor* descriptor);
   const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
 };
 }  // namespace sd

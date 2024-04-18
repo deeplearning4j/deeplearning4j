@@ -28,6 +28,13 @@
 #include <helpers/logger.h>
 namespace sd {
 
+ConstantShapeHelper::~ConstantShapeHelper() {
+  for (int e = 0; e < 1; e++) {
+    for (auto v:_cache[e]) {
+      delete v.second;
+    }
+  }
+}
 
 
 ConstantShapeHelper::ConstantShapeHelper() {
@@ -44,8 +51,8 @@ const sd::LongType * ConstantShapeHelper::emptyShapeInfoWithShape(const sd::Data
   auto descriptor = ShapeBuilders::createShapeInfo(dataType,'c', shape, nullptr);
   ArrayOptions::setPropertyBit(descriptor, ARRAY_EMPTY);
   auto existing = createFromExisting(descriptor);
- //note we used to delete descriptors here. Some end up being used
- // in the constant shape helper and should not be deleted.
+  //note we used to delete descriptors here. Some end up being used
+  // in the constant shape helper and should not be deleted.
   return existing;
 }
 
@@ -72,13 +79,14 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::DataType 
   return ret;
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(LongType* buffer, ShapeDescriptor* descriptor) {
+ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* descriptor) {
   int deviceId = AffinityManager::currentDeviceId();
-
   std::lock_guard<std::mutex> lock(_mutex);
-
   if(descriptor == nullptr)
-    descriptor = new ShapeDescriptor(buffer);
+    THROW_EXCEPTION("Unable to create and store a shape buffer with null descriptor.");
+
+  auto buffer = descriptor->toShapeInfo();
+
 
   if(descriptor->dataType() == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
@@ -96,18 +104,20 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(LongType* buffer, S
 
   if (_cache[deviceId].count(*descriptor) == 0) {
     auto hPtr =
-        std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
+        std::make_shared<PointerWrapper>(buffer, std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
     _cache[deviceId][*descriptor] = constantShapeBuffer2;
     return constantShapeBuffer2;
   } else {
+    //delete the descriptor if we're not going to store it
+    delete descriptor;
     return _cache[deviceId].at(*descriptor);
   }
 }
 
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *descriptor) {
-  return storeAndWrapBuffer(descriptor->toShapeInfo(), descriptor);
+  return storeAndWrapBuffer(descriptor);
 }
 
 
@@ -214,7 +224,7 @@ const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType*
 ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
                                                                                  const sd::LongType* minShapeInfo,
                                                                                  sd::memory::Workspace* workspace,
-    const std::vector<LongType>& dimensions) {
+                                                                                 const std::vector<LongType>& dimensions) {
   sd::LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), sd::LongType);
 

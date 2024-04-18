@@ -67,7 +67,7 @@ EOF
 
     # Check if "--suppressions" already exists in TEST_RUNNER_PREFIX
     if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
-        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
     fi
 
     JAVA_CALL="${JAVA_CALL} -Djava.compiler=NONE"

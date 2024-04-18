@@ -23,7 +23,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
-import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.array.event.dict.*;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
@@ -53,23 +53,6 @@ public class NDArrayEvent implements Serializable {
     private StackTraceElement pointOfOrigin;
     private Set<StackTraceElement> parentPointOfInvocation;
 
-    public final static List<StackTraceQuery> invalidPointOfInvocationClasses = StackTraceQuery.ofClassPatterns(
-            false,
-            "org.nd4j.linalg.factory.Nd4j",
-            "org.nd4j.linalg.api.ndarray.BaseNDArray",
-            "org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory",
-            "org.nd4j.linalg.cpu.nativecpu.NDArray",
-            "org.nd4j.linalg.jcublas.JCublasNDArray",
-            "org.nd4j.linalg.jcublas.JCublasNDArrayFactory",
-            "org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner",
-            "org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner",
-            "org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner",
-            "org.nd4j.linalg.workspace.BaseWorkspaceMgr",
-            "java.lang.Thread",
-            "org.nd4j.linalg.factory.BaseNDArrayFactory"
-    );
-    //regexes for package names that we exclude
-    public static List<StackTraceQuery> invalidPointOfInvocationPatterns = queryForProperties();
     @Builder.Default
     private long eventId = -1;
 
@@ -87,9 +70,9 @@ public class NDArrayEvent implements Serializable {
         this.dataAtEvent = dataAtEvent;
         this.parentDataAtEvent = parentDataAtEvent;
         this.eventTimeStamp = eventTimeStamp;
-        this.pointOfInvocation = pointOfInvocation(stackTrace);
-        this.pointOfOrigin = pointOfOrigin(stackTrace);
-        this.parentPointOfInvocation = parentOfInvocation(stackTrace,this.pointOfOrigin,this.pointOfInvocation);
+        this.pointOfInvocation = StackTraceUtils.pointOfInvocation(stackTrace);
+        this.pointOfOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
+        this.parentPointOfInvocation = StackTraceUtils.parentOfInvocation(stackTrace,this.pointOfOrigin,this.pointOfInvocation);
         this.eventId = arrayCounter.incrementAndGet();
         //store the stack trace for easier lookup later
         StackTraceElementCache.storeStackTrace(stackTrace);
@@ -238,67 +221,6 @@ public class NDArrayEvent implements Serializable {
     }
 
 
-
-    /**
-     * Parent of invocation is an element of the stack trace
-     * with a different class altogether.
-     * The goal is to be able to segment what is calling a method within the same class.
-     * @param elements the elements to get the parent of invocation for
-     * @return
-     */
-    public static Set<StackTraceElement> parentOfInvocation(StackTraceElement[] elements,StackTraceElement pointOfOrigin,StackTraceElement pointOfInvocation) {
-        if(elements == null || elements.length < 1)
-            return null;
-
-        int pointOfInvocationIndex = -1;
-        for(int i = 0; i < elements.length; i++) {
-            if(elements[i].equals(pointOfInvocation)) {
-                pointOfInvocationIndex = i;
-                break;
-            }
-        }
-
-        if(pointOfInvocationIndex <= 0) {
-            return new HashSet<>(Arrays.asList(elements));
-        }
-
-        if(pointOfInvocationIndex < 0)
-            throw new IllegalArgumentException("Invalid stack trace. Point of invocation not found!");
-        int pointOfOriginIndex = -1;
-        Set<StackTraceElement> ret = new HashSet<>();
-        //loop backwards to find the first non nd4j class
-        for(int i = pointOfInvocationIndex + 1; i < elements.length; i++) {
-            StackTraceElement element = elements[i];
-            if(!StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationClasses,elements[i],i)
-                    && !StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationPatterns,elements[i],i) &&
-                    !element.getClassName().equals(pointOfOrigin.getClassName())  && !element.getClassName().equals(pointOfInvocation.getClassName())) {
-                pointOfOriginIndex = i;
-                break;
-            }
-        }
-
-        if(pointOfOriginIndex < 0) {
-            return new HashSet<>(Arrays.asList(elements));
-        }
-        //this is  what we'll call the "interesting parents", we need to index
-        //by multiple parents in order to capture the different parts of the stack tree that could be applicable.
-        for(int i = pointOfOriginIndex; i < elements.length; i++) {
-            StackTraceElement element = elements[i];
-
-            if(StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationClasses,elements[i],i)
-                    || StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationPatterns,elements[i],i) ||
-                    element.getClassName().equals(pointOfOrigin.getClassName())  || element.getClassName().equals(pointOfInvocation.getClassName())) {
-
-                break;
-            }
-
-            ret.add(elements[i]);
-        }
-
-        return ret;
-    }
-
-
     /**
      * Returns a map of event differences for a given stack frame.
      *
@@ -358,63 +280,6 @@ public class NDArrayEvent implements Serializable {
         return activateHelper;
     }
 
-
-    /**
-     * Point of origin is the first non nd4j class in the stack trace.
-     * @param elements the elements to get the point of origin for
-     * @return
-     */
-    public static StackTraceElement pointOfOrigin(StackTraceElement[] elements) {
-        if(elements == null || elements.length < 1)
-            return null;
-
-        int pointOfOriginIndex = 0;
-        //loop backwards to find the first non nd4j class
-        for(int i = elements.length - 1; i >= 0; i--) {
-            if(!StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationClasses,elements[i],i)
-                    && !StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationPatterns,elements[i],i)) {
-                pointOfOriginIndex = i;
-                break;
-            }
-        }
-
-        return elements[pointOfOriginIndex];
-    }
-
-    /**
-     *
-     * @param elements
-     * @return
-     */
-    public static StackTraceElement pointOfInvocation(StackTraceElement[] elements) {
-        if(elements == null || elements.length < 1)
-            return null;
-
-        int pointOfInvocationIndex = 0;
-        for(int i = 0; i < elements.length; i++) {
-            if(!StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationClasses,elements[i],i)
-                    && !StackTraceQuery.stackTraceElementMatchesCriteria(invalidPointOfInvocationPatterns,elements[i],i)) {
-                pointOfInvocationIndex = i;
-                break;
-            }
-        }
-
-        return elements[pointOfInvocationIndex];
-    }
-
-
-    private static List<StackTraceQuery> queryForProperties() {
-        if(System.getProperties().containsKey(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS)) {
-            return StackTraceQuery.ofClassPatterns(true,
-                    System.getProperty(ND4JSystemProperties.ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS).split(","));
-        }
-        return StackTraceQuery.ofClassPatterns(true,
-                "org.junit.*",
-                "com.intellij.*",
-                "java.*",
-                "jdk.*"
-        );
-    }
 
     @Override
     public String toString() {

@@ -56,7 +56,7 @@ class SD_LIB_EXPORT StringUtils {
 
   static void convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<LongType>& offsets, DataType inType, DataType outType);
 
-  static std::shared_ptr<DataBuffer> createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context);
+  static DataBuffer *  createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context);
 
   static NDArray createStringNDArray(const NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
 

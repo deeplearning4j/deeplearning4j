@@ -170,13 +170,6 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
   }
 
 
-  if (aP != aPR) delete aPR;
-  if (bP != bPR) delete bPR;
-  if (a != aP) delete aP;
-  if (b != bP) delete bP;
-
-  if (cP != cPR) delete cPR;
-  if (c != cP) delete cP;
 }
 
 
@@ -451,19 +444,15 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
     mmul(xT, yT, zT, alpha, beta);
 
-    if(xT != x) {
-      delete xT;
-    }
 
-    if(yT != y) {
-      delete yT;
-    }
 
   } else {  // rest cases -  batched mmul
 
     const int batchRank = xRank - 2;
-    std::vector<LongType> dimsToExclude(batchRank);
-    for (int i = 0; i < batchRank; ++i) dimsToExclude[i] = i;
+    std::vector<LongType> dimsToExclude;
+    for (int i = 0; i < batchRank; ++i) {
+      dimsToExclude.push_back(i);
+    }
 
     const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
 

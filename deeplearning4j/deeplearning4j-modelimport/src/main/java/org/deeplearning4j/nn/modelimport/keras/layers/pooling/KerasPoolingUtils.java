@@ -55,6 +55,62 @@ public class KerasPoolingUtils {
         return poolingType;
     }
 
+
+
+    /**
+     * Map Keras pooling layers to DL4J pooling dimensions.
+     *
+     * @param className name of the Keras pooling class
+     * @param dimOrder the dimension order to determine which pooling dimensions to use
+     * @return pooling dimensions as int array
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public static long[] mapGlobalPoolingDimensionsLong(String className, KerasLayerConfiguration conf, KerasLayer.DimOrder dimOrder)
+            throws UnsupportedKerasConfigurationException {
+        long[] dimensions = null;
+        if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D())) {
+            switch(dimOrder) {
+                case NONE:
+                case TENSORFLOW:
+                default:
+                    dimensions = new long[]{1};
+                    break;
+                case THEANO:
+                    dimensions = new long[]{2};
+                    break;
+            }
+        } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
+            switch(dimOrder) {
+                case NONE:
+                case TENSORFLOW:
+                default:
+                    dimensions = new long[]{1,2};
+                    break;
+                case THEANO:
+                    dimensions = new long[]{2, 3};
+                    break;
+            }
+        } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D()) ||
+                className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_3D())) {
+            switch(dimOrder) {
+                case NONE:
+                case TENSORFLOW:
+                default:
+                    dimensions = new long[]{1,2,3};
+                    break;
+                case THEANO:
+                    dimensions = new long[]{2, 3, 4};
+                    break;
+            }
+        }  else {
+            throw new UnsupportedKerasConfigurationException("Unsupported Keras pooling layer " + className);
+        }
+
+        return dimensions;
+    }
+
     /**
      * Map Keras pooling layers to DL4J pooling dimensions.
      *

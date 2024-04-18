@@ -99,14 +99,9 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
 
 void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW, const LongType sH,
             const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
-#if defined(HAVE_VEDA)
-    NDArray::preparePrimaryUse({&col}, {&im});
-#endif
+
   BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal),
                         SD_FLOAT_TYPES);
-#if defined(HAVE_VEDA)
-    NDArray::registerPrimaryUse({&col}, {&im});
-#endif
 }
 
 }  // namespace helpers

@@ -321,7 +321,6 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
   updateStridesAndType(newShapeInfo, shapeInfo, order);
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
-  RELEASE(newShapeInfo, workspace);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   return ret;
 }
@@ -716,18 +715,18 @@ std::string ShapeUtils::shapeAsString(const LongType* shapeInfo) {
 std::string ShapeUtils::shapeInfoAsString(const LongType* shapeInfo) {
   if (!shapeInfo) THROW_EXCEPTION("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
 
-  std::string result;
+  std::string *result = new std::string();
 
   LongType len = shape::shapeInfoLength(shapeInfo[0]);
 
-  result.append("[");
+  result->append("[");
   for (LongType e = 0; e < len; e++) {
-    result += flatbuffers::NumToString(shapeInfo[e]);
-    if (e < len - 1) result.append(", ");
+    result->append(flatbuffers::NumToString(shapeInfo[e]));
+    if (e < len - 1) result->append(", ");
   }
-  result.append("]");
+  result->append("]");
 
-  return result;
+  return *result;
 }
 
 std::string ShapeUtils::shapeAsString(const LongType rank, const LongType* shapeInfo) {

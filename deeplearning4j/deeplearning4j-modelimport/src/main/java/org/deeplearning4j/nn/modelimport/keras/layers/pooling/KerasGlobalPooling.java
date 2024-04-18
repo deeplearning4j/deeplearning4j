@@ -43,7 +43,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = false)
 public class KerasGlobalPooling extends KerasLayer {
 
-    private final int[] dimensions;
+    private final long[] dimensions;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -68,7 +68,7 @@ public class KerasGlobalPooling extends KerasLayer {
     public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        this.dimensions = KerasPoolingUtils.mapGlobalPoolingDimensions(this.className, conf, dimOrder);
+        this.dimensions = KerasPoolingUtils.mapGlobalPoolingDimensionsLong(this.className, conf, dimOrder);
         GlobalPoolingLayer.Builder builder =
                 new GlobalPoolingLayer.Builder(KerasPoolingUtils.mapPoolingType(this.className, conf))
                         .poolingDimensions(dimensions)

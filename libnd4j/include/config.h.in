@@ -9,9 +9,7 @@
 
 #cmakedefine SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
 
-#if defined(HAVE_VEDA)
-#define VEDA_VEDNN_LIBRARY "lib" SD_LIBRARY_NAME "_device.vso"
-#endif
+
 
 #cmakedefine HAVE_ARMCOMPUTE
 

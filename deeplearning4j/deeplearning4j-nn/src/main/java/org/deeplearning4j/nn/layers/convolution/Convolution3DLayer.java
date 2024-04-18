@@ -73,17 +73,17 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         int outEpsChannels = (int) layerConf().getNIn();
 
-        int[] dilation = layerConfig.getDilation();
-        int[] kernel = layerConfig.getKernelSize();
-        int[] strides = layerConfig.getStride();
-        int[] pad;
-        int[] outSize;
+        long[] dilation = layerConfig.getDilation();
+        long[] kernel = layerConfig.getKernelSize();
+        long[] strides = layerConfig.getStride();
+        long[] pad;
+        long[] outSize;
 
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = Convolution3DUtils.get3DOutputSize(
+            outSize = Convolution3DUtils.get3DOutputSizeLong(
                     input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
-            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(
-                    outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
+            pad = Convolution3DUtils.get3DSameModeTopLeftPaddingLong(
+                    outSize, new long[]{inD, inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
         }
@@ -98,7 +98,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
             outEpsilon = outEpsilon.reshape('c', miniBatch, inD, inH, inW, outEpsChannels);
 
 
-        int[] intArgs = new int[]{
+        long[] intArgs = new long[]{
                 kernel[0], kernel[1], kernel[2],
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
@@ -214,25 +214,25 @@ public class Convolution3DLayer extends ConvolutionLayer {
         }
 
 
-        int[] kernel = layerConfig.getKernelSize();
-        int[] dilation = layerConfig.getDilation();
-        int[] strides = layerConfig.getStride();
+        long[] kernel = layerConfig.getKernelSize();
+        long[] dilation = layerConfig.getDilation();
+        long[] strides = layerConfig.getStride();
 
-        int[] pad;
-        int[] outSize;
+        long[] pad;
+        long[] outSize;
         if (mode == ConvolutionMode.Same) {
-            outSize = Convolution3DUtils.get3DOutputSize(
+            outSize = Convolution3DUtils.get3DOutputSizeLong(
                     input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
-            int[] inSize = {inD, inH, inW};
-            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize,
+            long[] inSize = {inD, inH, inW};
+            pad = Convolution3DUtils.get3DSameModeTopLeftPaddingLong(outSize,
                     inSize, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = Convolution3DUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
+            outSize = Convolution3DUtils.get3DOutputSizeLong(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
-        int outD = outSize[0];
-        int outH = outSize[1];
-        int outW = outSize[2];
+        long outD = outSize[0];
+        long outH = outSize[1];
+        long outW = outSize[2];
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, weights.dataType(),miniBatch*outWeightChannels*outD*outH*outW);
         if (isNCDHW)
@@ -240,7 +240,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         else
             output = output.reshape('c', miniBatch, outD, outH, outW, outWeightChannels);
 
-        int[] intArgs = new int[]{
+        long[] intArgs = new long[]{
                 kernel[0], kernel[1], kernel[2],
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],

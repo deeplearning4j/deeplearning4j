@@ -66,10 +66,10 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
         Convolution3D.DataFormat df = layerConf().getDataFormat();
         ConvolutionMode cm = layerConf().getConvolutionMode();
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
-        int[] pad = layerConf().getPadding();
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
+        long[] pad = layerConf().getPadding();
 
         INDArray biasGradView = gradientViews.get(DeconvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(DeconvolutionParamInitializer.WEIGHT_KEY);
@@ -78,7 +78,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
         Integer sameMode = (layerConf().getConvolutionMode() == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = {
+        long[] args = {
                 kernel[0], kernel[1], kernel[2], strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode,
                 df == Convolution3D.DataFormat.NCDHW ? 0 : 1
@@ -145,20 +145,20 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
                     + layerId());
         }
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
 
-        int[] pad;
+        long[] pad;
         ConvolutionMode cm = layerConf().getConvolutionMode();
         long[] outSize;
-        int[] inSize = df == Convolution3D.DataFormat.NCDHW ? new int[]{(int)input.size(2), (int)input.size(3), (int)input.size(4)} : new int[]{(int)input.size(1), (int)input.size(2), (int)input.size(3)};
+        long[] inSize = df == Convolution3D.DataFormat.NCDHW ? new long[]{(int)input.size(2), (int)input.size(3), (int)input.size(4)} : new long[]{(int)input.size(1), (int)input.size(2), (int)input.size(3)};
         if (cm == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getDeconvolution3DOutputSize(input, kernel, strides, null, dilation, cm, layerConf().getDataFormat()); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(ArrayUtil.toInts(outSize), inSize, kernel, strides, dilation );
+            outSize = ConvolutionUtils.getDeconvolution3DOutputSizeLong(input, kernel, strides, null, dilation, cm, layerConf().getDataFormat()); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, inSize, kernel, strides, dilation );
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getDeconvolution3DOutputSize(input, kernel, strides, pad, dilation, cm, layerConf().getDataFormat()); //Also performs validation
+            outSize = ConvolutionUtils.getDeconvolution3DOutputSizeLong(input, kernel, strides, pad, dilation, cm, layerConf().getDataFormat()); //Also performs validation
         }
 
         long outH = outSize[0];
@@ -172,7 +172,7 @@ public class Deconvolution3DLayer extends BaseLayer<Deconvolution3D> {
 
         int sameMode = (cm == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = {
+        long[] args = {
                 kernel[0], kernel[1], kernel[2], strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode,
                 df == Convolution3D.DataFormat.NCDHW ? 0 : 1

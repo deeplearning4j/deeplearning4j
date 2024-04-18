@@ -45,7 +45,7 @@ class SD_LIB_EXPORT DataBuffer {
   std::atomic<int> _deviceId;
   std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
-#if defined(__CUDABLAS__) || defined(HAVE_VEDA)
+#if defined(__CUDABLAS__)
   mutable std::atomic<LongType> _counter;
   mutable std::atomic<LongType> _writePrimary;
   mutable std::atomic<LongType> _writeSpecial;
@@ -115,6 +115,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   void *primary();
   void *special();
+  void printAllocationTrace();
 
   void allocatePrimary();
   void allocateSpecial();
@@ -151,13 +152,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  void** getPtrToSpecial() const;
-  void allocVeda();
-  void asyncToVeda();
-#endif
-#endif
+
 
   void  showBufferLimited();
   //for Debug purposes

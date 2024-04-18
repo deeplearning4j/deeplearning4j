@@ -38,7 +38,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D> {
 
-    private int[] cropping; //[padTop, padBottom, padLeft, padRight]
+    private long[] cropping; //[padTop, padBottom, padLeft, padRight]
 
     public Cropping2DLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

@@ -44,8 +44,8 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         super(sameDiff, i_v, inPlace);
     }
 
-    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, inPlace, extraArgs);
     }
 
     public BaseTransformStrictOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {

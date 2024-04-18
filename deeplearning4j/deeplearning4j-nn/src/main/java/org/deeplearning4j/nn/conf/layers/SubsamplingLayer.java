@@ -34,6 +34,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -49,11 +50,11 @@ public class SubsamplingLayer extends NoParamLayer {
 
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
     protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType;
-    protected int[] kernelSize; // Same as filter size from the last conv layer
-    protected int[] stride; // Default is 2. Down-sample by a factor of 2
-    protected int[] padding;
-    protected int[] dilation = new int[] {1, 1};
-    protected int pnorm;
+    protected long[] kernelSize; // Same as filter size from the last conv layer
+    protected long[] stride; // Default is 2. Down-sample by a factor of 2
+    protected long[] padding;
+    protected long[] dilation = {1, 1};
+    protected long pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
     protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW; //default value for legacy reasons
@@ -159,7 +160,7 @@ public class SubsamplingLayer extends NoParamLayer {
                     + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                 ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
                 cnn2dDataFormat, SubsamplingLayer.class);
     }
@@ -214,7 +215,7 @@ public class SubsamplingLayer extends NoParamLayer {
                 .build();
     }
 
-    public int getPnorm() {
+    public long getPnorm() {
         return pnorm;
     }
 
@@ -240,7 +241,54 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * Dilation for kernel
          */
-        private int[] dilation = new int[] {1, 1};
+        private long[] dilation = {1, 1};
+
+
+
+
+
+
+
+
+
+
+
+
+        public Builder(PoolingType poolingType, long[] kernelSize, long[] stride) {
+            super(poolingType, kernelSize, stride);
+        }
+
+        public Builder(PoolingType poolingType, long[] kernelSize) {
+            super(poolingType, kernelSize);
+        }
+
+        public Builder(PoolingType poolingType, long[] kernelSize, long[] stride, long[] padding) {
+            super(poolingType, kernelSize, stride, padding);
+        }
+
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, long[] kernelSize) {
+            super(poolingType, kernelSize);
+        }
+
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, long[] kernelSize, long[] stride,
+                       long[] padding) {
+            super(poolingType, kernelSize, stride, padding);
+        }
+
+        public Builder(long[] kernelSize, long[] stride, long[] padding) {
+            super(kernelSize, stride, padding);
+        }
+
+        public Builder(long[] kernelSize, long[] stride) {
+            super(kernelSize, stride);
+        }
+
+        public Builder(long... kernelSize) {
+            super(kernelSize);
+        }
+
+
+
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
@@ -294,7 +342,7 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * @param kernelSize kernel size in height and width dimensions
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
@@ -304,7 +352,7 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * @param stride stride in height and width dimensions
          */
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
@@ -314,7 +362,7 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * @param padding padding in the height and width dimensions
          */
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
@@ -334,7 +382,7 @@ public class SubsamplingLayer extends NoParamLayer {
          *
          * @param dilation Dilation for kernel
          */
-        public Builder dilation(int... dilation) {
+        public Builder dilation(long... dilation) {
             this.setDilation(dilation);
             return this;
         }
@@ -354,22 +402,22 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         @Override
-        public void setKernelSize(int... kernelSize) {
+        public void setKernelSize(long... kernelSize) {
             this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize,false, "kernelSize");
         }
 
         @Override
-        public void setStride(int... stride) {
+        public void setStride(long... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         @Override
-        public void setPadding(int... padding) {
+        public void setPadding(long... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding,false, "padding");
         }
 
 
-        public void setDilation(int[] dilation) {
+        public void setDilation(long[] dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
@@ -387,9 +435,9 @@ public class SubsamplingLayer extends NoParamLayer {
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
                 org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
-        protected int[] kernelSize = {1, 1}; // Same as filter size from the last conv layer
-        protected int[] stride = {2, 2}; // Default is 2. Down-sample by a factor of 2
-        protected int[] padding = {0, 0};
+        protected long[] kernelSize = {1, 1}; // Same as filter size from the last conv layer
+        protected long[] stride = {2, 2}; // Default is 2. Down-sample by a factor of 2
+        protected long[] padding = {0, 0};
 
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
@@ -397,7 +445,7 @@ public class SubsamplingLayer extends NoParamLayer {
          * Convolution mode for layer
          */
         protected ConvolutionMode convolutionMode = null;
-        protected int pnorm;
+        protected long pnorm;
         protected double eps = 1e-8;
 
         /**
@@ -417,49 +465,105 @@ public class SubsamplingLayer extends NoParamLayer {
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.setPoolingType(poolingType.toPoolingType());
-            this.setKernelSize(kernelSize);
-            this.setStride(stride);
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+            this.setStride(ArrayUtil.toLongArray(stride));
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize) {
             this.setPoolingType(poolingType.toPoolingType());
-            this.setKernelSize(kernelSize);
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
         }
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride, int[] padding) {
             this.setPoolingType(poolingType.toPoolingType());
-            this.setKernelSize(kernelSize);
-            this.setStride(stride);
-            this.setPadding(padding);
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+            this.setStride(ArrayUtil.toLongArray(stride));
+            this.setPadding(ArrayUtil.toLongArray(padding));
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize) {
             this.setPoolingType(poolingType);
-            this.setKernelSize(kernelSize);
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
                                          int[] stride, int[] padding) {
             this.setPoolingType(poolingType);
-            this.setKernelSize(kernelSize);
-            this.setStride(stride);
-            this.setPadding(padding);
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+            this.setStride(ArrayUtil.toLongArray(stride));
+            this.setPadding(ArrayUtil.toLongArray(padding));
         }
 
         protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride, int[] padding) {
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+            this.setStride(ArrayUtil.toLongArray(stride));
+            this.setPadding(ArrayUtil.toLongArray(padding));
+        }
+
+        protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride) {
+               this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+                this.setStride(ArrayUtil.toLongArray(stride));
+        }
+
+        protected BaseSubsamplingBuilder(int... kernelSize) {
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+        }
+
+
+
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType, long[] kernelSize, long[] stride) {
+            this.setPoolingType(poolingType.toPoolingType());
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+        }
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType, long[] kernelSize) {
+            this.setPoolingType(poolingType.toPoolingType());
+            this.setKernelSize(kernelSize);
+        }
+
+        protected BaseSubsamplingBuilder(PoolingType poolingType, long[] kernelSize, long[] stride, long[] padding) {
+            this.setPoolingType(poolingType.toPoolingType());
             this.setKernelSize(kernelSize);
             this.setStride(stride);
             this.setPadding(padding);
         }
 
-        protected BaseSubsamplingBuilder(int[] kernelSize, int[] stride) {
+        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, long[] kernelSize) {
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
+        }
+
+        protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, long[] kernelSize,
+                                         long[] stride, long[] padding) {
+            this.setPoolingType(poolingType);
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+        }
+
+        protected BaseSubsamplingBuilder(long[] kernelSize, long[] stride, long[] padding) {
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+        }
+
+        protected BaseSubsamplingBuilder(long[] kernelSize, long[] stride) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
         }
 
-        protected BaseSubsamplingBuilder(int... kernelSize) {
+        protected BaseSubsamplingBuilder(long... kernelSize) {
             this.setKernelSize(kernelSize);
         }
+
+
+
+
+
+
+
 
         protected BaseSubsamplingBuilder(PoolingType poolingType) {
             this.setPoolingType(poolingType.toPoolingType());
@@ -469,7 +573,7 @@ public class SubsamplingLayer extends NoParamLayer {
             this.setPoolingType(poolingType);
         }
 
-        public void setPnorm(int pnorm){
+        public void setPnorm(long pnorm) {
             ValidationUtils.validateNonNegative(pnorm, "pnorm");
             this.pnorm = pnorm;
         }
@@ -518,7 +622,7 @@ public class SubsamplingLayer extends NoParamLayer {
             return (T) this;
         }
 
-        public T pnorm(int pnorm) {
+        public T pnorm(long pnorm) {
             this.setPnorm(pnorm);
             return (T) this;
         }

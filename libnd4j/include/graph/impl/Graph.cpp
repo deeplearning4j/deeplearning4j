@@ -1007,10 +1007,10 @@ void Graph::printOut() {
 
         if (v->getName() != nullptr && !v->getName()->empty()) {
           sd_printf("<%s> <%i:%i> dtype: %s; shape: %s; values: %s;\n", v->getName()->c_str(), v->id(), v->index(),
-                    dtype.c_str(), shape.c_str(), values.c_str());
+                    dtype.c_str(), shape.c_str(), values->c_str());
         } else {
           sd_printf("<%i:%i> dtype: %s; shape: %s; values: %s;\n", v->id(), v->index(), dtype.c_str(), shape.c_str(),
-                    values.c_str());
+                    values->c_str());
         }
       } else if (v->hasNDArrayList()) {
         // TODO: add better NDArrayList printout

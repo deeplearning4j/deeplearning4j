@@ -353,7 +353,7 @@ NDArray NDArray::tile(const std::vector<LongType>& reps) const {
   // evaluate shapeInfo for resulting array
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
-  std::shared_ptr<DataBuffer> newBuff = std::make_shared<DataBuffer>(shape::length(newShapeInfo) * sizeOfT(),
+  DataBuffer *  newBuff = new DataBuffer(shape::length(newShapeInfo) * sizeOfT(),
                                                                      dataType(), getContext()->getWorkspace(), true);
   // assign new shape and new buffer to resulting array
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);

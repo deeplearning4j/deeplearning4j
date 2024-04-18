@@ -52,6 +52,10 @@ public class OpaqueDataBuffer extends Pointer {
         allocationTrace = currentTrace();
     }
 
+    public void printNativeAllocationTrace() {
+
+    }
+
     private String currentTrace() {
         return Arrays.toString(Thread.currentThread().getStackTrace()).replace( ',', '\n');
     }
@@ -171,6 +175,7 @@ public class OpaqueDataBuffer extends Pointer {
                     buffer.captureTrace();
                 // check error code
                 ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+
                 if (ec != 0) {
                     em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
 
@@ -192,20 +197,25 @@ public class OpaqueDataBuffer extends Pointer {
         throw new RuntimeException("DataBuffer expansion failed: [" + em + "]");
     }
 
+    public long numElements() {
+        return Nd4j.getNativeOps().dbBufferLength(this);
+    }
+
     /**
      * This method returns pointer to linear buffer, primary one.
      * @return
      */
     public Pointer primaryBuffer() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(this);
+        return Nd4j.getNativeOps().dbPrimaryBuffer(this);
     }
+
 
     /**
      * This method returns pointer to special buffer, device one, if any.
      * @return
      */
     public Pointer specialBuffer() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().
+        return Nd4j.getNativeOps().
                 dbSpecialBuffer(this);
     }
 

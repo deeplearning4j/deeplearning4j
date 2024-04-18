@@ -282,7 +282,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   auto gradWReshaped =
       !gradO->isScalar() ? new NDArray(gradW->reshape(gradW->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},
                                                       false)) : gradW;  // [kW, iC, oC] -> [1, kW, iC, oC]
-  gradW->printIndexedBuffer("GRAD W RESHAPED:");
   Status ret = Status::OK;
 
   conv2d_bp conv2dBP;
@@ -331,7 +330,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     }
   }
 
-  gradW->printIndexedBuffer("GRAD W RESHAPED AFTER:");
 
 
   return ret;

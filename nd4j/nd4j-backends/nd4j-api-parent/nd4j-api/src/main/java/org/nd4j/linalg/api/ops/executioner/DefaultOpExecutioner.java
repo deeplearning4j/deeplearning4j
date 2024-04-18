@@ -35,7 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
-import org.nd4j.linalg.api.ops.custom.LinearCopy;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
@@ -55,6 +54,7 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.util.*;
 
@@ -69,8 +69,45 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected AtomicBoolean verbose = new AtomicBoolean(false);
     protected AtomicBoolean debug = new AtomicBoolean(false);
 
+    protected ThreadLocal<OpContext> nextOpContext = new ThreadLocal<>();
+
 
     public DefaultOpExecutioner() {}
+
+
+    /**
+     * Inject an op context created using
+     * {@link #buildContext()}
+     * and return a reference to the context.
+     * @return
+     */
+    @Override
+    public OpContext injectNewContext() {
+        clearOpContext();
+        OpContext opContext = buildContext();
+        nextOpContext.set(opContext);
+        return opContext;
+    }
+
+    /**
+     * Clears the context injected
+     * with {@link #injectNewContext()} ()}
+     */
+    @Override
+    public void clearOpContext() {
+        nextOpContext.remove();
+    }
+
+    /**
+     * Setting an {@link OpContext} will cause
+     * {@link #buildContext()} to consume the specified op context
+     * in place of creating a  new one.
+     * @param context
+     */
+    @Override
+    public void setNextOpContext(OpContext context) {
+        nextOpContext.set(context);
+    }
 
     /**
      * Execute a redirected {@link org.nd4j.linalg.api.ops.impl.transforms.custom.Assign} op
@@ -1058,6 +1095,26 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         // no-op
     }
 
+    public static List<INDArray> getIntermediateResults(PointerPointer<OpaqueDataBuffer> pointerPointer, PointerPointer<LongPointer> opaqueConstantShapeBufferPointerPointer) {
+        List<INDArray> results = new ArrayList<>();
+        if (pointerPointer == null)
+            return results;
+        OpaqueDataBuffer[] buffers = new OpaqueDataBuffer[(int) pointerPointer.capacity()];
+        LongPointer[] shapes = new LongPointer[(int) opaqueConstantShapeBufferPointerPointer.capacity()];
+        for (int e = 0; e < pointerPointer.capacity(); e++) {
+            if (buffers[e] == null)
+                continue;
+
+
+            DataBuffer buffer = Nd4j.createBuffer(shapes[e], null, shapes[e].capacity(), DataType.LONG);
+            DataBuffer originalBuffer = Nd4j.createBuffer(buffers[e].primaryBuffer(),buffers[e].specialBuffer(),Shape.length(buffer),Shape.dataType(buffer));
+            INDArray arr = Nd4j.createArrayFromShapeBuffer(originalBuffer, buffer);
+            results.add(arr);
+        }
+
+        return results;
+    }
+
     /**
      * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.
      * I.e. if matrix has shape of 64 x 128, and threshold is set to 8, each thread will be processing 8 sub-arrays (sure, if you have 8 core cpu).
@@ -1145,7 +1202,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return sb.toString();
     }
 
-    public String arrayInfo(INDArray arr){
+    public String arrayInfo(INDArray arr) {
         if(arr == null)
             return "<null>";
         if(arr.isEmpty())

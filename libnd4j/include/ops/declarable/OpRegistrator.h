@@ -93,15 +93,6 @@ class SD_LIB_EXPORT OpRegistrator {
   SD_MAP_IMPL<std::pair<std::string, samediff::Engine>, platforms::PlatformHelper*> _helpersH;
   std::vector<platforms::PlatformHelper*> _uniqueH;
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  // SD_MAP_IMPL should have custom hash as the third template argument
-  SD_MAP_IMPL<platforms::PlatformHelperLegacyEntry, platforms::PlatformHelperLegacy*,
-              platforms::PlatformHelperLegacyEntryHasher>
-      _helpersHLegacy;
-  std::vector<platforms::PlatformHelperLegacy*> _uniqueHLegacy;
-#endif
-#endif
 
   std::mutex _locker;
   std::string _opsList;
@@ -148,20 +139,6 @@ class SD_LIB_EXPORT OpRegistrator {
 
   platforms::PlatformHelper* getPlatformHelper(LongType hash, samediff::Engine engine);
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-
-  void registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op);
-
-  /**
-   * @brief Get the Platform Helper Legacy object (Returns nullptr instead of throwing error)
-   *
-   * @param entry
-   * @return sd::ops::platforms::PlatformHelperLegacy*  nullptr if there is not any
-   */
-  sd::ops::platforms::PlatformHelperLegacy* getPlatformHelperLegacy(const platforms::PlatformHelperLegacyEntry& entry);
-#endif
-#endif
   std::vector<LongType> getAllHashes();
 
   int numberOfOperations();

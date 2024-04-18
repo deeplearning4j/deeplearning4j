@@ -124,7 +124,6 @@ bool VariableSpace::hasVariable(int id) { return _variables.count(id) == 1 || _t
 bool VariableSpace::hasVariable(std::pair<int, int>& id) { return _paired.count(id) > 0; }
 
 void VariableSpace::putOutputVariable(Variable* variable) {
-  // putVariable(_auto_counter--, variable);
   putVariable(variable->id(), variable);
 }
 
@@ -183,7 +182,6 @@ void VariableSpace::putVariable(int node, int idx, Variable* variable) {
 void VariableSpace::silentPutVariable(std::pair<int, int>& pair, Variable* variable) {
   _varmap.lock();
 
-  // std::pair<std::pair<int, int>, sd::graph::Variable *> p(pair, variable);
   _paired[pair] = variable;
 
   _varmap.unlock();
@@ -300,15 +298,13 @@ std::vector<Variable*>* VariableSpace::handles() { return _handles; }
  */
 VariableSpace::~VariableSpace() {
   // loop through variables and release them
-  for (auto p : *_handles) {
+/*  for (auto p : *_handles) {
     delete p;
-  }
+  }*/
 
-  delete _handles;
+  //delete _handles;
 
-  for (auto p : _lists) delete p;
-
-  _lists.clear();
+  //_lists.clear();
 }
 
 VariableSpace& VariableSpace::operator=(const VariableSpace& other) {

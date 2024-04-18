@@ -53,8 +53,8 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
         super(sameDiff, i_v, inPlace);
     }
 
-    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v,  boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, inPlace, extraArgs);
     }
 
     public BaseTransformSameOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {

@@ -84,7 +84,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
 
         hasBias = KerasLayerUtils.getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 3 : 2;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+        long[] dilationRate = getDilationRateLong(layerConfig, 2, conf, false);
 
         int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 
@@ -121,11 +121,11 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
                 .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
                 .dataFormat(KerasConvolutionUtils.getDataFormatFromConfig(layerConfig,conf))
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

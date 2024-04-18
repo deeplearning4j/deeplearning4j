@@ -38,7 +38,7 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
 
     //Note: if the working memory or output workspace names are null -> detached memory
     public DL4JSameDiffMemoryMgr(String workingMemoryWs, String outputWs, WorkspaceConfiguration confWorking,
-                                 WorkspaceConfiguration confOutput){
+                                 WorkspaceConfiguration confOutput) {
         this.workingMemoryWs = workingMemoryWs;
         this.outputWs = outputWs;
         this.confWorking = confWorking;

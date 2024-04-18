@@ -91,6 +91,12 @@ public interface OpExecutioner {
     ExecutionerType type();
 
 
+    OpContext injectNewContext();
+
+    void clearOpContext();
+
+    void setNextOpContext(OpContext context);
+
     /**
      * This method returns opName of the last invoked op
      *

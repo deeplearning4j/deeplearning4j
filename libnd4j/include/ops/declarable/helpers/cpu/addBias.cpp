@@ -356,6 +356,9 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
 
 template <typename X, typename Y>
 static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+  /**
+   * TODO: figure out why a native freeze is happening here.
+   */
   auto x_shapeInfo = input.shapeInfo();
   auto z_shapeInfo = output.shapeInfo();
   auto x = input.bufferAsT<X>();

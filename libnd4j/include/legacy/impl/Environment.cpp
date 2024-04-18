@@ -375,20 +375,9 @@ void Environment::setFuncTracePrintDeallocate(bool reallyPrint) {
 }
 
 const char* Environment::getVedaDeviceDir() {
-#if !defined(HAVE_VEDA)
-  return nullptr;
-#else
-  const std::lock_guard<std::mutex> lock(path_mutex);
-    if (veda_device_dir.empty()) return nullptr;
-    return veda_device_dir.c_str();
-#endif
 }
 
 void Environment::setVedaDeviceDir(const std::string &dir) {
-#if defined(HAVE_VEDA)
-  const std::lock_guard<std::mutex> lock(path_mutex);
-    if (!dir.empty()) veda_device_dir=dir;
-#endif
 }
 
 }  // namespace sd

@@ -192,19 +192,7 @@ void OpRegistrator::registerHelper(platforms::PlatformHelper* op) {
   _helpersLH.insert(pair2);
 }
 
-#if defined(HAVE_VEDA)
-void OpRegistrator::registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op) {
-  auto entry = op->getEntry();
-  if (_helpersHLegacy.count(entry) > 0) THROW_EXCEPTION("Tried to double register PlatformHelper Legacy");
 
-  _uniqueHLegacy.emplace_back(op);
-
-  sd_debug("Adding legacy helper  for op prefix\"%s\" opType: %d engine: [%i]\n", entry.prefix, entry.opType,
-           entry.engine);
-
-  _helpersHLegacy.emplace(entry, op);
-}
-#endif
 
 DeclarableOp* OpRegistrator::getOperation(const char* name) {
   std::string str(name);

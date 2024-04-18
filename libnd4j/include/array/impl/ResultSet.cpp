@@ -107,7 +107,7 @@ ResultSet& ResultSet::operator=(const ResultSet& other) noexcept {
 
 void ResultSet::delContent() {
   if (_removable) {
-    std::vector<std::shared_ptr<DataBuffer>> deleted;
+    std::vector<DataBuffer *> deleted;
     for (auto v : _content) {
       auto buffer = v->dataBuffer();
       deleted.push_back(buffer);

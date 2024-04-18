@@ -43,7 +43,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
  private:
   int _rank = 0;
-  std::vector<LongType> _shape_strides;
+  LongType * _shape_strides;
   LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;
@@ -51,6 +51,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
   LongType _paddedAllocSize = 0;
 
  public:
+  bool ownsShapeStrides = false;
 
 #ifndef __JAVACPP_HACK__
   ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape, LongType extras);
@@ -71,7 +72,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
                            const LongType *strides, const LongType rank, LongType extras);
 
   ShapeDescriptor() = default;
-  ~ShapeDescriptor() = default;
+  ~ShapeDescriptor();
 #endif
   int rank() const;
   LongType ews() const;
@@ -79,7 +80,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
   char order() const;
   DataType dataType() const;
   bool isEmpty() const;
-  std::vector<LongType> &shape_strides();
+  sd::LongType * shape_strides();
   const LongType *stridesPtr() const;
   LongType extra() const {
     return _extraProperties;
@@ -107,28 +108,32 @@ class SD_LIB_EXPORT ShapeDescriptor {
   LongType *toShapeInfo() const;
 
   const char * toString() {
-        std::string message;
-        message += " Rank:" ;
-        message += std::to_string(_rank);
-        message += " Shape and Strides:";
-        for (int i = 0; i < _rank * 2; i++) {
-            message += " ";
-            message += std::to_string(_shape_strides[i]);
-        }
+    std::string message;
+    message += " Rank:" ;
+    message += std::to_string(_rank);
+    message += " Shape and Strides:";
+    if(_shape_strides == nullptr) {
+      message += " Null";
+    } else {
+      for (int i = 0; i < _rank * 2; i++) {
+        message += " ";
+        message += std::to_string(_shape_strides[i]);
+      }
 
-        message += "Data type:";
-        message += std::to_string(_dataType);
-        message += " EWS:";
-        message += std::to_string(_ews);
-        message += " Order:";
-        message += std::to_string(_order);
-        message += " Extra Properties:";
-        message += std::to_string(_extraProperties);
-        message += " Padded Alloc Size: ";
-        message += std::to_string(_paddedAllocSize);
-        //need this in order to avoid deallocation
-        std::string *ret = new std::string(message.c_str());
-        return ret->c_str();
+    }
+    message += "Data type:";
+    message += std::to_string(_dataType);
+    message += " EWS:";
+    message += std::to_string(_ews);
+    message += " Order:";
+    message += std::to_string(_order);
+    message += " Extra Properties:";
+    message += std::to_string(_extraProperties);
+    message += " Padded Alloc Size: ";
+    message += std::to_string(_paddedAllocSize);
+    //need this in order to avoid deallocation
+    std::string *ret = new std::string(message.c_str());
+    return ret->c_str();
   }
   static ShapeDescriptor * emptyDescriptor(const DataType type);
   static ShapeDescriptor  * scalarDescriptor(const DataType type);
@@ -163,22 +168,25 @@ class SD_LIB_EXPORT ShapeDescriptor {
       return;
     }
 
-    // double checks if the _rank and _shape_strides are set correctly before filling strides
-    if (_rank + _rank == _shape_strides.size()) {
-      auto _shape = _shape_strides.data();
-      auto _strides = _shape_strides.data() + _rank;
-      if (_rank > 0) {
-        if (_order == 'c')
-          shape::calcStrides(_shape, _rank, _strides);
-        else
-          shape::calcStridesFortran(_shape, _rank, _strides);
+    if(_shape_strides == nullptr) {
+      return;
+    }
 
-      } else {
-        for (int i = 0; i < _rank; i++) {
-          _strides[i] = 0;
-        }
+    // double checks if the _rank and _shape_strides are set correctly before filling strides
+    auto _shape = _shape_strides;
+    auto _strides = _shape_strides + _rank;
+    if (_rank > 0) {
+      if (_order == 'c')
+        shape::calcStrides(_shape, _rank, _strides);
+      else
+        shape::calcStridesFortran(_shape, _rank, _strides);
+
+    } else {
+      for (int i = 0; i < _rank; i++) {
+        _strides[i] = 0;
       }
     }
+
 
   }
 
@@ -191,7 +199,7 @@ namespace std {
 template <>
 class SD_LIB_EXPORT hash<sd::ShapeDescriptor> {
  public:
-  size_t operator()(const sd::ShapeDescriptor &k) const;
+  size_t operator()(sd::ShapeDescriptor k) const;
 };
 }  // namespace std
 

@@ -446,7 +446,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         DataType netDtype = getConfiguration().getDataType();
         if(parameters != null && parameters.dataType() != netDtype){
             Preconditions.checkState(parameters.rank() == 2 && parameters.size(0) == 1, "Invalid parameters array: should be rank 2 with shape [1,numParams]. Got %ndShape", parameters);
-            if(cloneParametersArray){
+            if(cloneParametersArray) {
                 try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     parameters = parameters.castTo(netDtype);
                 }
@@ -526,7 +526,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             initializeParams = false;
         } else if(numParams > 0){
-            flattenedParams = Nd4j.create(netDtype, 1, numParams);
+            flattenedParams = Nd4j.create(netDtype, numParams);
             initializeParams = true;
         } else {
             flattenedParams = null;
@@ -1790,11 +1790,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param input       Input to the network
      * @return            Output from the network
      */
-    public  INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
+    public  INDArray[] output(boolean train, boolean clearInputs, INDArray... input) {
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
         try {
+
             return outputOfLayersDetached(train, FwdPassType.STANDARD, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs, null);
-        } catch (OutOfMemoryError e){
+        } catch (OutOfMemoryError e) {
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
         }
@@ -2281,7 +2282,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
         List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
-        Map<MemoryWorkspace, LayerWorkspaceMgr> openActivationsWorkspaces = new IdentityHashMap<>();
 
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         boolean noWS = wsm == WorkspaceMode.NONE;
@@ -2330,7 +2330,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                workspaceMgr.keepOpen(ArrayType.INPUT,ACTIVATIONS,FF_WORKING_MEM,RNN_FF_LOOP_WORKING_MEM);
+                workspaceMgr.keepOpen(ArrayType.values());
                 workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
                 //Is this one of the layers/vertices that we want the output for?

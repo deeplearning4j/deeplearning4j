@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
 
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
-    z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
+    z->assign(x->reshape(z->ordering(), z->getShapeAsVector(),false));
   }
   return Status::OK;
 }

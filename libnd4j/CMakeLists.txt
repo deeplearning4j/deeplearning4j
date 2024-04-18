@@ -344,6 +344,7 @@ else()
     if (SD_SANITIZE)
         set(SANITIZE_FLAGS " -Wall -Wextra -fPIE   -lpthread -ftls-model=local-dynamic -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
         message("Using sanitizers: ${SD_SANITIZERS} - note you can not use both thread and address sanitizer at the same time. Be careful what sanitizers you specify.
+         Note that address and undefined can not be used at the same time or an address overlap error will occur.  See: https://github.com/google/sanitizers/issues/856
          FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
          FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow")
         if(SD_CPU)
@@ -463,40 +464,6 @@ endif()
 
 
 
-if ( (NOT SD_AURORA) AND HAVE_VEDNN )
-    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/ve/veda/cmake /opt/nec/ve/share/veda/cmake)
-
-    message("--VEDA--")
-    FIND_PACKAGE(VEDA)
-
-    if(VEDA_FOUND)
-        ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
-        message("---${VEDA_INCLUDE_DIRS}--${VEDA_LIBRARY}-----")
-        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDE_DIRS} )
-        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
-
-        list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDE_DIRS} )
-
-        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
-        set(HAVE_VEDA 1)
-    else()
-        #try older
-        message("---try to look for VE package-----")
-        FIND_PACKAGE(VE REQUIRED)
-
-        ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
-
-        message("---${VEDA_INCLUDES}--${VEDA_LIBRARY}-----")
-        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDES} )
-        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
-
-        list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDES} )
-
-        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
-        set(HAVE_VEDA 1)
-    endif()
-
-endif()
 
 if (${HELPERS_onednn})
     message("Going to pull & build onednn")

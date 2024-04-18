@@ -35,23 +35,26 @@ namespace sd {
  */
 class SD_LIB_EXPORT InteropDataBuffer {
  private:
-  std::shared_ptr<DataBuffer> _dataBuffer;
+  DataBuffer *_dataBuffer = nullptr;
   uint64_t _offset = 0;
   bool owner;
+  DataType _dataType = DataType::UNKNOWN;
  public:
   bool isConstant = false;
 
   InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
-  InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer);
+  InteropDataBuffer(DataBuffer * databuffer);
   InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
   ~InteropDataBuffer() {
-    if(!isConstant)
+    if(!isConstant && _offset < 1)
       dataBuffer()->close();
   }
 #ifndef __JAVACPP_HACK__
-  std::shared_ptr<DataBuffer> getDataBuffer() const;
-  std::shared_ptr<DataBuffer> dataBuffer();
+  DataBuffer * getDataBuffer() const;
+  DataBuffer * dataBuffer();
 #endif
+
+  void printDbAllocationTrace();
 
   void *primary() const;
   void *special() const;

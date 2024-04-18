@@ -60,7 +60,6 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  sd_debug("ONEDNN is not used for conv2d!\n", 0);
 
   std::vector<sd::LongType> permutForOutput;
 
@@ -78,17 +77,20 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
     wAxes = {1, 2, 3};
 
   NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-  NDArray colP = col.permute({0, 5, 3, 4, 1, 2});  // {bS, iC, kH, kW, oH, oW}
+  NDArray *colP = new NDArray(col.permute({0, 5, 3, 4, 1, 2}));  // {bS, iC, kH, kW, oH, oW}
 
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
   //----- calculation of output -----//
   auto ctx = block.launchContext();
   helpers::im2col(
-      *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
+      *ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-  MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
-                        {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
+  //used for backward pass.
+  block.pushIntermediateResult(colP);
+  std::vector<sd::LongType> emptyPermute = {};
+  MmulHelper::tensorDot2(&col, weights, &mmulResult, {3, 4, 5}, wAxes,emptyPermute,emptyPermute,
+                        emptyPermute);  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
 
 

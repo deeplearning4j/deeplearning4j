@@ -29,9 +29,6 @@
 #include <ops/declarable/OpRegistrator.h>
 
 #include <cstdarg>
-#if defined(HAVE_VEDA)
-#include <ops/declarable/platform/vednn/veda_helper.h>
-#endif
 
 namespace sd {
 namespace ops {
@@ -462,16 +459,16 @@ bool DeclarableOp::allocateResult(Context &block, LongType *shape) {
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     auto desc = new ShapeDescriptor(__shape);
-    std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t),desc->dataType(), workspace);
+    DataBuffer *buffer =
+        new DataBuffer(len * sizeof(int8_t),desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
     auto desc = new ShapeDescriptor(__shape);
-    std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t), desc->dataType(), workspace);
+    DataBuffer *buffer =
+        new DataBuffer(len * sizeof(int8_t), desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
@@ -746,46 +743,7 @@ Status DeclarableOp::execute(Context *block) {
     if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
       auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
       if (helper->isUsable(*block)) {
-#if defined(HAVE_VEDA)
-        auto helper_exec = [](sd::ops::platforms::PlatformHelper *helper, sd::graph::Context &block, int numOutputs) {
-          std::vector<const sd::NDArray *> readList;
-          std::vector<const sd::NDArray *> writeList;
-          VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-          SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-
-          for (int i = 0; i < block.width(); i++) {
-            auto a = INPUT_VARIABLE(i);
-            if (a) {
-#if defined(DEBUG_VEDA_LOGS)
-              a->getDataBuffer()->showCounters("helper: before read", helper->name().c_str());
-#endif
-              a->getDataBuffer()->allocVeda();
-              a->getDataBuffer()->asyncToVeda();
-            }
-          }
-          for (int i = 0; i < numOutputs; i++) {
-            auto a = reinterpret_cast<sd::NDArray *>(helper->getZ(block, i));
-            if (a) {
-#if defined(DEBUG_VEDA_LOGS)
-              a->getDataBuffer()->showCounters("helper:  before write", helper->name().c_str());
-#endif
-              a->getDataBuffer()->allocVeda();
-              // its probably better to sync it when we have view
-              if (a->isView() && a->lengthOf() * a->sizeOfT() != a->getDataBuffer()->getLenInBytes()) {
-                a->getDataBuffer()->asyncToVeda();
-              }
-              a->getDataBuffer()->writeSpecial();
-            }
-          }
-
-          auto status = helper->invokeHelper(block);
-
-          return status;
-        };
-        status = helper_exec(helper, *block, numOutputs);
-#else
         status = helper->invokeHelper(*block);
-#endif
         hasHelper = true;
       }
     }
@@ -810,46 +768,8 @@ Status DeclarableOp::execute(Context *block) {
     printf("outputs to check %d\n", outputsToCheck.size());
   }
 
-  // if we don't have platform-specific helper - invoke generic implementation
-#if defined(HAVE_VEDA)
-  // try to sync if we have incomplete buffers
-  if (!hasHelper) {
-    auto nonhelper_exec = [](sd::ops::DeclarableOp *op, sd::graph::Context &block, int numOutputs) {
-      std::vector<const sd::NDArray *> readList;
-      std::vector<const sd::NDArray *> writeList;
-      for (int i = 0; i < block.width(); i++) {
-        auto a = INPUT_VARIABLE(i);
-        readList.push_back(a);
-#if defined(DEBUG_VEDA_LOGS)
-        if (a) {
-          a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before read", op->getOpName()->c_str());
-        }
-#endif
-      }
-      for (int i = 0; i < numOutputs; i++) {
-        auto a = reinterpret_cast<sd::NDArray *>(op->getZ(block, i));
-        writeList.push_back(a);
-#if defined(DEBUG_VEDA_LOGS)
-        if (a) {
-          a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before write", op->getOpName()->c_str());
-        }
-#endif
-      }
-
-      NDArray::preparePrimaryUse(writeList, readList);
-      auto status = op->validateAndExecute(block);
-      NDArray::registerPrimaryUse(writeList, readList);
-      return status;
-    };
-    status = nonhelper_exec(this, *block, numOutputs);
-  }
-#else
 
   if (!hasHelper) status = this->validateAndExecute(*block);
-#endif
-
   //validate when inputs are changed when they shouldn't be
   if(Environment::getInstance().isCheckInputChange() && !this->getOpDescriptor()->allowsInplace()) {
     for(int i = 0; i < block->width(); i++) {
@@ -945,11 +865,11 @@ Status DeclarableOp::execute(Context *block) {
       auto shape = ShapeUtils::shapeAsString(array);
       //limit size preview for string arrays due to allocation size when debugging
       int sizePreview = array->isS() ? 2 : 32;
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(sizePreview);
+      auto first = array->isEmpty() ? new std::string("Empty NDArray") : array->asString(sizePreview);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first.c_str());
+                type.c_str(), first->c_str());
     }
 
     for (int e = 0; e < numOutputs; e++) {
@@ -976,11 +896,14 @@ Status DeclarableOp::execute(Context *block) {
 
       auto shape = ShapeUtils::shapeAsString(array);
       LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(len);
+      sd_printf("array to string: Len of array is %lld real len is %lld data buffer length %lld array offset %lld array is attached %d array is view %d\n",
+                len,array->lengthOf(),array->dataBuffer()->getNumElements(),array->bufferOffset(),array->isAttached(),array->isView());
+      fflush(stdout);
+      auto first = array->isEmpty() ? new std::string("Empty NDArray") : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first.c_str());
+                type.c_str(), first->c_str());
     }
   }
 

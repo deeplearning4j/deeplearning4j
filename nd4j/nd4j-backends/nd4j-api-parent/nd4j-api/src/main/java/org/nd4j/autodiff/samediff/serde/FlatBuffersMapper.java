@@ -1073,7 +1073,6 @@ public class FlatBuffersMapper {
 
 
         log.info("Done with node: {}", node.getOwnName());
-        System.out.println(StackTraceUtils.currentStackTraceString());
         return flatNode;
     }
 

@@ -38,8 +38,8 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
         super(sameDiff, i_v, inPlace);
     }
 
-    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v,  boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, inPlace, extraArgs);
     }
 
     public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {

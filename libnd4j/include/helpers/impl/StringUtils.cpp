@@ -215,13 +215,13 @@ void StringUtils::convertDataForDifferentDataType(int8_t* outData, const int8_t*
   samediff::Threads::parallel_for(func, 0, numStrings, 1);
 }
 
-std::shared_ptr<DataBuffer> StringUtils::createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context) {
+DataBuffer * StringUtils::createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context) {
   LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(offsets.size() - 1);
-  return std::make_shared<DataBuffer>(offsetsLength + offsets.back(), dtype, context->getWorkspace(), true);
+  return new DataBuffer(offsetsLength + offsets.back(), dtype, context->getWorkspace(), true);
 }
 
 NDArray StringUtils::createStringNDArray(const NDArray& array, const std::vector<LongType>& offsets, DataType dtype) {
-  std::shared_ptr<DataBuffer> pBuffer = createBufferForStringData(offsets, dtype, array.getContext());
+  DataBuffer *pBuffer = createBufferForStringData(offsets, dtype, array.getContext());
   std::vector<LongType> shape = offsets.size() == 2 ? std::vector<LongType>({1}) : array.getShapeAsVector();
   auto desc = new ShapeDescriptor(dtype, array.ordering(), shape);
   NDArray res(pBuffer, desc, array.getContext());

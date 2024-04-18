@@ -116,7 +116,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameOutput, confWorking, confOutput);
 
         InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
-        if(is == null){
+        if(is == null) {
             is = SameDiff.getInferenceFactory().create(sameDiff);
             sameDiff.getSessions().put(Thread.currentThread().getId(), is);
         }
@@ -127,9 +127,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         //Edge case - identity activation
         //TODO there may be a cleaner way to do this...
-        if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
+        if(!actScopedOut && result.data().getParentWorkspace() != null && !result.data().getParentWorkspace().getId().equals(wsNameOutput)) {
             result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
-        } else if(actScopedOut && result.isAttached()){
+        } else if(actScopedOut && result.isAttached()) {
             result = result.detach();
         }
 
@@ -179,7 +179,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         Map<String,INDArray> phMap = new HashMap<>();
         phMap.put(INPUT_KEY, input);
         phMap.put(fn.getGradPlaceholderName(), epsilon);
-        if(maskArray != null){
+        if(maskArray != null) {
             phMap.put(MASK_KEY, maskArray);
         } else {
             phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
@@ -190,7 +190,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         requiredGrads.addAll(paramTable.keySet());
 
         Map<String,INDArray> m = sameDiff.calculateGradients(phMap, requiredGrads);
-        for(String s : paramTable.keySet() ){
+        for(String s : paramTable.keySet()) {
             INDArray sdGrad = m.get(s);
             INDArray dl4jGrad = gradTable.get(s);
             dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
@@ -228,7 +228,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParam(String key, INDArray val) {
-        if(!paramTable.containsKey(key)){
+        if(!paramTable.containsKey(key)) {
             throw new IllegalArgumentException("Cannot set parameter, invalid/unknown parameter key: " + key);
         }
         INDArray current = paramTable.get(key);
@@ -295,7 +295,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     protected void doInit() {
         org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
-        sameDiff = SameDiff.create();
+        sameDiff = SameDiff.create().enableEagerMode();
         //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
         sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
         Map<String, INDArray> p = paramTable();

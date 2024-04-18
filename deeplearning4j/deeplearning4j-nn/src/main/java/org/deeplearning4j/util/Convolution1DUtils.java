@@ -136,10 +136,26 @@ public class Convolution1DUtils {
      * @return Output size (width)
      */
     public static long getOutputSize(long inH, int kernel, int strides, int padding,
-                                    ConvolutionMode convolutionMode, int dilation) {
+                                     ConvolutionMode convolutionMode, int dilation) {
+        return getOutputSizeLong(inH, (long) kernel, (long) strides, (long) padding, convolutionMode, (long) dilation);
+    }
+
+    /**
+     * Get the output size (height) for the given input data and CNN1D configuration
+     *
+     * @param inH             Input size (height, or channels).
+     * @param kernel          Kernel size
+     * @param strides         Stride
+     * @param padding         Padding
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation
+     * @return Output size (width)
+     */
+    public static long getOutputSizeLong(long inH, long kernel, long strides, long padding,
+                                         ConvolutionMode convolutionMode, long dilation) {
         long eKernel = effectiveKernelSize(kernel, dilation);
         if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
-            return (int) Math.ceil(inH / ((double) strides));
+            return (long) Math.ceil(inH / ((double) strides));
         }
         return (inH - eKernel + 2 * padding) / strides + 1;
     }
@@ -157,20 +173,34 @@ public class Convolution1DUtils {
      */
     public static int getOutputSize(INDArray inputData, int kernel, int strides, int padding,
                                     ConvolutionMode convolutionMode, int dilation) {
-        if (inputData.size(2) > Integer.MAX_VALUE)
-            throw new ND4JArraySizeException();
-        int inH = (int) inputData.size(2);
-        int eKernel = effectiveKernelSize(kernel, dilation);
-        boolean atrous = (eKernel == kernel);
-        validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inH, atrous);
+        return (int) getOutputSizeLong(inputData, (long) kernel, (long) strides, (long) padding, convolutionMode, (long) dilation);
+    }
 
-        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
-            int outH = (int) Math.ceil(inH / ((double) strides));
-            return outH;
+    /**
+     * Get the output size (height) for the given input data and CNN1D configuration
+     *
+     * @param inputData       Input data
+     * @param kernel          Kernel size
+     * @param strides         Stride
+     * @param padding         Padding
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation
+     * @return Output size (width)
+     */
+    public static long getOutputSizeLong(INDArray inputData, long kernel, long strides, long padding,
+                                         ConvolutionMode convolutionMode, long dilation) {
+        long inH = inputData.size(2);
+        long dilatedFilterSize = kernel + (kernel - 1) * (dilation - 1);
+        long outputLength;
+        if (convolutionMode == ConvolutionMode.Same) {
+            outputLength = inH - dilatedFilterSize + 1;
+        } else if (convolutionMode == ConvolutionMode.Causal) {
+            outputLength = inH + dilatedFilterSize - 1;
+        } else {
+            throw new IllegalArgumentException("Unsupported convolution mode: " + convolutionMode);
         }
 
-        int outH = (inH - eKernel + 2 * padding) / strides + 1;
-        return outH;
+        return (outputLength + strides - 1) / strides;
     }
 
     public static void validateShapes(INDArray inputData, int eKernel, int strides, int padding,
@@ -226,6 +256,17 @@ public class Convolution1DUtils {
             }
         }
 
+    }
+
+    /**
+     * Calculates the effective kernel size, accounting for dilation.
+     *
+     * @param kernel   The kernel size.
+     * @param dilation The dilation factor.
+     * @return The effective kernel size.
+     */
+    private static long effectiveKernelSize(long kernel, long dilation) {
+        return kernel + (kernel - 1) * (dilation - 1);
     }
 
     public static int effectiveKernelSize(int kernel, int dilation) {

@@ -80,15 +80,15 @@ class KerasConvolution3DTest extends BaseDL4JTest {
 
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
 
-    private final int[] KERNEL_SIZE = new int[] { 1, 2, 3 };
+    private final long[] KERNEL_SIZE = { 1, 2, 3 };
 
-    private final int[] STRIDE = new int[] { 3, 4, 5 };
+    private final long[] STRIDE = { 3, 4, 5 };
 
     private final int N_OUT = 13;
 
     private final String BORDER_MODE_VALID = "valid";
 
-    private final int[] VALID_PADDING = new int[] { 0, 0, 0 };
+    private final long[] VALID_PADDING = { 0, 0, 0 };
 
     private Integer keras1 = 1;
 
@@ -132,15 +132,15 @@ class KerasConvolution3DTest extends BaseDL4JTest {
             config.put(conf.getLAYER_FIELD_3D_KERNEL_2(), KERNEL_SIZE[1]);
             config.put(conf.getLAYER_FIELD_3D_KERNEL_3(), KERNEL_SIZE[2]);
         } else {
-            List kernel = new ArrayList<Integer>() {
+            List<Long> kernel = new ArrayList<>() {
 
                 {
-                    for (int i : KERNEL_SIZE) add(i);
+                    for (Long i : KERNEL_SIZE) add(i);
                 }
             };
             config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
         }
-        List<Integer> subsampleList = new ArrayList<>();
+        List<Long> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
         subsampleList.add(STRIDE[2]);

@@ -784,7 +784,9 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
     case LoopKind::EWS1: {
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
       LongType start = span.startX(), stop = span.stopX();
-      for (LongType i = start; i < stop; i++) z[i] = static_cast<Z>(OpType::op(x[i], extraParams));
+      for (LongType i = start; i < stop; i++) {
+        z[i] = static_cast<Z>(OpType::op(x[i], extraParams));
+      }
 
     } break;
 

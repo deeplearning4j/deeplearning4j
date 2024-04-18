@@ -206,9 +206,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            StringBuilder errorMessage = new StringBuilder();
+            errorMessage.append("Op [").append(op.getClass().getSimpleName()).append("] execution failed\n");
+            errorMessage.append("Inputs:\n");
+            errorMessage.append("X:\n");
+            errorMessage.append(x);
+            errorMessage.append("\n");
+            errorMessage.append("Z:\n");
+            errorMessage.append(z);
+            errorMessage.append("\n");
+            errorMessage.append(loop.lastErrorMessage());
+            errorMessage.append(differentialFunction.debugInfo());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
@@ -346,9 +358,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             null,
 
                             var.isBiasCorrected(), null, null);
-                } catch (Throwable t){
+                } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             }
 
@@ -370,7 +386,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     );
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             } else if (ret.isScalar()) {
                 loop.execReduce3Scalar(null, op.opNum(),
@@ -390,7 +410,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             null, null, null, null);
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             }
 
@@ -463,9 +487,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            String str = opInfoString(op, Optional.of(dimension));
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native AccumulationOp execution (double) failed: " + str);
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
@@ -544,8 +574,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException();
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        if (loop.lastErrorCode() != 0) {
+            String str = opInfoString(op, Optional.of(dimension));
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: " + str);
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
     }
 
     public INDArray exec(ScalarOp op) {
@@ -601,8 +638,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (loop.lastErrorCode() != 0) {
             // the variable is mainly for ease of use with the debugger
-            String errorMessage = loop.lastErrorMessage();
-            throw new RuntimeException("Op " + op.opName() + " failed with message:" + errorMessage);
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
         }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
@@ -792,8 +833,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
-            if (loop.lastErrorCode() != 0)
-                throw new RuntimeException(loop.lastErrorMessage());
+            if (loop.lastErrorCode() != 0) {
+                StringBuilder errorMessage = new StringBuilder();
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
+            }
         }
 
 
@@ -866,8 +913,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op,oc,st);
         return z;
     }
@@ -996,8 +1049,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                 batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
-        if (loop.lastErrorCode() != 0)
+        if (loop.lastErrorCode() != 0) {
             throw new RuntimeException(loop.lastErrorMessage());
+            }
 
     }
 
@@ -1203,9 +1257,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.extraArgsDataBuff(z.dataType()).addressPointer());
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
 
         return z;
     }
@@ -1374,7 +1433,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
         if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if(log.isTraceEnabled()){
+            if(log.isTraceEnabled()) {
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
@@ -1476,14 +1535,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (loop.lastErrorCode() != 0) {
                 //used with debuggers mainly
-                String errorMessage = loop.lastErrorMessage();
-                throw new RuntimeException(errorMessage);
+                StringBuilder errorMessage = new StringBuilder();
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
             }
             if (ptrptr == null)
                 throw new RuntimeException();
 
         } catch (Throwable t) {
             StringBuilder sb = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
             sb.append("Inputs: [(");
             for( int i = 0; i < inputArgs.size(); i++) {
                 if(i > 0)
@@ -1491,9 +1555,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 sb.append(Shape.shapeToStringShort(inputArgs.get(i)));
             }
             sb.append(")]");
-            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null) {
-                appendSameDiffInfo(sb, (DifferentialFunction) op);
-            }
+            sb.append(differentialFunction.debugInfo());
 
             int nOut = opContext != null ? opContext.numOutputArguments() : op.numOutputArguments();
             log.error("Failed to calculate output shapes for op {}. Attempted to execute with {} inputs, {} outputs, " +
@@ -1502,9 +1564,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw t;
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         if (ptrptr == null)
             throw new RuntimeException();
 
@@ -1684,7 +1751,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public OpContext buildContext() {
-        return new CpuOpContext();
+        if(this.nextOpContext.get() != null) {
+            return this.nextOpContext.get();
+        }
+
+        CpuOpContext ctx =  new CpuOpContext();
+        return ctx;
     }
 
     @Override
@@ -1705,10 +1777,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
             if (status != 0) {
-                DifferentialFunction differentialFunction = (DifferentialFunction)  op;
-                //mainly for use with the debugger
-                String errorMessage = loop.lastErrorMessage();
-                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed with message " + errorMessage);
+                StringBuilder errorMessage = new StringBuilder();
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
             }
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
@@ -1758,7 +1832,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
-            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null) {
                 appendSameDiffInfo(sb, (DifferentialFunction) op);
             }
 

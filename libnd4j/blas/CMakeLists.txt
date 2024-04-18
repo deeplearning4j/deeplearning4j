@@ -225,12 +225,7 @@ if (HAVE_ONEDNN)
     file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
 endif()
 
-if (HAVE_VEDNN)
-    file(GLOB_RECURSE CUSTOMOPS_VEDNN_SOURCES false ../include/ops/declarable/platform/vednn/*.cpp ../include/ops/declarable/platform/vednn/*.h)
-    if (HAVE_VEDA)
-        file(GLOB_RECURSE VEDA_SOURCES false ../include/ops/declarable/platform/vednn/*.vc ../include/ops/declarable/platform/vednn/*.vcpp ../include/ops/declarable/platform/vednn/*.h)
-    endif()
-endif()
+
 
 if(HAVE_ARMCOMPUTE)
     file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES false ../include/ops/declarable/platform/armcompute/*.cpp ../include/ops/declarable/platform/armcompute/*.h)
@@ -679,18 +674,6 @@ elseif(SD_CPU OR SD_AURORA)
     if(NOT "$ENV{CLION_IDE}")
         target_link_libraries(${SD_LIBRARY_NAME}    ${EXTERNAL_DEPENDENCY_LIBS}  ${ONEDNN}  ${ONEDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
         target_include_directories (${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-    endif()
-
-    if (HAVE_VEDA)
-        message("----${VEDA_SOURCES}---${VEDA_LIBRARY}")
-        ADD_LIBRARY (${SD_LIBRARY_NAME}_device SHARED ${VEDA_SOURCES})
-        target_link_libraries(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_DEPENDENCY_LIBS})
-        target_include_directories(${SD_LIBRARY_NAME}_device PRIVATE ${VEDA_INCLUDE_DIRS})
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR "${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O${SD_OPTIMIZATION_LEVEL} -g -traceback )
-        else()
-            target_compile_options(${SD_LIBRARY_NAME}_device PRIVATE -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2)
-        endif()
     endif()
 
 

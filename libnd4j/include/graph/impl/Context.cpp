@@ -88,11 +88,11 @@ Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Con
 }
 
 Context::~Context() {
-  this->_iArgs.clear();
-  this->_tArgs.clear();
-  this->_inputs.clear();
-  this->_fastpath_in.clear();
-  this->_fastpath_out.clear();
+ // this->_iArgs.clear();
+//  this->_tArgs.clear();
+//  this->_inputs.clear();
+//  this->_fastpath_in.clear();
+//  this->_fastpath_out.clear();
 
   // for (auto v : _handles) delete v;
 
@@ -534,13 +534,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmptyConst(newShapeInfoCast)) {
-    auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
-    if(!DataTypeUtils::validDataType(ArrayOptions::dataType(newShapeInfoCast)) && !DataTypeUtils::validDataType(dataBuffer->dataBuffer()->getDataType())) {
-      THROW_EXCEPTION("Invalid data type for new shape info");
-    }
-
-
-    array = new NDArray(newRef,newShapeInfoCast, LaunchContext::defaultContext(),
+    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeInfoCast)));
 
@@ -586,11 +580,11 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
 
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+
   NDArray *array;
   if (dataBuffer != nullptr) {
-    auto newRef = std::make_shared<DataBuffer>(*dataBuffer->dataBuffer());
-
-    array = new NDArray(newRef,newShapeCast2, LaunchContext::defaultContext(),
+    array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2, LaunchContext::defaultContext(),
                         dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeCast2)));
   }

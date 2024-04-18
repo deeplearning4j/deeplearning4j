@@ -47,14 +47,14 @@
 #include <ops/declarable/OpRegistrator.h>
 typedef sd::InteropDataBuffer OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
-
+typedef sd::ShapeList OpaqueShapeList;
+typedef Context OpaqueContext;
 
 
 
 #if defined(SD_GCC_FUNCTRACE)
 
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
-
 SD_LIB_EXPORT std::vector<bool> * bArgs(void *execTrace);
 SD_LIB_EXPORT std::vector<std::string> * sArgs(void *execTrace);
 SD_LIB_EXPORT std::vector<double> * tArgs(void *execTrace);
@@ -94,6 +94,9 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 }
 
 #endif
+
+SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *buff);
+
 
 SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
@@ -149,7 +152,20 @@ SD_LIB_EXPORT int lastErrorCode();
 SD_LIB_EXPORT const char* lastErrorMessage();
 
 
-/**
+SD_LIB_EXPORT std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT std::vector<const sd::LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT void setIntermediateResult(OpaqueContext *contextPointer, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo);
+
+SD_LIB_EXPORT int numIntermediateResults(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT void pushIntermediateResult(OpaqueContext *contextPointer, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo);
+
+SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
+    /**
  *
  * @param p
  * @param len
@@ -1480,8 +1496,7 @@ SD_LIB_EXPORT sd::Status execCustomOp(sd::Pointer* extraPointers, sd::LongType h
                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
 SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer* extraPointers, sd::LongType hash, sd::Pointer opContext);
 
-typedef sd::ShapeList OpaqueShapeList;
-typedef Context OpaqueContext;
+
 
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
@@ -1656,6 +1671,7 @@ SD_LIB_EXPORT OpaqueDataBuffer* allocateDataBuffer(sd::LongType elements, int da
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                                            sd::Pointer special);
+SD_LIB_EXPORT sd::LongType dbBufferLength(OpaqueDataBuffer *dataBuffer);
 SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length, sd::LongType offset);
 SD_LIB_EXPORT sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer* dataBuffer);
@@ -1684,7 +1700,6 @@ SD_LIB_EXPORT int optimalLevel();
 SD_LIB_EXPORT bool isMinimalRequirementsMet();
 SD_LIB_EXPORT bool isOptimalRequirementsMet();
 
-SD_LIB_EXPORT void setVedaDeviceLibFolder(std::string path);
 
 }
 

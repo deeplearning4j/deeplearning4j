@@ -58,6 +58,9 @@ DataBuffer::DataBuffer() {
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 DataBuffer::DataBuffer(const DataBuffer& other) {
+  if(other._dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const DataBuffer& other) copy constructor\n");
     fflush(stdout);
@@ -91,6 +94,9 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType,
                        const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) {
+  if(dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf(
         "DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, const bool isOwnerSpecial, memory::Workspace* workspace) constructor\n");
@@ -125,7 +131,9 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
 DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary,
                        memory::Workspace* workspace)
     : DataBuffer(primary, nullptr, lenInBytes, dataType, isOwnerPrimary, false, workspace) {
-
+  if(dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
 
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType dataType, const bool isOwnerPrimary, memory::Workspace* workspace) constructor\n");
@@ -148,6 +156,10 @@ DataBuffer::DataBuffer(void* primary, const size_t lenInBytes, const DataType da
 // copies data from hostBuffer to own memory buffer
 DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes,
                        memory::Workspace* workspace) {
+  if(dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
+
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const size_t lenInBytes, memory::Workspace* workspace) constructor\n");
     fflush(stdout);
@@ -182,6 +194,11 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace,
                        const bool allocBoth) {
+
+  if(dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
+
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
@@ -198,11 +215,7 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
   setCountersToZero();
 
   allocateBuffers(allocBoth);
-#if defined(HAVE_VEDA)
-  readPrimary();
-#else
   writeSpecial();
-#endif
 
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
@@ -217,6 +230,11 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 ////////////////////////////////////////////////////////////////////////
 // move constructor
 DataBuffer::DataBuffer(DataBuffer&& other) {
+
+  if(other._dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer constructor: dataType is UNKNOWN !");
+  }
+
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::DataBuffer(DataBuffer&& other) move constructor\n");
     fflush(stdout);
@@ -251,13 +269,16 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
+  if(other._dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer assignment operator: dataType is UNKNOWN !");
+  }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(const DataBuffer& other) assignment operator\n");
     fflush(stdout);
   }
   if (this == &other) return *this;
 
-  deleteBuffers();
+  //deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
@@ -278,6 +299,10 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 ////////////////////////////////////////////////////////////////////////
 // move assignment operator
 DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
+  if(other._dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer move assignment operator: dataType is UNKNOWN !");
+  }
+
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     printf("DataBuffer::operator=(DataBuffer&& other) move assignment operator\n");
     fflush(stdout);
@@ -412,37 +437,7 @@ void DataBuffer::deletePrimary() {
 
 void DataBuffer::printPrimaryAllocationStackTraces() {
 #if defined(SD_GCC_FUNCTRACE)
-  Printer p2;
 
-  if(Environment::getInstance().isFuncTracePrintAllocate()) {
-    printf("Beginning printing for allocation part of deallocation event deletePrimary\n");
-    if(allocationStackTracePrimary != nullptr && allocationStackTracePrimary->size() > 0)
-      p2.print(*allocationStackTracePrimary);
-    else {
-      printf("No stack trace available for deletePrimary\n");
-    }
-    printf("End printing for allocation part of deallocation event deletePrimary\n");
-
-
-
-    printf("Beginning printing for creation part of deallocation event deletePrimary\n");
-    if(creationStackTrace != nullptr && creationStackTrace->size() > 0)
-      p2.print(*creationStackTrace);
-    else {
-      printf("No creation stack trace available for deletePrimary\n");
-    }
-    printf("End printing for creation part of deallocation event deletePrimary\n");
-  }
-
-  if(Environment::getInstance().isFuncTracePrintDeallocate()) {
-    printf("Beginning printing for deallocation event deletePrimary\n");
-    StackTrace deallocTrace;
-    deallocTrace.load_here();
-    sd_printf("Deleting primary databuffer of length %d and type %s\n", getLenInBytes(), DataTypeUtils::asString(getDataType()).c_str());
-    p2.print(deallocTrace);
-    printf("End printing for deallocation event deletePrimary\n");
-
-  }
 #endif
 
 }
@@ -496,7 +491,33 @@ void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
 }
 
-void DataBuffer::setDataType(DataType dataType) { _dataType = dataType; }
+void DataBuffer::setDataType(DataType dataType) {
+  if(dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("DataBuffer setDataType: dataType is UNKNOWN !");
+  }
+  _dataType = dataType;
+}
+
+void DataBuffer::printAllocationTrace() {
+  if(closed) {
+    printf("DataBuffer::printAllocationTrace() - buffer is closed\n");
+    fflush(stdout);
+  }
+#if defined(SD_GCC_FUNCTRACE)
+  //print whether each stack trace is null or not:
+  Printer p;
+  if(allocationStackTracePrimary != nullptr) {
+    p.print(*allocationStackTracePrimary);
+  }
+  if(allocationStackTraceSpecial != nullptr) {
+    p.print(*allocationStackTraceSpecial);
+  }
+  if(creationStackTrace != nullptr) {
+    p.print(*creationStackTrace);
+  }
+#endif
+}
+
 
 int DataBuffer::deviceId() const { return _deviceId.load(); }
 

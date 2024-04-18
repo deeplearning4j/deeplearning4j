@@ -95,6 +95,31 @@ public interface OpContext extends AutoCloseable {
     int numDArguments();
 
 
+    /**
+     * This method returns number of intermediate results
+     * @return
+     */
+    int numIntermediateResults();
+
+    /**
+     * This method sets intermediate result for future op call
+     * @param index
+     * @param arr
+     */
+    void setIntermediateResult(int index,INDArray arr);
+
+    /**
+     * This method returns intermediate result by index
+     * @param index
+     * @return
+     */
+    INDArray getIntermediateResult(int index);
+
+    /**
+     * This method adds intermediate result for future op call
+     * @param arr
+     */
+    void addIntermediateResult(INDArray arr);
 
     /**
      * This method sets data type arguments required for operation

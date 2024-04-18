@@ -93,7 +93,7 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType pW = INT_ARG(5);                                               // paddings width
   LongType dH = INT_ARG(6);                                               // dilations height
   LongType dW = INT_ARG(7);                                               // dilations width
-  int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
+  int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                 ? INT_ARG(10)
@@ -141,7 +141,7 @@ DECLARE_SHAPE_FN(conv2d) {
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
   LongType oH, oW;  // output height, width
-  ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+  ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
   outputShapeInfo[0] = rank;
   outputShapeInfo[1] = bS;

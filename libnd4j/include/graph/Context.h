@@ -59,6 +59,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   // fields for fast execution (out-of-graph ops use)
   std::vector<NDArray*> _fastpath_in;
   std::vector<NDArray*> _fastpath_out;
+  std::vector<NDArray*> _intermediateResults;
   std::vector<NDArray*> _handles;
 
   bool _helpersAllowed = true;
@@ -149,6 +150,45 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   NDArray* array(int idx);
 
   /**
+   * An intermediate results
+   * is a performance optimization
+   * meant for use with backpropagation.
+   * There are many ops where a part of the forward
+   * pass is used as a component of the backward pass.
+   * By storing this in the context
+   * it can be passed down to a backward op.
+   * @param idx the index of the intermediate result
+   * @return
+   */
+  NDArray *intermediateResult(int idx) {
+    return _intermediateResults.at(idx);
+  }
+
+  /**
+   * Add an intermediate result as described
+   * in {@link #intermediateResult(int)}
+   * @param array the intermediate result to add
+   */
+  void addIntermediateResult(NDArray *array) {
+        _intermediateResults.push_back(array);
+  }
+
+
+
+  /**
+   * This method returns the number of intermediate results
+   * in this context.
+   * @return
+   */
+  int numIntermediates() {
+    return _intermediateResults.size();
+  }
+
+  bool hasIntermediateResults() {
+    return numIntermediates() > 0;
+  }
+
+  /**
    * This method fetches variable from VariableSpace DIRECTLY
    * @param p
    * @return
@@ -184,13 +224,27 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
    */
   void forbidFastPath(bool reallyForbid);
 
-#ifndef __JAVACPP_HACK__
+
   std::vector<NDArray*>& fastpath_in();
   std::vector<NDArray*>& fastpath_out();
-#endif
 
 
 
+  std::vector<NDArray*>& intermediateResults() {
+    return _intermediateResults;
+  }
+
+  void pushIntermediateResult(NDArray* array) {
+    _intermediateResults.push_back(array);
+  }
+
+  void setIntermediateResult(int idx, NDArray* array) {
+    if(intermediateResults().size() < idx) {
+        intermediateResults().resize(idx + 1);
+    }
+
+    _intermediateResults[idx] = array;
+  }
 
   void setInputArrays(int numArrays,NDArray** array, bool removable = false);
   void setInputArrays(int numArrays,void** buffer, void const** shapeInfo, void** specialBuffer, void const** specialShapeInfo);

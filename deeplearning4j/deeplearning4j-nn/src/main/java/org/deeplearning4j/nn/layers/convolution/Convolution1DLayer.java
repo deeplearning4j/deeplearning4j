@@ -202,7 +202,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                                                           int minibatchSize) {
-        INDArray reduced = ConvolutionUtils.cnn1dMaskReduction(maskArray, layerConf().getKernelSize()[0],
+        INDArray reduced = ConvolutionUtils.cnn1dMaskReductionLong(maskArray, layerConf().getKernelSize()[0],
                 layerConf().getStride()[0], layerConf().getPadding()[0], layerConf().getDilation()[0],
                 layerConf().getConvolutionMode());
         return new Pair<>(reduced, currentMaskState);

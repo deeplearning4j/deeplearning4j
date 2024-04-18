@@ -272,20 +272,26 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
 }
 
 SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
-  std::vector<size_t> setFlagIndices;
+  LongType flagIndices[numFlags];
+  int numFlagsSet = 0;
   for (size_t i = 0; i < numFlags; ++i) {
     if (hasPropertyBitSetForFlags(property, flags[i])) {
-      setFlagIndices.push_back(i);
+      flagIndices[i] = 1;
+      numFlagsSet++;
+    } else {
+      flagIndices[i] = 0;
     }
   }
 
-  if (setFlagIndices.size() > 1) {
+  if (numFlagsSet > 1) {
     std::ostringstream errorMsg;
     errorMsg << "Multiple data types are set for the given property: ";
-    for (size_t index : setFlagIndices) {
-      errorMsg << "Flag index " << index << " (flag value: " << flags[index] << "), ";
+    for (int i = 0; i < numFlags; i++) {
+      if(flagIndices[i] == 1) {
+        errorMsg << "Flag index " << i << " (flag value: " << flags[i] << "), ";
+      }
     }
-    errorMsg << "Total: " << setFlagIndices.size() << " data types set.";
+    errorMsg << "Total: " << numFlagsSet << " data types set.";
     THROW_EXCEPTION(errorMsg.str().c_str());
   }
 }
@@ -362,7 +368,7 @@ SD_HOST bool ArrayOptions::isView(sd::LongType *shapeInfo) {
 }
 
 SD_HOST void ArrayOptions::toggleIsView(sd::LongType *shapeInfo) {
-    togglePropertyBit(shapeInfo, ARRAY_IS_VIEW);
+  togglePropertyBit(shapeInfo, ARRAY_IS_VIEW);
 }
 
 SD_HOST bool ArrayOptions::togglePropertyBit(sd::LongType *shapeInfo, LongType property) {

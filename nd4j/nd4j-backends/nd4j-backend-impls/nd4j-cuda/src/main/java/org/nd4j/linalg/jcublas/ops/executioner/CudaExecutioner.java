@@ -2061,6 +2061,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public OpContext buildContext() {
+        if(this.nextOpContext.get() != null) {
+            return this.nextOpContext.get();
+        }
+
         return new CudaOpContext();
     }
 

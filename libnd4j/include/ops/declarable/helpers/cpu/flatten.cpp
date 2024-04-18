@@ -28,24 +28,36 @@ namespace helpers {
 template <typename T>
 static void flatten_(std::vector<NDArray *> &inputs, NDArray *output, const char order) {
   int numArrays = inputs.size();
-  std::vector<sd::LongType> offsets(numArrays);
-  sd::LongType cOffset = 0;
-
-  // calculating offsets in output
-  for (int e = 0; e < numArrays; e++) {
-    offsets[e] = cOffset;
-    cOffset += inputs[e]->lengthOf();
-  }
-
+  int zIdx = 0;
+  auto z = reinterpret_cast<T *>(output->buffer());
+  auto zLength = output->lengthOf();
   // actually transferring data
   for (sd::LongType e = 0; e < numArrays; e++) {
-    auto z = reinterpret_cast<T *>(output->bufferWithOffset(offsets[e]));
-
     auto xBuffer = inputs[e]->bufferAsT<T>();
     auto xShapeInfo = inputs[e]->shapeInfo();
     auto xLength = inputs[e]->lengthOf();
+    for (sd::LongType i = 0; i < xLength; i++) {
+      auto xIdx = shape::getIndexOffset(i, xShapeInfo);
+      if(xIdx >= xLength) {
+        std::string errorMessage;
+        errorMessage += "flatten: xIdx >= xLength. xIdx = ";
+        errorMessage += std::to_string(xIdx);
+        errorMessage += ", xLength = ";
+        errorMessage += std::to_string(xLength);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      if(zIdx >= zLength) {
+        std::string errorMessage;
+        errorMessage += "flatten: zIdx >= zLength. zIdx = ";
+        errorMessage += std::to_string(zIdx);
+        errorMessage += ", zLength = ";
+        errorMessage += std::to_string(zLength);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
 
-    for (sd::LongType i = 0; i < xLength; i++) z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
+      z[zIdx] = xBuffer[xIdx];
+      zIdx++;
+    }
   }
 }
 

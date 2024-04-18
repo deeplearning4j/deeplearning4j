@@ -103,7 +103,6 @@ public class Nd4jNamespaceGenerator {
 
     public static void generate(NamespaceOps namespace, GeneratorConfig config, File outputDirectory, String className,
                                 String basePackage, String docsDirectory) throws IOException {
-        //String basePackage = "org.nd4j.linalg.factory";
 
         generateEnums(outputDirectory, basePackage);
         generateConfigs(outputDirectory, basePackage);
@@ -117,7 +116,6 @@ public class Nd4jNamespaceGenerator {
 
     public static void generate(NamespaceOps namespace, GeneratorConfig config, File outputDirectory, String className,
                                 String basePackage, String parentClass, String docsDirectory) throws IOException {
-        //String basePackage = "org.nd4j.linalg.factory";
 
         generateEnums(outputDirectory, basePackage);
         generateConfigs(outputDirectory, basePackage);
@@ -280,8 +278,8 @@ public class Nd4jNamespaceGenerator {
         }
         List<Parameter> params = s.getParameters();
         if(!params.isEmpty()){
-            for(Parameter p : params){
-                if(p instanceof Input){
+            for(Parameter p : params) {
+                if(p instanceof Input) {
                     Input i = (Input)p;
                     c.addJavadoc("@param " + i.getName() + " " + (i.getDescription() == null ? "" : DocTokens.processDocText(i.getDescription(), op, DocTokens.GenerationType.ND4J)) + " (" + i.getType() + " type)\n");
                 } else if(p instanceof Arg) {
@@ -454,7 +452,7 @@ public class Nd4jNamespaceGenerator {
                     return 0;
                 }
             ).map(it -> {
-            if(inNames.contains(it.name())){
+            if(inNames.contains(it.name())) {
                 return it.name();
             }else{
                 if(!it.hasDefaultValue()) throw new IllegalStateException("The parameter "+it.name()+" has no default value, but is also not part of "+inNames.toString());
@@ -542,7 +540,7 @@ public class Nd4jNamespaceGenerator {
 
     private static void enableVarargsOnLastArg(MethodSpec.Builder c, Op op, Signature s) {
         List<Parameter> p = s.getParameters();
-        if(!p.isEmpty()){
+        if(!p.isEmpty()) {
             Parameter lastP = p.get(p.size() - 1);
             if (lastP instanceof Arg) {
                 Arg arg = (Arg) lastP;
@@ -634,7 +632,6 @@ public class Nd4jNamespaceGenerator {
     private static StringBuilder buildDocSectionText(List<DocSection> docSections) {
         StringBuilder sb = new StringBuilder();
         for (DocSection ds : docSections) {
-            //if(ds.applies(Language.JAVA, CodeComponent.OP_CREATOR)){
             String text = ds.getText();
             String[] lines = text.split("\n");
             for (int i = 0; i < lines.length; i++) {

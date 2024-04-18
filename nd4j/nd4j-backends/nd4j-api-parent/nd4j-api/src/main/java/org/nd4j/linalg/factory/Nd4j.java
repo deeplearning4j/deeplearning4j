@@ -1304,7 +1304,7 @@ public class Nd4j {
      * @param dataType       the opType of buffer to create,
      * @return               the created buffer
      */
-    public static DataBuffer createBuffer(@NonNull Pointer pointer, @NonNull Pointer devicePointer, long length, @NonNull DataType dataType) {
+    public static DataBuffer createBuffer(@NonNull Pointer pointer,  Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = getPointer(pointer, dataType);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
     }

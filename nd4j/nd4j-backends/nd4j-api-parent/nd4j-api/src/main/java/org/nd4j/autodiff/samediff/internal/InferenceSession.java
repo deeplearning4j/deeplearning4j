@@ -1463,16 +1463,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray z = mmgr.allocate(false, oc.getInputArray(0).dataType(), oc.getInputArray(0).shape());
                 oc.setOutputArray(0, z);
             } else {
-                if(op.z() != null) {
-                    oc.setOutputArray(0,op.z());
-                } else {
-                    List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape(oc);
-                    Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-                    LongShapeDescriptor lsd = outputShape.get(0);
-                    INDArray z = mmgr.allocate(isOutput, lsd);
-                    oc.setOutputArray(0, z);
-                }
-
+                List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape(oc);
+                Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
+                LongShapeDescriptor lsd = outputShape.get(0);
+                INDArray z = mmgr.allocate(isOutput, lsd);
+                oc.setOutputArray(0, z);
             }
         }
 

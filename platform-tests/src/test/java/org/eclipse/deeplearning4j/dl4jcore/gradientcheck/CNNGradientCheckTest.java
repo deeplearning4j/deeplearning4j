@@ -104,7 +104,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Gradient CNNMLN")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     public void testGradientCNNMLN(CNN2DFormat format,Nd4jBackend backend) {
         if (// Only test NCHW due to flat input format...
         format != CNN2DFormat.NCHW)
@@ -149,8 +149,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     }
                     if (PRINT_RESULTS) {
                         System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
-                        // for (int j = 0; j < mln.getnLayers(); j++)
-                        // System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(gradOK);
@@ -161,7 +159,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
     }
 
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     @DisplayName("Test Gradient CNNL 1 L 2 MLN")
     void testGradientCNNL1L2MLN(CNN2DFormat format,Nd4jBackend backend) {
         if (// Only test NCHW due to flat input format...
@@ -225,7 +223,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @Disabled
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     @DisplayName("Test Cnn With Space To Depth")
     void testCnnWithSpaceToDepth(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -263,7 +261,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn With Space To Batch")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     public void testCnnWithSpaceToBatch(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
@@ -308,7 +306,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn With Upsampling")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnWithUpsampling(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
@@ -343,7 +341,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn With Subsampling")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnWithSubsampling(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
@@ -351,9 +349,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         int width = 5;
         int height = 5;
         int inputDepth = 1;
-        int[] kernel = { 2, 2 };
-        int[] stride = { 1, 1 };
-        int[] padding = { 0, 0 };
+        long[] kernel = { 2, 2 };
+        long[] stride = { 1, 1 };
+        long[] padding = { 0, 0 };
         int pnorm = 2;
         Activation[] activations = { Activation.SIGMOID, Activation.TANH };
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[] { SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM };
@@ -367,14 +365,21 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(new int[] { i, i % nOut }, 1.0);
                     }
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).dist(new NormalDistribution(0, 1)).list().layer(0, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(inputDepth).dataFormat(format).nOut(3).build()).layer(1, new SubsamplingLayer.Builder(poolingType).dataFormat(format).kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3 * 3 * 3).nOut(4).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).dataType(DataType.DOUBLE)
+                            .dist(new NormalDistribution(0, 1)).list()
+                            .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .nIn(inputDepth).dataFormat(format).nOut(3).build())
+                            .layer(1, new SubsamplingLayer.Builder(poolingType).dataFormat(format)
+                                    .kernelSize(kernel).stride(stride).padding(padding).pnorm(pnorm).build())
+                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(3 * 3 * 3).nOut(4).build())
+                            .setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
                     String msg = format + " - poolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
                     if (PRINT_RESULTS) {
                         System.out.println(msg);
-                        // for (int j = 0; j < net.getnLayers(); j++)
-                        // System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     assertTrue(gradOK,msg);
@@ -386,7 +391,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn With Subsampling V 2")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnWithSubsamplingV2(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
@@ -394,9 +399,9 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         int width = 5;
         int height = 5;
         int inputDepth = 1;
-        int[] kernel = { 2, 2 };
-        int[] stride = { 1, 1 };
-        int[] padding = { 0, 0 };
+        long[] kernel = { 2, 2 };
+        long[] stride = { 1, 1 };
+        long[] padding = { 0, 0 };
         int pNorm = 3;
         Activation[] activations = { Activation.SIGMOID, Activation.TANH };
         SubsamplingLayer.PoolingType[] poolingTypes = new SubsamplingLayer.PoolingType[] { SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM };
@@ -410,7 +415,16 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(new int[] { i, i % nOut }, 1.0);
                     }
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).dist(new NormalDistribution(0, 1)).list().layer(0, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(inputDepth).dataFormat(format).nOut(3).build()).layer(1, new SubsamplingLayer.Builder(poolingType).dataFormat(format).kernelSize(kernel).stride(stride).padding(padding).pnorm(pNorm).build()).layer(2, new ConvolutionLayer.Builder(kernel, stride, padding).dataFormat(format).nIn(3).nOut(2).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(2 * 2 * 2).nOut(4).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).dataType(DataType.DOUBLE).dist(new NormalDistribution(0, 1)).list()
+                            .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(inputDepth).dataFormat(format).nOut(3).build())
+                            .layer(1, new SubsamplingLayer.Builder(poolingType).dataFormat(format)
+                                    .kernelSize(kernel).stride(stride).padding(padding).pnorm(pNorm).build())
+                            .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding)
+                                    .dataFormat(format).nIn(3).nOut(2).build())
+                            .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(2 * 2 * 2).nOut(4).build())
+                            .setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
                     String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn=" + afn;
@@ -425,7 +439,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Locally Connected 2 D")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnLocallyConnected2D(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 3;
         int width = 5;
@@ -456,7 +470,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Multi Layer")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnMultiLayer(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 2, 5 };
@@ -497,7 +511,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Same Padding Mode")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnSamePaddingMode(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 3, 3, 2, 1, 2 };
@@ -532,7 +546,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Same Padding Mode Strided")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnSamePaddingModeStrided(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int[] minibatchSizes = { 1, 3 };
@@ -576,27 +590,36 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Zero Padding Layer")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnZeroPaddingLayer(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
         int width = 6;
         int height = 6;
-        int[] kernel = { 2, 2 };
-        int[] stride = { 1, 1 };
-        int[] padding = { 0, 0 };
+        long[] kernel = { 2, 2 };
+        long[] stride = { 1, 1 };
+        long[] padding = { 0, 0 };
         int[] minibatchSizes = { 1, 3, 2 };
-        int[] inputDepths = { 1, 3, 2 };
-        int[][] zeroPadLayer = new int[][] { { 0, 0, 0, 0 }, { 1, 1, 0, 0 }, { 2, 2, 2, 2 } };
+        long[] inputDepths = { 1, 3, 2 };
+        long[][] zeroPadLayer = new long[][] { { 0, 0, 0, 0 }, { 1, 1, 0, 0 }, { 2, 2, 2, 2 } };
         boolean nchw = format == CNN2DFormat.NCHW;
         for (int i = 0; i < minibatchSizes.length; i++) {
             int minibatchSize = minibatchSizes[i];
-            int inputDepth = inputDepths[i];
-            int[] zeroPad = zeroPadLayer[i];
+            long inputDepth = inputDepths[i];
+            long[] zeroPad = zeroPadLayer[i];
             long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
             INDArray labels = TestUtils.randomOneHot(minibatchSize, nOut);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).dist(new NormalDistribution(0, 1)).list().layer(0, new ConvolutionLayer.Builder(kernel, stride, padding).dataFormat(format).nIn(inputDepth).nOut(3).build()).layer(1, new ZeroPaddingLayer.Builder(zeroPad).dataFormat(format).build()).layer(2, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).dataFormat(format).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(4).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new NoOp()).dataType(DataType.DOUBLE)
+                    .dist(new NormalDistribution(0, 1)).list()
+                    .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
+                    .dataFormat(format).nIn(inputDepth).nOut(3).build())
+                    .layer(1, new ZeroPaddingLayer.Builder(zeroPad).dataFormat(format).build())
+                    .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).dataFormat(format).build())
+                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
+                            .nOut(4).build())
+                    .setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             // Check zero padding activation shape
@@ -623,7 +646,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Deconvolution 2 D")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testDeconvolution2D(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int[] minibatchSizes = new int[] { 1, 3, 3, 1, 3 };
@@ -669,7 +692,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Separable Conv 2 D")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testSeparableConv2D(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int width = 6;
@@ -715,7 +738,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cnn Dilated")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCnnDilated(CNN2DFormat format,Nd4jBackend backend) {
         int nOut = 2;
         int minibatchSize = 2;
@@ -766,7 +789,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Cropping 2 D Layer")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testCropping2DLayer(CNN2DFormat format,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 2;
@@ -775,18 +798,31 @@ class CNNGradientCheckTest extends BaseDL4JTest {
         int[] kernel = { 2, 2 };
         int[] stride = { 1, 1 };
         int[] padding = { 0, 0 };
-        int[][] cropTestCases = new int[][] { { 0, 0, 0, 0 }, { 1, 1, 0, 0 }, { 2, 2, 2, 2 }, { 1, 2, 3, 4 } };
+        long[][] cropTestCases = { { 0, 0, 0, 0 }, { 1, 1, 0, 0 }, { 2, 2, 2, 2 }, { 1, 2, 3, 4 } };
         int[] inputDepths = { 1, 2, 3, 2 };
         int[] minibatchSizes = { 2, 1, 3, 2 };
         boolean nchw = format == CNN2DFormat.NCHW;
         for (int i = 0; i < cropTestCases.length; i++) {
             int inputDepth = inputDepths[i];
             int minibatchSize = minibatchSizes[i];
-            int[] crop = cropTestCases[i];
+            long[] crop = cropTestCases[i];
             long[] inShape = nchw ? new long[] { minibatchSize, inputDepth, height, width } : new long[] { minibatchSize, height, width, inputDepth };
             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
             INDArray labels = TestUtils.randomOneHot(minibatchSize, nOut);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).convolutionMode(ConvolutionMode.Same).weightInit(new NormalDistribution(0, 1)).list().layer(new ConvolutionLayer.Builder(kernel, stride, padding).dataFormat(format).nIn(inputDepth).nOut(2).build()).layer(new Cropping2D.Builder(crop).dataFormat(format).build()).layer(new ConvolutionLayer.Builder(kernel, stride, padding).dataFormat(format).nIn(2).nOut(2).build()).layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG).kernelSize(3, 3).stride(3, 3).dataFormat(format).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE).updater(new NoOp())
+                    .convolutionMode(Same)
+                    .weightInit(new NormalDistribution(0, 1))
+                    .list().layer(new ConvolutionLayer.Builder(kernel, stride, padding)
+                            .dataFormat(format).nIn(inputDepth).nOut(2).build())
+                    .layer(new Cropping2D.Builder(crop).dataFormat(format).build())
+                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
+                            .dataFormat(format).nIn(2).nOut(2).build())
+                    .layer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.AVG)
+                            .kernelSize(3, 3).stride(3, 3).dataFormat(format).build())
+                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
+                            .nOut(nOut).build())
+                    .setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             // Check cropping activation shape
@@ -811,7 +847,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
 
     @DisplayName("Test Depthwise Conv 2 D")
     @ParameterizedTest
-    @MethodSource("org.deeplearning4j.gradientcheck.CNNGradientCheckTest#params")
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     void testDepthwiseConv2D(CNN2DFormat format,Nd4jBackend backendt) {
         int nIn = 3;
         int depthMultiplier = 2;

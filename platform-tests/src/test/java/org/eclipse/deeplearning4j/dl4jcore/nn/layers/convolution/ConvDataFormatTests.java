@@ -825,7 +825,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     private MultiLayerNetwork getGlobalPoolingNet(DataType dataType,CNN2DFormat format, PoolingType pt, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
             return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)
-                    .poolingDimensions(format == CNN2DFormat.NCHW ? new int[]{2,3} : new int[]{1,2})
+                    .poolingDimensions(format == CNN2DFormat.NCHW ? new long[]{2,3} : new long[]{1,2})
                     .build(), format, ConvolutionMode.Same, null);
         } else {
             return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)

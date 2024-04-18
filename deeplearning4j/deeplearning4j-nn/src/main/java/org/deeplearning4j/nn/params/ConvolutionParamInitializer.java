@@ -55,7 +55,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         ConvolutionLayer layerConf =
                         (ConvolutionLayer) l;
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         //don't double count parameters for conv 1d
@@ -140,7 +140,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         ConvolutionLayer layerConf =
                         (ConvolutionLayer) conf.getLayer();
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
 
@@ -199,8 +199,8 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         ConvolutionLayer layerConf =
                         (ConvolutionLayer) conf.getLayer();
         if (initializeParams) {
-            int[] kernel = layerConf.getKernelSize();
-            int[] stride = layerConf.getStride();
+            long[] kernel = layerConf.getKernelSize();
+            long[] stride = layerConf.getStride();
 
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
@@ -212,7 +212,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
 
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c', weightView);
         } else {
-            int[] kernel = layerConf.getKernelSize();
+            long[] kernel = layerConf.getKernelSize();
             long[] realWeights = layerConf instanceof  Convolution1DLayer ?  new long[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], 1} :  new long[] {layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1]};
             return WeightInitUtil.reshapeWeights(
                     realWeights, weightView, 'c');

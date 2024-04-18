@@ -4961,7 +4961,7 @@ public class SameDiff extends SDBaseOps {
         }
         Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<>();
         Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<>();
-        if(outputVars != null){
+        if(outputVars != null) {
             for(String s : outputVars){
                 outOutputs.put(s, grads.get(s));
             }
@@ -5049,7 +5049,7 @@ public class SameDiff extends SDBaseOps {
                 " Losses can be specified either in TrainingConfiguration (Builder.minimize(...)) or via SameDiff.setLossVariables()/addLossVariable()");
 
         if (log.isTraceEnabled()) {
-            log.trace("Defining function \"grad\"");
+            log.trace("Defining function grad");
         }
 
         if (variablesRequiringGradients != null && variablesRequiringGradients.length > 0) {
@@ -5106,7 +5106,6 @@ public class SameDiff extends SDBaseOps {
             }
 
             outer.invokeGraphOn(sameDiff);
-            System.out.println("Done with invoke graph");
             outer.putSubFunction(GRAD_FN_KEY,sameDiff);
             if (debugMode) {
                 //Expect incoming args and outgoing args to be the same
@@ -5412,17 +5411,9 @@ public class SameDiff extends SDBaseOps {
                 }
 
 
-                /**
-                 * TODO: when in a frame or see an exit op
-                 * we need to log all ops in the loop/if body
-                 *
-                 * When we hit an enter we need to look at its inputs
-                 * and set the gradients appropriately.
-                 */
                 //Differentiate:
                 List<SDVariable> currFnGrads = df.diff(grads);
                 differentiatedOps.add(df.getOwnName());
-                System.out.println("Added differentiated op " + df.getOwnName());
                 //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
                 for (String s : inputsToOp) {
                     Variable v = sameDiff.variables.get(s);
@@ -5759,7 +5750,7 @@ public class SameDiff extends SDBaseOps {
         for (SDVariable var : variableMap().values()) {
             var.setSameDiff(this);
         }
-//        for(DifferentialFunction df : functionInstancesById.values()){
+
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction df = op.getOp();
             df.setSameDiff(this);

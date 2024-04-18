@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.convolution;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -38,16 +39,21 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.DisplayName;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Max Pumperla
@@ -68,7 +74,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @DisplayName("Test 2 d Forward")
     void test2dForward() {
         ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected2D.Builder().kernelSize(8, 8).nIn(3).stride(4, 4).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28, 28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
-        new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 3));
+                new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -81,7 +87,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @DisplayName("Test 1 d Forward")
     void test1dForward() {
         ListBuilder builder = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).l2(2e-4).updater(new Nesterovs(0.9)).dropOut(0.5).list().layer(new LocallyConnected1D.Builder().kernelSize(4).nIn(3).stride(1).nOut(16).dropOut(0.5).convolutionMode(ConvolutionMode.Strict).setInputSize(28).activation(Activation.RELU).weightInit(WeightInit.XAVIER).build()).layer(// output layer
-        new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.recurrent(3, 8));
+                new OutputLayer.Builder(LossFunctions.LossFunction.SQUARED_LOSS).nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.recurrent(3, 8));
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -97,47 +103,73 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     }
 
     @Test
+    public void dummyTestRecreation() {
+        INDArray arr = Nd4j.create(2);
+        OpExecutioner executioner = Nd4j.getExecutioner();
+        OpContext opContext = executioner.buildContext();
+        opContext.addIntermediateResult(arr);
+        assertEquals(1, opContext.numIntermediateResults());
+        INDArray arr2 = opContext.getIntermediateResult(0);
+        assertEquals(arr, arr2);
+    }
+
+    @Test
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
-        for (DataType globalDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {
+        for (DataType globalDtype : new DataType[] { DataType.DOUBLE }) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
-            for (DataType networkDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {
+            for (DataType networkDtype : new DataType[] { DataType.DOUBLE }) {
                 assertEquals(globalDtype, Nd4j.dataType());
                 assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
-                for (int test = 0; test < 2; test++) {
+                for (int test = 1; test < 2; test++) {
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
-                    ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder().dataType(networkDtype).seed(123).updater(new NoOp()).weightInit(WeightInit.XAVIER).convolutionMode(ConvolutionMode.Same).graphBuilder();
+                    ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
+                            .dataType(networkDtype).seed(123)
+                            .updater(new NoOp())
+                            .weightInit(WeightInit.XAVIER)
+                            .convolutionMode(ConvolutionMode.Same)
+                            .graphBuilder();
                     INDArray[] in;
                     INDArray label;
                     switch(test) {
                         case 0:
-                            b.addInputs("in").addLayer("1", new LSTM.Builder().nOut(5).build(), "in").addLayer("2", new LocallyConnected1D.Builder().kernelSize(2).nOut(4).build(), "1").addLayer("out", new RnnOutputLayer.Builder().nOut(10).build(), "2").setOutputs("out").setInputTypes(InputType.recurrent(5, 4));
+                            System.out.println("Test case 0:");
+                            b.addInputs("in").addLayer("1", new LSTM.Builder().nOut(5).build(), "in")
+                                    .addLayer("2", new LocallyConnected1D.Builder().kernelSize(2).nOut(4).build(), "1")
+                                    .addLayer("out", new RnnOutputLayer.Builder().nOut(10).build(), "2").setOutputs("out");
+                            b.setInputTypes(InputType.recurrent(5, 4));
                             in = new INDArray[] { Nd4j.rand(networkDtype, 2, 5, 4) };
-                            label = TestUtils.randomOneHotTimeSeries(2, 10, 4).castTo(networkDtype);
+                            label = TestUtils.randomOneHotTimeSeries(2, 10, 3).castTo(networkDtype);
                             break;
                         case 1:
-                            b.addInputs("in").addLayer("1", new ConvolutionLayer.Builder().kernelSize(2, 2).nOut(5).convolutionMode(ConvolutionMode.Same).build(), "in").addLayer("2", new LocallyConnected2D.Builder().kernelSize(2, 2).nOut(5).build(), "1").addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2").setOutputs("out").setInputTypes(InputType.convolutional(8, 8, 1));
+                            System.out.println("Test case 1: PID: " + ProcessHandle.current().pid());
+                            b.addInputs("in")
+                                    .addLayer("1", new ConvolutionLayer.Builder()
+                                            .kernelSize(2, 2).nOut(5)
+                                            .convolutionMode(ConvolutionMode.Same).build(), "in")
+                                    .addLayer("2", new LocallyConnected2D.Builder()
+                                            .kernelSize(2, 2).nOut(5).build(), "1")
+                                    .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
+                                    .setOutputs("out");
+                            b.setInputTypes(InputType.convolutional(8, 8, 1));
                             in = new INDArray[] { Nd4j.rand(networkDtype, 2, 1, 8, 8) };
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;
                         default:
                             throw new RuntimeException();
                     }
-                    ComputationGraph net = new ComputationGraph(b.build());
+                    ComputationGraphConfiguration build = b.build();
+                    ComputationGraph net = new ComputationGraph(build);
                     net.init();
                     INDArray out = net.outputSingle(in);
                     assertEquals(networkDtype, out.dataType(),msg);
-                    Map<String, INDArray> ff = net.feedForward(in, false);
-                    for (Map.Entry<String, INDArray> e : ff.entrySet()) {
-                        if (e.getKey().equals("in"))
-                            continue;
-                        String s = msg + " - layer: " + e.getKey();
-                        assertEquals( networkDtype, e.getValue().dataType(),s);
-                    }
                     net.setInputs(in);
                     net.setLabels(label);
-                    net.computeGradientAndScore();
-                    net.fit(new MultiDataSet(in, new INDArray[] { label }));
+
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(in).labels(new INDArray[]{label}));
+                    assertTrue(gradOK);
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }

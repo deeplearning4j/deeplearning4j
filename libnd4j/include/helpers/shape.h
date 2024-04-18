@@ -3999,6 +3999,37 @@ SD_LIB_EXPORT SD_INLINE void SD_HOST checkStridesEwsAndOrder(sd::LongType *shape
 }
 
 
+SD_INLINE SD_LIB_EXPORT SD_HOST void calcOffsets(const sd::LongType *shapeInfo, sd::LongType *offsets, const char order) {
+  if (shapeInfo == nullptr) THROW_EXCEPTION("calcOffsets: shapeInfo is nullptr !");
+  if (offsets == nullptr) THROW_EXCEPTION("calcOffsets: offsets is nullptr !");
+  if (shapeInfo[0] < 0 || shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("calcOffsets: shapeInfo[0] is invalid !");
+  // firstly consider simple case when ews > 0
+  const sd::LongType ews = elementWiseStride(shapeInfo);
+
+  if (ews > 0) {
+    // set offset for first sub-array, it is equal to zero always
+    offsets[0] = 0;
+
+    sd::LongType e = 0;
+    if (order != shape::order(shapeInfo))
+      for (sd::LongType i = 1; i <= rank(shapeInfo); ++i)
+        if (shapeInfo[i] != 1) ++e;  // check whether input is CommonVector
+
+    if (order == shape::order(shapeInfo) || e == 1) {  // e==1 means common vector
+      e = 1;
+      sd::LongType len = length(shapeInfo);
+      while (e < len) {
+        offsets[e] = offsets[e - 1] + ews;
+        e++;
+      }
+      return;
+    }
+  }
+
+  calcOffsets(rank(shapeInfo), shapeOf(const_cast<sd::LongType *>(shapeInfo)),
+              stride(const_cast<sd::LongType *>(shapeInfo)), offsets, order);
+}
+
 SD_INLINE SD_LIB_EXPORT SD_HOST void calcOffsets(const sd::LongType rank, const sd::LongType *shape, const sd::LongType *strides, sd::LongType *offsets,
                                                  const char order) {
   const sd::LongType len = prodLong(shape, rank);

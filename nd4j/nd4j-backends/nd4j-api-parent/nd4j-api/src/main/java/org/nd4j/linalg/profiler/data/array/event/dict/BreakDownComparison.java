@@ -23,6 +23,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
@@ -163,7 +164,7 @@ public class BreakDownComparison implements Serializable {
     /**
      * Returns the parent points of invocation
      * for the given events accordingv to the definition of
-     * {@link NDArrayEvent#parentOfInvocation(StackTraceElement[], StackTraceElement, StackTraceElement)}
+     * {@link StackTraceUtils#parentOfInvocation(StackTraceElement[], StackTraceElement, StackTraceElement)}
      * @return
      */
     public Set<StackTraceElement> parentPointsOfInvocation() {

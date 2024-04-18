@@ -1098,6 +1098,31 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @param iargs
          * @return
          */
+        public DynamicCustomOpsBuilder addIntegerArguments(long... iargs) {
+            if (numIArguments >= 0) {
+                if (iargs == null)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments. Null was passed instead.");
+
+                if (numIArguments > iargs.length)
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+            }
+
+            for (val in : iargs)
+                iArguments.add(Long.valueOf((long) in));
+
+            return this;
+        }
+
+
+        /**
+         * This method takes arbitrary number of Integer arguments for op,
+         * Note that this ACCUMULATES arguments. You are able to call this method
+         * multiple times and it will add arguments to a list.
+         * PLEASE NOTE: this method does NOT validate values.
+         *
+         * @param iargs
+         * @return
+         */
         public DynamicCustomOpsBuilder addIntegerArguments(int... iargs) {
             if (numIArguments >= 0) {
                 if (iargs == null)

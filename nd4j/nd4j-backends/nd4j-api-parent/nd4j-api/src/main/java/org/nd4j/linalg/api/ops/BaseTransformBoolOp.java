@@ -52,8 +52,8 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v,  boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, inPlace, extraArgs);
     }
 
     public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {

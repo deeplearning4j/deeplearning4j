@@ -1251,28 +1251,16 @@ TEST_F(NativeOpsTests, CustomOpTests_2) {
   auto exp = NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f});
   Context ctx(1);
 
-#if defined(HAVE_VEDA)
-  // veda should be set using InteropDataBuffer
-  InteropDataBuffer i0(array0.dataBuffer());
-  InteropDataBuffer i1(array1.dataBuffer());
-  InteropDataBuffer o0(z.dataBuffer());
-  ctx.setInputArray(0, &i0, array0.shapeInfo(), array0.specialShapeInfo());
-  ctx.setInputArray(1, &i0, array1.shapeInfo(), array1.specialShapeInfo());
-  ctx.setOutputArray(0, &o0, z.shapeInfo(), z.specialShapeInfo());
-#else
+
   NDArray::prepareSpecialUse({&z}, {&array0, &array1});
   ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), array0.specialBuffer(), array0.specialShapeInfo());
   ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), array1.specialBuffer(), array1.specialShapeInfo());
   ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
-#endif
 
   ASSERT_EQ(2, ctx.width());
 
   add op;
   execCustomOp2(nullptr, op.getOpHash(), &ctx);
-#if !defined(HAVE_VEDA)
-  NDArray::registerSpecialUse({&z}, {&array0, &array1});
-#endif
   ASSERT_EQ(exp, z);
 }
 TEST_F(NativeOpsTests, CalculateOutputShapeTests_1) {

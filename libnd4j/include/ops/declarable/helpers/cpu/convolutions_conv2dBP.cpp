@@ -64,6 +64,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
+
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
   sd_debug("MKL-DNN is not used for conv2d_bp!\n", 0);
@@ -91,15 +92,24 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     colPermute = {2, 3, 1, 0, 4, 5};
   }
   std::vector<sd::LongType> emptyPerm = {};
+  NDArray columns;
+  //use the previous forward pass
+  if(block.hasIntermediateResults()) {
+    columns = *block.intermediateResult(0);
+  } else {
+    columns = NDArray(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+    columns.nullify();
+  }
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-  columns.nullify();
   // ----- calculation of gradW ----- //
   if (gradW) {
     auto ctx = block.launchContext();
-    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create<double>(
-                        0., input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    if(!block.hasIntermediateResults()) {
+      //skip im2col if we already have an intermediate array
+      helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
+                      NDArrayFactory::create<double>(
+                          0., input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+    }
     sd::MmulHelper::tensorDot2(
         &columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,emptyPerm,emptyPerm,
         wPermute);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]

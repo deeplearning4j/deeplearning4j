@@ -144,7 +144,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
 
         CNN2DFormat format = ((InputType.InputTypeConvolutional)inputType).getFormat();
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         nOut, layerIndex, getLayerName(), format, SeparableConvolution2DLayer.class);
     }
 
@@ -231,7 +231,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          *
          * @param kernelSize the height and width of the kernel
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
@@ -241,7 +241,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          *
          * @param stride the stride of the kernel (in h/w dimensions)
          */
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
@@ -251,23 +251,23 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          *
          * @param padding the padding in h/w dimensions
          */
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
 
         @Override
-        public void setKernelSize(int... kernelSize){
+        public void setKernelSize(long... kernelSize) {
             this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
         }
 
         @Override
-        public void setStride(int... stride){
+        public void setStride(long... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         @Override
-        public void setPadding(int... padding){
+        public void setPadding(long... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 

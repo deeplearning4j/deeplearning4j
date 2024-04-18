@@ -42,8 +42,8 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, L
     THROW_EXCEPTION("NDArrayFactory::create: invalid ShapeDescriptor ");
   }
   LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
+  DataBuffer *  buffer =
+      new DataBuffer(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
   NDArray result(buffer, shapeDescriptor, context);
   result.nullify();
   return result;
@@ -61,8 +61,8 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector
   auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
 
   LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
+  DataBuffer *  buffer =
+      new DataBuffer(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
 
   // lets check offsets
   int check_size = paddingOffsets.size() < rank ? paddingOffsets.size() : rank;
@@ -99,7 +99,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
   ALLOCATE(hostBuffer, context->getWorkspace(), data.size(), bool);
   std::copy(data.begin(), data.end(), hostBuffer);
 
-  std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
+  DataBuffer * buffer = new DataBuffer(hostBuffer, data.size() * sizeof(bool), BOOL, true, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
   return result;
@@ -129,7 +129,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   //note here we use data.size() to work around the scalar case. If the shape is zero but the data is actually length 1 we need this reflected
   //to create a correct length data buffer
   auto dtypeString = DataTypeUtils::asString(descriptor->dataType());
-  std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
+  DataBuffer *  buffer = new DataBuffer(
       data.data(), DataTypeUtils::fromT<T>(), data.size() * sizeof(T), context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
@@ -230,8 +230,8 @@ template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, co
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+  DataBuffer *  buffer =
+      new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
@@ -296,8 +296,8 @@ TMPL_INSTANTIATE_CREATE_D(bool)
 
 template <typename T>
 NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+  DataBuffer *  buffer =
+      new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   NDArray res(buffer,desc , context);
@@ -432,8 +432,8 @@ TMPL_INSTANTIATE_LINSPACE(bool)
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::vector(LongType length, const T value, LaunchContext* context) {
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+  DataBuffer *  buffer =
+      new DataBuffer(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
   auto desc = ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
@@ -482,7 +482,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(dtype, order, shape);
 
-  std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(
+  DataBuffer *  buffer = new DataBuffer(
       descriptor->arrLength() * DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace());
 
   NDArray result(buffer, descriptor, context);
@@ -493,8 +493,8 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArrayFactory::create(DataType dtype, LaunchContext* context) {
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
+  DataBuffer *  buffer =
+      new DataBuffer(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
   auto desc = ShapeDescriptor::scalarDescriptor(dtype);
   NDArray res(buffer, desc, context);
   res.nullify();
@@ -511,8 +511,8 @@ NDArray* NDArrayFactory::create_(DataType dtype, LaunchContext* context) {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* context) {
-  std::shared_ptr<DataBuffer> buffer =
-      std::make_shared<DataBuffer>(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+  DataBuffer *  buffer =
+      new DataBuffer(values.size() * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
 
   auto desc = ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>());
   NDArray res(buffer, desc, context);
@@ -612,7 +612,7 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
   std::vector<LongType> shp(shape);
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shp);
 
-  std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(
+  DataBuffer *  pBuffer = new DataBuffer(
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);

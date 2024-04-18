@@ -246,22 +246,22 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
         for (int maskDim = 2; maskDim <= 3; maskDim++) {
 
-            int[] minibatchSizes = new int[] {1, 3};
+            int[] minibatchSizes = {1, 3};
             PoolingType[] poolingTypes =
-                    new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+                    {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
             for (int miniBatchSize : minibatchSizes) {
                 for (PoolingType pt : poolingTypes) {
 
-                    int[] kernel;
-                    int[] stride;
+                    long[] kernel;
+                    long[] stride;
                     if (maskDim == 2) {
                         //"time" (variable length) dimension is dimension 2
-                        kernel = new int[] {2, inputW};
-                        stride = new int[] {1, inputW};
+                        kernel = new long[] {2, inputW};
+                        stride = new long[] {1, inputW};
                     } else {
-                        kernel = new int[] {inputH, 2};
-                        stride = new int[] {inputH, 1};
+                        kernel = new long[] {inputH, 2};
+                        stride = new long[] {inputH, 1};
                     }
 
                     MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
