@@ -1087,20 +1087,16 @@ void ShapeUtils::copyCertainStridesFromShapeInfo(const LongType* inShapeInfo, co
 bool ShapeUtils::areShapesEqual(const LongType* shapeInfo, const std::vector<LongType>& shapeOnly) {
   LongType  rank = shape::rank(shapeInfo);
   if (rank != shapeOnly.size()) {
-    printf("rank is not equal\n");
     return false;
   }
 
   sd::LongType  *inputShapeOnly = shape::shapeOf(shapeInfo);
   for (LongType i = 0; i < rank; ++i) {
     if (inputShapeOnly[i] != shapeOnly[i]) {
-      printf("index at %lld is %lld is not equal\n", i, inputShapeOnly[i]);
       return false;
     }
   }
 
-  printf("Shapes equal returning true\n");
-  fflush(stdout);
   return true;
 }
 

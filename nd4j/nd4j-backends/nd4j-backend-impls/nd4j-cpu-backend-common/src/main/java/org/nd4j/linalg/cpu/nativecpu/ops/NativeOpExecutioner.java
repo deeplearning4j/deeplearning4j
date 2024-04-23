@@ -1398,6 +1398,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             return result;
         } catch (ND4JOpProfilerException e) {
+
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);

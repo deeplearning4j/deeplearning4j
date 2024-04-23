@@ -146,6 +146,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                             b.addInputs("in")
                                     .addLayer("1", new ConvolutionLayer.Builder()
                                             .kernelSize(2, 2).nOut(5)
+                                            .dataFormat(CNN2DFormat.NHWC)
                                             .convolutionMode(ConvolutionMode.Same).build(), "in")
                                     .addLayer("2", new LocallyConnected2D.Builder()
                                             .kernelSize(2, 2).nOut(5).build(), "1")

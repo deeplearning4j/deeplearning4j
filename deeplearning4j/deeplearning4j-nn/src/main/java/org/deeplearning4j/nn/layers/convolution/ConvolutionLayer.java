@@ -88,6 +88,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW) {
             input = input.permute(0,3,1,2); //NHWC to NCHW
             epsilon = epsilon.permute(0,3,1,2); //NHWC to NCHW
+            lastZ = lastZ.permute(0,3,1,2); //NHWC to NCHW
         }
 
 
@@ -241,6 +242,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
         INDArray z  = Nd4j.cnn().conv2d(input,weights,bias,config);
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
+            z = z.permute(0,2,3,1); //NCHW to NHWC
+        }
         INDArray im2col = ctx.getIntermediateResult(0);
         Nd4j.getExecutioner().clearOpContext();
         long outH = im2col.size(-2);

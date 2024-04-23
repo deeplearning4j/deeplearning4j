@@ -171,18 +171,7 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
-  if (A->dataType() != B->dataType())
-    throw datatype_exception::build("mmulMxM expects all data types to be the same", A->dataType(), B->dataType());
 
-  if (C != nullptr && A->dataType() != C->dataType()) {
-    std::string errorMessage;
-    errorMessage = "mmulMxM expects all data types to be the same";
-    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
-    errorMessage += "B: " + DataTypeUtils::asString(B->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of A array is not equal 2 !");
-  if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of B array is not equal 2 !");
 
   const auto M = A->sizeAt(0);
   const auto K = A->sizeAt(1);
@@ -208,6 +197,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     errorMessage += " C: " +  std::to_string(M);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
   if (C != nullptr && C->sizeAt(1) != N) {
     std::string errorMessage;
     errorMessage = "mmulMxM expects C array has the same number of columns as B" ;
@@ -215,10 +205,11 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     errorMessage +=  "C : " + std::to_string(N);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (C == nullptr) {
+
+  if (C == nullptr)
     C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
-  }
+
   if (C->isEmpty()) return C;
 
   const auto aType = A->dataType();
@@ -313,40 +304,18 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   }
   sd::LongType xLenDim, yLenDim(0);
 
-  if (A->rankOf() != 2)  {
-    std::string errorMessage;
-    errorMessage = "MmulHelper::mmulMxV: rank of A array is not equal 2";
-    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (!shape::isCommonVector(X->shapeInfo(), xLenDim)) {
-    std::string errorMessage;
-    errorMessage += "MmulHelper::mmulMxV: X array must be vector !";
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
+  if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
+    THROW_EXCEPTION("MmulHelper::mmulMxV: X array must be vector !");
+
   const auto M = A->sizeAt(0);
   const auto N = A->sizeAt(1);
 
+  if (Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim))
+    THROW_EXCEPTION("MmulHelper::mmulMxV: Y array must be vector !");
+  if (X->lengthOf() != N) THROW_EXCEPTION("MmulHelper::mmulMxV: X vector has wrong length !");
+  if (Y != nullptr && Y->lengthOf() != M) THROW_EXCEPTION("MmulHelper::mmulMxV: Y array has wrong length !");
 
-  if (Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim)) {
-    std::string errorMessage;
-    errorMessage = "MmulHelper::mmulMxV: Y array must be vector !";
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  if (X->lengthOf() != N) {
-    std::string errorMessage;
-    errorMessage = "MmulHelper::mmulMxV: X vector has wrong length !";
-    errorMessage += " A: " + std::to_string(M) + " x " + std::to_string(N);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  if (Y != nullptr && Y->lengthOf() != M) {
-    std::string errorMessage;
-    errorMessage = "MmulHelper::mmulMxV: Y array has wrong length ! ";
-    errorMessage += " A: " + std::to_string(M) + " x " + std::to_string(N);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   if (Y == nullptr)
     Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
                     A->getContext());

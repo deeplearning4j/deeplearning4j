@@ -110,11 +110,18 @@ namespace sd {
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_floor(T val);
 
+
+
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_log(X val);
 
+
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_pow(X val, Y val2);
+
+        template <typename X, typename Y, typename Z>
+        SD_HOST_DEVICE inline Z sd_floordiv(X val,Y val2);
+
 
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_round(T val);
@@ -652,6 +659,8 @@ namespace sd {
             return p_exp<X>(val);
         }
 
+
+
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_floor(X val) {
             return static_cast<Z>(p_floor<X>(val));
@@ -684,6 +693,11 @@ namespace sd {
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_pow(X val, Y val2) {
             return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
+        }
+
+        template <typename X, typename Y, typename Z>
+        SD_HOST_DEVICE inline Z sd_floordiv(X val, Y val2) {
+          return static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
         }
 
 /**

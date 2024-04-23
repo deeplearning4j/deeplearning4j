@@ -42,7 +42,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType outputHeight(const LongType *inputShapeInfo,bool nchw) {
     if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 3);
+      return shape::sizeAt(inputShapeInfo, 2);
     } else {
       return shape::sizeAt(inputShapeInfo, 1);
     }
@@ -50,9 +50,9 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType outputWidth(const LongType *inputShapeInfo,bool nchw) {
     if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 4);
+      return shape::sizeAt(inputShapeInfo, 3);
     } else {
-      return shape::sizeAt(inputShapeInfo, 2);
+      return shape::sizeAt(inputShapeInfo, 1);
     }
   }
 
@@ -72,19 +72,23 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
   }
 
-  static inline LongType  inChannels(const LongType *inputShapeInfo,bool nchw) {
-    if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 1);
-    } else {
+  static inline LongType inChannels(const LongType* inputShapeInfo, int weightFormat) {
+    if (weightFormat == 0 || weightFormat == 1) {  // [kH, kW, iC, oC] or [oC, iC, kH, kW]
+      return shape::sizeAt(inputShapeInfo, 2);
+    } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, 3);
+    } else {
+     THROW_EXCEPTION("Unsupported weight format");
     }
   }
 
-  static inline LongType outChannels(const LongType *inputShapeInfo,bool nchw) {
-    if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 1);
-    } else {
+  static inline LongType outChannels(const LongType* inputShapeInfo, int weightFormat) {
+    if (weightFormat == 0) {  // [kH, kW, iC, oC]
       return shape::sizeAt(inputShapeInfo, 3);
+    } else if (weightFormat == 1 || weightFormat == 2) {  // [oC, iC, kH, kW] or [oC, kH, kW, iC]
+      return shape::sizeAt(inputShapeInfo, 0);
+    } else {
+      THROW_EXCEPTION("Unsupported weight format");
     }
   }
 
@@ -135,14 +139,13 @@ class SD_LIB_HIDDEN ConvolutionUtils {
                                         const LongType padding, const LongType dilation, const int paddingMode) {
     LongType outputDim;
     const LongType dilatedKernelDim = (kernelDim - 1) * dilation + 1;
-
     if (paddingMode == 0) {  // valid
-      outputDim = (inputDim + 2 * padding - dilatedKernelDim) / stride + 1;
+      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(inputDim + 2 * padding - dilatedKernelDim,stride + 1);
     } else if (paddingMode == 1) {  // same
-      outputDim = (inputDim + stride - 1) / stride;
+      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>((inputDim + stride - 1),stride);
     } else {  // causal
       const LongType causalPadding = (kernelDim - 1) * dilation;
-      outputDim = (inputDim + 2 * causalPadding - dilatedKernelDim) / stride + 1;
+      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(inputDim + 2 * causalPadding - dilatedKernelDim,stride + 1);
     }
 
     return outputDim;
@@ -154,7 +157,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
                                        const int paddingMode) {
     oH = calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
     oW = calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
-
+    printf("oH %d oW %d input width %lld input height %lld kernel height %lld kernel width %lld\n",oH,oW,iW,iH,kH,kW);
   }
 
   static inline void calcOutSizePool3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,
@@ -410,11 +413,6 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kH, const LongType kW, const LongType iC,
                                                   const LongType oC) {
-
-    /*
-     *
-     *  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
-     * */
     if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});

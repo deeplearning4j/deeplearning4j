@@ -32,7 +32,7 @@ public abstract class BaseActivationFunction implements IActivation {
     }
 
     protected void assertShape(INDArray in, INDArray epsilon){
-        if(!in.equalShapes(epsilon)){
+        if(!in.equalShapes(epsilon)) {
             throw new IllegalStateException("Shapes must be equal during backprop: in.shape{} = " + Arrays.toString(in.shape())
                     + ", epsilon.shape() = " + Arrays.toString(epsilon.shape()));
         }

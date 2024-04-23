@@ -57,7 +57,6 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
 
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
-
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                            wFormat);
 
@@ -80,12 +79,11 @@ DECLARE_SHAPE_FN(conv2d) {
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   LongType wFormat = block.getIArguments()->size() > 10
-                     ? INT_ARG(10)
-                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                         ? INT_ARG(10)
+                         : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(ConvolutionUtils::sizeOfKh(weightsShapeInfo,wFormat));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(ConvolutionUtils::sizeOfKw(weightsShapeInfo,wFormat));  // filter(kernel) width
-  printf("kH is %lld and kW is %lld\n", kH, kW);
   const int rank = 4;  // 4
 
   REQUIRE_TRUE(inputShapeInfo[0] == rank, 0,
@@ -97,11 +95,11 @@ DECLARE_SHAPE_FN(conv2d) {
 
 
 
-  const LongType bS = inputShapeInfo[1];             // batch size
-  const LongType iH = ConvolutionUtils::inputHeight(inputShapeInfo,isNCHW == 0);    // input height
-  const LongType iW = ConvolutionUtils::inputWidth(inputShapeInfo,isNCHW == 0);    // input width
-  const LongType iC = ConvolutionUtils::inChannels(inputShapeInfo,isNCHW == 0);  // input channels
-  const LongType oC = ConvolutionUtils::sizeOfOutChannels(weightsShapeInfo,wFormat);  // output channels
+  LongType bS = shape::sizeAt(inputShapeInfo, 0);             // batch size
+  LongType   iC = ConvolutionUtils::inChannels(weightsShapeInfo, wFormat);
+  LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW == 0);
+  LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW == 0);
+  LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
 
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
@@ -139,7 +137,7 @@ DECLARE_SHAPE_FN(conv2d) {
   outputShapeInfo[0] = rank;
   outputShapeInfo[1] = bS;
 
-  if (isNCHW) {
+  if (isNCHW == 0) {
     outputShapeInfo[2] = oC;
     outputShapeInfo[3] = oH;
     outputShapeInfo[4] = oW;
@@ -153,6 +151,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
   return SHAPELIST(CONSTANT(outputShapeInfo));
 }
+
 
 DECLARE_TYPES(conv2d) {
   getOpDescriptor()

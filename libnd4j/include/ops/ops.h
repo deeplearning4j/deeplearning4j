@@ -364,25 +364,24 @@ class FloorDiv {
   //This is not a guaranteed fix and need to verify. The test case is -1 / 3 is -.333 which floor rounds down to -1.
   //We are currently reutrning
   SD_OP_DEF static Z op(X d1, Y d2) {
-    auto divResult = static_cast<float>(d1) / static_cast<float>(d2);
+    auto divResult = static_cast<double>(d1) / static_cast<double>(d2);
     //note: we do this because floor cast to an int can provide incorrect results
     //the test case that caused this change was -1 / 3 = -0.33 = -1 but it was zero instead.
-    return static_cast<Z>(sd::math::sd_floor<float, float>(divResult));
+    return static_cast<Z>(sd::math::sd_floor<double, double>(divResult));
   }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) {
-    auto divResult = static_cast<float>(d1) / static_cast<float>(d2);
+    auto divResult = static_cast<double>(d1) / static_cast<double>(d2);
     //note: we do this because floor cast to an int can provide incorrect results
     //the test case that caused this change was -1 / 3 = -0.33 = -1 but it was zero instead.
-    return static_cast<Z>(sd::math::sd_floor<float, float>(divResult));
+    return static_cast<Z>(sd::math::sd_floor<double, double>(divResult));
   }
 
   SD_OP_DEF static Z op(X d1) { return sd::math::sd_floor<Z, Z>(static_cast<Z>(d1)); }
 
   // op for MetaOps
   SD_OP_DEF static Z op(X d1, Y *params) {
-    printf("in params divide\n");
-    return sd::math::sd_floor<Z, Z>(static_cast<Z>(static_cast<float>(d1) / static_cast<float>(params[0])));
+    return sd::math::sd_floor<Z, Z>(static_cast<Z>(static_cast<double>(d1) / static_cast<double>(params[0])));
   }
 };
 

@@ -199,7 +199,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         int index = 0;
         for (long[] position : product) {
             List<SDIndex> indices = new ArrayList<>();
-            indices.add(SDIndex.all());
+           indices.add(SDIndex.all());
             if(nchw) {
                 indices.add(SDIndex.all());
             }
@@ -210,6 +210,9 @@ public class LocallyConnected2D extends SameDiffLayer {
                 indices.add(SDIndex.interval(start, end));
             }
 
+            if(!nchw) {
+                indices.add(SDIndex.all());
+            }
             SDVariable slice = layerInput.get(indices.toArray(new SDIndex[0]));
             SDVariable reshapedSlice = sameDiff.reshape(slice, 1, -1, featureDim);
             xs[index++] = reshapedSlice;
