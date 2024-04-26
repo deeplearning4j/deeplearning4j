@@ -160,6 +160,7 @@
                                     <goal>run</goal>
                                 </goals>
                                 <configuration>
+                                    <protocArtifact>com.google.protobuf:protoc:${google.protobuf.version}</protocArtifact>
                                     <protocVersion>${google.protobuf.version}</protocVersion>
                                     <extension>.proto</extension>
                                     <includeDirectories>

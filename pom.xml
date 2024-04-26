@@ -210,7 +210,7 @@
         <commons-compress.version>1.21</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.11</commonslang.version>
-        <commonsio.version>2.7</commonsio.version>
+        <commonsio.version>2.9.0</commonsio.version>
         <commons-codec.version>1.10</commons-codec.version>
         <commons.math.version>${commonsmath.version}</commons.math.version>
         <commons.lang.version>${commonslang.version}</commons.lang.version>
