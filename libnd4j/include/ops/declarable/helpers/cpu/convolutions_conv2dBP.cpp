@@ -22,11 +22,12 @@
 #include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 
-#include <ops/declarable/helpers/addBias.h>
+#include "helpers/ShapeUtils.h"
 #if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 
 namespace sd {
@@ -71,7 +72,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   if (!isNCHW) {
     inputPermuted = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
     gradIPermuted = new NDArray(gradI->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradOPermuted = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradOPermuted = new NDArray(gradO->permute({1,0,2,3}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   } else {
     inputPermuted = const_cast<NDArray *>(input);
     gradIPermuted = const_cast<NDArray *>(gradI);
@@ -110,8 +111,20 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
 
   // ----- calculation of gradB ----- //
   if (gradB) {
-    std::vector<sd::LongType> axes = {0, indOoH, indOoH + 1};
-    gradOPermuted->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
+    if(!isNCHW) {
+      std::vector<sd::LongType> axes = {1,2,3};
+      printf("Summing over shape:\n");
+      gradO->printShapeInfo("gradOPermuted");
+      gradO->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
+    } else {
+      printf("Summing over shape:\n");
+      const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
+      std::vector<LongType> channel;
+      channel.push_back(channelDim);
+      auto dims = ShapeUtils::evalDimsToExclude(gradO->rankOf(), 1,channel.data());
+      gradO->reduceAlongDimension(reduce::Sum, *gradB, dims);
+    }
+
   }
 
   //----- calculation of gradI -----//

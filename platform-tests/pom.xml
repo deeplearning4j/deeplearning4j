@@ -87,7 +87,7 @@
         <test.prefix></test.prefix>
         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
-        <test.asan.options>halt_on_error=0</test.asan.options>
+        <test.asan.options>halt_on_error=0:alloc_dealloc_mismatch=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <!--

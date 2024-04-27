@@ -348,7 +348,6 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const double alpha,
                           const double beta, const char outOrder) {
-  printf("in mmul\n");
   LongType lenDim;
   const LongType aRank = A->rankOf();
   const LongType bRank = B->rankOf();
@@ -457,15 +456,9 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
 
-    /*
-     * TODO: figure out why Y keeps changing.
-     */
+
 
     mmul(xT, yT, zT, alpha, beta);
-    xT->printBufferRaw("XT AFTER MMUL\n",10);
-    yT->printBufferRaw("YT AFTER MMUL\n",10);
-    zT->printBufferRaw("ZT AFTER MMUL\n",10);
-
   } else {  // rest cases -  batched mmul
 
     const int batchRank = xRank - 2;

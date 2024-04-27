@@ -138,8 +138,6 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   static inline LongType calcOutDimConv(const LongType inputDim, const LongType kernelDim, const LongType stride,
                                         const LongType padding, const LongType dilation, const int paddingMode) {
 
-    printf("inputDim: %d, kernelDim: %d, stride: %d, padding: %d, dilation: %d, paddingMode: %d\n", inputDim, kernelDim, stride, padding, dilation, paddingMode);
-
     const LongType dilatedKernelDim = kernelDim + (kernelDim - 1) * (dilation - 1);
     LongType outputLength;
 
@@ -153,9 +151,6 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     }
 
     LongType outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(outputLength + stride - 1, stride);
-
-    printf("outputDim: %d\n", outputDim);
-    fflush(stdout);
     return outputDim;
   }
 

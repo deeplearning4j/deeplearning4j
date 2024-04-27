@@ -278,7 +278,7 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   }
   if (this == &other) return *this;
 
-  //deleteBuffers();
+  deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
   _dataType = other._dataType;
