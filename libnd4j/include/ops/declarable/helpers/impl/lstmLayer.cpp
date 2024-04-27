@@ -502,7 +502,7 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
   dLdzo *= temp;
 
   // dcdcI
-  NDArray dcdcI = f.dup();  // dcdcI = f*clipDeriv [bS, nOut](or[nOut])
+  NDArray dcdcI = f.dup(false);  // dcdcI = f*clipDeriv [bS, nOut](or[nOut])
 
   // take into account possible deposit from clipping derivative
   clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, dcdcI);

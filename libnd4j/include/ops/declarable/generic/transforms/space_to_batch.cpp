@@ -67,7 +67,7 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
   if (shape::strideDescendingCAscendingF(input->shapeInfo()))
     helpers::spaceToBatch(block.launchContext(), *input, *output, padBottom, padTop, padLeft, padRight, blockSize);
   else
-    helpers::spaceToBatch(block.launchContext(), input->dup(), *output, padBottom, padTop, padLeft, padRight,
+    helpers::spaceToBatch(block.launchContext(), input->dup(false), *output, padBottom, padTop, padLeft, padRight,
                           blockSize);
 
   return Status::OK;

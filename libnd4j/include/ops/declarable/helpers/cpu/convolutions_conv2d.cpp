@@ -57,11 +57,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   LongType bS = input->sizeAt(0);
   LongType   iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
-  LongType   iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW == 0);
-  LongType    iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW == 0);
   LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
-  LongType    oH = ConvolutionUtils::outputHeight(output->shapeInfo(), isNCHW == 0);
-  LongType   oW = ConvolutionUtils::outputWidth(output->shapeInfo(),isNCHW == 0);  // batch size, input channels, input height/width, output channels, output height/width;
+  LongType    oH = ConvolutionUtils::outputHeight(output->shapeInfo(), isNCHW);
+  LongType   oW = ConvolutionUtils::outputWidth(output->shapeInfo(),isNCHW);  // batch size, input channels, input height/width, output channels, output height/width;
 
 
   NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getContext());
@@ -72,24 +70,20 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
 
   auto ctx = block.launchContext();
   helpers::im2col(*ctx, *im2ColIn, *col2, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));
-
   block.pushIntermediateResult(col2);
-  //print all batch size output height etc params no dumbass print bS oH etc
 
   std::vector<LongType> permuteW = {3,2,1,0};
   NDArray permutedW = weights->permute(permuteW);
   std::vector<LongType> newShape = {kW * kH * iC, oC};
-  NDArray reshapedW = permutedW.reshape(permutedW.ordering(),newShape,false);
-  NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW});
-
+  NDArray reshapedW = permutedW.reshape(permutedW.ordering(),newShape,true);
+  NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW},false);
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
   MmulHelper::matmul(&im2col2d,&reshapedW,&mmulResult,false,false);
-
   if (bias)
     helpers::addBias(block, mmulResult, *bias, mmulResult, true);
 
   if (isNCHW) {
-    mmulResult.reshapei({bS, oH, oW, oC});
+    mmulResult.reshapei({bS, oH, oW, oC},'f');
     mmulResult.permutei({0, 3, 1, 2});  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   }
 

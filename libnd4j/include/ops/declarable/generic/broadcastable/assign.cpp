@@ -73,7 +73,7 @@ DECLARE_TYPES(assign_bp) {
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = block.width() < 2 ? new NDArray(x->dup(x->ordering())) : INPUT_VARIABLE(1);
+  auto y = block.width() < 2 ? new NDArray(x->dup(x->ordering(), false)) : INPUT_VARIABLE(1);
   auto epsNext = INPUT_VARIABLE(2);
 
   auto gradX = OUTPUT_VARIABLE(0);

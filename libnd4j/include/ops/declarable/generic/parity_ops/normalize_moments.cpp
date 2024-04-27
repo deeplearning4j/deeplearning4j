@@ -44,8 +44,8 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
 
   means->applyScalarArr(scalar::Divide, *counts, *resMeans);
 
-  NDArray squareMeans = resMeans->dup('c');
-  NDArray tempVariances = resVariances->dup('c');
+  NDArray squareMeans = resMeans->dup('c', false);
+  NDArray tempVariances = resVariances->dup('c', false);
 
   squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
   variances->applyScalarArr(scalar::Divide, *counts, tempVariances);

@@ -673,7 +673,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
 
   if (_calcU) {
-    NDArray q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
+    NDArray q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup(false);
 
     for (int i = col1 + k - 1; i >= col1; --i)
       _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(_u({col1, col1 + k + 1, i, i + 1}, true));

@@ -46,7 +46,7 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
       // TODO: ???
     } else {
       // FIXME: in some cases it's possible to have no NDArray
-      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup()));
+      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup(false)));
     }
   }
 

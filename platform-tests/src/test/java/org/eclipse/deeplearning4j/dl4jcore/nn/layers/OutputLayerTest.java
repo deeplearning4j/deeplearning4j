@@ -70,7 +70,12 @@ class OutputLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Set Params")
     void testSetParams() {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).updater(new Sgd(1e-1)).layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.ZERO).activation(Activation.SOFTMAX).lossFunction(LossFunction.MCXENT).build()).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(1e-1))
+                .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.ZERO)
+                        .activation(Activation.SOFTMAX).lossFunction(LossFunction.MCXENT).build())
+                .build();
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         org.deeplearning4j.nn.layers.OutputLayer l = (org.deeplearning4j.nn.layers.OutputLayer) conf.getLayer().instantiate(conf, Collections.<TrainingListener>singletonList(new ScoreIterationListener(1)), 0, params, true, params.dataType());

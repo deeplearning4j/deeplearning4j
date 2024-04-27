@@ -37,6 +37,12 @@ public interface OpContext extends AutoCloseable {
 
 
     /**
+     * Copies arguments from the given CustomOp
+     * @param customOp CustomOp to copy arguments from
+     */
+    void setArgsFrom(CustomOp customOp);
+
+    /**
      * This method sets integer arguments required for operation
      *
      * @param arguments

@@ -347,9 +347,9 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, const LongType rank, const NDArray& arr,
+LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType rank, const NDArray* arr,
                                         memory::Workspace* workspace, const bool setContigStrides) {
-  if (rank != arr.rankOf())
+  if (rank != arr->rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
 
   auto shapeInfoLength = shape::shapeInfoLength(rank);
@@ -359,17 +359,18 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, const LongTy
   ALLOCATE(shapeInfoNew, workspace, shapeInfoLength, sd::LongType);
 
   // copy arr _shapeInfo into new array
-  memcpy(shapeInfoNew, arr.shapeInfo(), shape::shapeInfoByteLength(rank));
+  memcpy(shapeInfoNew, arr->shapeInfo(), shape::shapeInfoByteLength(rank));
 
   // perform buffer permutation
-  shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr.lengthOf());
+  shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr->lengthOf());
 
-  if (setContigStrides) shape::updateStrides(shapeInfoNew, arr.ordering());
+  if (setContigStrides) shape::updateStrides(shapeInfoNew, arr->ordering());
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfoNew);
 
   auto ret = descriptor->toShapeInfo();
   if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
+
   return ret;
 }
 
@@ -389,7 +390,7 @@ const LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, memory::W
     dims[i] = rank - 1 - i;
   }
 
-  auto ret = evalPermShapeInfo(dims, rank, arr, workspace, setContigStrides);
+  auto ret = evalPermShapeInfo(dims, rank, &arr, workspace, setContigStrides);
   delete[] dims;
   return ret;
 }

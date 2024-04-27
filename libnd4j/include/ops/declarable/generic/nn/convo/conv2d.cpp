@@ -59,6 +59,7 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
                            wFormat);
+  output->printBufferRaw("Output from conv2d forward pass:");
 
   return Status::OK;
 }
@@ -97,8 +98,8 @@ DECLARE_SHAPE_FN(conv2d) {
 
   LongType bS = shape::sizeAt(inputShapeInfo, 0);             // batch size
   LongType   iC = ConvolutionUtils::inChannels(weightsShapeInfo, wFormat);
-  LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW == 0);
-  LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW == 0);
+  LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW);
+  LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
 
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
@@ -137,7 +138,7 @@ DECLARE_SHAPE_FN(conv2d) {
   outputShapeInfo[0] = rank;
   outputShapeInfo[1] = bS;
 
-  if (isNCHW == 0) {
+  if (isNCHW) {
     outputShapeInfo[2] = oC;
     outputShapeInfo[3] = oH;
     outputShapeInfo[4] = oW;
@@ -147,7 +148,7 @@ DECLARE_SHAPE_FN(conv2d) {
     outputShapeInfo[4] = oC;
   }
 
-  ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, shape::order(inputShapeInfo));
+  ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, 'f');
 
   return SHAPELIST(CONSTANT(outputShapeInfo));
 }
@@ -174,8 +175,8 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
                ? INPUT_VARIABLE(3)
                : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-  auto gradI = OUTPUT_NULLIFIED(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-  auto gradW = OUTPUT_NULLIFIED(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
+  auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+  auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;  // [oC]
 
   LongType kH = INT_ARG(0);                                               // filter(kernel) height

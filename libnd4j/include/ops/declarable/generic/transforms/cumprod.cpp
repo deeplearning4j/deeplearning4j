@@ -102,7 +102,7 @@ CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
   }
 
   helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
-  NDArray val = NDArray(output->dup());
+  NDArray val = NDArray(output->dup(false));
 
   gradOut->applyPairwiseTransform(pairwise::Multiply, *output, val);
   val.applyPairwiseTransform(pairwise::Divide, *input, val);

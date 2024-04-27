@@ -153,7 +153,7 @@ class ConvolutionLayerSetupTest extends BaseDL4JTest {
     }
 
     public ListBuilder incompleteLRN() {
-        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new LocalResponseNormalization.Builder().build()).layer(3, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(4, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).activation(Activation.SOFTMAX).build());
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(3).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(1, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(2, new LocalResponseNormalization.Builder().build()).layer(3, new ConvolutionLayer.Builder(new int[] { 5, 5 }).nOut(6).build()).layer(4, new SubsamplingLayer.Builder(new int[] { 2, 2 }).build()).layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(2).activation(Activation.SOFTMAX).build());
         return builder;
     }
 

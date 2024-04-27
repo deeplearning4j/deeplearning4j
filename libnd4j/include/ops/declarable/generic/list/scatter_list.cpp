@@ -61,7 +61,7 @@ LIST_OP_IMPL(scatter_list, 1, 1, 0, -2) {
     auto idx = indices->e<LongType>(e);
     if (idx >= tads.size()) return Status::BAD_ARGUMENTS;
 
-    auto arr = new NDArray(tads.at(e)->dup(array->ordering()));
+    auto arr = new NDArray(tads.at(e)->dup(array->ordering(), false));
     auto res = list->write(idx, arr);
 
 

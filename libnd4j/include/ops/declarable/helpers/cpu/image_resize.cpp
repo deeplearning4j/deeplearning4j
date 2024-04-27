@@ -87,10 +87,8 @@ static void resizeImage_(T const* pInputBuf, sd::LongType batchSize, sd::LongTyp
   sd::LongType inBatchNumValues = inHeight * inRowSize;
   sd::LongType outRowSize = outWidth * channels;
 
-  //        T const *pInputBuf = images->getDataBuffer()->primaryAsT<T>(); // this works only with 'c' direction
   BilinearInterpolationData const* xsPtr = xs.data();
 
-  //        T* pOutputBuf = output->dataBuffer()->primaryAsT<T>();
   auto computeBilinear = [](double topLeft, double topRight, double bottomLeft, double bottomRight, double xVal,
                             double yVal) {
     double top = topLeft + (topRight - topLeft) * xVal;

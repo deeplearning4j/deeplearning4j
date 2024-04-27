@@ -121,7 +121,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE }) {
                 assertEquals(globalDtype, Nd4j.dataType());
                 assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
-                for (int test = 1; test < 2; test++) {
+                for (int test = 0; test < 2; test++) {
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
                     ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
                             .dataType(networkDtype).seed(123)

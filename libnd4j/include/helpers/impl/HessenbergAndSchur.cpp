@@ -36,14 +36,14 @@ Hessenberg<T>::Hessenberg(const NDArray& matrix) {
   if (matrix.sizeAt(0) == 1) {
     _Q = NDArray(matrix.ordering(), {1, 1}, matrix.dataType(), matrix.getContext());
     _Q = 1;
-    _H = matrix.dup();
+    _H = matrix.dup(false);
     return;
   }
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
     THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
 
-  _H = matrix.dup();
+  _H = matrix.dup(false);
   _Q = matrix.ulike();
 
   evalData();

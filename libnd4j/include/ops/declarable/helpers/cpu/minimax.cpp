@@ -61,8 +61,8 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
 
     // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same
     // shape)
-    auto preX = x->dup();
-    auto preY = y->dup();
+    auto preX = x->dup(false);
+    auto preY = y->dup(false);
 
     auto targetShape = epsNext->getShapeAsVector();
 
@@ -120,8 +120,8 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
 
     // in this case we want to boost our X and Y shapes to the size of FF pass output (or epsNext, which has the same
     // shape)
-    auto preX = x->dup();
-    auto preY = y->dup();
+    auto preX = x->dup(false);
+    auto preY = y->dup(false);
 
     auto targetShape = epsNext->getShapeAsVector();
 

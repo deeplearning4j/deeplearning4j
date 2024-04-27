@@ -218,9 +218,9 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     @DisplayName("Test Feature Map Shape MNIST")
     void testFeatureMapShapeMNIST() throws Exception {
         int inputWidth = 28;
-        int[] stride = new int[] { 1, 1 };
-        int[] padding = new int[] { 0, 0 };
-        int[] kernelSize = new int[] { 9, 9 };
+        int[] stride = { 1, 1 };
+        int[] padding = { 0, 0 };
+        int[] kernelSize = { 9, 9 };
         int nChannelsIn = 1;
         int depth = 20;
         int featureMapWidth = (inputWidth + padding[1] * 2 - kernelSize[1]) / stride[1] + 1;
@@ -252,9 +252,9 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     }
 
     public Layer getMNISTConfig() {
-        int[] kernelSize = new int[] { 9, 9 };
-        int[] stride = new int[] { 1, 1 };
-        int[] padding = new int[] { 1, 1 };
+        int[] kernelSize = { 9, 9 };
+        int[] stride = { 1, 1 };
+        int[] padding = { 1, 1 };
         int nChannelsIn = 1;
         int depth = 20;
         return getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
@@ -272,9 +272,9 @@ class ConvolutionLayerTest extends BaseDL4JTest {
     }
 
     public Layer getContainedConfig() {
-        int[] kernelSize = new int[] { 2, 2 };
-        int[] stride = new int[] { 2, 2 };
-        int[] padding = new int[] { 0, 0 };
+        int[] kernelSize = { 2, 2 };
+        int[] stride = { 2, 2 };
+        int[] padding = { 0, 0 };
         int nChannelsIn = 1;
         int depth = 2;
         INDArray W = Nd4j.create(new double[] { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 }, new int[] { 2, 1, 2, 2 });

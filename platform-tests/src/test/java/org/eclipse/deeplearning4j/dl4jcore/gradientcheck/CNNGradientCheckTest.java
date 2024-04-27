@@ -68,7 +68,6 @@ import org.junit.jupiter.api.DisplayName;
 @NativeTag
 @Tag(TagNames.LARGE_RESOURCES)
 @Tag(TagNames.LONG_TEST)
-@Disabled("Fails on GPU to be revisited")
 class CNNGradientCheckTest extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -106,9 +105,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
     public void testGradientCNNMLN(CNN2DFormat format,Nd4jBackend backend) {
-        if (// Only test NCHW due to flat input format...
-        format != CNN2DFormat.NCHW)
-            return;
         // Parameterized test, testing combinations of:
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
@@ -128,7 +124,13 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                 for (int i = 0; i < lossFunctions.length; i++) {
                     LossFunctions.LossFunction lf = lossFunctions[i];
                     Activation outputActivation = outputActivations[i];
-                    ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp()).weightInit(WeightInit.XAVIER).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(1, 1).nOut(6).activation(afn).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
+                    ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new NoOp()).weightInit(WeightInit.XAVIER).seed(12345L)
+                            .list()
+                            .layer(0, new ConvolutionLayer.Builder(1, 1).hasBias(false).nOut(6).activation(afn).build())
+                            .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
+                            .setInputType(InputType.convolutionalFlat(1, 4, 1));
                     MultiLayerConfiguration conf = builder.build();
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
@@ -163,7 +165,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
     @DisplayName("Test Gradient CNNL 1 L 2 MLN")
     void testGradientCNNL1L2MLN(CNN2DFormat format,Nd4jBackend backend) {
         if (// Only test NCHW due to flat input format...
-        format != CNN2DFormat.NCHW)
+                format != CNN2DFormat.NCHW)
             return;
         // Parameterized test, testing combinations of:
         // (a) activation function
@@ -191,7 +193,14 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             Activation outputActivation = outputActivations[i];
             double l2 = l2vals[i];
             double l1 = l1vals[i];
-            ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i]).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1).nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build()).layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).weightInit(WeightInit.XAVIER).updater(new NoOp()).build()).setInputType(InputType.convolutionalFlat(1, 4, 1));
+            ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE)
+                    .l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i])
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1)
+                            .nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build())
+                    .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
+                            .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
+                    .setInputType(InputType.convolutionalFlat(1, 4, 1));
             MultiLayerConfiguration conf = builder.build();
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -324,7 +333,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             INDArray input = Nd4j.rand(DataType.DOUBLE, inShape);
             INDArray labels = TestUtils.randomOneHot(minibatchSize, nOut);
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE).updater(new NoOp()).dist(new NormalDistribution(0, 1)).list().layer(new ConvolutionLayer.Builder(kernel, stride, padding).nIn(inputDepth).dataFormat(format).nOut(3).build()).layer(// output: 4*2 =8 -> 8x8x3
-            new Upsampling2D.Builder().size(size).dataFormat(format).build()).layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(8 * 8 * 3).nOut(4).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
+                    new Upsampling2D.Builder().size(size).dataFormat(format).build()).layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(8 * 8 * 3).nOut(4).build()).setInputType(InputType.convolutional(height, width, inputDepth, format)).build();
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
             String msg = "Upsampling - minibatch=" + minibatchSize;
@@ -614,7 +623,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     .updater(new NoOp()).dataType(DataType.DOUBLE)
                     .dist(new NormalDistribution(0, 1)).list()
                     .layer(0, new ConvolutionLayer.Builder(kernel, stride, padding)
-                    .dataFormat(format).nIn(inputDepth).nOut(3).build())
+                            .dataFormat(format).nIn(inputDepth).nOut(3).build())
                     .layer(1, new ZeroPaddingLayer.Builder(zeroPad).dataFormat(format).build())
                     .layer(2, new ConvolutionLayer.Builder(kernel, stride, padding).nIn(3).nOut(3).dataFormat(format).build())
                     .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)
@@ -730,7 +739,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             String msg = " - mb=" + minibatchSize + ", k=" + k + ", s=" + s + ", d=" + d + ", cm=" + cm;
             System.out.println(msg);
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input).labels(labels).subset(true).maxPerParam(// Most params are in output layer
-            50));
+                    50));
             assertTrue(gradOK,msg);
             TestUtils.testModelSerialization(net);
         }

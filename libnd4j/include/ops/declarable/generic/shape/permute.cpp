@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(permute) {
   std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
 
   auto outputShapeInfo =
-      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
+      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, block.workspace(), true);
   return SHAPELIST(outputShapeInfo);
 }
 

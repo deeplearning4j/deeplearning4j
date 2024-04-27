@@ -155,7 +155,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
     auto meanT = listOfOutTensors.at(idx);
     int count = 1;
-    auto meanV = meanT->dup();
+    auto meanV = meanT->dup(false);
     meanV.assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
@@ -598,7 +598,7 @@ template <typename T>
 sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
   // if input is a vector: (as if in doc sample)
-  auto tempRes = gradOut->dup();
+  auto tempRes = gradOut->dup(false);
   segmentMaxFunctor_<T>(input, indices, &tempRes);
   if (input->isVector() || input->isScalar()) {
     sd::LongType loop_size = input->lengthOf();
@@ -655,7 +655,7 @@ BUILD_SINGLE_TEMPLATE(template sd::Status segmentMaxFunctorBP_,
 // segmen min
 sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                NDArray* output) {
-  NDArray tempRes = gradOut->dup();
+  NDArray tempRes = gradOut->dup(false);
   segmentMinFunctor(context, input, indices, &tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {
@@ -769,7 +769,7 @@ sd::Status segmentSumFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 
 sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
-  auto tempRes = gradOut->dup();
+  auto tempRes = gradOut->dup(false);
   segmentProdFunctor(context, input, indices, &tempRes);
   if (input->isVector() || input->isScalar()) {
     for (sd::LongType e = 0; e < indices->lengthOf(); ++e) {
@@ -809,7 +809,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
                                                NDArray* gradOut, sd::LongType numOfClasses, NDArray* output) {
   //        int numOfClasses = gradOut->sizeAt(0);
   // if input is a vector: (as if in doc sample)
-  auto tempRes = gradOut->dup();
+  auto tempRes = gradOut->dup(false);
   unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, &tempRes);
   if (input->isVector() || input->isScalar()) {
     for (sd::LongType e = 0; e < input->lengthOf(); ++e) {
@@ -855,7 +855,7 @@ BUILD_SINGLE_TEMPLATE(template sd::Status unsortedSegmentMaxFunctorBP_,
 template <typename T>
 static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices,
                                                NDArray* gradOut, sd::LongType numOfClasses, NDArray* output) {
-  auto tempRes = gradOut->dup();
+  auto tempRes = gradOut->dup(false);
   unsortedSegmentMinFunctor(context, input, indices, numOfClasses, &tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {
@@ -972,7 +972,7 @@ sd::Status unsortedSegmentSumFunctorBP(sd::LaunchContext* context, NDArray* inpu
 
 sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                         sd::LongType numOfClasses, NDArray* output) {
-  auto tempRes = gradOut->dup();
+  auto tempRes = gradOut->dup(false);
   unsortedSegmentProdFunctor(context, input, indices, numOfClasses, &tempRes);
   if (input->isVector() || input->isScalar()) {
     auto func = PRAGMA_THREADS_FOR {

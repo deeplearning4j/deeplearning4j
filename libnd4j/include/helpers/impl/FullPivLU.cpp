@@ -41,7 +41,7 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   if (A.sizeAt(1) != x.sizeAt(0))
     THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
-  NDArray LU = A.dup();
+  NDArray LU = A.dup(false);
 
   const int rows = LU.sizeAt(0);
   const int cols = LU.sizeAt(1);

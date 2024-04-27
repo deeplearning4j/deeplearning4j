@@ -753,7 +753,7 @@ Status DeclarableOp::execute(Context *block) {
   if(Environment::getInstance().isCheckInputChange()) {
     for(int i = 0; i < block->width(); i++) {
       auto array = block->array(i);
-      inputsToCheck.push_back(array->dup());
+      inputsToCheck.push_back(array->dup(false));
 
     }
   }
@@ -762,7 +762,7 @@ Status DeclarableOp::execute(Context *block) {
   if(Environment::getInstance().isCheckOutputChange()) {
     for(int i = 0; i < numOutputs; i++) {
       auto array = block->fastpath_out()[i];
-      outputsToCheck.push_back(array->dup());
+      outputsToCheck.push_back(array->dup(false));
     }
 
     printf("outputs to check %d\n", outputsToCheck.size());

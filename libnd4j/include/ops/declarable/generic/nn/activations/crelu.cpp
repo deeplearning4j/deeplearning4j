@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
 
   REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
-  auto tmp = x->dup();
+  auto tmp = x->dup(false);
   tmp.applyTransform(transform::Neg, tmp);
 
   auto z = OUTPUT_VARIABLE(0);

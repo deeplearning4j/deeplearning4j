@@ -37,7 +37,7 @@ LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum) : LegacyOp(1, opNum) {
 LegacyOp *LegacyScalarBoolOp::clone() { return new LegacyScalarBoolOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
-  _scalar = new NDArray(scalar.dup(scalar.ordering()));
+  _scalar = new NDArray(scalar.dup(scalar.ordering(), false));
 }
 
 ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {

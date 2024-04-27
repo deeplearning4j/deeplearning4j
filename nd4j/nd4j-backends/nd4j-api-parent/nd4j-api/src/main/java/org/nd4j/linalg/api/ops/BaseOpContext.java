@@ -47,6 +47,16 @@ public abstract class BaseOpContext implements OpContext {
     protected ExecutionMode executionMode = ExecutionMode.UNDEFINED;
 
     @Override
+    public void setArgsFrom(CustomOp customOp) {
+        setIArguments(customOp.iArgs());
+        setTArguments(customOp.tArgs());
+        setBArguments(customOp.bArgs());
+        setDArguments(customOp.dArgs());
+        setInputArrays(customOp.inputArguments());
+        setOutputArrays(customOp.outputArguments());
+    }
+
+    @Override
     public void setIArguments(Pointer arguments, int length) {
         throw new UnsupportedOperationException("Unable to set an int arguments pointer using a pointer");
 

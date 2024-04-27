@@ -84,7 +84,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
 
 
 
-  auto leftLower = leftOutput.dup();
+  auto leftLower = leftOutput.dup(false);
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
   MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0);

@@ -135,7 +135,7 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
                             const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                             std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
                             std::vector<LongType>& permuteCt) {
-  
+
 
   // check whether permutation is required
   NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt));
@@ -348,6 +348,7 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const double alpha,
                           const double beta, const char outOrder) {
+  printf("in mmul\n");
   LongType lenDim;
   const LongType aRank = A->rankOf();
   const LongType bRank = B->rankOf();
@@ -358,6 +359,7 @@ NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const 
       (aRank != 2 ||
        aRank == 2 && (A->isSameShape(B) ||
                       bRank == 1 && A->sizeAt(1) == 1))) {  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
+
 
     return dot(A, B, C, alpha, beta);
   }
@@ -386,6 +388,8 @@ NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const 
     return C;
   }
 
+  printf("Batched matrix multiplication\n");
+  fflush(stdout);
   // batched matrix multiplication
   return mmulNxN(A, B, C, alpha, beta, outOrder);
 }
@@ -410,25 +414,36 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
   if (z->isEmpty()) return;
 
-  const NDArray *xT = x;
-  const NDArray *yT = y;
+  NDArray *xT = const_cast<NDArray *>(x);
+  NDArray *yT = const_cast<NDArray *>(y);
   NDArray *zT = z;
 
   if ((transX && xRank > 1) || (transY && yRank > 1)) {
     const int rank = xRank >= yRank ? xRank : yRank;
-    std::vector<LongType> permut(rank);
-    for (int i = 0; i < rank - 2; ++i) permut[i] = i;
-    permut[rank - 2] = rank - 1;
-    permut[rank - 1] = rank - 2;
+    std::vector<LongType> permute(rank);
+    for (int i = 0; i < rank - 2; ++i) permute[i] = i;
+    permute[rank - 2] = rank - 1;
+    permute[rank - 1] = rank - 2;
 
     //transpose can affect the input data. We shouldn't mutate that.
     //note we dup here to avoid manipulating the reference
     if (transX) {
-      xT = new NDArray(x->dup(x->ordering()).permute(permut));
+      if(x->isView()) {
+        xT = new NDArray(x->dup(x->ordering()));
+        xT->permutei(permute);
+      } else {
+        xT = new NDArray(x->dup('f').permute(permute));
+      }
     }
 
     if (transY) {
-      yT = new NDArray(y->dup(y->ordering()).permute(permut));
+      if(y->isView()) {
+        yT = new NDArray(y->dup(y->ordering()));
+        yT->permutei(permute);
+      } else {
+        yT = new NDArray(y->dup(y->ordering()));
+        yT->permutei(permute);
+      }
     }
 
   }
@@ -437,14 +452,19 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
       yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
     if (xRank == 1 && yRank == 2) {  // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
-      NDArray xReshape = x->dup().reshape(xT->ordering(), {1, xT->lengthOf()});
+      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},false);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
 
+    /*
+     * TODO: figure out why Y keeps changing.
+     */
+
     mmul(xT, yT, zT, alpha, beta);
-
-
+    xT->printBufferRaw("XT AFTER MMUL\n",10);
+    yT->printBufferRaw("YT AFTER MMUL\n",10);
+    zT->printBufferRaw("ZT AFTER MMUL\n",10);
 
   } else {  // rest cases -  batched mmul
 

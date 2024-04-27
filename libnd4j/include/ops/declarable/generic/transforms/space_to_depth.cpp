@@ -60,7 +60,7 @@ namespace ops {
         if (shape::strideDescendingCAscendingF(input->shapeInfo()))
             helpers::_spaceTodepth(block.launchContext(), *input, output, block_size, isNHWC);
         else
-            helpers::_spaceTodepth(block.launchContext(), input->dup(), output, block_size, isNHWC);
+            helpers::_spaceTodepth(block.launchContext(), input->dup(false), output, block_size, isNHWC);
 
         return Status::OK;
     }

@@ -531,7 +531,7 @@ public class GradientCheckUtil {
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scoreMinus = c.net.score(mds, true);

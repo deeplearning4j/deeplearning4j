@@ -64,9 +64,22 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
         long rng = 12345L;
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
         // original conf
-        ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.01, 0.99)).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4)).addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In").addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0").setOutputs("layer1").build();
+        ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Nesterovs(0.01, 0.99))
+                .graphBuilder().addInputs("layer0In")
+                .setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                .addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0")
+                .setOutputs("layer1").build();
         // conf with learning parameters changed
-        ComputationGraphConfiguration expectedConf = new NeuralNetConfiguration.Builder().seed(rng).updater(new RmsProp(0.2)).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4)).addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In").addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0").setOutputs("layer1").build();
+        ComputationGraphConfiguration expectedConf = new NeuralNetConfiguration.Builder().seed(rng).updater(new RmsProp(0.2))
+                .graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                .addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0")
+                .setOutputs("layer1").build();
         ComputationGraph expectedModel = new ComputationGraph(expectedConf);
         expectedModel.init();
         ComputationGraph modelToFineTune = new ComputationGraph(expectedConf);

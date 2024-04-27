@@ -286,7 +286,7 @@ void hardSigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArra
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
+  NDArray tempInput = input->dup(false);
   input->applyTransform(transform::Exp, tempInput);
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
@@ -300,7 +300,7 @@ static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
-  NDArray tempInput = input->dup();
+  NDArray tempInput = input->dup(false);
   input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
   tempInput.applyTransform(transform::Exp, tempInput);
 

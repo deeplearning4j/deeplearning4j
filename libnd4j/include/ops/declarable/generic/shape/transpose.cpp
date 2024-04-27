@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(transpose) {
 
 
   //note: do not deallocate thhis buffer. they are kept around.
-  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, nullptr, true);
+  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
   if(x->isEmpty()) {
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
   }

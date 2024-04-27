@@ -88,7 +88,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW) {
             input = input.permute(0,3,1,2); //NHWC to NCHW
             epsilon = epsilon.permute(0,3,1,2); //NHWC to NCHW
-            lastZ = lastZ.permute(0,3,1,2); //NHWC to NCHW
         }
 
 
@@ -104,13 +103,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         long[] dilation = layerConf().getDilation();
         long[] kernel = layerConf().getKernelSize();
         long[] strides = layerConf().getStride();
-        long[] outSize;
-
-
-        outSize = ConvolutionUtils.getOutputSizeLong(input.shape(), kernel, strides, null, convolutionMode, dilation, CNN2DFormat.NCHW); //Also performs validation
-
-        long outH = outSize[0];
-        long outW = outSize[1];
 
 
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
@@ -126,6 +118,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         delta = afn.backprop(lastZ, epsilon).getFirst(); //TODO handle activation function params
+        //delta = delta.permute(1, 0, 2, 3); //To shape: [outDepth,miniBatch,outH,outW]
 
 
 
@@ -156,12 +149,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         if(bias != null) {
             conv2DDerivative.addInputArgument(input, weights, bias, delta);
-            conv2DDerivative.addOutputArgument(epsOut, weightGradView2df, biasGradView);
+            conv2DDerivative.addOutputArgument(epsOut, weightGradView, biasGradView);
         } else {
             conv2DDerivative.addInputArgument(input, weights, delta);
-            conv2DDerivative.addOutputArgument(epsOut, weightGradView2df);
+            conv2DDerivative.addOutputArgument(epsOut, weightGradView);
         }
 
+        ctx.setArgsFrom(conv2DDerivative);
+        Nd4j.getExecutioner().exec(conv2DDerivative, ctx);
 
 
         Gradient retGradient = new DefaultGradient();
@@ -178,11 +173,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
 
         try {
-         /*   ctx.close();
+            ctx.close();
             im2col2d.close();
             lastZ.close();
             lastZ = null;
-            this.im2col2d = null;*/
+            this.im2col2d = null;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -250,8 +245,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         long outH = im2col.size(-2);
         long outW = im2col.size(-1);
         INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
-        this.lastZ = z;
-        this.im2col2d = im2col2d;
+        this.lastZ = z.dup();
+        this.im2col2d = im2col2d.dup();
         return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,z), forBackprop ? im2col2d : null);
     }
 

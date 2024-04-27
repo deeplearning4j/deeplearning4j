@@ -659,7 +659,7 @@ public class GradientCheckTests extends BaseDL4JTest {
 
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .dataType(DataType.DOUBLE)
-                                .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
+                                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new NoOp())
                                 .seed(12345L)
                                 .list().layer(0,
                                         new DenseLayer.Builder().nIn(4).nOut(3)

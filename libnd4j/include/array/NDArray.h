@@ -609,6 +609,15 @@ class SD_LIB_EXPORT NDArray {
   void printBuffer(const char *msg = nullptr, LongType limit = -1, const bool sync = true) const;
 
   /**
+   *  prints buffer elements raw without using
+   *  shape information but instead just the databuffer itself.
+   *  msg - message to print out
+   *  limit - number of array elements to print out
+   *  sync - if true check whether host buffer is actual, if it is not then make it so
+   */
+  void printBufferRaw(const char *msg = nullptr, sd::LongType limit = -1, const bool sync = true) const;
+
+  /**
    * print element by element consequently in a way they (elements) are stored in physical memory
    */
   void printLinearBuffer() const;
@@ -649,7 +658,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  returns new copy of this array, optionally in different order
    */
-  NDArray dup(const char newOrder = 'a') const;
+  NDArray dup(const char newOrder = 'a', bool forceOriginalBuffer = false) const;
 
 
 
@@ -1671,15 +1680,19 @@ void NDArray::setShapeInfo(LongType *shapeInfo) {
       THROW_EXCEPTION("Set shape info buffer was corrupt. Please check for deallocation.");
 
     _dataType = ArrayOptions::dataType(_shapeInfo);
-
-    if (ArrayOptions::arrayType(_shapeInfo) == EMPTY)
+    if (ArrayOptions::arrayType(_shapeInfo) == EMPTY) {
       _length = 0;
-    else
+    }
+    else {
       _length = shape::length(_shapeInfo);
+    }
+
   } else {
     //note this used to be a silent fall back. This is a silent source of bugs.
     THROW_EXCEPTION("Unable to create ndarray. Shape info must always be specified");
   }
+
+
 
 }
 

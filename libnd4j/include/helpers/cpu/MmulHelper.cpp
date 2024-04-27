@@ -237,20 +237,22 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = new NDArray(A->dup('f'));
+      pA = new NDArray(A->dup('f', false));
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = new NDArray(B->dup('f'));
+      pB = new NDArray(B->dup('f', false));
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = new NDArray(C->dup('f'));
+      pC = new NDArray(C->dup('f', false));
       toDelete.push_back(pC);
       cMcont = true;
     }
+
+
 
     const CBLAS_ORDER blasOrder = cMcont ? CblasColMajor : CblasRowMajor;
 
@@ -274,6 +276,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
                                         pC->bufferAsT<double>(), ldc);
 
     }
+
 
     if (pC != C) {
       C->assign(pC);
@@ -344,7 +347,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
     bool aNcont = N == 1 || A->strideAt(1) == 1;
 
     if (!aMcont && !aNcont) {
-      pA = new NDArray(A->dup('f'));
+      pA = new NDArray(A->dup('f', false));
       aMcont = true;
     }
     const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;

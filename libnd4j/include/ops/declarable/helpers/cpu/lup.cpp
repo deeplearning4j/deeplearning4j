@@ -245,7 +245,7 @@ void processColumns(sd::LongType currentRow, sd::LongType rowNum, T* compoundBuf
 
 template <typename T>
 static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType rowNum) {
-  auto input = compound->dup();
+  auto input = compound->dup(false);
   compound->nullify();
 
   // Decomposing matrix into Upper and Lower
@@ -549,7 +549,7 @@ sd::Status cholesky(sd::LaunchContext* context, NDArray* input, NDArray* output,
 
 template <typename T>
 sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* output) {
-  auto tempOutput = input->dup();
+  auto tempOutput = input->dup(false);
   auto res = cholesky_<T>(context, input, &tempOutput, false);
   if (res != sd::Status::OK) return res;
   auto n = input->sizeAt(-1);

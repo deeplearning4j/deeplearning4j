@@ -137,19 +137,28 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType calcOutDimConv(const LongType inputDim, const LongType kernelDim, const LongType stride,
                                         const LongType padding, const LongType dilation, const int paddingMode) {
-    LongType outputDim;
-    const LongType dilatedKernelDim = (kernelDim - 1) * dilation + 1;
+
+    printf("inputDim: %d, kernelDim: %d, stride: %d, padding: %d, dilation: %d, paddingMode: %d\n", inputDim, kernelDim, stride, padding, dilation, paddingMode);
+
+    const LongType dilatedKernelDim = kernelDim + (kernelDim - 1) * (dilation - 1);
+    LongType outputLength;
+
     if (paddingMode == 0) {  // valid
-      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(inputDim + 2 * padding - dilatedKernelDim,stride + 1);
+      outputLength = inputDim + 2 * padding - dilatedKernelDim + 1;
     } else if (paddingMode == 1) {  // same
-      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>((inputDim + stride - 1),stride);
+      outputLength = inputDim;
     } else {  // causal
       const LongType causalPadding = (kernelDim - 1) * dilation;
-      outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(inputDim + 2 * causalPadding - dilatedKernelDim,stride + 1);
+      outputLength = inputDim + causalPadding - dilatedKernelDim + 1;
     }
 
+    LongType outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(outputLength + stride - 1, stride);
+
+    printf("outputDim: %d\n", outputDim);
+    fflush(stdout);
     return outputDim;
   }
+
 
   static inline void calcOutSizePool2D(LongType& oH, LongType& oW, const LongType kH, const LongType kW,
                                        const LongType sH, const LongType sW, const LongType pH, const LongType pW,
@@ -157,7 +166,6 @@ class SD_LIB_HIDDEN ConvolutionUtils {
                                        const int paddingMode) {
     oH = calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
     oW = calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
-    printf("oH %d oW %d input width %lld input height %lld kernel height %lld kernel width %lld\n",oH,oW,iW,iH,kH,kW);
   }
 
   static inline void calcOutSizePool3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,

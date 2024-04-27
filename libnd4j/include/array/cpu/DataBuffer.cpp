@@ -90,20 +90,44 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 /////////////////////////
 
 void DataBuffer::memcpyPointer(std::shared_ptr<DataBuffer>   dst, std::shared_ptr<DataBuffer>  src) {
-  if (src->_lenInBytes > dst->_lenInBytes)
-    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
-
+  if (src->_lenInBytes > dst->_lenInBytes) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
+    errorMessage += std::to_string(src->_lenInBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(dst->_lenInBytes);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   std::memcpy(dst->_primaryBuffer, src->_primaryBuffer, src->_lenInBytes);
   dst->readPrimary();
 }
 
 void DataBuffer::memcpy(const DataBuffer dst, const DataBuffer src) {
-  if (src._lenInBytes > dst._lenInBytes)
-    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
-
+  if (src._lenInBytes > dst._lenInBytes) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
+    errorMessage += std::to_string(src._lenInBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(dst._lenInBytes);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   std::memcpy(dst._primaryBuffer, src._primaryBuffer, src._lenInBytes);
   dst.readPrimary();
 }
+
+void DataBuffer::memcpy(const DataBuffer *dst, const DataBuffer *src) {
+  if (src->_lenInBytes > dst->_lenInBytes) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
+    errorMessage += std::to_string(src->_lenInBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(dst->_lenInBytes);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  std::memcpy(dst->_primaryBuffer, src->_primaryBuffer, src->_lenInBytes);
+  dst->readPrimary();
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 
