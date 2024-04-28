@@ -117,7 +117,6 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
       gradO->printShapeInfo("gradOPermuted");
       gradO->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
     } else {
-      printf("Summing over shape:\n");
       const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
       std::vector<LongType> channel;
       channel.push_back(channelDim);

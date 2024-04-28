@@ -23,7 +23,6 @@
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/helpers/addBias.h>
-#include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
@@ -52,14 +51,17 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   // paddingMode 0-VALID, 1-SAME
   // isNCHW      1-NCHW,  0-NHWC
 
-  if (!isNCHW)
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // NHWC to NCHW
 
   LongType bS = input->sizeAt(0);
   LongType   iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
   LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
-  LongType    oH = ConvolutionUtils::outputHeight(output->shapeInfo(), isNCHW);
-  LongType   oW = ConvolutionUtils::outputWidth(output->shapeInfo(),isNCHW);  // batch size, input channels, input height/width, output channels, output height/width;
+  LongType iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW);
+  LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
+  LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
+  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
+ 
+  if (!isNCHW)
+    input = new NDArray(input->permute({0, 3, 1, 2}));  // NHWC to NCHW
 
 
   NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getContext());
@@ -87,7 +89,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
     mmulResult.permutei({0, 3, 1, 2});  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   }
 
-  output->assign(mmulResult);
+  output->assign(mmulResult.reshape(output->ordering(),output->getShapeAsVector()));
 
   if (!isNCHW) {
     delete input;

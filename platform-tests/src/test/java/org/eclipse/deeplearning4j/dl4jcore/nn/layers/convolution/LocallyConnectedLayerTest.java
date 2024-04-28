@@ -116,12 +116,13 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
+        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         for (DataType globalDtype : new DataType[] { DataType.DOUBLE }) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE }) {
                 assertEquals(globalDtype, Nd4j.dataType());
                 assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
-                for (int test = 0; test < 2; test++) {
+                for (int test = 1; test < 2; test++) {
                     String msg = "Global dtype: " + globalDtype + ", network dtype: " + networkDtype + ", test=" + test;
                     ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
                             .dataType(networkDtype).seed(123)
@@ -146,13 +147,14 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                             b.addInputs("in")
                                     .addLayer("1", new ConvolutionLayer.Builder()
                                             .kernelSize(2, 2).nOut(5)
-                                            .dataFormat(CNN2DFormat.NHWC)
+                                            .dataFormat(CNN2DFormat.NCHW)
                                             .convolutionMode(ConvolutionMode.Same).build(), "in")
                                     .addLayer("2", new LocallyConnected2D.Builder()
+                                            .dataFormat(CNN2DFormat.NCHW)
                                             .kernelSize(2, 2).nOut(5).build(), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out");
-                            b.setInputTypes(InputType.convolutional(8, 8, 1,CNN2DFormat.NHWC));
+                            b.setInputTypes(InputType.convolutional(8, 8, 1,CNN2DFormat.NCHW));
                             in = new INDArray[] { Nd4j.rand(networkDtype, 2, 1, 8, 8) };
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;

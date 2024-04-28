@@ -233,6 +233,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         } else {
             permutation = LongStream.concat(LongStream.of(ndims), LongStream.concat(LongStream.range(0, ndims), LongStream.of(ndims + 1))).toArray();
         }
+
         output = sameDiff.permute(output, permutation);
 
         if (hasBias) {

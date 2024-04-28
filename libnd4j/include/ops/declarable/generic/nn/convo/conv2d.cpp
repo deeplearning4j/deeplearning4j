@@ -50,11 +50,14 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
   LongType dH = INT_ARG(6);                                               // dilations height
   LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
-  int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
+  int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                 ? INT_ARG(10)
                 : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
+  //normally nchw is 0 and 1 being passed in, we're using it as a boolean here
+  //so we want it to be whether nchw is 0 or not.
+  isNCHW = isNCHW == 0;
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
   ConvolutionUtils::conv2d(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
@@ -77,10 +80,13 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType dH = INT_ARG(6);                                               // dilations height
   LongType dW = INT_ARG(7);                                               // dilations width
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
-  int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
+  int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 0;  // INT_ARG(9): 0-NCHW, 1-NHWC
   LongType wFormat = block.getIArguments()->size() > 10
-                         ? INT_ARG(10)
-                         : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                     ? INT_ARG(10)
+                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+  //normally nchw is 0 and 1 being passed in, we're using it as a boolean here
+  //so we want it to be whether nchw is 0 or not.
+  isNCHW = isNCHW == 0;
 
   LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(ConvolutionUtils::sizeOfKh(weightsShapeInfo,wFormat));  // filter(kernel) height
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(ConvolutionUtils::sizeOfKw(weightsShapeInfo,wFormat));  // filter(kernel) width
@@ -187,11 +193,12 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
   LongType dH = INT_ARG(6);                                               // dilations height
   LongType dW = INT_ARG(7);                                               // dilations width
   int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
-  int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
+  int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                 ? INT_ARG(10)
                 : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
+  isNCHW = isNCHW != 0;
   REQUIRE_TRUE(input->rankOf() == 4, 0,
                "CUSTOM CONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
   REQUIRE_TRUE(weights->rankOf() == 4, 0,

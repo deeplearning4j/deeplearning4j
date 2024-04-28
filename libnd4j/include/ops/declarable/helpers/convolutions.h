@@ -73,12 +73,14 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static inline LongType inChannels(const LongType* inputShapeInfo, int weightFormat) {
-    if (weightFormat == 0 || weightFormat == 1) {  // [kH, kW, iC, oC] or [oC, iC, kH, kW]
+    if (weightFormat == 0 ) {  // [kH, kW, iC, oC] or
       return shape::sizeAt(inputShapeInfo, 2);
+    } else if(weightFormat == 1) { //[oC, iC, kH, kW]
+        return shape::sizeAt(inputShapeInfo, 1);
     } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, 3);
     } else {
-     THROW_EXCEPTION("Unsupported weight format");
+      THROW_EXCEPTION("Unsupported weight format");
     }
   }
 
@@ -416,6 +418,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kH, const LongType kW, const LongType iC,
                                                   const LongType oC) {
+    printf("expectWeightsShape weightFormat: %d kH %lld kW %lld iC %lld oC %lld\n",wFormat,kH,kW,iC,oC);
+    fflush(stdout);
     if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
