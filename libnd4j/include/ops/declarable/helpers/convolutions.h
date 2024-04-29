@@ -76,7 +76,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     if (weightFormat == 0 ) {  // [kH, kW, iC, oC] or
       return shape::sizeAt(inputShapeInfo, 2);
     } else if(weightFormat == 1) { //[oC, iC, kH, kW]
-        return shape::sizeAt(inputShapeInfo, 1);
+      return shape::sizeAt(inputShapeInfo, 1);
     } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, 3);
     } else {
@@ -415,11 +415,19 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     oH = output.sizeAt(indIOioD + 1);  // output height
     oW = output.sizeAt(indIOioD + 2);  // output width
   }
+  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+  static std::vector<LongType> expectGrad0Shape(int isNCHW,LongType batchSize, LongType oH, LongType oW, LongType oC) {
+    if (isNCHW) {
+      return std::vector<LongType>({batchSize, oC, oH, oW});
+    } else {
+      return std::vector<LongType>({batchSize, oH, oW, oC});
+    }
+
+  }
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kH, const LongType kW, const LongType iC,
                                                   const LongType oC) {
-    printf("expectWeightsShape weightFormat: %d kH %lld kW %lld iC %lld oC %lld\n",wFormat,kH,kW,iC,oC);
-    fflush(stdout);
+
     if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
     if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
@@ -429,11 +437,11 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kD, const LongType kH, const LongType kW,
                                                   const LongType iC, const LongType oC) {
-    if (0 == wFormat) return std::vector<LongType>({kD, kH, kW, iC, oC});
+    if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
 
-    if (1 == wFormat) return std::vector<LongType>({oC, iC, kD, kH, kW});
+    if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
 
-    return std::vector<LongType>({oC, kD, kH, kW, iC});
+    return std::vector<LongType>({oC, kH, kW, iC});
   }
 
   static void conv2d(graph::Context& context, const NDArray* input, const NDArray* weights, const NDArray* bias,

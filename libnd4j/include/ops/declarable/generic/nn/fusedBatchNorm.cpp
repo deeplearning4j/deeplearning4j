@@ -43,7 +43,6 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
 
   const bool dataFormat = (bool)INT_ARG(0);  // 0->NHWC, 1->NCHW
   const bool isTraining = (bool)INT_ARG(1);
-  sd_debug("CUSTOM_OP fused_batch_norm: data format, is NCHW: %d, isTraining: %d\n", dataFormat, isTraining);
 
   REQUIRE_TRUE(x->rankOf() == 4, 0,
                "CUSTOM_OP fused_batch_norm: the rank of input x array must be equal to 4, but got %i instead !",

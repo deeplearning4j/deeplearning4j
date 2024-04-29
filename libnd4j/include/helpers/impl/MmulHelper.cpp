@@ -387,8 +387,6 @@ NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const 
     return C;
   }
 
-  printf("Batched matrix multiplication\n");
-  fflush(stdout);
   // batched matrix multiplication
   return mmulNxN(A, B, C, alpha, beta, outOrder);
 }

@@ -59,7 +59,7 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
   LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
   LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
- 
+
   if (!isNCHW)
     input = new NDArray(input->permute({0, 3, 1, 2}));  // NHWC to NCHW
 

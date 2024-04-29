@@ -85,12 +85,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             epsilon = epsilon.castTo(dataType);
 
 
-        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW) {
-            input = input.permute(0,3,1,2); //NHWC to NCHW
-            epsilon = epsilon.permute(0,3,1,2); //NHWC to NCHW
-        }
-
-
         long miniBatch = input.size(0);
         long inH = input.size(2);
         long inW =  input.size(3);
@@ -118,7 +112,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         delta = afn.backprop(lastZ, epsilon).getFirst(); //TODO handle activation function params
-        //delta = delta.permute(1, 0, 2, 3); //To shape: [outDepth,miniBatch,outH,outW]
 
 
 
@@ -237,9 +230,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
         INDArray z  = Nd4j.cnn().conv2d(input,weights,bias,config);
-        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
-            z = z.permute(0,2,3,1); //NCHW to NHWC
-        }
+
         INDArray im2col = ctx.getIntermediateResult(0);
         Nd4j.getExecutioner().clearOpContext();
         long outH = im2col.size(-2);

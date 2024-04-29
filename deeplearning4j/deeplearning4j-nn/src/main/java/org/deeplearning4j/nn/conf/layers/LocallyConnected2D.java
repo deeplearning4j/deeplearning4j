@@ -199,7 +199,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         int index = 0;
         for (long[] position : product) {
             List<SDIndex> indices = new ArrayList<>();
-           indices.add(SDIndex.all());
+            indices.add(SDIndex.all());
             if(nchw) {
                 indices.add(SDIndex.all());
             }

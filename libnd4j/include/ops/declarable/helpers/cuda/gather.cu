@@ -125,22 +125,18 @@ void gather(LaunchContext* context, const NDArray* input, const NDArray* indices
   if (axis < 0) axis += inputRank;
 
   if (indices == nullptr && numOfIntArgs == 2) {  // scalar case
-    printf("case 1\n");
     output->assign((*input)(intArgs[1], {axis}));
   } else if (indices != nullptr && indices->isScalar()) {
-    printf("case 2\n");
     if (input->rankOf() <= 1) {  // For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is
                                  // whole array... instead, we want to get a scalar
       auto idx = indices->e<LongType>(0);
       auto scalarNDArray = input->e(idx);
       output->assign(scalarNDArray);
     } else {
-      printf("case 3\n");
       NDArray inSubArr = (*input)(indices->e<LongType>(0), {axis});
       output->assign(inSubArr);
     }
   } else {
-    printf("case 4\n");
     NDArray* pIndices = const_cast<NDArray*>(indices);
     if (indices == nullptr)
       pIndices =
@@ -175,7 +171,6 @@ void gather(LaunchContext* context, const NDArray* input, const NDArray* indices
       NDArray::registerSpecialUse({output}, {input, pIndices});
       manager.synchronize();
     } else {
-      printf("case 5\n");
       NDArray::prepareSpecialUse({output}, {input, pIndices});
       BUILD_DOUBLE_SELECTOR(
           input->dataType(), pIndices->dataType(), gatherCudaLinear,

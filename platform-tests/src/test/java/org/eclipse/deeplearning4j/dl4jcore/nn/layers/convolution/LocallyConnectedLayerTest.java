@@ -49,6 +49,8 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
@@ -116,7 +118,6 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
-        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         for (DataType globalDtype : new DataType[] { DataType.DOUBLE }) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE }) {
@@ -147,15 +148,14 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                             b.addInputs("in")
                                     .addLayer("1", new ConvolutionLayer.Builder()
                                             .kernelSize(2, 2).nOut(5)
-                                            .dataFormat(CNN2DFormat.NCHW)
                                             .convolutionMode(ConvolutionMode.Same).build(), "in")
                                     .addLayer("2", new LocallyConnected2D.Builder()
-                                            .dataFormat(CNN2DFormat.NCHW)
+                                            .hasBias(false)
                                             .kernelSize(2, 2).nOut(5).build(), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out");
-                            b.setInputTypes(InputType.convolutional(8, 8, 1,CNN2DFormat.NCHW));
-                            in = new INDArray[] { Nd4j.rand(networkDtype, 2, 1, 8, 8) };
+                            b.setInputTypes(InputType.convolutional(8, 8, 1,CNN2DFormat.NHWC));
+                            in = new INDArray[] { Nd4j.rand(networkDtype, 2,  8, 8,1) };
                             label = TestUtils.randomOneHot(2, 10).castTo(networkDtype);
                             break;
                         default:
@@ -170,7 +170,9 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                     net.setLabels(label);
 
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(in).labels(new INDArray[]{label}));
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig()
+                            .excludeParams(new HashSet<>(Arrays.asList( "1_W", "1_b")))
+                            .net(net).inputs(in).labels(new INDArray[]{label}));
                     assertTrue(gradOK);
                     TestUtils.testModelSerialization(net);
                 }

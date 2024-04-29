@@ -130,8 +130,17 @@ public class ConvolutionUtils {
         return new int[]{ defaultValue ,defaultValue};
     }
 
+    /**
+     * For NCHW we expect:
+     * 4D input with shape [minibatch, inputChannels, inputHeight, inputWidth]
+     * for NHWC:
+     * 4D input with shape [minibatch, inputHeight, inputWidth, inputChannels]
+     * Note this is also tied to convolutions.h weightShape
+     * @param format
+     * @return
+     */
     public static WeightsFormat getWeightFormat(CNN2DFormat format) {
-        return format == CNN2DFormat.NCHW ? WeightsFormat.OIYX : WeightsFormat.YXIO;
+        return format == CNN2DFormat.NCHW ? WeightsFormat.YXIO : WeightsFormat.OIYX;
     }
 
 

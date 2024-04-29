@@ -176,7 +176,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
     return;
   }
 
-  printf("concat general case\n");
   // TODO: optimize the other cases to be NEC friendly as well
   // general case
   auto func = PRAGMA_THREADS_FOR {

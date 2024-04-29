@@ -360,11 +360,9 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, LongType const* boxe
         // Suppression has not occurred, so select nextCandidate
         I currSize = math::atomics::sd_atomicAdd(&selectedSize, (I)1);
         if (output) {
-          printf("Setting output currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
           output[currSize] = nextCandidateBoxIndex;
         }
         tempOutput[currSize] = nextCandidateBoxIndex;
-        printf(" tempOutput: currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
 
       }
 

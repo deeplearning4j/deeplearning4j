@@ -274,7 +274,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        if(this.paramTable == null){
+        if(this.paramTable == null) {
             this.paramTable = paramTable;
         } else {
             for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {

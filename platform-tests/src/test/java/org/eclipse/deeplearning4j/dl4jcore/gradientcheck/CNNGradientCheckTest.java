@@ -194,6 +194,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     .l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i])
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                     .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1)
+                            .hasBias(true)
                             .nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build())
                     .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
                             .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
