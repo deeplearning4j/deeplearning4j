@@ -32,6 +32,23 @@ namespace helpers {
 template <typename T>
 static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW,
                     const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
+  if(input->rankOf() != 6) {
+    std::string errorMessage;
+    errorMessage += "ops::helpers::col2im: input array must have rank = 6, but got rank = ";
+    errorMessage += std::to_string(input->rankOf());
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(output->rankOf() != 4) {
+    std::string errorMessage;
+    errorMessage += "ops::helpers::col2im: output array must have rank = 4, but got rank = ";
+    errorMessage += std::to_string(output->rankOf());
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+
   auto imBuff = output->bufferAsT<T>();
   auto colBuff = input->bufferAsT<T>();
 
@@ -62,7 +79,6 @@ static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* o
   auto func = PRAGMA_THREADS_FOR {
     for (auto b = start; b < stop; b++) {
       T* im0 = imBuff + b * imStride0;
-      int imIdx = b * imStride0;
       T const* col4 = colBuff + b * colStride0;
       int col4Idx = b * colStride0;
       for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {

@@ -364,7 +364,10 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType ran
   // perform buffer permutation
   shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr->lengthOf());
 
-  if (setContigStrides) shape::updateStrides(shapeInfoNew, arr->ordering());
+  if (setContigStrides) {
+    shape::updateStrides(shapeInfoNew, arr->ordering());
+  }
+
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfoNew);
 

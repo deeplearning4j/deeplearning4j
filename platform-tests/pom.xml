@@ -106,7 +106,7 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
-        <preload>/home/linuxbrew/.linuxbrew/lib/gcc/13/libasan.so.8</preload>
+        <preload></preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
         <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->

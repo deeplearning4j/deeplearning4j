@@ -89,10 +89,14 @@ public abstract class DifferentialFunction {
     @JsonIgnore
     @Getter
     @Setter
+    @Builder.Default
     protected boolean ownNameSetWithDefault = false;
 
+    @Getter
     protected StackTraceElement creationLocation,creationPointofOrigin;
+    @Getter
     protected StackTraceElement[] sameDiffCalls;
+    @Getter
     protected  StackTraceElement[] creationCallStack;
     public DifferentialFunction() {
         this(false);

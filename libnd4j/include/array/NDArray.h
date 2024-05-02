@@ -150,6 +150,9 @@ class SD_LIB_EXPORT NDArray {
   SD_INLINE void copyBufferStatus(const NDArray &other) const;
 
  protected:
+#if defined(SD_GCC_FUNCTRACE)
+  StackTrace creationTrace;
+#endif
   /**
    *  if true then array doesn't own buffer and simply points to another's buffer
    */
@@ -1733,7 +1736,13 @@ LongType *NDArray::stridesOf() const { return shape::stride(_shapeInfo); }
 int NDArray::rankOf() const { return shape::rank(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
-LongType NDArray::lengthOf() const { return _length; }
+LongType NDArray::lengthOf() const {
+ if(_length != shape::length(_shapeInfo)) {
+  Printer p;
+  p.print(creationTrace);
+ }
+  return _length;
+}
 
 //////////////////////////////////////////////////////////////////////////
 LongType NDArray::rows() const {

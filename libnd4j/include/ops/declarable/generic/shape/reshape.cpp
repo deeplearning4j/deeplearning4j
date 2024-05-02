@@ -176,7 +176,6 @@ DECLARE_SHAPE_FN(reshape) {
                "got %i vs %i",
                x->lengthOf(), len);
 
-
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }
 

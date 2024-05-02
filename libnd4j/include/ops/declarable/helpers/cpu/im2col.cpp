@@ -32,6 +32,21 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                     const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                     const NDArray& arrZeroPadVal) {
   // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
+  if(input.rankOf() != 4) {
+    std::string errorMessage;
+    errorMessage += "ops::helpers::col2im: input array must have rank = 4, but got rank = ";
+    errorMessage += std::to_string(input.rankOf());
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(output.rankOf() != 6) {
+    std::string errorMessage;
+    errorMessage += "ops::helpers::col2im: output array must have rank = 6, but got rank = ";
+    errorMessage += std::to_string(output.rankOf());
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   auto imBuff = static_cast<T const*>(input.buffer());
   auto colBuff = static_cast<T*>(output.buffer());

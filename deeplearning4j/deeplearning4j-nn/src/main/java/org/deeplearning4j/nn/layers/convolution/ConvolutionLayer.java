@@ -56,7 +56,6 @@ import java.util.Arrays;
 @Slf4j
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
 
-    protected INDArray i2d;
     @Getter
     @Setter
     protected ConvolutionMode convolutionMode;

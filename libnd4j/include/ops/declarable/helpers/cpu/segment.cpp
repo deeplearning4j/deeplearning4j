@@ -479,7 +479,7 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
 
 void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, sd::LongType numOfClasses,
                                NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
   if (input->isVector() || input->isScalar()) {  // 1D case
@@ -516,7 +516,7 @@ void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 
 template <typename T>
 void unsortedSegmentProdFunctor_(NDArray* input, NDArray* indices, sd::LongType numOfClasses, NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;  //(indices->lengthOf());
+  SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
   for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indices->e<sd::LongType>(e)].push_back(e);
 
   output->assign(1.f);
@@ -700,7 +700,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
 sd::Status segmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                 NDArray* output) {
   int numClasses = output->sizeAt(0);
-  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;  //(numClasses);
+  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;
 
   for (sd::LongType count = 0; count < numClasses; ++count) {
     classCount[count] = 0;
@@ -904,7 +904,7 @@ BUILD_SINGLE_TEMPLATE(template sd::Status unsortedSegmentMinFunctorBP_,
 
 sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                         sd::LongType numOfClasses, NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;  //(numClasses);
+  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;
 
   for (sd::LongType count = 0; count < numOfClasses; ++count) {
     classCount[count] = 0;
@@ -1009,7 +1009,7 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
 //    template <typename T>
 sd::Status unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                          sd::LongType numOfClasses, NDArray* output) {
-  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;  //(numClasses);
+  SD_MAP_IMPL<sd::LongType, sd::LongType> classCount;
 
   for (sd::LongType count = 0; count < numOfClasses; ++count) {
     classCount[count] = 0;

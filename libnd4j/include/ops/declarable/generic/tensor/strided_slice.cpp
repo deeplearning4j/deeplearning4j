@@ -321,7 +321,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
     REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0,
                  "StridedSlice: Length of begin/end should match, but got %i vs %i instead", v_begin->lengthOf(),
-                v_end->lengthOf());
+                 v_end->lengthOf());
 
     for (int e = 0; e < v_begin->lengthOf(); e++) begin->emplace_back(v_begin->e<LongType>(e));
 
@@ -409,6 +409,14 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   } else if (!z->isEmpty()) {
     z->assign(x->e(0));
   }
+
+  delete indices;
+  delete final_shape;
+  delete begin;
+  delete end;
+  delete strides;
+  delete args;
+
   return Status::OK;
 }
 DECLARE_SYN(stridedslice, strided_slice);

@@ -442,7 +442,8 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
   OpaqueDataBuffer **specialShapeBuffers = (OpaqueDataBuffer **) specialShapeInfo;
 
   for(int i = 0; i < numArrays; i++) {
-    ptr->setInputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+    ptr->setInputArray(i,buffer != nullptr && buffer[i] != nullptr ? buffer[i] : nullptr,shapeBuffers[i],
+                       specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
   }
 
 }

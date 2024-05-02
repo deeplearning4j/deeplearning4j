@@ -500,9 +500,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see WeightInit
          */
         public Builder weightInit(WeightInit weightInit) {
-            if(weightInit == WeightInit.DISTRIBUTION) {
-                //   throw new UnsupportedOperationException("Not supported!, Use weightInit(Distribution distribution) instead!");
-            }
 
             this.weightInitFn = weightInit.getWeightInitFunction();
             return this;

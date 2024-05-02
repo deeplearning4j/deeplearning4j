@@ -27,11 +27,16 @@
 #include <array/NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <vector>
-#include <numeric>
+#include <ops/declarable/headers/shape.h>
+#include <ops/declarable/helpers/batched_gemm.h>
+
 #include <algorithm>
 #include <iterator>
-#include <ops/declarable/headers/shape.h>
+#include <numeric>
+#include <vector>
+
+#include "ops/declarable/headers/blas.h"
+
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,8 +161,8 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
 
 
   std::vector<LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
-  NDArray* cPR = new NDArray(cP->reshape('f', requiredCshape, false));
-
+  NDArray cP2 = cP->reshape('f', requiredCshape, false);
+  NDArray* cPR = new NDArray(cP2);
   NDArray * ret = mmul(aPR, bPR, cPR, 1.0, 0.0);
   if (cPR->buffer() != cP->buffer() ||
       cPR->specialBuffer() != cP->specialBuffer()) {  // this means both permute and reshape have been performed on c, cP
@@ -406,7 +411,6 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     errorMessage += ShapeUtils::shapeAsString(outShape).c_str();
     errorMessage += " ! \n";
     THROW_EXCEPTION(errorMessage.c_str());
-
   }
 
   if (z->isEmpty()) return;
@@ -442,23 +446,21 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
         yT->permutei(permute);
       }
     }
-
   }
 
-  if (xRank <= 2 &&
-      yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
-    if (xRank == 1 && yRank == 2) {  // reduce vector-matrix to matrix-matrix case
+  if (xRank <= 2 && yRank <= 2) {
+    // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
+    if (xRank == 1 && yRank == 2) {
+      // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
       NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},false);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
 
-
-
     mmul(xT, yT, zT, alpha, beta);
-  } else {  // rest cases -  batched mmul
-
+  } else {
+    // rest cases - batched mmul
     const int batchRank = xRank - 2;
     std::vector<LongType> dimsToExclude;
     for (int i = 0; i < batchRank; ++i) {
@@ -467,18 +469,38 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
 
     const LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
 
+    std::vector<NDArray*> vA(numOfSubArrs);
+    std::vector<NDArray*> vB(numOfSubArrs);
+    std::vector<NDArray*> vC(numOfSubArrs);
+
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      auto xSubArr = (*xT)(i, dimsToExclude);
-      auto ySubArr = (*yT)(i, dimsToExclude);
-      auto zSubArr = (*zT)(i, dimsToExclude);
-      mmul(&xSubArr, &ySubArr, &zSubArr, alpha, beta);
+      vA[i] = new NDArray((*xT)(i, dimsToExclude));
+      vB[i] = new NDArray((*yT)(i, dimsToExclude));
+      vC[i] = new NDArray((*zT)(i, dimsToExclude));
+    }
+
+    NDArray alphaArr = NDArrayFactory::create<double>('c', {0}, {alpha});
+    NDArray betaArr = NDArrayFactory::create<double>('c', {0}, {beta});
+
+    int M = vA[0]->sizeAt(0);
+    int N = vB[0]->sizeAt(1);
+    int K = vA[0]->sizeAt(1);
+    int lda = vA[0]->sizeAt(1);
+    int ldb = vB[0]->sizeAt(1);
+    int ldc = vC[0]->sizeAt(1);
+
+    ops::helpers::bgemm(vA, vB, vC, &alphaArr, &betaArr, 0, 0, M, N, K, lda, ldb, ldc);
+
+    for (LongType i = 0; i < numOfSubArrs; ++i) {
+      delete vA[i];
+      delete vB[i];
+      delete vC[i];
     }
   }
 
+  if (xT != x) delete xT;
+  if (yT != y) delete yT;
 }
-
-
-
 }  // namespace sd
 
 #endif

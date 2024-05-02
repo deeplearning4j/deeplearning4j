@@ -531,7 +531,9 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
 
 
 
-  if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
+  if (_fastpath_in.size() < index + 1 || _fastpath_in.empty()) {
+    _fastpath_in.resize(index + 1);
+  }
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmptyConst(newShapeInfoCast)) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, LaunchContext::defaultContext(),
@@ -541,6 +543,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   } else {
     array = new NDArray(nullptr, nullptr, newShapeInfoCast);
   }
+
   _fastpath_in[index] = array;
   _handles.emplace_back(array);
 

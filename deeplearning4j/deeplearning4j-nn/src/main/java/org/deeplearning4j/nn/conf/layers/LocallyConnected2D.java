@@ -180,51 +180,66 @@ public class LocallyConnected2D extends SameDiffLayer {
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
-
-        long[] inputShape = layerInput.getShape();
-        long miniBatch = inputShape[0];
-        long[] kernelShape = w.getShape();
-        long featureDim = kernelShape[1];
-        long channelsOut = kernelShape[kernelShape.length - 1];
-        long ndims = kernel.length;
-        long[] spatialDimensions = LongStream.range(0, ndims).toArray();
         boolean nchw = format == CNN2DFormat.NCHW;
 
-        SDVariable[] xs = new SDVariable[Math.toIntExact(Arrays.stream(outputSize).reduce(1, (a, b) -> a * b))];
-        long[][] outputAxesTicks = new long[(int) ndims][];
-        for (int d = 0; d < ndims; d++)
-            outputAxesTicks[d] = LongStream.range(0, outputSize[d]).toArray();
+        long[] inputShape = layerInput.getShape();
+        long batchSize = inputShape[0];
+        long inHeight = nchw ? inputShape[2] : inputShape[1];
+        long inWidth = nchw ? inputShape[3] : inputShape[2];
+        long inChannels = this.nIn;
 
-        long[][] product = product(outputAxesTicks);
+        long[] kernelShape = w.getShape();
+        long outHeight = this.outputSize[0];
+        long outWidth = this.outputSize[1];
+        long kernelHeight = this.kernel[0];
+        long kernelWidth = this.kernel[1];
+        long outChannels = this.nOut;
+        long ndims = kernel.length;
+
+
+        SDVariable[] xs = new SDVariable[(int)(outHeight * outWidth)];
         int index = 0;
-        for (long[] position : product) {
-            List<SDIndex> indices = new ArrayList<>();
-            indices.add(SDIndex.all());
-            if(nchw) {
-                indices.add(SDIndex.all());
+
+        long[][] outputAxesTicks = new long[(int) ndims][];
+        for (int d = 0; d < ndims; d++) {
+            outputAxesTicks[d] = LongStream.range(0, outputSize[d]).toArray();
+        }
+
+        long[][] positions = product(outputAxesTicks);
+
+        for (long[] position : positions) {
+            List<SDIndex> slices = new ArrayList<>();
+            slices.add(SDIndex.all());
+
+            if (nchw) {
+                slices.add(SDIndex.all());
             }
 
-            for (long d : spatialDimensions) {
-                long start = position[(int) d] * stride[(int) d];
-                long end = start + kernel[(int) d];
-                indices.add(SDIndex.interval(start, end));
+            for (int d = 0; d < ndims; d++) {
+                long start = position[d] * stride[d];
+                long end = start + kernel[d];
+                slices.add(SDIndex.interval(start, end));
             }
 
-            if(!nchw) {
-                indices.add(SDIndex.all());
+            if (!nchw) {
+                slices.add(SDIndex.all());
             }
-            SDVariable slice = layerInput.get(indices.toArray(new SDIndex[0]));
-            SDVariable reshapedSlice = sameDiff.reshape(slice, 1, -1, featureDim);
+
+             SDVariable slice = layerInput.get(slices.toArray(new SDIndex[0]));
+            SDVariable reshapedSlice = sameDiff.reshape(slice, 1, -1, inChannels * kernelHeight * kernelWidth);
             xs[index++] = reshapedSlice;
         }
 
         SDVariable xAggregate = sameDiff.concat(0, xs);
+        /**
+         * TODO: figure out why the 2 matmul calls are different (numpy baseline)
+         */
         SDVariable output = sameDiff.mmul(xAggregate, w);
 
         long[] newShape = new long[(int) (ndims + 2)];
         System.arraycopy(outputSize, 0, newShape, 0, (int) ndims);
         newShape[(int) ndims] = -1;
-        newShape[(int) (ndims + 1)] = channelsOut;
+        newShape[(int) (ndims + 1)] = outChannels;
         output = sameDiff.reshape(output, newShape);
 
         long[] permutation;

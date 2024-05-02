@@ -41,6 +41,8 @@ ConstantShapeHelper::ConstantShapeHelper() {
   _cache.resize(1);
   for (int e = 0; e < 1; e++) {
     SD_MAP_IMPL<ShapeDescriptor , ConstantShapeBuffer *> cache;
+    printf("Cache set for device %i\n", e);
+    fflush(stdout);
     _cache[e] = cache;
   }
 }
@@ -109,9 +111,9 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
     _cache[deviceId][*descriptor] = constantShapeBuffer2;
     return constantShapeBuffer2;
   } else {
-    //delete the descriptor if we're not going to store it
+    auto ret =  _cache[deviceId].at(*descriptor);
     delete descriptor;
-    return _cache[deviceId].at(*descriptor);
+    return ret;
   }
 }
 

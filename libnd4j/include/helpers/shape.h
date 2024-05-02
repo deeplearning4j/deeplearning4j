@@ -1546,7 +1546,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST const char *shapeInfoString(const sd::LongType *
     ss << flags;
     ss << "\n";
     ret += ss.str();
-    return ret.c_str();
+    return (new std::string(ret))->c_str();
   }
 
   sd::LongType *shape = shapeOf(shapeInfo);
@@ -1578,7 +1578,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST const char *shapeInfoString(const sd::LongType *
   ss << "\n";
 
   ret += ss.str();
-  return ret.c_str();
+  return (new std::string(ret))->c_str();
 }
 
 SD_LIB_EXPORT SD_INLINE SD_HOST void printShapeInfo(const sd::LongType *shapeInfo) {
@@ -4120,6 +4120,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
   sd::LongType rank = shapeInfo[0];
   sd::LongType doubleRank = 2 * rank;
   if (isEmpty(shapeInfo)) {
+    printf("Updating strides for empty shape info\n");
     auto strides = stride(shapeInfo);
     for (int i = 0; i < rank; i++) {
       strides[i] = 0;

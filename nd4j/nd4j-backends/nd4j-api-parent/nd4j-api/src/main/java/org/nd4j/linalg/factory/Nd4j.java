@@ -3236,6 +3236,19 @@ public class Nd4j {
     }
 
     /**
+     * Fill the given ndarray with random numbers drawn from a uniform distribution
+     *
+     * @param target  target array
+     * @param seed the  seed to use
+     * @return the given target array
+     */
+    public static INDArray randnWithSeed(INDArray target, long seed) {
+        Nd4j.getRandom().setSeed(seed);
+        return getExecutioner().exec(new GaussianDistribution(target), Nd4j.getRandom());
+    }
+
+
+    /**
      * Create a ndarray of the given shape with values from N(0,1)
      *
      * @param shape the shape of the array
@@ -3314,7 +3327,7 @@ public class Nd4j {
      * @param dataType the data type of the ndarray
      */
     public static INDArray randn(@NonNull DataType dataType, char order, @NonNull long... shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
+        INDArray ret = createUninitialized(dataType, shape, order);
         return randn(ret);
     }
 
@@ -3333,7 +3346,7 @@ public class Nd4j {
      * @return new array with random values
      */
     public static INDArray randn(long seed, @NonNull long[] shape) {
-        INDArray ret = Nd4j.createUninitialized(shape, order());
+        INDArray ret = createUninitialized(shape, order());
         return randn(ret, seed);
     }
 
@@ -3361,7 +3374,7 @@ public class Nd4j {
      * @return new array with random values
      */
     public static INDArray randn(@NonNull org.nd4j.linalg.api.rng.Random r, @NonNull long... shape) {
-        final INDArray ret = Nd4j.createUninitialized(shape, order());
+        INDArray ret = createUninitialized(shape, order());
         return randn(ret, r);
     }
 
@@ -3370,7 +3383,7 @@ public class Nd4j {
     }
 
     public static INDArray randn(double mean, double stddev, long[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray target = Nd4j.createUninitialized(shape);
+        INDArray target = createUninitialized(shape);
         return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
     }
     /**
@@ -3380,7 +3393,7 @@ public class Nd4j {
      * @return the given target array
      */
     public static INDArray rand(INDArray target) {
-        return getExecutioner().exec(new UniformDistribution(target), Nd4j.getRandom());
+        return getExecutioner().exec(new UniformDistribution(target), getRandom());
     }
 
     /**

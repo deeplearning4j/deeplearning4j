@@ -210,13 +210,6 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
       gradO->rankOf());
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
 
-  LongType bS = input->sizeAt(0);
-  LongType   iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
-  LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
-  LongType iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW);
-  LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
-  LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
-  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
 
   ConvolutionUtils::conv2dBP(block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW,
                              isSameMode, isNCHW, wFormat);
