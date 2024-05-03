@@ -155,20 +155,6 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
 
-#if defined(HAVE_VEDA)
-
-  for (const auto& a : readList) {
-    if (a != nullptr) a->getDataBuffer()->syncToPrimary(LaunchContext::defaultContext());
-  }
-
-  for (const auto& a : writeList) {
-    if (a != nullptr) {
-      a->getDataBuffer()->allocatePrimary();
-      if (synchronizeWritables) a->getDataBuffer()->syncToPrimary(LaunchContext::defaultContext());
-      a->getDataBuffer()->writePrimary();
-    }
-  }
-#endif
 }
 
 void InteropDataBuffer::expand(size_t newlength) {

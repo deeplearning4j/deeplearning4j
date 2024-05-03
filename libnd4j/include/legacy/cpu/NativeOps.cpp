@@ -3345,9 +3345,6 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   dataBuffer->getDataBuffer()->close();
 }
 
-void setVedaDeviceLibFolder(std::string path) {
-  Environment::getInstance().setVedaDeviceDir(path);
-}
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
                       (void *, LongType const *, void *, LongType const *, const int, LongType const *,

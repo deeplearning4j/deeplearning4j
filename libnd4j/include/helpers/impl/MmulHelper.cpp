@@ -485,9 +485,9 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     int M = vA[0]->sizeAt(0);
     int N = vB[0]->sizeAt(1);
     int K = vA[0]->sizeAt(1);
-    int lda = vA[0]->sizeAt(1);
-    int ldb = vB[0]->sizeAt(1);
-    int ldc = vC[0]->sizeAt(1);
+    int lda = vA[0]->sizeAt(0);
+    int ldb = vB[0]->sizeAt(0);
+    int ldc = vC[0]->sizeAt(0);
 
     ops::helpers::bgemm(vA, vB, vC, &alphaArr, &betaArr, 0, 0, M, N, K, lda, ldb, ldc);
 

@@ -112,7 +112,6 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
     return constantShapeBuffer2;
   } else {
     auto ret =  _cache[deviceId].at(*descriptor);
-    delete descriptor;
     return ret;
   }
 }

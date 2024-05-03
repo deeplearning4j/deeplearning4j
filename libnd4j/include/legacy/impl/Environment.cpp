@@ -374,10 +374,6 @@ void Environment::setFuncTracePrintDeallocate(bool reallyPrint) {
   this->funcTracePrintDeallocate = reallyPrint;
 }
 
-const char* Environment::getVedaDeviceDir() {
-}
 
-void Environment::setVedaDeviceDir(const std::string &dir) {
-}
 
 }  // namespace sd

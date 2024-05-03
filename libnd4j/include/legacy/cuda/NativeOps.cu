@@ -3934,9 +3934,7 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
     return 1;
 }
 
-void setVedaDeviceLibFolder(std::string path){
 
-}
 
 
 void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) {

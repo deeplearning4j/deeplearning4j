@@ -1425,13 +1425,10 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
   ctx.setInputArray(1, b->buffer(), b->shapeInfo(), b->specialBuffer(), b->specialShapeInfo());
 
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-#endif
   concat op;
   auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
-#if !defined(HAVE_VEDA)
   NDArray::registerSpecialUse({z}, {a, b});
-#endif
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_EQ(e, z);

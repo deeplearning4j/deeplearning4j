@@ -100,9 +100,9 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     betaInput = beta;
   }
 
-  std::vector<NDArray*> vA(batchSize);
-  std::vector<NDArray*> vB(batchSize);
-  std::vector<NDArray*> vC(batchSize);
+  std::vector<NDArray*> vA;
+  std::vector<NDArray*> vB;
+  std::vector<NDArray*> vC;
 
   auto firstType = INPUT_VARIABLE(0)->dataType();
   for (int e = 0; e < batchSize; e++) {

@@ -57,20 +57,14 @@ SD_LIB_EXPORT std::u32string NDArray::e(const sd::LongType i) const;
 
 SD_INLINE void prepareUse(const std::vector<const NDArray *> &writeList, const std::vector<const NDArray *> &readList,
                           bool synchronizeWritables = false) {
-#if defined(HAVE_VEDA)
-  NDArray::preparePrimaryUse(writeList, readList, synchronizeWritables);
-#else
   NDArray::prepareSpecialUse(writeList, readList, synchronizeWritables);
 #endif
 }
 
 SD_INLINE void registerUse(const std::vector<const NDArray *> &writeList,
                            const std::vector<const NDArray *> &readList) {
-#if defined(HAVE_VEDA)
-  NDArray::registerPrimaryUse(writeList, readList);
-#else
+
   NDArray::registerSpecialUse(writeList, readList);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -6843,4 +6837,3 @@ template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray, void>(NDArray &&arr1,
 
 }
 
-#endif

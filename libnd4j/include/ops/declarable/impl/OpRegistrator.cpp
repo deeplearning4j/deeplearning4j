@@ -105,10 +105,7 @@ OpRegistrator::~OpRegistrator() {
   _declarablesD.clear();
 
   _declarablesLD.clear();
-#if defined(HAVE_VEDA)
-  for (auto x : _uniqueHLegacy) delete x;
-  _helpersHLegacy.clear();
-#endif
+
 #endif
 }
 

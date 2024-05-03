@@ -3,13 +3,22 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import Input, Model
 
+# Set the seed using keras.utils.set_random_seed. This will set:
+# 1) `numpy` seed
+# 2) backend random seed
+# 3) `python` random seed
+keras.utils.set_random_seed(12345)
+
+# If using TensorFlow, this will make GPU ops as deterministic as possible,
+# but it will affect the overall performance, so be mindful of that.
+tf.config.experimental.enable_op_determinism()
 for global_dtype in [tf.float64]:
     tf.keras.backend.set_floatx(global_dtype.name)
 
     for network_dtype in [tf.float64, tf.float32, tf.float16]:
         assert tf.keras.backend.floatx() == global_dtype.name
 
-        for test in range(1,2):
+        for test in range(1, 2):
             msg = f"Global dtype: {global_dtype}, network dtype: {network_dtype}, test={test}"
 
             if test == 0:
@@ -19,26 +28,36 @@ for global_dtype in [tf.float64]:
                 outputs = keras.layers.TimeDistributed(keras.layers.Dense(10, dtype=network_dtype))(x)
                 model = keras.Model(inputs=inputs, outputs=outputs)
 
-                in_data = tf.random.normal((2, 4, 5), dtype=network_dtype)
-                label = tf.one_hot(tf.random.uniform((2, 4), maxval=10, dtype=tf.int32), depth=10)
+                in_data = tf.linspace(0.0, 1.0, num=2 * 4 * 5)
+                in_data = tf.reshape(in_data, (2, 4, 5))
+                in_data = tf.cast(in_data, dtype=network_dtype)
+
+                label = tf.one_hot(tf.linspace(0.0, 9.0, num=2 * 4, dtype=tf.int32), depth=10)
+                label = tf.reshape(label, (2, 4, 10))
                 label = tf.cast(label, network_dtype)
 
             elif test == 1:
                 inputs = keras.Input(shape=(8, 8, 1))
-                x = keras.layers.Conv2D(5, 2, padding='same', dtype=network_dtype)(inputs)
+                x = keras.layers.Conv2D(5, 2, padding='same', dtype=network_dtype,
+                                        kernel_initializer=keras.initializers.constant(
+                                            np.linspace(1, 5 * 2 * 2 * 1, num=5 * 2 * 2 * 1).reshape(2, 2, 1, 5)))(
+                    inputs)
                 x = keras.layers.LocallyConnected2D(5, (2, 2), dtype=network_dtype)(x)
                 outputs = keras.layers.Flatten()(x)
                 outputs = keras.layers.Dense(10, dtype=network_dtype)(outputs)
                 model = keras.Model(inputs=inputs, outputs=outputs)
 
-                in_data = tf.random.normal((2, 8, 8, 1), dtype=network_dtype)
-                label = tf.one_hot(tf.random.uniform((2,), maxval=10, dtype=tf.int32), depth=10)
+                in_data = tf.linspace(0.0, 1.0, num=2 * 8 * 8 * 1)
+                in_data = tf.reshape(in_data, (2, 8, 8, 1))
+                in_data = tf.cast(in_data, dtype=network_dtype)
+
+                label = tf.one_hot(tf.cast(tf.linspace(0.0, 9.0, num=2), tf.int32), depth=10)
                 label = tf.cast(label, network_dtype)
 
             else:
                 raise ValueError("Invalid test case")
 
-            model.compile(optimizer='adam', loss='categorical_crossentropy')
+            #model.compile(optimizer='adam', loss='categorical_crossentropy')
 
             out = model(in_data)
             assert out.dtype == network_dtype, msg

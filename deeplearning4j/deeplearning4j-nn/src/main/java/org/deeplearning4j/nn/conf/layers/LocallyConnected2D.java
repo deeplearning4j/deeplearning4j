@@ -231,9 +231,6 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
 
         SDVariable xAggregate = sameDiff.concat(0, xs);
-        /**
-         * TODO: figure out why the 2 matmul calls are different (numpy baseline)
-         */
         SDVariable output = sameDiff.mmul(xAggregate, w);
 
         long[] newShape = new long[(int) (ndims + 2)];

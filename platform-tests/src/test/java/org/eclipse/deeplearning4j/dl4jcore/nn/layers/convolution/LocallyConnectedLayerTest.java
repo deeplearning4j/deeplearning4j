@@ -120,9 +120,6 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
         Nd4j.getRandom().setSeed(12345);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         for (DataType globalDtype : new DataType[] { DataType.DOUBLE }) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {

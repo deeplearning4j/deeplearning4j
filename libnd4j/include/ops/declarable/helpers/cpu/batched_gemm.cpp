@@ -99,16 +99,16 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     shape::fill(tldC, ldc, batchSize);
     shape::fill(tsize, 1, batchSize);
 
-    std::vector<T *> buffersA(batchSize);
-    std::vector<T *> buffersB(batchSize);
-    std::vector<T *> buffersC(batchSize);
+    std::vector<T *> buffersA;
+    std::vector<T *> buffersB;
+    std::vector<T *> buffersC;
 
 
 
     for (int e = 0; e < batchSize; e++) {
-      buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
-      buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
-      buffersC[e] = reinterpret_cast<T *>(vC[e]->buffer());
+      buffersA.push_back(reinterpret_cast<T *>(vA[e]->buffer()));
+      buffersB.push_back(reinterpret_cast<T *>(vB[e]->buffer()));
+      buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
     }
 
     if (std::is_same<T, double>::value) {
@@ -146,11 +146,11 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
         auto alpha = alphas->isScalar() ? alphas->e<T>(0) : alphas->e<T>(p);
         auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
-        for (int m = 0; m < M; ++m) {
-          for (int n = 0; n < N; ++n) {
+        for (int m = 0; m < M; m++) {
+          for (int n = 0; n < N; n++) {
             T c_mnp = 0;
             PRAGMA_OMP_SIMD
-            for (int k = 0; k < K; ++k) {
+            for (int k = 0; k < K; k++) {
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
                        B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
             }
