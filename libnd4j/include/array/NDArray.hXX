@@ -216,7 +216,9 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
                                                   other->shapeOf(), getContext()->getWorkspace(), false);
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(newDesc);
     setShapeInfo(constDesc);
-    delete newDesc;
+    if(Environment::getInstance().isDeleteShapeInfo()) {
+      delete newDesc;
+    }
   }
 
   int len = isScalar() ? 1 : lengthOf();
@@ -542,8 +544,9 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
+  auto constShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
   _offset = 0;
-  setShapeInfo(shapeInfo);
+  setShapeInfo(constShapeBuffer);
 
   if (this->isEmpty()) {
     tickReadDevice();
@@ -4080,7 +4083,6 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   for (sd::LongType e = 0; e < shape.size(); e++) shape[e] = shape_[e];
 
-  //if (numberNegativesOnes > 0) delete[] shape_;
 
   sd::LongType arrLength = 1;
   for (const auto &item : shape) arrLength *= item;

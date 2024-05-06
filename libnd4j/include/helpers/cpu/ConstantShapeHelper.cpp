@@ -168,10 +168,7 @@ ShapeDescriptor* ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *de
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
   auto descriptor = new ShapeDescriptor(shapeInfo);
-  auto ret =  bufferForShapeInfo(descriptor);
-  //note we used to delete descriptors here. Some end up being used
-  // in the constant shape helper and should not be deleted.
-  return ret;
+  return bufferForShapeInfo(descriptor);
 }
 
 bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor) {
