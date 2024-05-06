@@ -50,10 +50,16 @@ class SD_LIB_EXPORT ShapeDescriptor {
   LongType _extraProperties = 0;
   LongType _paddedAllocSize = 0;
 
+
  public:
   bool ownsShapeStrides = false;
 
 #ifndef __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+  StackTrace st;
+  //stack trace when stored in cache.
+  StackTrace storeStackTrace;
+#endif
   ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape, LongType extras);
   ShapeDescriptor(const ShapeDescriptor &other);
   ShapeDescriptor(const LongType *shapeInfo, bool validateDataType = true);
@@ -86,6 +92,8 @@ class SD_LIB_EXPORT ShapeDescriptor {
     return _extraProperties;
   }
 
+
+  void collectStoreStackTrace();
   void print() const;
   // returns minimal allocation length
   LongType allocLength() const;

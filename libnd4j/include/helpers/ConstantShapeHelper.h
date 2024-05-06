@@ -38,6 +38,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
  private:
   std::mutex _mutex;
   std::vector<SD_MAP_IMPL<ShapeDescriptor , ConstantShapeBuffer *>> _cache;
+
 #if defined(__NEC__)
   bool _cache_existing_pointers = true;
 #endif
@@ -82,11 +83,11 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   const LongType* createShapeInfo(const DataType dataType, const char order, const int rank,
                                       const LongType* shape, LongType extraProperties);
   const LongType* createShapeInfo(DataType dataType, const LongType* shapeInfo);
-  const LongType* createFromExisting(const LongType* shapeInfo, memory::Workspace* workspace);
+  const LongType* createFromExisting(const LongType* shapeInfo, sd::memory::Workspace* workspace);
   const LongType* createFromExisting(const LongType* shapeInfo, bool destroyOriginal = true);
 
-  const LongType* createFromExisting(LongType* shapeInfo, memory::Workspace* workspace);
-  const LongType* createFromExisting(LongType* shapeInfo, bool destroyOriginal = true);
+  const LongType* createFromExisting( sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
+  const LongType* createFromExisting( sd::LongType* shapeInfo, bool destroyOriginal = true);
 
   bool checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor);
 
@@ -112,6 +113,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
     return total;
   }
   ConstantShapeBuffer* storeAndWrapBuffer(ShapeDescriptor* descriptor);
+  ShapeDescriptor* findBufferForShapeInfo(ShapeDescriptor *descriptor);
   const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
 };
 }  // namespace sd

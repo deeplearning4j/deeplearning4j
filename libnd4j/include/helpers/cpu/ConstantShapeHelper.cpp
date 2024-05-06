@@ -90,6 +90,7 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
   auto buffer = descriptor->toShapeInfo();
 
 
+
   if(descriptor->dataType() == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
@@ -104,13 +105,42 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
   }
 
 
+
   if (_cache[deviceId].count(*descriptor) == 0) {
     auto hPtr =
         std::make_shared<PointerWrapper>(buffer, std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
+    //validate
+    if(Environment::getInstance().isVerbose() || Environment::getInstance().isDebug()) {
+      auto descBuffer = descriptor->toShapeInfo();
+      auto constBuffer = constantShapeBuffer2->primary();
+      if(!shape::haveSameShapeAndStrides(descBuffer, constBuffer)) {
+        std::string errorMessage;
+        errorMessage += "Attempting to store Shape info and cache buffer shape info that do not match: \n";
+        errorMessage += "Shape info:\n";
+        errorMessage += shape::shapeToString(descBuffer,"\n");
+        errorMessage += "\nCache buffer shape info:\n";
+        errorMessage += shape::shapeToString(constBuffer,"\n");
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+    }
     _cache[deviceId][*descriptor] = constantShapeBuffer2;
     return constantShapeBuffer2;
   } else {
+    auto cacheBuff = _cache[deviceId].at(*descriptor)->primary();
+    if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+      //ensure cache values aren't inconsistent when we debug
+      if(!shape::haveSameShapeAndStrides(buffer, cacheBuff)) {
+        std::string errorMessage;
+        errorMessage += "Shape info and cache hit shape info do not match.\n";
+        errorMessage += "Shape info:\n";
+        errorMessage += shape::shapeToString(buffer,"\n");
+        errorMessage += "\nCache hit shape info:\n";
+        errorMessage += shape::shapeToString(cacheBuff,"\n");
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+    }
     auto ret =  _cache[deviceId].at(*descriptor);
     return ret;
   }
@@ -122,6 +152,19 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
 }
 
 
+ShapeDescriptor* ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *descriptor) {
+  for (const auto& cache : _cache) {
+    auto it = cache.find(*descriptor);
+    if (it != cache.end()) {
+      // Key found in the map
+      auto ret = it->first;
+      return new ShapeDescriptor(ret);
+    }
+  }
+
+  // Key not found in any map
+  return nullptr;
+}
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
   auto descriptor = new ShapeDescriptor(shapeInfo);
@@ -194,28 +237,29 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descri
   return bufferForShapeInfo(descriptor)->primary();
 }
 
-const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
+const LongType* ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  return result;
+}
+
+const LongType* ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
 
   return result;
 }
 
-const sd::LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+const LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-
+  if(destroyOriginal) {
+    RELEASE(const_cast<sd::LongType*>(shapeInfo), nullptr);
+  }
   return result;
 }
 
-
-const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
-  auto result = createShapeInfo(descriptor);
-  return result;
-}
-
-const sd::LongType * ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+const LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
   return result;

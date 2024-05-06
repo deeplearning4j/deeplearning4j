@@ -151,6 +151,7 @@ DECLARE_SHAPE_FN(matmul) {
   if(shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) {
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(xShapeInfo),zShapeOnly));
   }
+
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtypeZ, zOrder, zShapeOnly);
   return SHAPELIST(newShape);
 }

@@ -92,6 +92,20 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(LongType* buffer, S
   }
 }
 
+ShapeDescriptor*  ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *descriptor) {
+  std::lock_guard<std::mutex> lock(_mutex);
+
+  for (const auto& cache : _cache) {
+    auto it = cache.find(*descriptor);
+    if (it != cache.end()) {
+      // Key found in the map
+      return it->second;
+    }
+  }
+
+  // Key not found in any map
+  return nullptr;
+}
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor* descriptor) {
   return storeAndWrapBuffer(descriptor->toShapeInfo(), descriptor);
 }

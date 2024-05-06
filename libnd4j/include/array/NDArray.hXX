@@ -543,9 +543,7 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
   _offset = 0;
-  auto descriptor = new ShapeDescriptor(shapeInfo);
-  setShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
+  setShapeInfo(shapeInfo);
 
   if (this->isEmpty()) {
     tickReadDevice();
@@ -4151,7 +4149,8 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   }
 
   if (canReshape) {
-    setShapeInfo(shapeInfoNew);
+    auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+    setShapeInfo(newShape);
   } else {
     NDArray temp(order, shape, dataType(), getContext());
     if (copyToNewBuff) this->applyTransform(transform::Assign, temp, nullptr);
@@ -6213,8 +6212,10 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
 
   auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
   _shapeInfoBuffer = shapeBuffer;
-
   _shapeInfo = shapeBuffer->primary();
+  if(!shape::shapeEquals(_shapeInfo, descriptor->toShapeInfo())) {
+    THROW_EXCEPTION("New shape is not reflected in the created descriptor");
+  }
   if(ArrayOptions::dataType(_shapeInfo) != descriptor->dataType()) {
     THROW_EXCEPTION("New data type is not reflected in the created descriptor");
   }

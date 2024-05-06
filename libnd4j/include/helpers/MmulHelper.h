@@ -86,6 +86,8 @@ class SD_LIB_EXPORT MmulHelper {
 
   static void matmul(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY,
                      double alpha = 1.0, double beta = 0.0);
+
+  static bool resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB);
 };
 }  // namespace sd
 

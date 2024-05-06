@@ -87,6 +87,10 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
 
   fillStrides();
 
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
+
 
 }
 
@@ -130,6 +134,10 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -169,6 +177,9 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 
@@ -181,6 +192,9 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
@@ -191,6 +205,10 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataType) {
@@ -243,6 +261,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
       _shape_strides[e] = shapePtr[e];
       _shape_strides[e + _rank] = stridePtr[e];
     }
+
 
     //validate construction of the shape descriptor. This is to prevent flag regressions when modifying
     //_extraProperties.
@@ -300,6 +319,10 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
+
 }
 
 
@@ -321,6 +344,10 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtype
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride)
@@ -328,6 +355,10 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride,
@@ -337,6 +368,11 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
+
+
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 int ShapeDescriptor::rank() const { return _rank; }
@@ -384,6 +420,13 @@ LongType ShapeDescriptor::allocLength() const {
     len += (_shape[i] - 1) * _strides[i];
   }
   return len;
+}
+
+void ShapeDescriptor::collectStoreStackTrace() {
+#if defined(SD_GCC_FUNCTRACE)
+  this->storeStackTrace = backward::StackTrace();
+  this->storeStackTrace.load_here(32);
+#endif
 }
 
 LongType ShapeDescriptor::validate() const {
@@ -488,6 +531,9 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
   _shape_strides = other._shape_strides;
   this->ownsShapeStrides = false;
   _paddedAllocSize = other._paddedAllocSize;
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -499,7 +545,9 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 
   _shape_strides = new LongType [2 * rank2];
   this->ownsShapeStrides = true;
-
+#if defined(SD_GCC_FUNCTRACE)
+  this-st.load_here();
+#endif
   auto _shape = _shape_strides;
   auto _strides = _shape_strides + rank2;
   if (!shape.empty() && strides.size() != shape.size() ) {

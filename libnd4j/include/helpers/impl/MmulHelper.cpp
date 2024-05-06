@@ -396,6 +396,33 @@ NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const 
   return mmulNxN(A, B, C, alpha, beta, outOrder);
 }
 
+bool MmulHelper::resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB) {
+  int rowsA = a.sizeAt(-2);
+  int colsA = a.sizeAt(-1);
+  int rowsB = b.sizeAt(-2);
+  int colsB = b.sizeAt(-1);
+
+  transA = false;
+  transB = false;
+
+
+  if (colsA == rowsB) {
+    // No transpose needed
+    return true;
+  } else if (rowsA == rowsB) {
+    // Transpose A
+    transA = true;
+    return true;
+  } else if (colsA == colsB) {
+    // Transpose B
+    transB = true;
+    return true;
+  } else {
+    // Dimensions do not match for matrix multiply
+    return false;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bool transX,
                         const bool transY, double alpha, double beta) {
@@ -489,7 +516,24 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     int ldb = vB[0]->sizeAt(0);
     int ldc = vC[0]->sizeAt(0);
 
-    ops::helpers::bgemm(vA, vB, vC, &alphaArr, &betaArr, 0, 0, M, N, K, lda, ldb, ldc);
+    bool transXResolve = transX == 1;
+    bool transYResolve = transY == 1;
+    if(!resolveTranspose(*vA[0], *vB[0], transXResolve, transYResolve)) {
+      // Batch dimensions do not match
+      std::string errorMessage;
+      errorMessage = "NDArrayFactory::matmul static method: batch dimensions do not match";
+      errorMessage += "x shape: ";
+      errorMessage += ShapeUtils::shapeAsString(vA[0]).c_str();
+      errorMessage += " y shape: ";
+      errorMessage += ShapeUtils::shapeAsString(vB[0]).c_str();
+      errorMessage += " ! \n";
+      errorMessage += "z shape: ";
+      errorMessage += ShapeUtils::shapeAsString(vC[0]).c_str();
+      THROW_EXCEPTION(errorMessage.c_str());
+
+    }
+
+    ops::helpers::bgemm(vA, vB, vC, &alphaArr, &betaArr, transXResolve ? 1 : 0, transYResolve ? 1 : 0, M, N, K, lda, ldb, ldc);
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
       delete vA[i];

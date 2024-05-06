@@ -994,13 +994,12 @@ std::vector<LongType> ShapeUtils::evalShapeForMatmul(const LongType* xShapeInfo,
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-  std::vector<LongType> cShape(xRank);
-
-  // copy batch part of shape (if present)
-  for (LongType i = 0; i < xRank - 2; ++i) cShape[i] = xShapeInfo[i + 1];
-  // copy rest part of shape (two dims: multiplication part)
-  cShape[xRank - 2] = x0Dim;
-  cShape[xRank - 1] = y1Dim;
+  std::vector<LongType> cShape;
+  for(int i = 0; i < xRank  - 2; i++) {
+    cShape.push_back(shape::sizeAt(xShapeInfo, i));
+  }
+  cShape.push_back(x0Dim);
+  cShape.push_back(y1Dim);
 
   return cShape;
 }

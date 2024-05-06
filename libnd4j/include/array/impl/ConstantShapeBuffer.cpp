@@ -26,6 +26,10 @@
 namespace sd {
 ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary)
     : ConstantShapeBuffer(primary, std::shared_ptr<PointerWrapper>(nullptr)) {
+#if defined(SD_GCC_FUNCTRACE)
+  st = backward::StackTrace();
+  st.load_here(32);
+#endif
 
 }
 
@@ -33,6 +37,10 @@ ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &
                                          const std::shared_ptr<PointerWrapper> &special) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
+#if defined(SD_GCC_FUNCTRACE)
+  st = backward::StackTrace();
+  st.load_here(32);
+#endif
 }
 
 const LongType *ConstantShapeBuffer::primary() const {

@@ -248,9 +248,9 @@ DECLARE_SHAPE_FN(concat) {
     currShape[axis] = newDim;
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(firstNonEmptyShapeIdx), shape::order(arrShapes.at(firstNonEmptyShapeIdx)));
 
-    auto desc = new ShapeDescriptor(outShapeInfo);
-    auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    //note: always ensure that the constant shape helper is used, otherwise we could end up with
+    //some modification of pre existing cache values.
+    auto result = ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo,true);
     return SHAPELIST(result);
   }
 
@@ -310,7 +310,7 @@ DECLARE_SHAPE_FN(concat_bp) {
     auto desc = new ShapeDescriptor(
         ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape));
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
 
   return shapeList;
