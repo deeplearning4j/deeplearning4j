@@ -34,14 +34,14 @@
 
 namespace sd {
 
-NDArray AttentionHelper::multiHeadProject(const NDArray *input, const NDArray *projectionMatrix,
+NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMatrix,
                                           LaunchContext *context) {
   auto miniBatchSize = input->sizeAt(0);
   auto seqLength = input->sizeAt(2);
   auto numHeads = projectionMatrix->sizeAt(0);
   auto projectedSize = projectionMatrix->sizeAt(1);
 
-  auto inputPerm = input->permute({1, 0, 2});  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
+  auto inputPerm = input->permute({1, 0, 2}, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
   auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});  //[nIn, batch*timeSteps]
   auto projectionPrep = projectionMatrix->reshape(
       'c',
@@ -53,7 +53,7 @@ NDArray AttentionHelper::multiHeadProject(const NDArray *input, const NDArray *p
   mmul.execute({&projectionPrep, &inputPrep}, {&projected});
 
   projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
-  projected.permutei({2, 0, 1, 3});  //[minibatch, numHeads, projectedSize, seqLength]
+  projected.permutei({2, 0, 1, 3}, false);  //[minibatch, numHeads, projectedSize, seqLength]
 
   return projected;
 }
@@ -435,18 +435,18 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
 }
 
 
-void AttentionHelper::multiHeadProjectBp(const NDArray *input, const NDArray *projectionMatrix,
-                                         const NDArray *eps,
+void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatrix,
+                                         NDArray *eps,
                                          NDArray *dLdInput, NDArray *dLdProjectionMatrix, LaunchContext *context) {
   auto miniBatchSize = input->sizeAt(0);
   auto seqLength = input->sizeAt(2);
   auto numHeads = projectionMatrix->sizeAt(0);
   auto projectedSize = projectionMatrix->sizeAt(1);
 
-  auto epsPerm = eps->permute({1, 2, 0, 3});
+  auto epsPerm = eps->permute({1, 2, 0, 3}, false);
   auto epsReshaped = epsPerm.reshape('c', {numHeads * projectedSize, miniBatchSize * seqLength});
 
-  auto inputPerm = input->permute({1, 0, 2});
+  auto inputPerm = input->permute({1, 0, 2}, false);
   auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
   auto projectionPrep =
       projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
@@ -461,7 +461,7 @@ void AttentionHelper::multiHeadProjectBp(const NDArray *input, const NDArray *pr
   dLdProjectionMatrix->assign(dLdProjectionPrep);
 
   dLdInputPrep.reshapei({input->sizeAt(1), miniBatchSize, seqLength});
-  dLdInputPrep.permutei({1, 0, 2});
+  dLdInputPrep.permutei({1, 0, 2}, false);
   dLdInput->assign(dLdInputPrep);
 }
 }  // namespace sd

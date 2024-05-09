@@ -99,7 +99,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
-        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY); //4d, c order. Shape: [outDepth,inDepth,kH,kW]
+        INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY).reshape(weights.shape()); //4d, c order. Shape: [outDepth,inDepth,kH,kW]
         INDArray weightGradView2df = Shape
                 .newShapeNoCopy(weightGradView, new long[]{outDepth, inDepth * kH * kW}, false).transpose();
 

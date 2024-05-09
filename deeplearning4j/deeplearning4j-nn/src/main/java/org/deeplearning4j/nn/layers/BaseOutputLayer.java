@@ -52,7 +52,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     //current input and label matrices
     protected INDArray labels;
 
-    private transient Solver solver;
 
     private double fullNetRegTerm;
 

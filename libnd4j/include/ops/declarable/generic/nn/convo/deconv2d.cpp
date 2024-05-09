@@ -76,7 +76,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
                "instead !",
                oC, bias->rankOf(), bias->lengthOf());
 
-  if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+  if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
   std::vector<LongType> colPermut;
   if (1 == wFormat)
@@ -268,7 +268,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   std::vector<LongType> inputAxes;
 
   if (!isNCHW) {
-    gradO = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradO = new NDArray(gradO->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     inputAxes = {0, 1, 2};                              // bS, iH, iW
   } else
     inputAxes = {0, 2, 3};  // bS, iH, iW

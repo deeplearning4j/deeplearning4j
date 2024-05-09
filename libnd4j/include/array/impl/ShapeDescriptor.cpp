@@ -240,6 +240,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   _ews = shape::elementWiseStride(shapeInfo);
   _rank = rankVal;
   _extraProperties = shape::extra(shapeInfo);
+
   if(_rank > 0 && shape::isEmptyConst(shapeInfo)) {
     _shape_strides = new LongType[2 * rankVal];
     auto _strides = _shape_strides + _rank;

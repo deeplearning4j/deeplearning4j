@@ -100,7 +100,7 @@ void gruCell(LaunchContext* context, const NDArray* x, const NDArray* hI, const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
              NDArray* gates, NDArray* h, bool linearBeforeReset) {
 
   if(linearBeforeReset) {
@@ -168,8 +168,8 @@ void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
-                 const NDArray* b, NDArray* h, bool linearBeforeReset) {
+void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh,
+                 NDArray* b, NDArray* h, bool linearBeforeReset) {
   // sL means time steps
 
   // x   input [sL, bS, nIn]
@@ -503,8 +503,8 @@ void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoopBp(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx,
-                   const NDArray* Wh, const NDArray* b, const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhI,
+void gruTimeLoopBp(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
+                   NDArray* Wh, NDArray* b, NDArray* dLdh, NDArray* dLdx, NDArray* dLdhI,
                    NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // sL means time steps
 

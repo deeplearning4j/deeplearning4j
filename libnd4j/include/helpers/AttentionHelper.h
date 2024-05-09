@@ -37,9 +37,9 @@
 namespace sd {
 class SD_LIB_EXPORT AttentionHelper {
  public:
-  static NDArray multiHeadProject(const NDArray * input, const NDArray * projectionMatrix,
+  static NDArray multiHeadProject(NDArray *input, NDArray *projectionMatrix,
                                   LaunchContext * context = LaunchContext ::defaultContext());
-  static void multiHeadProjectBp(const NDArray * input, const NDArray * projectionMatrix, const NDArray * eps,
+  static void multiHeadProjectBp(NDArray *input, NDArray *projectionMatrix, NDArray *eps,
                                  NDArray * dLdInput, NDArray * dLdProjectionMatrix,
                                  LaunchContext * context = LaunchContext ::defaultContext());
 

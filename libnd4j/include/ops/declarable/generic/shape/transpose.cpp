@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
     return Status::OK;
   }
 
-  z->assign(x->permute(permutationVector));
+  z->assign(x->permute(permutationVector, false));
 
   return Status::OK;
 }

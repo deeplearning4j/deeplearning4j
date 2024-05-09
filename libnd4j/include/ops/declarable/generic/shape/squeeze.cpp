@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   }
 
   if (block.isInplace()) {
-    output->reshapei(input->ordering(), shape, false);
+    output->reshapei(input->ordering(), shape);
   } else {
     if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
       output->dataBuffer()->copyBufferFrom(*input->dataBuffer(),

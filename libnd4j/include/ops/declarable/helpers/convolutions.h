@@ -444,29 +444,29 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     return std::vector<LongType>({oC, kH, kW, iC});
   }
 
-  static void conv2d(graph::Context& context, const NDArray* input, const NDArray* weights, const NDArray* bias,
+  static void conv2d(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
                      NDArray* output, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                      const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat);
 
 
 
-  static void conv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
+  static void conv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
+                       NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
                        const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                        const int isNCHW, const int wFormat);
 
-  static void depthwiseConv2d(graph::Context& block, const NDArray* input, const NDArray* weights,
-                              const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+  static void depthwiseConv2d(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                              NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                               const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                               const int isNCHW, const int wFormat);
 
-  static void depthwiseConv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights,
-                                const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+  static void depthwiseConv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                                NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                 NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                                 const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat);
 
-  static void sconv2d(graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
-                      const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
+  static void sconv2d(sd::graph::Context& block, NDArray* input, NDArray* weightsDepth,
+                      NDArray* weightsPoint, NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
                       const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat);
 

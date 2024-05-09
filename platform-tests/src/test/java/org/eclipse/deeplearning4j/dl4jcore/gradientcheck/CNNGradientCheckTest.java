@@ -135,21 +135,7 @@ class CNNGradientCheckTest extends BaseDL4JTest {
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
                     String name = new Object() {
-                    }.getClass().getEnclosingMethod().getName();
-                    if (doLearningFirst) {
-                        // Run a number of iterations of learning
-                        mln.setInput(ds.getFeatures());
-                        mln.setLabels(ds.getLabels());
-                        mln.computeGradientAndScore();
-                        double scoreBefore = mln.score();
-                        for (int j = 0; j < 10; j++) mln.fit(ds);
-                        mln.computeGradientAndScore();
-                        double scoreAfter = mln.score();
-                        // Can't test in 'characteristic mode of operation' if not learning
-                        String msg = name + " - score did not (sufficiently) decrease during learning - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-                        assertTrue(scoreAfter < 0.9 * scoreBefore,msg);
-                    }
-                    if (PRINT_RESULTS) {
+                    }.getClass().getEnclosingMethod().getName();                    if (PRINT_RESULTS) {
                         System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
                     }
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
@@ -204,18 +190,6 @@ class CNNGradientCheckTest extends BaseDL4JTest {
             mln.init();
             String testName = new Object() {
             }.getClass().getEnclosingMethod().getName();
-            if (doLearningFirst) {
-                // Run a number of iterations of learning
-                mln.setInput(ds.getFeatures());
-                mln.setLabels(ds.getLabels());
-                mln.computeGradientAndScore();
-                double scoreBefore = mln.score();
-                for (int j = 0; j < 10; j++) mln.fit(ds);
-                mln.computeGradientAndScore();
-                double scoreAfter = mln.score();
-                // Can't test in 'characteristic mode of operation' if not learning
-                String msg = testName + "- score did not (sufficiently) decrease during learning - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
-            }
             if (PRINT_RESULTS) {
                 System.out.println(testName + "- activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
             }

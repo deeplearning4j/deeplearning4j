@@ -257,6 +257,24 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
     return;
   }
 
+  if(sizeToCopyinBytes > other._lenInBytes - offsetOther) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::copyBufferFrom: size to copy is larger than source buffer ";
+    errorMessage += std::to_string(sizeToCopyinBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(other._lenInBytes - offsetOther);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(sizeToCopyinBytes > getLenInBytes() - offsetThis) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::copyBufferFrom: size to copy is larger than destination buffer ";
+    errorMessage += std::to_string(sizeToCopyinBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(getLenInBytes() - offsetThis);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
 
   if(closed) {
     THROW_EXCEPTION("Unable to write to buffer that has been closed.");

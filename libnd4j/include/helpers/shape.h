@@ -4198,6 +4198,25 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
   return reshapeC(oldShapeInfo, newShapeInfo);
 }
 
+SD_LIB_EXPORT SD_INLINE SD_HOST void fillStrides(sd::LongType  *shapeInfo) {
+  // double checks if the _rank and _shape_strides are set correctly before filling strides
+  auto _shape = shape::shapeOf(shapeInfo);
+  auto _strides = shape::stride(shapeInfo);
+  auto rank = shape::rank(shapeInfo);
+  auto order = shape::order(shapeInfo);
+  if (rank > 0 && !shape::isEmptyConst(shapeInfo)) {
+    if (order == 'c')
+      shape::calcStrides(_shape, rank, _strides);
+    else
+      shape::calcStridesFortran(_shape, rank, _strides);
+
+  } else {
+    for (int i = 0; i < rank; i++) {
+      _strides[i] = 0;
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeInfo) {
   // newShapeInfo contains rank, shape and order; but no strides, type and ews
@@ -4262,8 +4281,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
   }
 
   // fill new calculated strides into newShapeInfo, take into account possible unities in shape
-  for (int j = 0, i = 0; i < newRank; ++i)
+  for (int j = 0, i = 0; i < newRank; i++) {
     stride(newShapeInfo)[i] = (shapeOf(newShapeInfo)[i] == 1) ? 1 : newStrides[j++];
+
+  }
 
   // set ews
   if (oldEws == 0)

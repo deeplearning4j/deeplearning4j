@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
   REQUIRE_TRUE(permutationVector.size() == x->rankOf(),permutationVector.size(),"PERMUTE OP: number of permutations is less in size than input rank.");
 
-  z->assign(x->permute(permutationVector));
+  z->assign(x->permute(permutationVector, false));
 
   return Status::OK;
 }

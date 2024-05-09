@@ -68,8 +68,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
                ShapeUtils::shapeAsString(expectedOutputShape).c_str(), ShapeUtils::shapeAsString(output).c_str());
 
   if (!isNCDHW) {
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    output = new NDArray(output->permute({0, 4, 1, 2, 3}, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -203,9 +203,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
       ShapeUtils::shapeAsString(expectedGradIShape).c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
   if (!isNCDHW) {
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME

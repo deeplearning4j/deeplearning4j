@@ -59,8 +59,29 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate pri
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
                                 const sd::LongType offsetOther) {
-  if (sizeToCopyinBytes == 0) sizeToCopyinBytes = other.getLenInBytes();
+  if (sizeToCopyinBytes == 0) {
+    LongType otherBytes = other.getLenInBytes() - offsetOther;
+    LongType thisBytes = getLenInBytes() - offsetThis;
+    sizeToCopyinBytes = otherBytes < thisBytes ? otherBytes : thisBytes;
+  }
   if (sizeToCopyinBytes == 0) return;
+  if(sizeToCopyinBytes > other._lenInBytes - offsetOther) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::copyBufferFrom: size to copy is larger than source buffer ";
+    errorMessage += std::to_string(sizeToCopyinBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(other._lenInBytes - offsetOther);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(sizeToCopyinBytes > getLenInBytes() - offsetThis) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::copyBufferFrom: size to copy is larger than destination buffer ";
+    errorMessage += std::to_string(sizeToCopyinBytes);
+    errorMessage += " > ";
+    errorMessage += std::to_string(getLenInBytes() - offsetThis);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   if (other._primaryBuffer != nullptr) {
     auto sizeOfElement = DataTypeUtils::sizeOfElement(_dataType);

@@ -777,8 +777,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
 
-
-
   switch (kindOfLoop) {
     //*********************************************//
     case LoopKind::EWS1: {

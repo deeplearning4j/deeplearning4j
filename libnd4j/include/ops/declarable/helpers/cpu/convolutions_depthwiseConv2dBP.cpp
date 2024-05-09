@@ -31,7 +31,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO,
+static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, NDArray* gradO,
                                NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW, const LongType sH,
                                const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                                const int isNCHW, const int wFormat) {
@@ -71,8 +71,8 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     modifGradO1 = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-    input = new NDArray(input->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    input = new NDArray(input->permute({0, 3, 1, 2}, false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    gradI = new NDArray(gradI->permute({0, 3, 1, 2}, false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifGradO1 = {{1, 0, 3, 4, 2},
@@ -123,8 +123,8 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   }
 }
 
-void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                                         const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                                         NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                          NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH,
                                          LongType pW, const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,
                                          const int wFormat) {

@@ -462,6 +462,9 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
 
 NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context,
                  const sd::LongType offset) {
+  if(!shape::isEmpty(shapeInfo) && buffer == nullptr) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
+  }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - constructor 13\n");
     fflush(stdout);
@@ -2424,7 +2427,7 @@ void NDArray::transposei() {
   std::vector<sd::LongType> perm;
   for (int e = this->rankOf() - 1; e >= 0; e--) perm.emplace_back(e);
 
-  this->permutei(perm);
+  this->permutei(perm, false);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2439,19 +2442,19 @@ void NDArray::updateStrides(const char order) { THROW_EXCEPTION("Forbidden metho
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
-bool NDArray::reshapei(const char order, const std::initializer_list<sd::LongType> &shape, const bool copyToNewBuff) {
+bool NDArray::reshapei(const char order, const std::initializer_list<sd::LongType> &shape) {
   std::vector<sd::LongType> vShape(shape);
-  return reshapei(order, vShape, copyToNewBuff);
+  return reshapei(order, vShape);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::reshapei(const std::initializer_list<sd::LongType> &shape, const bool copyToNewBuff) {
-  return reshapei(ordering(), shape, copyToNewBuff);
+bool NDArray::reshapei(const std::initializer_list<sd::LongType> &shape) {
+  return reshapei(ordering(), shape);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::reshapei(const std::vector<sd::LongType> &shape, const bool copyToNewBuff) {
-  return reshapei(ordering(), shape, copyToNewBuff);
+bool NDArray::reshapei(const std::vector<sd::LongType> &shape) {
+  return reshapei(ordering(), shape);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2507,7 +2510,7 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) const & {
+NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) & {
   if(order != 'c' && order != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
@@ -2521,20 +2524,178 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
     THROW_EXCEPTION("Array created with unknown data type!");
   if(desc->dataType() != _dataType)
     THROW_EXCEPTION("New shape descriptor didn't have matching data type");
-  NDArray newArr(getDataBuffer(), desc, getContext(), bufferOffset());
-  if(!DataTypeUtils::validDataType(newArr.dataType()))
-    THROW_EXCEPTION("Array created with unknown data type!");
   if(desc->order() != 'c' && desc->order() != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
     errorMessage += desc->order();
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  newArr.reshapei(order, shape, copyToNewBuff);
-  if(newArr.dataType() == sd::DataType::UNKNOWN)
-    THROW_EXCEPTION("Array created with unknown data type!");
+  // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
+  if (order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), shape.size(), shape.data())) {
+    return *this;
+  }
+
+  const bool isOutShapeEmpty = std::find(shape.begin(), shape.end(), 0) != shape.end();
+
+  if (isEmpty() && !isOutShapeEmpty) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: can't reshape empty array to non-empty !\n";
+    errorMessage += "Empty array shape: ";
+    errorMessage += std::string(shape::shapeInfoString(shapeInfo()));
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += std::string(shape::shapeInfoString(this->shapeInfo()));
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+
+  if (isEmpty() && isOutShapeEmpty) {
+    sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, shape, getContext()->getWorkspace());
+    setShapeInfo(shapeInfoNew);
+    RELEASE(shapeInfoNew, getContext()->getWorkspace());
+    return *this;
+  }
+
+  std::vector<sd::LongType> shape_vector;
+
+  // looking for negative in shape
+  int numberNegativesOnes = 0;
+
+  for (sd::LongType i = 0; i < shape.size(); i++) {
+    if (shape[i] < 0) {
+      if (numberNegativesOnes >= 1) {
+        std::string errorMessage;
+        errorMessage += "NDArray::reshapei: only one dimension can be negative at once !\n";
+        errorMessage += "Shape: ";
+        errorMessage += ShapeUtils::shapeAsString(this);
+        errorMessage += "\n";
+        errorMessage += "New shape: ";
+        errorMessage += ShapeUtils::shapeAsString(shape);
+        errorMessage += "\n";
+        errorMessage += "Order: ";
+        errorMessage += this->ordering();
+        errorMessage += "\n";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+
+      numberNegativesOnes++;
+
+      sd::LongType shapeLength = 1;
+      for (sd::LongType j = 0; j < shape.size(); j++)
+        if (i != j) shapeLength *= shape[j];
+
+      sd::LongType realShape = sd::math::sd_abs<sd::LongType>(lengthOf() / shapeLength);
+
+      for (sd::LongType j = 0; j < shape.size(); j++) {
+        if (i != j)
+          shape_vector.push_back(shape[j]);
+        else
+          shape_vector.push_back(realShape);
+      }
+    } else {
+      shape_vector.push_back(shape[i]);
+    }
+  }
+
+
+
+  sd::LongType arrLength = 1;
+  for (const auto &item : shape_vector) {
+    arrLength *= item;
+  }
+
+  //don't validate scalar case reshape 0 -> 1,1 should be valid
+  if (platformBuffer() == nullptr || arrLength != this->lengthOf() && !isScalar()) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: bad length of new shape !\n";
+    errorMessage += "Shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += ShapeUtils::shapeAsString(shape);
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    errorMessage += "Length of new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    errorMessage += "Length of array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Number of elements in array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Number of elements in new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  sd::LongType *shapeInfoNew;
+  ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(static_cast<LongType>(shape_vector.size())), sd::LongType);
+
+  bool canReshape = shape::reshapeC(shapeInfo(), order, shape_vector.size(),shape_vector.data(), shapeInfoNew);
+
+  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(_dataType))) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshapei: bad data type of new shape !\n";
+    errorMessage += "Shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += "\n";
+    errorMessage += "New shape: ";
+    errorMessage += ShapeUtils::shapeAsString(shape);
+    errorMessage += "\n";
+    errorMessage += "Order: ";
+    errorMessage += this->ordering();
+    errorMessage += "\n";
+    errorMessage += "Length of new shape: ";
+    errorMessage += std::to_string(arrLength);
+    errorMessage += "\n";
+    errorMessage += "Length of array: ";
+    errorMessage += std::to_string(this->lengthOf());
+    errorMessage += "\n";
+    errorMessage += "Original data type: ";
+    errorMessage += DataTypeUtils::asString(_dataType);
+    //add what the expected flag is and what the extra property flag is
+    errorMessage += "\n";
+    errorMessage += "Expected data type: ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfoNew));
+    errorMessage += "\n";
+    errorMessage += "Extra property flag: ";
+    errorMessage += std::to_string(ArrayOptions::extra(shapeInfoNew));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (canReshape) {
+    auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+    if(copyToNewBuff) {
+      NDArray ret(newShape->primary(), true, getContext());
+      if (copyToNewBuff) this->applyTransform(transform::Assign, ret, nullptr);
+      return ret;
+    } else {
+      NDArray ret = NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
+      ret._isView = true;
+      *this = std::move(ret);
+    }
+
+  } else {
+    //print strides shape info new:
+    shape::fillStrides(shapeInfoNew);
+    auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+    NDArray ret(newShape->primary(), true, getContext());
+    this->applyTransform(transform::Assign, ret, nullptr);
+    return ret;
+
+  }
+
+
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
-  return newArr;
+  return *this;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2545,7 +2706,7 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
     errorMessage += order;
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  this->reshapei(order, shape, copyToNewBuff);
+  this->reshapei(order, shape);
   return std::move(*this);
 }
 
@@ -2587,44 +2748,53 @@ sd::LongType NDArray::strideAt(const int dim) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::permutei(const std::initializer_list<LongType> &dimensions) {
+bool NDArray::permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff) {
   std::vector<sd::LongType> vec(dimensions);
-  return permutei(vec);
+  return permutei(vec, copyToNewBuff);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::permutei(const std::vector<LongType> &dimensions) { return permutei(dimensions.data(), rankOf()); }
+bool NDArray::permutei(const std::vector<LongType> &dimensions, const bool copyToNewBuff) {
+  return permutei(dimensions.data(), rankOf());
+}
 
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const LongType *dimensions, const int rank) const & {
+NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) & {
   // evaluate shapeInfo for output (permuted) array ret
-  auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),true);
+  auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),false);
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
-  NDArray ret = NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
-  ret._isView = true;
-  return ret;
+  if(copyToNewBuff) {
+    NDArray *ret = new NDArray(buff->primary(), dataType(), false,getContext(),false);
+    this->applyTransform(transform::Assign, *ret, nullptr);
+    return *ret;
+  } else {
+    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
+    ret->_isView = true;
+    return *ret;
+  }
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const LongType *dimensions, const int rank) && {
+NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) && {
   this->permutei(dimensions, rank);
   return std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<LongType> &dimensions) const & {
+NDArray NDArray::permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) & {
   if(dimensions.size() < 1)
     return *this;
-  return permute(dimensions.data(), rankOf());
+  return permute(dimensions.data(), rankOf(), copyToNewBuff);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<LongType> &dimensions) && {
+NDArray NDArray::permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) && {
   if(dimensions.size() < 1)
     return *this;
-  this->permutei(dimensions);
+  this->permutei(dimensions, false);
   return std::move(*this);
 }
 
@@ -4008,7 +4178,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector, NDArray::asVectorT(), 
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
-bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape, const bool copyToNewBuff) {
+bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape) {
   // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
   if (order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data())) return true;
 
@@ -4153,12 +4323,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   if (canReshape) {
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     setShapeInfo(newShape);
-  } else {
-    NDArray temp(order, shape, dataType(), getContext());
-    if (copyToNewBuff) this->applyTransform(transform::Assign, temp, nullptr);
-    *this = std::move(temp);
   }
-
 
   return canReshape;
 }

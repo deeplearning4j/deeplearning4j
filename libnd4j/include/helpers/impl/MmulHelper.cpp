@@ -40,7 +40,7 @@
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B,
+NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B,
                                const std::initializer_list<LongType>& axesA,
                                const std::initializer_list<LongType>& axesB) {
   std::vector<LongType> aA(axesA);
@@ -49,7 +49,7 @@ NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B,
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B, const std::vector<LongType>& axesA,
+NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B, const std::vector<LongType>& axesA,
                                const std::vector<LongType>& axesB) {
   std::vector<LongType> permutAt, permutBt;
   std::vector<LongType> shapeAt, shapeBt;
@@ -57,12 +57,12 @@ NDArray* MmulHelper::tensorDot(const NDArray* A, const NDArray* B, const std::ve
   auto outShape = ShapeUtils::evalShapeForTensorDot(A, B, axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
 
   // check whether permutation is necessary
-  const NDArray* aP = permutAt.empty() ? A : new NDArray(A->permute(permutAt));
-  const NDArray* bP = permutBt.empty() ? B : new NDArray(B->permute(permutBt));
+   NDArray* aP = permutAt.empty() ? A : new NDArray(A->permute(permutAt, false));
+   NDArray* bP = permutBt.empty() ? B : new NDArray(B->permute(permutBt, false));
 
   // check whether reshape is necessary
-  const NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
-  const NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
+   NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
+   NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
 
   NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
@@ -136,14 +136,14 @@ void MmulHelper::computeNewShapesAndAxes(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
+void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c,
                             const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                             std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
                             std::vector<LongType>& permuteCt) {
 
 
   // check whether permutation is required
-  NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt));
+  NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt, false));
   std::vector<LongType> shapeAt, shapeBt;
 
   std::vector<LongType> permutAtDummy, permuteBtDummy;
@@ -152,12 +152,12 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
   computeNewShapesAndAxes(*a, axes_a, *b, axes_b, newshape_a, newaxes_a, newshape_b, newaxes_b);
 
 
-  const NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt));
-  const NDArray* bP = permuteBt.empty() ? b : new NDArray(b->permute(permuteBt));
-  auto apReshaped = aP->permute(newaxes_a).reshape('c', newshape_a,true);
-  const NDArray* aPR =  new NDArray(apReshaped);
-  auto bpReshape = bP->permute(newaxes_b).reshape('c', newshape_b,true);
-  const NDArray* bPR = new NDArray(bpReshape);
+  NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt, false));
+  NDArray* bP = permuteBt.empty() ? b : new NDArray(b->permute(permuteBt, false));
+  auto apReshaped = aP->permute(newaxes_a, false).reshape('c', newshape_a,true);
+  NDArray* aPR =  new NDArray(apReshaped);
+  auto bpReshape = bP->permute(newaxes_b, false).reshape('c', newshape_b,true);
+  NDArray* bPR = new NDArray(bpReshape);
 
 
   std::vector<LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
@@ -178,7 +178,7 @@ void MmulHelper::tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
 }
 
 
-void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
+void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
                            const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                            const std::vector<LongType>& permutForC) {
 
@@ -188,14 +188,14 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 
 
   // check whether permutation is required
-  NDArray* cP = permutForC.empty() ? c : new NDArray(c->permute(permutForC));
+  NDArray* cP = permutForC.empty() ? c : new NDArray(c->permute(permutForC, false));
   // check whether permutation is necessary
-  const NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt));
-  const NDArray* bP = permutBt.empty() ? b : new NDArray(b->permute(permutBt));
+  NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt, false));
+  NDArray* bP = permutBt.empty() ? b : new NDArray(b->permute(permutBt, false));
 
   // check whether reshape is necessary
-  const NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
-  const NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
+   NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
+   NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
 
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
 
@@ -236,7 +236,7 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
+void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
                            const std::vector<std::vector<LongType>>& modifA,
                            const std::vector<std::vector<LongType>>& modifB,
                            const std::vector<std::vector<LongType>>& modifC) {
@@ -258,22 +258,22 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 
   // first step for a array
   if (!whatToDoWithA.empty())
-    aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0]))
+    aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0], false))
                                     : new NDArray(a->reshape(a->ordering(), modifA[0]));
   // first step for b array
   if (!whatToDoWithB.empty())
-    bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0]))
+    bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0], false))
                                     : new NDArray(b->reshape(b->ordering(), modifB[0]));
   // rest steps for a array
   for (int i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
-      aPR->permutei(modifA[i]);
+      aPR->permutei(modifA[i], false);
     else
       aPR->reshapei(modifA[i]);
   // rest steps for b array
   for (int i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
-      bPR->permutei(modifB[i]);
+      bPR->permutei(modifB[i], false);
     else
       bPR->reshapei(modifB[i]);
 
@@ -284,7 +284,7 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
     for (int i = 0; i < cArrs.size() - 1; ++i)
       cArrs[i + 1] =
           (whatToDoWithC[i] == 'p')
-          ? new NDArray(cArrs[i]->permute(modifC[i]))
+          ? new NDArray(cArrs[i]->permute(modifC[i], false))
           : new NDArray(cArrs[i]->reshape(
               c->ordering(), modifC[i],
               false));  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
@@ -306,7 +306,7 @@ void MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
+NDArray* MmulHelper::tensorDot(NDArray* a, NDArray* b,
                                const std::vector<std::vector<LongType>>& modifA,
                                const std::vector<std::vector<LongType>>& modifB) {
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
@@ -325,22 +325,22 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 
   // first step for a array
   if (!whatToDoWithA.empty())
-    aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0]))
+    aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0], false))
                                     : new NDArray(a->reshape(a->ordering(), modifA[0]));
   // first step for b array
   if (!whatToDoWithB.empty())
-    bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0]))
+    bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0], false))
                                     : new NDArray(b->reshape(b->ordering(), modifB[0]));
   // rest steps for a array
   for (int i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
-      aPR->permutei(modifA[i]);
+      aPR->permutei(modifA[i], false);
     else
       aPR->reshapei(modifA[i]);
   // rest steps for b array
   for (int i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
-      bPR->permutei(modifB[i]);
+      bPR->permutei(modifB[i], false);
     else
       bPR->reshapei(modifB[i]);
 
@@ -351,7 +351,7 @@ NDArray* MmulHelper::tensorDot(const NDArray* a, const NDArray* b,
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmul(const NDArray* A, const NDArray* B, NDArray* C, const double alpha,
+NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha,
                           const double beta, const char outOrder) {
   LongType lenDim;
   const LongType aRank = A->rankOf();
@@ -424,7 +424,7 @@ bool MmulHelper::resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bool transX,
+void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX,
                         const bool transY, double alpha, double beta) {
   int xRank = x->rankOf();
   int yRank = y->rankOf();
@@ -456,22 +456,11 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     //transpose can affect the input data. We shouldn't mutate that.
     //note we dup here to avoid manipulating the reference
     if (transX) {
-      if(x->isView()) {
-        xT = new NDArray(x->dup(x->ordering()));
-        xT->permutei(permute);
-      } else {
-        xT = new NDArray(x->dup('f').permute(permute));
-      }
+      NDArray permuted = x->permute(permute,false);
+      xT = new NDArray(x->permute(permute,false));
     }
-
     if (transY) {
-      if(y->isView()) {
-        yT = new NDArray(y->dup(y->ordering()));
-        yT->permutei(permute);
-      } else {
-        yT = new NDArray(y->dup(y->ordering()));
-        yT->permutei(permute);
-      }
+      yT = new NDArray(y->permute(permute,false));
     }
   }
 
@@ -480,12 +469,16 @@ void MmulHelper::matmul(const NDArray* x, const NDArray* y, NDArray* z, const bo
     if (xRank == 1 && yRank == 2) {
       // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
-      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},false);
+      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},true);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
 
+
     mmul(xT, yT, zT, alpha, beta);
+
+
+
   } else {
     // rest cases - batched mmul
     const int batchRank = xRank - 2;

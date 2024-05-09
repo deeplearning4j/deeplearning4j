@@ -119,14 +119,14 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
                     {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});
 
   // Project attention results
-  attnResults.permutei({0, 3, 1, 2});
+  attnResults.permutei({0, 3, 1, 2}, false);
   attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
   matmul mmul;
   NDArray projRes('c', {attnResults.sizeAt(0), Wo->sizeAt(1)}, values->dataType(), block.launchContext());
   mmul.execute({&attnResults, Wo}, {&projRes}, {}, {}, {});
   projRes.reshapei(projRes.ordering(), {miniBatchSize, queryCount, outSize});
-  projRes.permutei({0, 2, 1});
+  projRes.permutei({0, 2, 1}, false);
 
   // FIXME: bad for performance
   output->assign(projRes);
@@ -255,11 +255,11 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
                     {});
 
   // Project attention results
-  attnResults.permutei({0, 3, 1, 2});
+  attnResults.permutei({0, 3, 1, 2}, false);
   attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
   // dLdWo
-  auto epsPerm = eps->permute({0, 2, 1});
+  auto epsPerm = eps->permute({0, 2, 1}, false);
   auto epsPostReshape = epsPerm.reshape(eps->ordering(), {miniBatchSize * queryCount, outSize});
   matmul_bp matmulBp;
   NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
@@ -267,7 +267,7 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
 
   // dLdAttn
   dLdPreWo.reshapei({miniBatchSize, queryCount, numHeads, projectedValues.sizeAt(2)});
-  dLdPreWo.permutei({0, 2, 3, 1});
+  dLdPreWo.permutei({0, 2, 3, 1}, false);
 
   dot_product_attention_bp attentionBp;
   NDArray dLdProjectedQueries(projectedQueries.shapeInfo(), false, block.launchContext());

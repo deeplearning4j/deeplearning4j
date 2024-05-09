@@ -89,7 +89,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
   if (isNCDHW) {
     permuteForOutput = {0, 2, 3, 4, 1};  // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
   } else {
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));
   }
   std::vector<LongType> wAxes;
   if (0 == wFormat)
@@ -296,8 +296,8 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
   if (!isNCDHW) {
     gradOaxesForDot = {0, 1, 2, 3};                        // bS, oD, oH, oW
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
     emptyPermute = {};
   } else {
     gradOaxesForDot = {0, 2, 3, 4};  // bS, oD, oH, oW

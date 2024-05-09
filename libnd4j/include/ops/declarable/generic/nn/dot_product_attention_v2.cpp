@@ -88,9 +88,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto attentionLogits = OUTPUT_VARIABLE(2);
   auto dropoutMask = dropout > 0.0 ? OUTPUT_VARIABLE(3) : nullptr;
   if(reshapedQ) {
-    applyScoresOut->reshapei('c', {1,applyScoresOut->sizeAt(0), applyScoresOut->sizeAt(1)});
-    attentionLogits->reshapei('c', {1,attentionLogits->sizeAt(0), attentionLogits->sizeAt(1)});
-    attentionScores->reshapei('c', {1,attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
+    applyScoresOut->reshapei('c', {1, applyScoresOut->sizeAt(0), applyScoresOut->sizeAt(1)});
+    attentionLogits->reshapei('c', {1, attentionLogits->sizeAt(0), attentionLogits->sizeAt(1)});
+    attentionScores->reshapei('c', {1, attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
 
   }
   AttentionHelper::doAttention(inputs, masks2, training, useCausalMask, dropout, scale, attentionScores,
@@ -206,16 +206,16 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto attentionScoresWeights = INPUT_VARIABLE(4);
   auto attentionScoreLogits = INPUT_VARIABLE(5);
   if(reshapedQ) {
-    attentionScoresOut->reshapei('c', {1,attentionScoresOut->sizeAt(0), attentionScoresOut->sizeAt(1)});
-    attentionScoreLogits->reshapei('c', {1,attentionScoreLogits->sizeAt(0), attentionScoreLogits->sizeAt(1)});
-    attentionScoresWeights->reshapei('c', {1,attentionScoresWeights->sizeAt(0), attentionScoresWeights->sizeAt(1)});
+    attentionScoresOut->reshapei('c', {1, attentionScoresOut->sizeAt(0), attentionScoresOut->sizeAt(1)});
+    attentionScoreLogits->reshapei('c', {1, attentionScoreLogits->sizeAt(0), attentionScoreLogits->sizeAt(1)});
+    attentionScoresWeights->reshapei('c', {1, attentionScoresWeights->sizeAt(0), attentionScoresWeights->sizeAt(1)});
 
   }
 
 
   auto eps = INPUT_VARIABLE(6);
   if(reshapedQ) {
-    eps->reshapei('c', {1,eps->sizeAt(0), eps->sizeAt(1)});
+    eps->reshapei('c', {1, eps->sizeAt(0), eps->sizeAt(1)});
   }
   auto dropoutMask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
 
@@ -234,9 +234,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto dLdv = OUTPUT_VARIABLE(1);
   auto dLdk = OUTPUT_VARIABLE(2);
   if(reshapedQ) {
-    dLdq->reshapei('c', {1,dLdq->sizeAt(0), dLdq->sizeAt(1)});
-    dLdv->reshapei('c', {1,dLdv->sizeAt(0), dLdv->sizeAt(1)});
-    dLdk->reshapei('c', {1,dLdk->sizeAt(0), dLdk->sizeAt(1)});
+    dLdq->reshapei('c', {1, dLdq->sizeAt(0), dLdq->sizeAt(1)});
+    dLdv->reshapei('c', {1, dLdv->sizeAt(0), dLdv->sizeAt(1)});
+    dLdk->reshapei('c', {1, dLdk->sizeAt(0), dLdk->sizeAt(1)});
   }
   auto scale = block.numT() > 1 ? T_ARG(0) : 1.0;
   auto dropout = block.numT() > 0 ? T_ARG(1) : 0.0;

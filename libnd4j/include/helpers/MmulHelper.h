@@ -46,17 +46,17 @@ class SD_LIB_EXPORT MmulHelper {
                               double beta = 0.0, const char outOrder = 'f');
 
  public:
-  static NDArray* mmul(const NDArray* A, const NDArray* B, NDArray* C = nullptr,
+  static NDArray* mmul(NDArray* A, NDArray* B, NDArray* C = nullptr,
                            const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
 
-  static NDArray* tensorDot(const NDArray* A, const NDArray* B,
+  static NDArray* tensorDot(NDArray* A, NDArray* B,
                                 const std::initializer_list<LongType>& axesA,
                                 const std::initializer_list<LongType>& axesB = {});
 
-  static NDArray* tensorDot(const NDArray* A, const NDArray* B, const std::vector<LongType>& axesA,
+  static NDArray* tensorDot(NDArray* A, NDArray* B, const std::vector<LongType>& axesA,
                                 const std::vector<LongType>& axesB);
 
-  static void tensorDot(const NDArray* a, const NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
+  static void tensorDot(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
                         const std::vector<LongType>& axes_b, const std::vector<LongType>& permutForC = {});
 
   static void computeNewShapesAndAxes(
@@ -70,21 +70,21 @@ class SD_LIB_EXPORT MmulHelper {
    *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must
    * take care of correctness of such arrays by himself
    */
-  static void tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
+  static void tensorDot(NDArray* a, NDArray* b, NDArray* c,
                         const std::vector<std::vector<LongType>>& modifA,
                         const std::vector<std::vector<LongType>>& modifB,
                         const std::vector<std::vector<LongType>>& modifC);
-  static NDArray* tensorDot(const NDArray* a, const NDArray* b,
+  static NDArray* tensorDot(NDArray* a, NDArray* b,
                                 const std::vector<std::vector<LongType>>& modifA,
                                 const std::vector<std::vector<LongType>>& modifB);
 
-  static void tensorDot2(const NDArray* a, const NDArray* b, NDArray* c,
+  static void tensorDot2(NDArray* a, NDArray* b, NDArray* c,
                          const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
                          std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
                          std::vector<LongType>& permuteCt);
 #endif
 
-  static void matmul(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY,
+  static void matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY,
                      double alpha = 1.0, double beta = 0.0);
 
   static bool resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB);

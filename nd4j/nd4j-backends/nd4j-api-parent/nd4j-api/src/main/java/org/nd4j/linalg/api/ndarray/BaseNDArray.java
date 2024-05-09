@@ -2405,7 +2405,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 get.addEvent(event);
             }
 
-            INDArray ret =  get.assign(element);
+            INDArray ret =  get.assign(element.reshape(get.shape()));
             if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
                 NDArrayEvent event = NDArrayEvent.builder()
                         .dataAtEvent(NDArrayMetaData.from(get))

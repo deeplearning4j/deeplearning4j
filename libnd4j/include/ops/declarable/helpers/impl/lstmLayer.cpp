@@ -346,9 +346,9 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI,
-                     const NDArray* cI, const NDArray* Wp, const NDArray* dLdh, const NDArray* dLdhL,
-                     const NDArray* dLdcL, const NDArray* z, const NDArray* a, const NDArray* c,
+void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI,
+                     NDArray* cI, NDArray* Wp, NDArray* dLdh, NDArray* dLdhL,
+                     NDArray* dLdcL, NDArray* z, NDArray* a, NDArray* c,
                      const std::vector<float>& params, NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI,
                      NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp) {
   /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
@@ -659,7 +659,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
     if (h) hSet = new ResultSet(h->allTensorsAlongDimension(*dims));    //  sub-arrays with shape [nOut]
     if (ht) htSet = new ResultSet(ht->allTensorsAlongDimension({1}));  //  sub-arrays with shape [nOut]
 
-     delete dims;
+    delete dims;
   }
 
   // loops
@@ -879,9 +879,9 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                         const NDArray* seqLen, NDArray* hI, NDArray* cI, const NDArray* Wp, const NDArray* dLdh,
-                         const NDArray* dLdhL, const NDArray* dLdcL, const std::vector<float>& params,
+void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                         NDArray* seqLen, NDArray* hI, NDArray* cI, NDArray* Wp, NDArray* dLdh,
+                         NDArray* dLdhL, NDArray* dLdcL, const std::vector<float>& params,
                          const bool forward, NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdb,
                          NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdWp) {
   // INPUTS:
@@ -995,9 +995,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       // bp
       for (LongType t = sL - 1; t >= 0; --t) {
 
-        const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
-        const NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
-        const NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
+        NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
+        NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
+        NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL, zSet->at(t),
                         aSet->at(t), cSet->at(t + 1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
       }
@@ -1031,9 +1031,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (LongType t = limit - 1; t >= 0; --t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == limit - 1 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == limit - 1 && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at(t * bS + e), cSet->at(t * bS + e), Wp, dLdhh, dLdhhL,
                           dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at((t + 1) * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
@@ -1066,9 +1066,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
       // bp
       for (LongType t = 0; t < sL; ++t) {
-        const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
-        const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
-        const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
+        NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
+        NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
+        NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), cSet->at(t + 1), Wp, dLdhh, dLdhhL, dLdccL,
                         zSet->at(t), aSet->at(t), cSet->at(t), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb,
                         dLdWp);
@@ -1105,9 +1105,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (LongType t = sL - limit; t < sL; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == sL - limit && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == sL - limit && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e), Wp, dLdhh,
                           dLdhhL, dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at(t * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
@@ -1148,9 +1148,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (LongType t = 0; t < limit; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e), Wp, dLdhh,
                           dLdhhL, dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at(t * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);

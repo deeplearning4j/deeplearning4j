@@ -567,9 +567,9 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
    */
-  bool permutei(const std::initializer_list<LongType> &dimensions);
-  bool permutei(const std::vector<LongType> &dimensions);
-  bool permutei(const LongType *dimensions, const int rank);
+  bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff = false);
+  bool permutei(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false);
+  bool permutei(const sd::LongType *dimensions, const int rank);
 
 
   bool isFinite();
@@ -582,10 +582,10 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(const std::vector<LongType> &dimensions) const &;
-  NDArray permute(const LongType *dimensions, const int rank) const &;
-  NDArray permute(const std::vector<LongType> &dimensions) &&;
-  NDArray permute(const LongType *dimensions, const int rank) &&;
+  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) &;
+  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) &;
+  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) &&;
+  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) &&;
 
   void permute(const LongType *dimensions, const int rank, NDArray &target) const;
   void permute(const std::vector<LongType> &dimensions, NDArray &target) const;
@@ -1102,11 +1102,11 @@ class SD_LIB_EXPORT NDArray {
    *  copyToNewBuff - if true then old buffer will be copied to new buffer if last one will be allocated after reshaping
    *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
    */
-  bool reshapei(const char order, const std::initializer_list<LongType> &shape, const bool copyToNewBuff = true);
-  bool reshapei(const char order, const std::vector<LongType> &shape, const bool copyToNewBuff = true);
+  bool reshapei(const char order, const std::initializer_list<sd::LongType> &shape);
+  bool reshapei(const char order, const std::vector<sd::LongType> &shape);
 
-  bool reshapei(const std::initializer_list<LongType> &shape, const bool copyToNewBuff = true);
-  bool reshapei(const std::vector<LongType> &shape, const bool copyToNewBuff = true);
+  bool reshapei(const std::initializer_list<sd::LongType> &shape);
+  bool reshapei(const std::vector<sd::LongType> &shape);
 
   void printStringInternalState();
   void printStringType();
@@ -1120,7 +1120,7 @@ class SD_LIB_EXPORT NDArray {
    *
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
-  NDArray reshape(const char order, const std::vector<LongType> &shape, const bool copyToNewBuff = true) const &;
+  NDArray reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff = true) &;
   NDArray reshape(const char order, const std::vector<LongType> &shape, const bool copyToNewBuff = true) &&;
 
   /**

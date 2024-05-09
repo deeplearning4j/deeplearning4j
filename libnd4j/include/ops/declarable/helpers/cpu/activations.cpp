@@ -178,11 +178,7 @@ void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& al
   }
 }
 
-bool checkAlphaShapeLen(std::vector<sd::LongType> const& expectedShape, sd::LongType shapeLen) {
-  sd::LongType expectedAlphaLen =
-      std::accumulate(expectedShape.cbegin(), expectedShape.cend(), 1, std::multiplies<sd::LongType>());
-  return expectedAlphaLen == shapeLen;
-}
+
 template <typename T>
 static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
   auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; };

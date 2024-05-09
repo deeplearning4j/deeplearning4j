@@ -306,7 +306,7 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
   gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims);  // [4*K]
 
   // gradW
-  x->permutei({0, 2, 1});                       // [time x bS x 2*K] -> [time x 2*K x bS]
+  x->permutei({0, 2, 1}, false);                       // [time x bS x 2*K] -> [time x 2*K x bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time x 2*K x bS ] * [time x bS x 6*K] = [time x 2*K x 6*K]
 }
 

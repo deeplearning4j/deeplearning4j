@@ -63,8 +63,8 @@ CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
   const LongType iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);
 
   if (!isNCHW) {
-    input = new NDArray(input->permute({0, 3, 1, 2}));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = new NDArray(input->permute({0, 3, 1, 2}, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = new NDArray(output->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
@@ -183,9 +183,9 @@ CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 10) {
       ShapeUtils::shapeAsString(expectedGradIShape).c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
   if (!isNCHW) {
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradO = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = new NDArray(input->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = new NDArray(gradI->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = new NDArray(gradO->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   if (isSameMode)  // SAME

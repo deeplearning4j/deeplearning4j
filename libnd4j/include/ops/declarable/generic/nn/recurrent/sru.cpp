@@ -319,7 +319,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   gradBias->reduceAlongDimension(reduce::Sum, gradB2, &axes2);  // [1 x 2K]
 
   // gradW [bS x 3K x K]
-  x->permutei({0, 2, 1});                     // [bS x N x K]
+  x->permutei({0, 2, 1}, false);                     // [bS x N x K]
   MmulHelper::mmul(gradU, x, gradW, 1., 0.);  // [bS x 3K x K]
 
   delete gct;

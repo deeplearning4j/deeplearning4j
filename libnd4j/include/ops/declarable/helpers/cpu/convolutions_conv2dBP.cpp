@@ -37,12 +37,10 @@ namespace ops {
 
 
 template <typename X, typename Y>
-static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                      const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
+static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
+                      NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
                       const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat) {
-  printf("calling conv2d bp\n");
-  fflush(stdout);
 
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
@@ -71,20 +69,15 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   LongType oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
   LongType oW = ConvolutionUtils::calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
 
-  printf("Extracted input and output dimensions\n");
-  fflush(stdout);
-
   NDArray *inputPermuted, *gradIPermuted, *gradOPermuted;
   if (!isNCHW) {
-    inputPermuted = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradIPermuted = new NDArray(gradI->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    inputPermuted = new NDArray(input->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradIPermuted = new NDArray(gradI->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
     gradOPermuted = const_cast<NDArray*>(gradO);
-    printf("Permuted input and gradI from NHWC to NCHW\n");
-    fflush(stdout);
   } else {
     inputPermuted = const_cast<NDArray*>(input);
     gradIPermuted = const_cast<NDArray*>(gradI);
-    gradOPermuted = new NDArray(gradO->permute({1, 0, 2, 3}));
+    gradOPermuted = new NDArray(gradO->permute({1, 0, 2, 3}, false));
   }
 
   NDArray* columns;
@@ -113,15 +106,17 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
      * Due to how GEMM works it sometimes will produce very strange results.
      */
 
-    NDArray columns2d = columns->reshape(columns->ordering(), {bS * oH * oW, iC * kH * kW}, true);
-    NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), {oC, bS * oH * oW}, true);
-    NDArray gradW2d = gradW->reshape(gradW->ordering(), {iC * kH * kW, oC}, false);
+
+
+    NDArray columns2d = columns->reshape('c', {bS * oH * oW, iC * kH * kW}, true);
+    NDArray gradO2d = gradOPermuted->reshape('c', {oC, bS * oH * oW}, true);
+    NDArray gradW2d = gradW->reshape('c', {iC * kH * kW, oC}, true);
 
     sd::MmulHelper::matmul(&columns2d, &gradO2d, &gradW2d, true, true, 1.0, 0.0);
 
 
     std::vector<sd::LongType> gradWShape = {iC, kH, kW, oC};
-    gradW->assign(gradW2d.reshape(gradW2d.ordering(), gradWShape));
+    gradW->reshape(gradW->ordering(), gradWShape, false).assign(gradW2d);
 
   }
 
@@ -135,10 +130,10 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
       gradOPermuted->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
     }
   }
-
-
+  
   //----- calculation of gradI -----//
-  NDArray weights2d = weights->permute({0, 3, 1, 2}).reshape(weights->ordering(), {oC, iC * kH * kW});
+  NDArray weights2d = weights->permute({0, 3, 1, 2}, false).reshape(weights->ordering(), {oC, iC * kH * kW});
+
   NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), {bS * oH * oW, oC});
   NDArray columns2d = NDArray(columns->ordering(), {iC * kH * kW, bS * oH * oW}, columns->dataType(), columns->getContext());
   sd::MmulHelper::matmul(&weights2d, &gradO2d, &columns2d, true, true, 1.0, 0.0);
@@ -153,12 +148,12 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
 
 
   if (!isNCHW) {
-    gradI->assign(gradIPermuted->permute({0, 2, 3, 1}));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    gradI->assign(gradIPermuted->permute({0, 2, 3, 1}, false));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
   }
 }
 
-void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                                const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+void ConvolutionUtils::conv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                                NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                 NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                                 const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,
                                 const int wFormat) {

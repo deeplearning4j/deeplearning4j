@@ -120,10 +120,6 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
     @DisplayName("Test Locally Connected")
     void testLocallyConnected() {
         Nd4j.getRandom().setSeed(12345);
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getEnvironment().setVerbose(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
         for (DataType globalDtype : new DataType[] { DataType.DOUBLE }) {
             Nd4j.setDefaultDataTypes(globalDtype, globalDtype);
             for (DataType networkDtype : new DataType[] { DataType.DOUBLE, DataType.FLOAT, DataType.HALF }) {
@@ -179,6 +175,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                                     default:
                                         throw new IllegalStateException("Unknown format: " + format);
                                 }
+
                                 b.addInputs("in")
                                         .addLayer("1", new ConvolutionLayer.Builder()
                                                 .kernelSize(2, 2).nOut(5)
@@ -198,7 +195,7 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
                                 in = new INDArray[]{Nd4j.linspace(0, 1, 2 * 1 * 8 * 8).reshape(inputShape).castTo(networkDtype)};
                                 label = Nd4j.linspace(0, 9, 2 * 10, DataType.INT32).reshape(2, 10).castTo(networkDtype);
                             }
-                                break;
+                            break;
                             default : {
                                 throw new RuntimeException();
                             }

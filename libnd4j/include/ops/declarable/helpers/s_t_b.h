@@ -28,9 +28,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void batchToSpace(LaunchContext* context, const NDArray& input, NDArray& output,
-                                const LongType cropBottom, const LongType cropTop, const LongType cropLeft,
-                                const LongType cropRight, const LongType blockSize);
+SD_LIB_HIDDEN void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
+                                const sd::LongType cropBottom, const sd::LongType cropTop, const sd::LongType cropLeft,
+                                const sd::LongType cropRight, const sd::LongType blockSize);
 
 SD_LIB_HIDDEN void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output,
                                 const LongType padBottom, const LongType padTop, const LongType padLeft,
@@ -39,7 +39,7 @@ SD_LIB_HIDDEN void spaceToBatch(LaunchContext* context, const NDArray& input, ND
 SD_LIB_HIDDEN void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray& blockShape,
                                   const NDArray& padding, NDArray& output);
 
-SD_LIB_HIDDEN void batchToSpaceND(LaunchContext* context, const NDArray& input, const NDArray& blockShape,
+SD_LIB_HIDDEN void batchToSpaceND(sd::LaunchContext* context, NDArray input, const NDArray& blockShape,
                                   const NDArray& crop, NDArray& output);
 
 }  // namespace helpers

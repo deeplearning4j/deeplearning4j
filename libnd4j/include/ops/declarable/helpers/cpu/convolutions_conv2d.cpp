@@ -32,7 +32,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
                     NDArray* output, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                     const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
@@ -61,12 +61,12 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
 
   if (!isNCHW)
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // NHWC to NCHW
+    input = new NDArray(input->permute({0, 3, 1, 2}, false));  // NHWC to NCHW
 
 
   NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getContext());
   std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
-  NDArray* col2 = new NDArray(col.permute(permute));  // {bS, iC, kH, kW, oH, oW}
+  NDArray* col2 = new NDArray(col.permute(permute, false));  // {bS, iC, kH, kW, oH, oW}
 
   NDArray* im2ColIn = new NDArray(input->cast(col2->dataType()));
 
@@ -75,9 +75,9 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   block.pushIntermediateResult(col2);
 
   std::vector<LongType> permuteW = {3,2,1,0};
-  NDArray permutedW = weights->permute(permuteW);
+  NDArray permutedW = weights->permute(permuteW, false);
   std::vector<LongType> newShape = {kW * kH * iC, oC};
-  NDArray reshapedW = permutedW.reshape(permutedW.ordering(),newShape,true);
+  NDArray reshapedW = permutedW.reshape(permutedW.ordering(),newShape,false);
   NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW},false);
   NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
   MmulHelper::matmul(&im2col2d,&reshapedW,&mmulResult,false,false);
@@ -85,8 +85,8 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
     helpers::addBias(block, mmulResult, *bias, mmulResult, true);
 
   if (isNCHW) {
-    mmulResult.reshapei({bS, oH, oW, oC},'f');
-    mmulResult.permutei({0, 3, 1, 2});  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    mmulResult.reshapei({bS, oH, oW, oC});
+    mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
   }
 
   output->assign(mmulResult.reshape(output->ordering(),output->getShapeAsVector()));
@@ -97,8 +97,8 @@ static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArr
   }
 }
 
-void ConvolutionUtils::conv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                              const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+void ConvolutionUtils::conv2d(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                              NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                               const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                               const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(

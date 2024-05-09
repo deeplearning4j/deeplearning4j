@@ -93,9 +93,9 @@ BUILD_SINGLE_TEMPLATE(template void batchToSpaceCudaLauncher,
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void batchToSpace(LaunchContext* context, const NDArray& input, NDArray& output, const LongType cropBottom,
-                  const LongType cropTop, const LongType cropLeft, const LongType cropRight,
-                  const LongType blockSize) {
+void batchToSpace(sd::LaunchContext* context, NDArray& input, NDArray& output, const sd::LongType cropBottom,
+                  const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight,
+                  const sd::LongType blockSize) {
   // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
   // oH = H - cropTop  - cropBottom
   // oW = W - cropLeft - cropRight
@@ -199,7 +199,7 @@ BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher,
                       SD_COMMON_TYPES, SD_INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop,
+void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
                     NDArray& output) {
   // 4D example, numOfSpatialDims = 2 - two spatial dimensions
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -

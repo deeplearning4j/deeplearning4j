@@ -91,8 +91,8 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
   }
 
   if (timeMajor == false) {
-    x = new NDArray(x->permute({1, 0, 2}));  // [bS x time x inSize]   -> [time x bS x inSize]
-    h = new NDArray(h->permute({1, 0, 2}));  // [bS x time x numUnits] -> [time x bS x numUnits]
+    x = new NDArray(x->permute({1, 0, 2}, false));  // [bS x time x inSize]   -> [time x bS x inSize]
+    h = new NDArray(h->permute({1, 0, 2}, false));  // [bS x time x numUnits] -> [time x bS x numUnits]
   }
 
   helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep, h, hFinal);

@@ -211,9 +211,9 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
 
   auto aPermArgsAfter = argsort(grad_a_axes);
   auto bPermArgsAfter = argsort(grad_b_axes);
-  auto newA = A->permute(aPermuteAxesBefore);
+  auto newA = A->permute(aPermuteAxesBefore, false);
   std::vector<LongType> empty;
-  auto newB = B->permute(bPermuteAxesBefore);
+  auto newB = B->permute(bPermuteAxesBefore, false);
 
 
   //perform the actual matrix multiplication

@@ -40,8 +40,11 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
@@ -49,6 +52,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -80,6 +84,65 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         return 999999999L;
     }
 
+    @DisplayName("Test Gradient CNNMLN")
+    @ParameterizedTest
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
+    public void testGradientCNNMLN(CNN2DFormat format, Nd4jBackend backend) {
+        // Parameterized test, testing combinations of:
+        // (a) activation function
+        // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
+        // (c) Loss function (with specified output activations)
+        Activation[] activFns = { Activation.SIGMOID, Activation.TANH };
+        // If true: run some backprop steps first
+        boolean[] characteristic = { false, true };
+        LossFunctions.LossFunction[] lossFunctions = { LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE };
+        // i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = { Activation.SOFTMAX, Activation.TANH };
+        DataSet ds = new IrisDataSetIterator(150, 150).next();
+        ds.normalizeZeroMeanZeroUnitVariance();
+        INDArray input = ds.getFeatures();
+        INDArray labels = ds.getLabels();
+        for (Activation afn : activFns) {
+            for (boolean doLearningFirst : characteristic) {
+                for (int i = 0; i < lossFunctions.length; i++) {
+                    LossFunctions.LossFunction lf = lossFunctions[i];
+                    Activation outputActivation = outputActivations[i];
+                    ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new NoOp()).weightInit(WeightInit.XAVIER).seed(12345L)
+                            .list()
+                            .layer(0, new ConvolutionLayer.Builder(1, 1).hasBias(false).nOut(6).activation(afn).build())
+                            .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3).build())
+                            .setInputType(InputType.convolutionalFlat(1, 4, 1));
+                    MultiLayerConfiguration conf = builder.build();
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
+                    String name = new Object() {
+                    }.getClass().getEnclosingMethod().getName();
+                    if (doLearningFirst) {
+                        // Run a number of iterations of learning
+                        mln.setInput(ds.getFeatures());
+                        mln.setLabels(ds.getLabels());
+                        mln.computeGradientAndScore();
+                        double scoreBefore = mln.score();
+                        for (int j = 0; j < 10; j++) mln.fit(ds);
+                        mln.computeGradientAndScore();
+                        double scoreAfter = mln.score();
+                        // Can't test in 'characteristic mode of operation' if not learning
+                        String msg = name + " - score did not (sufficiently) decrease during learning - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
+                        assertTrue(scoreAfter < 0.9 * scoreBefore,msg);
+                    }
+                    if (PRINT_RESULTS) {
+                        System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
+                    }
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                    assertTrue(gradOK);
+                    TestUtils.testModelSerialization(mln);
+                }
+            }
+        }
+    }
+
     @Test
     public void testBasicIris() {
         Nd4j.getRandom().setSeed(12345);
@@ -88,13 +151,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                 .graphBuilder().addInputs("input")
-                .addLayer("firstLayer",
+                /*.addLayer("firstLayer",
                         new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
-                        "input")
+                        "input")*/
                 .addLayer("outputLayer",
                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
-                        "firstLayer")
+                                .activation(Activation.SOFTMAX).nIn(4).nOut(3).build(),"input")
                 .setOutputs("outputLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -102,7 +164,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -114,8 +176,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIris()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -165,8 +225,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIrisWithMerging()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -222,8 +280,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -239,7 +295,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     public void testBasicIrisWithElementWiseNodeInputSizeGreaterThanTwo() {
 
         ElementWiseVertex.Op[] ops =
-                new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Product, ElementWiseVertex.Op.Average, ElementWiseVertex.Op.Max};
+                {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Product, ElementWiseVertex.Op.Average, ElementWiseVertex.Op.Max};
 
         for (ElementWiseVertex.Op op : ops) {
 
@@ -282,8 +338,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -296,10 +350,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     }
 
     @Test
-    public void testElementWiseVertexBroadcast(){
+    public void testElementWiseVertexBroadcast() {
 
         ElementWiseVertex.Op[] ops =
-                new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Average,
+                {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Average,
                         ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Max, ElementWiseVertex.Op.Product};
 
         for(boolean firstSmaller : new boolean[]{false, true}) {
@@ -384,8 +438,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -447,8 +500,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -486,8 +538,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithSubset()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -523,8 +574,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithLastTimeStepVertex()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
         }
 
         //First: test with no input mask array
@@ -587,8 +637,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithDuplicateToTimeSeries()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input1, input2})
@@ -636,8 +685,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithReverseTimeSeriesVertex()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -896,8 +944,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIrisTripletStackingL2Loss()");
-//            for (int j = 0; j < graph.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{pos, anc, neg})

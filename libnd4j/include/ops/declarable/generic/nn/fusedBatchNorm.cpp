@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
    * Figure out differences.
    */
   if (dataFormat) {
-    xCast = xCast.permute({0, 2, 3, 1});
+    xCast = xCast.permute({0, 2, 3, 1}, false);
   }
   REQUIRE_TRUE(scale->rankOf() == 1 && scale->sizeAt(0) == iD, 0,
                "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD,
@@ -145,7 +145,8 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   if (dataFormat) {
     // need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
     auto reshaped = xShifted1.reshape(xCast.ordering(), xCast.getShapeAsVector());
-    reshaped.permutei({0, 3, 1, 2});
+    std::vector<sd::LongType> permute = {0, 3, 1, 2};
+    reshaped.permutei(permute, false);
     y->assign(reshaped);
 
   } else  // NWHC case
