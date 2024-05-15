@@ -93,10 +93,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         DataSet ds = new IrisDataSetIterator(150, 150).next();
         ds.normalizeZeroMeanZeroUnitVariance();
         INDArray input = ds.getFeatures();
