@@ -2178,9 +2178,7 @@ public class Shape {
         }
 
         // we need to wrap buffer of a current array, to make sure it's properly marked as a View
-        DataBuffer db = arr.data();
-        DataBuffer buffer = Nd4j.createBuffer(db, arr.offset(), arr.length());
-        INDArray ret = Nd4j.create(buffer,newShape,newStrides,arr.offset(),isFOrder ? 'f' : 'c',true);
+        INDArray ret = Nd4j.create(arr.data(),newShape,newStrides,arr.offset(),isFOrder ? 'f' : 'c',true);
         return ret;
     }
 
@@ -3698,8 +3696,8 @@ public class Shape {
                 shape, stride);
         //Length is simply 1 + the buffer index of the last element
         long length = 1;
-        for(int i=0; i<shape.length; i++ ){
-            length += (shape[i]-1) * stride[i];
+        for(int i = 0; i < shape.length; i++) {
+            length += (shape[i] - 1) * stride[i];
         }
         return length;
     }
@@ -3716,13 +3714,13 @@ public class Shape {
                 shape, stride);
         //Length is simply 1 + the buffer index of the last element
         long length = 1;
-        for(int i=0; i<shape.length; i++) {
-            length += (shape[i]-1) * stride[i];
+        for(int i = 0; i < shape.length; i++) {
+            length += (shape[i] - 1) * stride[i];
         }
         return length;
     }
 
-    public static boolean hasDefaultStridesForShape(INDArray input){
+    public static boolean hasDefaultStridesForShape(INDArray input) {
         if(input.rank() == 0)
             return true;
         if(!strideDescendingCAscendingF(input)){

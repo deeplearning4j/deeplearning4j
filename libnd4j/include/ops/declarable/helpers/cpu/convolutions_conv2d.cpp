@@ -35,6 +35,7 @@ template <typename X, typename Y>
 static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
                     NDArray* output, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                     const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
+
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   // bias    [oC]
@@ -75,21 +76,46 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   block.pushIntermediateResult(col2);
 
   std::vector<LongType> permuteW = {3,2,1,0};
-  NDArray permutedW = weights->permute(permuteW, false);
+  NDArray permutedW = weights->permute(permuteW, true);
   std::vector<LongType> newShape = {kW * kH * iC, oC};
-  NDArray reshapedW = permutedW.reshape(permutedW.ordering(),newShape,false);
-  NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW},false);
-  NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
-  MmulHelper::matmul(&im2col2d,&reshapedW,&mmulResult,false,false);
-  if (bias)
-    helpers::addBias(block, mmulResult, *bias, mmulResult, true);
+  NDArray *reshapedW =  new NDArray(permutedW.reshape(permutedW.ordering(),newShape,true));
+  NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW}, true);
+  if(output->ordering() != 'f') {
+    NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
+    MmulHelper::matmul(&im2col2d,reshapedW,&mmulResult,false,false);
+    if (bias) {
+      helpers::addBias(block, mmulResult, *bias, mmulResult, true);
+    }
 
-  if (isNCHW) {
-    mmulResult.reshapei({bS, oH, oW, oC});
-    mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    if (isNCHW) {
+      mmulResult.reshapei({bS, oH, oW, oC});
+      mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    }
+
+    //NOTE: WE DO THIS BECAUSE OF GEMM/BLAS OPERATING PURELY ON LINEAR BUFFERS. IT DOES NOT KNOW WHAT STRIDES ARE
+    //THE CORRECT ORDER HERE IS TO COPY THE DATA OVER TO THE OUTPUT BUFFER
+    output->dataBuffer()->copyBufferFrom(*mmulResult.dataBuffer(), mmulResult.lengthOf() * mmulResult.sizeOfT());
+
+
+  } else {
+    NDArray mmulResult = output->reshape(output->ordering(), {bS * oH * oW, oC},false);
+    MmulHelper::matmul(&im2col2d,reshapedW,&mmulResult,false,false);
+    if (bias) {
+      helpers::addBias(block, mmulResult, *bias, mmulResult, isNCHW);
+    }
+
+    if (isNCHW) {
+      mmulResult.reshapei({bS, oH, oW, oC});
+      mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    }
+
+    //NOTE: WE DO THIS BECAUSE OF GEMM/BLAS OPERATING PURELY ON LINEAR BUFFERS. IT DOES NOT KNOW WHAT STRIDES ARE
+    //THE CORRECT ORDER HERE IS TO COPY THE DATA OVER TO THE OUTPUT BUFFER
+    output->dataBuffer()->copyBufferFrom(*mmulResult.dataBuffer(), mmulResult.lengthOf() * mmulResult.sizeOfT());
+
+
   }
 
-  output->assign(mmulResult.reshape(output->ordering(),output->getShapeAsVector()));
 
   if (!isNCHW) {
     delete input;

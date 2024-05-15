@@ -42,6 +42,16 @@ public class CpuEnvironment implements Environment {
     }
 
     @Override
+    public boolean isEnableBlas() {
+        return e.isEnableBlas();
+    }
+
+    @Override
+    public void setEnableBlas(boolean reallyEnable) {
+        e.setEnableBlas(reallyEnable);
+    }
+
+    @Override
     public boolean isLogNativeNDArrayCreation() {
         return e.isLogNativeNDArrayCreation();
     }

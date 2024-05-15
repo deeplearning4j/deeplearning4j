@@ -87,7 +87,7 @@
         <test.prefix></test.prefix>
         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
-        <test.asan.options>halt_on_error=0:alloc_dealloc_mismatch=0</test.asan.options>
+        <test.asan.options>verbose=1:halt_on_error=0:alloc_dealloc_mismatch=0</test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <!--
@@ -106,7 +106,7 @@
             sudo sysctl vm.mmap_rnd_bits=28
             sudo sysctl -w kernel.randomize_va_space=0
         -->
-        <preload></preload>
+        <preload>/home/linuxbrew/.linuxbrew/lib/gcc/current/libasan.so.8</preload>
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
         <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->

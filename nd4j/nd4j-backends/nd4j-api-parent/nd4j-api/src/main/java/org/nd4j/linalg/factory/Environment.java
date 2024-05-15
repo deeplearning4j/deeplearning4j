@@ -35,6 +35,15 @@ package org.nd4j.linalg.factory;
 public interface Environment {
 
 
+    /**
+     * Whether to enable blas library or not.
+     * Disabling this should mainly be used for debugging
+     * purposes.
+     * @return
+     */
+    boolean isEnableBlas();
+
+    void setEnableBlas(boolean reallyEnable);
 
     /**
      * Set this to true to

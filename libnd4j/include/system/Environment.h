@@ -60,6 +60,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int64_t> _maxTotalSpecialMemory{-1};
   std::atomic<int64_t> _maxDeviceMemory{-1};
   bool _blasFallback = false;
+  std::atomic<bool> _enableBlasFall{true};
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   const bool _experimental = true;
@@ -85,6 +86,16 @@ class SD_LIB_EXPORT Environment {
   int _blasPatchVersion = 0;
 
   static Environment& getInstance();
+
+  bool isEnableBlas() {
+    return _enableBlasFall.load();
+  }
+
+  void setEnableBlas(bool reallyEnable) {
+    _enableBlasFall.store(reallyEnable);
+    printf("Called set enabled blas %d\n",reallyEnable);
+    fflush(stdout);
+  }
 
   /**
    * When log ndarray evens is true in c++

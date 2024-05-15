@@ -38,8 +38,13 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
                       const double beta) {
   const T1* A = vA->bufferAsT<T1>();
   const T2* B = vB->bufferAsT<T2>();
+  printf("Before c buffer creation\n");
+  fflush(stdout);
+  Printer p;
+  p.print(vC->creationTrace,stdout);
   T3* C = vC->bufferAsT<T3>();
-
+  printf("After c buffer creation\n");
+  fflush(stdout);
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
 
@@ -54,42 +59,45 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
   const int cRank = vC->rankOf();
 
   const sd::LongType cLen = vC->lengthOf();
-
+  vC->printShapeInfo("VC SHAPE INFO:");
+  printf("vC is view: %d\n",vC->isView());
   const int K = vA->sizeAt(aKaxis);
 
   auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(2), bCoords(2), cCoords(2);
+      std::vector<sd::LongType> aCoords(2), bCoords(2), cCoords(2);
 
-    for (auto i = start; i < stop; ++i) {
-      // evaluate C coordinates
-      shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
+      for (auto i = start; i < stop; i++) {
+        // evaluate C coordinates
+        shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
-      // evaluate A coordinates
-      aCoords[aMaxis] = cCoords[cMaxis];
-      aCoords[aKaxis] = 0;
+        // evaluate A coordinates
+        aCoords[aMaxis] = cCoords[cMaxis];
+        aCoords[aKaxis] = 0;
 
-      // evaluate B coordinates
-      bCoords[bKaxis] = 0;
-      bCoords[bNaxis] = cCoords[cNaxis];
+        // evaluate B coordinates
+        bCoords[bKaxis] = 0;
+        bCoords[bNaxis] = cCoords[cNaxis];
 
-      auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
-      auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
+        auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
+        auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
 
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
+        T3 val = A[aOffset] * B[bOffset];  // first iteration
 
-      for (int j = 1; j < K; ++j) {  // rest iterations
-        aOffset += shape::stride(aShapeInfo)[aKaxis];
-        bOffset += shape::stride(bShapeInfo)[bKaxis];
-        val = val + A[aOffset] * B[bOffset];
+        for (int j = 1; j < K; ++j) {  // rest iterations
+          aOffset += shape::stride(aShapeInfo)[aKaxis];
+          bOffset += shape::stride(bShapeInfo)[bKaxis];
+          val += A[aOffset] * B[bOffset];
+        }
+
+        auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
+        if (betaPersent) {
+          C[cOffset] = alphaZ * val + betaZ * C[cOffset];
+        } else {
+          printf("Setting val %f at offset %lld\n",val,cOffset);
+          fflush(stdout);
+          C[cOffset] = alphaZ * val;
+        }
       }
-
-      auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
-
-      if (betaPersent)
-        C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      else
-        C[cOffset] = alphaZ * val;
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, cLen);
@@ -206,10 +214,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (C == nullptr)
+  if (C == nullptr) {
     C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
-
+  }
   if (C->isEmpty()) return C;
 
   const auto aType = A->dataType();
@@ -222,7 +230,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  if (!typeFloat && !typeDouble) {
+  if (!typeFloat && !typeDouble || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     std::vector<NDArray*> toDelete;
@@ -338,7 +346,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
 
-  if (!typeDouble && !typeFloat) {
+  if (!typeDouble && !typeFloat || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));

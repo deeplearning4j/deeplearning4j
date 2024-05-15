@@ -73,7 +73,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
-  if (BlasHelper::getInstance().hasBatchedGEMM<T>()) {
+  if (BlasHelper::getInstance().hasBatchedGEMM<T>() || !Environment::getInstance().isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
     int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
@@ -111,12 +111,12 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
       buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
     }
 
-    if (std::is_same<T, double>::value) {
+    if (std::is_same<T, double>::value || !Environment::getInstance().isEnableBlas()) {
       BlasHelper::getInstance().dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *)alphas->buffer(),
                                                (double **)buffersA.data(), tldA, (double **)buffersB.data(), tldB,
                                                (double *)betas->buffer(), (double **)buffersC.data(), tldC, vA.size(),
                                                tsize);
-    } else if (std::is_same<T, float>::value) {
+    } else if (std::is_same<T, float>::value || !Environment::getInstance().isEnableBlas()) {
       BlasHelper::getInstance().sgemmBatched()(
           CblasColMajor, tA, tB, tM, tN, tK, (float *)alphas->buffer(), (float **)buffersA.data(), tldA,
           (float **)buffersB.data(), tldB, (float *)betas->buffer(), (float **)buffersC.data(), tldC, vA.size(), tsize);

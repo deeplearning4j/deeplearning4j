@@ -153,8 +153,32 @@ DECLARE_SHAPE_FN(conv2d) {
     outputShapeInfo[4] = oC;
   }
 
-  ShapeUtils::updateStridesAndType(outputShapeInfo, weightsShapeInfo, 'f');
 
+  /**
+   * NOTE: THIS BLOCK OF LOGIC PROBABLY LOOKS STRANGE.
+   * THIS IS FOR COMPATIBILITY WITH THE CONV2D implementation in dl4j.
+   */
+  sd::LongType strideCalcShape[4];
+  strideCalcShape[0] = oW;
+  strideCalcShape[1] = oH;
+  strideCalcShape[2] = bS;
+  strideCalcShape[3] = oC;
+
+  sd::LongType * second = shape::calcStridesFortran(strideCalcShape,shape::rank(outputShapeInfo));
+
+  sd::LongType permute[4];
+  permute[0] = 2;
+  permute[1] = 3;
+  permute[2] = 1;
+  permute[3] = 0;
+  shape::doPermuteSwap(4,&second,permute);
+  auto stride = shape::stride(outputShapeInfo);
+  for(int i = 0; i < 4; i++) {
+    stride[i] = second[i];
+  }
+
+  shape::setOrder(outputShapeInfo, 'f');
+  ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
   return SHAPELIST(CONSTANT(outputShapeInfo));
 }
 

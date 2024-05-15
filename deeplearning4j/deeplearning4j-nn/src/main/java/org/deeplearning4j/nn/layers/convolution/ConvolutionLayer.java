@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -100,8 +101,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY).reshape(weights.shape()); //4d, c order. Shape: [outDepth,inDepth,kH,kW]
-        INDArray weightGradView2df = Shape
-                .newShapeNoCopy(weightGradView, new long[]{outDepth, inDepth * kH * kW}, false).transpose();
 
 
 
@@ -228,8 +227,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
+        /**
+         * TODO: need to figure out how to emulate the
+         * shape info of the reference java implementation.
+         *
+         * We have the correct shape here but the wrong underlying data layout.
+         * The data layout of the databuffer itself isn't correct
+         * if we specify f ordering.
+         * Directly calling assign in c++ doesn't seem to work either.
+         *
+         */
         INDArray z  = Nd4j.cnn().conv2d(input,weights,bias,config);
-
         INDArray im2col = ctx.getIntermediateResult(0);
         Nd4j.getExecutioner().clearOpContext();
         long outH = im2col.size(-2);

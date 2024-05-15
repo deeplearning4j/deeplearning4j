@@ -478,6 +478,10 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX,
     mmul(xT, yT, zT, alpha, beta);
 
 
+    if(zT != z) {
+     z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
+    }
+
 
   } else {
     // rest cases - batched mmul

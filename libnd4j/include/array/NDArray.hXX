@@ -71,25 +71,33 @@ SD_INLINE void registerUse(const std::vector<const NDArray *> &writeList,
 // copy constructor
 NDArray::NDArray(const NDArray &other) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray::NDArray(const NDArray &other) - constructor 1\n");
+    sd_print("NDArray::NDArray(const NDArray &other) - copy constructor \n");
     fflush(stdout);
   }
 
+#ifndef __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
-
+#endif
   _context = other._context;
   _offset = other._offset;
-  setShapeInfo(other.shapeInfo());
+  //we should always set an array as a view with the copy constructor
+  if(!shape::isViewConst(other.shapeInfo())) {
+    auto copyedInfo = ShapeBuilders::setAsView(other.shapeInfo());
+    auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(copyedInfo);
+    setShapeInfo(shapeInfo);
+  } else {
+    setShapeInfo(other.shapeInfo());
+  }
+
 
   _dataType = other._dataType;
-  _isView = other._isView;
+  _isView = true;
   //scalar can be length 0
   if (!isEmpty() && other.isScalar() || other.lengthOf() > 0) {
-    _buffer = new DataBuffer(other.lengthOf() * other.sizeOfT(), other.dataType(),
-                             other.getContext()->getWorkspace());
-    _buffer->copyBufferFrom(*other._buffer);
+    _buffer = other._buffer;
   } else {
     _buffer = new DataBuffer();
   }
@@ -104,6 +112,7 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -145,6 +154,7 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -201,6 +211,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -240,6 +251,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -262,6 +274,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   sd_print("NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc, const bool isView, sd::LongType offset) - constructor 6\n");
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
   _context = context;
@@ -289,6 +302,7 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -342,6 +356,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
   _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
   if (isScalar) {
@@ -379,6 +394,7 @@ NDArray::NDArray(NDArray &&other) noexcept {
   other._length = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 }
@@ -398,6 +414,7 @@ NDArray::NDArray(sd::LaunchContext *context) {
   _length = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 }
@@ -412,6 +429,7 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::Laun
     fflush(stdout);
   }
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -442,6 +460,7 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -472,6 +491,7 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
   _context = context;
@@ -494,6 +514,7 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
   _context = context;
@@ -523,6 +544,7 @@ NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *conte
 
   }
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -538,6 +560,7 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
   }
 
 #if defined(SD_GCC_FUNCTRACE)
+  creationTrace = StackTrace();
   creationTrace.load_here();
 #endif
 
@@ -2678,23 +2701,53 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
       if (copyToNewBuff) this->applyTransform(transform::Assign, ret, nullptr);
       return ret;
     } else {
-      NDArray ret = NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
-      ret._isView = true;
-      *this = std::move(ret);
+      /**
+       * Figure out why creating a view here creaters
+       * an invalid offset.
+       * This happens when conv2d weights are reshaped on the backprop.
+       *
+       *
+       * The current theory is this could stem from wrong offset propagation
+       * coming from java. INvestigate the way the view is created in java.
+       * Also of note: this is triggered with address saniitzer
+       * but might also be the cause of the gradient checks failing for the
+       * first 6 values.
+       *
+       * TODO: maybe track where a buffer's offset is during view creation?
+       * Also determine where a buffer's "true" offset is relative to a parent object tracking?
+       * View creation and offsets can cause issues.
+       */
+      printf("creating view with move and can reshape: with data buffer offset: %lld\n",bufferOffset());
+      fflush(stdout);
+      printIndexedBuffer("INPUT FOR RESHAPE:\n");
+      fflush(stdout);
+      NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
+      ret->_isView = true;
+      ret->printIndexedBuffer("RET FOR RESHAPE:");
+      fflush(stdout);
+
+      printf("created view with move and can reshape: with buffer offset %lld\n",ret->bufferOffset());
+      fflush(stdout);
+
+      return *ret;
     }
 
   } else {
+    printf("ELSE BRANCH\n");
+    fflush(stdout);
     //print strides shape info new:
     shape::fillStrides(shapeInfoNew);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
-    NDArray ret(newShape->primary(), true, getContext());
-    this->applyTransform(transform::Assign, ret, nullptr);
-    return ret;
+    NDArray *ret = new NDArray(newShape->primary(), true, getContext(), false);
+    this->applyTransform(transform::Assign, *ret, nullptr);
+    return *ret;
 
   }
 
 
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  printf("reshape hitting end\n");
+  fflush(stdout);
   return *this;
 }
 

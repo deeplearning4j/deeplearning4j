@@ -181,6 +181,13 @@ LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool c
   return outShapeInfo;
 }
 
+
+LongType* ShapeBuilders::setAsView(const LongType* inShapeInfo) {
+  LongType* outShapeInfo = copyShapeInfo(inShapeInfo, true, nullptr);
+  ArrayOptions::toggleIsView(outShapeInfo);
+  return outShapeInfo;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::copyShapeInfoAndType(const LongType* inShapeInfo, const DataType dtype,
                                               const bool copyStrides, memory::Workspace* workspace) {

@@ -4120,7 +4120,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
   sd::LongType rank = shapeInfo[0];
   sd::LongType doubleRank = 2 * rank;
   if (isEmpty(shapeInfo)) {
-    printf("Updating strides for empty shape info\n");
     auto strides = stride(shapeInfo);
     for (int i = 0; i < rank; i++) {
       strides[i] = 0;
@@ -4130,12 +4129,12 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
   if (rank > 0) {
     if (order == 'c') {
       shapeInfo[doubleRank] = 1;  // set unity as last stride for c order
-      for (sd::LongType j = 1; j < rank; ++j) {
+      for (sd::LongType j = 1; j < rank; j++) {
         shapeInfo[doubleRank - j] = shapeInfo[doubleRank - j + 1] * shapeInfo[rank + 1 - j];
       }
     } else {
       shapeInfo[rank + 1] = 1;  // set unity as first stride for f order
-      for (sd::LongType j = rank + 1; j < doubleRank; ++j) {
+      for (sd::LongType j = rank + 1; j < doubleRank; j++) {
         shapeInfo[j + 1] = shapeInfo[j] * shapeInfo[j - rank];
       }
     }
@@ -4237,9 +4236,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
 
   const auto oldOrder = order(oldShapeInfo);
   const auto newOrder = order(newShapeInfo);
-  const auto oldEws = elementWiseStride(const_cast<sd::LongType *>(oldShapeInfo));
-
-  if (oldEws > 0 && oldOrder != newOrder) return false;
 
   // *** FIRST STAGE - exclude unity dimensions from oldShapeInfo and newShapeInfo (if such are present of course),
   // since they don't affect on strides evaluation, however they complicate code
@@ -4256,6 +4252,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
   // *** SECOND STAGE - strides evaluation
 
   int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
+  bool oldIsFortran = (oldOrder == 'f');
+  bool newIsFortran = (newOrder == 'f');
 
   while (newStart < newNumOfNonUnities && oldStart < oldNumOfNonUnities) {
     newDim = newShape[newStart];
@@ -4268,32 +4266,58 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
         oldDim *= oldShape[oldStop++];
     }
 
-    // check c-contiguous of old axes range
-    for (sd::LongType i = oldStart; i < oldStop - 1; ++i)  // do not check value of last stride, it doesn't matter
-      if (oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) return false;  // not contiguous
+    // check contiguity of old axes range
+    if (oldIsFortran) {
+      for (sd::LongType i = oldStart + 1; i < oldStop; ++i)
+        if (oldStrides[i] != oldShape[i - 1] * oldStrides[i - 1]) {
+          printf("Reshape: oldStrides[%lld] != oldShape[%lld] * oldStrides[%lld] not contiguous (Fortran)\n", i, i - 1, i - 1);
+          fflush(stdout);
+          return false;  // not contiguous
+        }
+    } else {
+      for (sd::LongType i = oldStart; i < oldStop - 1; ++i)
+        if (oldStrides[i] != oldShape[i + 1] * oldStrides[i + 1]) {
+          printf("Reshape: oldStrides[%lld] != oldShape[%lld] * oldStrides[%lld] not contiguous (C)\n", i, i + 1, i + 1);
+          fflush(stdout);
+          return false;  // not contiguous
+        }
+    }
 
-    // fill newStrides in c manner
-    newStrides[newStop - 1] = oldStrides[oldStop - 1];  // copy last stride
-    for (int i = newStop - 2; i >= newStart; --i) newStrides[i] = newStrides[i + 1] * newShape[i + 1];
+    // fill newStrides based on the ordering
+    if (newIsFortran) {
+      newStrides[newStart] = oldStrides[oldStart];  // copy first stride
+      for (int i = newStart + 1; i < newStop; ++i)
+        newStrides[i] = newStrides[i - 1] * newShape[i - 1];
+    } else {
+      newStrides[newStop - 1] = oldStrides[oldStop - 1];  // copy last stride
+      for (int i = newStop - 2; i >= newStart; --i)
+        newStrides[i] = newStrides[i + 1] * newShape[i + 1];
+    }
 
     newStart = newStop++;
     oldStart = oldStop++;
   }
 
+  // handle remaining dimensions in the new shape
+  if (newStart < newNumOfNonUnities) {
+    if (newIsFortran) {
+      newStrides[newStart] = 1;
+      for (int i = newStart + 1; i < newNumOfNonUnities; ++i)
+        newStrides[i] = newStrides[i - 1] * newShape[i - 1];
+    } else {
+      newStrides[newNumOfNonUnities - 1] = 1;
+      for (int i = newNumOfNonUnities - 2; i >= newStart; --i)
+        newStrides[i] = newStrides[i + 1] * newShape[i + 1];
+    }
+  }
+
   // fill new calculated strides into newShapeInfo, take into account possible unities in shape
   for (int j = 0, i = 0; i < newRank; i++) {
     stride(newShapeInfo)[i] = (shapeOf(newShapeInfo)[i] == 1) ? 1 : newStrides[j++];
-
   }
 
-  // set ews
-  if (oldEws == 0)
-    checkStridesEwsAndOrder(newShapeInfo, newOrder, newNumOfNonUnities, newShape,
-                            newStrides);  // set ews and order
-  else {
-    newShapeInfo[2 * newRank + 3] = oldOrder;           // order
-    setElementWiseStride(newShapeInfo, oldEws);  // ews
-  }
+  // set ews and order
+  checkStridesEwsAndOrder(newShapeInfo, newOrder, newNumOfNonUnities, newShape, newStrides);
 
   sd::ArrayOptions::setExtra(newShapeInfo, sd::ArrayOptions::extra(oldShapeInfo));
 

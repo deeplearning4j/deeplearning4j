@@ -170,7 +170,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     protected BaseCpuDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
 
-        // for vew we need "externally managed" pointer and deallocator registration
+        // for view we need "externally managed" pointer and deallocator registration
         ptrDataBuffer = ((BaseCpuDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 

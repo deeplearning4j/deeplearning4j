@@ -127,16 +127,25 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
     _cache[deviceId][*descriptor] = constantShapeBuffer2;
     return constantShapeBuffer2;
   } else {
-    auto cacheBuff = _cache[deviceId].at(*descriptor)->primary();
+    auto cacheBuff = _cache[deviceId].at(*descriptor);
+    auto cacheBuffPrim = _cache[deviceId].at(*descriptor)->primary();
     if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
       //ensure cache values aren't inconsistent when we debug
-      if(!shape::haveSameShapeAndStrides(buffer, cacheBuff)) {
+      if(!shape::haveSameShapeAndStrides(buffer, cacheBuffPrim)) {
         std::string errorMessage;
         errorMessage += "Shape info and cache hit shape info do not match.\n";
         errorMessage += "Shape info:\n";
         errorMessage += shape::shapeToString(buffer,"\n");
         errorMessage += "\nCache hit shape info:\n";
-        errorMessage += shape::shapeToString(cacheBuff,"\n");
+        errorMessage += shape::shapeToString(cacheBuffPrim,"\n");
+#if defined(SD_GCC_FUNCTRACE)
+        Printer p;
+        std::ostringstream oss;
+        p.print(cacheBuff->st, oss);
+        errorMessage += "=======================================================Stack trace when written.============================\n";
+        errorMessage += oss.str();
+        errorMessage += "=======================================================End of stack trace when written.============================\n";
+#endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
 

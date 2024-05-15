@@ -84,6 +84,64 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         return 999999999L;
     }
 
+
+    @ParameterizedTest
+    @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")
+    @DisplayName("Test Gradient CNNL 1 L 2 MLN")
+    void testGradientCNNL1L2MLN(CNN2DFormat format,Nd4jBackend backend) {
+        // Parameterized test, testing combinations of:
+        // (a) activation function
+        // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
+        // (c) Loss function (with specified output activations)
+        Nd4j.getEnvironment().setLogNativeNDArrayCreation(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getEnvironment().setLogNDArrayEvents(true);
+        DataSet ds = new IrisDataSetIterator(150, 150).next();
+        ds.normalizeZeroMeanZeroUnitVariance();
+        INDArray input = ds.getFeatures();
+        INDArray labels = ds.getLabels();
+        // use l2vals[i] with l1vals[i]
+        double[] l2vals = { 0.4, 0.0, 0.4, 0.4 };
+        double[] l1vals = { 0.0, 0.0, 0.5, 0.0 };
+        double[] biasL2 = { 0.0, 0.0, 0.0, 0.2 };
+        double[] biasL1 = { 0.0, 0.0, 0.6, 0.0 };
+        Activation[] activFns = { Activation.SIGMOID, Activation.TANH, Activation.ELU, Activation.SOFTPLUS };
+        // If true: run some backprop steps first
+        boolean[] characteristic = { false, true, false, true };
+        LossFunctions.LossFunction[] lossFunctions = { LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, LossFunctions.LossFunction.MSE };
+        // i.e., lossFunctions[i] used with outputActivations[i] here
+        Activation[] outputActivations = { Activation.SOFTMAX, Activation.TANH, Activation.SOFTMAX, Activation.IDENTITY };
+        for (int i = 0; i < l2vals.length; i++) {
+            Activation afn = activFns[i];
+            boolean doLearningFirst = characteristic[i];
+            LossFunctions.LossFunction lf = lossFunctions[i];
+            Activation outputActivation = outputActivations[i];
+            double l2 = l2vals[i];
+            double l1 = l1vals[i];
+            ListBuilder builder = new NeuralNetConfiguration.Builder().dataType(DataType.DOUBLE)
+                    .l2(l2).l1(l1).l2Bias(biasL2[i]).l1Bias(biasL1[i])
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .seed(12345L).list().layer(0, new ConvolutionLayer.Builder(new int[] { 1, 1 }).nIn(1)
+                            .hasBias(true)
+                            .nOut(6).weightInit(WeightInit.XAVIER).activation(afn).updater(new NoOp()).build())
+                    .layer(1, new OutputLayer.Builder(lf).activation(outputActivation).nOut(3)
+                            .weightInit(WeightInit.XAVIER).updater(new NoOp()).build())
+                    .setInputType(InputType.convolutionalFlat(1, 4, 1));
+            MultiLayerConfiguration conf = builder.build();
+            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+            mln.init();
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            if (PRINT_RESULTS) {
+                System.out.println(testName + "- activationFn=" + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", doLearningFirst=" + doLearningFirst);
+            }
+            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+            assertTrue(gradOK);
+            TestUtils.testModelSerialization(mln);
+        }
+    }
+
     @DisplayName("Test Gradient CNNMLN")
     @ParameterizedTest
     @MethodSource("org.eclipse.deeplearning4j.dl4jcore.gradientcheck.CNNGradientCheckTest#params")

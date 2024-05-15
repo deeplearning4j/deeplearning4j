@@ -150,9 +150,7 @@ class SD_LIB_EXPORT NDArray {
   SD_INLINE void copyBufferStatus(const NDArray &other) const;
 
  protected:
-#if defined(SD_GCC_FUNCTRACE)
-  StackTrace creationTrace;
-#endif
+
   /**
    *  if true then array doesn't own buffer and simply points to another's buffer
    */
@@ -206,8 +204,11 @@ class SD_LIB_EXPORT NDArray {
 
  public:
   NDArray() = default;
-
-
+#ifndef __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+  StackTrace creationTrace;
+#endif
+#endif
 
   /**
    *  do not allocate memory, memory for array is passed from outside
@@ -1664,6 +1665,8 @@ SD_INLINE R NDArray::templatedGet(void const *buffer, LongType index) const {
   return TemplatedGetter<T, R>::get(buffer, index);
 }
 
+
+
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
@@ -2053,6 +2056,14 @@ const void *NDArray::buffer() const {
   if(_buffer == nullptr || _buffer->primary() == nullptr) {
     return nullptr;
   }
+  if(bufferOffset() == 48) {
+    printf("Creating buffer with offset %lld and buffer length is %lld\n", bufferOffset() * sizeOfT(),_buffer->getNumElements());
+    Printer p;
+    p.print(creationTrace,stdout);
+    printf("===============================================================================================================\n");
+    fflush(stdout);
+  }
+
   return  static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT());
 }
 
@@ -2062,6 +2073,14 @@ void *NDArray::buffer() {
   if(_buffer == nullptr || _buffer->primary() == nullptr) {
     return nullptr;
   }
+  if(bufferOffset() == 48) {
+    printf("2 Creating buffer with offset %lld and buffer length is %lld\n", bufferOffset() * sizeOfT(),_buffer->getNumElements());
+    Printer p;
+    p.print(creationTrace,stdout);
+    printf("===============================================================================================================\n");
+    fflush(stdout);
+  }
+
   return  static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT());
 }
 

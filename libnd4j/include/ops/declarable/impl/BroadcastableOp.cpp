@@ -79,42 +79,35 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, Context 
       THROW_EXCEPTION(errorMessage.c_str());
 
     }
-    auto desc = new ShapeDescriptor(newshape, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+
+    auto newShape = ConstantShapeHelper::getInstance().createFromExisting(newshape, dtype);
+    shapeList->push_back(newShape);
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
-      auto desc = new ShapeDescriptor(x, dtype);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,x);
+      shapeList->push_back(newShape);
     } else {
-      auto desc = new ShapeDescriptor(y, dtype);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,y);
+      shapeList->push_back(newShape);
     }
   } else if (shape::equalsSoft(x, y)) {
-    auto desc = new ShapeDescriptor(x, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,x);
+    shapeList->push_back(newShape);
   } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-    auto desc = new ShapeDescriptor(y, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,y);
+    shapeList->push_back(newShape);
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    auto desc = new ShapeDescriptor(x, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,x);
+    shapeList->push_back(newShape);
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
     const LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    auto desc = new ShapeDescriptor(newshape, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,newshape);
+    shapeList->push_back(newShape);
   } else {
     // in this case we'll throw exception later
-    auto desc = new ShapeDescriptor(x, dtype);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype,x);
+    shapeList->push_back(newShape);
   }
 
   return shapeList;

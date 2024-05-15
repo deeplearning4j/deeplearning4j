@@ -319,7 +319,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
         //scope out of workspaces here to avoid borrow clashes
-        INDArray ret = workspaceMgr.create(ArrayType.ACTIVATIONS,W.dataType(), input.size(0), W.size(1));
+        INDArray ret = workspaceMgr.create(ArrayType.ACTIVATIONS,W.dataType(),new long[]{ input.size(0), W.size(1)},'f');
         input.mmuli(W, ret);
 
         INDArray preNorm = ret;

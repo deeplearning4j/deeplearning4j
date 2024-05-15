@@ -82,6 +82,7 @@ class SD_LIB_EXPORT ShapeBuilders {
 
   static LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape,
                                     memory::Workspace* workspace);
+  static LongType* setAsView(const LongType* inShapeInfo);
 };
 }  // namespace sd
 
