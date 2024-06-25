@@ -10,9 +10,9 @@ public class BlasWrapper {
 
     @State(Scope.Thread)
     public static class SetupState {
-        public INDArray array1 =  Nd4j.ones(100).addi(0.01f)
-        public INDArray array2 =  Nd4j.ones(100).addi(0.01f)
-        public INDArray array3 =  Nd4j.ones(100).addi(0.01f)
+        public INDArray array1 =  Nd4j.ones(100).addi(0.01f);
+        public INDArray array2 =  Nd4j.ones(100).addi(0.01f);
+        public INDArray array3 =  Nd4j.ones(100).addi(0.01f);
 
 
         public org.nd4j.linalg.factory.BlasWrapper wrapper = Nd4j.getBlasWrapper();

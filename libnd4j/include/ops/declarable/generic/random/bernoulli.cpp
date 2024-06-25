@@ -30,20 +30,6 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(random_bernoulli, 1, 1, true, 1, 0) {
   auto rng = block.getRng();
-  // FIXME: to be implemented
-  /*
-              if (rng == nullptr)
-                  return Logger::logKernelFailureMsg("RNG is null, aborting...");
-
-              auto x = INPUT_VARIABLE(0);
-              auto z = OUTPUT_VARIABLE(0);
-
-              T f = T_ARG(0);
-
-              functions::random::RandomFunction<T>::template
-     execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->buffer(), z->shapeInfo(), &f);
-  */
-
   auto z = OUTPUT_VARIABLE(0);
   auto f = T_ARG(0);
 

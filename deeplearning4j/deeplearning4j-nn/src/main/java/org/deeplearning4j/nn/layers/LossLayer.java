@@ -50,8 +50,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     //current input and label matrices
     protected INDArray labels;
 
-    private transient Solver solver;
-
     private double fullNetworkRegularizationScore;
 
     public LossLayer(NeuralNetConfiguration conf, DataType dataType) {
@@ -72,8 +70,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
-
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
         double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
                         false);
         score /= getInputMiniBatchSize();

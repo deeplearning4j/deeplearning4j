@@ -34,6 +34,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -1051,7 +1052,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (loop.lastErrorCode() != 0) {
             throw new RuntimeException(loop.lastErrorMessage());
-            }
+        }
 
     }
 
@@ -1215,7 +1216,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null){
+        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null) {
             //Ugly hack to ensure the triple arg call occurs
             //See GaussianDistribution.setZ etc
             x = z;
@@ -1231,9 +1232,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(z != null)
             Preconditions.checkArgument(z.isR(), "Op.Z must have one of floating point types");
 
-        val xb = x == null ? null : ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = y == null ? null : ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = z == null ? null : ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = x == null ? null : x.data().opaqueBuffer();
+        val yb = y == null ? null : y.data().opaqueBuffer();
+        val zb = z == null ? null : z.data().opaqueBuffer();
 
         if (x != null && y != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
@@ -1859,27 +1860,76 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
         long[] merged = new long[Shape.shapeInfoLength(shape.length)];
-        DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
-        merged[0] = shape.length;
-        int shapeIdx = 0;
-        int strideIdx = 0;
-        for(int i = 1; i < shape.length * 2 + 1; i++) {
-            if(shapeIdx < shape.length) {
-                merged[i] = shape[shapeIdx];
-                shapeIdx++;
-            } else {
-                merged[i] = stride[strideIdx];
-                strideIdx++;
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
+            merged[0] = shape.length;
+            int shapeIdx = 0;
+            int strideIdx = 0;
+            for(int i = 1; i < shape.length * 2 + 1; i++) {
+                if(shapeIdx < shape.length) {
+                    merged[i] = shape[shapeIdx];
+                    shapeIdx++;
+                } else {
+                    merged[i] = stride[strideIdx];
+                    strideIdx++;
+                }
             }
+
+
+
+            Shape.setElementWiseStride(merged,(int) elementWiseStride);
+            LongPointer longPointer = new LongPointer(merged);
+            loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.addressPointer()),order,(int) elementWiseStride,empty,isView);
+            longPointer.deallocate();
+            longPointer.releaseReference();
+            if(isView != ArrayOptionsHelper.isView(Shape.options(ret))) {
+                throw new IllegalStateException("isView is not set properly");
+            }
+
+            if(empty != ArrayOptionsHelper.isEmpty(Shape.options(ret))) {
+                throw new IllegalStateException("Empty is not set properly");
+            }
+
+
+            long[] shape2 = Shape.shape(ret.asLong());
+            long[] stride2 = Shape.stride(ret.asLong());
+            long ews = Shape.elementWiseStride(ret.asLong());
+            char order2 = Shape.order(ret.asLong());
+            DataType dtype2 = ArrayOptionsHelper.dataType(Shape.options(ret));
+            boolean empty2 = ArrayOptionsHelper.isEmpty(Shape.options(ret));
+            boolean isView2 = ArrayOptionsHelper.isView(Shape.options(ret));
+            if(!Arrays.equals(shape,shape2)) {
+                throw new IllegalStateException("Shape is not set properly");
+            }
+
+            if(!Arrays.equals(stride,stride2)) {
+                throw new IllegalStateException("Stride is not set properly");
+            }
+
+            if(ews > 0 && ews != elementWiseStride) {
+                throw new IllegalStateException("Element wise stride is not set properly");
+            }
+
+            if(order != order2) {
+                throw new IllegalStateException("Order is not set properly");
+            }
+
+            if(dtype != dtype2) {
+                throw new IllegalStateException("Data type is not set properly");
+            }
+
+            if(empty != empty2) {
+                throw new IllegalStateException("Empty is not set properly");
+            }
+
+            if(isView != isView2) {
+                throw new IllegalStateException("Is view is not set properly");
+            }
+            return ret;
         }
 
 
-        Shape.setElementWiseStride(merged,(int) elementWiseStride);
-        LongPointer longPointer = new LongPointer(merged);
-        loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty,isView);
-        longPointer.deallocate();
-        longPointer.releaseReference();
-        return ret;
     }
 
     @Override
@@ -1906,14 +1956,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         for(int i = 0; i < inputDimensions.length; i++) {
             inputDimensions[i] = dimension[i];
         }
-        OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new LongPointer(inputDimensions), dimension.length);
+        try {
+            OpaqueTadPack pack = loop.tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+            if (loop.lastErrorCode() != 0)
+                throw new RuntimeException(loop.lastErrorMessage());
 
-        val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
-        val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
-        return new TadPack(tadShape, tadOffsets);
+            val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
+            val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
+            return new TadPack(tadShape, tadOffsets);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void appendSameDiffInfo(StringBuilder sb, DifferentialFunction df) {

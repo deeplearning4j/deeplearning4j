@@ -73,14 +73,13 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
     public void testLSTMBasicMultiLayer() {
         //Basic test of LSTM layer
         Nd4j.getRandom().setSeed(12345L);
-
         int timeSeriesLength = 4;
         int nIn = 2;
         int layerSize = 2;
         int nOut = 2;
         int miniBatchSize = 5;
 
-        boolean[] LSTM = new boolean[] {true, false};
+        boolean[] LSTM = {true, false};
 
         for (boolean graves : LSTM) {
 
@@ -88,32 +87,32 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             Layer l1;
             if (graves) {
                 l0 = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
-                                .dist(new NormalDistribution(0, 1.0))
-                                .updater(new NoOp()).build();
+                        .dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
                 l1 = new LSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
-                                .dist(new NormalDistribution(0, 1.0))
-                                .updater(new NoOp()).build();
+                        .dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
             } else {
                 l0 = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.SIGMOID)
-                                .dist(new NormalDistribution(0, 1.0))
-                                .updater(new NoOp()).build();
+                        .dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
                 l1 = new LSTM.Builder().nIn(layerSize).nOut(layerSize).activation(Activation.SIGMOID)
-                                .dist(new NormalDistribution(0, 1.0))
-                                .updater(new NoOp()).build();
+                        .dist(new NormalDistribution(0, 1.0))
+                        .updater(new NoOp()).build();
             }
 
             MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().seed(12345L)
-                                            .dataType(DataType.DOUBLE)
-                                            .list()
-                                            .layer(0, l0).layer(1,
-                                                            l1)
-                                            .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
-                                                            .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
+                    new NeuralNetConfiguration.Builder().seed(12345L)
+                            .dataType(DataType.DOUBLE)
+                            .list()
+                            .layer(0, l0).layer(1,
+                                    l1)
+                            .layer(2, new RnnOutputLayer.Builder(LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
 
-                                                            .dist(new NormalDistribution(0, 1.0)).updater(new NoOp())
-                                                            .build())
-                                            .build();
+                                    .dist(new NormalDistribution(0, 1.0)).updater(new NoOp())
+                                    .build())
+                            .build();
 
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
@@ -139,12 +138,10 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             String testName = "testLSTMBasic(" + (graves ? "LSTM" : "LSTM") + ")";
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < mln.getnLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(gradOK, testName);
             TestUtils.testModelSerialization(mln);
@@ -160,7 +157,7 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
         int nOut = 2;
         int miniBatchSize = 2;
 
-        boolean[] LSTM = new boolean[] {true, false};
+        boolean[] LSTM = {true, false};
 
         for (boolean graves : LSTM) {
 
@@ -272,20 +269,20 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
-                                .dataType(DataType.DOUBLE)
-                                .dist(new NormalDistribution(0, 1))
-                                .updater(new NoOp()).list().layer(0, layer)
-                                .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
-                                                .nIn(layerSize).nOut(nOut).build())
-                                .build();
+                        .dataType(DataType.DOUBLE)
+                        .dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).list().layer(0, layer)
+                        .layer(1, new RnnOutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX)
+                                .nIn(layerSize).nOut(nOut).build())
+                        .build();
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
                 String msg = "testGradientLSTMEdgeCases(" + (graves ? "LSTM" : "LSTM") + " - timeSeriesLength="
-                                + timeSeriesLength[i] + ", miniBatchSize=" + miniBatchSize[i];
+                        + timeSeriesLength[i] + ", miniBatchSize=" + miniBatchSize[i];
                 System.out.println(msg);
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 assertTrue(gradOK, msg);
                 TestUtils.testModelSerialization(mln);
             }
@@ -319,17 +316,17 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
 
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).seed(12345)
-                        .dataType(DataType.DOUBLE)
-                        .dist(new UniformDistribution(-2, 2)).list()
-                        .layer(0, new ConvolutionLayer.Builder(3, 3).nIn(2).nOut(3).stride(1, 1)
-                                        .activation(Activation.TANH).build()) //Out: (10-5)/1+1 = 6 -> 6x6x5
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
-                                        .stride(1, 1).build()) //Out: (6-2)/1+1 = 5 -> 5x5x5
-                        .layer(2, new DenseLayer.Builder().nIn(27).nOut(4).activation(Activation.TANH).build())
-                        .layer(3, new LSTM.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
-                        .layer(4, new RnnOutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(3).nOut(nClasses)
-                                        .activation(Activation.SOFTMAX).build())
-                        .setInputType(InputType.convolutional(6, 6, 2)).build();
+                .dataType(DataType.DOUBLE)
+                .dist(new UniformDistribution(-2, 2)).list()
+                .layer(0, new ConvolutionLayer.Builder(3, 3).nIn(2).nOut(3).stride(1, 1)
+                        .activation(Activation.TANH).build()) //Out: (10-5)/1+1 = 6 -> 6x6x5
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .stride(1, 1).build()) //Out: (6-2)/1+1 = 5 -> 5x5x5
+                .layer(2, new DenseLayer.Builder().nIn(27).nOut(4).activation(Activation.TANH).build())
+                .layer(3, new LSTM.Builder().nIn(4).nOut(3).activation(Activation.TANH).build())
+                .layer(4, new RnnOutputLayer.Builder().lossFunction(LossFunction.MCXENT).nIn(3).nOut(nClasses)
+                        .activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.convolutional(6, 6, 2)).build();
 
         //Here: ConvolutionLayerSetup in config builder doesn't know that we are expecting time series input, not standard FF input -> override it here
         conf.getInputPreProcessors().put(0, new RnnToCnnPreProcessor(6, 6, 2));

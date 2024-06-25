@@ -163,6 +163,8 @@ class SD_LIB_EXPORT ArrayOptions {
 
   static SD_HOST  LongType propertyWithoutDataTypeValue(LongType extra);
   static SD_HOST DataType dataTypeValue(LongType property);
+  static bool isEmpty(LongType *shapeInfo);
+  static void toggleIsEmpty(LongType *shapeInfo);
 };
 
 }

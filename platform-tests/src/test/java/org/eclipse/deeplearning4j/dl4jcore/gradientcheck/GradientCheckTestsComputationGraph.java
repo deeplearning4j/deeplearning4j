@@ -205,12 +205,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .dist(new NormalDistribution(0, 1)).updater(new NoOp())
                 .graphBuilder().addInputs("input")
-                /*.addLayer("firstLayer",
+                .addLayer("firstLayer",
                         new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
-                        "input")*/
+                        "input")
                 .addLayer("outputLayer",
                         new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                .activation(Activation.SOFTMAX).nIn(4).nOut(3).build(),"input")
+                                .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),"firstLayer")
                 .setOutputs("outputLayer").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
@@ -267,7 +267,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
         DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -292,7 +292,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     @Test
     public void testBasicIrisWithElementWiseNode() {
 
-        ElementWiseVertex.Op[] ops = new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add,
+        ElementWiseVertex.Op[] ops = {ElementWiseVertex.Op.Add,
                 ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Product, ElementWiseVertex.Op.Average, ElementWiseVertex.Op.Max};
 
         for (ElementWiseVertex.Op op : ops) {
@@ -380,7 +380,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             Nd4j.getRandom().setSeed(12345);
             long nParams = graph.numParams();
-            INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+            INDArray newParams = Nd4j.rand(1, nParams);
             graph.setParams(newParams);
 
             DataSet ds = new IrisDataSetIterator(150, 150).next();
@@ -404,8 +404,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     }
 
     @Test
-    public void testElementWiseVertexBroadcast() {
-
+    public void testElemenatWiseVertexBroadcast() {
         ElementWiseVertex.Op[] ops =
                 {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Average,
                         ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Max, ElementWiseVertex.Op.Product};
@@ -423,7 +422,9 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                         .layer("l1", new DenseLayer.Builder().nIn(3).nOut(firstSmaller ? 1 : 3).build(), "in")   //[mb,3]
                         .layer("l2", new DenseLayer.Builder().nIn(3).nOut(firstSmaller ? 3 : 1).build(), "in")   //[mb,1]
                         .addVertex("ew", new ElementWiseVertex(op), "l1", "l2")
-                        .layer("out", new OutputLayer.Builder().nIn(3).nOut(2).lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).build(), "ew")
+                        .layer("out", new OutputLayer.Builder().nIn(3).nOut(2)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT)
+                                .activation(Activation.SOFTMAX).build(), "ew")
                         .build();
 
                 ComputationGraph graph = new ComputationGraph(conf);
@@ -438,6 +439,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                     INDArray out = graph.outputSingle(in);
                     assertArrayEquals(new long[]{mb, 2}, out.shape());
+
 
                     INDArray labels = TestUtils.randomOneHot(mb, 2);
 
@@ -587,7 +589,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        INDArray input = Nd4j.rand(new int[] {batchSize, inLength, timeSeriesLength});
+        INDArray input = Nd4j.rand(batchSize, inLength, timeSeriesLength);
         INDArray labels = TestUtils.randomOneHotTimeSeries(batchSize, 2, timeSeriesLength);
 
         if (PRINT_RESULTS) {
@@ -652,7 +654,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
     @Test
     public void testLSTMWithDuplicateToTimeSeries() {
-
         int batchSize = 2;
         int outSize = 2;
         int timeSeriesLength = 4;
@@ -685,8 +686,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input1 = Nd4j.rand(new int[] {batchSize, 3, 4});
-        INDArray input2 = Nd4j.rand(new int[] {batchSize, 2, 4});
+        INDArray input1 = Nd4j.rand(batchSize, 3, 4);
+        INDArray input2 = Nd4j.rand(batchSize, 2, 4);
         INDArray labels = TestUtils.randomOneHotTimeSeries(batchSize, outSize, timeSeriesLength);
 
         if (PRINT_RESULTS) {
@@ -734,7 +735,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         graph.init();
 
         Random r = new Random(12345);
-        INDArray input  = Nd4j.rand(new int[] {2, 2, 4});
+        INDArray input  = Nd4j.rand(2, 2, 4);
         INDArray labels = TestUtils.randomOneHotTimeSeries(2, 2, 4);
 
         if (PRINT_RESULTS) {
@@ -793,8 +794,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleInputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(inputs)
@@ -833,8 +832,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -879,8 +876,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(input)
@@ -930,8 +925,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
@@ -976,7 +969,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
         INDArray pos = Nd4j.rand(150, 4);
@@ -992,9 +985,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Map<String, INDArray> out = graph.feedForward(new INDArray[] {pos, anc, neg}, true);
 
-//        for (String s : out.keySet()) {
-//            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
-//        }
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIrisTripletStackingL2Loss()");
@@ -1015,7 +1005,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         int numLabels = 2;
 
-        boolean[] trainFirst = new boolean[] {false, true};
+        boolean[] trainFirst = {false, true};
 
         for (boolean train : trainFirst) {
             for (double lambda : new double[] {0.0, 0.5, 2.0}) {
@@ -1058,8 +1048,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 String msg = "testBasicCenterLoss() - lambda = " + lambda + ", trainFirst = " + train;
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
-//                    for (int j = 0; j < graph.getNumLayers(); j++)
-//                        System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{example})
@@ -1076,7 +1064,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         int numLabels = 2;
 
-        boolean[] trainFirst = new boolean[] {false, true};
+        boolean[] trainFirst = {false, true};
 
         int inputH = 5;
         int inputW = 4;
@@ -1101,7 +1089,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                INDArray example = Nd4j.rand(new int[] {150, inputDepth, inputH, inputW});
+                INDArray example = Nd4j.rand(150, inputDepth, inputH, inputW);
 
                 INDArray labels = Nd4j.zeros(150, numLabels);
                 Random r = new Random(12345);
@@ -1111,7 +1099,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                 if (train) {
                     for (int i = 0; i < 10; i++) {
-                        INDArray f = Nd4j.rand(new int[] {10, inputDepth, inputH, inputW});
+                        INDArray f = Nd4j.rand(10, inputDepth, inputH, inputW);
                         INDArray l = Nd4j.zeros(10, numLabels);
                         for (int j = 0; j < 10; j++) {
                             l.putScalar(j, r.nextInt(numLabels), 1.0);
@@ -1123,8 +1111,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 String msg = "testBasicCenterLoss() - trainFirst = " + train;
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
-//                    for (int j = 0; j < net.getnLayers(); j++)
-//                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -1157,7 +1143,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1172,8 +1158,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1214,10 +1198,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
-        int[] mbSizes = new int[] {1, 3, 10};
+        int[] mbSizes = {1, 3, 10};
         for (int minibatch : mbSizes) {
 
             INDArray in1 = Nd4j.rand(minibatch, layerSizes);
@@ -1230,8 +1214,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1272,10 +1254,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
-        int[] mbSizes = new int[] {1, 3, 10};
+        int[] mbSizes = {1, 3, 10};
         for (int minibatch : mbSizes) {
 
             INDArray in1 = Nd4j.rand(minibatch, 2);
@@ -1288,8 +1270,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1331,28 +1311,26 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
-        int[] mbSizes = new int[] {1, 2, 3};
+        int[] mbSizes = {1, 2, 3};
         for (int minibatch : mbSizes) {
 
-            INDArray in1 = Nd4j.rand(new int[] {minibatch, layerSizes, 4});
-            INDArray in2 = Nd4j.rand(new int[] {minibatch, layerSizes, 5});
+            INDArray in1 = Nd4j.rand(minibatch, layerSizes, 4);
+            INDArray in2 = Nd4j.rand(minibatch, layerSizes, 5);
             INDArray inMask1 = Nd4j.zeros(minibatch, 4);
             inMask1.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3)).assign(1);
             INDArray inMask2 = Nd4j.zeros(minibatch, 5);
             inMask2.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)).assign(1);
 
-            INDArray labels1 = Nd4j.rand(new int[] {minibatch, 2});
-            INDArray labels2 = Nd4j.rand(new int[] {minibatch, 2});
+            INDArray labels1 = Nd4j.rand(minibatch, 2);
+            INDArray labels2 = Nd4j.rand(minibatch, 2);
 
             String testName = "testBasicStackUnstackVariableLengthTS() - minibatch = " + minibatch;
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
@@ -1395,7 +1373,7 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         long nParams = graph.numParams();
-        INDArray newParams = Nd4j.rand(new long[]{1, nParams});
+        INDArray newParams = Nd4j.rand(1, nParams);
         graph.setParams(newParams);
 
         int[] mbSizes = new int[] {1, 3, 10};
@@ -1410,8 +1388,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
@@ -1456,8 +1432,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                 if (PRINT_RESULTS) {
                     System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
@@ -1507,8 +1481,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-//                for (int j = 0; j < graph.getNumLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
@@ -1545,8 +1517,6 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testGraphEmbeddingLayerSimple");
-//            for (int j = 0; j < cg.getNumLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + cg.getLayer(j).numParams());
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(new INDArray[]{input})

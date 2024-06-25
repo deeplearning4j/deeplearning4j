@@ -473,7 +473,9 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, NDArray* Z, const d
     THROW_EXCEPTION("MmulHelper::dot cuda: X array must be vector !");
   if (!shape::isCommonVector(Y->shapeInfo(), yLenDim))
     THROW_EXCEPTION("MmulHelper::dot cuda: Y array must be vector !");
-  if (Z != nullptr && !Z->isScalar()) THROW_EXCEPTION("MmulHelper::dot cuda: Z array must be scalar !");
+  if (Z != nullptr && Z->lengthOf() > 1) {
+    THROW_EXCEPTION("MmulHelper::dot: Z array must be scalar !");
+  }
 
   const auto length = X->lengthOf();
 

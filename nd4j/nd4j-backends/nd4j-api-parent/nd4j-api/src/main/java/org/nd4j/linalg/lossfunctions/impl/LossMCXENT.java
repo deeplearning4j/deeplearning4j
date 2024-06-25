@@ -94,9 +94,9 @@ public class LossMCXENT implements ILossFunction {
         labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
-        if(activationFn instanceof ActivationSoftmax && softmaxClipEps > 0.0){
+        if(activationFn instanceof ActivationSoftmax && softmaxClipEps > 0.0) {
             BooleanIndexing.replaceWhere(output, softmaxClipEps, Conditions.lessThan(softmaxClipEps));
-            BooleanIndexing.replaceWhere(output, 1.0-softmaxClipEps, Conditions.greaterThan(1.0-softmaxClipEps));
+            BooleanIndexing.replaceWhere(output, 1.0 - softmaxClipEps, Conditions.greaterThan(1.0 - softmaxClipEps));
         }
         INDArray scoreArr = Transforms.log(output, false).muli(labels);
 

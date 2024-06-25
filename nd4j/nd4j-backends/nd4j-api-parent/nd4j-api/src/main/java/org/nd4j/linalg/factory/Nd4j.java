@@ -895,8 +895,6 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
-        Preconditions.checkArgument(c.elementWiseStride() == 1, "Nd4j.gemm() C array should NOT be a view");
-
         Nd4j.exec(new Mmul(a, b, c, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
         return c;
     }

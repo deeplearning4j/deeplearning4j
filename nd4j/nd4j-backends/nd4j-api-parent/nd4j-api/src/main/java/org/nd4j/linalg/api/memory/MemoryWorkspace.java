@@ -47,6 +47,27 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     }
 
     /**
+     * This method returns the stack trace
+     * from when this workspace was entered
+     * @return
+     */
+    StackTraceElement[] lastEntered();
+
+    /**
+     * This method returns the stack trace
+     * from when this workspace was closed
+     * @return
+     */
+    StackTraceElement[] lastClosed();
+
+    /**
+     * This method returns the stack trace
+     * from when this workspace was last borrowed
+     * @return
+     */
+    StackTraceElement[] lastBorrowed();
+
+    /**
      * Set the workspace manager.
      * This is only needed for notifications for logging
      * when this workspace is destroyed/closed.
@@ -178,7 +199,7 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     void destroyWorkspace(boolean extended);
 
     /**
-     * This method allows you to temporary disable/enable given Workspace use.
+     * This method allows you to temporarily disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.
      *
      * @param isEnabled

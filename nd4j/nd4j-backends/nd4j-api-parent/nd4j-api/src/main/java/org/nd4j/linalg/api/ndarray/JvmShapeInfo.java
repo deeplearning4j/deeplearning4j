@@ -37,7 +37,7 @@ public class JvmShapeInfo {
     @Getter protected final char order;
     @Getter protected final int rank;
     @Getter protected final DataType dataType;
-
+    @Getter protected final boolean isView;
     public JvmShapeInfo(@NonNull long[] javaShapeInformation) {
         this.javaShapeInformation = javaShapeInformation;
         this.shape = Shape.shape(javaShapeInformation);
@@ -48,5 +48,6 @@ public class JvmShapeInfo {
         this.order = Shape.order(javaShapeInformation);
         this.rank = Shape.rank(javaShapeInformation);
         this.dataType = ArrayOptionsHelper.dataType(javaShapeInformation);
+        this.isView = ArrayOptionsHelper.isView(javaShapeInformation);
     }
 }

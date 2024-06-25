@@ -3959,19 +3959,37 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,isEmpty ? ARRAY_EMPTY : 0);
+  for(int i = 0; i < len; i++) {
+    bufferToSet[i] = inputShapeData[i];
+  }
 
-  auto buffer = descriptor.toShapeInfo();
-  for(LongType i = 0; i < len; i++) {
-    bufferToSet[i] = buffer[i];
+  ArrayOptions::setDataType(bufferToSet,dt);
+  if(isView) {
+    ArrayOptions::toggleIsView(bufferToSet);
+  }
+  if(!ArrayOptions::isEmpty(inputShapeData) && isEmpty) {
+    ArrayOptions::toggleIsEmpty(bufferToSet);
   }
 
 
+  if(rank == 0) {
+    //detect when the shape buffer values are unset.
+    auto len = shape::shapeInfoLength(rank);
+    //min number of values in a shape info buffer
+    bool allZero = true;
+    for(int i = 0; i < len; i++) {
+      if(bufferToSet[i] != 0) {
+        allZero = false;
+        break;
+      }
+    }
 
+    if(allZero) {
+      THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+    }
+  }
 
-  delete[] buffer;
 }
-
 void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, Pointer * buffer, Pointer * shapeInfo,
                                 Pointer * specialBuffer, Pointer * specialShapeInfo) {
 

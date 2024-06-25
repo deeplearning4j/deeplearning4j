@@ -31,7 +31,6 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,7 +44,6 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.*;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,6 +72,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
     protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Deallocator deallocator;
+    protected StackTraceElement[] allocationTrace =  Nd4j.getEnvironment().isFuncTracePrintAllocate()
+            || Nd4j.getEnvironment().isFuncTracePrintJavaOnly() ?
+            Thread.currentThread().getStackTrace() : null;
 
 
     protected DataType type;
@@ -104,6 +105,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
 
     public BaseDataBuffer() {}
+
+
+    @Override
+    public StackTraceElement[] allocationTrace() {
+        return allocationTrace;
+    }
 
     @Override
     public Deallocator deallocator() {

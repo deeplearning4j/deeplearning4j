@@ -68,6 +68,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Setter
     protected Enum associatedEnumType;
 
+    protected StackTraceElement[] lastEntered;
+    protected  StackTraceElement[] lastClosed;
+
+    protected StackTraceElement[] lastBorrowed;
+
+
     protected Type workspaceType = Type.SCOPED;
 
     public static final long SAFETY_OFFSET = 1024L;
@@ -205,6 +211,21 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         init();
+    }
+
+    @Override
+    public StackTraceElement[] lastEntered() {
+        return lastEntered;
+    }
+
+    @Override
+    public StackTraceElement[] lastClosed() {
+        return lastClosed;
+    }
+
+    @Override
+    public StackTraceElement[] lastBorrowed() {
+        return lastBorrowed;
     }
 
     @Override
@@ -593,13 +614,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
      */
     @Override
     public MemoryWorkspace notifyScopeBorrowed() {
-        //when we borrow from a workspace and it's already in use
-        //we shouldn't thrown an error here. We're already in
-        //the workspace.
-        if(isUsed.get()) {
-            Nd4j.getMemoryManager().setCurrentWorkspace(this);
-            return this;
-        }
         if (isBorrowed.get())
             throw new ND4JIllegalStateException("Workspace [" + id + "]: Can't borrow from borrowed workspace");
 
@@ -607,7 +621,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         isBorrowed.set(true);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
-
+        this.lastBorrowed = Thread.currentThread().getStackTrace();
         return this;
     }
 
@@ -744,6 +758,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             }
         }
 
+        this.lastClosed = Thread.currentThread().getStackTrace();
         cycleAllocations.set(0);
     }
 
@@ -787,7 +802,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         disabledCounter.set(0);
 
         generationId.incrementAndGet();
-
+        this.lastEntered = Thread.currentThread().getStackTrace();
         return this;
     }
 

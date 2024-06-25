@@ -34,6 +34,22 @@ public class DummyWorkspace implements MemoryWorkspace {
 
     protected MemoryWorkspace parentWorkspace;
     protected WorkspaceMgr workspaceMgr;
+
+    @Override
+    public StackTraceElement[] lastEntered() {
+        return new StackTraceElement[0];
+    }
+
+    @Override
+    public StackTraceElement[] lastClosed() {
+        return new StackTraceElement[0];
+    }
+
+    @Override
+    public StackTraceElement[] lastBorrowed() {
+        return new StackTraceElement[0];
+    }
+
     @Override
     public void setWorkspaceMgr(WorkspaceMgr mgr) {
         this.workspaceMgr = mgr;

@@ -56,6 +56,8 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
         MIXED_DATA_TYPES, // latest generation of INDArrays support multiple data types, with information stored within shapeInfo "offset" field.
     }
 
+    StackTraceElement[] allocationTrace();
+
     /**
      * Returns the underlying opaque buffer for this data buffer
      * @return

@@ -216,6 +216,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape info cannot be null!");
   }
 
+
   sd::LongType rankVal = shape::rank(shapeInfo);
   if(rankVal < 0 || rankVal > SD_MAX_RANK) {
     std::string errorMessage;
@@ -224,6 +225,23 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     errorMessage += ". Valid range is 0 to ";
     errorMessage += std::to_string(SD_MAX_RANK);
     THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if(rankVal == 0) {
+    //detect when the shape buffer values are unset.
+    auto len = shape::shapeInfoLength(rankVal);
+    //min number of values in a shape info buffer
+    bool allZero = true;
+    for(int i = 0; i < len; i++) {
+      if(shapeInfo[i] != 0) {
+        allZero = false;
+        break;
+      }
+    }
+
+    if(allZero) {
+      THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+    }
   }
 
 
@@ -317,6 +335,8 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     errorMessage += DataTypeUtils::asString(_dataType);
     errorMessage += " extra properties for data type was ";
     errorMessage += DataTypeUtils::asString(ArrayOptions::dataTypeValue(_extraProperties));
+    errorMessage += " Underlying extra value  was ";
+    errorMessage += std::to_string(_extraProperties);
     THROW_EXCEPTION(errorMessage.c_str());
   }
 

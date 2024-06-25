@@ -179,13 +179,12 @@ public class GradientCheckUtil {
         }
 
         return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
-                        .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
+                .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
     }
 
     public static boolean checkGradients(MLNConfig c) {
-
         //Basic sanity checks on input:
-          if (c.epsilon <= 0.0 || c.epsilon > 0.1)
+        if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
         if (c.maxRelError <= 0.0 || c.maxRelError > 0.25)
             throw new IllegalArgumentException("Invalid maxRelativeError: " + c.maxRelError);
@@ -195,8 +194,8 @@ public class GradientCheckUtil {
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         DataType netDataType = c.net.getLayerWiseConfigurations().getDataType();
@@ -222,12 +221,12 @@ public class GradientCheckUtil {
                     double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + n.getLayer().getLayerName() + "\"");
+                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                + n.getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
 
@@ -236,7 +235,7 @@ public class GradientCheckUtil {
             if (n.getLayer().getIDropout() != null && c.callEachIter == null) {
                 throw new IllegalStateException("When gradient checking dropout, need to reset RNG seed each iter, or no" +
                         " dropout should be present during gradient checks - got dropout = "
-                                + n.getLayer().getIDropout() + " for layer " + layerCount);
+                        + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 
@@ -331,7 +330,7 @@ public class GradientCheckUtil {
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scoreMinus = c.net.score(ds, true);
@@ -350,7 +349,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -360,21 +359,21 @@ public class GradientCheckUtil {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < c.minAbsoluteError) {
                     if(c.print == PrintMode.ALL || c.print == PrintMode.ZEROS && absError == 0.0) {
-                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                        log.info("MLN Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
                                 + ", numericalGrad= " + numericalGradient + ", relError= " + relError
                                 + "; absolute error = " + absError + " < minAbsoluteError = " + c.minAbsoluteError);
                     }
                 } else {
-                    log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                    log.info("MLN Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
 
             long step;
@@ -392,7 +391,7 @@ public class GradientCheckUtil {
 
         val nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
+                + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }
@@ -408,13 +407,13 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid input arrays: expect " + c.net.getNumInputArrays() + " inputs");
         if (c.net.getNumOutputArrays() != c.labels.length)
             throw new IllegalArgumentException(
-                            "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
+                    "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
 
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         DataType netDataType = c.net.getConfiguration().getDataType();
@@ -423,7 +422,7 @@ public class GradientCheckUtil {
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != c.net.params().dataType()){
+        if(netDataType != c.net.params().dataType()) {
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
                     + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
@@ -444,12 +443,12 @@ public class GradientCheckUtil {
                     double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                + lv.getLayerConf().getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
 
@@ -524,7 +523,7 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scorePlus = c.net.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
@@ -550,7 +549,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -566,21 +565,21 @@ public class GradientCheckUtil {
                     }
                 } else {
                     log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
         }
 
         val nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                        + totalNFailures + " failed. Largest relative error = " + maxError);
+                + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }
@@ -593,7 +592,7 @@ public class GradientCheckUtil {
      * NOTE: gradient checking pretrain layers can be difficult...
      */
     public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+                                                      double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
 
         LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();
 
@@ -606,8 +605,8 @@ public class GradientCheckUtil {
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:
@@ -674,7 +673,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -684,27 +683,27 @@ public class GradientCheckUtil {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < minAbsoluteError) {
                     log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
                 } else {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (print) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
         }
 
         if (print) {
             val nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
+                    + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
         return totalNFailures == 0;

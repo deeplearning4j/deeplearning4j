@@ -55,10 +55,10 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
         shape::elementWiseStride(yShapeInfo) == 1 && shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
         shape::order(zShapeInfo) == shape::order(yShapeInfo)) {
       auto func = PRAGMA_THREADS_FOR {
-        PRAGMA_OMP_SIMD
-        for (auto i = start; i < stop; i++) {
-          z[i] = OpClass::op(x[i], y[i], i, length, rng, extraArguments);
-        }
+          PRAGMA_OMP_SIMD
+          for (auto i = start; i < stop; i++) {
+            z[i] = OpClass::op(x[i], y[i], i, length, rng, extraArguments);
+          }
       };
       samediff::Threads::parallel_for(func, 0, length, 1);
     } else {
@@ -66,11 +66,11 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
       auto func = PRAGMA_THREADS_FOR {
-        PRAGMA_OMP_SIMD
-        for (auto i = start; i < stop; i++) {
-          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-          z[offset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
-        }
+          PRAGMA_OMP_SIMD
+          for (auto i = start; i < stop; i++) {
+            auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+            z[offset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
+          }
       };
 
       samediff::Threads::parallel_for(func, 0, length, 1);
@@ -82,12 +82,12 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-        z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+          z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -98,12 +98,12 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-        z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+          z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -114,12 +114,12 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-        z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+          z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -132,13 +132,13 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-        z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+          auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+          z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -164,19 +164,19 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     if (shape::elementWiseStride(zShapeInfo) == 1 && shape::elementWiseStride(xShapeInfo) == 1 &&
         shape::order(xShapeInfo) == shape::order(zShapeInfo)) {
       auto func = PRAGMA_THREADS_FOR {
-        PRAGMA_OMP_SIMD
-        for (auto i = start; i < stop; i++) {
-          z[i] = OpClass::op(x[i], i, length, rng, extraArguments);
-        }
+          PRAGMA_OMP_SIMD
+          for (auto i = start; i < stop; i++) {
+            z[i] = OpClass::op(x[i], i, length, rng, extraArguments);
+          }
       };
       samediff::Threads::parallel_for(func, 0, length, 1);
     } else {
       auto func = PRAGMA_THREADS_FOR {
-        PRAGMA_OMP_SIMD
-        for (auto i = start; i < stop; i++) {
-          auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-          z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
-        }
+          PRAGMA_OMP_SIMD
+          for (auto i = start; i < stop; i++) {
+            auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+            z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
+          }
       };
 
       samediff::Threads::parallel_for(func, 0, length, 1);
@@ -186,12 +186,12 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-        z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+          auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+          z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -204,17 +204,16 @@ void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::Lon
                                       void *vextraArguments) {
   auto z = reinterpret_cast<X *>(vz);
   auto extraArguments = reinterpret_cast<X *>(vextraArguments);
-
   auto length = shape::length(zShapeInfo);
 
   sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 
   if (shape::elementWiseStride(zShapeInfo) == 1) {
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        z[i] = OpClass::op(i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          z[i] = OpClass::op(i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -225,11 +224,11 @@ void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::Lon
     const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
-      for (auto i = start; i < stop; i++) {
-        auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-        z[offset] = OpClass::op(i, length, rng, extraArguments);
-      }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++) {
+          auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+          z[offset] = OpClass::op(i, length, rng, extraArguments);
+        }
     };
 
     samediff::Threads::parallel_for(func, 0, length, 1);
@@ -246,6 +245,7 @@ template <typename X>
 void RandomFunction<X>::execTransform(int opNum, sd::Pointer state, const void *x, const sd::LongType *xShapeInfo,
                                       const void *y, const sd::LongType *yShapeInfo, void *z,
                                       const sd::LongType *zShapeInfo, void *extraArguments) {
+
   DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments),
                       RANDOM_OPS)
 }

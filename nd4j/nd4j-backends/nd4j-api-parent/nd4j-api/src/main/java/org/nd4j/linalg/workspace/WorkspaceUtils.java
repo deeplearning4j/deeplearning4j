@@ -131,7 +131,7 @@ public class WorkspaceUtils {
      * @param msg   Message (prefix) to include in the exception, if required. May be null
      */
     public static void assertValidArray(INDArray array, String msg) {
-        if(array == null || !array.isAttached()){
+        if(array == null || !array.isAttached()) {
             return;
         }
 

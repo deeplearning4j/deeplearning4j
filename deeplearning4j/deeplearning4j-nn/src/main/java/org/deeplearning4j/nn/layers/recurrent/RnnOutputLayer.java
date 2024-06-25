@@ -111,8 +111,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
-            input = (layerConf().getRnnDataFormat() == RNNFormat.NWC) ? input.permute(0, 2, 1):input;
-            input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+            input = (layerConf().getRnnDataFormat() == RNNFormat.NWC) ? input.permute(0, 2, 1) : input;
+            input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.INPUT);
             INDArray out = super.preOutput(training, workspaceMgr);
             this.input = inputTemp;
             return out;

@@ -1305,6 +1305,8 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
 void NativeOpExecutioner::execRandom(sd::LaunchContext *lc, int opNum, sd::Pointer state, void *hZ,
                                      const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                      void *extraArguments) {
+  printf("exec random\n");
+  fflush(stdout);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction,
                         ::execTransform(opNum, state, hZ, hZShapeInfo, extraArguments), SD_FLOAT_TYPES);

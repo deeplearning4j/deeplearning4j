@@ -89,9 +89,7 @@ public class StackVertex extends BaseGraphVertex {
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-                    return Nd4j.concat(0, inputs);
-                }
+                return Nd4j.concat(0, inputs);
             }
 
             outShape[2] = maxLength;
@@ -106,9 +104,8 @@ public class StackVertex extends BaseGraphVertex {
 
             return out;
         } else {
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-                return Nd4j.concat(0, inputs);
-            }
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,Nd4j.concat(0, inputs));
+
         }
     }
 
@@ -154,7 +151,7 @@ public class StackVertex extends BaseGraphVertex {
             }
         }
 
-        for( int i=0; i<nStack; i++ ){
+        for( int i = 0; i < nStack; i++) {
             out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, out[i]);
         }
 
@@ -176,13 +173,13 @@ public class StackVertex extends BaseGraphVertex {
         }
 
         boolean allNull = true;
-        for(INDArray i : maskArrays){
+        for(INDArray i : maskArrays) {
             if(i != null) {
                 allNull = false;
                 break;
             }
         }
-        if(allNull){
+        if(allNull) {
             return new Pair<>(null, currentMaskState);
         }
 

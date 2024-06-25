@@ -3120,6 +3120,12 @@ public class Shape {
     }
 
 
+    /**
+     * Returns the options for the given
+     * shape information buffer
+     * @param buffer
+     * @return
+     */
     public static long options(DataBuffer buffer) {
         long rank = rank(buffer);
         int idx =  rank == 0 ? 3 : (int) (rank + rank + 1);
@@ -3321,12 +3327,26 @@ public class Shape {
                 }
             }
 
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty, isView);
+        DataBuffer ret =  Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dataType, isEmpty, isView);
+        if(ret.getLong(0) == 0) {
+            boolean allZero = true;
+            for(int i = 0; i < ret.length(); i++) {
+                if(ret.getLong(i) != 0) {
+                    allZero = false;
+                    break;
+                }
+            }
+
+            if(allZero) {
+                throw new IllegalStateException("Shape buffer is all zero. Values are unset.");
+            }
+        }
+        return ret;
     }
 
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty) {
-      return createShapeInformation(shape, stride, elementWiseStride, order, dataType, empty, false);
+        return createShapeInformation(shape, stride, elementWiseStride, order, dataType, empty, false);
     }
 
 

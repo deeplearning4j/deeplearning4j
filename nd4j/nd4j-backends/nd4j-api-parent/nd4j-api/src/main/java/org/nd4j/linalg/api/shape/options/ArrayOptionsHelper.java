@@ -84,6 +84,33 @@ public class ArrayOptionsHelper {
         return hasBitSet(shapeInfo, IS_VIEW);
     }
 
+
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #ATYPE_EMPTY_BIT}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isEmpty(long shapeInfo) {
+        return hasBitSet(shapeInfo, ATYPE_EMPTY_BIT);
+    }
+
+
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #ATYPE_EMPTY_BIT}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isEmpty(long[] shapeInfo) {
+        return hasBitSet(shapeInfo, ATYPE_EMPTY_BIT);
+    }
+
+
     /**
      * Toggle whether the the given bit is set
      * @param flagStorage the storage to toggle

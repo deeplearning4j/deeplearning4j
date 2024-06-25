@@ -1218,9 +1218,28 @@ void setGridLimit(int gridSize) {
   // no-op
 }
 
-TadPack *tadOnlyShapeInfo(LongType const *hXShapeInfo, LongType *dimension, LongType dimensionLength) {
+TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, LongType *dimension, LongType dimensionLength) {
   try {
-    auto pack = ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
+    auto rankVal = buffPrim[0];
+    if(rankVal == 0) {
+      //detect when the shape buffer values are unset.
+      auto len = shape::shapeInfoLength(rankVal);
+      //min number of values in a shape info buffer
+      bool allZero = true;
+      for(int i = 0; i < len; i++) {
+        if(buffPrim[i] != 0) {
+          allZero = false;
+          break;
+        }
+      }
+
+      if(allZero) {
+        THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+      }
+    }
+
+    auto pack = ConstantTadHelper::getInstance().tadForDimensions(reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1277,31 +1296,31 @@ void pullRowsGeneric(void *vx, LongType const *hXShapeInfo, void *vz, LongType c
   _threads = math::sd_min<int>(_threads, Environment::getInstance().maxThreads());
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto idx = start; idx < stop; idx++) {
-      auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
-      auto zTadOffsetForBlock = zTadOffsets[idx];
+      for (auto idx = start; idx < stop; idx++) {
+        auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
+        auto zTadOffsetForBlock = zTadOffsets[idx];
 
-      auto rX = hX + xTadOffsetForBlock;
-      auto rZ = hZ + zTadOffsetForBlock;
+        auto rX = hX + xTadOffsetForBlock;
+        auto rZ = hZ + zTadOffsetForBlock;
 
-      if (xEWS == 1 && zEWS == 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType i = 0; i < tadLength; i++) {
-          rZ[i] = rX[i];
-        }
-      } else if (xEWS >= 1 && zEWS >= 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType i = 0; i < tadLength; i++) {
-          rZ[i * zEWS] = rX[i * xEWS];
-        }
-      } else {
-        for (LongType i = 0; i < tadLength; i++) {
-          auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
-          auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
-          hZ[zOffset] = hX[xOffset];
+        if (xEWS == 1 && zEWS == 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType i = 0; i < tadLength; i++) {
+            rZ[i] = rX[i];
+          }
+        } else if (xEWS >= 1 && zEWS >= 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType i = 0; i < tadLength; i++) {
+            rZ[i * zEWS] = rX[i * xEWS];
+          }
+        } else {
+          for (LongType i = 0; i < tadLength; i++) {
+            auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+            auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
+            hZ[zOffset] = hX[xOffset];
+          }
         }
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
@@ -1335,25 +1354,25 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
   auto numTads = shape::length(hXShapeInfo) / tadLength;
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      auto hZ = reinterpret_cast<T *>(targets[i]);
-      auto s = hX + tadOffsets[i];
+      for (auto i = start; i < stop; i++) {
+        auto hZ = reinterpret_cast<T *>(targets[i]);
+        auto s = hX + tadOffsets[i];
 
-      if (zEWS == 1 && tadEWS == 1) {
-        PRAGMA_OMP_SIMD
-        for (LongType j = 0; j < tadLength; j++) {
-          hZ[j] = s[j];
+        if (zEWS == 1 && tadEWS == 1) {
+          PRAGMA_OMP_SIMD
+          for (LongType j = 0; j < tadLength; j++) {
+            hZ[j] = s[j];
+          }
+        } else if (zEWS > 0 && tadEWS > 0) {
+          PRAGMA_OMP_SIMD
+          for (LongType j = 0; j < tadLength; j++) {
+            hZ[j * zEWS] = s[j * tadEWS];
+          }
+        } else {
+          for (LongType j = 0; j < tadLength; j++)
+            hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
         }
-      } else if (zEWS > 0 && tadEWS > 0) {
-        PRAGMA_OMP_SIMD
-        for (LongType j = 0; j < tadLength; j++) {
-          hZ[j * zEWS] = s[j * tadEWS];
-        }
-      } else {
-        for (LongType j = 0; j < tadLength; j++)
-          hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, numTads);
@@ -1424,50 +1443,50 @@ void shuffleGeneric(void **hX, LongType *const *hXShapeInfo, void **dz, LongType
   auto dZ = reinterpret_cast<T **>(dz);
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto f = start; f < stop; f++) {
-      auto hX = reinterpret_cast<T *>(dX[f]);
+      for (auto f = start; f < stop; f++) {
+        auto hX = reinterpret_cast<T *>(dX[f]);
 
-      auto xShapeInfo = hXShapeInfo[f];
-      auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
+        auto xShapeInfo = hXShapeInfo[f];
+        auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
 
-      const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
-      auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-      auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-      auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
+        const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
+        auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+        auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
+        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
 
-      if (shape::rank(xShapeInfo) == 1) {
-        auto xLength = shape::length(xShapeInfo);
-        auto ews = shape::elementWiseStride(xShapeInfo);
-        for (LongType r = 0; r < xLength; r++) {
-          auto swapIdx = shuffleMap[r];
-          if (swapIdx < 0) continue;
+        if (shape::rank(xShapeInfo) == 1) {
+          auto xLength = shape::length(xShapeInfo);
+          auto ews = shape::elementWiseStride(xShapeInfo);
+          for (LongType r = 0; r < xLength; r++) {
+            auto swapIdx = shuffleMap[r];
+            if (swapIdx < 0) continue;
 
-          math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
-        }
-      } else {
-        for (LongType r = 0; r < numTads; r++) {
-          if (shuffleMap[r] < 0) continue;
+            math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
+          }
+        } else {
+          for (LongType r = 0; r < numTads; r++) {
+            if (shuffleMap[r] < 0) continue;
 
-          auto oldOffset = tadOffset[r];
-          auto newOffset = tadOffset[shuffleMap[r]];
+            auto oldOffset = tadOffset[r];
+            auto newOffset = tadOffset[shuffleMap[r]];
 
-          auto rX = hX + oldOffset;
-          auto rY = hX + newOffset;
+            auto rX = hX + oldOffset;
+            auto rY = hX + newOffset;
 
-          if (tadEWS == 1) {
-            for (LongType i = 0; i < tadLength; i++) {
-              math::sd_swap<T>(rX[i], rY[i]);
-            }
-          } else {
-            for (LongType i = 0; i < tadLength; i++) {
-              auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-              math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+            if (tadEWS == 1) {
+              for (LongType i = 0; i < tadLength; i++) {
+                math::sd_swap<T>(rX[i], rY[i]);
+              }
+            } else {
+              for (LongType i = 0; i < tadLength; i++) {
+                auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
+                math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+              }
             }
           }
         }
       }
-    }
   };
 
   samediff::Threads::parallel_tad(func, 0, N);
@@ -1782,14 +1801,14 @@ SD_INLINE int estimateThresholdGeneric(Pointer *extraPointers, Pointer hX, int N
   int span = (N / 6) + 8;
 
   auto func = PRAGMA_REDUCE_LONG {
-    int64_t cnt = 0;
-    PRAGMA_OMP_SIMD
-    for (auto e = start; e < stop; e++) {
-      auto v = math::sd_abs<T>(buffer[e]);
-      if (v >= threshold) cnt++;
-    }
+      int64_t cnt = 0;
+      PRAGMA_OMP_SIMD
+      for (auto e = start; e < stop; e++) {
+        auto v = math::sd_abs<T>(buffer[e]);
+        if (v >= threshold) cnt++;
+      }
 
-    return cnt;
+      return cnt;
   };
 
   return samediff::Threads::parallel_long(
@@ -2588,31 +2607,45 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
     }
   }
 
+  bufferToSet[0] = rank;
+
+  shape::setOrder(bufferToSet,order);
 
   auto len = shape::shapeInfoLength(rank);
-  sd::LongType extra =  ArrayOptions::defaultFlag();
-  if(isEmpty) {
-    extra = ArrayOptions::setPropertyBitForFlagsValue(extra, ARRAY_EMPTY);
-  }
 
+  auto origShape = shape::shapeOf(inputShapeData);
+  auto origStride = shape::stride(inputShapeData);
+  shape::setShape(bufferToSet,origShape);
+  shape::setStride(bufferToSet,origStride);
+
+  ArrayOptions::setDataType(bufferToSet,dt);
   if(isView) {
-    extra = ArrayOptions::setPropertyBitForFlagsValue(extra,ARRAY_IS_VIEW);
+    ArrayOptions::toggleIsView(bufferToSet);
   }
-
-  extra = ArrayOptions::setDataTypeValue(extra,dt);
-
-
-  auto descriptor = ShapeDescriptor(dt,order,shape.data(),strides.data(),rank,extra);
-
-  auto buffer = descriptor.toShapeInfo();
-  for(LongType i = 0; i < len; i++) {
-    bufferToSet[i] = buffer[i];
+  if(!ArrayOptions::isEmpty(inputShapeData) && isEmpty) {
+    ArrayOptions::toggleIsEmpty(bufferToSet);
   }
 
 
+  if(rank == 0) {
+    //detect when the shape buffer values are unset.
+    auto len = shape::shapeInfoLength(rank);
+    //min number of values in a shape info buffer
+    bool allZero = true;
+    for(int i = 0; i < len; i++) {
+      if(bufferToSet[i] != 0) {
+        allZero = false;
+        break;
+      }
+    }
+
+    if(allZero) {
+      THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+    }
+
+  }
 
 
-  delete[] buffer;
 }
 
 
@@ -2644,48 +2677,48 @@ static void _scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs,
                            const LongType *dIndicesShapeInfo) {
   auto hIindexes = reinterpret_cast<I *>(vIindexes);
   auto func = PRAGMA_THREADS_DO {
-    for (int i = 0; i < numOfSubArrs; ++i) {
-      int threadIndex = thread_id;
-      const auto xIndex = hIindexes[i];
-      const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+      for (int i = 0; i < numOfSubArrs; ++i) {
+        int threadIndex = thread_id;
+        const auto xIndex = hIindexes[i];
+        const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
-      if (!isOwner) continue;
+        if (!isOwner) continue;
 
-      NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                       hXShapeInfo);
-      NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                        hYShapeInfo);
+        NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                         hXShapeInfo);
+        NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                          hYShapeInfo);
 
-      if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
-        continue;
-      }
-
-      switch (opCode) {
-        case 0:
-          inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
-          break;
-        case 1:
-          inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
-          break;
-        case 2:
-          inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
-          break;
-        case 3:
-          inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
-          break;
-        case 4:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
-          break;
-        case 5:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
-          break;
-        case 6:
-          inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
-          break;
-        default:
+        if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
           continue;
+        }
+
+        switch (opCode) {
+          case 0:
+            inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
+            break;
+          case 1:
+            inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
+            break;
+          case 2:
+            inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
+            break;
+          case 3:
+            inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
+            break;
+          case 4:
+            inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
+            break;
+          case 5:
+            inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
+            break;
+          case 6:
+            inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
+            break;
+          default:
+            continue;
+        }
       }
-    }
   };
 
   samediff::Threads::parallel_do(func);
@@ -2746,6 +2779,25 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *st
 
     auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, extras);
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    auto buffPrim = buffer->primary();
+    auto rankVal = buffPrim[0];
+    if(rankVal == 0) {
+      //detect when the shape buffer values are unset.
+      auto len = shape::shapeInfoLength(rankVal);
+      //min number of values in a shape info buffer
+      bool allZero = true;
+      for(int i = 0; i < len; i++) {
+        if(buffPrim[i] != 0) {
+          allZero = false;
+          break;
+        }
+      }
+
+      if(allZero) {
+        THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+      }
+    }
+
     return buffer;
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3347,14 +3399,14 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
 
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
-                      (void *, LongType const *, void *, LongType const *, const int, LongType const *,
-                          LongType const *, LongType const *, LongType const *, LongType const *),
-                      SD_COMMON_TYPES);
+(void *, LongType const *, void *, LongType const *, const int, LongType const *,
+LongType const *, LongType const *, LongType const *, LongType const *),
+SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric,
-                      (void *, LongType const *, Pointer *, LongType const *, LongType const *,
-                          LongType const *),
-                      SD_COMMON_TYPES);
+(void *, LongType const *, Pointer *, LongType const *, LongType const *,
+LongType const *),
+SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
-                      (void **, LongType *const *, void **, LongType *const *, int, int *,
-                          LongType *const *, LongType *const *),
-                      SD_COMMON_TYPES);
+(void **, LongType *const *, void **, LongType *const *, int, int *,
+LongType *const *, LongType *const *),
+SD_COMMON_TYPES);

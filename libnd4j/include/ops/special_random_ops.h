@@ -160,41 +160,41 @@ class Choice {
 
     if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
       auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          T prob = rng->relativeT<T>(e);
-          T cumProb = (T)0.0f;
-          for (sd::LongType f = 0; f < yLength; f++) {
-            T relProb = y[f * yEWS];
-            cumProb += relProb;
+          for (auto e = start; e < stop; e++) {
+            T prob = rng->relativeT<T>(e);
+            T cumProb = (T)0.0f;
+            for (sd::LongType f = 0; f < yLength; f++) {
+              T relProb = y[f * yEWS];
+              cumProb += relProb;
 
-            if (prob <= cumProb || f == yLength - 1) {
-              z[e * zEWS] = x[f * xEWS];
-              break;
+              if (prob <= cumProb || f == yLength - 1) {
+                z[e * zEWS] = x[f * xEWS];
+                break;
+              }
             }
           }
-        }
       };
 
       samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
     } else {
       auto func = PRAGMA_THREADS_FOR {
-        for (sd::LongType i = 0; i < zLength; i++) {
-          auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
-          T prob = rng->relativeT<T>(i);
-          T cumProb = (T)0.0f;
+          for (sd::LongType i = 0; i < zLength; i++) {
+            auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
+            T prob = rng->relativeT<T>(i);
+            T cumProb = (T)0.0f;
 
-          for (sd::LongType f = 0; f < yLength; f++) {
-            auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
-            T relProb = y[yOffset2];
-            cumProb += relProb;
+            for (sd::LongType f = 0; f < yLength; f++) {
+              auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
+              T relProb = y[yOffset2];
+              cumProb += relProb;
 
-            if (prob <= cumProb || f == yLength - 1) {
-              auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
-              z[zOffset2] = x[xOffset2];
-              break;
+              if (prob <= cumProb || f == yLength - 1) {
+                auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
+                z[zOffset2] = x[xOffset2];
+                break;
+              }
             }
           }
-        }
       };
 
       samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
@@ -299,19 +299,11 @@ if(tid < middle)
     const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
     auto zLength = shape::length(zShapeBuffer);
-    auto yEWS = shape::elementWiseStride(yShapeBuffer);
-    auto zEWS = shape::elementWiseStride(zShapeBuffer);
-
     auto middle = zLength % 2 + zLength / 2;
 
     int elementsPerThread = middle / TAD_THRESHOLD;
     int _threads = sd::math::sd_max<int>(1, elementsPerThread);
     _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
-
-    int span = (middle / _threads) + 8;
-
-    // we're enforcing even chunks, since it's mandatory for this algorithm
-    span -= span % 2;
 
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     const T mean = extraArguments[0];
@@ -327,21 +319,25 @@ if(tid < middle)
         T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
         T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-        T realMean0 = y == z ? mean : y[e * yEWS];
+        auto yOffset0 = shape::getIndexOffset(e, yShapeBuffer);
+        T realMean0 = y == z ? mean : y[yOffset0];
 
         auto z0 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                    sd::math::sd_cos<T, T>(two_pi * r1)) *
-                  stddev +
+                      stddev +
                   realMean0;
-        z[e * zEWS] = z0;
+        auto zOffset0 = shape::getIndexOffset(e, zShapeBuffer);
+        z[zOffset0] = z0;
 
         if (epm < zLength) {
-          T realMean1 = y == z ? mean : y[epm * yEWS];
+          auto yOffset1 = shape::getIndexOffset(epm, yShapeBuffer);
+          T realMean1 = y == z ? mean : y[yOffset1];
           auto z1 = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                      sd::math::sd_sin<T, T>(two_pi * r1)) *
-                    stddev +
+                        stddev +
                     realMean1;
-          z[epm * zEWS] = z1;
+          auto zOffset1 = shape::getIndexOffset(epm, zShapeBuffer);
+          z[zOffset1] = z1;
         }
       }
     };
@@ -412,43 +408,43 @@ class BinomialDistribution {
   }
 #endif
 
-  static inline void specialOp(sd::Pointer state, const T *x, const sd::LongType *xShapeBuffer, const T *y,
-                               const sd::LongType *yShapeBuffer, T *z, const sd::LongType *zShapeBuffer,
-                               T *extraArguments) {
-    int trials = (int)extraArguments[0];
 
-    sd::LongType zLength = shape::length(zShapeBuffer);
+   static inline void specialOp(sd::Pointer state, const T *x, const sd::LongType *xShapeBuffer, const T *y,
+                                const sd::LongType *yShapeBuffer, T *z, const sd::LongType *zShapeBuffer,
+                                T *extraArguments) {
+     int trials = (int)extraArguments[0];
 
-    auto yEWS = shape::elementWiseStride(yShapeBuffer);
-    auto zEWS = shape::elementWiseStride(zShapeBuffer);
+     sd::LongType zLength = shape::length(zShapeBuffer);
 
-    int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+     int elementsPerThread = zLength / TAD_THRESHOLD;
+     int _threads = sd::math::sd_max<int>(1, elementsPerThread);
+     _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
 
-    T prob = extraArguments[1];
+     T prob = extraArguments[1];
 
-    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        int success = 0;
-        for (int t = 1; t <= trials; t++) {
-          T randVal = rng->relativeT<T>((e + 1) * t);
-          if (y != z) {
-            // we're using external probs
-            prob = y[(t - 1) * yEWS];
-          }
+     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+     auto func = PRAGMA_THREADS_FOR {
+       for (auto e = start; e < stop; e++) {
+         int success = 0;
+         for (int t = 1; t <= trials; t++) {
+           T randVal = rng->relativeT<T>((e + 1) * t);
+           if (y != z) {
+             // we're using external probs
+             auto yOffset = shape::getIndexOffset(e, yShapeBuffer);
+             prob = y[yOffset];
+           }
 
-          if (randVal < prob) success++;
-        }
+           if (randVal < prob) success++;
+         }
 
-        // if trials is set to 0, effectively we just have successful memset
-        z[e * zEWS] = static_cast<T>(success);
-      }
-    };
+         // if trials is set to 0, effectively we just have successful memset
+         auto zOffset = shape::getIndexOffset(e, zShapeBuffer);
+         z[zOffset] = static_cast<T>(success);
+       }
+     };
 
-    samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
-  }
+     samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+   }
 };
 
 //////////////////////////////////////////////////////////////////////
@@ -522,16 +518,13 @@ class BinomialDistributionEx {
 
     sd::LongType zLength = shape::length(zShapeBuffer);
 
-    auto yEWS = shape::elementWiseStride(yShapeBuffer);
-    auto zEWS = shape::elementWiseStride(zShapeBuffer);
-
     int elementsPerThread = zLength / TAD_THRESHOLD;
     int _threads = sd::math::sd_max<int>(1, elementsPerThread);
     _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
 
     T prob = extraArguments[1];
 
-    auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
+    sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         int success = 0;
@@ -539,14 +532,16 @@ class BinomialDistributionEx {
           T randVal = rng->relativeT<T>((e + 1) * t);
           if (y != z) {
             // we're using external probs
-            prob = y[e * yEWS];
+            auto yOffset = shape::getIndexOffset(e, yShapeBuffer);
+            prob = y[yOffset];
           }
 
           if (randVal < prob) success++;
         }
 
         // if trials is set to 0, effectively we just have successful memset
-        z[e * zEWS] = static_cast<T>(success);
+        auto zOffset = shape::getIndexOffset(e, zShapeBuffer);
+        z[zOffset] = static_cast<T>(success);
       }
     };
 
@@ -663,8 +658,6 @@ class TruncatedNormalDistribution {
                                T *extraArguments) {
     GaussianDistribution<T>::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
     sd::LongType zLength = shape::length(zShapeBuffer);
-    // auto yEWS = shape::elementWiseStride(yShapeBuffer);
-    // auto zEWS = shape::elementWiseStride(zShapeBuffer);
     auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     T mean = extraArguments[0];
     T stddev = extraArguments[1];
@@ -677,13 +670,13 @@ class TruncatedNormalDistribution {
     const T epsilon = static_cast<T>(1e-5);
 
     auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        if (z[e] > mean + ds || z[e] < mean - ds) {
-          z[e] = step(rng, mean, stddev, e, middle, z[e]);
+        for (auto e = start; e < stop; e++) {
+          if (z[e] > mean + ds || z[e] < mean - ds) {
+            z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
-          if (z[e] > mean + ds || z[e] < mean - ds) z[e] = mean + sd::DataTypeUtils::min_positive<T>();
+            if (z[e] > mean + ds || z[e] < mean - ds) z[e] = mean + sd::DataTypeUtils::min_positive<T>();
+          }
         }
-      }
     };
 
     samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
@@ -697,7 +690,7 @@ class LogNormalDistribution {
  public:
   method_XY method_X method_idx
 
-  static const bool requiresSpecial = true;
+      static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer,
@@ -707,8 +700,6 @@ class LogNormalDistribution {
     __shared__ T two_pi;
 
     __shared__ sd::LongType zLength;
-    __shared__ sd::LongType zEWS;
-    __shared__ sd::LongType yEWS;
     __shared__ T mean;
     __shared__ T stddev;
     __shared__ int step;
@@ -731,8 +722,6 @@ class LogNormalDistribution {
       tZ = reinterpret_cast<T *>(shmem + sizeof(sd::graph::RandomGenerator));
 
       zLength = shape::length(zShapeBuffer);
-      zEWS = shape::elementWiseStride(zShapeBuffer);
-      yEWS = shape::elementWiseStride(yShapeBuffer);
 
       epsilon = static_cast<T>(1e-5);
       two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
@@ -760,17 +749,20 @@ class LogNormalDistribution {
       T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
       T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-      T realMean = y == z ? mean : y[e * yEWS];
+      auto yOffset = shape::getIndexOffset(e, yShapeBuffer);
+      T realMean = y == z ? mean : y[yOffset];
 
-      z[e * zEWS] =
-          sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
-                                  sd::math::sd_cos<T, T>(two_pi * r1)) *
-                                     stddev +
-                                 realMean);
+      auto zOffset = shape::getIndexOffset(e, zShapeBuffer);
+      z[zOffset] = sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
+                                           sd::math::sd_cos<T, T>(two_pi * r1)) *
+                                              stddev +
+                                          realMean);
 
       if (epm < zLength) {
-        realMean = y == z ? mean : y[epm * yEWS];
-        z[epm * zEWS] =
+        auto yOffsetEpm = shape::getIndexOffset(epm, yShapeBuffer);
+        realMean = y == z ? mean : y[yOffsetEpm];
+        auto zOffsetEpm = shape::getIndexOffset(epm, zShapeBuffer);
+        z[zOffsetEpm] =
             sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                     sd::math::sd_sin<T, T>(two_pi * r1)) *
                                        stddev +
@@ -786,8 +778,6 @@ class LogNormalDistribution {
     const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
     sd::LongType zLength = shape::length(zShapeBuffer);
-    auto yEWS = shape::elementWiseStride(yShapeBuffer);
-    auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
     auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
@@ -815,20 +805,24 @@ class LogNormalDistribution {
         T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
         T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-        T realMean = y == z ? mean : y[e * yEWS];
+        auto yOffset = shape::getIndexOffset(e, yShapeBuffer);
+        T realMean = y == z ? mean : y[yOffset];
 
-        z[e * zEWS] =
+        auto zOffset = shape::getIndexOffset(e, zShapeBuffer);
+        z[zOffset] =
             sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                     sd::math::sd_cos<T, T>(two_pi * r1)) *
-                                   stddev +
+                                       stddev +
                                    realMean);
 
         if (epm < zLength) {
-          realMean = y == z ? mean : y[epm * yEWS];
-          z[epm * zEWS] =
+          auto yOffsetEpm = shape::getIndexOffset(epm, yShapeBuffer);
+          realMean = y == z ? mean : y[yOffsetEpm];
+          auto zOffsetEpm = shape::getIndexOffset(epm, zShapeBuffer);
+          z[zOffsetEpm] =
               sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                       sd::math::sd_sin<T, T>(two_pi * r1)) *
-                                     stddev +
+                                         stddev +
                                      realMean);
         }
       }

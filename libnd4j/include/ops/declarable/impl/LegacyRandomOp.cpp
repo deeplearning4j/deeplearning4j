@@ -119,12 +119,11 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
       std::vector<LongType> shape(input->lengthOf());
       for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
 
-      auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+      auto z = OUTPUT_VARIABLE(0);
 
       RandomLauncher::fillGaussian(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
-      // FIXME: !!
-      // OVERWRITE_RESULT(z);
+
     } break;
     case random::BernoulliDistribution: {
       // bernoulli distribution
@@ -149,8 +148,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
       RandomLauncher::fillBernoulli(block.launchContext(), block.randomGenerator(), z, prob);
 
-      // FIXME:
-      // OVERWRITE_RESULT(z);
+
     } break;
     case random::BinomialDistributionEx: {
       // BinomialEx distribution
@@ -180,8 +178,6 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 
       RandomLauncher::fillBinomial(block.launchContext(), block.randomGenerator(), z, trials, prob);
 
-      // FIXME: !!!
-      // OVERWRITE_RESULT(z);
     } break;
     case random::LogNormalDistribution: {
       // lognorm distribution
@@ -236,7 +232,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
       std::vector<LongType> shape(input->lengthOf());
       for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
 
-      auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+      auto z = OUTPUT_VARIABLE(0);
 
       RandomLauncher::fillTruncatedNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
     } break;
@@ -292,9 +288,6 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 }
 
 Status LegacyRandomOp::validateAndExecute(Context& block) {
-  //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be provided for LegacyRandomOp, but got NULL
-  //            instead at node_%i", block.nodeId())
-
   auto z = OUTPUT_VARIABLE(0);
   BUILD_SINGLE_SELECTOR(z->dataType(), return validateAndExecute_, (block), SD_FLOAT_TYPES);
 }

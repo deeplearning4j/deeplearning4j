@@ -31,20 +31,6 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
 
     /**
-     * This will for certain workspaces to stay open during use.
-     * @param types
-     */
-    void keepOpen(T...types);
-
-    /**
-     * This will remove types that should be kept open.
-     * @param types
-     */
-    void removeKeepOpen(T...types);
-
-
-
-    /**
      * Records a  workspace close event
      * This happens when enabled in environment with
      * {@link Environment#isTrackWorkspaceOpenClose()}

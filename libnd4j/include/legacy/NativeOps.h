@@ -803,7 +803,8 @@ typedef sd::TadPack OpaqueTadPack;
  * @param targetBuffer
  * @param offsetsBuffer
  */
-SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(const sd::LongType* hXShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength);
+SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(OpaqueDataBuffer* hXShapeInfo, sd::LongType* dimension,
+                                              sd::LongType dimensionLength);
 
 SD_LIB_EXPORT sd::LongType const* getPrimaryShapeInfo(OpaqueTadPack* pack);
 SD_LIB_EXPORT sd::LongType const* getPrimaryOffsets(OpaqueTadPack* pack);

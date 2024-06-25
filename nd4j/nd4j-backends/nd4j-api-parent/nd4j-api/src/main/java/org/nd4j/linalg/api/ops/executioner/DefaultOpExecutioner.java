@@ -371,7 +371,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
                 if (!ws.isScopeActive()) {
                     throw new ND4JIllegalStateException("Op [" + opName + "] X argument uses leaked workspace pointer from workspace ["
-                            + ws.getId() + "]: Workspace the array was defined in is no longer open.\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG);
+                            + ws.getId() + "]: Workspace the array was defined in is no longer open.\nAll open workspaces: " + allOpenWorkspaces() + "\n" + SCOPE_PANIC_MSG
+                            + " with workspace enum: " + ws.getAssociatedEnumType());
                 }
 
                 if (ws.getGenerationId() != array.data().getGenerationId())
@@ -386,11 +387,12 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected void checkForWorkspaces(CustomOp op, OpContext oc) {
         List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
         List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
-        for (val input: inArgs) {
-            checkWorkspace(op.opName(), input);
+        for (int i = 0; i < inArgs.size(); i++) {
+            checkWorkspace(op.opName(), inArgs.get(i));
         }
-        for (val output: outArgs)
-            checkWorkspace(op.opName(), output);
+        for (int i = 0; i < outArgs.size(); i++) {
+            checkWorkspace(op.opName(), outArgs.get(i));
+        }
     }
 
     protected void checkForWorkspaces(Op op, OpContext oc) {

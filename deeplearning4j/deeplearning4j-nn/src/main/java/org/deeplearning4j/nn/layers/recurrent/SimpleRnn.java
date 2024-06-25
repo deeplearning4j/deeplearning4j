@@ -244,7 +244,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         val tsLength = input.size(2);
         val nOut = layerConf().getNOut();
 
-        workspaceMgr.keepOpen(ArrayType.ACTIVATIONS,ArrayType.BP_WORKING_MEM);
+        //workspaceMgr.keepOpen(ArrayType.ACTIVATIONS,ArrayType.BP_WORKING_MEM);
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
         INDArray b = layerConf().isUseBias() ? getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr) : null;

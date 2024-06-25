@@ -2701,40 +2701,12 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
       if (copyToNewBuff) this->applyTransform(transform::Assign, ret, nullptr);
       return ret;
     } else {
-      /**
-       * Figure out why creating a view here creaters
-       * an invalid offset.
-       * This happens when conv2d weights are reshaped on the backprop.
-       *
-       *
-       * The current theory is this could stem from wrong offset propagation
-       * coming from java. INvestigate the way the view is created in java.
-       * Also of note: this is triggered with address saniitzer
-       * but might also be the cause of the gradient checks failing for the
-       * first 6 values.
-       *
-       * TODO: maybe track where a buffer's offset is during view creation?
-       * Also determine where a buffer's "true" offset is relative to a parent object tracking?
-       * View creation and offsets can cause issues.
-       */
-      printf("creating view with move and can reshape: with data buffer offset: %lld\n",bufferOffset());
-      fflush(stdout);
-      printIndexedBuffer("INPUT FOR RESHAPE:\n");
-      fflush(stdout);
       NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
       ret->_isView = true;
-      ret->printIndexedBuffer("RET FOR RESHAPE:");
-      fflush(stdout);
-
-      printf("created view with move and can reshape: with buffer offset %lld\n",ret->bufferOffset());
-      fflush(stdout);
-
       return *ret;
     }
 
   } else {
-    printf("ELSE BRANCH\n");
-    fflush(stdout);
     //print strides shape info new:
     shape::fillStrides(shapeInfoNew);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);

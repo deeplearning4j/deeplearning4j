@@ -147,7 +147,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         INDArray eFwd;
         INDArray eBwd;
         //workspaces  can sometimes not be opened due to the way the layer is used in practice
-        workspaceMgr.keepOpen(ArrayType.INPUT, ArrayType.ACTIVATION_GRAD, ArrayType.BP_WORKING_MEM,ArrayType.ACTIVATIONS);
+       // workspaceMgr.keepOpen(ArrayType.INPUT, ArrayType.ACTIVATION_GRAD, ArrayType.BP_WORKING_MEM,ArrayType.ACTIVATIONS);
         val n = epsilon.size(1) / 2;
         epsilon = epsilon.dup(epsilon.ordering());
         switch (layerConf.getMode()) {

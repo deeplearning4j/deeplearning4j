@@ -59,8 +59,6 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
   const int cRank = vC->rankOf();
 
   const sd::LongType cLen = vC->lengthOf();
-  vC->printShapeInfo("VC SHAPE INFO:");
-  printf("vC is view: %d\n",vC->isView());
   const int K = vA->sizeAt(aKaxis);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -399,7 +397,9 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
     THROW_EXCEPTION("MmulHelper::dot: X array must be vector !");
   if (!shape::isCommonVector(Y->shapeInfo(), yLenDim))
     THROW_EXCEPTION("MmulHelper::dot: Y array must be vector !");
-  if (Z != nullptr && !Z->isScalar()) THROW_EXCEPTION("MmulHelper::dot: Z array must be scalar !");
+  if (Z != nullptr && Z->lengthOf() > 1) {
+    THROW_EXCEPTION("MmulHelper::dot: Z array must be scalar !");
+  }
 
   const auto length = X->lengthOf();
 

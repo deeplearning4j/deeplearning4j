@@ -110,17 +110,8 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
     NDArray columns2d = columns->reshape('c', {bS * oH * oW, iC * kH * kW}, true);
     NDArray gradO2d = gradOPermuted->reshape('c', {oC, bS * oH * oW}, false);
-    printf("gradO offset %lld gradO2d offset: %lld \n", gradOPermuted->bufferOffset(),gradO2d.bufferOffset());
-    printf("before gradw2d reshape %lld \n", gradW->bufferOffset());
-    fflush(stdout);
     NDArray gradW2d = gradW->reshape('c', {iC * kH * kW, oC}, false);
-    if(gradW->dataBuffer() != gradW2d.dataBuffer()) {
-      THROW_EXCEPTION("GRADW 2D NOT EQUAL TO GRADW");
-    }
-    printf("gradw offset %lld gradw offset: %lld \n", gradW->bufferOffset(),gradW2d.bufferOffset());
     sd::MmulHelper::matmul(&columns2d, &gradO2d, &gradW2d, true, true, 1.0, 0.0);
-    gradW2d.printIndexedBuffer("GRADW 2D: \n");
-    gradW->printIndexedBuffer("GRADW: \n");
   }
 
   // ----- calculation of gradB ----- //

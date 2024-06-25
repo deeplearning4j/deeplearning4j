@@ -363,6 +363,14 @@ SD_HOST ArrayType ArrayOptions::arrayType(sd::LongType *shapeInfo) {
   return arrayTypeForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 }
 
+SD_HOST bool ArrayOptions::isEmpty(sd::LongType *shapeInfo) {
+  return hasPropertyBitSet(shapeInfo, EMPTY);
+}
+
+SD_HOST void ArrayOptions::toggleIsEmpty(sd::LongType *shapeInfo) {
+  togglePropertyBit(shapeInfo, EMPTY);
+}
+
 SD_HOST bool ArrayOptions::isView(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, ARRAY_IS_VIEW);
 }

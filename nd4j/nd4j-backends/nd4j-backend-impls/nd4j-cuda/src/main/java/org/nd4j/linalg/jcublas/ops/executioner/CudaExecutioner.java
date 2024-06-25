@@ -2152,19 +2152,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
-        LongPointer shape2 = new LongPointer(shape);
-        LongPointer stride2 = new LongPointer(stride);
-        shape2.retainReference();
-        stride2.retainReference();
-        val dbf = nativeOps.shapeBuffer(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, empty);
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            LongPointer shape2 = new LongPointer(shape);
+            LongPointer stride2 = new LongPointer(stride);
+            shape2.retainReference();
+            stride2.retainReference();
+            val dbf = nativeOps.shapeBuffer(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, empty);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+            val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
-        return result;
+            return result;
+        }
+
     }
 
     @Override
@@ -2172,22 +2175,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
-        LongPointer shape2 = new LongPointer(shape);
-        LongPointer stride2 = new LongPointer(stride);
-        shape2.retainReference();
-        stride2.retainReference();
+      try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+          LongPointer shape2 = new LongPointer(shape);
+          LongPointer stride2 = new LongPointer(stride);
+          shape2.retainReference();
+          stride2.retainReference();
 
-        val dbf = nativeOps.shapeBufferEx(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, extras);
+          val dbf = nativeOps.shapeBufferEx(shape.length, shape2, stride2, dtype.toInt(), order, elementWiseStride, extras);
 
-        if (nativeOps.lastErrorCode() != 0) {
-            //mainly to make use debugger easier
-            String errorMessage = nativeOps.lastErrorMessage();
-            throw new RuntimeException(errorMessage);
-        }
-        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+          if (nativeOps.lastErrorCode() != 0) {
+              //mainly to make use debugger easier
+              String errorMessage = nativeOps.lastErrorMessage();
+              throw new RuntimeException(errorMessage);
+          }
+          val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
-        return result;
+          return result;
+      }
+
     }
 
     @Override

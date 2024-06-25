@@ -140,7 +140,8 @@ public class LSTMParamInitializer implements ParamInitializer {
 
             params.put(INPUT_WEIGHT_KEY, layerConf.getWeightInitFn().init(fanIn, fanOut, inputWShape,
                     IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, inputWeightView));
-            params.put(RECURRENT_WEIGHT_KEY, rwInit.init(fanIn, fanOut, recurrentWShape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, recurrentWeightView));
+            INDArray init = rwInit.init(fanIn, fanOut, recurrentWShape, IWeightInit.DEFAULT_WEIGHT_INIT_ORDER, recurrentWeightView);
+            params.put(RECURRENT_WEIGHT_KEY, init);
             biasView.put(new INDArrayIndex[] {NDArrayIndex.interval(nL, 2 * nL)},
                             Nd4j.valueArrayOf(new long[]{nL}, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.
