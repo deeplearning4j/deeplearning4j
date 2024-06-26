@@ -485,15 +485,16 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
+    #if defined(SD_GCC_FUNCTRACE)
+      creationTrace = StackTrace();
+      creationTrace.load_here();
+    #endif
     sd_print("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - constructor 13\n");
     fflush(stdout);
 
   }
 
-#if defined(SD_GCC_FUNCTRACE)
-  creationTrace = StackTrace();
-  creationTrace.load_here();
-#endif
+
   _context = context;
   _offset = offset;
   _buffer = buffer;

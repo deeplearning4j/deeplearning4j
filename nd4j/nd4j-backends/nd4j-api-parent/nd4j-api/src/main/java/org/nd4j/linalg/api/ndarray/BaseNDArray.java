@@ -4153,7 +4153,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (order != ordering()) {
             INDArray ret = Nd4j.createUninitialized(this.dataType(), shape,order);
-            ret.setData(toFlattened(order,this).data());
+            ret.setData(dup(order).data());
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
                 NDArrayEvent event = NDArrayEvent.builder()
                         .parentDataAtEvent(NDArrayMetaData.fromArr(this))
