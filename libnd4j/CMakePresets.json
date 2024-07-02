@@ -14,6 +14,7 @@
                 "SD_CPU": true,
                 "SD_ARCH": "x86-64",
                 "SD_GCC_FUNCTRACE": "ON",
+                "PRINT_INDICES": "ON",
                 "SD_ALL_OPS": true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
@@ -31,6 +32,7 @@
                 "SD_LIBRARY_NAME": "nd4jcpu",
                 "SD_CPU": true,
                 "SD_ARCH": "x86-64",
+                "PRINT_INDICES": "ON",
                 "SD_BUILD_TESTS": "OFF",
                 "SD_ALL_OPS": true,
                 "CMAKE_BUILD_TYPE" : "Debug",

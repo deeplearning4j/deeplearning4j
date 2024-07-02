@@ -23,9 +23,17 @@ option(SD_STATIC_LIB "Build static library" OFF)
 option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
+option(PRINT_INDICES "Print indices" OFF)
 # GCC specific flag: 	 -finstrument-functions enables call stack logging. Useful for debugging segfaults.
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
+
+message("PRINT_INDICES: ${PRINT_INDICES}")
+if("${PRINT_INDICES}" STREQUAL "ON")
+    message("Added print indices compile definition")
+    add_compile_definitions(PRINT_INDICES)
+endif()
+
 
 if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
     message("Set optimization for functrace ${SD_GCC_FUNCTRACE}")

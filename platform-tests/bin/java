@@ -22,7 +22,7 @@
 
 set -exo pipefail
 
-JAVA_CALL="java  -javaagent:/home/agibsonccc/Documents/GitHub/deeplearning4j/contrib/nd4j-log-analyzer/nd4j-log-analyzer/target/nd4j-log-analyzer-1.0-SNAPSHOT.jar "
+JAVA_CALL="java   "
 
 # Find libjvm.so
 if [[ -n $LIBJVM_SO ]]; then

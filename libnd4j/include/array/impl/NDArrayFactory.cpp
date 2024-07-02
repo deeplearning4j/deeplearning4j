@@ -268,11 +268,11 @@ template <typename T>
 NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* context) {
   if (type == DataTypeUtils::fromT<T>()) return NDArrayFactory::create(scalar, context);
 
-  NDArray res(type, context);
-  res.p(0, scalar);
-  res.syncToDevice();
+  NDArray *res = new NDArray(type, context);
+  res->p(0, scalar);
+  res->syncToDevice();
 
-  return res;
+  return *res;
 }
 
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \

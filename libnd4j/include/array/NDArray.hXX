@@ -86,7 +86,7 @@ NDArray::NDArray(const NDArray &other) {
   //we should always set an array as a view with the copy constructor
   if(!shape::isViewConst(other.shapeInfo())) {
     auto copyedInfo = ShapeBuilders::setAsView(other.shapeInfo());
-    auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(copyedInfo);
+    auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(copyedInfo,false);
     setShapeInfo(shapeInfo);
   } else {
     setShapeInfo(other.shapeInfo());
@@ -1760,14 +1760,14 @@ void NDArray::assign(const NDArray *other, bool allowParallelism) { assign(*othe
 template <typename T, typename>
 void NDArray::assign(const T &value, bool allowParallelism) {
   // just fire scalar
-  auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
+  auto temp = new NDArray(NDArrayFactory::create(dataType(), value, this->getContext()));
 
-  prepareUse(std::vector<const NDArray *>{this}, std::vector<const NDArray *>{&temp});
+  prepareUse(std::vector<const NDArray *>{this}, std::vector<const NDArray *>{temp});
   NativeOpExecutioner::execScalar(getContext(), sd::scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
                                   specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                  temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.specialShapeInfo(),
+                                  temp->buffer(), temp->shapeInfo(), temp->specialBuffer(), temp->specialShapeInfo(),
                                   nullptr, allowParallelism);
-  registerUse(std::vector<const NDArray *>{this}, std::vector<const NDArray *>{&temp});
+  registerUse(std::vector<const NDArray *>{this}, std::vector<const NDArray *>{temp});
 }
 template SD_LIB_EXPORT void NDArray::assign(const double &value, bool allowParallelism);
 template SD_LIB_EXPORT void NDArray::assign(const float &value, bool allowParallelism);
@@ -2580,7 +2580,6 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
   if (isEmpty() && isOutShapeEmpty) {
     sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, shape, getContext()->getWorkspace());
     setShapeInfo(shapeInfoNew);
-    RELEASE(shapeInfoNew, getContext()->getWorkspace());
     return *this;
   }
 
@@ -2698,9 +2697,14 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
   if (canReshape) {
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     if(copyToNewBuff) {
-      NDArray ret(newShape->primary(), true, getContext());
-      if (copyToNewBuff) this->applyTransform(transform::Assign, ret, nullptr);
-      return ret;
+      printf("copy to new buff shape info new: \n");
+      fflush(stdout);
+      shape::printShapeInfo(newShape->primary());
+      NDArray *ret = new NDArray(newShape->primary(), true, getContext());
+      if (copyToNewBuff) {
+        this->applyTransform(transform::Assign, *ret, nullptr);
+      }
+      return *ret;
     } else {
       NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
       ret->_isView = true;
@@ -2719,8 +2723,6 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
 
 
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
-  printf("reshape hitting end\n");
-  fflush(stdout);
   return *this;
 }
 

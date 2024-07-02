@@ -52,7 +52,13 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
     const auto startingVal = OpType::startingValue(x);
 
-    for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
+    for (sd::LongType i = 0; i < length; i++) {
+#if defined(PRINT_INDICES)
+       shape::printShapeInfo(xShapeInfo);
+        printf("i: %lld\n", i);
+#endif
+      z[i] = startingVal;
+    }
     return;
   }
 
@@ -63,11 +69,11 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
     sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++)
+    for (sd::LongType i = 0; i < length; i++) {
       startingValue = OpType::update(
           startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
           extraParams);
-
+    }
     z[0] = OpType::postProcess(startingValue, length, extraParams);
   }
 }
@@ -88,11 +94,11 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
     sd::LongType xShapeInfoCast[SD_MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++)
+    for (sd::LongType i = 0; i < length; i++) {
       startingValue = OpType::update(
           startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
           extraParams);
-
+    }
     return OpType::postProcess(startingValue, length, extraParams);
   }
 }
@@ -127,16 +133,29 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
   Z intermediate[64];
 
   PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  for (auto e = 0; e < maxThreads; e++) {
+#if defined(PRINT_INDICES)
+        printf("e: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", e,xEws);
+#endif
+    intermediate[e] = OpType::startingValue(x);
+  }
 
   auto func = PRAGMA_THREADS_FOR {
     if (xEws == 1) {
-      for (auto i = start; i < stop; i++)
+      for (auto i = start; i < stop; i++) {
+#if defined(PRINT_INDICES)
+    printf("i: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", i,xEws);
+#endif
         intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+      }
     } else {
-      for (auto i = start; i < stop; i++)
+      for (auto i = start; i < stop; i++) {
+#if defined(PRINT_INDICES)
+        printf("i: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", i,xEws);
+#endif
         intermediate[thread_id] =
             OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
+      }
     }
   };
 
@@ -166,7 +185,14 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     const auto startingVal = OpType::startingValue(x);
     const auto zLen = shape::length(zShapeInfo);
     if(z != nullptr)
-      for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
+      for (sd::LongType i = 0; i < zLen; i++) {
+#if defined(PRINT_INDICES)
+        shape::printShapeInfo(xShapeInfo);
+        shape::printShapeInfo(zShapeInfo);
+        printf("i: %lld\n  ReduceBoolFunction<X, Z>::exec", i);
+#endif
+        z[i] = startingVal;
+      }
     return;
   }
 

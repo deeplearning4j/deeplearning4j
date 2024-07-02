@@ -30,10 +30,14 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 
 import java.util.Arrays;
+
+import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
+import static org.deeplearning4j.nn.conf.RNNFormat.NWC;
 
 public class Convolution1DUtils {
 
@@ -91,7 +95,7 @@ public class Convolution1DUtils {
             return convolution1DLayer.getRnnDataFormat();
         } else if(layer instanceof Subsampling1DLayer) {
             Subsampling1DLayer subsampling1DLayer = (Subsampling1DLayer) layer;
-            return subsampling1DLayer.getCnn2dDataFormat() == CNN2DFormat.NCHW ? RNNFormat.NCW : RNNFormat.NWC;
+            return subsampling1DLayer.getCnn2dDataFormat() == CNN2DFormat.NCHW ? NCW : NWC;
         } else if(layer instanceof LSTM) {
             LSTM lstm = (LSTM) layer;
             return lstm.getRnnDataFormat();
@@ -105,24 +109,26 @@ public class Convolution1DUtils {
     }
 
     /**
-     * Reshapes the given weight
-     * array or weight gradient
-     * to work with the specified
-     * {@link RNNFormat}
+     * Reshapes the given weight array or weight gradient to work with the specified {@link RNNFormat}
      * @param w the weight array or gradient
-     * @param rnnFormat the {@link RNNFormat} to use
-     * @return the reshaped array.
+     * @param wFormat the {@link RNNFormat} to use
+     * @return the reshaped array
      */
-    public static INDArray reshapeWeightArrayOrGradientForFormat(INDArray w, RNNFormat rnnFormat) {
-        if(rnnFormat == RNNFormat.NWC)
-            w = w.reshape(w.ordering(), w.size(0), w.size(1), w.size(2)).permute(2, 1, 0);   //[oC, iC, k, 1] to [k, iC, oC]
-        else {
-            w = w.reshape(w.ordering(),w.size(2),w.size(1),w.size(0));
+    public static INDArray reshapeWeightArrayOrGradientForFormat(INDArray w, WeightsFormat wFormat) {
+       if(w.rank() < 4)
+           return w;
+        switch(wFormat) {
+            case OIYX:
+                return w.reshape(w.size(0),w.size(1),w.size(3));
+            case YXIO:
+                return w.reshape(w.size(1),w.size(2),w.size(3));
+            case OYXI:
+                return w.reshape(w.size(0),w.size(2),w.size(3));
+            default:
+                throw new IllegalArgumentException("Illegal weights format " + wFormat);
+
         }
-
-        return w;
     }
-
 
     /**
      * Get the output size (height) for the given input data and CNN1D configuration
@@ -236,14 +242,14 @@ public class Convolution1DUtils {
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("Invalid input data or configuration: Combination of kernel size, " +
-                        "stride and padding are not " +
-                        "valid for given input height, using ConvolutionMode.Strict\n")
+                                "stride and padding are not " +
+                                "valid for given input height, using ConvolutionMode.Strict\n")
                         .append("ConvolutionMode.Strict requires: output height = (input height - kernelSize + " +
                                 "2*padding)/stride + 1 to be an integer. Got: (")
                         .append(inH).append(" - ").append(eKernel).append(" + 2*").append(padding).append(")/")
                         .append(strides).append(" + 1 = ")
                         .append(str).append("\n").append("See \"Constraints on strides\" at http://cs231n.github." +
-                        "io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n")
+                                "io/convolutional-networks/ and ConvolutionType enumeration Javadoc.\n")
                         .append("To truncate/crop the input, such that output height = floor(")
                         .append(str).append(") = ")
                         .append(truncated).append(", use ConvolutionType.Truncate.\n")
@@ -318,8 +324,8 @@ public class Convolution1DUtils {
         //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
         int outPad = ((outSize - 1) * strides + eKernel - inSize) / 2;
         Preconditions.checkState(outPad >= 0, "Invalid padding values calculated: %s - " +
-                        "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
-                        "strides %s, dilation %s", outPad, inSize, outSize, kernel, strides, dilation);
+                "layer configuration is invalid? Input size %s, output size %s, kernel %s, " +
+                "strides %s, dilation %s", outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 

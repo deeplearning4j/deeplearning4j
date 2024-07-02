@@ -71,13 +71,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   NDArray *inputPermuted, *gradIPermuted, *gradOPermuted;
   if (!isNCHW) {
-    inputPermuted = new NDArray(input->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradIPermuted = new NDArray(gradI->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    inputPermuted = new NDArray(input->permute({0, 3, 1, 2}, true));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradIPermuted = new NDArray(gradI->permute({0, 3, 1, 2}, true));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
     gradOPermuted = const_cast<NDArray*>(gradO);
   } else {
     inputPermuted = const_cast<NDArray*>(input);
     gradIPermuted = const_cast<NDArray*>(gradI);
-    gradOPermuted = new NDArray(gradO->permute({1, 0, 2, 3}, false));
+    gradOPermuted = new NDArray(gradO->permute({1, 0, 2, 3}, true));
   }
 
   NDArray* columns;
@@ -91,6 +91,8 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     columns = new NDArray(inputPermuted->ordering(), {bS, iC, kH, kW, oH, oW}, inputPermuted->dataType(), inputPermuted->getContext());
   }
 
+  columns->printIndexedBuffer("conv2dBP_ columns: \n");
+
   // ----- calculation of gradW ----- //
   if (gradW) {
     auto ctx = block.launchContext();
@@ -100,6 +102,9 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
     }
 
+    columns->printIndexedBuffer("conv2dBP_ columns after: \n");
+
+
     /**
      * NOTE ON THIS LOGIC here.
      * Be VERY careful with views and knowing buffer order.
@@ -108,10 +113,24 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
 
 
-    NDArray columns2d = columns->reshape('c', {bS * oH * oW, iC * kH * kW}, true);
-    NDArray gradO2d = gradOPermuted->reshape('c', {oC, bS * oH * oW}, false);
-    NDArray gradW2d = gradW->reshape('c', {iC * kH * kW, oC}, false);
-    sd::MmulHelper::matmul(&columns2d, &gradO2d, &gradW2d, true, true, 1.0, 0.0);
+    NDArray columns2d = columns->reshape('c', {iC * kH * kW,bS * oH * oW}, true);
+    NDArray gradO2d = gradOPermuted->reshape('f', {bS * oH * oW,oC}, true);
+    NDArray gradW2d = gradW->reshape('c', {iC * kH * kW,oC}, false);
+    printf("bS %lld oH %lld oW %lld iC %lld kH %lld kW %lld\n", bS, oH, oW, iC, kH, kW);
+    fflush(stdout);
+    printf("Reshaped columns to: %lld %lld\n", bS * oH * oW, iC * kH * kW);
+    fflush(stdout);
+    printf("Reshaped gradO to: %lld %lld\n", oC, bS * oH * oW);
+    fflush(stdout);
+    printf("Reshaped gradW to: %lld %lld\n", iC * kH * kW, oC);
+
+    columns2d.printShapeInfo("columns2d shape");
+    gradO2d.printShapeInfo("gradO2d shape");
+    gradW2d.printShapeInfo("gradW2d shape");
+    fflush(stdout);
+    sd::MmulHelper::matmul(&columns2d, &gradO2d, &gradW2d, false, false, 1.0, 0.0);
+    gradW->printIndexedBuffer("conv2dBP_ GRAD W: \n");
+
   }
 
   // ----- calculation of gradB ----- //
@@ -119,9 +138,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     if (!isNCHW) {
       std::vector<sd::LongType> axes = {0, 1, 2};
       gradOPermuted->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
+      gradB->printIndexedBuffer("conv2dBP_ GRAD B: \n");
+
     } else {
       std::vector<sd::LongType> axes = {1, 2, 3};
       gradOPermuted->reduceAlongDimension(reduce::Sum, *gradB, &axes);  // sum over bS, oH, oW
+      gradB->printIndexedBuffer("conv2dBP_ GRAD B: \n");
+
     }
   }
 

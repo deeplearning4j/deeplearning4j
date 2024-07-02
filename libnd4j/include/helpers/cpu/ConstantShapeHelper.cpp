@@ -29,11 +29,6 @@
 namespace sd {
 
 ConstantShapeHelper::~ConstantShapeHelper() {
-  for (int e = 0; e < 1; e++) {
-    for (auto v:_cache[e]) {
-      delete v.second;
-    }
-  }
 }
 
 

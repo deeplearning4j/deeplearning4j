@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -78,15 +79,14 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(convolutionMode))
                 .build();
 
+        //[kW, iC, oC]
         INDArray w = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
                 getParam(ConvolutionParamInitializer.WEIGHT_KEY),
-                RNNFormat.NCW);
+                WeightsFormat.YXIO);
 
         INDArray[] inputArrs;
         INDArray[] outputArrs;
-        INDArray wg = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
-                gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY),
-                getRnnDataFormat());
+        INDArray wg = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY).reshape(w.shape());
         INDArray epsOut = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), input.shape());
         INDArray input = this.input.castTo(dataType);
         if(layerConf().getRnnDataFormat() == RNNFormat.NWC) {
@@ -156,7 +156,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         INDArray w = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
                 getParam(ConvolutionParamInitializer.WEIGHT_KEY)
-                ,RNNFormat.NCW);
+                ,WeightsFormat.YXIO);
 
 
         INDArray[] inputs;

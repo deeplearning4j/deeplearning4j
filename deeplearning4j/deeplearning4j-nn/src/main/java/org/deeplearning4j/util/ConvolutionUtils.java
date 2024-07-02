@@ -145,13 +145,14 @@ public class ConvolutionUtils {
 
 
     public static long[] getWeightShape1d(WeightsFormat weightsFormat, long kernelSize, long inputDepth, long outputDepth) {
+        //[kW, iC, oC]
         switch(weightsFormat) {
             case OIYX:
-                return new long[]{outputDepth, inputDepth, kernelSize,1};
+                return new long[]{outputDepth, inputDepth, 1,kernelSize};
             case YXIO:
-                return new long[]{inputDepth, kernelSize, 1,outputDepth};
+                return new long[]{kernelSize,1, inputDepth,outputDepth};
             case OYXI:
-                return new long[]{outputDepth, kernelSize,1, inputDepth};
+                return new long[]{outputDepth,1, kernelSize, inputDepth};
             default:
                 throw new IllegalArgumentException("Unknown weights format: " + weightsFormat);
         }

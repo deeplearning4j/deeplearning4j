@@ -80,7 +80,9 @@
         <libnd4j.test.runner></libnd4j.test.runner>
         <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
         <libnd4j.optimization>3</libnd4j.optimization>
+        <libnd4j.printindices>OFF</libnd4j.printindices>
         <junit.version>5.9.2</junit.version>
+
         <cpu.core.count></cpu.core.count>
 
     </properties>
@@ -389,6 +391,8 @@
                                         <argument>${libnd4j.log}</argument>
                                         <argument>--optimization-level</argument>
                                         <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -522,6 +526,8 @@
                                         <argument>${libnd4j.keepnvcc}</argument>
                                         <argument>--optimization-level</argument>
                                         <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

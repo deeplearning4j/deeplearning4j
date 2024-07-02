@@ -180,6 +180,7 @@ class CNN1DGradientCheckTest extends BaseDL4JTest {
                         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .dataType(DataType.DOUBLE)
                                 .updater(new NoOp())
+                                .seed(1337)
                                 .dist(new NormalDistribution(0, 1))
                                 .convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder()

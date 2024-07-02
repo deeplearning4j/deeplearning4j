@@ -176,7 +176,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
     public void map(InfoMap infoMap) {
         //whether to include the SD_GCC_FUNCTRACE definition in the build. Not needed if we're not enabling the profiler.
         boolean funcTrace = System.getProperty("libnd4j.calltrace","OFF").equalsIgnoreCase("ON");
-        System.out.println("Func trace: " + funcTrace);
+        boolean printIndices = System.getProperty("libnd4j.printindices","OFF").equalsIgnoreCase("ON");
         infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
@@ -212,6 +212,9 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         "short[]"))
                 .put(new Info("bfloat16").cast().valueTypes("short").pointerTypes("ShortPointer", "ShortBuffer",
                         "short[]"));
+        if(printIndices) {
+            infoMap.put(new Info("PRINT_INDICES").define(true));
+        }
 
         infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false)
                         : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false))

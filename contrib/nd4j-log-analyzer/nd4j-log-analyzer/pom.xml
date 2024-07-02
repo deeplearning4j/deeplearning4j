@@ -78,6 +78,12 @@
   <dependencies>
 
 
+    <dependency>
+      <groupId>com.tdunning</groupId>
+      <artifactId>json</artifactId>
+      <version>1.8</version>
+    </dependency>
+
 
     <dependency>
       <groupId>org.ow2.asm</groupId>
