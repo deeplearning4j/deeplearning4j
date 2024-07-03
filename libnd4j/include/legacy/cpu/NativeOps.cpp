@@ -1141,7 +1141,7 @@ int freeHost(Pointer pointer) {
 #if defined(SD_ALIGNED_ALLOC)
   free(pointer);
 #else
-  delete reinterpret_cast<int8_t *>(pointer);
+  delete[] reinterpret_cast<int8_t *>(pointer);
 #endif
   return 1L;
 }

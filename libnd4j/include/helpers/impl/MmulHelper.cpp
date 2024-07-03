@@ -141,40 +141,49 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c,
                             std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
                             std::vector<LongType>& permuteCt) {
 
-
+  a->printIndexedBuffer("A:");
+  b->printIndexedBuffer("B:");
+  c->printIndexedBuffer("C:");
   // check whether permutation is required
   NDArray* cP  =permuteCt.empty() ? c : new NDArray(c->permute(permuteCt, false));
-  std::vector<LongType> shapeAt, shapeBt;
+  cP->printIndexedBuffer("CP");
 
+  std::vector<LongType> shapeAt, shapeBt;
   std::vector<LongType> permutAtDummy, permuteBtDummy;
 
   std::vector<LongType> newshape_a, newaxes_a, newshape_b, newaxes_b;
   computeNewShapesAndAxes(*a, axes_a, *b, axes_b, newshape_a, newaxes_a, newshape_b, newaxes_b);
 
-
   NDArray* aP = permutAt.empty() ? a : new NDArray(a->permute(permutAt, false));
+  aP->printIndexedBuffer("AP");
   NDArray* bP = permuteBt.empty() ? b : new NDArray(b->permute(permuteBt, false));
+  bP->printIndexedBuffer("BP");
+
   auto apReshaped = aP->permute(newaxes_a, false).reshape('c', newshape_a,true);
   NDArray* aPR =  new NDArray(apReshaped);
+  aPR->printIndexedBuffer("APR");
+
   auto bpReshape = bP->permute(newaxes_b, false).reshape('c', newshape_b,true);
   NDArray* bPR = new NDArray(bpReshape);
-
+  bPR->printIndexedBuffer("BPR");
 
   std::vector<LongType> requiredCshape  = {aPR->sizeAt(0), bPR->sizeAt(1)};
   NDArray cP2 = cP->reshape('f', requiredCshape, false);
   NDArray* cPR = new NDArray(cP2);
+  cPR->printIndexedBuffer("CPR");
+
   NDArray * ret = mmul(aPR, bPR, cPR, 1.0, 0.0);
+
   if (cPR->buffer() != cP->buffer() ||
       cPR->specialBuffer() != cP->specialBuffer()) {  // this means both permute and reshape have been performed on c, cP
     if(c->buffer() == cP->buffer()) {
-      cP->assign(cPR);
+      auto copyFromBuff = cP->dataBuffer();
+      cP->dataBuffer()->copyBufferFrom(*copyFromBuff);
     } else {
-      c->assign(cPR);
+      auto copyFromBuff = cP->dataBuffer();
+      c->dataBuffer()->copyBufferFrom(*copyFromBuff);
     }
-
   }
-
-
 }
 
 

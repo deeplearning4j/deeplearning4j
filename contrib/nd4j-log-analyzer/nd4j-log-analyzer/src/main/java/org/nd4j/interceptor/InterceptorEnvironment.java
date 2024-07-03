@@ -19,6 +19,7 @@
  */
 package org.nd4j.interceptor;
 
+import org.nd4j.interceptor.data.JSONArraySerializer;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 
@@ -30,7 +31,8 @@ public class InterceptorEnvironment {
     public static final String PASSWORD = "nd4j";
     public static final String SOURCE_CODE_INDEXER_PATH_KEY = "sourceCodeIndexerPath";
     public static final String SOURCE_CODE_INDEXER_PATH = System.getProperty(SOURCE_CODE_INDEXER_PATH_KEY);
-    public static final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    public static final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+            .registerModule(new JSONArraySerializer.JSONArraySerializerModule());
     public static final double[] EPSILONS = {1e-3, 1e-6, 1e-12};
 
 

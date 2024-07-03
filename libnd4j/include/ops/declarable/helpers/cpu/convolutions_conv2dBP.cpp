@@ -102,6 +102,8 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
     }
 
+    input->printIndexedBuffer("conv2dBP_ input: \n");
+
     columns->printIndexedBuffer("conv2dBP_ columns after: \n");
 
 
@@ -111,25 +113,36 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
      * Due to how GEMM works it sometimes will produce very strange results.
      */
 
+    std::vector<LongType> wPermute, colPermute;
+
+    std::vector<LongType> gradOaxesForDot;
+
+    if (!isNCHW) {
+      gradOaxesForDot = {0, 1, 2};                        // bS, oH, oW
+    } else {
+      gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
+    }
+
+    if (0 == wFormat) {
+      wPermute = {2, 0, 1, 3};
+      colPermute = {2, 3, 1, 0, 4, 5};
+    } else if (1 == wFormat) {
+      wPermute = {1, 2, 3, 0};
+      colPermute = {1, 2, 3, 0, 4, 5};
+    } else {
+      wPermute = {3, 1, 2, 0};
+      colPermute = {2, 3, 1, 0, 4, 5};
+    }
 
 
-    NDArray columns2d = columns->reshape('c', {iC * kH * kW,bS * oH * oW}, true);
-    NDArray gradO2d = gradOPermuted->reshape('f', {bS * oH * oW,oC}, true);
-    NDArray gradW2d = gradW->reshape('c', {iC * kH * kW,oC}, false);
-    printf("bS %lld oH %lld oW %lld iC %lld kH %lld kW %lld\n", bS, oH, oW, iC, kH, kW);
-    fflush(stdout);
-    printf("Reshaped columns to: %lld %lld\n", bS * oH * oW, iC * kH * kW);
-    fflush(stdout);
-    printf("Reshaped gradO to: %lld %lld\n", oC, bS * oH * oW);
-    fflush(stdout);
-    printf("Reshaped gradW to: %lld %lld\n", iC * kH * kW, oC);
 
-    columns2d.printShapeInfo("columns2d shape");
-    gradO2d.printShapeInfo("gradO2d shape");
-    gradW2d.printShapeInfo("gradW2d shape");
-    fflush(stdout);
-    sd::MmulHelper::matmul(&columns2d, &gradO2d, &gradW2d, false, false, 1.0, 0.0);
-    gradW->printIndexedBuffer("conv2dBP_ GRAD W: \n");
+    std::vector<LongType> emptyPermute = {};
+    sd::MmulHelper::tensorDot2(
+        columns, gradO, gradW, {0, 4, 5},
+        gradOaxesForDot,
+        emptyPermute,
+        emptyPermute,
+        wPermute);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
 
   }
 

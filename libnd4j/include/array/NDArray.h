@@ -583,10 +583,10 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) &;
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) &;
-  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) &&;
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) &&;
+  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &;
+  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &;
+  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &&;
+  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &&;
 
   void permute(const LongType *dimensions, const int rank, NDArray &target) const;
   void permute(const std::vector<LongType> &dimensions, NDArray &target) const;

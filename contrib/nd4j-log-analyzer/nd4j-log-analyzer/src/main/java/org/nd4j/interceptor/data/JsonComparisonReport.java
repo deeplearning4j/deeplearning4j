@@ -48,6 +48,16 @@ public class JsonComparisonReport {
             generateReport(differences,epsilon);
         }
 
+        List<OpLogEvent> orderedEvents1 = orderedEvents(new File(directory1));
+        List<OpLogEvent> orderedEvents2 = orderedEvents(new File(directory2));
+        try {
+            InterceptorEnvironment.mapper.writeValue(new File("first_in_order.json"), orderedEvents1);
+            InterceptorEnvironment.mapper.writeValue(new File("second_in_order.json"), orderedEvents2);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     private static Map<String,OpDifference> compareDirectories(String directory1, String directory2,double epsilon) {
@@ -60,6 +70,9 @@ public class JsonComparisonReport {
 
         if (files1 != null && files2 != null) {
             for (File file1 : files1) {
+                if(file1.getName().contains("div_scalar")) {
+                    continue;
+                }
                 String fileName = file1.getName();
                 File file2 = new File(dir2, fileName);
 
@@ -114,6 +127,34 @@ public class JsonComparisonReport {
                 .build();
     }
 
+
+    private static List<OpLogEvent> orderedEvents(File directory) {
+        List<OpLogEvent> orderedEvents = new ArrayList<>();
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                try {
+                    JSONObject jsonObject = new JSONObject(new JSONTokener(new FileReader(file)));
+                    jsonObject = jsonObject.getJSONObject("opLogEvents");
+                    for (String key : jsonObject.keySet()) {
+                        JSONArray jsonArray = jsonObject.getJSONArray(key);
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            JSONObject opLogEventJson = jsonArray.getJSONObject(i);
+                            OpLogEvent opLogEvent = convertToOpLogEvent(opLogEventJson);
+                            orderedEvents.add(opLogEvent);
+                        }
+                    }
+                } catch (IOException | JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        Collections.sort(orderedEvents, Comparator.comparingLong(OpLogEvent::getEventId));
+
+        return orderedEvents;
+    }
+
     private static OpLogEvent convertToOpLogEvent(JSONObject jsonObject) {
         String opName = jsonObject.getString("opName");
         JSONObject inputsObject = jsonObject.getJSONObject("inputs");
@@ -145,30 +186,16 @@ public class JsonComparisonReport {
         return result;
     }
 
-
-    private static String[] convertJsonArrayToStringArray(JSONArray jsonArray) {
-        String[] stringArray = new String[jsonArray.length()];
-        for (int i = 0; i < jsonArray.length(); i++) {
-            stringArray[i] = jsonArray.toString(2);
-        }
-        return stringArray;
-    }
-
-    private static String convertJsonArrayToString(JSONArray jsonArray) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            stringBuilder.append(jsonArray.getString(i)).append("\n");
-        }
-        return stringBuilder.toString().trim();
-    }
-    private static Map<String,OpDifference> compareOpLogArrays( Map<String,List<OpLogEvent>> jsonArray1,  Map<String,List<OpLogEvent>> jsonArray2,double epsilon) {
+    private static Map<String,OpDifference> compareOpLogArrays(Map<String,List<OpLogEvent>> jsonArray1,  Map<String,List<OpLogEvent>> jsonArray2,double epsilon) {
         Map<String,OpDifference> differences = new HashMap<>();
         for (String key : jsonArray1.keySet()) {
             List<OpLogEvent> opLogEvents1 = jsonArray1.get(key);
             List<OpLogEvent> opLogEvents2 = jsonArray2.get(key);
-
+            if(opLogEvents1 == null || opLogEvents2 == null)
+                continue;
+            int minEventSize = Math.min(opLogEvents1.size(), opLogEvents2.size());
             if (opLogEvents2 != null) {
-                for (int i = 0; i < opLogEvents1.size(); i++) {
+                for (int i = 0; i < minEventSize; i++) {
                     OpLogEvent opLogEvent1 = opLogEvents1.get(i);
                     OpLogEvent opLogEvent2 = opLogEvents2.get(i);
                     Map<Integer,String> inputs = opLogEvent1.getInputs();
@@ -268,7 +295,8 @@ public class JsonComparisonReport {
     private static void generateReport(Map<String,OpDifference> differences,double epsilon) {
         String reportFile = "comparison_report_" + epsilon + ".json";
         String earliestDifferenceFile = "earliest_difference_" + epsilon + ".json";
-
+        String firstInOrderFile = "first_in_order_" + epsilon + ".json";
+        String secondInOrderFile = "second_in_order_" + epsilon + ".json";
         Map<String,OpDifference> filteredDifferences = filterDifferencesByEpsilon(differences, epsilon);
 
         try {
@@ -323,7 +351,7 @@ public class JsonComparisonReport {
             Object value1 = jsonArray1.get(i);
             Object value2 = jsonArray2.get(i);
             if(value1 instanceof JSONArray) {
-               JSONComparisonResult result = compareJSONArraysWithEpsilon((JSONArray) value1,(JSONArray) value2,epsilon);
+                JSONComparisonResult result = compareJSONArraysWithEpsilon((JSONArray) value1,(JSONArray) value2,epsilon);
                 if(!result.isSame()) {
                     return result;
                 }
@@ -333,11 +361,11 @@ public class JsonComparisonReport {
 
 
             if (Math.abs(((Number) value1).doubleValue() - ((Number) value2).doubleValue()) > epsilon) {
-            return JSONComparisonResult.builder()
-                    .same(false)
-                    .firstValue(((Number) value1).doubleValue())
-                    .secondValue(((Number) value2).doubleValue())
-                    .build();
+                return JSONComparisonResult.builder()
+                        .same(false)
+                        .firstValue(((Number) value1).doubleValue())
+                        .secondValue(((Number) value2).doubleValue())
+                        .build();
             }
         }
 
@@ -362,7 +390,7 @@ public class JsonComparisonReport {
             }
             JSONArray value1 = (JSONArray) cast1;
             JSONArray value2 = (JSONArray) cast2;
-           JSONComparisonResult result = compareJSONArraysWithEpsilon(value1,value2,epsilon);
+            JSONComparisonResult result = compareJSONArraysWithEpsilon(value1,value2,epsilon);
             if(!result.isSame()) {
                 return result;
             }
@@ -371,8 +399,5 @@ public class JsonComparisonReport {
         return JSONComparisonResult.noDifference();
     }
 
-    private static String readFileAsString(Path path) throws IOException {
-        return new String(Files.readAllBytes(path));
-    }
 
 }

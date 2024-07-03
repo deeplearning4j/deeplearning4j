@@ -61,65 +61,53 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
   LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
 
-  if (!isNCHW)
-    input = new NDArray(input->permute({0, 3, 1, 2}, false));  // NHWC to NCHW
+  std::vector<LongType> wAxes;
+  if (0 == wFormat)
+    wAxes = {0, 1, 2};
+  else if (1 == wFormat)
+    wAxes = {2, 3, 1};
+  else
+    wAxes = {1, 2, 3};
 
+  NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
+  std::vector<LongType> colPermuteDims = {0, 4, 5, 1, 2, 3};  // {bS, kH, kW, oH, oW, iC}
+  NDArray colP = col.permute(colPermuteDims);  // {bS, iC, kH, kW, oH, oW}
+  NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
 
-  NDArray col('c', {bS, oH, oW, iC, kH, kW}, input->dataType(), input->getContext());
-  std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
-  NDArray* col2 = new NDArray(col.permute(permute, false));  // {bS, iC, kH, kW, oH, oW}
+  std::vector<LongType> permuteForOutput = {0,3,1,2};
 
-  NDArray* im2ColIn = new NDArray(input->cast(col2->dataType()));
-
+  //----- calculation of output -----//
   auto ctx = block.launchContext();
-  helpers::im2col(*ctx, *im2ColIn, *col2, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));
-  block.pushIntermediateResult(col2);
+  helpers::im2col(
+      *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
+      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  std::vector<LongType> emptyPermute = {};
+  MmulHelper::tensorDot2(&col,
+                         weights,
+                         &mmulResult,
+                         {3, 4, 5},
+                         wAxes,
+                         emptyPermute,
+                         emptyPermute,
+                         emptyPermute);  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
 
-  std::vector<LongType> permuteW = {3,2,1,0};
-  NDArray permutedW = weights->permute(permuteW, true);
-  std::vector<LongType> newShape = {kW * kH * iC, oC};
-  NDArray *reshapedW =  new NDArray(permutedW.reshape(permutedW.ordering(),newShape,true));
-  NDArray im2col2d = col.reshape('c', {bS * oH * oW, iC * kH * kW}, true);
-  if(output->ordering() != 'f') {
-    NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
-    MmulHelper::matmul(&im2col2d,reshapedW,&mmulResult,false,false);
-    if (bias) {
-      helpers::addBias(block, mmulResult, *bias, mmulResult, true);
-    }
-
-    if (isNCHW) {
-      mmulResult.reshapei({bS, oH, oW, oC});
-      mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-    }
-
-    //NOTE: WE DO THIS BECAUSE OF GEMM/BLAS OPERATING PURELY ON LINEAR BUFFERS. IT DOES NOT KNOW WHAT STRIDES ARE
-    //THE CORRECT ORDER HERE IS TO COPY THE DATA OVER TO THE OUTPUT BUFFER
-    output->dataBuffer()->copyBufferFrom(*mmulResult.dataBuffer(), mmulResult.lengthOf() * mmulResult.sizeOfT());
-
-
-  } else {
-    NDArray mmulResult = output->reshape(output->ordering(), {bS * oH * oW, oC},false);
-    MmulHelper::matmul(&im2col2d,reshapedW,&mmulResult,false,false);
-    if (bias) {
-      helpers::addBias(block, mmulResult, *bias, mmulResult, isNCHW);
-    }
-
-    if (isNCHW) {
-      mmulResult.reshapei({bS, oH, oW, oC});
-      mmulResult.permutei({0, 3, 1, 2}, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-    }
-
-    //NOTE: WE DO THIS BECAUSE OF GEMM/BLAS OPERATING PURELY ON LINEAR BUFFERS. IT DOES NOT KNOW WHAT STRIDES ARE
-    //THE CORRECT ORDER HERE IS TO COPY THE DATA OVER TO THE OUTPUT BUFFER
-    output->dataBuffer()->copyBufferFrom(*mmulResult.dataBuffer(), mmulResult.lengthOf() * mmulResult.sizeOfT());
-
-
+  //----- assign outTemp to output  -----//
+  if (isNCHW) {
+    mmulResult.reshapei({bS, oH, oW, oC});
+    mmulResult.permutei(permuteForOutput);
   }
+  output->assign(mmulResult);
+
+  //----- add biases if required -----//
+  if (bias)
+    // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+    helpers::addBias(block, *output, *bias, *output, isNCHW);
+
+  if (!isNCHW) delete input;
 
 
   if (!isNCHW) {
     delete input;
-    delete im2ColIn;
   }
 }
 

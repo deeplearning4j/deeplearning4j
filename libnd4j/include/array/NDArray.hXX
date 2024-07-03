@@ -363,7 +363,7 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
     auto desc = ShapeBuilders::createScalarShapeInfo(dtype, getContext()->getWorkspace());
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     setShapeInfo(constDesc);
-    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    if (Environment::getInstance().isDeleteShapeInfo()) delete[] desc;
     _buffer = new DataBuffer(sizeOfT(), dtype, getContext()->getWorkspace());
     _buffer->setToZeroBuffers();
   } else

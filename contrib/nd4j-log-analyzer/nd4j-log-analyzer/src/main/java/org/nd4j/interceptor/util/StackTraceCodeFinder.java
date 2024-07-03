@@ -33,6 +33,10 @@ public class StackTraceCodeFinder {
             return null;
         }
 
+        if(!new File(rootDirectory).exists()) {
+            throw new IllegalArgumentException("Root directory does not exist. Unable to scan code path.");
+        }
+
         Set<String> skipPatterns = new HashSet<>(Arrays.asList(
                 "org\\.nd4j\\.linalg\\.api\\.ops.*",
                 "org\\.nd4j\\.interceptor.*",
@@ -42,7 +46,8 @@ public class StackTraceCodeFinder {
                 "org\\.nd4j\\.linalg\\.jcublas\\.ops\\.executioner.*",
                 "org\\.nd4j\\.linalg\\.factory.*",
                 "org\\.nd4j\\.linalg\\.api\\.ndarray.*",
-                "org\\.nd4j\\.linalg\\.api\\.blas\\.impl.*"
+                "org\\.nd4j\\.linalg\\.api\\.blas\\.impl.*",
+                "org\\.deeplearning4j\\.nn\\.updater.*"
         ));
 
         for (StackTraceElement element : stackTrace) {
@@ -58,7 +63,7 @@ public class StackTraceCodeFinder {
             }
         }
 
-        throw new IllegalArgumentException("Failed to get first line of code from files");
+       return null;
     }
 
     public static String extractPackageName(String fullyQualifiedClassName) {
