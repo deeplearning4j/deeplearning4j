@@ -87,7 +87,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto leftLower = leftOutput.dup(false);
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
-  MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0);
+  MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0, 0, 0, &rightPart);
   ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (sd::LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;

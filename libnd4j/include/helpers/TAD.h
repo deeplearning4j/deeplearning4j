@@ -399,9 +399,6 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index) {
   }
 
   // sub for indices
-  /* int *sub = new int[leftOverIndexLen];
-   shape::ind2subOrder(tadShape,index,len,sub);
-  */
   index2coords(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {

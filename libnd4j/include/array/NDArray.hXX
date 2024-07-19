@@ -485,10 +485,10 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    #if defined(SD_GCC_FUNCTRACE)
-      creationTrace = StackTrace();
-      creationTrace.load_here();
-    #endif
+#if defined(SD_GCC_FUNCTRACE)
+    creationTrace = StackTrace();
+    creationTrace.load_here();
+#endif
     sd_print("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - constructor 13\n");
     fflush(stdout);
 
@@ -1280,11 +1280,18 @@ static void sd_printformatted(std::ostream& os, const sd::NDArray& arr, sd::Long
       for (sd::LongType col = 0; col < cols; col++) {
         if (col > 0) os << ", ";
         if (arr.isR()) {
-          //set precision to allow higher precision
-          os << std::fixed << std::setw(11) << std::setprecision(15)
-             << std::setfill('0') << arr.e<double>(row, col);
+          if(arr.dataType() == sd::DataType::DOUBLE) {
+            os << std::fixed << std::setw(11) << std::setprecision(15)
+               << std::setfill('0') << arr.e<double>(row, col);
+          } else {
+            os << std::fixed << std::setw(11) << std::setprecision(15)
+               << std::setfill('0') <<  arr.e<float>(row, col);
+          }
         } else if (arr.isZ()) {
-          os << arr.e<sd::LongType>(row, col);
+          if(arr.dataType() == sd::DataType::INT64)
+            os << arr.e<sd::LongType>(row, col);
+          else
+            os << arr.e<int>(row, col);
         } else if (arr.isB()) {
           os << (arr.e<bool>(row, col) ? "true" : "false");
         } else if (arr.isS()) {
@@ -1656,8 +1663,8 @@ template SD_LIB_EXPORT NDArray &NDArray::operator=(const bool scalar);
 //////////////////////////////////////////////////////////////////////////
 void NDArray::copyBuffersContinuouslyFrom(const NDArray &other, size_t sizeToCopyInBytes, sd::LongType offsetThis,
                                           sd::LongType offsetOther) {
-  if (offsetThis == 0) offsetThis = bufferOffset();
-  if (offsetOther == 0) offsetOther = other.bufferOffset();
+  if (offsetThis == 0) offsetThis = offset();
+  if (offsetOther == 0) offsetOther = other.offset();
 
   dataBuffer()->copyBufferFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
 }
@@ -2185,66 +2192,6 @@ void NDArray::printShapeInfo(const char *msg) const {
   fflush(stdout);
 }
 
-//////////////////////////////////////////////////////////////////////////
-void NDArray::printBuffer(const char *msg, sd::LongType limit, const bool sync) const {
-  if (sync) syncToHost();
-
-  if (limit == -1   || limit >= this->lengthOf()) {
-    limit = this->lengthOf();
-  }
-
-  if (msg != nullptr) {
-    sd_printf("%s: [", msg);
-  } else {
-    sd_print("[");
-  }
-  if (this->isR()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (e) sd_print(", ");
-      if(this->dataType() == sd::DataType::DOUBLE) {
-        sd_printf("%f", this->e<double>(e));
-      }  else {
-        sd_printf("%f", this->e<float>(e));
-      }
-    }
-  } else if (this->isZ()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (this->dataType() != sd::DataType::INT64 && this->dataType() != sd::DataType::UINT64) {
-        sd_printf("%d", this->e<sd::LongType>(e));
-      }
-      else {
-        sd_printf("%llu", this->e<sd::LongType>(e));
-      }
-
-      if (e < limit - 1)  {
-        sd_print(", ");
-      }
-    }
-  } else if (this->isB()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (this->e<bool>(e)) {
-        sd_print("true");
-      } else {
-        sd_print("false");
-      }
-
-      if (e < limit - 1)  {
-        sd_print(", ");
-      }
-    }
-  } else if (this->isS()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      sd_printf("\"%s\"", this->e<std::string>(e).c_str());
-      if (e < limit - 1) {
-        sd_print(", ");
-      }
-    }
-  }
-  sd_print("]\n");
-  fflush(stdout);
-}
-
-
 void NDArray::printBufferRaw(const char *msg, sd::LongType limit, const bool sync) const {
   if (sync) syncToHost();
 
@@ -2252,141 +2199,13 @@ void NDArray::printBufferRaw(const char *msg, sd::LongType limit, const bool syn
     limit = this->lengthOf();
   }
 
+  auto begin = this->offset() / this->sizeOfT();
+
   if (msg != nullptr) {
     sd_printf("%s: [", msg);
-  } else {
-    sd_print("[");
   }
-  if (this->isR()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (e) sd_print(", ");
-      if(this->dataType() == sd::DataType::DOUBLE) {
-        sd_printf("%f", this->bufferAsT<double>()[e]);
-      }  else {
-        sd_printf("%f", this->bufferAsT<float>()[e]);
-      }
-    }
-  } else if (this->isZ()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (this->dataType() != sd::DataType::INT64 && this->dataType() != sd::DataType::UINT64) {
-        sd_printf("%d", this->bufferAsT<sd::LongType>()[e]);
-      }
-      else {
-        sd_printf("%llu", this->bufferAsT<sd::LongType>()[e]);
-      }
 
-      if (e < limit - 1)  {
-        sd_print(", ");
-      }
-    }
-  } else if (this->isB()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      if (this->bufferAsT<bool>()[e]) {
-        sd_print("true");
-      } else {
-        sd_print("false");
-      }
-
-      if (e < limit - 1)  {
-        sd_print(", ");
-      }
-    }
-  } else if (this->isS()) {
-    for (sd::LongType e = 0; e < limit; e++) {
-      sd_printf("\"%s\"", this->bufferAsT<const char *>()[e]);
-      if (e < limit - 1) {
-        sd_print(", ");
-      }
-    }
-  }
-  sd_print("]\n");
-  fflush(stdout);
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-// print element by element consequently in a way they (elements) are stored in physical memory
-void NDArray::printLinearBuffer() const {
-  syncToHost();
-
-  const auto ews = this->ews() > 0 ? this->ews() : 1;
-  const auto len = this->lengthOf();
-
-  sd_print("[");
-
-  if (this->dataType() == sd::DataType::INT32) {
-    for (sd::LongType e = 0; e < len; e++) sd_printf("%d, ", this->bufferAsT<int>()[e * ews]);
-  } else if (this->dataType() == sd::DataType::INT64) {
-    for (sd::LongType e = 0; e < len; e++) sd_printf("%lld, ", this->bufferAsT<sd::LongType>()[e * ews]);
-  } else if (this->dataType() == sd::DataType::FLOAT32) {
-    for (sd::LongType e = 0; e < len; e++) sd_printf("%.8f, ", this->bufferAsT<float>()[e * ews]);
-  } else if (this->dataType() == sd::DataType::DOUBLE) {
-    for (sd::LongType e = 0; e < len; e++) sd_printf("%.8f, ", this->bufferAsT<double>()[e * ews]);
-  } else
-    THROW_EXCEPTION("NDArray::printLinearBuffer: not implemented yet for this data type !");
-
-  sd_print("]\n");
-  fflush(stdout);
-}
-//////////////////////////////////////////////////////////////////////////
-static void sd_printFormatted(NDArray const *arr, LongType depth, LongType limit) {
-  if (arr->rankOf() == 1) {
-    sd_print("[ ");
-    for (sd::LongType i = 0; i < arr->lengthOf(); ++i) {
-      if (arr->isR()) {
-        sd_printf("%f, ", arr->e<float>(i));
-      }  else if (arr->isZ()) {
-        sd_printf("%lld, ", arr->e<sd::LongType>(i));
-      } else if (arr->isB()) {
-        sd_printf("%s, ", arr->e<bool>(i) ? "true" : "false");
-      } else if (arr->isS()) {
-        sd_printf("\"%s\", ", arr->e<std::string>(i).c_str());
-      }
-    }
-    sd_print("]\n");
-  } else if (arr->rankOf() == 2) {
-    sd::LongType rows = arr->rows();
-    sd::LongType cols = limit < 0 ? arr->columns() : sd::math::sd_min<sd::LongType>(limit,cols);
-    char *padding = new char[depth + 1];
-    memset(padding, ' ', depth);
-    padding[depth] = 0;
-    sd_print("[");
-    for (sd::LongType row = 0; row < rows; ++row) {
-      if (row && depth > 0) sd_printf("%s", padding);
-      sd_print("[");
-      for (sd::LongType col = 0; col < cols; col++) {
-        if (col > 0) sd_print(", ");
-        if (arr->isR()) {
-          sd_printf("%f", arr->e<float>(row, col));
-        } else if (arr->isZ()) {
-          sd_printf("%lld", arr->e<sd::LongType>(row, col));
-        } else if (arr->isB()) {
-          sd_printf("%s", arr->e<bool>(row, col) ? "true" : "false");
-        } else if (arr->isS()) {
-          sd_printf("\"%s\"", arr->e<std::string>(row * cols + col).c_str());
-        }
-      }
-      if (row < rows - 1) {
-        sd_print("]\n");
-      } else {
-        sd_print("]");
-      }
-    }
-    sd_print("]");
-  } else {
-    sd::LongType restCount = 2;
-    sd_print("[");
-    restCount = ShapeUtils::getNumOfSubArrs(arr->shapeInfo(), {0});
-    for (sd::LongType arrIndex = 0; arrIndex < restCount; ++arrIndex) {
-      NDArray subArr = (*arr)(arrIndex, {0});
-      sd_printFormatted(&subArr, depth + 1, limit);
-      if (arrIndex < restCount - 1) {
-        for (sd::LongType i = 1; i < arr->rankOf(); ++i) sd_print("\n");
-        for (sd::LongType i = 0; i < depth - 2; ++i) sd_print(" ");
-      }
-    }
-    sd_print("]");
-  }
+  this->getDataBuffer()->printHostDevice(offset());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2420,7 +2239,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void *NDArray::templatedPointerShif
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
 NDArray NDArray::transpose() const & {
   auto desc = new ShapeDescriptor(shapeInfo());
-  NDArray newArr(getDataBuffer(), desc, getContext(), bufferOffset());
+  NDArray newArr(getDataBuffer(), desc, getContext(), offset());
   newArr.transposei();
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return newArr;
@@ -2695,24 +2514,22 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
   }
 
   if (canReshape) {
+    printf("can reshape\n");
+    fflush(stdout);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     if(copyToNewBuff) {
-      printf("copy to new buff shape info new: \n");
+      printf("copy to new buff\n");
       fflush(stdout);
-      shape::printShapeInfo(newShape->primary());
       NDArray *ret = new NDArray(newShape->primary(), true, getContext());
-      if (copyToNewBuff) {
-        this->applyTransform(transform::Assign, *ret, nullptr);
-      }
+      this->applyTransform(transform::Assign, *ret, nullptr);
       return *ret;
     } else {
-      NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), bufferOffset());
+      NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), offset());
       ret->_isView = true;
       return *ret;
     }
 
   } else {
-    //print strides shape info new:
     shape::fillStrides(shapeInfoNew);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     NDArray *ret = new NDArray(newShape->primary(), true, getContext(), false);
@@ -2798,7 +2615,7 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool 
     this->applyTransform(transform::Assign, *ret, nullptr);
     return *ret;
   } else {
-    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
+    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
     ret->_isView = true;
     return *ret;
   }
@@ -2890,18 +2707,15 @@ const std::string *SD_LIB_EXPORT NDArray::bufferAsT() const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 const T *NDArray::bufferAsT() const {
-  // FIXME: do we REALLY want sync here?
-  // syncToHost();
-  return reinterpret_cast<const T *>(buffer());
+  return bufferasTWithOffset<T>(0);
+
 }
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::bufferAsT() const, SD_COMMON_TYPES);
 
 template <typename T>
 T *NDArray::bufferAsT() {
-  if (buffer() == nullptr) return nullptr;
-  syncToHost();
-  return reinterpret_cast<T *>(buffer());
+ return bufferasTWithOffset<T>(0);
 }
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
@@ -4353,6 +4167,8 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     setShapeInfo(newShape);
   }
 
+  RELEASE(shapeInfoNew, getContext()->getWorkspace());
+
   return canReshape;
 }
 
@@ -4833,6 +4649,28 @@ T NDArray::e(const sd::LongType i, const sd::LongType j) const {
 
   sd::LongType indices[2] = {i,j};
   const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
+  if(xOffset >= this->getDataBuffer()->getNumElements()) {
+    std::string errorMessage;
+    errorMessage += "NDArray::e: index is out of array length !";
+    errorMessage += " Requested index: ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(i);
+    errorMessage += ",";
+    errorMessage += StringUtils::valueToString<sd::LongType>(j);
+    errorMessage += ", array length: ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(lengthOf());
+    errorMessage += ", array shape: ";
+    errorMessage += ShapeUtils::shapeAsString(this);
+    errorMessage += ", array rank: ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(rankOf());
+    errorMessage += ", array order: ";
+    errorMessage += ordering();
+    errorMessage += ", offset: ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(xOffset);
+    auto shapeInfoString = shape::shapeInfoString(this->shapeInfo());
+    errorMessage += ", shapeInfo: ";
+    errorMessage += shapeInfoString;
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
@@ -4937,7 +4775,7 @@ NDArray NDArray::e(const sd::LongType i) const {
   const auto offset = getOffset(i);
   NDArray scalar(dataType(), getContext());
 
-  scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, bufferOffset() + offset);
+  scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, this->offset() + offset);
 
   return scalar;
 }
@@ -6097,7 +5935,7 @@ ResultSet NDArray::multipleTensorsAlongDimension(const std::vector<LongType> &in
 
     auto newShapeInfoCast = const_cast<sd::LongType *const>(pack->primaryShapeInfo());
     auto array =
-        new NDArray(getDataBuffer(), newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + bufferOffset());
+        new NDArray(getDataBuffer(), newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + offset());
     result.push_back(array);
   }
 
@@ -6181,7 +6019,7 @@ NDArray NDArray::diagonal(const char type) const {
 
   ArrayOptions::setDataType(outShapeInfo, this->dataType());
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
-  NDArray result(_buffer, const_cast<sd::LongType *>(buff->primary()), getContext(), bufferOffset());
+  NDArray result(_buffer, const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
 
   RELEASE(outShapeInfo, getContext()->getWorkspace());
 
@@ -6221,7 +6059,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
   }
   if (isScalar() && dimensions.size() == 1 && dimensions[0] == 0) {
     auto newShapeInfoCast = const_cast<sd::LongType *const>(this->shapeInfo());
-    auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), bufferOffset());
+    auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), offset());
     array->_isView = true;
     result.push_back(array);
     sd_debug("NDArray::allTensorsAlongDimension: Dimensions were equal %d with this rank of %d\n", dimensions.back(),
@@ -6246,7 +6084,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 
 
   for (sd::LongType idx = 0; idx < numTads; idx++) {
-    auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + bufferOffset());
+    auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + offset());
     array->_isView = true;
     if(Environment::getInstance().isDebug() && Environment::getInstance().isVerbose())
       sd_printf("TAD %lld has primary offsets at %lld\n",idx, pack->primaryOffsets()[idx]);
@@ -6290,7 +6128,7 @@ NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool kee
                                       numOfUntiesInSubArrShape);
 
   auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
-  NDArray result(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + bufferOffset());
+  NDArray result(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + this->offset());
   result._isView = true;
   ShapeDescriptor descriptor(newShapeInfo);
   descriptor.validate();

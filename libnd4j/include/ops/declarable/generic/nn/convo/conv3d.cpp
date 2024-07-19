@@ -113,7 +113,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
   /*
    *  {1,2,3,4}, wAxes, permutForOutput
    */
-  MmulHelper::tensorDot2(&columns, weights, output, {1,2,3,4}, wAxes, permuteAb, permuteAb, permuteForOutput);
+  MmulHelper::tensorDot2(&columns, weights, output, {1, 2, 3, 4}, wAxes, permuteAb, permuteAb, permuteForOutput, output);
 
   if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCDHW);
@@ -323,12 +323,8 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
   std::vector<sd::LongType> permuteOutput;
   MmulHelper::tensorDot2(
-      &columns,
-      gradO,
-      gradW,
-      {0, 5, 6, 7},
-      gradOaxesForDot, emptyPermute, emptyPermute,
-      wPermute);  // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
+      &columns, gradO, gradW, {0, 5, 6, 7}, gradOaxesForDot, emptyPermute, emptyPermute, wPermute,
+      gradW);  // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
 
   //----- calculation of gradO -----//
   if (gradB) {
@@ -342,7 +338,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
   // [kD, kH, kW, iC, oC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
   // [oC, iC, kD, kH, kW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
   // [oC, kD, kH, kW, iC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
-  MmulHelper::tensorDot2(weights, gradO, &columns, {indWoC}, {indIOioC}, emptyPermute, emptyPermute, colPermute);
+  MmulHelper::tensorDot2(weights, gradO, &columns, {indWoC}, {indIOioC}, emptyPermute, emptyPermute, colPermute, &columns);
   ConvolutionUtils::col2vol(block, columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
 

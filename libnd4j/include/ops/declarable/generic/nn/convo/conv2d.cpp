@@ -106,7 +106,6 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW);
   LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
-
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
     std::string errorMessage;
@@ -137,21 +136,9 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
-  LongType oH, oW;  // output height, width
-  ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
-
-  outputShapeInfo[0] = rank;
-  outputShapeInfo[1] = bS;
-
-  if (isNCHW) {
-    outputShapeInfo[2] = oC;
-    outputShapeInfo[3] = oH;
-    outputShapeInfo[4] = oW;
-  } else {
-    outputShapeInfo[2] = oH;
-    outputShapeInfo[3] = oW;
-    outputShapeInfo[4] = oC;
-  }
+  outputShapeInfo[0] = 4;
+  LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
+  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
 
 
   /**
@@ -164,21 +151,46 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-  sd::LongType * second = shape::calcStridesFortran(strideCalcShape,shape::rank(outputShapeInfo));
-
-  sd::LongType permute[4];
+  sd::LongType *permute = new sd::LongType[4];
   permute[0] = 2;
   permute[1] = 3;
   permute[2] = 1;
   permute[3] = 0;
-  shape::doPermuteSwap(4,&second,permute);
-  auto stride = shape::stride(outputShapeInfo);
-  for(int i = 0; i < 4; i++) {
-    stride[i] = second[i];
+
+  sd::LongType * second = shape::calcStridesFortran(strideCalcShape,shape::rank(outputShapeInfo));
+  shape::doPermuteSwap(4, second,permute);
+  shape::doPermuteSwap(4, strideCalcShape,permute);
+
+
+  if(!isNCHW) {
+    permute[0] = 0;
+    permute[1] = 2;
+    permute[2] = 3;
+    permute[3] = 1;
+    shape::doPermuteSwap(4, strideCalcShape,permute);
+    shape::doPermuteSwap(4, second,permute);
+
+
+    sd::LongType * second2 = shape::calcStridesFortran(strideCalcShape,shape::rank(outputShapeInfo));
+    shape::doPermuteSwap(4, second2,permute);
+
+    shape::setShape(outputShapeInfo, strideCalcShape);
+    shape::setStride(outputShapeInfo,second);
+    shape::setOrder(outputShapeInfo, 'f');
+    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+    delete[] second2;
+
+  } else {
+    shape::setShape(outputShapeInfo, strideCalcShape);
+    shape::setStride(outputShapeInfo,second);
+    shape::setOrder(outputShapeInfo, 'f');
+    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
   }
 
-  shape::setOrder(outputShapeInfo, 'f');
-  ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+
+
+  delete[] second;
+  delete[] permute;
   return SHAPELIST(CONSTANT(outputShapeInfo));
 }
 
@@ -249,67 +261,59 @@ DECLARE_SHAPE_FN(conv2d_bp) {
                         ? inputShape->at(3)
                         : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
+
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
+  int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
+  int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 0;  // INT_ARG(9): 0-NCHW, 1-NHWC
+  LongType wFormat = block.getIArguments()->size() > 10
+                         ? INT_ARG(10)
+                         : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+  //normally nchw is 0 and 1 being passed in, we're using it as a boolean here
+  //so we want it to be whether nchw is 0 or not.
+  isNCHW = isNCHW == 0;
+  // output [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(ConvolutionUtils::sizeOfKh(weightsShapeInfo,wFormat));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(ConvolutionUtils::sizeOfKw(weightsShapeInfo,wFormat));  // filter(kernel) width
+
   const LongType rank = 4;
 
-  REQUIRE_TRUE(inputShapeInfo[0] == rank, 0,
-               "CUSTOM CONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank,
-               inputShapeInfo[0]);
-  REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0,
-               "CUSTOM CONV2D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank,
-               weightsShapeInfo[0]);
-  if(gradOShapeInfo[0] > 0) {
-    REQUIRE_TRUE(
-        gradOShapeInfo[0] == rank, 0,
-        "CUSTOM CONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
-        rank, gradOShapeInfo[0]);
-  }
-  const LongType kH = INT_ARG(0);                                               // filter(kernel) height
-  const LongType kW = INT_ARG(1);                                               // filter(kernel) width
-  const LongType sH = INT_ARG(2);                                               // strides height
-  const LongType sW = INT_ARG(3);                                               // strides width
-  const LongType pH = INT_ARG(4);                                               // paddings height
-  const LongType pW = INT_ARG(5);                                               // paddings width
-  const LongType dH = INT_ARG(6);                                               // dilations height
-  const LongType dW = INT_ARG(7);                                               // dilations width
-  const int isSameMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
-  int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
-  const int wFormat = block.getIArguments()->size() > 10
-                      ? INT_ARG(10)
-                      : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
-
-
-
-  isNCHW = isNCHW == 0;
-  const LongType bS = inputShapeInfo[1];             // batch size
-  const LongType iH = ConvolutionUtils::inputHeight(inputShapeInfo,isNCHW);    // input height
-  const LongType iW = ConvolutionUtils::inputWidth(inputShapeInfo,isNCHW);    // input width
-  const LongType iC = ConvolutionUtils::inChannels(weightsShapeInfo,wFormat);  // input channels
-  const LongType oC = ConvolutionUtils::outChannels(weightsShapeInfo,wFormat);  // output channels
-
-  LongType trueoH, trueoW;  // true output height, width
-  ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
-  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-  std::vector<LongType> expectedGradOShape =
-      ConvolutionUtils::expectGrad0Shape(isNCHW,bS, trueoH, trueoW, oC);
+  LongType bS = shape::sizeAt(inputShapeInfo, 0);             // batch size
+  LongType   iC = ConvolutionUtils::inChannels(weightsShapeInfo, wFormat);
+  LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW);
+  LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW);
+  LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
-
-  if(gradOShapeInfo[0] > 0) {
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,
-                 "CUSTOM CONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedGradOShape).c_str(),
-                 ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
-
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0,
-                 "CUSTOM CONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(expectedWeightsShape).c_str(),
-                 ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
+  if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
+    std::string errorMessage;
+    errorMessage += "CUSTOM CONV2D OP: wrong shape of weights array, expected is ";
+    errorMessage += ShapeUtils::shapeAsString(expectedWeightsShape);
+    errorMessage += ", but got ";
+    errorMessage += ShapeUtils::shapeAsString(weightsShapeInfo);
+    errorMessage += " instead !";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
+
+
   if (biasShapeInfo) {
-    REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0,
-                 "CUSTOM CONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, "
-                 "%i instead !",
-                 oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+    if(biasShapeInfo[0] > 2 || oC != shape::length(biasShapeInfo)) {
+      std::string errorMessage;
+      errorMessage += "CUSTOM CONV2D OP: wrong shape of array with biases, expected rank, length: <=2, ";
+      errorMessage += std::to_string(oC);
+      errorMessage += ", but got ";
+      errorMessage += std::to_string(biasShapeInfo[0]);
+      errorMessage += ", ";
+      errorMessage += std::to_string(shape::length(biasShapeInfo));
+      errorMessage += " instead !";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
   }
+
   auto gradIshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());
   auto gradWshapeInfo =

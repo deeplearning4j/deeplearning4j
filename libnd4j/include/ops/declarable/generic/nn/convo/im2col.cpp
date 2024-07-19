@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
   // FIXME: zeropad value is void
   LaunchContext* ctx = block.launchContext();
   helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX,
-                           NDArrayFactory::create(zeroPadVal, block.launchContext()));
+                  NDArrayFactory::create(zeroPadVal, block.launchContext()));
 
   return Status::OK;
 }

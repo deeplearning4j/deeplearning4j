@@ -897,7 +897,7 @@ Status DeclarableOp::execute(Context *block) {
       auto shape = ShapeUtils::shapeAsString(array);
       LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       sd_printf("array to string: Len of array is %lld real len is %lld data buffer length %lld array offset %lld array is attached %d array is view %d\n",
-                len,array->lengthOf(),array->dataBuffer()->getNumElements(),array->bufferOffset(),array->isAttached(),array->isView());
+                len,array->lengthOf(),array->dataBuffer()->getNumElements(), array->offset(),array->isAttached(),array->isView());
       fflush(stdout);
       auto first = array->isEmpty() ? new std::string("Empty NDArray") : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());

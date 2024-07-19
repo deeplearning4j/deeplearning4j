@@ -169,8 +169,6 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         Conv1D op = new Conv1D(inputs, null, conf);
-        List<LongShapeDescriptor> outShape = op.calculateOutputShape();
-        op.setOutputArgument(0, Nd4j.create(outShape.get(0), false));
         Nd4j.exec(op);
         INDArray output = op.getOutputArgument(0);
 

@@ -25,10 +25,10 @@
 #include <helpers/logger.h>
 
 namespace sd {
-InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) {
-  if(dataBuffer._dataBuffer->getDataType() == DataType::UNKNOWN)
+InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t length, uint64_t offset) {
+  if(dataBuffer->_dataBuffer->getDataType() == DataType::UNKNOWN)
         THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer has unknown data type");
-  _dataBuffer = dataBuffer.dataBuffer();
+  _dataBuffer = dataBuffer->dataBuffer();
 
   // offset is always absolute to the original buffer
   _offset = offset;
@@ -104,9 +104,12 @@ void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
   _dataBuffer->setSpecialBuffer(ptr, length);
 }
 
-uint64_t InteropDataBuffer::offset() const { return _offset; }
+uint64_t InteropDataBuffer::offset() const { return _offset / DataTypeUtils::sizeOf(this->_dataType); }
 
-void InteropDataBuffer::setOffset(uint64_t offset) { _offset = offset; }
+
+uint64_t InteropDataBuffer::byteOffset() const { return _offset; }
+
+void InteropDataBuffer::setByteOffset(uint64_t offset) { _offset = offset; }
 
 int InteropDataBuffer::deviceId() const { return _dataBuffer->deviceId(); }
 

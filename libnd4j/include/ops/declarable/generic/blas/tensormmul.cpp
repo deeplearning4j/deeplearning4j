@@ -217,8 +217,8 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
 
 
   //perform the actual matrix multiplication
-  MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA,empty, empty, aPermArgsAfter);
-  MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter);
+  MmulHelper::tensorDot2(dC, &newB, gradA, axes_a_gradA, axes_b_gradA, empty, empty, aPermArgsAfter, gradA);
+  MmulHelper::tensorDot2(&newA, dC, gradB, axes_a_gradB, axes_b_gradB, empty, empty, bPermArgsAfter, gradB);
 
 
 

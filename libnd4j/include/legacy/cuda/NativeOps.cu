@@ -1130,7 +1130,6 @@ void execTransformFloat(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
     auto tadShapeInfo = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
     auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
-    printf("launching execTransformFloat nativeops\n");
     LaunchContext lc(extraPointers[1],
                      extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformFloat(

@@ -99,14 +99,8 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
   // [kD, kH, kW, oC, iC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
   // [iC, oC, kD, kH, kW] x [bS, iD, iH, iW, iC] = [oC, kD, kH, kW, bS, iD, iH, iW]
   // [iC, kD, kH, kW, oC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
-  MmulHelper::tensorDot2(weights,
-                         input,
-                         &columns,
-                         {indWiC},
-                         {indIOioC},
-                         emptyPermute,
-                         emptyPermute,
-                         colPermute);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
+  MmulHelper::tensorDot2(weights, input, &columns, {indWiC}, {indIOioC}, emptyPermute, emptyPermute, colPermute,
+                         &columns);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
 
   ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, kD, kH, kW, iD, iH, iW] is de-convoluted to [bS, oC, oD, oH, oW]
@@ -308,8 +302,8 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
                                         block.launchContext());
   ConvolutionUtils::vol2col(block, gradO, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, oD, oH, oW] is deconvoluted to [bS, oC, kD, kH, kW, iD, iH, iW]
-  MmulHelper::tensorDot2(input, &columns, gradW, inputAxesForDot, {0, 5, 6, 7},emptyPermute,emptyPermute,
-                        gradWAxes);  // [bS, iC, iD, iH, iW]/[bS, iD, iH, iW, iC] x [bS, oC, kD, kH, kW, iD, iH, iW] =
+  MmulHelper::tensorDot2(input, &columns, gradW, inputAxesForDot, {0, 5, 6, 7}, emptyPermute, emptyPermute, gradWAxes,
+                         gradW);  // [bS, iC, iD, iH, iW]/[bS, iD, iH, iW, iC] x [bS, oC, kD, kH, kW, iD, iH, iW] =
   // [iC, oC, kD, kH, kW]
 
   // ----- calculation of gradB ----- //

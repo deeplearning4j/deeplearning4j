@@ -78,14 +78,13 @@ class SD_LIB_EXPORT MmulHelper {
                                 const std::vector<std::vector<LongType>>& modifA,
                                 const std::vector<std::vector<LongType>>& modifB);
 
-  static void tensorDot2(NDArray* a, NDArray* b, NDArray* c,
-                         const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
-                         std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
-                         std::vector<LongType>& permuteCt);
+  static void tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
+                         const std::vector<LongType>& axes_b, std::vector<LongType>& permutAt,
+                         std::vector<LongType>& permuteBt, std::vector<LongType>& permuteCt, NDArray* realFinalResult = nullptr);
 #endif
 
-  static void matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY,
-                     double alpha = 1.0, double beta = 0.0);
+  static void matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY, double alpha,
+                     double beta, NDArray* realFinalResult = nullptr);
 
   static bool resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB);
 };

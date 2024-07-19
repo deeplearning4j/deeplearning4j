@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto inclusive = std::vector<LongType>();
 
 
-  auto baseOffset = inputBase->bufferOffset();
+  auto baseOffset = inputBase->offset();
   auto outIdx = 0;
   auto inIdx = 0;
   std::vector<std::vector<LongType>> indexVectors;

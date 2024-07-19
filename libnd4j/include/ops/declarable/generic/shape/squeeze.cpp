@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
     if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
       output->dataBuffer()->copyBufferFrom(*input->dataBuffer(),
                                            output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0,
-                                           input->bufferOffset());
+                                           input->offset());
     } else {
       auto tmp = input->reshape(input->ordering(), shape);
       output->assign(tmp);

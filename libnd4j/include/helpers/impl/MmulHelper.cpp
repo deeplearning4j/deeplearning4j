@@ -57,12 +57,12 @@ NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B, const std::vector<LongTyp
   auto outShape = ShapeUtils::evalShapeForTensorDot(A, B, axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
 
   // check whether permutation is necessary
-   NDArray* aP = permutAt.empty() ? A : new NDArray(A->permute(permutAt, false));
-   NDArray* bP = permutBt.empty() ? B : new NDArray(B->permute(permutBt, false));
+  NDArray* aP = permutAt.empty() ? A : new NDArray(A->permute(permutAt, false));
+  NDArray* bP = permutBt.empty() ? B : new NDArray(B->permute(permutBt, false));
 
   // check whether reshape is necessary
-   NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
-   NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
+  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
+  NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
 
   NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
 
@@ -136,10 +136,10 @@ void MmulHelper::computeNewShapesAndAxes(
 }
 
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c,
-                            const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
-                            std::vector<LongType>& permutAt, std::vector<LongType>& permuteBt,
-                            std::vector<LongType>& permuteCt) {
+void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
+                            const std::vector<LongType>& axes_b, std::vector<LongType>& permutAt,
+                            std::vector<LongType>& permuteBt, std::vector<LongType>& permuteCt,
+                            NDArray* realFinalResult) {
 
   a->printIndexedBuffer("A:");
   b->printIndexedBuffer("B:");
@@ -184,6 +184,11 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c,
       c->dataBuffer()->copyBufferFrom(*copyFromBuff);
     }
   }
+
+  if(realFinalResult != c) {
+    realFinalResult->dataBuffer()->copyBufferFrom(*c->dataBuffer());
+  }
+
 }
 
 
@@ -203,8 +208,8 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   NDArray* bP = permutBt.empty() ? b : new NDArray(b->permute(permutBt, false));
 
   // check whether reshape is necessary
-   NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
-   NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
+  NDArray* aPR = aP->isSameShape(shapeAt) ? aP : new NDArray(aP->reshape(aP->ordering(), shapeAt));
+  NDArray* bPR = bP->isSameShape(shapeAt) ? bP : new NDArray(bP->reshape(bP->ordering(), shapeBt));
 
   std::vector<LongType> requiredCshape = {aPR->sizeAt(0), bPR->sizeAt(1)};
 
@@ -433,8 +438,8 @@ bool MmulHelper::resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX,
-                        const bool transY, double alpha, double beta) {
+void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY, double alpha,
+                        double beta, NDArray* realFinalResult) {
   int xRank = x->rankOf();
   int yRank = y->rankOf();
 
@@ -488,7 +493,8 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX,
 
 
     if(zT != z) {
-     z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
+      z->printIndexedBuffer("Z BEING COPIED FROM");
+      z->dataBuffer()->copyBufferFrom(*zT->dataBuffer(), zT->lengthOf() * zT->sizeOfT());
     }
 
 
@@ -546,10 +552,24 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX,
       delete vB[i];
       delete vC[i];
     }
+
+
   }
 
   if (xT != x) delete xT;
   if (yT != y) delete yT;
+
+
+  if(realFinalResult != nullptr && realFinalResult != z) {
+    printf("Copying buffer result final:\n");
+    fflush(stdout);
+    realFinalResult->dataBuffer()->copyBufferFrom(*z->dataBuffer());
+  } else  {
+        printf("Not copying buffer result final:\n");
+        fflush(stdout);
+        z->printIndexedBuffer("Z matmul result\n");
+  }
+
 }
 }  // namespace sd
 

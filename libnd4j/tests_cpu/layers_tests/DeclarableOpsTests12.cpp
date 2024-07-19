@@ -3325,7 +3325,7 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_1) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-  MmulHelper::matmul(&a, z, &exp, false, false);
+  MmulHelper::matmul(&a, z, &exp, false, false,&exp);
 
   ASSERT_TRUE(exp.equalsTo(b));
 }
@@ -3344,7 +3344,7 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_2) {
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
 
-  MmulHelper::matmul(&a, z, &exp, false, false);
+  MmulHelper::matmul(&a, z, &exp, false, false,&exp);
   ASSERT_TRUE(exp.equalsTo(b));
 }
 
@@ -3361,7 +3361,7 @@ TEST_F(DeclarableOpsTests12, SolveLs_Test_3) {
   auto res = op.evaluate({&a, &b});
   ASSERT_EQ(res.status(), sd::Status::OK);
   auto z = res.at(0);
-  MmulHelper::matmul(&a, z, &exp, false, false);
+  MmulHelper::matmul(&a, z, &exp, false, false,&exp);
   ASSERT_TRUE(exp.equalsTo(b));
 }
 

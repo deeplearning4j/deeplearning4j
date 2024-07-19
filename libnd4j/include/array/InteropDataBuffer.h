@@ -42,7 +42,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
  public:
   bool isConstant = false;
 
-  InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
+  InteropDataBuffer(InteropDataBuffer *dataBuffer, uint64_t length, uint64_t offset);
   InteropDataBuffer(DataBuffer * databuffer);
   InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
   ~InteropDataBuffer() {
@@ -63,8 +63,8 @@ class SD_LIB_EXPORT InteropDataBuffer {
     isConstant = reallyConstant;
     dataBuffer()->markConstant(reallyConstant);
   }
-  uint64_t offset() const;
-  void setOffset(uint64_t offset);
+  uint64_t byteOffset() const;
+  void setByteOffset(uint64_t offset);
 
   void setPrimary(void *ptr, size_t length);
   void setSpecial(void *ptr, size_t length);
@@ -90,6 +90,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
   static void preparePrimaryUse(const std::vector<const InteropDataBuffer *> &writeList,
                                 const std::vector<const InteropDataBuffer *> &readList,
                                 bool synchronizeWritables = false);
+  uint64_t offset() const;
 };
 }  // namespace sd
 

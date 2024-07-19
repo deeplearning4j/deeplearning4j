@@ -103,7 +103,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   }
   // ******* end of input validation ******* //
 
-  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta);
+  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta, z);
 
   return Status::OK;
 }

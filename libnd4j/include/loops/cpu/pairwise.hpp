@@ -95,6 +95,12 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
   auto xEws = shape::elementWiseStride(xShapeInfo);
   auto yEws = shape::elementWiseStride(yShapeInfo);
   auto zEws = shape::elementWiseStride(zShapeInfo);
+  bool allSameOrder = true;
+  if(yShapeInfo != nullptr) {
+    allSameOrder = shape::order(xShapeInfo) == shape::order(yShapeInfo) && shape::order(yShapeInfo) == shape::order(zShapeInfo);
+  } else {
+    allSameOrder = shape::order(xShapeInfo) == shape::order(zShapeInfo);
+  }
 
   if (shape::isScalar(yShapeInfo)) {
     sd::LongType xShapeInfoCast[SD_MAX_RANK];
@@ -108,11 +114,13 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
     } else {
       sd::LongType zShapeInfoCast[SD_MAX_RANK];
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+      sd::LongType zCoords[SD_MAX_RANK];
 
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        shape::index2coords(i, zShapeInfo, zCoords);
+        auto xOffset = shape::getOffset(xShapeInfo, zCoords);
+        auto zOffset = shape::getOffset(zShapeInfo, zCoords);
         z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
       };
     }
@@ -122,70 +130,89 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
   const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
-  if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY
-      && !shape::isViewConst(xShapeInfo) && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
+  if ((kindOfLoop == sd::LoopKind::EWS1 ||
+       kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY
+      && !shape::isViewConst(xShapeInfo) && !shape::isViewConst(yShapeInfo)
+      && !shape::isViewConst(zShapeInfo)
+      && allSameOrder
+       && shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
+      && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    printf("pairwise broadcast case 1\n");
+    fflush(stdout);
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
-             !sameShapesXY) {  // not same shape
+             !sameShapesXY
+             && allSameOrder) {  // not same shape
+    printf("pairwise broadcast case 2\n");
+    fflush(stdout);
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
   } else {
 
-    if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
-        shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo) && !shape::isViewConst(xShapeInfo)
-        &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
+    if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
+        && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)
+        && !shape::isViewConst(xShapeInfo)
+        &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
+        && allSameOrder) {
+      printf("pairwise broadcast case 3\n");
+      fflush(stdout);
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+      sd::LongType zCoords[SD_MAX_RANK];
 
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
-        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        z[offset] = OpType::op(x[offset], y[offset], extraParams);
+        shape::index2coords(i, zShapeInfo, zCoords);
+        auto xOffset = shape::getOffset(xShapeInfo, zCoords);
+        auto yOffset = shape::getOffset(yShapeInfo, zCoords);
+        auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       }
-    } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    } else if ((shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
+                || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo))
+               &&  allSameOrder) {
+      printf("pairwise broadcast case 4\n");
+      fflush(stdout);
       //general case. note we use to do element wise stride here
       //but for some cases of views it doesn't work
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType zCoords[SD_MAX_RANK];
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
-        shape::index2coords(i, xShapeInfo, xCoords);
-        shape::index2coords(i, yShapeInfo, yCoords);
         shape::index2coords(i, zShapeInfo, zCoords);
-
-        auto offset = shape::getOffset(xShapeInfo, xCoords);
-        auto yOffset = shape::getOffset(yShapeInfo, yCoords);
+        auto xOffset = shape::getOffset(xShapeInfo, zCoords);
+        auto yOffset = shape::getOffset(yShapeInfo, zCoords);
         auto zOffset = shape::getOffset(zShapeInfo, zCoords);
-        z[zOffset] = OpType::op(x[offset], y[yOffset], extraParams);
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)
                && !shape::isViewConst(xShapeInfo)
-               && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)) {
+               && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
+               && allSameOrder) {
+      printf("pairwise broadcast case 5\n");
+      fflush(stdout);
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+      sd::LongType zCoords[SD_MAX_RANK];
 
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
-
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto offset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
-        z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
+        shape::index2coords(i, zShapeInfo, zCoords);
+        auto xOffset = shape::getOffset(xShapeInfo, zCoords);
+        auto yOffset = shape::getOffset(yShapeInfo, zCoords);
+        auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       };
     } else {
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
+      printf("pairwise broadcast case 6\n");
+      fflush(stdout);
       sd::LongType zCoords[SD_MAX_RANK];
 
-
       for (sd::LongType i = start; i < stop; i++) {
-        shape::index2coords(i, xShapeInfo, xCoords);
-        shape::index2coords(i, yShapeInfo, yCoords);
         shape::index2coords(i, zShapeInfo, zCoords);
 
-        auto xOffset = shape::getOffset(xShapeInfo, xCoords);
-        auto yOffset = shape::getOffset(yShapeInfo, yCoords);
+        auto xOffset = shape::getOffset(xShapeInfo, zCoords);
+        auto yOffset = shape::getOffset(yShapeInfo, zCoords);
         auto zOffset = shape::getOffset(zShapeInfo, zCoords);
         z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       };

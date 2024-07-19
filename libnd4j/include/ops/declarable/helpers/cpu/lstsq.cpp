@@ -58,11 +58,11 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->shapeInfo(), leftInput->shapeInfo(), true, false);
     // tAtShape[tAtShape.size() - 2] = output->sizeAt(-2);
     NDArray leftOutput('c', tAtShape, output->dataType(), context);
-    MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false);  // Computing A2 = A^T * A
+    MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false, 0, 0, &leftOutput);  // Computing A2 = A^T * A
     // 2. Computing B' = A^T * b
     auto rightOutput = output->ulike();
 
-    MmulHelper::matmul(leftInput, rightInput, &rightOutput, true, false);  // Computing B' = A^T * b
+    MmulHelper::matmul(leftInput, rightInput, &rightOutput, true, false, 0, 0, &rightOutput);  // Computing B' = A^T * b
     // 3. due l2Regularizer = 0, skip regularization ( indeed A' = A2 - l2Regularizer * I)
     auto regularizer = leftOutput.ulike();
     fillRegularizer<T>(regularizer, l2Regularizer);
@@ -94,7 +94,7 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     helpers::qr(context, leftInput, &Q, &R, true);
     // 2. b` = Q^t * b:
     auto rightOutput = rightInput->ulike();
-    MmulHelper::matmul(&Q, rightInput, &rightOutput, true, false);
+    MmulHelper::matmul(&Q, rightInput, &rightOutput, true, false, 0, 0, &rightOutput);
     // 3. Solve triangular system
     helpers::triangularSolveFunctor(context, &R, &rightOutput, false, false, output);
   }

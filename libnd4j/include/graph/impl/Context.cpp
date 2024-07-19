@@ -500,7 +500,7 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeIn
       errorMessage += "Data buffer: " + std::string(dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null") + ". ";
       errorMessage += "Special buffer: " + std::string(dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null") + ". ";
     }
-    errorMessage += "Offset: " + std::to_string(dataBuffer->offset()) + ". ";
+    errorMessage += "Offset: " + std::to_string(dataBuffer->byteOffset()) + ". ";
     errorMessage += "Elements: ";
     for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
       errorMessage += std::to_string(newShapeInfoCast[i]) + ", ";
@@ -537,7 +537,7 @@ void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo,
   NDArray *array;
   if (dataBuffer != nullptr && !shape::isEmptyConst(newShapeInfoCast)) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, LaunchContext::defaultContext(),
-                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
+                        dataBuffer->byteOffset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeInfoCast)));
 
   } else {
@@ -572,7 +572,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
     errorMessage += std::string(" Special buffer: ");
     errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
     errorMessage += std::string(" Offset: ");
-    errorMessage += std::to_string(dataBuffer->offset());
+    errorMessage += std::to_string(dataBuffer->byteOffset());
     //print the elements. we know these are longs
     errorMessage += std::string(" Elements: ");
     for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
@@ -588,7 +588,7 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
   NDArray *array;
   if (dataBuffer != nullptr) {
     array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2, LaunchContext::defaultContext(),
-                        dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
+                        dataBuffer->byteOffset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeCast2)));
   }
 

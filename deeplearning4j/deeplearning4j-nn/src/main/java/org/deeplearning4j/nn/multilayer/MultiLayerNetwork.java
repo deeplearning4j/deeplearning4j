@@ -957,7 +957,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try{
             //if the layer is a pre processor be a bit more flexible with migration, for strict layers
             //throw exception (mainly for performance reasons)
-            mgr.validateArrayLocation(arrayType, array, isPreprocessor, layerIdx > 0);
+            mgr.validateArrayLocation(arrayType, array, isPreprocessor, false);
         } catch (ND4JWorkspaceException e) {
             String layerName = layers[layerIdx].conf().getLayer().getLayerName();
             String clazz;
@@ -1009,6 +1009,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if(input.isAttached()) {
                 //Don't leverage out of async DataSetIterator workspaces
                 workspaceMgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
+            } else {
+                workspaceMgr.setScopedOutFor(INPUT);
             }
 
             if(!clearInputs) {
@@ -1017,7 +1019,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
-        // workspaceMgr.keepOpen(ArrayType.values());
 
         List<INDArray> out = new ArrayList<>();
         input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
@@ -1060,7 +1061,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         ArrayType[] toClose = {
-                ArrayType.ACTIVATIONS,
+                ACTIVATIONS,
                 FF_WORKING_MEM,
                 BP_WORKING_MEM,
                 RNN_FF_LOOP_WORKING_MEM,
@@ -1958,6 +1959,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //Open activation gradients WS *then* BP working memory, so BP working memory is opened last for use in layers
                 wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
                 try (MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)) {
+
+                    //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
+                    // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
+                    // workspace may be set to the incorrect one
+                    wsActGradTemp.setPreviousWorkspace(initialWorkspace);
+                    wsBPWorking.setPreviousWorkspace(initialWorkspace);
 
                     INDArray eps = (i == layers.length - 1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
 

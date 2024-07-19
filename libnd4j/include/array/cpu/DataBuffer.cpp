@@ -205,23 +205,75 @@ void DataBuffer::migrate() {}
 
 
 template <typename T>
-void _printHostBuffer(DataBuffer *buffer) {
+void _printHostBuffer(DataBuffer* buffer, long offset) {
   sd::LongType len = buffer->getNumElements();
   auto buff = buffer->template primaryAsT<T>();
-  sd_printf("Host buffer: address %p ",buffer->primary());
-  for(int i = 0; i < len; i++) {
-    sd_printf("%f ",(double) buff[i]);
+
+
+  sd::LongType limit = len;
+  if (limit == -1 || limit >= buffer->getNumElements()) {
+    limit = buffer->getNumElements();
   }
 
-  sd_printf("\n",0);
+  const char* msg = nullptr;
+  if (msg != nullptr) {
+    printf("%s: [", msg);
+  } else {
+    printf("[");
+  }
+
+  sd::DataType dataType = buffer->getDataType();
+  auto baseOffset = offset;
+  if (dataType == sd::DataType::DOUBLE || dataType == sd::DataType::FLOAT32) {
+    for (sd::LongType e = baseOffset; e < limit; e++) {
+      if (e) printf(", ");
+      if (dataType == sd::DataType::DOUBLE) {
+        printf("%.15f", buff[e]);
+      } else {
+        printf("%.15f", static_cast<float>(buff[e]));
+      }
+    }
+  } else if (dataType == sd::DataType::INT64 || dataType == sd::DataType::UINT64 ||
+             dataType == sd::DataType::INT32 || dataType == sd::DataType::UINT32) {
+    for (sd::LongType e = baseOffset; e < limit; e++) {
+      if (dataType == sd::DataType::INT64 || dataType == sd::DataType::UINT64) {
+        printf("%lld", static_cast<long long>(buff[e]));
+      } else {
+        printf("%d", static_cast<int>(buff[e]));
+      }
+
+      if (e < limit - 1) {
+        printf(", ");
+      }
+    }
+  } else if (dataType == sd::DataType::BOOL) {
+    for (sd::LongType e = baseOffset; e < limit; e++) {
+      if (static_cast<bool>(buff[e])) {
+        printf("true");
+      } else {
+        printf("false");
+      }
+
+      if (e < limit - 1) {
+        printf(", ");
+      }
+    }
+  } else if (dataType == sd::DataType::UTF8 || dataType == sd::DataType::UTF16 ||
+             dataType == sd::DataType::UTF32) {
+    for (sd::LongType e = baseOffset; e < limit; e++) {
+      printf("\"%s\"", reinterpret_cast<const char*>(&buff[e]));
+      if (e < limit - 1) {
+        printf(", ");
+      }
+    }
+  }
+
+  printf("]\n");
+  fflush(stdout);
 }
-
-
-
-
-void DataBuffer::printHostDevice() {
+void DataBuffer::printHostDevice(long offset) {
   auto xType = getDataType();
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(this,offset),SD_COMMON_TYPES_ALL);
 
 }
 

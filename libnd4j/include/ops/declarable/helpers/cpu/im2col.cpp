@@ -28,25 +28,22 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType kH, const LongType kW,
-                    const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
-                    const NDArray& arrZeroPadVal) {
+static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType kH,
+                    const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW,
+                    const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
   // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
   if(input.rankOf() != 4) {
-    std::string errorMessage;
-    errorMessage += "ops::helpers::col2im: input array must have rank = 4, but got rank = ";
-    errorMessage += std::to_string(input.rankOf());
-    errorMessage += " instead !";
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("ops::helpers::im2col: input array must have rank = 4");
   }
 
   if(output.rankOf() != 6) {
-    std::string errorMessage;
-    errorMessage += "ops::helpers::col2im: output array must have rank = 6, but got rank = ";
-    errorMessage += std::to_string(output.rankOf());
-    errorMessage += " instead !";
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("ops::helpers::im2col: output array must have rank = 6");
   }
+
+  input.printBufferRaw("INPUT IM2COL BUFFER:");
+
+  input.printIndexedBuffer("IM2COL INPUT:");
+
 
   auto imBuff = static_cast<T const*>(input.buffer());
   auto colBuff = static_cast<T*>(output.buffer());
@@ -76,10 +73,31 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
+  //print all parameters
+  printf("bS: %d\n", bS);
+  printf("iC: %d\n", iC);
+  printf("iH: %d\n", iH);
+  printf("iW: %d\n", iW);
+  printf("oH: %d\n", oH);
+  printf("oW: %d\n", oW);
+  printf("colStride0: %d\n", colStride0);
+  printf("colStride1: %d\n", colStride1);
+  printf("colStride2: %d\n", colStride2);
+  printf("colStride3: %d\n", colStride3);
+  printf("colStride4: %d\n", colStride4);
+  printf("colStride5: %d\n", colStride5);
+  printf("imStride0: %d\n", imStride0);
+  printf("imStride1: %d\n", imStride1);
+  printf("imStride2: %d\n", imStride2);
+  printf("imStride3: %d\n", imStride3);
+
+  printf("bS: %lld, iC: %lld, iH: %lld, iW: %lld, oH: %lld, oW: %lld\n", bS, iC, iH, iW, oH, oW);
+  printf("colStride: %lld, %lld, %lld, %lld, %lld, %lld\n", colStride0, colStride1, colStride2, colStride3, colStride4, colStride5);
+  printf("imStride: %lld, %lld, %lld, %lld\n", imStride0, imStride1, imStride2, imStride3);
+  fflush(stdout);
+
   auto func = PRAGMA_THREADS_FOR_2D {
-    T* col;
-    T const* im;
-    sd::LongType imRow, imCol;
+    sd::LongType imRow, imCol, colIndex, imIndex;
 
     for (auto b = start_x; b < stop_x; b += inc_x) {
       for (auto colH = start_y; colH < stop_y; colH += inc_y) {
@@ -90,16 +108,21 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
                 imRow = (-pH + kRow * dH) + colH * sH;
                 imCol = (-pW + kCol * dW) + colW * sW;
 
-                col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
-                      colH * colStride4 + colW * colStride5;
+                colIndex = b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 +
+                           colH * colStride4 + colW * colStride5;
+
                 if (static_cast<LongType>(imRow) >= static_cast<LongType>(iH) ||
                     static_cast<LongType>(imRow) < 0 ||
                     static_cast<LongType>(imCol) >= static_cast<LongType>(iW) ||
-                    static_cast<LongType>(imCol) < 0)
-                  *col = zeroPadVal;
-                else {
-                  im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
-                  *col = static_cast<T>(*im);
+                    static_cast<LongType>(imCol) < 0) {
+                  if (colIndex < output.lengthOf()) {
+                    colBuff[colIndex] = zeroPadVal;
+                  }
+                } else {
+                  imIndex = b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                  if (colIndex < output.lengthOf() && imIndex < input.lengthOf()) {
+                    colBuff[colIndex] = static_cast<T>(imBuff[imIndex]);
+                  }
                 }
               }
             }
@@ -110,10 +133,12 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   };
 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
+  output.printBufferRaw("IM2COL OUTPUT BUFFER:");
 }
 
-void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW, const LongType sH,
-            const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
+void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW,
+            const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
+            const LongType dW, const NDArray& arrZeroPadVal) {
 
   BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal),
                         SD_FLOAT_TYPES);

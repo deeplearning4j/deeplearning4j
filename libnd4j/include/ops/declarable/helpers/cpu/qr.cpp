@@ -82,17 +82,17 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     e /= normE;
     q[k] = vmul<T>(e, M);
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, &qQ, false, false);
+    MmulHelper::matmul(&q[k], &z, &qQ, false, false, 0, 0, &qQ);
     z = std::move(qQ);
   }
   resQ.assign(q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false);  // use mmulMxM?
+    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false, 0, 0, &tempResQ);  // use mmulMxM?
     resQ = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, &resR, false, false);
+  MmulHelper::matmul(&resQ, matrix, &resR, false, false, 0, 0, &resR);
   // resR *= -1.f;
   resQ.transposei();
   if (fullMatricies) {

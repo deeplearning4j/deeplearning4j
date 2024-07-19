@@ -3214,7 +3214,9 @@ void _printHostBuffer(OpaqueDataBuffer *buffer) {
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
   sd_printf("Data type %s: ", DataTypeUtils::asString(xType).c_str());
   sd_printf("Host buffer: ",0);
-  for(int i = 0; i < len; i++) {
+  sd_printf("Offset %lld\n", buffer->byteOffset());
+  auto startOffset = buffer->byteOffset() / sizeof(T);
+  for(int i = startOffset; i < len; i++) {
     sd_printf("%f ",(double) buff[i]);
   }
 
@@ -3364,7 +3366,7 @@ void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, LongType elements) {
 }
 
 OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, LongType length, LongType offset) {
-  return new OpaqueDataBuffer(*dataBuffer, length, offset);
+  return new OpaqueDataBuffer(dataBuffer, length, offset);
 }
 
 

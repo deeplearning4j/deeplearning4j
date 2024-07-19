@@ -76,7 +76,6 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
     if (threadIdx.x == 0) {
       x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo)]];
       z = reinterpret_cast<X*>(vz) + zOffsets[i];
-      printf("gather len is %d processing block %d at i %d\n",len,blockIdx.x,i);
     }
     __syncthreads();
 
@@ -84,7 +83,6 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
     for (LongType j = threadIdx.x; j < len; j += blockDim.x) {
       auto zIndex = shape::getIndexOffset(j, zShapeInfo);
       auto xIndex = shape::getIndexOffset(j, xShapeInfo);
-      printf("Setting x index at %d and z index %d at j %d\n",xIndex,zIndex,j);
       z[zIndex] = x[xIndex];
     }
     __syncthreads();

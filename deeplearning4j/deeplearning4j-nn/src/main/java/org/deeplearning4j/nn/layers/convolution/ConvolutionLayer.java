@@ -85,16 +85,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             epsilon = epsilon.castTo(dataType);
 
 
-        long miniBatch = input.size(0);
-        long inH = input.size(2);
-        long inW =  input.size(3);
-
-        long outDepth = weights.size(0);
-        long inDepth = weights.size(1);
-        long kH = weights.size(2);
-        long kW =  weights.size(3);
-
-        long[] dilation = layerConf().getDilation();
         long[] kernel = layerConf().getKernelSize();
         long[] strides = layerConf().getStride();
 
@@ -109,7 +99,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
 
-        delta = afn.backprop(lastZ, epsilon).getFirst(); //TODO handle activation function params
+        delta = afn.backprop(workspaceMgr.dup(ArrayType.BP_WORKING_MEM,lastZ), epsilon).getFirst(); //TODO handle activation function params
 
 
 
@@ -225,27 +215,30 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 .dataFormat(format.name())
                 .build();
 
+        Nd4j.getEnvironment().setEnableBlas(false);
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
-        /**
-         * TODO: need to figure out how to emulate the
-         * shape info of the reference java implementation.
-         *
-         * We have the correct shape here but the wrong underlying data layout.
-         * The data layout of the databuffer itself isn't correct
-         * if we specify f ordering.
-         * Directly calling assign in c++ doesn't seem to work either.
-         *
-         */
+
         INDArray z  = Nd4j.cnn().conv2d(input,weights,bias,config);
         INDArray im2col = ctx.getIntermediateResult(0);
+
+
         Nd4j.getExecutioner().clearOpContext();
-        long outH = im2col.size(-2);
-        long outW = im2col.size(-1);
+        long outH = im2col.size(1);
+        long outW = im2col.size(2);
         INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
-        this.lastZ = z.dup();
-        this.im2col2d = im2col2d.dup();
-        return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,z), forBackprop ? im2col2d : null);
+        try(MemoryWorkspace ws1 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            /**
+             * TODO: dup seems to change underlyuing buffer here.
+             * We need to preserve  everything about the buffer.
+             */
+            this.lastZ = z.dup();
+            this.im2col2d = im2col2d.dup();
+        }
+
+
+        INDArray leveragedRet = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, z);
+        return new Pair<>(leveragedRet, forBackprop ? im2col2d : null);
     }
 
     @Override

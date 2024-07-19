@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-@Disabled("Fails on gpu, to be revisited")
 public class ConvDataFormatTests extends BaseDL4JTest {
 
 
@@ -897,17 +896,17 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
         System.out.println("Net 1 " + tc.net1.summary());
         INDArray l0_1 = tc.net1.feedForward(inNCHW).get(tc.testLayerIdx + 1);
-        System.out.println(l0_1.toStringFull());;
         System.out.println("Net 3  " + tc.net3.summary());
         INDArray l0_3 = tc.net3.feedForward(inNHWC).get(tc.testLayerIdx + 1);
-        System.out.println(l0_3.toStringFull());;
         INDArray l0_2 = tc.net2.feedForward(inNCHW).get(tc.testLayerIdx + 1);
         INDArray l0_4 = tc.net4.feedForward(inNHWC).get(tc.testLayerIdx + 1);
 
         assertEquals(l0_1, l0_2,tc.msg);
         if(l0_1.rank() == 4) {
-            assertEquals(l0_1, l0_3.permute(0, 3, 1, 2),tc.msg);
-            assertEquals(l0_1, l0_4.permute(0, 3, 1, 2),tc.msg);
+            INDArray l0_3Permuted = l0_3.permute(0, 3, 1, 2);
+            assertEquals(l0_1, l0_3Permuted,tc.msg);
+            INDArray l0_4Permuted = l0_4.permute(0, 3, 1, 2);
+            assertEquals(l0_1, l0_4Permuted,tc.msg);
         } else {
             assertEquals(l0_1, l0_3,tc.msg);
             assertEquals( l0_1, l0_4,tc.msg);

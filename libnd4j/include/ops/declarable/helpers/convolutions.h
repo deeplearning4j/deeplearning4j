@@ -50,21 +50,21 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType outputWidth(const LongType *inputShapeInfo,bool nchw) {
     if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 3);
+      return shape::sizeAt(inputShapeInfo, -1);
     } else {
-      return shape::sizeAt(inputShapeInfo, 1);
+      return shape::sizeAt(inputShapeInfo, -2);
     }
   }
 
   static inline LongType inputWidth(const LongType *inputShapeInfo,bool nchw) {
-    if(nchw) {
-      return shape::sizeAt(inputShapeInfo, 3);
-    } else {
-      return shape::sizeAt(inputShapeInfo, 2);
-    }
+    return outputWidth(inputShapeInfo,nchw);
   }
 
   static inline LongType inputHeight(const LongType *inputShapeInfo,bool nchw) {
+   //time series: this will always be 1.
+    if(shape::rank(inputShapeInfo) < 4) {
+      return 1;
+    }
     if(nchw) {
       return shape::sizeAt(inputShapeInfo, 2);
     } else {
@@ -74,11 +74,11 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType inChannels(const LongType* inputShapeInfo, int weightFormat) {
     if (weightFormat == 0 ) {  // [kH, kW, iC, oC] or
-      return shape::sizeAt(inputShapeInfo, 2);
+      return shape::sizeAt(inputShapeInfo, -2);
     } else if(weightFormat == 1) { //[oC, iC, kH, kW]
-      return shape::sizeAt(inputShapeInfo, 1);
+      return shape::sizeAt(inputShapeInfo, -2);
     } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
-      return shape::sizeAt(inputShapeInfo, 3);
+      return shape::sizeAt(inputShapeInfo, -1);
     } else {
       THROW_EXCEPTION("Unsupported weight format");
     }
@@ -86,7 +86,7 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static inline LongType outChannels(const LongType* inputShapeInfo, int weightFormat) {
     if (weightFormat == 0) {  // [kH, kW, iC, oC]
-      return shape::sizeAt(inputShapeInfo, 3);
+      return shape::sizeAt(inputShapeInfo, -1);
     } else if (weightFormat == 1 || weightFormat == 2) {  // [oC, iC, kH, kW] or [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, 0);
     } else {
@@ -140,16 +140,46 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   static inline LongType calcOutDimConv(const LongType inputDim, const LongType kernelDim, const LongType stride,
                                         const LongType padding, const LongType dilation, const int paddingMode) {
 
+
+    /**
+     * Reference:
+     * def conv_output_length(input_length, filter_size, padding, stride, dilation=1):
+    """Determines output length of a convolution given input length.
+
+    Args:
+        input_length: integer.
+        filter_size: integer.
+        padding: one of "same", "valid", "full", "causal"
+        stride: integer.
+        dilation: dilation rate, integer.
+
+    Returns:
+        The output length (integer).
+    """
+    if input_length is None:
+        return None
+    assert padding in {"same", "valid", "full", "causal"}
+    dilated_filter_size = filter_size + (filter_size - 1) * (dilation - 1)
+    if padding in ["same", "causal"]:
+        output_length = input_length
+    elif padding == "valid":
+        output_length = input_length - dilated_filter_size + 1
+    elif padding == "full":
+        output_length = input_length + dilated_filter_size - 1
+    return (output_length + stride - 1) // stride
+
+
+
+     */
     const LongType dilatedKernelDim = kernelDim + (kernelDim - 1) * (dilation - 1);
-    LongType outputLength;
+    LongType outputLength = 0;
 
     if (paddingMode == 0) {  // valid
-      outputLength = inputDim + 2 * padding - dilatedKernelDim + 1;
-    } else if (paddingMode == 1) {  // same
+      outputLength = inputDim - dilatedKernelDim + 1;
+    } else if (paddingMode == 1 || paddingMode == 2) {  // same
       outputLength = inputDim;
-    } else {  // causal
-      const LongType causalPadding = (kernelDim - 1) * dilation;
-      outputLength = inputDim + causalPadding - dilatedKernelDim + 1;
+    } else {
+      THROW_EXCEPTION("Invalid padding type");
     }
 
     LongType outputDim = sd::math::sd_floordiv<LongType,LongType,LongType>(outputLength + stride - 1, stride);

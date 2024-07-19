@@ -509,7 +509,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *   returns buffer offset (offset is the same for host and device buffers)
    */
-  SD_INLINE LongType bufferOffset() const;
+  SD_INLINE LongType offset() const;
 
   /**
    *  checks if array has padded buffer
@@ -605,14 +605,6 @@ class SD_LIB_EXPORT NDArray {
   void printShapeInfo(const char *msg = nullptr) const;
 
   /**
-   *  prints buffer elements
-   *  msg - message to print out
-   *  limit - number of array elements to print out
-   *  sync - if true check whether host buffer is actual, if it is not then make it so
-   */
-  void printBuffer(const char *msg = nullptr, LongType limit = -1, const bool sync = true) const;
-
-  /**
    *  prints buffer elements raw without using
    *  shape information but instead just the databuffer itself.
    *  msg - message to print out
@@ -620,11 +612,6 @@ class SD_LIB_EXPORT NDArray {
    *  sync - if true check whether host buffer is actual, if it is not then make it so
    */
   void printBufferRaw(const char *msg = nullptr, sd::LongType limit = -1, const bool sync = true) const;
-
-  /**
-   * print element by element consequently in a way they (elements) are stored in physical memory
-   */
-  void printLinearBuffer() const;
 
   /**
    *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking
@@ -2056,15 +2043,7 @@ const void *NDArray::buffer() const {
   if(_buffer == nullptr || _buffer->primary() == nullptr) {
     return nullptr;
   }
-  if(bufferOffset() == 48) {
-    printf("Creating buffer with offset %lld and buffer length is %lld\n", bufferOffset() * sizeOfT(),_buffer->getNumElements());
-    Printer p;
-    p.print(creationTrace,stdout);
-    printf("===============================================================================================================\n");
-    fflush(stdout);
-  }
-
-  return  static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT());
+  return  static_cast<int8_t *>(_buffer->primary()) + (offset() * sizeOfT());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2073,15 +2052,8 @@ void *NDArray::buffer() {
   if(_buffer == nullptr || _buffer->primary() == nullptr) {
     return nullptr;
   }
-  if(bufferOffset() == 48) {
-    printf("2 Creating buffer with offset %lld and buffer length is %lld\n", bufferOffset() * sizeOfT(),_buffer->getNumElements());
-    Printer p;
-    p.print(creationTrace,stdout);
-    printf("===============================================================================================================\n");
-    fflush(stdout);
-  }
 
-  return  static_cast<int8_t *>(_buffer->primary()) + (bufferOffset() * sizeOfT());
+  return  static_cast<int8_t *>(_buffer->primary()) + (offset() * sizeOfT());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2107,7 +2079,9 @@ const LongType *NDArray::specialShapeInfo() const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-LongType NDArray::bufferOffset() const { return _offset; }
+LongType NDArray::offset() const { return _offset; }
+
+
 
 ////////////////////////////////////////////////////////////////////////
 bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }

@@ -121,17 +121,17 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     e /= normE;
     q[k] = vmul<T>(context, e, M);
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, &qQ, false, false);
+    MmulHelper::matmul(&q[k], &z, &qQ, false, false,&qQ);
     z = std::move(qQ);
   }
-  resQ.assign(q[0]);  //
-                      //        MmulHelper::matmul(&q[0], matrix, &resR, false, false);
+  resQ.assign(q[0]);
+
   for (int i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false);
+    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false,&tempResQ);
     resQ = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, &resR, false, false);
+  MmulHelper::matmul(&resQ, matrix, &resR, false, false,&resR);
   // resR *= -1.f;
   resQ.transposei();
 

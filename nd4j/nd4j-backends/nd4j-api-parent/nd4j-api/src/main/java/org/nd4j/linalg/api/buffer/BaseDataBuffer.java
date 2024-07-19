@@ -124,6 +124,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public OpaqueDataBuffer opaqueBuffer() {
+        if(offset > 0) {
+            return ptrDataBuffer.createView(length * elementSize,offset * elementSize);
+        }
         return ptrDataBuffer;
     }
 

@@ -1889,7 +1889,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Nd4j.getCompressor().autoDecompress(this);
 
-        val z = Nd4j.create(this.dataType(), this.shape(),order);
+        val z = Nd4j.create(data().dup(), shape(), stride(), offset(), order);
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayMetaData metaData = NDArrayMetaData.from(this);
             NDArrayEvent event = NDArrayEvent.builder()
@@ -1901,7 +1901,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             z.addEvent(event);
 
         }
-        z.assign(this);
         return z;
     }
 
