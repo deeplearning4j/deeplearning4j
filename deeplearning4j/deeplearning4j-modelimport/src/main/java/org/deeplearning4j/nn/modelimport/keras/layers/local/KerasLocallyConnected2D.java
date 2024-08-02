@@ -85,7 +85,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         hasBias = KerasLayerUtils.getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+        long[] dilationRate = getDilationRateLong(layerConfig, 2, conf, false);
 
         IWeightInit init = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -102,10 +102,10 @@ public class KerasLocallyConnected2D extends KerasConvolution {
                 .weightInit(conf.getKERAS_PARAM_NAME_W(), init)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
         if (padding != null)
             builder.padding(padding);
         if (dilationRate != null)
@@ -142,7 +142,7 @@ public class KerasLocallyConnected2D extends KerasConvolution {
 
         // Override input/output shape and input channels dynamically. This works since getOutputType will always
         // be called when initializing the model.
-        ((LocallyConnected2D) this.layer).setInputSize(new int[] {(int) convType.getHeight(),(int) convType.getWidth()});
+        ((LocallyConnected2D) this.layer).setInputSize(new long[] {convType.getHeight(),convType.getWidth()});
         ((LocallyConnected2D) this.layer).setNIn(convType.getChannels());
         ((LocallyConnected2D) this.layer).computeOutputSize();
 

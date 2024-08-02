@@ -21,13 +21,10 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
@@ -97,12 +94,13 @@ public class KerasSequentialModel extends KerasModel {
         // "config" is now an object containing a "name" and "layers", the latter contain the same data as before.
         // This change only affects Sequential models.
         List<Object> layerList;
-        try {
+        if(modelConfig.get(config.getModelFieldConfig()) instanceof List) {
             layerList = (List<Object>) modelConfig.get(config.getModelFieldConfig());
-        } catch (Exception e) {
+        } else {
             HashMap layerMap = (HashMap<String, Object>) modelConfig.get(config.getModelFieldConfig());
             layerList =  (List<Object>) layerMap.get("layers");
         }
+
 
         Pair<Map<String, KerasLayer>, List<KerasLayer>> layerPair =
                 prepareLayers(layerList);
@@ -184,7 +182,7 @@ public class KerasSequentialModel extends KerasModel {
             modelBuilder.updater(optimizer);
         }
 
-        NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
+        ListBuilder listBuilder = modelBuilder.list();
         //don't forcibly over ride for keras import
         listBuilder.overrideNinUponBuild(false);
         /* Add layers one at a time. */

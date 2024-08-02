@@ -80,7 +80,7 @@ public class KerasDeconvolution3D extends KerasConvolution {
 
         hasBias = KerasLayerUtils.getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 3, conf, false);
+        long[] dilationRate = getDilationRateLong(layerConfig, 3, conf, false);
 
         IWeightInit init = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -97,10 +97,10 @@ public class KerasDeconvolution3D extends KerasConvolution {
                 .dataFormat(KerasConvolutionUtils.getCNN3DDataFormatFromConfig(layerConfig,conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 3, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 3, conf, kerasMajorVersion);
+                .stride(getStrideFromConfigLong(layerConfig, 3, conf));
+        long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 3, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

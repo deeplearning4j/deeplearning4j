@@ -67,9 +67,9 @@ public class KerasPooling2D extends KerasLayer {
                 .dropOut(this.dropout)
                 .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .convolutionMode(KerasConvolutionUtils.getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
-                .stride(KerasConvolutionUtils.getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = KerasConvolutionUtils.getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
+                .stride(KerasConvolutionUtils.getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = KerasConvolutionUtils.getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();

@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.getPaddingFromConfigLong;
 
 @Slf4j
 @Data
@@ -63,7 +64,7 @@ public class KerasCropping2D extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         String croppingField = conf.getLAYER_FIELD_CROPPING();
-        int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 2);
+        long[] cropping = getPaddingFromConfigLong(layerConfig, conf, croppingField, 2);
         Cropping2D.Builder builder = new Cropping2D.Builder(cropping)
                 .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .name(this.layerName).dropOut(this.dropout);
