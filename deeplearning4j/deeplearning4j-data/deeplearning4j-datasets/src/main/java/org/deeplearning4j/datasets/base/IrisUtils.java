@@ -46,7 +46,7 @@ public class IrisUtils {
     public static List<DataSet> loadIris(int from, int to) throws IOException {
         File rootDir = DL4JResources.getDirectory(ResourceType.DATASET, "iris");
         File irisData = new File(rootDir, "iris.dat");
-        if(!irisData.exists()){
+        if(!irisData.exists()) {
             URL url = DL4JResources.getURL(IRIS_RELATIVE_URL);
             Downloader.download("Iris", url, irisData, MD5, 3);
         }
@@ -57,7 +57,7 @@ public class IrisUtils {
             lines = IOUtils.readLines(is);
         }
         List<DataSet> list = new ArrayList<>();
-        INDArray ret = Nd4j.ones(Math.abs(to - from), 4);
+        INDArray ret = to - from > 1 ? Nd4j.ones(Math.abs(to - from), 4) : Nd4j.ones( 4);
         double[][] outcomes = new double[lines.size()][3];
         int putCount = 0;
 
@@ -74,7 +74,7 @@ public class IrisUtils {
         }
 
         for (int i = 0; i < ret.rows(); i++) {
-            DataSet add = new DataSet(ret.getRow(i, true), Nd4j.create(outcomes[from + i], new long[]{1,3}));
+            DataSet add = new DataSet(ret.getRow(i, false), Nd4j.create(outcomes[from + i], 3));
             list.add(add);
         }
         return list;

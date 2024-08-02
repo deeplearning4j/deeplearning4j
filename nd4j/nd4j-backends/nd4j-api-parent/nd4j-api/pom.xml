@@ -96,6 +96,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- Thi sis to redirect jackson logging to slf4j-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
         <!-- Shaded version of Jackson -->
         <dependency>
             <groupId>org.nd4j</groupId>

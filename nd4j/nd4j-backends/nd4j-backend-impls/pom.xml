@@ -171,6 +171,7 @@
                <activeByDefault>false</activeByDefault>
            </activation>
             <modules>
+                <module>../../../libnd4j</module>
                 <module>nd4j-native</module>
                 <module>nd4j-native-preset</module>
                 <module>nd4j-native-platform</module>
@@ -181,13 +182,8 @@
         </profile>
         <profile>
             <id>cuda</id>
-            <activation>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>cuda</value>
-                </property>
-            </activation>
             <modules>
+                <module>../../../libnd4j</module>
                 <module>nd4j-cuda</module>
                 <module>nd4j-cuda-preset</module>
                 <module>nd4j-cuda-platform</module>
