@@ -81,7 +81,7 @@ public class KerasConvolution2D extends KerasConvolution {
 
         hasBias = KerasLayerUtils.getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = KerasConvolutionUtils.getDilationRate(layerConfig, 2, conf, false);
+        long[] dilationRate = KerasConvolutionUtils.getDilationRateLong(layerConfig, 2, conf, false);
 
         IWeightInit init = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -98,10 +98,10 @@ public class KerasConvolution2D extends KerasConvolution {
                 .dataFormat(dimOrder == KerasLayer.DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(KerasConvolutionUtils.getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
-                .stride(KerasConvolutionUtils.getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = KerasConvolutionUtils.getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(KerasConvolutionUtils.getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = KerasConvolutionUtils.getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)
