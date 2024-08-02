@@ -151,6 +151,7 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
+
   sd::LongType *permute = new sd::LongType[4];
   permute[0] = 2;
   permute[1] = 3;
@@ -271,8 +272,8 @@ DECLARE_SHAPE_FN(conv2d_bp) {
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? INT_ARG(9) : 0;  // INT_ARG(9): 0-NCHW, 1-NHWC
   LongType wFormat = block.getIArguments()->size() > 10
-                         ? INT_ARG(10)
-                         : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                     ? INT_ARG(10)
+                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
   //normally nchw is 0 and 1 being passed in, we're using it as a boolean here
   //so we want it to be whether nchw is 0 or not.
   isNCHW = isNCHW == 0;
@@ -314,17 +315,41 @@ DECLARE_SHAPE_FN(conv2d_bp) {
 
   }
 
-  auto gradIshapeInfo =
-      ShapeBuilders::copyShapeInfoAndType(inputShapeInfo, gradOShapeInfo, false, block.getWorkspace());
+  sd::LongType * strideCalcShapeGradI = new sd::LongType[shape::rank(inputShapeInfo)];
+  strideCalcShapeGradI[0] = iC;
+  strideCalcShapeGradI[1] = bS;
+  strideCalcShapeGradI[2] = iH;
+  strideCalcShapeGradI[3] = iW;
+
+  sd::LongType *strides = new sd::LongType[4];
+  sd::LongType *permute = new sd::LongType[4];
+  permute[0] = 1;
+  permute[1] = isNCHW ? 0 : 2;
+  permute[2] = isNCHW ? 2 : 3;
+  permute[3] = isNCHW ? 3 : 0;
+  shape::calcStrides(strideCalcShapeGradI,shape::rank(inputShapeInfo),strides);
+  shape::doPermuteSwap(4, strideCalcShapeGradI, permute);
+  shape::doPermuteSwap(4, strides, permute);
+  auto shapeDesc = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
+                                                  'c',
+                                                  4,
+                                                  strideCalcShapeGradI,
+                                                  block.getWorkspace(),
+                                                  false);
+  shape::setStride(shapeDesc,strides);
+  auto gradIshapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeDesc, true);
+  RELEASE(strides,block.getWorkspace());
+  RELEASE(strideCalcShapeGradI,block.getWorkspace());
+  RELEASE(permute,block.getWorkspace());
   auto gradWshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
   if (biasShapeInfo) {
     auto gradBshapeInfo =
         ShapeBuilders::copyShapeInfoAndType(biasShapeInfo, gradOShapeInfo, false, block.getWorkspace());
-    return SHAPELIST(CONSTANT(gradIshapeInfo), CONSTANT(gradWshapeInfo), CONSTANT(gradBshapeInfo));
+    return SHAPELIST(gradIshapeInfo, CONSTANT(gradWshapeInfo), CONSTANT(gradBshapeInfo));
   }
 
-  return SHAPELIST(CONSTANT(gradIshapeInfo), CONSTANT(gradWshapeInfo));
+  return SHAPELIST(gradIshapeInfo, CONSTANT(gradWshapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////////////

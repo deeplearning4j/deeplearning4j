@@ -73,29 +73,6 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
-  //print all parameters
-  printf("bS: %d\n", bS);
-  printf("iC: %d\n", iC);
-  printf("iH: %d\n", iH);
-  printf("iW: %d\n", iW);
-  printf("oH: %d\n", oH);
-  printf("oW: %d\n", oW);
-  printf("colStride0: %d\n", colStride0);
-  printf("colStride1: %d\n", colStride1);
-  printf("colStride2: %d\n", colStride2);
-  printf("colStride3: %d\n", colStride3);
-  printf("colStride4: %d\n", colStride4);
-  printf("colStride5: %d\n", colStride5);
-  printf("imStride0: %d\n", imStride0);
-  printf("imStride1: %d\n", imStride1);
-  printf("imStride2: %d\n", imStride2);
-  printf("imStride3: %d\n", imStride3);
-
-  printf("bS: %lld, iC: %lld, iH: %lld, iW: %lld, oH: %lld, oW: %lld\n", bS, iC, iH, iW, oH, oW);
-  printf("colStride: %lld, %lld, %lld, %lld, %lld, %lld\n", colStride0, colStride1, colStride2, colStride3, colStride4, colStride5);
-  printf("imStride: %lld, %lld, %lld, %lld\n", imStride0, imStride1, imStride2, imStride3);
-  fflush(stdout);
-
   auto func = PRAGMA_THREADS_FOR_2D {
     sd::LongType imRow, imCol, colIndex, imIndex;
 

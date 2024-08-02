@@ -33,27 +33,17 @@ template <typename T>
 static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW,
                     const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   if(input->rankOf() != 6) {
-    std::string errorMessage;
-    errorMessage += "ops::helpers::col2im: input array must have rank = 6, but got rank = ";
-    errorMessage += std::to_string(input->rankOf());
-    errorMessage += " instead !";
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("ops::helpers::col2im: input array must have rank = 6");
   }
 
   if(output->rankOf() != 4) {
-    std::string errorMessage;
-    errorMessage += "ops::helpers::col2im: output array must have rank = 4, but got rank = ";
-    errorMessage += std::to_string(output->rankOf());
-    errorMessage += " instead !";
-    THROW_EXCEPTION(errorMessage.c_str());
+    THROW_EXCEPTION("ops::helpers::col2im: output array must have rank = 4");
   }
 
-
-  auto imBuff = output->bufferAsT<T>();
   auto colBuff = input->bufferAsT<T>();
-
-  auto imShapeBuffer = output->shapeInfo();
+  auto imBuff = output->bufferAsT<T>();
   auto colShapeBuffer = input->shapeInfo();
+  auto imShapeBuffer = output->shapeInfo();
   auto colShape = shape::shapeOf(colShapeBuffer);
   auto colStride = shape::stride(colShapeBuffer);
   auto imShape = shape::shapeOf(imShapeBuffer);
@@ -78,35 +68,31 @@ static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* o
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto b = start; b < stop; b++) {
-      T* im0 = imBuff + b * imStride0;
-      T const* col4 = colBuff + b * colStride0;
-      int col4Idx = b * colStride0;
-      for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
-        T const* col5 = col4;
-        int col5Idx = col4Idx;
-        for (int colW = 0; colW < oW; ++colW, col5 += colStride5,col5Idx += colStride5) {
-          T const* col1 = col5;
-          T* im1 = im0;
-          for (int c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
+      LongType im0Offset = b * imStride0;
+      LongType col4Offset = b * colStride0;
+      for (int colH = 0; colH < oH; ++colH) {
+        LongType col5Offset = col4Offset + colH * colStride4;
+        for (int colW = 0; colW < oW; ++colW) {
+          LongType col1Offset = col5Offset + colW * colStride5;
+          LongType im1Offset = im0Offset;
+          for (int c = 0; c < iC; ++c) {
             int imRow = (-pH + colH * sH);
-            T const* col2 = col1;
-            T* im2 = im1 + imRow * imStride2;
-            for (int kRow = 0; kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH * imStride2) {
+            LongType col2Offset = col1Offset + c * colStride1;
+            LongType im2Offset = im1Offset + c * imStride1 + imRow * imStride2;
+            for (int kRow = 0; kRow < kH; ++kRow) {
               int imCol = -pW + colW * sW;
-              T const* col3 = col2;
-              T* im3 = im2 + imCol * imStride3;
-              for (int kCol = 0; kCol < kW;
-                   ++kCol,
-                       col3 += colStride3,
-                       imCol += dW,
-                       im3 += dW * imStride3) {
+              LongType col3Offset = col2Offset + kRow * colStride2;
+              LongType im3Offset = im2Offset + kRow * dH * imStride2 + imCol * imStride3;
+              for (int kCol = 0; kCol < kW; ++kCol) {
                 if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) &&
-                    static_cast<unsigned>(imCol) < static_cast<unsigned>(iW)
-                    && iW >=0 && iH >= 0 && imRow >= 0 && imCol >= 0) {
-                  //print all loop variables that aren't present below
-                  *im3 += static_cast<T>(*col3);
+                    static_cast<unsigned>(imCol) < static_cast<unsigned>(iW)) {
+                  imBuff[im3Offset] += colBuff[col3Offset];
                 }
+                col3Offset += colStride3;
+                imCol += dW;
+                im3Offset += dW * imStride3;
               }
+              imRow += dH;
             }
           }
         }
@@ -115,10 +101,7 @@ static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* o
   };
 
   samediff::Threads::parallel_tad(func, 0, bS);
-
-
 }
-
 void col2im(LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(input->dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW),

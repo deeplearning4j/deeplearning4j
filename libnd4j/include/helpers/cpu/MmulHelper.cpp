@@ -36,21 +36,13 @@ template <typename T1, typename T2, typename T3>
 static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
                       const double beta) {
-
-  printf("Begin usualGemm\n");
-  fflush(stdout);
-  vA->printBufferRaw("usualGemm A");
-  vB->printBufferRaw("usualGemm B");
-  vC->printBufferRaw("usualGemm C");
   const T1* A = vA->bufferAsT<T1>();
   const T2* B = vB->bufferAsT<T2>();
-  printf("T2 primary: %f T2 other buffer %f vB offset %lld",B[0],vB->bufferAsT<T2>()[0], vB->offset());
-  fflush(stdout);
   T3* C = vC->bufferAsT<T3>();
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
 
-  const bool betaPersent = beta;
+  const bool betaPresent = beta;
 
   const sd::LongType* aShapeInfo = vA->shapeInfo();
   const sd::LongType* bShapeInfo = vB->shapeInfo();
@@ -59,8 +51,6 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
   const int aRank = vA->rankOf();
   const int bRank = vB->rankOf();
   const int cRank = vC->rankOf();
-  printf("mmul rank %d %d\n", aRank, bRank);
-  fflush(stdout);
   const sd::LongType cLen = vC->lengthOf();
   const int K = vA->sizeAt(aKaxis);
 
@@ -69,93 +59,42 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
     std::vector<sd::LongType> aCoords(2), bCoords(2), cCoords(2);
 
     for (auto i = start; i < stop; i++) {
-      printf("i: %lld\n", i);
-      fflush(stdout);
-
       // evaluate C coordinates
       shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
-      printf("cCoords: [%lld, %lld]\n", cCoords[0], cCoords[1]);
-      fflush(stdout);
+
 
       // evaluate A coordinates
       aCoords[aMaxis] = cCoords[cMaxis];
       aCoords[aKaxis] = 0;
-      printf("aCoords: [%lld, %lld]\n", aCoords[0], aCoords[1]);
-      fflush(stdout);
+
 
       // evaluate B coordinates
       bCoords[bKaxis] = 0;
       bCoords[bNaxis] = cCoords[cNaxis];
-      printf("B shape info:\n");
-      shape::printShapeInfo(bShapeInfo);
-      fflush(stdout);
-      printf("bCoords: [%lld, %lld]\n", bCoords[0], bCoords[1]);
-      fflush(stdout);
-
-      printf("A shape info\n");
-      shape::printShapeInfo(aShapeInfo);
-      fflush(stdout);
 
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
-      printf("aOffset: %lld coords %lld %lld\n", aOffset, aCoords[0], aCoords[1]);
-      fflush(stdout);
-
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
-      printf("bOffset: %lld coords %lld %lld\n", bOffset, bCoords[0], bCoords[1]);
-      fflush(stdout);
 
-      printf("A[%lld]: %f, B[%lld]: %f\n", aOffset, static_cast<double>(A[aOffset]), bOffset, static_cast<double>(B[bOffset]));
-      fflush(stdout);
 
       T3 val = A[aOffset] * B[bOffset];  // first iteration
-      printf("val (first iteration): %f\n", static_cast<double>(val));
-      fflush(stdout);
 
-      for (int j = 1; j < K; ++j) {  // rest iterations
-        printf("j: %d\n", j);
-        fflush(stdout);
-
+      for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];
-        printf("aOffset: %lld\n", aOffset);
-        fflush(stdout);
-
         bOffset += shape::stride(bShapeInfo)[bKaxis];
-        printf("bOffset: %lld\n", bOffset);
-        fflush(stdout);
-
-        printf("A[%lld]: %f, B[%lld]: %f\n", aOffset, static_cast<double>(A[aOffset]), bOffset, static_cast<double>(B[bOffset]));
-        fflush(stdout);
-
         val += A[aOffset] * B[bOffset];
-        printf("val: %f\n", static_cast<double>(val));
-        fflush(stdout);
       }
 
       auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
-      printf("cOffset: %lld\n", cOffset);
-      fflush(stdout);
-
-      if (betaPersent) {
-        printf("alphaZ: %f, betaZ: %f, C[%lld] before: %f\n",
-               static_cast<double>(alphaZ), static_cast<double>(betaZ), cOffset, static_cast<double>(C[cOffset]));
-        fflush(stdout);
-
+      if (betaPresent) {
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-        printf("C[%lld] (beta present): %f\n", cOffset, static_cast<double>(C[cOffset]));
-        fflush(stdout);
       } else {
-        printf("alphaZ: %f\n", static_cast<double>(alphaZ));
-        fflush(stdout);
 
         C[cOffset] = alphaZ * val;
-        printf("C[%lld] (beta not present): %f\n", cOffset, static_cast<double>(C[cOffset]));
-        fflush(stdout);
       }
     }
   };
   samediff::Threads::parallel_tad(func, 0, cLen);
-  printf("Parallel execution completed\n");
-  fflush(stdout);}
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // MXN x N = M  -> actual sequence of {M,N} axes doesn't matter
@@ -298,22 +237,16 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      printf("mmul: aMcont && aKcont\n");
-      fflush(stdout);
       pA = new NDArray(A->dup('f', false));
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      printf("mmul: bKcont && bNcont\n");
-      fflush(stdout);
       pB = new NDArray(B->dup('f', false));
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      printf("mmul: cMcont && cNcont\n");
-      fflush(stdout);
       pC = new NDArray(C->dup('f', false));
       toDelete.push_back(pC);
       cMcont = true;
@@ -331,12 +264,6 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     const int ldb = (bKcont && bNcont) ? K : !bKcont ? pB->strideAt(0) : pB->strideAt(1);
     const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
-    A->printBufferRaw("mmulMXM A 1");
-    B->printBufferRaw("mmulMXM B 1");
-    C->printBufferRaw("mmulMXM C 1");
-    pA->printBufferRaw("mmulMXM A");
-    pB->printBufferRaw("mmulMXM B");
-    pC->printBufferRaw("mmulMXM C");
     if (typeFloat) {
       BlasHelper::getInstance().sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float)alpha,
                                         pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float)beta,

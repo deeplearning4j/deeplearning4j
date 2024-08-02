@@ -1527,6 +1527,15 @@ std::vector<sd::LongType> NDArray::getShapeAsVector() const {
   return *vector;
 }
 
+std::vector<sd::LongType> NDArray::getStrideAsVector() const {
+  std::vector<sd::LongType> *vector = new std::vector<sd::LongType>();
+  for (int e = 0; e < this->rankOf(); e++) {
+    vector->push_back(this->strideAt(e));
+  }
+
+  return *vector;
+}
+
 ////////////////////////////////////////////////////////////////////////
 std::vector<int> NDArray::getShapeAsVectorInt() const {
   std::vector<int> vector(this->rankOf());
@@ -1552,6 +1561,8 @@ std::vector<sd::LongType> NDArray::getShapeInfoAsVector() const {
   for (int e = 0; e < magicNumber; e++) vector[e] = this->_shapeInfo[e];
   return vector;
 }
+
+
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<int8_t> NDArray::asByteVector() {
@@ -2202,7 +2213,7 @@ void NDArray::printBufferRaw(const char *msg, sd::LongType limit, const bool syn
   auto begin = this->offset() / this->sizeOfT();
 
   if (msg != nullptr) {
-    sd_printf("%s: [", msg);
+    sd_printf("%s: ", msg);
   }
 
   this->getDataBuffer()->printHostDevice(offset());
@@ -2284,6 +2295,130 @@ void NDArray::setAttached(bool reallyAttached) { _isAttached = reallyAttached; }
 void NDArray::updateStrides(const char order) { THROW_EXCEPTION("Forbidden method"); }
 
 //////////////////////////////////////////////////////////////////////////
+
+NDArray * NDArray::newShapeNoCopy(const std::vector<sd::LongType> &newShape, const char order) {
+  NDArray arr = *this;
+  int oldnd;
+  std::vector<sd::LongType> *olddims = new std::vector<sd::LongType>(arr.getShapeAsVector());
+  std::vector<sd::LongType> *oldstrides = new std::vector<sd::LongType>(arr.getStrideAsVector());
+  sd::LongType np, op, last_stride;
+  int oi, oj, ok, ni, nj, nk;
+  std::vector<sd::LongType> newStrides(newShape.size());
+  oldnd = 0;
+  bool isFOrder = order == 'f';
+
+  // Remove axes with dimension 1 from the old array
+  for (oi = 0; oi < arr.rankOf(); oi++) {
+    if (arr.sizeAt(oi) != 1) {
+      olddims->at(oldnd) = arr.sizeAt(oi);
+      oldstrides->at(oldnd) = arr.strideAt(oi);
+      oldnd++;
+    }
+  }
+
+  np = 1;
+  for (ni = 0; ni < newShape.size(); ni++) {
+    np *= newShape[ni];
+  }
+  op = 1;
+  for (oi = 0; oi < oldnd; oi++) {
+    op *= olddims->at(oi);
+  }
+  if (np != op) {
+    // different total sizes; no hope
+    delete olddims;
+    delete oldstrides;
+    return nullptr;
+  }
+
+  if (np == 0) {
+    // the current code does not handle 0-sized arrays, so give up
+    delete olddims;
+    delete oldstrides;
+    return nullptr;
+  }
+
+  // oi to oj and ni to nj give the axis ranges currently worked with
+  oi = 0;
+  oj = 1;
+  ni = 0;
+  nj = 1;
+  while (ni < newShape.size() && oi < oldnd) {
+    np = newShape[ni];
+    op = olddims->at(oi);
+
+    while (np != op) {
+      if (np < op) {
+        // Misses trailing 1s, these are handled later
+        np *= newShape[nj++];
+      } else {
+        op *= olddims->at(oj++);
+      }
+    }
+
+    // Check whether the original axes can be combined
+    for (ok = oi; ok < oj - 1; ok++) {
+      if (isFOrder) {
+        if (oldstrides->at(ok + 1) != olddims->at(ok) * oldstrides->at(ok)) {
+          // not contiguous enough
+          delete olddims;
+          delete oldstrides;
+          return nullptr;
+        }
+      } else {
+        // C order
+        if (oldstrides->at(ok) != olddims->at(ok + 1) * oldstrides->at(ok + 1)) {
+          // not contiguous enough
+          delete olddims;
+          delete oldstrides;
+          return nullptr;
+        }
+      }
+    }
+
+    // Calculate new strides for all axes currently worked with
+    if (isFOrder) {
+      newStrides[ni] = oldstrides->at(oi);
+      for (nk = ni + 1; nk < nj; nk++) {
+        newStrides[nk] = newStrides[nk - 1] * newShape[nk - 1];
+      }
+    } else {
+      // C order
+      newStrides[nj - 1] = oldstrides->at(oj - 1);
+      for (nk = nj - 1; nk > ni; nk--) {
+        newStrides[nk - 1] = newStrides[nk] * newShape[nk];
+      }
+    }
+    ni = nj++;
+    oi = oj++;
+  }
+
+  // Set strides corresponding to trailing 1s of the new shape
+  if (ni >= 1) {
+    last_stride = newStrides[ni - 1];
+  } else {
+    last_stride = 1;
+  }
+  if (isFOrder && ni >= 1) {
+    last_stride *= newShape[ni - 1];
+  }
+  for (nk = ni; nk < newShape.size(); nk++) {
+    newStrides[nk] = last_stride;
+  }
+
+  // Create a new array with the same buffer but new shape and strides
+  auto newShapeInfo = ShapeBuilders::createShapeInfo(arr.dataType(), order, newShape, getContext()->getWorkspace());
+  shape::setStride(newShapeInfo, newStrides.data());
+
+  delete olddims;
+  delete oldstrides;
+
+  auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo,true);
+  auto ret =  new NDArray(this->getDataBuffer(), const_cast<sd::LongType *>(retShapeInfo), getContext(), this->offset());
+  return ret;
+}
+
+
 // set new order and shape in case of suitable array length
 bool NDArray::reshapei(const char order, const std::initializer_list<sd::LongType> &shape) {
   std::vector<sd::LongType> vShape(shape);
@@ -2514,12 +2649,8 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
   }
 
   if (canReshape) {
-    printf("can reshape\n");
-    fflush(stdout);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     if(copyToNewBuff) {
-      printf("copy to new buff\n");
-      fflush(stdout);
       NDArray *ret = new NDArray(newShape->primary(), true, getContext());
       this->applyTransform(transform::Assign, *ret, nullptr);
       return *ret;

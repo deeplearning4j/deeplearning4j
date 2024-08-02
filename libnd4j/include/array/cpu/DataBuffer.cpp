@@ -217,7 +217,7 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
 
   const char* msg = nullptr;
   if (msg != nullptr) {
-    printf("%s: [", msg);
+    printf("%s: ", msg);
   } else {
     printf("[");
   }
@@ -226,7 +226,7 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
   auto baseOffset = offset;
   if (dataType == sd::DataType::DOUBLE || dataType == sd::DataType::FLOAT32) {
     for (sd::LongType e = baseOffset; e < limit; e++) {
-      if (e) printf(", ");
+      if (e > offset) printf(", ");
       if (dataType == sd::DataType::DOUBLE) {
         printf("%.15f", buff[e]);
       } else {

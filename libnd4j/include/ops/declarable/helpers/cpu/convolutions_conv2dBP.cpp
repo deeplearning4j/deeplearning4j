@@ -58,8 +58,6 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   const LongType oC = isNCHW ? gradO->sizeAt(1) : gradO->sizeAt(3);  // output channels
   const LongType oH = isNCHW ? gradO->sizeAt(2) : gradO->sizeAt(1);  // output height
   const LongType oW = isNCHW ? gradO->sizeAt(3) : gradO->sizeAt(2);  // output width
-  printf("bS %lld iC %lld iH %lld iW %lld oC %lld oH %lld oW %lld\n",bS,iC,iH,iW,oC,oH,oW);
-  fflush(stdout);
   NDArray *inputPermuted, *gradOPermuted, *gradIPermuted;
   if (!isNCHW) {
     inputPermuted = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
@@ -72,20 +70,16 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   }
 
   // Reshape gradO to 2D: [oC, bS * oH * oW]
-  NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), {oC, bS * oH * oW});
+  NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), {oC, bS * oH * oW},false);
 
   // Perform im2col
   NDArray* columns;
   if (block.hasIntermediateResults()) {
-    printf("intermediate columns\n");
-    fflush(stdout);
     columns = block.intermediateResult(0);
     if (columns->rankOf() < 6) {
       columns->reshapei({bS, iC, kH, kW, oH, oW});
     }
   } else {
-    printf("recreating columns\n");
-    fflush(stdout);
     columns = new NDArray(inputPermuted->ordering(), {bS, iC, kH, kW, oH, oW}, inputPermuted->dataType(), inputPermuted->getContext());
     auto ctx = block.launchContext();
     helpers::im2col(*ctx, *inputPermuted, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
@@ -94,43 +88,43 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   // Calculate gradW
   if (gradW) {
-    NDArray columns2d = columns->reshape(columns->ordering(), {bS * oH * oW, iC * kH * kW});
-    NDArray gradW2d = gradW->reshape(gradW->ordering(), {oC, iC * kH * kW}).permute({1, 0});
-    columns2d.printIndexedBuffer("columns2d backprop gradw\n");
-    gradO2d.printIndexedBuffer("gradO2d backprop gradw\n");
+    NDArray columns2d = columns->reshape('c', {bS * oH * oW, iC * kH * kW},false);
+    NDArray gradW2d = gradW->reshape('f', {oC, iC * kH * kW},false).permute({1, 0},false);
 
-    MmulHelper::matmul( &columns2d,&gradO2d, &gradW2d, true, true, 1.0, 0.0, gradW);
-    gradW2d.printIndexedBuffer("Gradw2d after matrix multiply:");
+    MmulHelper::matmul( &columns2d,&gradO2d, &gradW2d, true, true, 1.0, 0.0, &gradW2d);
     gradW->assign(gradW2d);
-    printf("grad w after assign\n");
-    fflush(stdout);
-    gradW->printIndexedBuffer("gradW after assign\n");
+
   }
 
   // Calculate gradB
   if (gradB) {
     std::vector<LongType> axes = {1};  // Sum over bS, oH, oW
-    gradO2d.printIndexedBuffer("gradB before reduce\n");
     gradO2d.reduceAlongDimension(reduce::Sum, *gradB, &axes);
   }
 
   // Calculate gradI
   NDArray weights2d;
   if (wFormat == 0) {
-    weights2d = weights->permute({3, 2, 0, 1}).reshape(weights->ordering(), {oC, iC * kH * kW});
+    weights2d = weights->permute({3, 2, 1,0},false).reshape('f', {iC * kH * kW,oC});
   } else if (wFormat == 1) {
-    weights2d = weights->reshape(weights->ordering(), {oC, iC * kH * kW});
+    weights2d = weights->reshape('f', { iC * kH * kW,oC});
   } else {
-    weights2d = weights->permute({0, 2, 3, 1}).reshape(weights->ordering(), {oC, iC * kH * kW});
+    weights2d = weights->permute({0, 2, 3, 1},false).reshape('f', {iC * kH * kW,oC});
   }
 
-  NDArray columns2d('f', {iC * kH * kW, bS * oH * oW}, columns->dataType(), columns->getContext());
-  MmulHelper::matmul(&weights2d, &gradO2d, &columns2d, true, false, 1.0, 0.0);
+  NDArray columns2d('c', {iC * kH * kW, bS * oH * oW}, columns->dataType(), columns->getContext());
+
+
+  MmulHelper::matmul(&weights2d, &gradO2d, &columns2d, false, false, 1.0, 0.0);
+  //Calculate epsilonNext by doing im2col reduction.
+  //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
+  //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
+  auto eps6d = columns2d.newShapeNoCopy({kH, kW,iC, oW, oH, bS }, 'f');
+  auto permuted = eps6d->permute({5,2,1,0,4,3},false);
 
   // Perform col2im
   auto ctx = block.launchContext();
-  helpers::col2im(*ctx, columns, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
-
+  helpers::col2im(*ctx, &permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
   // Handle NHWC format if necessary
   if (!isNCHW) {
     gradI->assign(gradIPermuted->permute({0, 2, 3, 1}));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]

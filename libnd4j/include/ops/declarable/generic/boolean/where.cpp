@@ -74,7 +74,6 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
       delete dims;
     }
   } else {
-    printf("where: second case\n");
     // in this case we return 2D matrix, which basically contains coordinates fo true
     REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                  block.width());

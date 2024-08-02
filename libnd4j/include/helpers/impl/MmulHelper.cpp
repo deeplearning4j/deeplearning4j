@@ -470,11 +470,12 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     //transpose can affect the input data. We shouldn't mutate that.
     //note we dup here to avoid manipulating the reference
     if (transX) {
-      NDArray permuted = x->permute(permute,false);
-      xT = new NDArray(x->permute(permute,false));
+      NDArray permuted = x->permute(permute,true);
+      xT = new NDArray(x->permute(permute,true));
     }
     if (transY) {
-      yT = new NDArray(y->permute(permute,false));
+      yT = new NDArray(y->permute(permute,true));
+
     }
   }
 
@@ -483,7 +484,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     if (xRank == 1 && yRank == 2) {
       // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
-      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},true);
+      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},false);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
     }
@@ -561,13 +562,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
 
   if(realFinalResult != nullptr && realFinalResult != z) {
-    printf("Copying buffer result final:\n");
-    fflush(stdout);
     realFinalResult->dataBuffer()->copyBufferFrom(*z->dataBuffer());
-  } else  {
-        printf("Not copying buffer result final:\n");
-        fflush(stdout);
-        z->printIndexedBuffer("Z matmul result\n");
   }
 
 }

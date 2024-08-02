@@ -1931,6 +1931,7 @@ SD_LIB_EXPORT SD_INLINE  SD_HOST const char *shapeToString(const sd::LongType *s
   return ret->c_str();
 }
 
+
 /**
  * Computes the standard packed array strides for a given shape.
  *

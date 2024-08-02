@@ -96,7 +96,6 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
   ArrayOptions::setDataType(shapeInfo, dataType);
 
   if (empty) {
-    printf("Setting bit empty\n");
     ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   }
 

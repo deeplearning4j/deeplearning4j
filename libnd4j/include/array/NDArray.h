@@ -1078,6 +1078,7 @@ class SD_LIB_EXPORT NDArray {
   template <typename T>
   std::vector<T> getBufferAsVector() const;
   std::vector<LongType> getShapeAsVector() const;
+  std::vector<sd::LongType> getStrideAsVector() const;
   std::vector<int> getShapeAsVectorInt() const;
   std::vector<LongType> getShapeInfoAsVector() const;
   std::vector<int64_t> getShapeInfoAsFlatVector() const;
@@ -1116,6 +1117,8 @@ class SD_LIB_EXPORT NDArray {
    *  order - order to set
    */
   void updateStrides(const char order);
+
+  NDArray *newShapeNoCopy(const std::vector<sd::LongType> &newShape, const char order);
 
   /**
    *  change an array by repeating it the number of times given by reps (in-place operation)
