@@ -37,10 +37,10 @@ OP_IMPL(barnes_gains, 3, 1, true) {
   auto output = OUTPUT_VARIABLE(0);
 
   helpers::barnes_gains(input, gradX, epsilon, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(barnes_gains) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(barnes_gains) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

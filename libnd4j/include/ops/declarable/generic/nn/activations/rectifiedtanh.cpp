@@ -32,14 +32,14 @@ CONFIGURABLE_OP_IMPL(rectifiedtanh, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(sd::transform::RectifiedTanh, *output);
+  input->applyTransform(transform::RectifiedTanh, *output);
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(rectifiedtanh) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(rectifiedtanh_bp, 2, 1, true, 0, 0) {
@@ -50,14 +50,14 @@ CONFIGURABLE_OP_IMPL(rectifiedtanh_bp, 2, 1, true, 0, 0) {
 
   // input->applyPairwiseTransform(pairwise::RectifiedTanhDerivativeE, epsilon, z, nullptr);
   helpers::rectifiedTanhDerivative(block.launchContext(), input, epsilon, z);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(rectifiedtanh_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd

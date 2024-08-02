@@ -38,23 +38,23 @@ BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
   REQUIRE_TRUE(!y->isB(), 0, "FLOORMOD OP: you can't divide by bool array!");
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(floormod) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, INHERIT);
 }
 
 DECLARE_TYPES(floormod_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
@@ -71,15 +71,15 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
   if (gradY->rankOf() == gradX->rankOf()) {
     epsNext->applyPairwiseTransform(pairwise::Multiply, temp, *gradY);
   } else  { // epsNext is greater than gradY
-    std::vector<sd::LongType> dims(epsNext->rankOf() * 2);
-    sd::LongType gap = epsNext->rankOf() - gradY->rankOf();
-    for (sd::LongType d = 0; d < gap; d++) {
+    std::vector<LongType> dims(epsNext->rankOf() * 2);
+    LongType gap = epsNext->rankOf() - gradY->rankOf();
+    for (LongType d = 0; d < gap; d++) {
       dims[d * 2 + 1] = 1;
     }
     auto tempIn((temp)(dims));
     (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, -tempIn, *gradY);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(floormod_bp) {
@@ -90,8 +90,8 @@ DECLARE_SHAPE_FN(floormod_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  sd::LongType* shapeE;
-  sd::LongType* shapeG;
+  LongType* shapeE;
+  LongType* shapeG;
 
   COPY_SHAPE(x, shapeE);
   COPY_SHAPE(y, shapeG);

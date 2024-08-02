@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-InferenceRequest::InferenceRequest(sd::LongType graphId, ExecutorConfiguration *configuration) {
+InferenceRequest::InferenceRequest(LongType graphId, ExecutorConfiguration *configuration) {
   this->_id = graphId;
   this->_configuration = configuration;
 }

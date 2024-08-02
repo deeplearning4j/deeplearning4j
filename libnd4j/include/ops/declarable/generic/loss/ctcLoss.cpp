@@ -65,10 +65,10 @@ CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
                ShapeUtils::shapeAsString(targetLabelLengths).c_str(), ShapeUtils::shapeAsString(outputLosses).c_str());
 
   auto emptyGradients = NDArrayFactory::empty<float>();
-  sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *outputLosses,
+  helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, *outputLosses,
                             emptyGradients, blankIndex);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ DECLARE_SHAPE_FN(ctc_loss) {
   auto dtype = ArrayOptions::dataType(yShapeInfo);
   auto desc = new ShapeDescriptor(zShapeInfo, dtype);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 
@@ -132,10 +132,10 @@ CUSTOM_OP_IMPL(ctc_loss_grad, 4, 1, false, 0, 1) {
                ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
 
   auto emptyLoss = NDArrayFactory::empty<float>();
-  sd::ops::helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, emptyLoss,
+  helpers::ctcLoss(block, *logitInput, *targetLabels, *logitInputLengths, *targetLabelLengths, emptyLoss,
                             *outputGradients, blankIndex);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(ctc_loss_grad) {
   auto dtype = ArrayOptions::dataType(yShapeInfo);
   auto desc = new ShapeDescriptor(yShapeInfo, dtype);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 

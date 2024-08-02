@@ -30,80 +30,79 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+SD_LIB_HIDDEN void triuBP(LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
                           const int diagonal);
 
-SD_LIB_HIDDEN void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output);
+SD_LIB_HIDDEN void trace(LaunchContext* context, const NDArray& input, NDArray& output);
 
-SD_LIB_HIDDEN void randomShuffle(sd::LaunchContext* context, NDArray& input, NDArray& output,
-                                 sd::graph::RandomGenerator& rng, const bool isInplace);
+SD_LIB_HIDDEN void randomShuffle(LaunchContext* context, NDArray& input, NDArray& output, graph::RandomGenerator& rng, const bool isInplace);
 
 // auxiliary function which serves for recursion purpose and is used in pad operation
 // void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int>
 // dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
 
-SD_LIB_HIDDEN void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings,
+SD_LIB_HIDDEN void pad(LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings,
                        NDArray& output, NDArray const& padValue);
 
-SD_LIB_HIDDEN void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output);
+SD_LIB_HIDDEN void invertPermutation(LaunchContext* context, const NDArray& input, NDArray& output);
 
-SD_LIB_HIDDEN void gatherND(sd::LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output);
+SD_LIB_HIDDEN void gatherND(LaunchContext* context, NDArray& input, NDArray& indices, NDArray& output);
 
-SD_LIB_HIDDEN void gather(sd::LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output,
+SD_LIB_HIDDEN void gather(LaunchContext* context, NDArray* input, const NDArray* indices, NDArray* output,
                           const std::vector<int>& intArgs);
 
-SD_LIB_HIDDEN void eye(sd::LaunchContext* context, NDArray& output);
+SD_LIB_HIDDEN void eye(LaunchContext* context, NDArray& output);
 
-SD_LIB_HIDDEN void scatterUpdate(sd::LaunchContext* context, NDArray& operand, NDArray& updates,
+SD_LIB_HIDDEN void scatterUpdate(LaunchContext* context, NDArray& operand, NDArray& updates,
                                  const std::vector<LongType>* intArgs);
 
-SD_LIB_HIDDEN void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
+SD_LIB_HIDDEN void scatterSimple(LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
                                  const NDArray& indices, const std::vector<LongType>& dimensions);
 
-SD_LIB_HIDDEN void mergeMaxIndex(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs,
+SD_LIB_HIDDEN void mergeMaxIndex(LaunchContext* context, const std::vector<const NDArray*>& inArrs,
                                  NDArray& output);
 
-SD_LIB_HIDDEN void mergeMax(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
-SD_LIB_HIDDEN void mergeMaxBp(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs,
+SD_LIB_HIDDEN void mergeMax(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+SD_LIB_HIDDEN void mergeMaxBp(LaunchContext* context, const std::vector<const NDArray*>& inArrs,
                               std::vector<NDArray*>& outArrs);
 
-SD_LIB_HIDDEN void mergeAvg(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
-SD_LIB_HIDDEN void mergeAvgBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
+SD_LIB_HIDDEN void mergeAvg(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+SD_LIB_HIDDEN void mergeAvgBp(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
 
-SD_LIB_HIDDEN void mergeAdd(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
-SD_LIB_HIDDEN void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
+SD_LIB_HIDDEN void mergeAdd(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+SD_LIB_HIDDEN void mergeAddBp(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
 
-SD_LIB_HIDDEN void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output,
+SD_LIB_HIDDEN void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output,
                               const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool isInplace,
                               const bool useAverage);
 
-SD_LIB_HIDDEN void clipByGlobalNorm(sd::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
-                                    sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
+SD_LIB_HIDDEN void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
+                                    memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
-SD_LIB_HIDDEN void clipByNormBp(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO,
+SD_LIB_HIDDEN void clipByNormBp(LaunchContext* context, const NDArray& input, const NDArray& gradO,
                                 NDArray& gradI /*output*/, const std::vector<LongType>& dimensions, const NDArray& clipNorm,
                                 const bool useAverage);
 
-SD_LIB_HIDDEN void clipByAveragedNorm(sd::LaunchContext* context, NDArray& input, NDArray& output,
-                                      const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm,
+SD_LIB_HIDDEN void clipByAveragedNorm(LaunchContext* context, NDArray& input, NDArray& output,
+                                      const std::vector<LongType>& dimensions, const NDArray& clipNorm,
                                       const bool isInplace);
 
-SD_LIB_HIDDEN void mirrorPad(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+SD_LIB_HIDDEN void mirrorPad(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
                              const int mode);
 
-SD_LIB_HIDDEN void clipByValue(sd::LaunchContext* context, NDArray& input, double leftBound, double rightBound,
+SD_LIB_HIDDEN void clipByValue(LaunchContext* context, NDArray& input, double leftBound, double rightBound,
                                NDArray& output);
 
-SD_LIB_HIDDEN void mirrorPad(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+SD_LIB_HIDDEN void mirrorPad(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
                              const int mode);
 
-SD_LIB_HIDDEN void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
+SD_LIB_HIDDEN void concat(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
                           const int axis);
 
-SD_LIB_HIDDEN void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
-                          const std::vector<sd::LongType> reps);
+SD_LIB_HIDDEN void tileBP(LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
+                          const std::vector<LongType> reps);
 
-SD_LIB_HIDDEN void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs,
+SD_LIB_HIDDEN void split(LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs,
                          const LongType axis);
 
 SD_LIB_HIDDEN void compareAndBitpack(graph::Context& block, const NDArray& input, const NDArray& threshold,

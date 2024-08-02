@@ -36,7 +36,7 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);  // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size,
-                               // inSize - number of features
+  // inSize - number of features
   auto w = INPUT_VARIABLE(1);  // W, 2d tensor of weights [3*inSize x inSize]
   auto b = INPUT_VARIABLE(2);  // B, row of biases with twice length [2*inSize]
   auto c0 = INPUT_VARIABLE(3);  // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
@@ -60,13 +60,13 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
                "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank - 1,
                c0->rankOf());
   if (mask)
-    REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
-                 "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 mask->rankOf());
+  REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
+               "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               mask->rankOf());
 
-  const std::vector<sd::LongType> wCorrectShape = {3 * inSize, inSize};
-  const std::vector<sd::LongType> bCorrectShape = {2 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, inSize};
+  const std::vector<LongType> wCorrectShape = {3 * inSize, inSize};
+  const std::vector<LongType> bCorrectShape = {2 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, inSize};
 
   REQUIRE_TRUE(w->isSameShape(wCorrectShape), 0,
                "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -78,15 +78,15 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
                "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(c0).c_str());
   if (mask)
-    REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
-                 "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
+  REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
+               "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
 
   //  xm = x * mask
   auto xm = x;
   if (mask) {
     xm = new NDArray(x->shapeInfo(), true, block.launchContext());
-    std::vector<sd::LongType> dims = {0, 1};
+    std::vector<LongType> dims = {0, 1};
     x->applyBroadcast(broadcast::Multiply,&dims , *mask, *xm);
   }
 
@@ -95,14 +95,14 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
   if (mask) delete xm;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(sru) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(sru) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 DECLARE_SHAPE_FN(sru) {
   auto xShapeInfo = inputShape->at(0);   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS -
-                                         // batch size, inSize - number of features
+  // batch size, inSize - number of features
   auto wShapeInfo = inputShape->at(1);   // W, 2d tensor of weights [3*inSize x inSize]
   auto bShapeInfo = inputShape->at(2);   // B, row of biases with twice length [2*inSize]
   auto c0ShapeInfo = inputShape->at(3);  // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
@@ -124,13 +124,13 @@ DECLARE_SHAPE_FN(sru) {
                "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank - 1,
                c0ShapeInfo[0]);
   if (maskShapeInfo)
-    REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
-                 "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 maskShapeInfo[0]);
+  REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
+               "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               maskShapeInfo[0]);
 
-  const std::vector<sd::LongType> wCorrectShape = {3 * inSize, inSize};
-  const std::vector<sd::LongType> bCorrectShape = {2 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, inSize};
+  const std::vector<LongType> wCorrectShape = {3 * inSize, inSize};
+  const std::vector<LongType> bCorrectShape = {2 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, inSize};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(wShapeInfo, wCorrectShape), 0,
                "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -142,11 +142,11 @@ DECLARE_SHAPE_FN(sru) {
                "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(c0ShapeInfo).c_str());
   if (maskShapeInfo)
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
-                 "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
+               "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
 
-  sd::LongType* newShapeInfo1 = nullptr;
+  LongType * newShapeInfo1 = nullptr;
   ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);  // [bS x inSize x time]
 
   newShapeInfo1[0] = rank;
@@ -158,7 +158,7 @@ DECLARE_SHAPE_FN(sru) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo1);
   RELEASE(newShapeInfo1, block.getWorkspace());
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return SHAPELIST(result, result);
 }
 
@@ -200,7 +200,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   auto temp1 = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
   auto temp2 = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
 
-  std::vector<sd::LongType> axes = {0, 1};
+  std::vector<LongType> axes = {0, 1};
   //  x = x * mask
   if (applyMask) x->applyBroadcast(broadcast::Multiply, &axes, *mask, *x);  // apply mask
   // multiplication matrix wi = matmul(w,x), U = WX
@@ -219,7 +219,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
   NDArray* ct_1 = nullptr;
 
-  std::vector<sd::LongType> idx = {0, 0, 0, 0, 0, 0};
+  std::vector<LongType> idx = {0, 0, 0, 0, 0, 0};
 
   for (int t = N - 1; t >= 0; --t) {
     // initialization
@@ -307,19 +307,19 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   auto weightsT = w->transpose();                                                    // [K x 3K]
   MmulHelper::mmul(&weightsT, gradU, gradX, 1., 0.);                                 // [bS x K x N]
   gradX->applyPairwiseTransform(pairwise::Add, *gradHX, *gradX);
-  std::vector<sd::LongType> axes3 = {0, 1};
+  std::vector<LongType> axes3 = {0, 1};
   // + grad_highway_x
   if (applyMask) gradX->applyBroadcast(broadcast::Multiply, &axes3, *mask, *gradX);  // apply mask
 
   // gradB
   auto gradB2 = gradB->reshape(gradB->ordering(), {2 * K});
-  std::vector<sd::LongType> axes2;
+  std::vector<LongType> axes2;
   axes.push_back(0);
   axes.push_back(2);
   gradBias->reduceAlongDimension(reduce::Sum, gradB2, &axes2);  // [1 x 2K]
 
   // gradW [bS x 3K x K]
-  x->permutei({0, 2, 1});                     // [bS x N x K]
+  x->permutei({0, 2, 1}, false);                     // [bS x N x K]
   MmulHelper::mmul(gradU, x, gradW, 1., 0.);  // [bS x 3K x K]
 
   delete gct;
@@ -334,11 +334,11 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   delete rtMinus;
   delete gradBias;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sru_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(sru_bp) {
@@ -354,20 +354,23 @@ DECLARE_SHAPE_FN(sru_bp) {
   ShapeDescriptor *descriptor4 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
-                   ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
+                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
+                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
+                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
+
+  if (Environment::getInstance().isDeleteShapeInfo()) {
   delete descriptor1;
   delete descriptor2;
   delete descriptor3;
   delete descriptor4;
+  }
   return ret;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);   // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch
-                                // size, inSize - number of features
+  // size, inSize - number of features
   auto w = INPUT_VARIABLE(1);   // W, 2d tensor of weights [2*inSize x 6*inSize]
   auto b = INPUT_VARIABLE(2);   // B, row of biases with twice length [1 x 4*inSize]
   auto c0 = INPUT_VARIABLE(3);  // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
@@ -379,8 +382,8 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
   // input shapes validation
   const int rank = x->rankOf();
-  const sd::LongType bS = x->sizeAt(1);
-  const sd::LongType inSize = x->sizeAt(2) / 2;
+  const LongType bS = x->sizeAt(1);
+  const LongType inSize = x->sizeAt(2) / 2;
 
   REQUIRE_TRUE(x->rankOf() == rank, 0,
                "SRU_BI operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf());
@@ -393,13 +396,13 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
                "SRU_BI operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank - 1,
                c0->rankOf());
   if (mask)
-    REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
-                 "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 mask->rankOf());
+  REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
+               "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               mask->rankOf());
 
-  const std::vector<sd::LongType> wCorrectShape = {2 * inSize, 6 * inSize};
-  const std::vector<sd::LongType> bCorrectShape = {4 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, 2 * inSize};
+  const std::vector<LongType> wCorrectShape = {2 * inSize, 6 * inSize};
+  const std::vector<LongType> bCorrectShape = {4 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, 2 * inSize};
 
   REQUIRE_TRUE(w->isSameShape(wCorrectShape), 0,
                "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -411,17 +414,17 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
                "SRU_BI operation: wrong shape of initial state array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(c0).c_str());
   if (mask)
-    REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
-                 "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
+  REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
+               "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
 
   helpers::sruBI(block.launchContext(), x, w, b, c0, mask, ht, ct);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sru_bi) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(sru_bi) {
@@ -433,9 +436,9 @@ DECLARE_SHAPE_FN(sru_bi) {
       block.width() > 4 ? inputShape->at(4) : nullptr;  // optional,  2d tensor of dropout mask [bS x inSize]
 
   const int rank = xShapeInfo[0];  // = 3
-  const sd::LongType time = xShapeInfo[1];
-  const sd::LongType bS = xShapeInfo[2];
-  const sd::LongType inSize = xShapeInfo[3] / 2;
+  const LongType time = xShapeInfo[1];
+  const LongType bS = xShapeInfo[2];
+  const LongType inSize = xShapeInfo[3] / 2;
 
   // input shapes validation
   REQUIRE_TRUE(wShapeInfo[0] == rank - 1, 0,
@@ -447,13 +450,13 @@ DECLARE_SHAPE_FN(sru_bi) {
                "SRU_BI operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank - 1,
                c0ShapeInfo[0]);
   if (maskShapeInfo)
-    REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
-                 "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 maskShapeInfo[0]);
+  REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
+               "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               maskShapeInfo[0]);
 
-  const std::vector<sd::LongType> wCorrectShape = {2 * inSize, 6 * inSize};
-  const std::vector<sd::LongType> bCorrectShape = {4 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, 2 * inSize};
+  const std::vector<LongType> wCorrectShape = {2 * inSize, 6 * inSize};
+  const std::vector<LongType> bCorrectShape = {4 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, 2 * inSize};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(wShapeInfo, wCorrectShape), 0,
                "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -465,9 +468,9 @@ DECLARE_SHAPE_FN(sru_bi) {
                "SRU_BI operation: wrong shape of initial state array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(c0ShapeInfo).c_str());
   if (maskShapeInfo)
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
-                 "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
+               "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
 
   char order = shape::order(xShapeInfo);
 
@@ -477,13 +480,13 @@ DECLARE_SHAPE_FN(sru_bi) {
 }
 
 DECLARE_TYPES(sru_bi_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
   auto x = INPUT_VARIABLE(0);   // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch
-                                // size, inSize - number of features
+  // size, inSize - number of features
   auto w = INPUT_VARIABLE(1);   // W, 2d tensor of weights [2*inSize x 6*inSize]
   auto b = INPUT_VARIABLE(2);   // B, row of biases with twice length [4*inSize]
   auto c0 = INPUT_VARIABLE(3);  // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
@@ -495,9 +498,9 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 
   // input shapes validation
   const int rank = x->rankOf();
-  const sd::LongType time = x->sizeAt(0);
-  const sd::LongType bS = x->sizeAt(1);
-  const sd::LongType inSize = x->sizeAt(2) / 2;
+  const LongType time = x->sizeAt(0);
+  const LongType bS = x->sizeAt(1);
+  const LongType inSize = x->sizeAt(2) / 2;
 
   REQUIRE_TRUE(w->rankOf() == rank - 1, 0,
                "SRU_BI_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank - 1,
@@ -517,14 +520,14 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
                "SRU_BI_BP operation: wrong rank of gradient ht, expected is %i, but got %i instead !", rank,
                inGradHt->rankOf());
   if (mask)
-    REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
-                 "SRU_BI_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 mask->rankOf());
+  REQUIRE_TRUE(mask->rankOf() == rank - 1, 0,
+               "SRU_BI_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               mask->rankOf());
 
-  const std::vector<sd::LongType> wCorrectShape = {2 * inSize, 6 * inSize};
-  const std::vector<sd::LongType> bCorrectShape = {4 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, 2 * inSize};
-  const std::vector<sd::LongType> ctCorrectShape = {time, bS, 2 * inSize};
+  const std::vector<LongType> wCorrectShape = {2 * inSize, 6 * inSize};
+  const std::vector<LongType> bCorrectShape = {4 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, 2 * inSize};
+  const std::vector<LongType> ctCorrectShape = {time, bS, 2 * inSize};
 
   REQUIRE_TRUE(w->isSameShape(wCorrectShape), 0,
                "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -539,9 +542,9 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
                "SRU_BI operation: wrong shape of state array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(ctCorrectShape).c_str(), ShapeUtils::shapeAsString(ct).c_str());
   if (mask)
-    REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
-                 "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
+  REQUIRE_TRUE(mask->isSameShape(c0CorrectShape), 0,
+               "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(mask).c_str());
 
   auto gradI = OUTPUT_VARIABLE(0);   // [time x bS x 2*inSize]
   auto gradW = OUTPUT_VARIABLE(1);   // [time x 2*inSize x 6*inSize]
@@ -550,7 +553,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 
   helpers::sruBIBP(block.launchContext(), x, w, b, c0, ct, inGradC0, inGradHt, mask, gradI, gradW, gradB, gradC0);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(sru_bi_bp) {
@@ -566,9 +569,9 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
   // input shapes validation
   const int rank = xShapeInfo[0];
-  const sd::LongType time = xShapeInfo[1];
-  const sd::LongType bS = xShapeInfo[2];
-  const sd::LongType inSize = xShapeInfo[3] / 2;
+  const LongType time = xShapeInfo[1];
+  const LongType bS = xShapeInfo[2];
+  const LongType inSize = xShapeInfo[3] / 2;
 
   REQUIRE_TRUE(wShapeInfo[0] == rank - 1, 0,
                "SRU_BI_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank - 1,
@@ -588,16 +591,16 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
                "SRU_BI_BP operation: wrong rank of gradient ht, expected is %i, but got %i instead !", rank,
                inGradHtShapeInfo[0]);
   if (maskShapeInfo)
-    REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
-                 "SRU_BI_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
-                 maskShapeInfo[0]);
+  REQUIRE_TRUE(maskShapeInfo[0] == rank - 1, 0,
+               "SRU_BI_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank - 1,
+               maskShapeInfo[0]);
 
-  const std::vector<sd::LongType> wCorrectShape = {2 * inSize, 6 * inSize};
-  const std::vector<sd::LongType> bCorrectShape = {4 * inSize};
-  const std::vector<sd::LongType> c0CorrectShape = {bS, 2 * inSize};
-  const std::vector<sd::LongType> ctCorrectShape = {time, bS, 2 * inSize};
-  const std::vector<sd::LongType> inGradC0CorrectShape = {bS, 2 * inSize};
-  const std::vector<sd::LongType> inGradHtCorrectShape = {time, bS, 2 * inSize};
+  const std::vector<LongType> wCorrectShape = {2 * inSize, 6 * inSize};
+  const std::vector<LongType> bCorrectShape = {4 * inSize};
+  const std::vector<LongType> c0CorrectShape = {bS, 2 * inSize};
+  const std::vector<LongType> ctCorrectShape = {time, bS, 2 * inSize};
+  const std::vector<LongType> inGradC0CorrectShape = {bS, 2 * inSize};
+  const std::vector<LongType> inGradHtCorrectShape = {time, bS, 2 * inSize};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(wShapeInfo, wCorrectShape), 0,
                "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -620,9 +623,9 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
                ShapeUtils::shapeAsString(inGradHtCorrectShape).c_str(),
                ShapeUtils::shapeAsString(inGradHtShapeInfo).c_str());
   if (maskShapeInfo)
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
-                 "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
-                 ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(maskShapeInfo, c0CorrectShape), 0,
+               "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !",
+               ShapeUtils::shapeAsString(c0CorrectShape).c_str(), ShapeUtils::shapeAsString(maskShapeInfo).c_str());
 
   const char order = shape::order(xShapeInfo);
 

@@ -44,9 +44,9 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
   const int inSize = xt->sizeAt(1);  // inSize - number of features
 
   // input shapes validation
-  const std::vector<sd::LongType> correctCt_1Shape = {bS, inSize};
-  const std::vector<sd::LongType> correctWShape = {inSize, 3 * inSize};
-  const std::vector<sd::LongType> correctBShape = {2 * inSize};
+  const std::vector<LongType> correctCt_1Shape = {bS, inSize};
+  const std::vector<LongType> correctWShape = {inSize, 3 * inSize};
+  const std::vector<LongType> correctBShape = {2 * inSize};
 
   REQUIRE_TRUE(ct_1->isSameShape(correctCt_1Shape), 0,
                "SRUCELL operation: wrong shape of previous cell state, expected is %s, but got %s instead !",
@@ -61,11 +61,11 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
   // fixme: shitty initializer lists
   helpers::sruCell(block.launchContext(), xt, ct_1, w, b, ht, ct);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sruCell) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(sruCell) {
@@ -79,9 +79,9 @@ DECLARE_SHAPE_FN(sruCell) {
   const int inSize = xtShapeInfo[2];  // inSize - number of features
 
   // input shapes validation
-  const std::vector<sd::LongType> correctCt_1Shape = {bS, inSize};
-  const std::vector<sd::LongType> correctWShape = {inSize, 3 * inSize};
-  const std::vector<sd::LongType> correctBShape = {2 * inSize};
+  const std::vector<LongType> correctCt_1Shape = {bS, inSize};
+  const std::vector<LongType> correctWShape = {inSize, 3 * inSize};
+  const std::vector<LongType> correctBShape = {2 * inSize};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(ct_1ShapeInfo, correctCt_1Shape), 0,
                "SRUCELL operation: wrong shape of previous cell state, expected is %s, but got %s instead !",
@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(sruCell) {
                ShapeUtils::shapeAsString(correctBShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
 
   // evaluate output shapeInfos
-  sd::LongType *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+  LongType *hShapeInfo(nullptr), *cShapeInfo(nullptr);
   ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);  // [bS x numProj]
   ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);  // [bS x numUnits]
 

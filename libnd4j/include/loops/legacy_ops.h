@@ -88,6 +88,9 @@
       (43, TruncateMod), (44, SquaredReverseSubtract), (45, ReversePow), (46, DivideNoNan), (47, IGamma),              \
       (48, IGammac), (49, RELUDerivative)
 
+#define SCALAR_STRING_OPS                                                                                                     \
+  (0, AssignString)
+
 #define REDUCE3_OPS                                                                                    \
   (0, ManhattanDistance), (1, EuclideanDistance), (2, CosineSimilarity), (3, Dot), (4, EqualsWithEps), \
       (5, CosineDistance), (6, JaccardDistance), (7, SimpleHammingDistance)

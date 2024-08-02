@@ -25,17 +25,17 @@
 
 namespace sd {
 namespace ops {
-LegacyTransformFloatOp::LegacyTransformFloatOp() : LegacyOp::LegacyOp(1) {
+LegacyTransformFloatOp::LegacyTransformFloatOp() : LegacyOp(1) {
   // just a no-op
 }
 
-LegacyTransformFloatOp::LegacyTransformFloatOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+LegacyTransformFloatOp::LegacyTransformFloatOp(int opNum) : LegacyOp(1, opNum) {
   // just a no-op
 }
 
 LegacyOp *LegacyTransformFloatOp::clone() { return new LegacyTransformFloatOp(this->_opNum); }
 
-sd::Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
+Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
   auto input = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -55,7 +55,7 @@ sd::Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
   STORE_RESULT(*z);
   traceExecIfNeeded(block);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
@@ -63,10 +63,10 @@ sd::Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
  * col2im. But these ops already have CustomOp implementations.
  *
  */
-ShapeList *LegacyTransformFloatOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyTransformFloatOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  sd::LongType *newShape;
+  LongType *newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));

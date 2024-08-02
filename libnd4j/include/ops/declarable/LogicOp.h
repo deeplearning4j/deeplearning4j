@@ -36,12 +36,12 @@ namespace ops {
  */
 class SD_LIB_EXPORT LogicOp : public DeclarableOp {
  protected:
-  sd::Status validateAndExecute(sd::graph::Context& block) override;
+  Status validateAndExecute(sd::graph::Context& block) override;
 
  public:
   LogicOp(const char* name);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
 }  // namespace ops
 }  // namespace sd

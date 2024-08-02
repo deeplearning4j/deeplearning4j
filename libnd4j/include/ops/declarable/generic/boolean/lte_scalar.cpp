@@ -32,18 +32,18 @@ BOOLEAN_OP_IMPL(lte_scalar, 2, true) {
   auto y = INPUT_VARIABLE(1);
 
   if (x->e<float>(0) <= y->e<float>(0))
-    return sd::Status::EQ_TRUE;
+    return Status::EQ_TRUE;
   else
-    return sd::Status::EQ_FALSE;
+    return Status::EQ_FALSE;
 }
 DECLARE_SYN(LessOrEquals, lte_scalar);
 DECLARE_SYN(lessorequals, lte_scalar);
 
 DECLARE_TYPES(lte_scalar) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::BOOL);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, BOOL);
 }
 }  // namespace ops
 }  // namespace sd

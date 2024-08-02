@@ -33,10 +33,10 @@ namespace ops {
 namespace helpers {
 
 // calculate the digamma function for each element for array
-SD_LIB_HIDDEN void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z);
+SD_LIB_HIDDEN void diGamma(LaunchContext* context, const NDArray& x, NDArray& z);
 
 // calculate the polygamma function
-SD_LIB_HIDDEN void polyGamma(sd::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z);
+SD_LIB_HIDDEN void polyGamma(LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z);
 
 // calculate the digamma function for one element
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma =
@@ -51,7 +51,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
       return DataTypeUtils::infOrMax<T>();
     else
       return diGammaScalar<T>(1 - x) -
-             M_PI / sd::math::sd_tan<T, T>(M_PI * x);  // use reflection formula psi(1-x) = psi(x) + pi*cot(pi*x)
+             M_PI / math::sd_tan<T, T>(M_PI * x);  // use reflection formula psi(1-x) = psi(x) + pi*cot(pi*x)
   }
 
   // positive integer
@@ -59,7 +59,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
       xInt <= 20) {  // psi(n) = -Euler_Mascheroni_const + sum_from_k=1_to_n-1( 1/k ), for n = 1,2,3,...inf, we use this
                      // formula only for n <= 20 to avoid time consuming sum calculation for bigger n
     T result = -0.577215664901532;
-    for (sd::LongType i = 1; i <= xInt - 1; ++i) {
+    for (LongType i = 1; i <= xInt - 1; ++i) {
       result += static_cast<T>(1) / i;
     }
     return result;
@@ -69,8 +69,8 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   if (x - xInt == 0.5 && xInt <= 20) {  // psi(n+0.5) = -Euler_Mascheroni_const - 2*ln(2) + sum_from_k=1_to_n( 2/(2*k-1)
                                         // )    , for n = 1,2,3,...inf, we use this formula only for n <= 20 to avoid
                                         // time consuming sum calculation for bigger n
-    T result = -0.577215664901532 - 2 * sd::math::sd_log<T, T>(2);
-    for (sd::LongType i = 1; i <= xInt; ++i) {
+    T result = -0.577215664901532 - 2 * math::sd_log<T, T>(2);
+    for (LongType i = 1; i <= xInt; ++i) {
       result += static_cast<T>(2) / (2 * i - 1);
     }
     return result;
@@ -86,7 +86,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   // - 1/(12*x^14) + ...
 
   if (x >= (sizeof(T) > 4 ? 1.e16 : 1.e8))  // if x is too big take into account only log(x)
-    return sd::math::sd_log<T, T>(x);
+    return math::sd_log<T, T>(x);
 
   // coefficients used in truncated asymptotic expansion formula
   const T coeffs[7] = {-(T)1 / 12, (T)1 / 120, -(T)1 / 252, (T)1 / 240, -(T)5 / 660, (T)691 / 32760, -(T)1 / 12};
@@ -97,7 +97,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   T result = 0;
 
   for (int i = 6; i >= 0; --i) result = (result + coeffs[i]) * x2Inv;
-  return result + sd::math::sd_log<T, T>(x) - static_cast<T>(0.5) / x;
+  return result + math::sd_log<T, T>(x) - static_cast<T>(0.5) / x;
 }
 
 }  // namespace helpers

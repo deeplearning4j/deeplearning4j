@@ -47,11 +47,11 @@ CUSTOM_OP_IMPL(diag_part, 1, 1, false, 0, 0) {
 
   helpers::diagPartFunctor(block.launchContext(), input, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(DiagPart, diag_part);
 
-DECLARE_TYPES(diag_part) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(diag_part) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(diag_part) {
   auto inputShapeInfo = inputShape->at(0);
@@ -68,7 +68,7 @@ DECLARE_SHAPE_FN(diag_part) {
                  "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !",
                  ShapeUtils::shapeAsString(inputShapeInfo).c_str());
 
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
 
   int outRank = inRank / 2;
 

@@ -108,7 +108,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
 
   T norm = 0;
   for (int j = 0; j < numOfCols; ++j)
-    norm += schurMatrixT({j, j + 1, math::sd_max<sd::LongType>(j - 1, 0), numOfCols})
+    norm += schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols})
                 .reduceNumber(reduce::ASum)
                 .template t<T>(0);
 

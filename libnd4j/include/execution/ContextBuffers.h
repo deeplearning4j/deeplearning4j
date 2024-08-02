@@ -34,7 +34,7 @@ class SD_LIB_EXPORT ContextBuffers {
   void *_allocationPointer = nullptr;
   void *_execStream = nullptr;
   void *_specialStream = nullptr;
-  sd::ErrorReference _errorReference;
+  ErrorReference _errorReference;
   bool _allocated = false;
   bool _initialized = false;
 
@@ -64,7 +64,7 @@ class SD_LIB_EXPORT ContextBuffers {
   void setScalarBuffer(void *pointer);
   void setAllocationBuffer(void *pointer);
 
-  sd::ErrorReference *errorReference();
+  ErrorReference *errorReference();
 
   void triggerOwnership(bool isOwner);
 

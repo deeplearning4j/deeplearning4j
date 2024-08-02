@@ -38,25 +38,25 @@ void FlowPath::ensureFrame(int frameId) {
   }
 }
 
-void FlowPath::setInnerTime(int nodeId, sd::LongType time) {
+void FlowPath::setInnerTime(int nodeId, LongType time) {
   ensureNode(nodeId);
 
   _states[nodeId].setInnerTime(time);
 }
 
-void FlowPath::setOuterTime(int nodeId, sd::LongType time) {
+void FlowPath::setOuterTime(int nodeId, LongType time) {
   ensureNode(nodeId);
 
   _states[nodeId].setOuterTime(time);
 }
 
-sd::LongType FlowPath::innerTime(int nodeId) {
+LongType FlowPath::innerTime(int nodeId) {
   ensureNode(nodeId);
 
   return _states[nodeId].innerTime();
 }
 
-sd::LongType FlowPath::outerTime(int nodeId) {
+LongType FlowPath::outerTime(int nodeId) {
   ensureNode(nodeId);
 
   return _states[nodeId].outerTime();
@@ -86,41 +86,41 @@ void FlowPath::markBranch(int nodeId, int index) {
   _states[nodeId].markBranch(index);
 }
 
-bool FlowPath::isFrameActive(sd::LongType frameId) {
+bool FlowPath::isFrameActive(LongType frameId) {
   ensureFrame(frameId);
 
   return _frames[frameId].wasActivated();
 }
 
-void FlowPath::markFrameActive(sd::LongType frameId, bool isActive) {
+void FlowPath::markFrameActive(LongType frameId, bool isActive) {
   ensureFrame(frameId);
 
   _frames[frameId].markActivated(isActive);
 }
 
-bool FlowPath::isRewindPlanned(sd::LongType frameId) { return _frames[frameId].isRewindPlanned(); }
+bool FlowPath::isRewindPlanned(LongType frameId) { return _frames[frameId].isRewindPlanned(); }
 
-void FlowPath::planRewind(sd::LongType frameId, bool reallyRewind) { _frames[frameId].planRewind(reallyRewind); }
+void FlowPath::planRewind(LongType frameId, bool reallyRewind) { _frames[frameId].planRewind(reallyRewind); }
 
-int FlowPath::getRewindPosition(sd::LongType frameId) { return _frames[frameId].getRewindPosition(); }
+int FlowPath::getRewindPosition(LongType frameId) { return _frames[frameId].getRewindPosition(); }
 
-void FlowPath::setRewindPosition(sd::LongType frameId, int position) { _frames[frameId].setRewindPosition(position); }
+void FlowPath::setRewindPosition(LongType frameId, int position) { _frames[frameId].setRewindPosition(position); }
 
-void FlowPath::setRewindPositionOnce(sd::LongType frameId, int position) {
+void FlowPath::setRewindPositionOnce(LongType frameId, int position) {
   _frames[frameId].setRewindPositionOnce(position);
 }
 
-void FlowPath::registerFrame(sd::LongType frameId) {
+void FlowPath::registerFrame(LongType frameId) {
   if (_frames.count(frameId) == 0) ensureFrame(frameId);
 }
 
-void FlowPath::forgetFrame(sd::LongType frameId) {
+void FlowPath::forgetFrame(LongType frameId) {
   if (_frames.count(frameId) > 0) _frames.erase(frameId);
 }
 
-void FlowPath::incrementNumberOfCycles(sd::LongType frameId) { _frames[frameId].incrementNumberOfCycles(); }
+void FlowPath::incrementNumberOfCycles(LongType frameId) { _frames[frameId].incrementNumberOfCycles(); }
 
-sd::LongType FlowPath::getNumberOfCycles(sd::LongType frameId) { return _frames[frameId].getNumberOfCycles(); }
+LongType FlowPath::getNumberOfCycles(LongType frameId) { return _frames[frameId].getNumberOfCycles(); }
 
 bool FlowPath::wasExecuted(int nodeId) { return _states[nodeId].wasExecuted(); }
 

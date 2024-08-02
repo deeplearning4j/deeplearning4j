@@ -39,7 +39,7 @@ void MemoryRegistrator::attachWorkspace(Workspace* workspace) { _workspace = wor
 
 void MemoryRegistrator::forgetWorkspace() { _workspace = nullptr; }
 
-void MemoryRegistrator::setGraphMemoryFootprint(sd::LongType hash, sd::LongType bytes) {
+void MemoryRegistrator::setGraphMemoryFootprint(LongType hash, LongType bytes) {
   _lock.lock();
 
   _footprint[hash] = bytes;
@@ -47,23 +47,23 @@ void MemoryRegistrator::setGraphMemoryFootprint(sd::LongType hash, sd::LongType 
   _lock.unlock();
 }
 
-void MemoryRegistrator::setGraphMemoryFootprintIfGreater(sd::LongType hash, sd::LongType bytes) {
+void MemoryRegistrator::setGraphMemoryFootprintIfGreater(LongType hash, LongType bytes) {
   _lock.lock();
 
   if (_footprint.count(hash) == 0)
     _footprint[hash] = bytes;
   else {
-    sd::LongType cv = _footprint[hash];
+    LongType cv = _footprint[hash];
     if (bytes > cv) _footprint[hash] = bytes;
   }
 
   _lock.unlock();
 }
 
-sd::LongType MemoryRegistrator::getGraphMemoryFootprint(sd::LongType hash) {
+LongType MemoryRegistrator::getGraphMemoryFootprint(LongType hash) {
   _lock.lock();
 
-  sd::LongType result = 0L;
+  LongType result = 0L;
   if (_footprint.count(hash) > 0) result = _footprint[hash];
 
   _lock.unlock();

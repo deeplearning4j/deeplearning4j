@@ -49,10 +49,10 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 2, true, 1, 1) {
   if (probValue == 1.0f) {
     *output = *input;
     mask->assign(1.0);
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  return sd::ops::helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue, mask);
+  return helpers::dropOutFunctor(block, input, output, reduceShape, seed, probValue, mask);
 }
 
 DECLARE_TYPES(dropout) {
@@ -84,14 +84,14 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 3, 1, false, 1, 1) {
   REQUIRE_TRUE((probValue > 0. && probValue <= 1.), 0, "dropout_bp: Probability should be with range 0 to 1.");
   if (probValue == 1.0) {
     output->assign(0.f);  // fill up output with 0
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   REQUIRE_TRUE(sd::ops::helpers::dropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue,
                                                   mask) == sd::Status::OK,
                0, "dropout_bp: Cannot backprop dropout.");
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dropout_bp) {
@@ -119,7 +119,7 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
   REQUIRE_TRUE(probValue > 0. && probValue <= 1., 0, "dropout_bp: Probability should be with range 0 to 1.");
   if (probValue == 1.0) {
     output->assign(0.);  // fill up output with 0
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue,

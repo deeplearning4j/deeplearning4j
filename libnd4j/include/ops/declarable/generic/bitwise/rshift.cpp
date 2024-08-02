@@ -41,7 +41,7 @@ BROADCASTABLE_OP_IMPL(rshift_bits, 0, 0) {
   x->applyTrueBroadcast(BroadcastIntOpsTuple::custom(scalar::ShiftRight, pairwise::ShiftRight, broadcast::ShiftRight),
                         *y, *z, false);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(rshift_bits) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setSameMode(true); }

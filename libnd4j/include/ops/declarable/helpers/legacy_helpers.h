@@ -45,43 +45,43 @@ namespace helpers {
     SD_INLINE void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     SD_INLINE void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
 */
-SD_LIB_HIDDEN void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond);
-SD_LIB_HIDDEN void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond);
+SD_LIB_HIDDEN void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                   NDArray* theOutput);
-SD_LIB_HIDDEN void relu6Derivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void relu6Derivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                    NDArray* theOutput);
-SD_LIB_HIDDEN void leakyReluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void leakyReluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                        NDArray* theOutput, const float alpha);
-SD_LIB_HIDDEN void eluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
+SD_LIB_HIDDEN void eluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
                                  const float alpha);
-SD_LIB_HIDDEN void seluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void seluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                   NDArray* theOutput);
-SD_LIB_HIDDEN void cubeDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void cubeDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                   NDArray* theOutput);
-SD_LIB_HIDDEN void reduceNorm1(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-SD_LIB_HIDDEN void sigmCrossEntropy(sd::LaunchContext* context, NDArray* logits, NDArray* lablels, NDArray* theOutput);
-SD_LIB_HIDDEN void sigmCrossEntropyGrad(sd::LaunchContext* context, NDArray* logits, NDArray* lablels,
+SD_LIB_HIDDEN void reduceNorm1(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
+SD_LIB_HIDDEN void sigmCrossEntropy(LaunchContext* context, NDArray* logits, NDArray* lablels, NDArray* theOutput);
+SD_LIB_HIDDEN void sigmCrossEntropyGrad(LaunchContext* context, NDArray* logits, NDArray* lablels,
                                         NDArray* theOutput);
-SD_LIB_HIDDEN void tanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void tanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                   NDArray* theOutput);
-SD_LIB_HIDDEN void hardTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void hardTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                       NDArray* theOutput);
-SD_LIB_HIDDEN void rationalTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void rationalTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                           NDArray* theOutput);
-SD_LIB_HIDDEN void rectifiedTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void rectifiedTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                            NDArray* theOutput);
-SD_LIB_HIDDEN void softSignDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void softSignDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                       NDArray* theOutput);
-SD_LIB_HIDDEN void softPlusDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void softPlusDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                       NDArray* theOutput);
-SD_LIB_HIDDEN void sigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void sigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                      NDArray* theOutput);
-SD_LIB_HIDDEN void hardSigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
+SD_LIB_HIDDEN void hardSigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                          NDArray* theOutput);
-SD_LIB_HIDDEN void logSumExp(sd::LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output);
-SD_LIB_HIDDEN void logSumExp(sd::LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray* axis,
+SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output);
+SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray* axis,
                              NDArray* output);
-SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext* context, NDArray const* targets,
+SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray const* targets,
                                                          NDArray const* input, NDArray const* weights, NDArray* output);
 }  // namespace helpers
 }  // namespace ops

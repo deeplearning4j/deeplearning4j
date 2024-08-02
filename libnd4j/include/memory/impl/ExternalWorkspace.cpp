@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace memory {
-ExternalWorkspace::ExternalWorkspace(sd::Pointer ptrH, sd::LongType sizeH, sd::Pointer ptrD, sd::LongType sizeD) {
+ExternalWorkspace::ExternalWorkspace(Pointer ptrH, LongType sizeH, Pointer ptrD, LongType sizeD) {
   _ptrH = ptrH;
   _sizeH = sizeH;
 
@@ -35,8 +35,8 @@ void* ExternalWorkspace::pointerHost() { return _ptrH; }
 
 void* ExternalWorkspace::pointerDevice() { return _ptrD; }
 
-sd::LongType ExternalWorkspace::sizeHost() { return _sizeH; }
+LongType ExternalWorkspace::sizeHost() { return _sizeH; }
 
-sd::LongType ExternalWorkspace::sizeDevice() { return _sizeD; }
+LongType ExternalWorkspace::sizeDevice() { return _sizeD; }
 }  // namespace memory
 }  // namespace sd

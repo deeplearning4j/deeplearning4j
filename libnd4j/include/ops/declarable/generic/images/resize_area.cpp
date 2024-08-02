@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(resize_area, 1, 1, false, 0, -2) {
   }
 
   auto output = OUTPUT_VARIABLE(0);
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
   auto inRank = image->rankOf();
 
   REQUIRE_TRUE(inRank == 3 || inRank == 4, 0, "resize_area: Source tensor should have rank 4, but %i given.", inRank);
@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(resize_area) {
   auto shapeList = SHAPELIST();
   auto in = inputShape->at(0);
 
-  sd::LongType* outputShape;
+  LongType* outputShape;
   auto inRank = shape::rank(in);
   int width;
   int height;
@@ -115,7 +115,7 @@ DECLARE_SHAPE_FN(resize_area) {
     outputShape[2] = width;
     outputShape[3] = in[3];
   }
-  ShapeUtils::updateStridesAndType(outputShape, DataType::FLOAT32, shape::order(in));
+  ShapeUtils::updateStridesAndType(outputShape, FLOAT32, shape::order(in));
 
   shapeList->push_back(CONSTANT(outputShape));
   return shapeList;
@@ -123,8 +123,8 @@ DECLARE_SHAPE_FN(resize_area) {
 DECLARE_TYPES(resize_area) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
-      ->setAllowedInputTypes(1, DataType::INT32)
-      ->setAllowedOutputTypes({DataType::FLOAT32});
+      ->setAllowedInputTypes(1, INT32)
+      ->setAllowedOutputTypes({FLOAT32});
 }
 
 }  // namespace ops

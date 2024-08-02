@@ -137,7 +137,6 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -260,7 +259,6 @@ static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArr
 
   stream.wait();
 
-  // shape::printArray(dLdI_mkl_mem.map_data<float>(),8);
 
   // notations:
   // f = g * (gamma * ((x - m) / (v + eps)^0.5) + beta) -> means dLdO * ff_output

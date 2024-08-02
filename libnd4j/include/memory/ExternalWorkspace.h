@@ -31,20 +31,20 @@ class SD_LIB_EXPORT ExternalWorkspace {
   void *_ptrH = nullptr;
   void *_ptrD = nullptr;
 
-  sd::LongType _sizeH = 0L;
-  sd::LongType _sizeD = 0L;
+  LongType _sizeH = 0L;
+  LongType _sizeD = 0L;
 
  public:
   ExternalWorkspace() = default;
   ~ExternalWorkspace() = default;
 
-  ExternalWorkspace(sd::Pointer ptrH, sd::LongType sizeH, sd::Pointer ptrD, sd::LongType sizeD);
+  ExternalWorkspace(Pointer ptrH, LongType sizeH, Pointer ptrD, LongType sizeD);
 
   void *pointerHost();
   void *pointerDevice();
 
-  sd::LongType sizeHost();
-  sd::LongType sizeDevice();
+  LongType sizeHost();
+  LongType sizeDevice();
 };
 }  // namespace memory
 }  // namespace sd

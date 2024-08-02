@@ -114,10 +114,10 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
   if (labels->rankOf() == 1) {  // If labels and predictions are of rank 1, it means that all data entries are 0-tensor
     // (scalar) so that the result of becomes always zero.
     *output = 0.;
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  std::vector<sd::LongType> zero;
+  std::vector<LongType> zero;
   zero.push_back(0);
   std::vector<LongType> *reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(),1,zero.data());
 
@@ -175,11 +175,11 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else {
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
       }
 
       if (numOfNonZeroWeights == 0)
@@ -192,12 +192,12 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 1) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(mean_pairwssqerr_loss) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -212,7 +212,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
                ShapeUtils::shapeAsString(labelsShapeInfo).c_str(),
                ShapeUtils::shapeAsString(predictionsShapeInfo).c_str());
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-  sd::LongType const *outShapeInfo = nullptr;
+  LongType const *outShapeInfo = nullptr;
 
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
@@ -265,7 +265,7 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
 
   auto n = double(labels->sizeAt(1));
   auto diffs = *predictions - *labels;
-  std::vector<sd::LongType> dims2;
+  std::vector<LongType> dims2;
   dims2.push_back(0);
   std::vector<LongType> *reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), 1,dims2.data());
   auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
@@ -342,11 +342,11 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
 
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
@@ -376,11 +376,11 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss_grad, 3, 3, false, 0, 1) {
 
   if (weightsBroad != weights) delete weightsBroad;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(mean_pairwssqerr_loss_grad) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(mean_pairwssqerr_loss_grad) {
@@ -408,11 +408,10 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss_grad) {
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
 
-  sd::LongType *dLdpShapeInfo =
+  LongType *dLdpShapeInfo =
       ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
-  sd::LongType *dLdwShapeInfo =
-      ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
-  sd::LongType *dLdlShapeInfo =
+  LongType *dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
+  LongType *dLdlShapeInfo =
       ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);

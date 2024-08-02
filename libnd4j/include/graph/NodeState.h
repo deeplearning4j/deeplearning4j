@@ -30,10 +30,10 @@ namespace graph {
 class SD_LIB_EXPORT NodeState {
  private:
   // inner time spent on specific node
-  sd::LongType _inner = 0;
+  LongType _inner = 0;
 
   // outer time spent on specific node
-  sd::LongType _outer = 0;
+  LongType _outer = 0;
 
   // flag that shows if node is active or disabled (i.e. after Switch op)
   bool _active = true;
@@ -49,11 +49,11 @@ class SD_LIB_EXPORT NodeState {
   NodeState(int id = 0);
   ~NodeState() = default;
 
-  void setInnerTime(sd::LongType time);
-  void setOuterTime(sd::LongType time);
+  void setInnerTime(LongType time);
+  void setOuterTime(LongType time);
 
-  sd::LongType innerTime();
-  sd::LongType outerTime();
+  LongType innerTime();
+  LongType outerTime();
 
   void markActive(bool isActive);
   bool isActive();

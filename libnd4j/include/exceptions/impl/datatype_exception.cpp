@@ -27,15 +27,15 @@ datatype_exception::datatype_exception(std::string message) : std::runtime_error
   //
 }
 
-datatype_exception datatype_exception::build(std::string message, sd::DataType expected, sd::DataType actual) {
+datatype_exception datatype_exception::build(std::string message, DataType expected, DataType actual) {
   auto exp = DataTypeUtils::asString(expected);
   auto act = DataTypeUtils::asString(actual);
   message += "; Expected: [" + exp + "]; Actual: [" + act + "]";
   return datatype_exception(message);
 }
 
-datatype_exception datatype_exception::build(std::string message, sd::DataType expected, sd::DataType actualX,
-                                             sd::DataType actualY) {
+datatype_exception datatype_exception::build(std::string message, DataType expected, DataType actualX,
+                                             DataType actualY) {
   auto exp = DataTypeUtils::asString(expected);
   auto actX = DataTypeUtils::asString(actualX);
   auto actY = DataTypeUtils::asString(actualY);
@@ -43,7 +43,7 @@ datatype_exception datatype_exception::build(std::string message, sd::DataType e
   return datatype_exception(message);
 }
 
-datatype_exception datatype_exception::build(std::string message, sd::DataType actual) {
+datatype_exception datatype_exception::build(std::string message, DataType actual) {
   auto act = DataTypeUtils::asString(actual);
   message += "; Actual: [" + act + "]";
   return datatype_exception(message);

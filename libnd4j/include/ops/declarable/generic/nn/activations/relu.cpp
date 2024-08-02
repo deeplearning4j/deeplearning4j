@@ -34,14 +34,14 @@ CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-  first->applyScalar(sd::scalar::RELU, scalar, *z);
+  first->applyScalar(scalar::RELU, scalar, *z);
 
   STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(relu) { getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(relu) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
 
 CONFIGURABLE_OP_IMPL(relu_bp, 2, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
@@ -51,15 +51,15 @@ CONFIGURABLE_OP_IMPL(relu_bp, 2, 1, true, 0, 0) {
 
   // input->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, z, nullptr);
   helpers::reluDerivative(block.launchContext(), input, epsilon, z);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(ReluGrad, relu_bp);
 
 DECLARE_TYPES(relu_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd

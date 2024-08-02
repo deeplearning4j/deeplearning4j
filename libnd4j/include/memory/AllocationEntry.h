@@ -33,16 +33,16 @@ namespace memory {
 class AllocationEntry {
  private:
   MemoryType _memoryType;
-  sd::LongType _pointer;
-  sd::LongType _numBytes;
+  LongType _pointer;
+  LongType _numBytes;
   std::string _stack;
 
  public:
   AllocationEntry() = default;
-  AllocationEntry(MemoryType type, sd::LongType ptr, sd::LongType numBytes, std::string &stack);
+  AllocationEntry(MemoryType type, LongType ptr, LongType numBytes, std::string &stack);
   ~AllocationEntry() = default;
 
-  sd::LongType numBytes();
+  LongType numBytes();
   std::string stackTrace();
   MemoryType memoryType();
 };

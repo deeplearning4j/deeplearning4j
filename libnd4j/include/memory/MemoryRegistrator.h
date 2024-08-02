@@ -37,7 +37,7 @@ namespace memory {
 class SD_LIB_EXPORT MemoryRegistrator {
  protected:
   Workspace* _workspace;
-  SD_MAP_IMPL<sd::LongType, sd::LongType> _footprint;
+  SD_MAP_IMPL<LongType, LongType> _footprint;
   std::mutex _lock;
 
   MemoryRegistrator();
@@ -53,18 +53,18 @@ class SD_LIB_EXPORT MemoryRegistrator {
   /**
    * This method allows you to set memory requirements for given graph
    */
-  void setGraphMemoryFootprint(sd::LongType hash, sd::LongType bytes);
+  void setGraphMemoryFootprint(LongType hash, LongType bytes);
 
   /**
    * This method allows you to set memory requirements for given graph, ONLY if
    * new amount of bytes is greater then current one
    */
-  void setGraphMemoryFootprintIfGreater(sd::LongType hash, sd::LongType bytes);
+  void setGraphMemoryFootprintIfGreater(LongType hash, LongType bytes);
 
   /**
    * This method returns memory requirements for given graph
    */
-  sd::LongType getGraphMemoryFootprint(sd::LongType hash);
+  LongType getGraphMemoryFootprint(LongType hash);
 };
 }  // namespace memory
 }  // namespace sd

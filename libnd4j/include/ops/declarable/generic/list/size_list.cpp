@@ -36,7 +36,7 @@ LIST_OP_IMPL(size_list, 1, 1, 0, 0) {
 
   // OVERWRITE_RESULT(result);
   setupResult(result, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArraySizeV3, size_list);
 DECLARE_SYN(tensorarraysizev3, size_list);

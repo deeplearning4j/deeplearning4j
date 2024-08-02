@@ -25,6 +25,8 @@
 
 namespace sd {
 
-void PrimaryPointerDeallocator::release(void *ptr) { delete[] reinterpret_cast<int8_t *>(ptr); }
+void PrimaryPointerDeallocator::release(void *ptr) {
+   delete reinterpret_cast<int8_t *>(ptr);
+}
 
 }  // namespace sd

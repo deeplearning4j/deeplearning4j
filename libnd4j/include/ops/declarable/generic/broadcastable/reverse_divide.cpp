@@ -38,19 +38,19 @@ BROADCASTABLE_OP_IMPL(reversedivide, 0, 0) {
   REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
   x->applyTrueBroadcast(BROADCAST(ReverseDivide), *y, *z, true);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(RDiv, reversedivide);
 
 DECLARE_TYPES(reversedivide) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, INHERIT);
 }
 
 DECLARE_TYPES(reversedivide_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
@@ -101,7 +101,7 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
       gradY->assign(preY);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reversedivide_bp) {
@@ -112,8 +112,8 @@ DECLARE_SHAPE_FN(reversedivide_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  sd::LongType *shapeE;
-  sd::LongType *shapeG;
+  LongType *shapeE;
+  LongType *shapeG;
 
   COPY_SHAPE(x, shapeE);
   COPY_SHAPE(y, shapeG);
