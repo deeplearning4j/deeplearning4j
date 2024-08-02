@@ -60,7 +60,7 @@ public class KerasUpsampling2D extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        int[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfig(layerConfig, 2, conf);
+        long[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfigLong(layerConfig, 2, conf);
         Upsampling2D.Builder builder = new Upsampling2D.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)

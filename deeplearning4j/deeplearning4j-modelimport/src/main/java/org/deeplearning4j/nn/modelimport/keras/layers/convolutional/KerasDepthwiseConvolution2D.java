@@ -121,7 +121,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         }
         hasBias = KerasLayerUtils.getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
-        int[] dilationRate = getDilationRate(layerConfig, 2, conf, false);
+        long[] dilationRate = getDilationRateLong(layerConfig, 2, conf, false);
 
         IWeightInit depthWiseInit = KerasInitilizationUtils.getWeightInitFromConfig(layerConfig,
                 conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
@@ -151,11 +151,11 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
                 .dataFormat(dimOrder == KerasLayer.DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
         if (padding != null)

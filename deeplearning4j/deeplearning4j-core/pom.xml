@@ -74,6 +74,11 @@
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-datasets</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-datavec-iterators</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -87,10 +92,10 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- Redirect jackson to slf4j.  -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <scope>test</scope>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>

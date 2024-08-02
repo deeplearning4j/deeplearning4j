@@ -30,12 +30,25 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class KerasConvolutionUtils {
 
 
+    /**
+     * Get (convolution) stride from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return Strides array from Keras configuration
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    public static long[] getStrideFromConfigLong(Map<String, Object> layerConfig, int dimension,
+                                                 KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        return Arrays.stream(getStrideFromConfig(layerConfig, dimension, conf)).mapToLong(i -> i).toArray();
+    }
 
 
     /**
@@ -86,7 +99,22 @@ public class KerasConvolutionUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         return  (int) innerConfig.get(conf.getLAYER_FIELD_DEPTH_MULTIPLIER());
     }
-
+    /**
+     * Get atrous / dilation rate from config
+     *
+     * @param layerConfig   dictionary containing Keras layer configuration
+     * @param dimension     dimension of the convolution layer (1 or 2)
+     * @param conf          Keras layer configuration
+     * @param forceDilation boolean to indicate if dilation argument should be in config
+     * @return list of integers with atrous rates
+     *
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    public static long[] getDilationRateLong(Map<String, Object> layerConfig, int dimension, KerasLayerConfiguration conf,
+                                        boolean forceDilation)
+            throws InvalidKerasConfigurationException {
+        return Arrays.stream(getDilationRate(layerConfig, dimension, conf, forceDilation)).mapToLong(i -> i).toArray();
+    }
     /**
      * Get atrous / dilation rate from config
      *
@@ -201,6 +229,50 @@ public class KerasConvolutionUtils {
         return size;
     }
 
+
+    /**
+     * Get upsampling size from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     *
+     * @return Upsampling integer array from Keras config
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
+     */
+    static long[] getUpsamplingSizeFromConfigLong(Map<String, Object> layerConfig, int dimension,
+                                             KerasLayerConfiguration conf)
+            throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        long[] size;
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()) && dimension == 2
+                || innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_3D_SIZE()) && dimension == 3) {
+            @SuppressWarnings("unchecked")
+            List<Long> sizeList = (List<Long>) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
+            size = ArrayUtil.toArrayLong(sizeList);
+        } else if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE()) && dimension == 1) {
+            int upsamplingSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE());
+            size = new long[]{upsamplingSize1D};
+        } else {
+            throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
+                    + conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE() + ", "
+                    + conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
+        }
+        return size;
+    }
+
+
+    /**
+     * Get (convolution) kernel size from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     *
+     * @return Convolutional kernel sizes
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    public static long[] getKernelSizeFromConfigLong(Map<String, Object> layerConfig, int dimension,
+                                                     KerasLayerConfiguration conf, int kerasMajorVersion)
+            throws InvalidKerasConfigurationException {
+        return Arrays.stream(getKernelSizeFromConfig(layerConfig, dimension, conf, kerasMajorVersion)).mapToLong(i -> i).toArray();
+    }
 
     /**
      * Get (convolution) kernel size from Keras layer configuration.
@@ -319,6 +391,19 @@ public class KerasConvolutionUtils {
         return convolutionMode;
     }
 
+
+    /**
+     * Get (convolution) padding from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return Padding values derived from border mode
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    public static long[] getPaddingFromBorderModeConfigLong(Map<String, Object> layerConfig, int dimension,
+                                                       KerasLayerConfiguration conf, int kerasMajorVersion)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        return Arrays.stream(getPaddingFromBorderModeConfig(layerConfig, dimension, conf, kerasMajorVersion)).mapToLong(i -> i).toArray();
+    }
     /**
      * Get (convolution) padding from Keras layer configuration.
      *
@@ -339,6 +424,93 @@ public class KerasConvolutionUtils {
             padding = getKernelSizeFromConfig(layerConfig, dimension, conf, kerasMajorVersion);
             for (int i = 0; i < padding.length; i++)
                 padding[i]--;
+        }
+        return padding;
+    }
+
+
+
+    /**
+     * Get padding and cropping configurations from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @param conf        KerasLayerConfiguration
+     * @param layerField  String value of the layer config name to check for (e.g. "padding" or "cropping")
+     * @param dimension   Dimension of the padding layer
+     * @return padding list of integers
+     * @throws InvalidKerasConfigurationException Invalid keras configuration
+     */
+    static long[] getPaddingFromConfigLong(Map<String, Object> layerConfig,
+                                      KerasLayerConfiguration conf,
+                                      String layerField,
+                                      int dimension)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(layerField))
+            throw new InvalidKerasConfigurationException(
+                    "Field " + layerField + " not found in Keras cropping or padding layer");
+        long[] padding;
+        if (dimension >= 2) {
+            List<Long> paddingList;
+            // For 2D layers, padding/cropping can either be a pair [[x_0, x_1].[y_0, y_1]] or a pair [x, y]
+            // or a single integer x. Likewise for the 3D case.
+            try {
+                List paddingNoCast = (List) innerConfig.get(layerField);
+                boolean isNested;
+                try {
+                    @SuppressWarnings("unchecked")
+                    List<Integer> firstItem = (List<Integer>) paddingNoCast.get(0);
+                    isNested = true;
+                    paddingList = new ArrayList<>(2 * dimension);
+                } catch (Exception e) {
+                    int firstItem = (int) paddingNoCast.get(0);
+                    isNested = false;
+                    paddingList = new ArrayList<>(dimension);
+                }
+
+                if ((paddingNoCast.size() == dimension) && !isNested) {
+                    for (int i = 0; i < dimension; i++)
+                        paddingList.add((Long) paddingNoCast.get(i));
+                    padding = ArrayUtil.toArrayLong(paddingList);
+                } else if ((paddingNoCast.size() == dimension) && isNested) {
+                    for (int j = 0; j < dimension; j++) {
+                        @SuppressWarnings("unchecked")
+                        List<Long> item = (List<Long>) paddingNoCast.get(j);
+                        paddingList.add((item.get(0)));
+                        paddingList.add((item.get(1)));
+                    }
+
+                    padding = ArrayUtil.toArrayLong(paddingList);
+                } else {
+                    throw new InvalidKerasConfigurationException("Found Keras ZeroPadding" + dimension
+                            + "D layer with invalid " + paddingList.size() + "D padding.");
+                }
+            } catch (Exception e) {
+                int paddingInt = (int) innerConfig.get(layerField);
+                if (dimension == 2) {
+                    padding = new long[]{paddingInt, paddingInt, paddingInt, paddingInt};
+                } else {
+                    padding = new long[]{paddingInt, paddingInt, paddingInt, paddingInt, paddingInt, paddingInt};
+                }
+            }
+
+        } else if (dimension == 1) {
+            Object paddingObj  = innerConfig.get(layerField);
+            if (paddingObj instanceof List) {
+                List<Long> paddingList = (List)paddingObj;
+                padding = new long[]{
+                        paddingList.get(0),
+                        paddingList.get(1)
+                };
+            }
+            else{
+                int paddingInt = (int) innerConfig.get(layerField);
+                padding = new long[]{paddingInt, paddingInt};
+            }
+
+        } else {
+            throw new UnsupportedKerasConfigurationException(
+                    "Keras padding layer not supported");
         }
         return padding;
     }

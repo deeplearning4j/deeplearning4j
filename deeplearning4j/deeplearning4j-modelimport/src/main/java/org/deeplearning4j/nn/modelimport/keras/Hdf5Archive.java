@@ -76,12 +76,17 @@ public class Hdf5Archive implements Closeable {
 
     public Group[] openGroups(String... groups) {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
-            Group[] groupArray = new Group[groups.length];
-            groupArray[0] = this.file.openGroup(groups[0]);
-            for (int i = 1; i < groups.length; i++) {
-                groupArray[i] = groupArray[i - 1].openGroup(groups[i]);
+            try {
+                Group[] groupArray = new Group[groups.length];
+                groupArray[0] = this.file.openGroup(groups[0]);
+                for (int i = 1; i < groups.length; i++) {
+                    groupArray[i] = groupArray[i - 1].openGroup(groups[i]);
+                }
+                return groupArray;
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Error opening HDF5 group " + groups[0], e);
             }
-            return groupArray;
+
         }
     }
 

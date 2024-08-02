@@ -88,14 +88,14 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
                 .nOut(KerasLayerUtils.getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(KerasActivationUtils.getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
-                .dilation(getDilationRate(layerConfig, 2, conf, true))
+                .dilation(getDilationRateLong(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .dataFormat(dimOrder == KerasLayer.DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 2, conf));
-        int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
+                .stride(getStrideFromConfigLong(layerConfig, 2, conf));
+        long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 2, conf, kerasMajorVersion);
 
         if (hasBias)
             builder.biasInit(0.0);
