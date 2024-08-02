@@ -23,7 +23,7 @@
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
         <java.version>11</java.version>
-        <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
+        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
         <kotlin.compiler.jvmTarget>11</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
         <module.name>omnihub</module.name>
@@ -38,7 +38,12 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.28</version>
         </dependency>
-
+        <!-- Redirect jackson to slf4j.  -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>1.7.28</version>
+        </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
