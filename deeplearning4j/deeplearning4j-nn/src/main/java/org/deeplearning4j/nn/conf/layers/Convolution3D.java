@@ -122,7 +122,7 @@ public class Convolution3D extends ConvolutionLayer {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
                     + "\"): Expected CNN3D input, got " + inputType);
         }
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, dataFormat, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnn3DLayersLong(inputType, dataFormat, kernelSize, stride, padding, dilation, convolutionMode,
                 nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
@@ -194,7 +194,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param kernelSize kernel size
          * @return 3D convolution layer builder
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
@@ -205,7 +205,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param stride kernel size
          * @return 3D convolution layer builder
          */
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
@@ -216,7 +216,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param padding kernel size
          * @return 3D convolution layer builder
          */
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
@@ -227,7 +227,7 @@ public class Convolution3D extends ConvolutionLayer {
          * @param dilation kernel size
          * @return 3D convolution layer builder
          */
-        public Builder dilation(int... dilation) {
+        public Builder dilation(long... dilation) {
             this.setDilation(dilation);
             return this;
         }
@@ -255,8 +255,8 @@ public class Convolution3D extends ConvolutionLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int... kernelSize) {
-            this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
+        public void setKernelSize(long... kernelSize) {
+            this.kernelSize = ValidationUtils.validate3NonNegativeLong(kernelSize, "kernelSize");
         }
 
         /**
@@ -265,8 +265,8 @@ public class Convolution3D extends ConvolutionLayer {
          * @param stride kernel size
          */
         @Override
-        public void setStride(int... stride) {
-            this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
+        public void setStride(long... stride) {
+            this.stride = ValidationUtils.validate3NonNegativeLong(stride, "stride");
         }
 
         /**
@@ -275,8 +275,8 @@ public class Convolution3D extends ConvolutionLayer {
          * @param padding kernel size
          */
         @Override
-        public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
+        public void setPadding(long... padding) {
+            this.padding = ValidationUtils.validate3NonNegativeLong(padding, "padding");
         }
 
         /**
@@ -285,8 +285,8 @@ public class Convolution3D extends ConvolutionLayer {
          * @param dilation kernel size
          */
         @Override
-        public void setDilation(int... dilation) {
-            this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
+        public void setDilation(long... dilation) {
+            this.dilation = ValidationUtils.validate3NonNegativeLong(dilation, "dilation");
         }
 
 
@@ -295,7 +295,7 @@ public class Convolution3D extends ConvolutionLayer {
         @SuppressWarnings("unchecked")
         public Convolution3D build() {
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
-            Convolution3DUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
+            Convolution3DUtils.validateCnn3DKernelStridePaddingLong(kernelSize, stride, padding);
 
             return new Convolution3D(this);
         }

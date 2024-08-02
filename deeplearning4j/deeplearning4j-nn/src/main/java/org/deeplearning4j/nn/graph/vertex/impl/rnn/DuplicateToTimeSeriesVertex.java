@@ -80,7 +80,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         for (int i = 0; i < tsLength; i++) {
             out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
         }
-        return out;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
     }
 
     @Override

@@ -65,9 +65,9 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         val inShape = input.shape();
         INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, dataType, inShape, 'c');
-        INDArray epsNextSubset = epsNext.get(all(), all(), interval(cropping[0], epsNext.size(2)-cropping[1]));
+        INDArray epsNextSubset = epsNext.get(all(), all(), interval(cropping[0], epsNext.size(2) - cropping[1]));
         epsNextSubset.assign(epsilon);
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return new Pair<>(new DefaultGradient(), workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,epsNext));
     }
 
 
@@ -87,13 +87,14 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
         return 0.0;
     }
 
-    private INDArray inputSubset(INDArray from, ArrayType arrayType, LayerWorkspaceMgr workspaceMgr){
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(arrayType)){
-            if(from.dataType() == dataType){
-                return from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])).dup(from.ordering());
-            } else {
-                return from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])).castTo(dataType);
-            }
+    private INDArray inputSubset(INDArray from, ArrayType arrayType, LayerWorkspaceMgr workspaceMgr) {
+        if(from.dataType() == dataType) {
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,from.get(all(), all(), interval(cropping[0], from.size(2)
+                    - cropping[1])).dup(from.ordering()));
+        } else {
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,
+                    from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])).castTo(dataType));
         }
+
     }
 }

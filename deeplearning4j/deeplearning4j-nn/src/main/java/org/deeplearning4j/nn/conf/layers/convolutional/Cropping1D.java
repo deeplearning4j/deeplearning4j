@@ -150,7 +150,7 @@ public class Cropping1D extends NoParamLayer {
          * @param cropBottom Amount of cropping to apply to the bottom of the input activations
          */
         public Builder(int cropTop, int cropBottom) {
-            this.setCropping(new int[]{cropTop, cropBottom});
+            this.setCropping(cropTop, cropBottom);
         }
 
         public Cropping1D build() {

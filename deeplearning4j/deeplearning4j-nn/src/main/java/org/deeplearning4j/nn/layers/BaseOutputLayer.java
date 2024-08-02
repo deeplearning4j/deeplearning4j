@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -51,7 +52,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     //current input and label matrices
     protected INDArray labels;
 
-    private transient Solver solver;
 
     private double fullNetRegTerm;
 
@@ -77,7 +77,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.INPUT);
         double score = lossFunction.computeScore(labels2d, preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
@@ -146,12 +146,14 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{w.size(0), delta.size(0)}, 'f');
+
         epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
+        epsilonNext = backpropDropOutIfPresent(epsilonNext);
+
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
 
-        epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
 
@@ -168,7 +170,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
-        //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
 
         Gradient gradient = new DefaultGradient();
@@ -177,7 +178,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
-        if(hasBias()){
+        if(hasBias()) {
             INDArray biasGradView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
             delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
             gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);

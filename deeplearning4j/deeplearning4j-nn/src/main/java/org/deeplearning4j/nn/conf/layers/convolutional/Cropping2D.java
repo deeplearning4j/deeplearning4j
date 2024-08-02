@@ -45,7 +45,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Cropping2D extends NoParamLayer {
 
-    private int[] cropping;
+    private long[] cropping;
     private CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
     /**
@@ -78,7 +78,7 @@ public class Cropping2D extends NoParamLayer {
      * @param cropping Cropping as either a length 2 array, with values {@code [cropTopBottom, cropLeftRight]}, or as a
      * length 4 array, with values {@code [cropTop, cropBottom, cropLeft, cropRight]}
      */
-    public Cropping2D(int[] cropping) {
+    public Cropping2D(long[] cropping) {
         this(new Builder(cropping));
     }
 
@@ -104,8 +104,8 @@ public class Cropping2D extends NoParamLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         int[] hwd = ConvolutionUtils.getHWDFromInputType(inputType);
-        int outH = hwd[0] - cropping[0] - cropping[1];
-        int outW = hwd[1] - cropping[2] - cropping[3];
+        long outH = hwd[0] - cropping[0] - cropping[1];
+        long outW = hwd[1] - cropping[2] - cropping[3];
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
 
@@ -137,7 +137,7 @@ public class Cropping2D extends NoParamLayer {
          * Cropping amount for top/bottom/left/right (in that order). A length 4 array.
          */
         @Setter(AccessLevel.NONE)
-        private int[] cropping = new int[] {0, 0, 0, 0};
+        private long[] cropping = {0, 0, 0, 0};
 
         private CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
 
@@ -155,8 +155,8 @@ public class Cropping2D extends NoParamLayer {
         /**
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 1, 2, or 4 array.
          */
-        public void setCropping(int... cropping) {
-            this.cropping = ValidationUtils.validate4NonNegative(cropping, "cropping");
+        public void setCropping(long... cropping) {
+            this.cropping = ValidationUtils.validate4NonNegativeLong(cropping, "cropping");
         }
 
         public Builder() {
@@ -166,7 +166,7 @@ public class Cropping2D extends NoParamLayer {
         /**
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 4 array.
          */
-        public Builder(@NonNull int[] cropping) {
+        public Builder(@NonNull long[] cropping) {
             this.setCropping(cropping);
         }
 
@@ -185,7 +185,7 @@ public class Cropping2D extends NoParamLayer {
          * @param cropRight Amount of cropping to apply to the right of the input activations
          */
         public Builder(int cropTop, int cropBottom, int cropLeft, int cropRight) {
-            this.setCropping(new int[] {cropTop, cropBottom, cropLeft, cropRight});
+            this.setCropping(new long[] {cropTop, cropBottom, cropLeft, cropRight});
         }
 
         public Cropping2D build() {

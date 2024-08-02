@@ -26,5 +26,5 @@ package org.deeplearning4j.nn.api;
  *
  */
 public enum OptimizationAlgorithm {
-    LINE_GRADIENT_DESCENT, CONJUGATE_GRADIENT, LBFGS, STOCHASTIC_GRADIENT_DESCENT
+    STOCHASTIC_GRADIENT_DESCENT
 }

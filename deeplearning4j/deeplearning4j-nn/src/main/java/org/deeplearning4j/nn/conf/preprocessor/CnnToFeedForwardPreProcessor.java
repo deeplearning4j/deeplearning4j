@@ -79,19 +79,19 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         int chDim = 1;
         int hDim = 2;
         int wDim = 3;
-        if(format == CNN2DFormat.NHWC){
+        if(format == CNN2DFormat.NHWC) {
             chDim = 3;
             hDim = 1;
             wDim = 2;
         }
 
-        if(inputHeight == 0 && inputWidth == 0 && numChannels == 0){
+        if(inputHeight == 0 && inputWidth == 0 && numChannels == 0) {
             this.inputHeight = input.size(hDim);
             this.inputWidth = input.size(wDim);
             this.numChannels = input.size(chDim);
         }
 
-        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight || input.size(wDim) != inputWidth){
+        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight || input.size(wDim) != inputWidth) {
             throw new IllegalStateException("Invalid input, does not match configuration: expected " +
                     (format == CNN2DFormat.NCHW ? "[minibatch, numChannels=" + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] " :
                             "[minibatch, inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + ", numChannels=" + numChannels + "]") +
@@ -100,7 +100,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         //Check input: nchw format
         if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight ||
-                input.size(wDim) != inputWidth){
+                input.size(wDim) != inputWidth) {
             throw new IllegalStateException("Invalid input array: expected shape [minibatch, channels, height, width] = "
                     + "[minibatch, " + numChannels + ", " + inputHeight + ", " + inputWidth + "] - got "
                     + Arrays.toString(input.shape()));
@@ -116,7 +116,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }
 
     @Override

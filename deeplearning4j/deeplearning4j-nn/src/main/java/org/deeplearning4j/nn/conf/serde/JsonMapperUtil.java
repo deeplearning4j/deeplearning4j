@@ -17,32 +17,18 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.deeplearning4j.nn.conf.serde;
 
-package org.deeplearning4j.nn.updater;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 
-import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-
-/**
- *
- *
- * @author Adam Gibson
- */
-public class UpdaterCreator {
-
-    private UpdaterCreator() {}
-
-    public static org.deeplearning4j.nn.api.Updater getUpdater(Model layer) {
-        if (layer instanceof MultiLayerNetwork) {
-            return new MultiLayerUpdater((MultiLayerNetwork) layer);
-        } else if (layer instanceof ComputationGraph) {
-            return new ComputationGraphUpdater((ComputationGraph) layer);
-        } else {
-            return new LayerUpdater((Layer) layer);
-        }
+public class JsonMapperUtil {
+    public static void configureMapper(ObjectMapper ret) {
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
     }
-
 }

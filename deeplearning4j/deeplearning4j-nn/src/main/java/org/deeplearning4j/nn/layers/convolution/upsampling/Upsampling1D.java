@@ -56,7 +56,7 @@ public class Upsampling1D extends Upsampling2D {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        int[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
+        long[] size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
         // we replicate the error term times "size" so that backprop works properly on it
         epsilon = epsilon.repeat(3, size[0]);
@@ -93,7 +93,7 @@ public class Upsampling1D extends Upsampling2D {
     }
 
     @Override
-    protected int[] getSize(){
+    protected long[] getSize(){
         return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 

@@ -35,7 +35,9 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -43,9 +45,11 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +85,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     protected boolean validateOutputLayerConfig = true;     //Default for 1.0.0-beta3 and earlier nets
 
+
     /**
      * List of inputs to the network, by name
      */
@@ -107,18 +112,72 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected int[] topologicalOrder;
     protected List<String> topologicalOrderStr;
 
+    private static ObjectMapper mapper = mapper();
+    private static ObjectMapper mapperYaml = mapperYaml();
+
+
+
+    public static ObjectMapper mapperYaml() {
+        ObjectMapper ret = new ObjectMapper(new YAMLFactory());
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                                                          JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
+                    return new ComputationGraphConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+        return ret;
+    }
+
+
+    public static ObjectMapper mapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                                                          JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
+                    return new ComputationGraphConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+        return ret;
+    }
+
+
+
     /**
      * @return YAML representation of configuration
      */
     public String toYaml() {
-        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
-        synchronized (mapper) {
-            try {
-                return mapper.writeValueAsString(this);
-            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            return mapperYaml.writeValueAsString(this);
+        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
+
     }
 
     /**
@@ -128,9 +187,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @return {@link ComputationGraphConfiguration}
      */
     public static ComputationGraphConfiguration fromYaml(String json) {
-        ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
         try {
-            return mapper.readValue(json, ComputationGraphConfiguration.class);
+            return mapperYaml.readValue(json, ComputationGraphConfiguration.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -141,8 +199,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     public String toJson() {
         //As per MultiLayerConfiguration.toJson()
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
-        synchronized (mapper) {
             //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
             //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
             try {
@@ -150,7 +206,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-        }
+
     }
 
     /**
@@ -161,7 +217,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     public static ComputationGraphConfiguration fromJson(String json) {
         //As per MultiLayerConfiguration.fromJson()
-        ObjectMapper mapper = NeuralNetConfiguration.mapper();
         ComputationGraphConfiguration conf;
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
@@ -174,7 +229,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     //Check for legacy custom layers: "Could not resolve type id 'CustomLayer' as a subtype of [simple type, class org.deeplearning4j.nn.conf.layers.Layer]: known type ids = [Bidirectional, CenterLossOutputLayer, CnnLossLayer, ..."
                     //1.0.0-beta5: dropping support for custom layers defined in pre-1.0.0-beta format. Built-in layers from these formats still work
                     String msg = e2.getMessage();
-                    if(msg != null && msg.contains("Could not resolve type id")){
+                    if(msg != null && msg.contains("Could not resolve type id")) {
                         throw new RuntimeException("Error deserializing ComputationGraphConfiguration - configuration may have a custom " +
                                 "layer, vertex or preprocessor, in pre version 1.0.0-beta JSON format.\nModels in legacy format with custom" +
                                 " layers should be loaded in 1.0.0-beta to 1.0.0-beta4 and saved again, before loading in the current version of DL4J", e);
@@ -494,7 +549,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * layer types such as convolutional -> dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
      *                                  activation sizes
-     * @param overrideInputs            whether to forcibly over ride inputs when
+     * @param overrideInputs            whether to forcibly override inputs when
      *                                  setting inputs
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
@@ -1178,7 +1233,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
 
-        private ComputationGraphConfiguration buildConfig(){
+        private ComputationGraphConfiguration buildConfig() {
             //Validate BackpropType setting
             if((tbpttBackLength != DEFAULT_TBPTT_LENGTH || tbpttFwdLength != DEFAULT_TBPTT_LENGTH) && backpropType != BackpropType.TruncatedBPTT){
                 log.warn("Truncated backpropagation through time lengths have been configured with values " + tbpttFwdLength
@@ -1257,7 +1312,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig) {
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
-                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
+                for(Map.Entry<String,GraphVertex> e : vertices.entrySet()) {
                     GraphVertex gv = e.getValue();
                     Layer l = (gv instanceof LayerVertex ? ((LayerVertex)gv).getLayerConf().getLayer() : null);
                     if(gv instanceof LastTimeStepVertex || (l != null && (l instanceof LastTimeStep || l instanceof GlobalPoolingLayer))){

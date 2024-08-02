@@ -31,7 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class SimpleRnnParamInitializer implements ParamInitializer {
 
@@ -60,22 +59,30 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         SimpleRnn c = (SimpleRnn)layer;
         val nIn = c.getNIn();
         val nOut = c.getNOut();
-        return nIn * nOut + nOut * nOut + nOut + (hasLayerNorm(layer) ? 2 * nOut : 0);
+        if(!c.isUseBias()) {
+            return nIn * nOut + nOut * nOut  + (hasLayerNorm(layer) ? 2 * nOut : 0);
+
+        } else {
+            return nIn * nOut + nOut * nOut + nOut + (hasLayerNorm(layer) ? 2 * nOut : 0);
+
+        }
     }
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        final ArrayList<String> keys = new ArrayList<>(3);
+        List<String> keys = new ArrayList<>(3);
         keys.addAll(weightKeys(layer));
-        keys.addAll(biasKeys(layer));
+        SimpleRnn simpleRnn = (SimpleRnn) layer;
+        if(simpleRnn.isUseBias())
+            keys.addAll(biasKeys(layer));
         return keys;
     }
 
     @Override
     public List<String> weightKeys(Layer layer) {
-        final ArrayList<String> keys = new ArrayList<>(WEIGHT_KEYS);
+        List<String> keys = new ArrayList<>(WEIGHT_KEYS);
 
-        if(hasLayerNorm(layer)){
+        if(hasLayerNorm(layer)) {
             keys.add(GAIN_KEY);
         }
 
@@ -106,7 +113,7 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         Map<String,INDArray> m;
 
         if (initializeParams) {
-            m = getSubsets(paramsView, nIn, nOut, false, hasLayerNorm(c));
+            m = getSubsets(paramsView, nIn, nOut, false, hasLayerNorm(c), c.isUseBias());
             INDArray w = c.getWeightInitFn().init(nIn, nOut, new long[]{nIn, nOut}, 'f', m.get(WEIGHT_KEY));
             m.put(WEIGHT_KEY, w);
 
@@ -119,19 +126,20 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
             INDArray rw = rwInit.init(nOut, nOut, new long[]{nOut, nOut}, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
+            if(c.isUseBias())
+                m.get(BIAS_KEY).assign(c.getBiasInit());
 
-            m.get(BIAS_KEY).assign(c.getBiasInit());
-
-            if(hasLayerNorm(c)){
+            if(hasLayerNorm(c)) {
                 m.get(GAIN_KEY).assign(c.getGainInit());
             }
         } else {
-            m = getSubsets(paramsView, nIn, nOut, true, hasLayerNorm(c));
+            m = getSubsets(paramsView, nIn, nOut, true, hasLayerNorm(c), c.isUseBias());
         }
 
         conf.addVariable(WEIGHT_KEY);
         conf.addVariable(RECURRENT_WEIGHT_KEY);
-        conf.addVariable(BIAS_KEY);
+        if(c.isUseBias())
+            conf.addVariable(BIAS_KEY);
         if(hasLayerNorm(c)){
             conf.addVariable(GAIN_KEY);
         }
@@ -145,18 +153,18 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         val nIn = c.getNIn();
         val nOut = c.getNOut();
 
-        return getSubsets(gradientView, nIn, nOut, true, hasLayerNorm(c));
+        return getSubsets(gradientView, nIn, nOut, true, hasLayerNorm(c), c.isUseBias());
     }
 
-    private static Map<String,INDArray> getSubsets(INDArray in, long nIn, long nOut, boolean reshape, boolean hasLayerNorm){
+    private static Map<String,INDArray> getSubsets(INDArray in, long nIn, long nOut, boolean reshape, boolean hasLayerNorm, boolean useBias) {
         long pos = nIn * nOut;
         INDArray inReshaped = in.reshape(in.length());
         INDArray w = inReshaped.get(interval(0, pos));
         INDArray rw = inReshaped.get(interval(pos, pos + nOut * nOut));
         pos += nOut * nOut;
-        INDArray b = inReshaped.get(interval(pos, pos + nOut));
+        INDArray b = useBias ?  inReshaped.get(interval(pos, pos + nOut)) : null;
 
-        if(reshape){
+        if(reshape) {
             w = w.reshape('f', nIn, nOut);
             rw = rw.reshape('f', nOut, nOut);
         }
@@ -164,8 +172,9 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
         Map<String,INDArray> m = new LinkedHashMap<>();
         m.put(WEIGHT_KEY, w);
         m.put(RECURRENT_WEIGHT_KEY, rw);
-        m.put(BIAS_KEY, b);
-        if(hasLayerNorm){
+        if(useBias)
+            m.put(BIAS_KEY, b);
+        if(hasLayerNorm) {
             pos += nOut;
             INDArray g = inReshaped.get(interval(pos, pos + 2 * nOut));
             m.put(GAIN_KEY, g);
@@ -174,9 +183,17 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
     }
 
     protected boolean hasLayerNorm(Layer layer) {
-        if(layer instanceof SimpleRnn){
+        if(layer instanceof SimpleRnn) {
             return ((SimpleRnn) layer).hasLayerNorm();
         }
+        return false;
+    }
+
+    protected  boolean useBias(Layer layer) {
+        if(layer instanceof SimpleRnn) {
+            return ((SimpleRnn) layer).isUseBias();
+        }
+
         return false;
     }
 }

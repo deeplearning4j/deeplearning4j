@@ -25,7 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.layers.HelperUtils;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
@@ -58,7 +57,6 @@ public class Dropout implements IDropout {
     private double p;
     private ISchedule pSchedule;
     private transient INDArray mask;
-    private transient DropoutHelper helper;
     private boolean initializedHelper = false;
 
     private int helperCountFail = 0;
@@ -103,16 +101,6 @@ public class Dropout implements IDropout {
         this.pSchedule = activationRetainProbabilitySchedule;
     }
 
-    /**
-     * Initialize the CuDNN dropout helper, if possible
-     */
-    protected void initializeHelper(DataType dataType){
-        helper = HelperUtils.createHelper(CUDNN_DROPOUT_HELPER_CLASS_NAME,
-                "", DropoutHelper.class, "dropout-helper", dataType
-        );
-
-        initializedHelper = helper != null;
-    }
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {
@@ -125,34 +113,7 @@ public class Dropout implements IDropout {
             currP = p;
         }
 
-        if(!initializedHelper){
-            initializeHelper(output.dataType());
-        }
 
-        if(helper != null && (helperCountFail == 0 || !isHelperAllowFallback())){
-            boolean helperWorked = false;
-            try {
-                helper.applyDropout(inputActivations, output, p);
-                helperWorked = true;
-            }catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-                if(isHelperAllowFallback()){
-                    helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                } else {
-                    throw new RuntimeException("Error during Dropout CuDNN helper forward pass - helperAllowFallback() is set to false", e);
-                }
-            }
-
-            if(helperWorked)
-                return output;
-        }
 
         INDArray inputCast = inputActivations;
         if(inputCast != output && inputCast.dataType() != output.dataType()){
@@ -167,31 +128,6 @@ public class Dropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
-        if(helper != null && (helperCountFail == 0 || !isHelperAllowFallback())){
-            boolean helperWorked = false;
-            try {
-                helper.backprop(gradAtOutput, gradAtInput);
-                helperWorked = true;
-            }catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Exception e){
-                if(e.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw e;
-                }
-
-                if(isHelperAllowFallback()){
-                    helperCountFail++;
-                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
-                } else {
-                    throw new RuntimeException("Error during Dropout CuDNN helper backprop - helperAllowFallback() is set to false", e);
-                }
-            }
-
-            if(helperWorked)
-                return gradAtInput;
-        }
-
         Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");
         //dL/dx = dL/dz * dz/dx, with z=0 or x/p
         //Mask already contains either 0 or 1/p, so just muli
