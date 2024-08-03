@@ -52,8 +52,8 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
+    public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v,  boolean inPlace, Object[] extraArgs) {
+        super(sameDiff, i_v, inPlace, extraArgs);
     }
 
     public BaseTransformBoolOp(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
@@ -122,7 +122,11 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
-        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
+
+        LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.emptyWithShape(x.shape(),DataType.BOOL) :
+                LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL);
+        //Calculate reduction shape. Note that reduction on scalar - returns a scalar
+        return Collections.singletonList(desc);
     }
 
     @Override

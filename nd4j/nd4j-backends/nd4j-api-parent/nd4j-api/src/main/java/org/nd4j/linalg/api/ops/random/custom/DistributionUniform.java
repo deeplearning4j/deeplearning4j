@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -76,15 +75,8 @@ public class DistributionUniform extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        AttrValue vDtype = attributesForNode.get("dtype");
-        AttrValue vTout = attributesForNode.get("Tout");
-        if (vDtype == null && vTout == null) {
-            throw new ND4JIllegalStateException("Unable to find output data type for node " + nodeDef.getName());
-        }
-        AttrValue v = vDtype == null ? vTout : vDtype;
-        dataType = TFGraphMapper.convertType(v.getType());
-        addIArgument(dataType.toInt());
-        addTArgument(0.0, 1.0); //TF version is hardcoded 0 to 1
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
+
     }
 
     protected void addArgs() {

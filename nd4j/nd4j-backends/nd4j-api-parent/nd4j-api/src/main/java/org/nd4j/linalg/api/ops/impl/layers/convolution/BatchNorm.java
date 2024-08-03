@@ -30,7 +30,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -126,36 +125,8 @@ public class BatchNorm extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        //Switch order: TF uses [input, gamma, beta, mean, variance]; libnd4j expects [input, mean, variance, gamma, beta]
-        SameDiffOp op = initWith.getOps().get(this.getOwnName());
-        List<String> list = op.getInputsToOp();
-        List<String> newList = Arrays.asList(list.get(0), list.get(3), list.get(4), list.get(1), list.get(2));
-        op.setInputsToOp(newList);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
-        this.applyGamma = true;
-        this.applyBeta = true;
-        this.epsilon = attributesForNode.get("epsilon").getF();
-
-        if(attributesForNode.containsKey("data_format")){
-            String dataFormat = attributesForNode.get("data_format").getS().toStringUtf8();
-            //TODO not sure if these conv1d/3d cases appear. But BN definitely uses "NCHW" or "NHWC"
-            if(dataFormat.equalsIgnoreCase(Conv2DConfig.NCHW) || dataFormat.equalsIgnoreCase(Conv1DConfig.NCW) || dataFormat.equalsIgnoreCase(Conv3DConfig.NCDHW)){
-                jaxis = new int[]{1};
-            } else if(dataFormat.equalsIgnoreCase(Conv2DConfig.NHWC)){
-                jaxis = new int[]{3};
-            } else if(dataFormat.equalsIgnoreCase(Conv1DConfig.NWC)){
-                jaxis = new int[]{2};
-            } else if(dataFormat.equalsIgnoreCase(Conv3DConfig.NDHWC)){
-                jaxis = new int[]{4};
-            } else {
-                throw new IllegalStateException("Unknown data format: \"" + dataFormat + "\"" );
-            }
-        }
-
-
-
-        addArgs();
     }
 
     @Override

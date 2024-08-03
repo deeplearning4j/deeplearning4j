@@ -23,7 +23,6 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
@@ -86,12 +85,8 @@ public class Relu6 extends BaseScalarOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        //TF cutoff is always 0.0. Need to make sure scalar type is same as input type (due to scalar op 'same type' exec restrictions)
-        if(attributesForNode.containsKey("T")){
-            attributesForNode.get("T").getType();
-            DataType dt = TFGraphMapper.convertType(attributesForNode.get("T").getType());
-            scalarValue = Nd4j.scalar(dt, 0.0);
-        }
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
+
     }
 
 
