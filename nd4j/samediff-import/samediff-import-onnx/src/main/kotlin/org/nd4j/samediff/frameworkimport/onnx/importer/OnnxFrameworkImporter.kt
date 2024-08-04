@@ -53,15 +53,20 @@ class OnnxFrameworkImporter: FrameworkImporter {
         return OnnxIRGraph(loadGraph.graph, registry)
     }
 
-    override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>,suggestDynamicVariables: Boolean): SameDiff {
+    override fun runImport(
+        fileName: String,
+        dynamicVariables: Map<String, INDArray>,
+        suggestDynamicVariables: Boolean,
+        trackVariableChanges: Boolean
+    ): SameDiff {
         val loadGraph = loadGraph(fileName)
         if(suggestDynamicVariables) {
             val newDynamicVariables  = suggestDynamicVariables(loadGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
             val dynamicVariablesConverted = convertToOnnxTensors(newDynamicVariables)
-            return onnxImporter.importGraph(loadGraph,null,null, dynamicVariablesConverted,registry)
+            return onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
         } else {
             val dynamicVariablesConverted = convertToOnnxTensors(dynamicVariables)
-            return onnxImporter.importGraph(loadGraph,null,null, dynamicVariablesConverted,registry)
+            return onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
         }
 
     }

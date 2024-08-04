@@ -20,7 +20,6 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
 import org.nd4j.autodiff.samediff.SameDiff
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
@@ -28,7 +27,6 @@ import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.TensorflowImportGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.convertNDArrayToTensorflowTensor
-import org.nd4j.samediff.frameworkimport.tensorflow.definitions.gruCell
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.tensorflowOpRegistry
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.opdefs.TensorflowOpDescriptorLoader
@@ -37,7 +35,6 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.tensorflow.framework.*
 import java.io.File
 import java.nio.file.Files
-import java.util.*
 import kotlin.collections.HashMap
 
 class TensorflowFrameworkImporter: FrameworkImporter {
@@ -62,11 +59,16 @@ class TensorflowFrameworkImporter: FrameworkImporter {
             dynamicVariablesConverted[name] = converted
         }
         val irGraph = TensorflowIRGraph(graphDef, opDefList, registry)
-        return tfImporter.importGraph(irGraph, null, null, dynamicVariablesConverted, tensorflowOpRegistry)
+        return tfImporter.importGraph(irGraph, null, null, dynamicVariablesConverted, tensorflowOpRegistry, false)
 
     }
 
-    override fun runImport(fileName: String, dynamicVariables: Map<String, INDArray>,suggestDynamicVariables: Boolean): SameDiff {
+    override fun runImport(
+        fileName: String,
+        dynamicVariables: Map<String, INDArray>,
+        suggestDynamicVariables: Boolean,
+        trackVariableChanges: Boolean
+    ): SameDiff {
         val loadGraph = GraphDef.parseFrom(Files.readAllBytes(File(fileName).toPath()))
         val irGraph = TensorflowIRGraph(loadGraph,opDefList,registry)
         return if(suggestDynamicVariables) {
