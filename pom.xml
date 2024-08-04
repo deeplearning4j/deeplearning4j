@@ -191,7 +191,7 @@
         <moditect.add.skip>false</moditect.add.skip>
         <moditect.version>1.0.0.RC2</moditect.version>
 
-        <python.version>3.11.3</python.version>
+        <python.version>3.12.1</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <numpy.version>1.26.3</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
