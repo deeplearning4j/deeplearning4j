@@ -1222,7 +1222,7 @@ static sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray) {
   }
 
   auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
- // delete[] shape;
+  delete[] shape;
   return reinterpret_cast<sd::Pointer>(shapeBuffer);
 }
 
