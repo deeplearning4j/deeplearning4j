@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -176,8 +177,8 @@ public class TestGradientCheckTestsMasking extends BaseDL4JTest {
                             .dataType(DataType.DOUBLE)
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(2).activation(Activation.TANH).build())
-                            .layer(1, new GravesBidirectionalLSTM.Builder().nIn(2).nOut(layerSize)
-                                            .activation(Activation.TANH).build())
+                            .layer(1, new Bidirectional(new SimpleRnn.Builder().nIn(nIn).nOut(2).activation(Activation.TANH).build())
+                                            )
                             .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
                             .build();

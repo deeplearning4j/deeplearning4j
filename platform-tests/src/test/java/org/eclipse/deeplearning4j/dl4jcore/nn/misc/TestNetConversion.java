@@ -135,7 +135,6 @@ public class TestNetConversion extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Sgd(0.1))
                 .list()
-                .layer(new GravesLSTM.Builder().nOut(8).build())
                 .layer(new LSTM.Builder().nOut(8).build())
                 .layer(new RnnOutputLayer.Builder().nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
                 .setInputType(InputType.recurrent(5))

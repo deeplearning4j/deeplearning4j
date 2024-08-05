@@ -12,6 +12,7 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
+
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
@@ -27,6 +28,7 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+
 
 
 
@@ -89,8 +91,11 @@ SD_HOST void BroadcastBool<X, Z>::intermediateBroadcast(dim3 launchDims, cudaStr
                                                         const sd::LongType* xShapeInfo, const void* y,
                                                         const sd::LongType* yShapeInfo, void* z,
                                                         const sd::LongType* zShapeInfo, void* extraParams) {
+
+
+
   broadcastBoolSimple<X, Z, OpClass>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
+  <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
   sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
 }
 
@@ -104,11 +109,12 @@ SD_HOST void BroadcastBool<X, Y>::execBroadcast(dim3 launchDims, cudaStream_t* s
                                                 sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
                                                 sd::LongType const* tadOnlyShapeInfoZ,
                                                 sd::LongType const* tadOffsetsZ) {
+
   DISPATCH_BY_OPNUM_TT(intermediateBroadcast,
                        PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension,
                               dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
                        OPS_A(BROADCAST_BOOL_OPS))
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -149,7 +155,7 @@ SD_HOST void BroadcastBool<X, Y>::execInverseBroadcast(
                               dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
                        OPS_A(BROADCAST_BOOL_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,6 +187,7 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
   __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
+
     tadLength = shape::length(tadOnlyShapeInfo);
     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
@@ -261,6 +268,7 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
       for (int i = threadIdx.x; i < tadLength; i += blockDim.x)
         rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS], extraParams);
     } else {
+
       // it is expected that x and z tads and y array all have the same length
       for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
         auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
@@ -276,23 +284,27 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                                  const sd::LongType* yShapeInfo, void* vz,
-                                                  const sd::LongType* zShapeInfo, void* vextraParams) {
+SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
+                                                  const sd::LongType* xShapeInfo,
+                                                  const void* vy,
+                                                  const sd::LongType* yShapeInfo,
+                                                  void* vz,
+                                                  const sd::LongType* zShapeInfo,
+                                                  void* vextraParams) {
   const X* x = reinterpret_cast<const X*>(vx);
   const X* y = reinterpret_cast<const X*>(vy);
   Z* z = reinterpret_cast<Z*>(vz);
-
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
   __shared__ sd::LongType zLen;
-  __shared__ int rank;
+  __shared__ sd::LongType xRank, yRank, zRank;
   __shared__ bool xzSameOffsets, yzSameOffsets;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
-    rank = shape::rank(zShapeInfo);
-
+    xRank = shape::rank(xShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    zRank = shape::rank(zShapeInfo);
     xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
   }
@@ -300,16 +312,15 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx, const sd::Long
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
+    sd::LongType coords[SD_MAX_RANK];
     shape::index2coords(i, zShapeInfo, coords);
-
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
     const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
     const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
+    z[zOffset] = OpType::op(x[xOffset], y[yOffset],extraParams);
 
-    z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }
 }
 

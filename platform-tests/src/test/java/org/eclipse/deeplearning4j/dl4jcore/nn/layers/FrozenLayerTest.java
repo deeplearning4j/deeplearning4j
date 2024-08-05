@@ -68,8 +68,6 @@ class FrozenLayerTest extends BaseDL4JTest {
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToFineTune).fineTuneConfiguration(finetune).setFeatureExtractor(1).build();
         INDArray paramsLastTwoLayers = Nd4j.hstack(modelToFineTune.getLayer(2).params(), modelToFineTune.getLayer(3).params());
         MultiLayerNetwork notFrozen = new MultiLayerNetwork(overallConf.clone().list().layer(0, new DenseLayer.Builder().nIn(2).nOut(3).build()).layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build()).build(), paramsLastTwoLayers);
-        // assertEquals(modelNow.getLayer(2).conf(), notFrozen.getLayer(0).conf());  //Equal, other than names
-        // assertEquals(modelNow.getLayer(3).conf(), notFrozen.getLayer(1).conf());  //Equal, other than names
         // Check: forward pass
         INDArray outNow = modelNow.output(randomData.getFeatures());
         INDArray outNotFrozen = notFrozen.output(asFrozenFeatures);

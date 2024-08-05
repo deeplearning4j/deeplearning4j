@@ -306,7 +306,7 @@ void cnpy::parseNpyHeader(FILE *fp, unsigned int &wordSize, unsigned int *&shape
   if (res != 11) THROW_EXCEPTION("parse_npy_header: failed fread");
   std::string header = fgets(buffer, 256, fp);
   assert(header[header.size() - 1] == '\n');
-  cnpy::parseNpyHeaderStr(header, wordSize, shape, ndims, fortranOrder);
+  parseNpyHeaderStr(header, wordSize, shape, ndims, fortranOrder);
 }
 
 /**
@@ -347,11 +347,11 @@ cnpy::NpyArray cnpy::loadNpyFromFile(FILE *fp) {
   unsigned int *shape;
   unsigned int ndims, wordSize;
   bool fortranOrder;
-  cnpy::parseNpyHeader(fp, wordSize, shape, ndims, fortranOrder);
+  parseNpyHeader(fp, wordSize, shape, ndims, fortranOrder);
   unsigned long long size = 1;  // long long so no overflow when multiplying by word_size
   for (unsigned int i = 0; i < ndims; i++) size *= shape[i];
 
-  cnpy::NpyArray arr;
+  NpyArray arr;
   arr.wordSize = wordSize;
   arr.shape = std::vector<unsigned int>(shape, shape + ndims);
   arr.data = new char[size * wordSize];
@@ -369,7 +369,7 @@ cnpy::NpyArray cnpy::loadNpyFromFile(FILE *fp) {
 cnpy::NpyArray cnpy::loadNpyFromPointer(char *data) {
   // move the pointer forward by 11 imitating
   // the seek in loading directly from a file
-  return cnpy::loadNpyFromHeader(data);
+  return loadNpyFromHeader(data);
 }
 
 /**
@@ -403,7 +403,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
   unsigned int *shape;
   unsigned int ndims, wordSize;
   bool fortranOrder;
-  cnpy::parseNpyHeaderStr(std::string(data), wordSize, shape, ndims, fortranOrder);
+  parseNpyHeaderStr(std::string(data), wordSize, shape, ndims, fortranOrder);
   // the "real" data starts after the \n
   char currChar = data[0];
   int count = 0;
@@ -420,7 +420,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
   unsigned long long size = 1;  // long long so no overflow when multiplying by word_size
   for (unsigned int i = 0; i < ndims; i++) size *= shape[i];
   char *cursor = data;
-  cnpy::NpyArray arr;
+  NpyArray arr;
   arr.wordSize = wordSize;
   arr.shape = std::vector<unsigned int>(shape, shape + ndims);
   delete[] shape;
@@ -436,7 +436,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
  */
 
 cnpy::npz_t cnpy::npzLoad(FILE *fp) {
-  cnpy::npz_t arrays;
+  npz_t arrays;
 
   while (1) {
     std::vector<char> local_header(30);
@@ -478,7 +478,7 @@ cnpy::npz_t cnpy::npzLoad(std::string fname) {
 
   if (!fp) printf("npz_load: Error! Unable to open file %s!\n", fname.c_str());
   assert(fp);
-  cnpy::npz_t arrays;
+  npz_t arrays;
   while (1) {
     std::vector<char> local_header(30);
     size_t headerres = fread(&local_header[0], sizeof(char), 30, fp);
@@ -545,7 +545,7 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
     fseek(fp, extra_field_len, SEEK_CUR);  // skip past the extra field
 
     if (vname == varname) {
-      NpyArray array = cnpy::loadNpyFromFile(fp);
+      NpyArray array = loadNpyFromFile(fp);
       fclose(fp);
       return array;
     } else {
@@ -572,7 +572,7 @@ cnpy::NpyArray cnpy::npyLoad(std::string fname) {
     printf("npy_load: Error! Unable to open file %s!\n", fname.c_str());
   }
 
-  NpyArray arr = cnpy::loadNpyFromFile(fp);
+  NpyArray arr = loadNpyFromFile(fp);
 
   fclose(fp);
   return arr;
@@ -653,7 +653,7 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
  */
 template <typename T>
 std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsigned int ndims,
-                                        unsigned int wordSize) {
+                                         unsigned int wordSize) {
 
   std::vector<char> dict;
   dict += "{'descr': '";
@@ -697,5 +697,5 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT std::vector<char> cnpy::createNpyHe
 
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void cnpy::npy_save,
                       (std::string fname, const void *data, const unsigned int *shape, const unsigned int ndims,
-                       std::string mode),
+                          std::string mode),
                       SD_COMMON_TYPES);

@@ -30,7 +30,6 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
@@ -71,7 +70,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         updater.update(layer, gradient, 0, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         assertNotEquals(weightGradCopy, weightGrad);
@@ -107,7 +106,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         INDArray weightGrad = Nd4j.rand(10, 20);
         INDArray biasGrad = Nd4j.rand(1, 20);
         INDArray weightGradCopy = weightGrad.dup();
@@ -150,7 +149,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         updater.update(layer, gradient, 0, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         assertNotEquals(weightGradCopy, weightGrad);
@@ -213,7 +212,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
             else
                 assertTrue(layerGradL2 > threshold);
 
-            Updater updater = UpdaterCreator.getUpdater(layer);
+            Updater updater = layer.createUpdater();
             updater.update(layer, gradient, 0, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
             if (t == 0) {
@@ -251,7 +250,7 @@ public class TestGradientNormalization extends BaseDL4JTest {
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);
         INDArray biasGrad = Nd4j.rand(1, 20).muli(10);
         INDArray weightGradCopy = weightGrad.dup();

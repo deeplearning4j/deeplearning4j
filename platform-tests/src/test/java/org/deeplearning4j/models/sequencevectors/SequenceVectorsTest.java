@@ -62,7 +62,6 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -285,8 +284,6 @@ public class SequenceVectorsTest extends BaseDL4JTest {
 
     @Test
     public void testDeepWalk() throws Exception {
-        Heartbeat.getInstance().disableHeartbeat();
-
         AbstractCache<Blogger> vocabCache = new AbstractCache.Builder<Blogger>().build();
 
         Graph<Blogger, Double> graph = buildGraph();
@@ -298,14 +295,6 @@ public class SequenceVectorsTest extends BaseDL4JTest {
                         .setPopularitySpread(10).setPopularityMode(PopularityMode.MAXIMUM)
                         .setSpreadSpectrum(SpreadSpectrum.PROPORTIONAL).build();
 
-        /*
-        GraphWalker<Blogger> walker = new RandomWalker.Builder<Blogger>(graph)
-                .setNoEdgeHandling(NoEdgeHandling.RESTART_ON_DISCONNECTED)
-                .setWalkLength(40)
-                .setWalkDirection(WalkDirection.RANDOM)
-                .setRestartProbability(0.05)
-                .build();
-        */
 
         GraphTransformer<Blogger> graphTransformer = new GraphTransformer.Builder<>(graph).setGraphWalker(walker)
                         .shuffleOnReset(true).setVocabCache(vocabCache).build();

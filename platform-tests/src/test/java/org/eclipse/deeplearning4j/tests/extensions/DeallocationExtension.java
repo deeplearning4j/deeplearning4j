@@ -19,17 +19,16 @@
  */
 package org.eclipse.deeplearning4j.tests.extensions;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitioned0;
+import org.junit.jupiter.api.extension.*;
+import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatableReference;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -40,60 +39,229 @@ import java.util.concurrent.ConcurrentMap;
  * When each test is done, this extension will listen to when a test is done
  *
  */
-public class DeallocationExtension implements BeforeEachCallback, AfterEachCallback, DeallocatorService.CustomDeallocatorListener {
+public class DeallocationExtension implements BeforeAllCallback,BeforeTestExecutionCallback, BeforeEachCallback, AfterEachCallback, DeallocatorService.CustomDeallocatorListener {
 
-    private ConcurrentMap<String, List<DeallocatableReference>> references = new ConcurrentHashMap<>();
-    public final static String CURRENT_TEST_PROPERTY = "org.deeplearning4j.current.test";
+    private ConcurrentMap<String, ClassAllocationHandler> classAllocationHandlers = new ConcurrentHashMap<>();
+    private ConcurrentMap<TestParams, List<DeallocatableReference>> references = new ConcurrentHashMap<>();
+    private ConcurrentMap<TestParams, List<DataBuffer>> dataBuffers = new ConcurrentHashMap<>();
+
+
+    public final static String CURRENT_TEST_DISPLAY_NAME = "org.deeplearning4j.current.display";
+    public final static String CURRENT_TEST_CLASS_PROPERTY = "org.deeplearning4j.current.test.class";
+    public final static String CURRENT_TEST_METHOD_PROPERTY = "org.deeplearning4j.current.test.method";
+
+    private Set<DeallocatableReference> referencesBeforeSet = new LinkedHashSet<>();
+    private Map<String,DataBuffer> dataBuffersBeforeSet = new LinkedHashMap<>();
+    private static AtomicBoolean addedAsListener = new AtomicBoolean(false);
+    private Set<TestParams>  executed = new HashSet<>();
 
     public DeallocationExtension() {
-        Nd4j.getDeallocatorService().addListener(this);
+          }
+
+    private String currentTestDisplayName() {
+        return System.getProperty(CURRENT_TEST_DISPLAY_NAME, "");
     }
 
-    private String currentTestName() {
-        return System.getProperty(CURRENT_TEST_PROPERTY,"");
+    private String currentTestClassName() {
+        return System.getProperty(CURRENT_TEST_CLASS_PROPERTY, "");
+    }
+    private String currentTestMethodName() {
+        return System.getProperty(CURRENT_TEST_METHOD_PROPERTY, "");
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        String currenTestName = currentTestName();
-        Set<String> deallocated = new HashSet<>();
-        references.entrySet().stream().forEach(entry -> {
-            if(!entry.getKey().equals(currenTestName)) {
-                entry.getValue().stream().forEach(reference -> {
-                    reference.deallocate();
-                });
-            }
-            deallocated.add(entry.getKey());
-        });
+     /*   System.out.print("After each");
+        Set<TestParams> deallocated = new HashSet<>();
+        TestParams testParams = TestParams.builder()
+                .testDisplayName(context.getDisplayName())
+                .testClass(context.getTestClass().get().getName())
+                .testMethod(context.getTestMethod().get().getName())
+                .build();
+        //before deallocation handle any cases where the custom allocation handler
+        //has references that were allocated during test setup
+        //this will allow us to deallocate those references when appropriate
+        if (!classAllocationHandlers.isEmpty()) {
+            for (ClassAllocationHandler handler : classAllocationHandlers.values()) {
+                Map<String, List<DeallocatableReference>> referencesByDisplayName = handler.passedReferences();
+                for(Map.Entry<String,List<DeallocatableReference>> referenceEntry : referencesByDisplayName.entrySet()) {
+                    TestParams testParams2 = TestParams.builder()
+                            .testDisplayName(context.getDisplayName())
+                            .testClass(currentTestClassName())
+                            .testMethod(context.getTestMethod().get().getName())
+                            .build();
 
-        for(String s : deallocated) {
-            references.remove(s);
+                    if(references.containsKey(testParams2)) {
+                        references.get(testParams).addAll(referenceEntry.getValue());
+                    } else {
+                        references.put(testParams2,referenceEntry.getValue());
+                    }
+                }
+                //clear references since these have been properly aligned with their
+                //respective tests
+                handler.clearReferences();
+
+
+                Map<String, List<DataBuffer>> dataBuffersByDisplayName = handler.passedDataBuffers();
+                for (Map.Entry<String, List<DataBuffer>> referenceEntry : dataBuffersByDisplayName.entrySet()) {
+                    TestParams testParams2 = TestParams.builder()
+                            .testDisplayName(referenceEntry.getKey())
+                            .testClass(currentTestClassName())
+                            .testMethod(context.getTestMethod().get().getName())
+                            .build();
+                    if (dataBuffers.containsKey(testParams2)) {
+                        dataBuffers.get(testParams2).addAll(referenceEntry.getValue());
+                    } else {
+                        dataBuffers.put(testParams2, referenceEntry.getValue());
+                    }
+                }
+                //clear references since these have been properly aligned with their
+                //respective tests
+                handler.clearDataBuffers();
+            }
+
+
         }
 
-        System.clearProperty(CURRENT_TEST_PROPERTY);
+
+
+        deallocated.clear();
+
+        if (dataBuffers.size() > 1) {
+            dataBuffers.entrySet().stream().forEach(entry -> {
+                if (executed.contains(entry.getKey())) {
+                    entry.getValue().stream().forEach(reference -> {
+                        if (!Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.NO_ARRAY_GC, "false"))) {
+                            if (!reference.wasClosed() && reference.closeable() && !reference.isConstant()) {
+                                reference.close();
+                            }
+                        }
+                    });
+                    //clear references
+                    entry.getValue().clear();
+                    deallocated.add(entry.getKey());
+
+
+                }
+
+
+            });
+        }
+        for (TestParams s : deallocated) {
+            dataBuffers.remove(s);
+        }
+
+
+        System.clearProperty(CURRENT_TEST_DISPLAY_NAME);
+        System.clearProperty(CURRENT_TEST_CLASS_PROPERTY);
+        System.clearProperty(CURRENT_TEST_METHOD_PROPERTY);
+
+        System.out.println("DeallocationExtension: clear after each");
+        executed.add(testParams);*/
+    }
+
+
+    private String displayName(ExtensionContext context) {
+        //note unique id for parameterized methods is not actually unique, hence
+        //we need something like display name. Especially for parameterized methods
+        return context.getDisplayName();
+    }
+    private String testName(ExtensionContext context) {
+        //note unique id for parameterized methods is not actually unique, hence
+        //we need something like display name. Especially for parameterized methods
+        return context.getTestMethod().get().getName();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        System.setProperty(CURRENT_TEST_PROPERTY,context.getDisplayName());
+      /*  if(!addedAsListener.get()) {
+            Nd4j.getDeallocatorService().addListener(this);
+            classAllocationHandlers.put(TestTFGraphAllSameDiffPartitioned0.class.getName(), new TFTestAllocationHandler());
+
+            addedAsListener.set(true);
+        }
+         String parentPid = ProcessHandle.current().parent().isPresent() ? String.valueOf(ProcessHandle.current().parent().get().pid()) : "none";
+        System.out.println("beforeEach Setting test property  " + testName(context) + " for pid: " + ProcessHandle.current().pid() + " and parent process pid: " + parentPid);
+        System.setProperty(CURRENT_TEST_DISPLAY_NAME,context.getDisplayName());
+        System.setProperty(CURRENT_TEST_CLASS_PROPERTY,context.getTestClass().get().getName());
+        System.setProperty(CURRENT_TEST_METHOD_PROPERTY,context.getTestMethod().get().getName());
+        TestParams testParams = TestParams.builder()
+                .testDisplayName(context.getDisplayName())
+                .testClass(currentTestClassName())
+                .testMethod(context.getTestMethod().get().getName())
+                .build();
+        if(!dataBuffers.containsKey(testParams)) {
+            dataBuffers.put(testParams,new ArrayList<>());
+        }
+
+        Set<String> remove = new LinkedHashSet<>();
+        dataBuffersBeforeSet.entrySet().forEach(entry -> {
+            if(entry.getKey().equals(testParams.getTestDisplayName())) {
+                dataBuffers.get(testParams).add(entry.getValue());
+                remove.add(entry.getKey());
+            }
+        });
+
+
+        remove.forEach(dataBuffersBeforeSet::remove);
+        System.out.println("Done with before in PID: " + ProcessHandle.current().pid() + " for test " + context.getDisplayName());
+*/
+    }
+
+    @Override
+    public void registerDataBuffer(DataBuffer reference) {
+    /*    String currMethodName = currentTestMethodName();
+        String currentTestClassName = currentTestClassName();
+        String displayName = currentTestDisplayName();
+        //handle case where allocations happen before a test is created
+        TestParams testParams = TestParams.builder()
+                .testDisplayName(displayName)
+                .testClass(currentTestClassName())
+                .testMethod(currMethodName)
+                .build();
+        if(currMethodName.isEmpty()) {
+            if(classAllocationHandlers.containsKey(currentTestClassName)) {
+                classAllocationHandlers.get(currentTestClassName).handleDataBuffer(reference);
+
+            }
+            else {
+                dataBuffersBeforeSet.put(displayName,reference);
+
+            }
+        } else {
+            if(!dataBuffers.containsKey(testParams)) {
+                dataBuffers.put(testParams,new ArrayList<>());
+                dataBuffers.get(testParams).add(reference);
+            }
+            else {
+                dataBuffers.get(testParams).add(reference);
+            }
+        }*/
 
     }
 
     @Override
     public void registerDeallocatable(DeallocatableReference reference) {
-        String currName = currentTestName();
-        if(!references.containsKey(currName)) {
-            references.put(currName,new ArrayList<>());
-            references.get(currName).add(reference);
-        }
-        else {
-            references.get(currName).add(reference);
-        }
+
+
     }
 
     @Override
     public void addForDeallocation(DeallocatableReference reference) {
-        String currName = currentTestName();
 
+    }
+
+    @Override
+    public void beforeTestExecution(ExtensionContext context) throws Exception {
+
+    }
+
+
+
+
+    @Override
+    public void beforeAll(ExtensionContext context) throws Exception {
+        System.clearProperty(CURRENT_TEST_DISPLAY_NAME);
+        System.setProperty(CURRENT_TEST_CLASS_PROPERTY,context.getRequiredTestClass().getName());
     }
 }

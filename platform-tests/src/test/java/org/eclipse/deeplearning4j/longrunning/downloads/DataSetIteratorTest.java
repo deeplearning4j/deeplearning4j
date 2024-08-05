@@ -31,6 +31,7 @@ import org.deeplearning4j.datasets.iterator.impl.*;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -186,7 +187,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
         int seed = 123;
         int listenerFreq = 1;
         LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples, new int[] { numRows, numColumns, numChannels }, outputNum, false, true, 1.0, new Random(seed));
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).stride(1, 1).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(numRows, numColumns, numChannels));
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(seed).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).stride(1, 1).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(numRows, numColumns, numChannels));
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
         model.setListeners(new ScoreIterationListener(listenerFreq));
@@ -230,7 +231,7 @@ class DataSetIteratorTest extends BaseDL4JTest {
         int seed = 123;
         int listenerFreq = 1;
         Cifar10DataSetIterator cifar = new Cifar10DataSetIterator(batchSize);
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(height, width, channels));
+        ListBuilder builder = new NeuralNetConfiguration.Builder().seed(seed).gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list().layer(0, new ConvolutionLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER).activation(Activation.RELU).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] { 2, 2 }).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build()).setInputType(InputType.convolutionalFlat(height, width, channels));
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
         // model.setListeners(Arrays.asList((TrainingListener) new ScoreIterationListener(listenerFreq)));

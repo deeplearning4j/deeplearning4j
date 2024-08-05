@@ -22,16 +22,17 @@
 //
 #include <loops/special_kernels.h>
 
+
 namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void concatKernelHStack(int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfos, void *vz,
-                                  sd::LongType *zShapeInfo) {
+SD_DEVICE void concatKernelHStack(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz,
+                                  LongType *zShapeInfo) {
   // we expect all data coming in as vectors, and z as 2D matrix
   // the only significant difference here is the fact that input lengths might be different
   auto z = reinterpret_cast<T *>(vz);
-  auto inputShapes = (sd::LongType **)inputShapeInfos;
+  auto inputShapes = (LongType **)inputShapeInfos;
   T **input = (T **)data;
 
   __shared__ int inputEWS;
@@ -70,18 +71,18 @@ SD_DEVICE void concatKernelHStack(int numArrays, sd::Pointer *data, sd::Pointer 
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execConcatKernelHStack(int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfos, void *vz,
-                                      sd::LongType *zShapeInfo) {
+SD_KERNEL void execConcatKernelHStack(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz,
+                                      LongType *zShapeInfo) {
   concatKernelHStack<T>(numArrays, data, inputShapeInfos, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void concatKernelHStackGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, sd::Pointer *data,
-                                       sd::Pointer *inputShapeInfos, void *vz, sd::LongType *zShapeInfo) {
+SD_HOST void concatKernelHStackGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
+                                       Pointer *inputShapeInfos, void *vz, LongType *zShapeInfo) {
   execConcatKernelHStack<T>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, inputShapeInfos, vz, zShapeInfo);
-  sd::DebugHelper::checkErrorCode(stream, "concatHStack(...) failed");
+  DebugHelper::checkErrorCode(stream, "concatHStack(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void concatKernelHStackGeneric,

@@ -196,7 +196,7 @@ public class TestInvalidInput extends BaseDL4JTest {
     public void testInputNinMismatchLSTM() {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new LSTM.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -213,27 +213,6 @@ public class TestInvalidInput extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testInputNinMismatchBidirectionalLSTM() {
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).build())
-                        .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        try {
-            net.fit(Nd4j.create(1, 10, 5), Nd4j.create(1, 5, 5));
-            fail("Expected DL4JException");
-        } catch (DL4JException e) {
-            System.out.println("testInputNinMismatchBidirectionalLSTM(): " + e.getMessage());
-        } catch (Exception e) {
-            log.error("",e);
-            fail("Expected DL4JException");
-        }
-
-    }
 
     @Test
     public void testInputNinMismatchEmbeddingLayer() {
@@ -273,7 +252,7 @@ public class TestInvalidInput extends BaseDL4JTest {
                     l = new LSTM.Builder().nIn(5).nOut(5).build();
                     break;
                 case "graves":
-                    l = new GravesLSTM.Builder().nIn(5).nOut(5).build();
+                    l = new LSTM.Builder().nIn(5).nOut(5).build();
                     break;
                 default:
                     throw new RuntimeException();

@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -76,7 +76,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                     .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
-                    .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                    .addLayer("0", new LSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                             "in")
                     .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(2).nOut(1).activation(Activation.TANH).build(), "0")
@@ -171,7 +171,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                             "in")
                     .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                             "0")
-                    .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                    .addLayer("2", new LSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                             "1")
                     .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
                             .nIn(2).nOut(1).activation(Activation.TANH).build(), "2")
@@ -308,7 +308,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                 new NeuralNetConfiguration.Builder().seed(12345L)
                                         .graphBuilder()
                                         .addInputs("in").addLayer("0",
-                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                        new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                 .dist(new NormalDistribution(0,
                                                         1))
@@ -377,7 +377,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                 new NeuralNetConfiguration.Builder().seed(12345L)
                                         .graphBuilder()
                                         .addInputs("in").addLayer("0",
-                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                        new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                 .dist(new NormalDistribution(0,
                                                         1))
@@ -398,7 +398,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                 new NeuralNetConfiguration.Builder().seed(12345L)
                                         .graphBuilder()
                                         .addInputs("in").addLayer("0",
-                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                        new LSTM.Builder().nIn(nIn).nOut(5)
 
                                                 .dist(new NormalDistribution(0,
                                                         1))

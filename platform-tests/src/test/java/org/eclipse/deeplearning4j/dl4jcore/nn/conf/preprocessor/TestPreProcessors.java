@@ -27,7 +27,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.*;
@@ -406,7 +406,7 @@ public class TestPreProcessors extends BaseDL4JTest {
                         new NeuralNetConfiguration.Builder().list()
                                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(5)
                                                         .nOut(6).build())
-                                        .layer(1, new GravesLSTM.Builder().nIn(6).nOut(7).build())
+                                        .layer(1, new LSTM.Builder().nIn(6).nOut(7).build())
                                         .layer(2, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(7)
                                                         .nOut(8).build())
                                         .layer(3, new RnnOutputLayer.Builder().nIn(8).nOut(9).activation(Activation.SOFTMAX).build()).build();
@@ -447,7 +447,7 @@ public class TestPreProcessors extends BaseDL4JTest {
         MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder().nOut(10)
                                         .kernelSize(5, 5).stride(1, 1).build())
-                        .layer(1, new GravesLSTM.Builder().nOut(6).build())
+                        .layer(1, new LSTM.Builder().nOut(6).build())
                         .layer(2, new RnnOutputLayer.Builder().nIn(6).nOut(5).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
         //Expect preprocessors: 0: FF->CNN, 1: CNN->RNN;

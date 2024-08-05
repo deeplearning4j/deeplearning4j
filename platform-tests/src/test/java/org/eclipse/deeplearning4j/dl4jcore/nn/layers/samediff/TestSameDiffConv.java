@@ -124,9 +124,9 @@ public class TestSameDiffConv extends BaseDL4JTest {
             for (boolean hasBias : new boolean[]{true, false}) {
                 for (int nIn : new int[]{3, 4}) {
                     for (int nOut : new int[]{4, 5}) {
-                        for (int[] kernel : new int[][]{{2, 2}, {2, 1}, {3, 2}}) {
-                            for (int[] strides : new int[][]{{1, 1}, {2, 2}, {2, 1}}) {
-                                for (int[] dilation : new int[][]{{1, 1}, {2, 2}, {1, 2}}) {
+                        for (long[] kernel : new long[][]{{2, 2}, {2, 1}, {3, 2}}) {
+                            for (long[] strides : new long[][]{{1, 1}, {2, 2}, {2, 1}}) {
+                                for (long[] dilation : new long[][]{{1, 1}, {2, 2}, {1, 2}}) {
                                     for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
                                         for (Activation a : afns) {
                                             if(r.nextInt(80) != 0)

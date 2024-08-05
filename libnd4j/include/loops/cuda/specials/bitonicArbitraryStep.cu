@@ -22,6 +22,7 @@
 //
 #include <ops/specials_cuda.h>
 
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy,
@@ -39,14 +40,7 @@ SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShap
   }
   __syncthreads();
 
-  // for (int i = 0; i < length; i+= window)
-  /*
-      if window == 4;
-      iterations will be: 0; 4; 8; 12; 16; 20
-      if gridDim = 3;
-      on first iteration we'll have: 0; 4; 8;
-      on second iteration we'll have: 0 + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
-  */
+
   int firstPosition;
   int firstStep;
   int secondPosition;
@@ -119,14 +113,6 @@ SD_KERNEL void execBitonicArbitraryStepKernel(void *vx, sd::LongType const *xSha
   }
   __syncthreads();
 
-  // for (int i = 0; i < length; i+= window)
-  /*
-      if window == 4;
-      iterations will be: 0; 4; 8; 12; 16; 20
-      if gridDim = 3;
-      on first iteration we'll have: 0; 4; 8;
-      on second iteration we'll have: 0 + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
-  */
   int firstPosition;
   int firstStep;
   int secondPosition;
@@ -184,6 +170,8 @@ SD_HOST void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream,
                                          bool descending) {
   execBitonicArbitraryStepKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, window, length, reverse, descending);
+  sd::DebugHelper::checkErrorCode(stream, "execBitonicArbitraryStepKernel  failed");
+
 }
 
 template <typename X, typename Y>
@@ -192,6 +180,8 @@ SD_HOST void bitonicArbitraryStepGenericKey(dim3 &launchDims, cudaStream_t *stre
                                             int window, int length, int reverse, bool descending) {
   bitonicArbitraryStepKernelKey<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, xShapeInfo, vy, yShapeInfo, window, length, reverse, descending);
+  sd::DebugHelper::checkErrorCode(stream, "bitonicArbitraryStepKernelKey  failed");
+
 }
 
 BUILD_SINGLE_TEMPLATE(template void bitonicArbitraryStepGeneric,
