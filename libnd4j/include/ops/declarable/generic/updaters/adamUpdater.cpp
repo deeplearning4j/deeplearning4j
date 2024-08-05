@@ -91,7 +91,7 @@ CONFIGURABLE_OP_IMPL(adam_updater, 3, 3, true, 0, 0) {
 
   helpers::updaterAdam(block.launchContext(), *gradient, *initStateU, *initStateM, *update, *stateU, *stateM, dLr,
                        dBeta1, dBeta2, dEpsilon, iteration);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(adam_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

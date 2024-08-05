@@ -30,18 +30,18 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT TimeHolder {
  private:
-  std::map<int, sd::LongType> _outer;
-  std::map<int, sd::LongType> _inner;
+  std::map<int, LongType> _outer;
+  std::map<int, LongType> _inner;
 
  public:
   TimeHolder() = default;
   ~TimeHolder() = default;
 
-  void setOuterTime(int nodeId, sd::LongType time);
-  void setInnerTime(int nodeId, sd::LongType time);
+  void setOuterTime(int nodeId, LongType time);
+  void setInnerTime(int nodeId, LongType time);
 
-  sd::LongType outerTime(int nodeId);
-  sd::LongType innerTime(int nodeId);
+  LongType outerTime(int nodeId);
+  LongType innerTime(int nodeId);
 };
 }  // namespace graph
 }  // namespace sd

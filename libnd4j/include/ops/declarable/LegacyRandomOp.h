@@ -33,7 +33,7 @@ namespace ops {
  */
 class SD_LIB_EXPORT LegacyRandomOp : public LegacyOp {
  protected:
-  sd::Status validateAndExecute(Context& block) override;
+  Status validateAndExecute(sd::graph::Context& block) override;
 
  public:
   LegacyRandomOp();
@@ -41,17 +41,17 @@ class SD_LIB_EXPORT LegacyRandomOp : public LegacyOp {
   ~LegacyRandomOp() = default;
 
   template <typename T>
-  sd::Status validateAndExecute_(Context& block);
+  Status validateAndExecute_(sd::graph::Context& block);
 
-  sd::ResultSet execute(sd::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs,
-                        std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-  sd::ResultSet execute(sd::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs,
-                        std::vector<int>& iArgs, bool isInplace = false);
+  ResultSet execute(RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs,
+                    std::initializer_list<int> iArgs, bool isInplace = false);
+  ResultSet execute(RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs,
+                    std::vector<int>& iArgs, bool isInplace = false);
 
-  sd::Status execute(Context* block) override;
+  Status execute(Context* block) override;
 
-  sd::Status validateDataTypes(Context& block) override;
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  Status validateDataTypes(sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
 }  // namespace ops

@@ -39,7 +39,7 @@ OP_IMPL(toggle_bits, -1, -1, true) {
 
     helpers::__toggle_bits(block.launchContext(), *x, *z);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(toggle_bits) {

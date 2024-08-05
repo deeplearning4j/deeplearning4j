@@ -34,12 +34,11 @@
 #include <ops/ops.h>
 
 #include <array/NDArray.hXX>
+#include <array/ArrayOptions.hXX>
+
 #include <memory>
 #include <sstream>
 #include <stdexcept>
-#if defined(HAVE_VEDA)
-#include <ops/declarable/platform/vednn/veda_helper.h>
-#endif
 
 namespace sd {
 
@@ -372,12 +371,11 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   // evaluate shapeInfo for resulting array
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
-  std::shared_ptr<DataBuffer> newBuff =
-      std::make_shared<DataBuffer>(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
+  DataBuffer * newBuff =
+      new DataBuffer(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
   auto desc = new ShapeDescriptor(newShapeInfo);
   // assign new shape and new buffer to resulting array
   NDArray result(newBuff,desc , getContext());
-delete desc;
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
   const auto resultLen = result.lengthOf();
@@ -418,7 +416,6 @@ void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const
   // evaluate true tile shapeInfo for comparison with target shapeInfo
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   if (!shape::equalsSoft(newShapeInfo, target.shapeInfo())) {
-    delete[] newShapeInfo;
     THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
   }
 

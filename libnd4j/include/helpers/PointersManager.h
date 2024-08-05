@@ -32,13 +32,12 @@
 namespace sd {
 
 class SD_LIB_EXPORT PointersManager {
- private:
-  sd::LaunchContext* _context;
+  LaunchContext* _context;
   std::vector<void*> _pOnGlobMem;
   std::string _funcName;
 
  public:
-  PointersManager(const sd::LaunchContext* context, const std::string& funcName = "");
+  PointersManager(const LaunchContext* context, const std::string& funcName = "");
 
   ~PointersManager();
 
@@ -49,20 +48,20 @@ class SD_LIB_EXPORT PointersManager {
   void synchronize() const;
 
   template <typename T>
-  void printDevContentOnHost(const void* pDev, const sd::LongType len) const;
+  void printDevContentOnHost(const void* pDev, const LongType len) const;
 
 #ifdef __CUDABLAS__
   template <typename T>
-  static void printDevContentOnDevFromHost(const void* pDev, const sd::LongType len, const int tid = 0);
+  static void printDevContentOnDevFromHost(const void* pDev, const LongType len, const int tid = 0);
 #endif
 
 #ifdef __CUDACC__
   template <typename T>
-  static SD_INLINE SD_DEVICE void printDevContentOnDev(const void* pDev, const sd::LongType len, const int tid = 0) {
+  static SD_INLINE SD_DEVICE void printDevContentOnDev(const void* pDev, const LongType len, const int tid = 0) {
     if (blockIdx.x * blockDim.x + threadIdx.x != tid) return;
 
     printf("device print out: \n");
-    for (sd::LongType i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
+    for (LongType i = 0; i < len; ++i) printf("%f, ", (double)reinterpret_cast<const T*>(pDev)[i]);
 
     printf("\n");
   }

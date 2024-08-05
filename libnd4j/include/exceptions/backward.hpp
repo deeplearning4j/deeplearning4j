@@ -3821,14 +3821,13 @@ public:
 
   // Allow adding to paths gotten from BACKWARD_CXX_SOURCE_PREFIXES after loading the
   // library; this can be useful when the library is loaded when the locations are unknown
-  // Warning: Because this edits the static paths variable, it is *not* intrinsiclly thread safe
+  // Warning: Because this edits the static paths variable, it is *not* intrinsically thread safe
   static void add_paths_to_env_variable_impl(const std::string & to_add) {
     get_mutable_paths_from_env_variable().push_back(to_add);
   }
 
 private:
-  details::handle<std::ifstream *, details::default_delete<std::ifstream *> >
-      _file;
+  details::handle<std::ifstream *, details::default_delete<std::ifstream *>>_file;
 
   static std::vector<std::string> get_paths_from_env_variable_impl() {
     std::vector<std::string> paths;

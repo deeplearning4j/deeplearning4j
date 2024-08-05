@@ -42,16 +42,16 @@ CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
 
   helpers::diagFunctor(block.launchContext(), input, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(MatrixDiag, diag);
 
-DECLARE_TYPES(diag) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(diag) {
-  const sd::LongType* inputShapeInfo = inputShape->at(0);
+  const LongType* inputShapeInfo = inputShape->at(0);
 
   return SHAPELIST(ShapeUtils::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
 }

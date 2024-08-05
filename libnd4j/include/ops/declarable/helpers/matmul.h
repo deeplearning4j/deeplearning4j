@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void _matmul(sd::LaunchContext *context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB,
+SD_LIB_HIDDEN void _matmul(LaunchContext *context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB,
                            double alpha = 1., double beta = 0.);
 }
 }  // namespace ops

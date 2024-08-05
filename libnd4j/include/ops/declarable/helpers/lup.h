@@ -28,18 +28,18 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::Status lup(sd::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
-SD_LIB_HIDDEN void lu(sd::LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutation);
-SD_LIB_HIDDEN sd::Status determinant(sd::LaunchContext* context, NDArray* input, NDArray* output);
-SD_LIB_HIDDEN sd::Status logAbsDeterminant(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN Status lup(LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
+SD_LIB_HIDDEN void lu(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutation);
+SD_LIB_HIDDEN Status determinant(LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN Status logAbsDeterminant(LaunchContext* context, NDArray* input, NDArray* output);
 
-SD_LIB_HIDDEN sd::Status inverse(sd::LaunchContext* context, NDArray* input, NDArray* output);
-SD_LIB_HIDDEN sd::Status upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
-SD_LIB_HIDDEN sd::Status lowerInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN Status inverse(LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN Status upperInverseFunctor(LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN Status lowerInverseFunctor(LaunchContext* context, NDArray* input, NDArray* output);
 
-SD_LIB_HIDDEN bool checkCholeskyInput(sd::LaunchContext* context, NDArray const* input);
-SD_LIB_HIDDEN sd::Status cholesky(sd::LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
-SD_LIB_HIDDEN sd::Status logdetFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+SD_LIB_HIDDEN bool checkCholeskyInput(LaunchContext* context, NDArray const* input);
+SD_LIB_HIDDEN Status cholesky(LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
+SD_LIB_HIDDEN Status logdetFunctor(LaunchContext* context, NDArray* input, NDArray* output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

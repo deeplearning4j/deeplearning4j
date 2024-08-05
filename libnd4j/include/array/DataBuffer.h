@@ -31,7 +31,7 @@
 #include <system/op_boilerplate.h>
 
 #include <cstring>
-
+#include <mutex>
 namespace sd {
 
 class SD_LIB_EXPORT DataBuffer {
@@ -41,19 +41,31 @@ class SD_LIB_EXPORT DataBuffer {
   size_t _lenInBytes = 0;
   DataType _dataType;
   memory::Workspace *_workspace = nullptr;
-  bool _isOwnerPrimary;
-  bool _isOwnerSpecial;
-  std::atomic<int> _deviceId;
 
+  std::atomic<int> _deviceId;
+  std::mutex _deleteMutex;
 #ifndef __JAVACPP_HACK__
-#if defined(__CUDABLAS__) || defined(HAVE_VEDA)
-  mutable std::atomic<sd::LongType> _counter;
-  mutable std::atomic<sd::LongType> _writePrimary;
-  mutable std::atomic<sd::LongType> _writeSpecial;
-  mutable std::atomic<sd::LongType> _readPrimary;
-  mutable std::atomic<sd::LongType> _readSpecial;
+#if defined(__CUDABLAS__)
+  mutable std::atomic<LongType> _counter;
+  mutable std::atomic<LongType> _writePrimary;
+  mutable std::atomic<LongType> _writeSpecial;
+  mutable std::atomic<LongType> _readPrimary;
+  mutable std::atomic<LongType> _readSpecial;
 #endif
+
+#if defined(SD_GCC_FUNCTRACE)
+  StackTrace *allocationStackTracePrimary = nullptr;
+  StackTrace *allocationStackTraceSpecial = nullptr;
+  StackTrace *creationStackTrace = nullptr;
+
 #endif
+
+
+#endif
+
+  bool closed = false;
+
+
 
   void setCountersToZero();
   void copyCounters(const DataBuffer &other);
@@ -65,10 +77,15 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setSpecial(void *special, const bool isOwnerSpecial);
 
-  void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
-                          const sd::LongType offsetHostBuffer = 0);
+  void copyBufferFromHost(const void *hostBuffer, size_t sizeToCopyinBytes = 0, const LongType offsetThis = 0,
+                          const LongType offsetHostBuffer = 0);
 
  public:
+
+  bool _isOwnerPrimary;
+  bool _isOwnerSpecial;
+  bool isConstant = false;
+
   DataBuffer(void *primary, void *special, const size_t lenInBytes, const DataType dataType,
              const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,
              memory::Workspace *workspace = nullptr);
@@ -98,6 +115,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   void *primary();
   void *special();
+  void printAllocationTrace();
 
   void allocatePrimary();
   void allocateSpecial();
@@ -120,6 +138,7 @@ class SD_LIB_EXPORT DataBuffer {
   template <typename T>
   SD_INLINE T *specialAsT();
 
+  void markConstant(bool reallyConstant);
 
 
   void syncToPrimary(const LaunchContext *context, const bool forceSync = false);
@@ -127,20 +146,13 @@ class SD_LIB_EXPORT DataBuffer {
 
   void setToZeroBuffers(const bool both = false);
 
-  void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const sd::LongType offsetThis = 0,
-                      const sd::LongType offsetOther = 0);
+  void copyBufferFrom(const DataBuffer &other, size_t sizeToCopyinBytes = 0, const LongType offsetThis = 0,
+                      const LongType offsetOther = 0);
 
-  static void memcpy(const DataBuffer &dst, const DataBuffer &src);
 
   void setPrimaryBuffer(void *buffer, size_t length);
   void setSpecialBuffer(void *buffer, size_t length);
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  void** getPtrToSpecial() const;
-  void allocVeda();
-  void asyncToVeda();
-#endif
-#endif
+
 
   void  showBufferLimited();
   //for Debug purposes
@@ -150,8 +162,15 @@ class SD_LIB_EXPORT DataBuffer {
    * This method deletes buffers, if we're owners
    */
   void close();
+  void printPrimaryAllocationStackTraces();
+  void printSpecialAllocationTraces();
+  DataBuffer  dup();
+  void printHostDevice(long offset);
+  static void memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src);
+  static void memcpy(const DataBuffer dst, const DataBuffer src);
+  static void memcpy(const DataBuffer *dst, const DataBuffer *src);
 };
-///// IMLEMENTATION OF INLINE METHODS /////
+///// IMPLEMENTATION OF INLINE METHODS /////
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

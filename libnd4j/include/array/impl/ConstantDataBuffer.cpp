@@ -58,7 +58,7 @@ T* ConstantDataBuffer::primaryAsT() const {
 template SD_LIB_EXPORT float* ConstantDataBuffer::primaryAsT<float>() const;
 template SD_LIB_EXPORT double* ConstantDataBuffer::primaryAsT<double>() const;
 template SD_LIB_EXPORT int* ConstantDataBuffer::primaryAsT<int>() const;
-template SD_LIB_EXPORT sd::LongType* ConstantDataBuffer::primaryAsT<sd::LongType>() const;
+template SD_LIB_EXPORT LongType* ConstantDataBuffer::primaryAsT<LongType>() const;
 
 template <typename T>
 T* ConstantDataBuffer::specialAsT() const {
@@ -67,6 +67,6 @@ T* ConstantDataBuffer::specialAsT() const {
 template SD_LIB_EXPORT float* ConstantDataBuffer::specialAsT<float>() const;
 template SD_LIB_EXPORT double* ConstantDataBuffer::specialAsT<double>() const;
 template SD_LIB_EXPORT int* ConstantDataBuffer::specialAsT<int>() const;
-template SD_LIB_EXPORT sd::LongType* ConstantDataBuffer::specialAsT<sd::LongType>() const;
+template SD_LIB_EXPORT LongType* ConstantDataBuffer::specialAsT<LongType>() const;
 
 }  // namespace sd

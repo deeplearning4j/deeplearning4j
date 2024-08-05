@@ -167,7 +167,7 @@ DECLARE_CONFIGURABLE_OP(betainc, 3, 1, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_biasadd)
 DECLARE_CUSTOM_OP(biasadd, 2, 1, true, 0, 0);
-DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
+DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0)
 #endif
 
 /**
@@ -187,7 +187,7 @@ DECLARE_CUSTOM_OP(diag_part, 1, 1, false, 0, 0);
 #endif
 
 /**
- * Returns a diagonal vector for any submatricies with in a given tensor.
+ * Returns a diagonal vector for any submatrices with in a given tensor.
  * It is an op inverse to matrix_set_giag.
  * Using input tensor as batched 2D diagonals flat them to vector (1D) with diagonal values.
  *
@@ -203,11 +203,11 @@ DECLARE_CUSTOM_OP(matrix_diag_part, 1, 1, false, 0, 0);
  * For A (MxN) Q is M x M and R is (NxN).
  *
  * Input :
- *    0 - float (or complex float) tensor with shape {.,..,...,M,N} - batch of float matricies
+ *    0 - float (or complex float) tensor with shape {.,..,...,M,N} - batch of float matrices
  *
  * Output:
- *    0 - float tensor with shape {.,..,...,MxN} - batch of ortogonal matricies {Qs}
- *    1 - float tensor with shape {.,..,...,NxN} - batch of upper triangular matricies {Rs}
+ *    0 - float tensor with shape {.,..,...,MxN} - batch of ortogonal matrices {Qs}
+ *    1 - float tensor with shape {.,..,...,NxN} - batch of upper triangular matrices {Rs}
  */
 #if NOT_EXCLUDED(OP_qr)
 DECLARE_CUSTOM_OP(qr, 1, 2, false, 0, 0);
@@ -1037,7 +1037,7 @@ DECLARE_CUSTOM_OP(broadcast_dynamic_shape, 2, 1, false, 0, 0);
  *
  * return value:
  *    tensor with dimension (x * y * z * ::: *) with determinant for all
- * M x M matricies
+ * M x M matrices
  */
 #if NOT_EXCLUDED(OP_matrix_determinant)
 DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
@@ -1051,7 +1051,7 @@ DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
  *
  * return value:
  *    tensor with dimension (x * y * z * ::: *) with log determinant for all
- * M x M matricies
+ * M x M matrices
  */
 
 #if NOT_EXCLUDED(OP_log_matrix_determinant)
@@ -1059,14 +1059,14 @@ DECLARE_CUSTOM_OP(log_matrix_determinant, 1, 1, false, 0, 0);
 #endif
 
 /**
- * logdet op. Logarithm of the determinant of hermitian positive matricies.
+ * logdet op. Logarithm of the determinant of hermitian positive matrices.
  *
  * input params:
  *    0 - the tensor with dimension (x * y * z * ::: * M * M)
  *
  * return value:
  *    tensor with dimension (x * y * z * ::: *) with log determinant for all
- * M x M matricies
+ * M x M matrices
  */
 
 #if NOT_EXCLUDED(OP_logdet)
@@ -1084,7 +1084,7 @@ DECLARE_CUSTOM_OP(logdet, 1, 1, false, 0, 0);
  *    0 - l2_regularizer (default 0. and only for 0 implemented)
  *
  * boolean args:
- *    0 - fast - default is true (optional) - use Cholesky decomposition instead QR decomposition of matricies.
+ *    0 - fast - default is true (optional) - use Cholesky decomposition instead QR decomposition of matrices.
  *
  * return value:
  *    tensor with dimension (x * y * z * ::: * N * K) with solutions
@@ -1104,7 +1104,7 @@ DECLARE_CUSTOM_OP(lstsq, 2, 1, false, 0, 0);
  *    0 - l2_regularizer (default 0. and only for 0 implemented)
  *
  * boolean args:
- *    0 - fast - default is true (optional) - use Cholesky decomposition instead QR decomposition of matricies.
+ *    0 - fast - default is true (optional) - use Cholesky decomposition instead QR decomposition of matrices.
  *
  * return value:
  *    tensor with dimension (x * y * z * ::: * N * K) with solutions
@@ -1116,13 +1116,13 @@ DECLARE_CUSTOM_OP(solve_ls, 2, 1, false, 0, 0);
 #endif
 
 /**
- * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
+ * matrix_inverse op. - make inverse for all 2D square matrices found in the input tensor
  *
  * input params:
  *    0 - the tensor with dimension (x * y * z * ::: * M * M)
  *
  * return value:
- *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it
+ *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matrices in it
  */
 #if NOT_EXCLUDED(OP_matrix_inverse)
 DECLARE_OP(matrix_inverse, 1, 1, true);
@@ -1168,13 +1168,13 @@ DECLARE_CUSTOM_OP(solve, 2, 1, true, 0, 0);
 #endif
 
 /**
- * lu op. - make LUP decomposition of given batch of 2D square matricies
+ * lu op. - make LUP decomposition of given batch of 2D square matrices
  *
  * input params:
  *    0 - float tensor with dimension (x * y * z * ::: * M * M)
  *
  * return value:
- *    0 - float tensor with dimension (x * y * z * ::: * M * M) with LU M x M matricies in it
+ *    0 - float tensor with dimension (x * y * z * ::: * M * M) with LU M x M matrices in it
  *    1 - int (32 or 64) batched vector of permutations with length M - shape (x * y * z * ::: * M)
  *
  * int argument:
@@ -1807,11 +1807,11 @@ DECLARE_CUSTOM_OP(non_max_suppression_overlaps, 2, 1, false, 0, 0);
 #endif
 
 /*
- * cholesky op - decomposite positive square symetric matrix (or matricies when rank > 2).
+ * cholesky op - decomposite positive square symetric matrix (or matrices when rank > 2).
  * input:
- *     0 - matricies - tensor with shape (..., N, N) by float type
+ *     0 - matrices - tensor with shape (..., N, N) by float type
  *
- * output - lower triangular matrix (matricies when rank > 2) with the same shape as input.
+ * output - lower triangular matrix (matrices when rank > 2) with the same shape as input.
  * */
 #if NOT_EXCLUDED(OP_cholesky)
 DECLARE_OP(cholesky, 1, 1, true);

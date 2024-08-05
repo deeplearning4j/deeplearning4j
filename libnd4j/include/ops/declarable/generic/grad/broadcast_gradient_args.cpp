@@ -33,11 +33,11 @@ namespace ops {
 OP_IMPL(broadcastgradientargs, 2, 2, true) {
   sd_printf("BroadcastGradientArgs: Not implemented yet\n", "");
 
-  return sd::Status::KERNEL_FAILURE;
+  return Status::KERNEL_FAILURE;
 }
 DECLARE_SYN(BroadcastGradientArgs, broadcastgradientargs);
 
-DECLARE_TYPES(broadcastgradientargs) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY); }
+DECLARE_TYPES(broadcastgradientargs) { getOpDescriptor()->setAllowedInputTypes(ANY); }
 }  // namespace ops
 }  // namespace sd
 

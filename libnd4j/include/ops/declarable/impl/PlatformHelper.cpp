@@ -33,14 +33,14 @@ PlatformHelper::PlatformHelper(const char* name, samediff::Engine engine) {
   _engine = engine;
 }
 
-sd::NDArray* PlatformHelper::getNullifiedZ(graph::Context& block, int inputId) {
+NDArray* PlatformHelper::getNullifiedZ(graph::Context& block, int inputId) {
   auto result = getZ(block, inputId);
   if (result != nullptr && !block.isInplace()) result->nullify();
 
   return result;
 }
 
-sd::NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
+NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
   NDArray* z = nullptr;
 
   if (ctx.isFastPath()) {
@@ -87,7 +87,7 @@ samediff::Engine PlatformHelper::engine() { return _engine; }
 
 std::string PlatformHelper::name() { return _name; }
 
-sd::LongType PlatformHelper::hash() { return _hash; }
+LongType PlatformHelper::hash() { return _hash; }
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

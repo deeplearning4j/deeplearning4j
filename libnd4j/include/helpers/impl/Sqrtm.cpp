@@ -245,7 +245,7 @@ void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
     return;
   }
 
-  ops::helpers::Schur<T> schur(in);
+  Schur<T> schur(in);
 
   const NDArray& t1 = schur.t;
   const NDArray& t2 = schur.u;

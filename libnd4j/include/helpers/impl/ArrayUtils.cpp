@@ -30,24 +30,24 @@ void toIntPtr(std::initializer_list<int> list, int* target) {
 
 void toIntPtr(std::vector<int>& list, int* target) { memcpy(target, list.data(), list.size() * sizeof(int)); }
 
-void toLongPtr(std::initializer_list<sd::LongType> list, sd::LongType* target) {
-  std::vector<sd::LongType> vec(list);
+void toLongPtr(std::initializer_list<LongType> list, LongType* target) {
+  std::vector<LongType> vec(list);
   toLongPtr(vec, target);
 }
 
-void toLongPtr(std::vector<sd::LongType>& list, sd::LongType* target) {
-  memcpy(target, list.data(), list.size() * sizeof(sd::LongType));
+void toLongPtr(std::vector<LongType>& list, LongType* target) {
+  memcpy(target, list.data(), list.size() * sizeof(LongType));
 }
 
-std::vector<sd::LongType> toLongVector(std::vector<int> vec) {
-  std::vector<sd::LongType> result(vec.size());
-  sd::LongType vecSize = vec.size();
+std::vector<LongType> toLongVector(std::vector<int> vec) {
+  std::vector<LongType> result(vec.size());
+  LongType vecSize = vec.size();
 
-  for (sd::LongType e = 0; e < vecSize; e++) result[e] = vec[e];
+  for (LongType e = 0; e < vecSize; e++) result[e] = vec[e];
 
   return result;
 }
 
-std::vector<sd::LongType> toLongVector(std::vector<sd::LongType> vec) { return vec; }
+std::vector<LongType> toLongVector(std::vector<LongType> vec) { return vec; }
 }  // namespace ArrayUtils
 }  // namespace sd

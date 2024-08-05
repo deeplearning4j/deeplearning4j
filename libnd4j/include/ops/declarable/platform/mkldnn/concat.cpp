@@ -165,8 +165,6 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
   else
     concatMKLDNN(nonEmptyArrs, *output, axis);
 
-  // delete dynamically allocated vectors with length=1
-  for (int index : arrsToDelete) delete nonEmptyArrs[index];
 
   return sd::Status::OK;
 }

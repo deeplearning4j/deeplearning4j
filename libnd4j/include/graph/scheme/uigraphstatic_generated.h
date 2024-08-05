@@ -81,11 +81,9 @@ inline const char *EnumNameUIInfoType(UIInfoType e) {
 
 struct UIStaticInfoRecord FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef UIStaticInfoRecordBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_INFOTYPE = 4
-  };
-  sd::graph::UIInfoType infoType() const {
-    return static_cast<sd::graph::UIInfoType>(GetField<int8_t>(VT_INFOTYPE, 0));
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE { VT_INFOTYPE = 4 };
+  UIInfoType infoType() const {
+    return static_cast<UIInfoType>(GetField<int8_t>(VT_INFOTYPE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -98,7 +96,7 @@ struct UIStaticInfoRecordBuilder {
   typedef UIStaticInfoRecord Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_infoType(sd::graph::UIInfoType infoType) {
+  void add_infoType(UIInfoType infoType) {
     fbb_.AddElement<int8_t>(UIStaticInfoRecord::VT_INFOTYPE, static_cast<int8_t>(infoType), 0);
   }
   explicit UIStaticInfoRecordBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -114,8 +112,7 @@ struct UIStaticInfoRecordBuilder {
 };
 
 inline flatbuffers::Offset<UIStaticInfoRecord> CreateUIStaticInfoRecord(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    sd::graph::UIInfoType infoType = sd::graph::UIInfoType_GRAPH_STRUCTURE) {
+    flatbuffers::FlatBufferBuilder &_fbb, UIInfoType infoType = UIInfoType_GRAPH_STRUCTURE) {
   UIStaticInfoRecordBuilder builder_(_fbb);
   builder_.add_infoType(infoType);
   return builder_.Finish();
@@ -175,17 +172,17 @@ struct UIGraphStructure FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *inputs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_INPUTS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *inputsPair() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *>(VT_INPUTSPAIR);
+  const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *inputsPair() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *>(VT_INPUTSPAIR);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *outputs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_OUTPUTS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIVariable>> *variables() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIVariable>> *>(VT_VARIABLES);
+  const flatbuffers::Vector<flatbuffers::Offset<UIVariable>> *variables() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<UIVariable>> *>(VT_VARIABLES);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIOp>> *ops() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIOp>> *>(VT_OPS);
+  const flatbuffers::Vector<flatbuffers::Offset<UIOp>> *ops() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<UIOp>> *>(VT_OPS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -215,16 +212,16 @@ struct UIGraphStructureBuilder {
   void add_inputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> inputs) {
     fbb_.AddOffset(UIGraphStructure::VT_INPUTS, inputs);
   }
-  void add_inputsPair(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> inputsPair) {
+  void add_inputsPair(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputsPair) {
     fbb_.AddOffset(UIGraphStructure::VT_INPUTSPAIR, inputsPair);
   }
   void add_outputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs) {
     fbb_.AddOffset(UIGraphStructure::VT_OUTPUTS, outputs);
   }
-  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIVariable>>> variables) {
+  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UIVariable>>> variables) {
     fbb_.AddOffset(UIGraphStructure::VT_VARIABLES, variables);
   }
-  void add_ops(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIOp>>> ops) {
+  void add_ops(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UIOp>>> ops) {
     fbb_.AddOffset(UIGraphStructure::VT_OPS, ops);
   }
   explicit UIGraphStructureBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -242,10 +239,10 @@ struct UIGraphStructureBuilder {
 inline flatbuffers::Offset<UIGraphStructure> CreateUIGraphStructure(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> inputs = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> inputsPair = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputsPair = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIVariable>>> variables = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UIOp>>> ops = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UIVariable>>> variables = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UIOp>>> ops = 0) {
   UIGraphStructureBuilder builder_(_fbb);
   builder_.add_ops(ops);
   builder_.add_variables(variables);
@@ -258,16 +255,16 @@ inline flatbuffers::Offset<UIGraphStructure> CreateUIGraphStructure(
 inline flatbuffers::Offset<UIGraphStructure> CreateUIGraphStructureDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *inputs = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::IntPair>> *inputsPair = nullptr,
+    const std::vector<flatbuffers::Offset<IntPair>> *inputsPair = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::UIVariable>> *variables = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::UIOp>> *ops = nullptr) {
+    const std::vector<flatbuffers::Offset<UIVariable>> *variables = nullptr,
+    const std::vector<flatbuffers::Offset<UIOp>> *ops = nullptr) {
   auto inputs__ = inputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*inputs) : 0;
-  auto inputsPair__ = inputsPair ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::IntPair>>(*inputsPair) : 0;
+  auto inputsPair__ = inputsPair ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputsPair) : 0;
   auto outputs__ = outputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputs) : 0;
-  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::UIVariable>>(*variables) : 0;
-  auto ops__ = ops ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::UIOp>>(*ops) : 0;
-  return sd::graph::CreateUIGraphStructure(
+  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<UIVariable>>(*variables) : 0;
+  auto ops__ = ops ? _fbb.CreateVector<flatbuffers::Offset<UIOp>>(*ops) : 0;
+  return CreateUIGraphStructure(
       _fbb,
       inputs__,
       inputsPair__,
@@ -293,17 +290,13 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_UILABELEXTRA = 26,
     VT_CONSTANTVALUE = 28
   };
-  const sd::graph::IntPair *id() const {
-    return GetPointer<const sd::graph::IntPair *>(VT_ID);
+  const IntPair *id() const {
+    return GetPointer<const IntPair *>(VT_ID);
   }
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
-  }
-  sd::graph::VarType type() const {
-    return static_cast<sd::graph::VarType>(GetField<int8_t>(VT_TYPE, 0));
-  }
-  sd::graph::DType datatype() const {
-    return static_cast<sd::graph::DType>(GetField<int8_t>(VT_DATATYPE, 0));
+  const flatbuffers::String *name() const { return GetPointer<const flatbuffers::String *>(VT_NAME); }
+  VarType type() const { return static_cast<VarType>(GetField<int8_t>(VT_TYPE, 0)); }
+  DType datatype() const {
+    return static_cast<DType>(GetField<int8_t>(VT_DATATYPE, 0));
   }
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
@@ -329,8 +322,8 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *uiLabelExtra() const {
     return GetPointer<const flatbuffers::String *>(VT_UILABELEXTRA);
   }
-  const sd::graph::FlatArray *constantValue() const {
-    return GetPointer<const sd::graph::FlatArray *>(VT_CONSTANTVALUE);
+  const FlatArray *constantValue() const {
+    return GetPointer<const FlatArray *>(VT_CONSTANTVALUE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -370,16 +363,16 @@ struct UIVariableBuilder {
   typedef UIVariable Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_id(flatbuffers::Offset<sd::graph::IntPair> id) {
+  void add_id(flatbuffers::Offset<IntPair> id) {
     fbb_.AddOffset(UIVariable::VT_ID, id);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(UIVariable::VT_NAME, name);
   }
-  void add_type(sd::graph::VarType type) {
+  void add_type(VarType type) {
     fbb_.AddElement<int8_t>(UIVariable::VT_TYPE, static_cast<int8_t>(type), 0);
   }
-  void add_datatype(sd::graph::DType datatype) {
+  void add_datatype(DType datatype) {
     fbb_.AddElement<int8_t>(UIVariable::VT_DATATYPE, static_cast<int8_t>(datatype), 0);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
@@ -406,7 +399,7 @@ struct UIVariableBuilder {
   void add_uiLabelExtra(flatbuffers::Offset<flatbuffers::String> uiLabelExtra) {
     fbb_.AddOffset(UIVariable::VT_UILABELEXTRA, uiLabelExtra);
   }
-  void add_constantValue(flatbuffers::Offset<sd::graph::FlatArray> constantValue) {
+  void add_constantValue(flatbuffers::Offset<FlatArray> constantValue) {
     fbb_.AddOffset(UIVariable::VT_CONSTANTVALUE, constantValue);
   }
   explicit UIVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -423,10 +416,8 @@ struct UIVariableBuilder {
 
 inline flatbuffers::Offset<UIVariable> CreateUIVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<sd::graph::IntPair> id = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    sd::graph::VarType type = sd::graph::VarType_VARIABLE,
-    sd::graph::DType datatype = sd::graph::DType_INHERIT,
+    flatbuffers::Offset<IntPair> id = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0, VarType type = VarType_VARIABLE, DType datatype = DType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::String> outputOfOp = 0,
@@ -435,7 +426,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForVar = 0,
     flatbuffers::Offset<flatbuffers::String> gradientVariable = 0,
     flatbuffers::Offset<flatbuffers::String> uiLabelExtra = 0,
-    flatbuffers::Offset<sd::graph::FlatArray> constantValue = 0) {
+    flatbuffers::Offset<FlatArray> constantValue = 0) {
   UIVariableBuilder builder_(_fbb);
   builder_.add_constantValue(constantValue);
   builder_.add_uiLabelExtra(uiLabelExtra);
@@ -455,10 +446,9 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
 
 inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<sd::graph::IntPair> id = 0,
+    flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
-    sd::graph::VarType type = sd::graph::VarType_VARIABLE,
-    sd::graph::DType datatype = sd::graph::DType_INHERIT,
+    VarType type = VarType_VARIABLE, DType datatype = DType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const char *outputOfOp = nullptr,
@@ -467,7 +457,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar = nullptr,
     const char *gradientVariable = nullptr,
     const char *uiLabelExtra = nullptr,
-    flatbuffers::Offset<sd::graph::FlatArray> constantValue = 0) {
+    flatbuffers::Offset<FlatArray> constantValue = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto shape__ = shape ? _fbb.CreateVector<int64_t>(*shape) : 0;
   auto controlDeps__ = controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0;
@@ -477,7 +467,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
   auto controlDepsForVar__ = controlDepsForVar ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForVar) : 0;
   auto gradientVariable__ = gradientVariable ? _fbb.CreateString(gradientVariable) : 0;
   auto uiLabelExtra__ = uiLabelExtra ? _fbb.CreateString(uiLabelExtra) : 0;
-  return sd::graph::CreateUIVariable(
+  return CreateUIVariable(
       _fbb,
       id,
       name__,
@@ -609,7 +599,7 @@ inline flatbuffers::Offset<UIOp> CreateUIOpDirect(
   auto outputs__ = outputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputs) : 0;
   auto controlDeps__ = controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0;
   auto uiLabelExtra__ = uiLabelExtra ? _fbb.CreateString(uiLabelExtra) : 0;
-  return sd::graph::CreateUIOp(
+  return CreateUIOp(
       _fbb,
       name__,
       opName__,

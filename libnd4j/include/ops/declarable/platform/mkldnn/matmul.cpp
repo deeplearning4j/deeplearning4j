@@ -199,8 +199,6 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
   if (xT != x) delete xT;
   if (yTR != yT) delete yTR;
   if (yT != y) delete yT;
-
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////

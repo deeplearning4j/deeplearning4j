@@ -4,33 +4,35 @@
 #include <indexing/NDIndexUtils.h>
 namespace sd {
 
-sd::NDArray NDIndexUtils::createInterval(sd::LongType start,sd::LongType end,sd::LongType stride,bool inclusive) {
+NDArray NDIndexUtils::createInterval(LongType start, LongType end, LongType stride, bool inclusive) {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{7},{INTERVAL_TYPE,2,1,start,end,stride,inclusive ? 1 : 0});
+  auto indexFirstPoint =
+      NDArrayFactory::create<LongType>('c', {7}, {INTERVAL_TYPE, 2, 1, start, end, stride, inclusive ? 1 : 0});
   return indexFirstPoint;
 }
 
-sd::NDArray NDIndexUtils::createInterval(sd::LongType start,sd::LongType end,sd::LongType stride,sd::LongType inclusive) {
+NDArray NDIndexUtils::createInterval(LongType start, LongType end, LongType stride, LongType inclusive) {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{7},{INTERVAL_TYPE,2,1,start,end,stride,inclusive});
+  auto indexFirstPoint =
+      NDArrayFactory::create<LongType>('c', {7}, {INTERVAL_TYPE, 2, 1, start, end, stride, inclusive});
   return indexFirstPoint;
 }
 
-sd::NDArray NDIndexUtils::createPoint(sd::LongType offset) {
+NDArray NDIndexUtils::createPoint(LongType offset) {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{5},{POINT_TYPE,1,1,offset,DEFAULT_INCLUSIVE});
+  auto indexFirstPoint = NDArrayFactory::create<LongType>('c', {5}, {POINT_TYPE, 1, 1, offset, DEFAULT_INCLUSIVE});
   return indexFirstPoint;
 }
 
-sd::NDArray NDIndexUtils::createNewAxis() {
+NDArray NDIndexUtils::createNewAxis() {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{5},{NEW_AXIS,1,1,0,DEFAULT_INCLUSIVE});
+  auto indexFirstPoint = NDArrayFactory::create<LongType>('c', {5}, {NEW_AXIS, 1, 1, 0, DEFAULT_INCLUSIVE});
   return indexFirstPoint;
 }
 
-sd::NDArray NDIndexUtils::createAll() {
+NDArray NDIndexUtils::createAll() {
   // index type, num indices,stride, indices (length num indices), inclusive
-  auto indexFirstPoint = NDArrayFactory::create<sd::LongType>('c',{4},{ALL_TYPE,0,1,DEFAULT_INCLUSIVE});
+  auto indexFirstPoint = NDArrayFactory::create<LongType>('c',{4},{ALL_TYPE,0,1,DEFAULT_INCLUSIVE});
   return indexFirstPoint;
 }
 }

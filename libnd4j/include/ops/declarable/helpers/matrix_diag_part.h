@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::Status matrixDiagPart(sd::LaunchContext* context, NDArray const* input, NDArray* output);
+SD_LIB_HIDDEN Status matrixDiagPart(LaunchContext* context, NDArray const* input, NDArray* output);
 
 }
 }  // namespace ops

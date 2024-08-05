@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
+Status LogicConditional::processNode(Graph *graph, Node *node) {
   auto __variableSpace = graph->getVariableSpace();
 
   auto size = node->input()->size();
@@ -46,7 +46,7 @@ sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
       // TODO: ???
     } else {
       // FIXME: in some cases it's possible to have no NDArray
-      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup()));
+      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup(false)));
     }
   }
 
@@ -61,10 +61,8 @@ sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
     lastNode = v->id();
   }
 
-  // now we should take result of the Scope run, and evaluate it
-  // sd_debug("", "");
+
   auto result = __variableSpace->getVariable(lastNode)->getNDArray();
-  // result->printBuffer("Result of the last node:");
 
   bool isReturn = false;
 
@@ -127,7 +125,7 @@ sd::Status LogicConditional::processNode(Graph *graph, Node *node) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

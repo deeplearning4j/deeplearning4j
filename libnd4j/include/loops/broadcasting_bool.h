@@ -26,7 +26,6 @@
 #ifndef BROADCASTING_BOOL_H_
 #define BROADCASTING_BOOL_H_
 #include <helpers/DebugHelper.h>
-#include <helpers/shape.h>
 #include <math/templatemath.h>
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>

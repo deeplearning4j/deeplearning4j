@@ -31,7 +31,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -193,64 +192,7 @@ public class DeConv2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
-        long sH = 1;
-        long sW = 1;
-        long kH = 1;
-        long kW = 1;
-
-        val aPadding = nodeDef.getAttrOrDefault("padding", null);
-
-        val paddingMode = aPadding.getS().toStringUtf8();
-
-        val args = args();
-        INDArray arr = sameDiff.getVariable(args[1].name()).getArr();
-        if (arr == null) {
-            arr = TFGraphMapper.getNDArrayFromTensor(nodeDef);
-            // TODO: arguable. it might be easier to permute weights once
-            //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-            val varForOp = initWith.getVariable(args[1].name());
-            if (arr != null)
-                initWith.associateArrayWithVariable(arr, varForOp);
-
-
-        }
-
-        String dataFormat = "nhwc";
-        if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
-            dataFormat = attr.getS().toStringUtf8().toLowerCase();
-        }
-
-        if (dataFormat.equalsIgnoreCase(DeConv2DConfig.NCHW)) {
-            sH = tfStrides.get(2).longValue();
-            sW = tfStrides.get(3).longValue();
-
-            kH = arr.size(2);
-            kW = arr.size(3);
-        } else {
-            sH = tfStrides.get(1).longValue();
-            sW = tfStrides.get(2).longValue();
-
-            kH = arr.size(0);
-            kW = arr.size(1);
-        }
-
-
-        boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
-        DeConv2DConfig conv2DConfig = DeConv2DConfig.builder()
-                .kH(kH)
-                .kW(kW)
-                .sH(sW)
-                .sW(sH)
-                .isSameMode(isSameMode)
-                .dataFormat(dataFormat.equalsIgnoreCase(DeConv2DConfig.NHWC) ? DeConv2DConfig.NHWC : DeConv2DConfig.NCHW)
-                .build();
-        this.config = conv2DConfig;
-
-        addArgs();
-
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
     }
 
@@ -324,7 +266,7 @@ public class DeConv2D extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

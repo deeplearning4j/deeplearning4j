@@ -27,7 +27,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output);
+SD_LIB_HIDDEN void histogramHelper(LaunchContext *context, NDArray &input, NDArray &output);
 }
 }  // namespace ops
 }  // namespace sd

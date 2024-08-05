@@ -88,11 +88,11 @@ CUSTOM_OP_IMPL(lstmBlockCell, 8, 7, false, 2, 1) {
   helpers::lstmBlockCell(xt, cLast, yLast, W, Wci, Wcf, Wco, b, i, c, f, o, z, h, y,
                          {(double)peephole, forgetBias, clippingCellValue});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lstmBlockCell) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(lstmBlockCell) {
@@ -123,7 +123,7 @@ DECLARE_SHAPE_FN(lstmBlockCell) {
 
   // evaluate output shapeInfos
   const int bS = xt[1];
-  sd::LongType *s(nullptr);
+  LongType *s(nullptr);
   ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);  // [bS, numUnits]
 
   s[0] = 2;

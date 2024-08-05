@@ -95,10 +95,10 @@ CUSTOM_OP_IMPL(ctc_beam, 2, 3, false, 0, -2) {
       "Ctc Beam Search: result_sequences_length output should be ews()==1 and c order: %d == ews(1) %c == order(c) ",
       result_sequences_length->ews(), result_sequences_length->ordering());
 
-  sd::ops::helpers::beamSearch(*logit, *sequence_length, *result_sequences, *result_probs, *result_sequences_length,
+  helpers::beamSearch(*logit, *sequence_length, *result_sequences, *result_probs, *result_sequences_length,
                                blank_index, beam_width, nbest_len, normalize_logits);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -136,9 +136,11 @@ DECLARE_SHAPE_FN(ctc_beam) {
       ConstantShapeHelper::getInstance().createShapeInfo(desc2);
   auto desc3 = new ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len});
   auto output2 = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
-  delete desc;
-  delete desc2;
-  delete desc3;
+  if (Environment::getInstance().isDeleteShapeInfo()) {
+    delete desc;
+    delete desc2;
+    delete desc3;
+  }
   return SHAPELIST(output0, output1, output2);
 }
 

@@ -48,7 +48,7 @@ SD_HOST void Logger::printv(const char *format, const std::vector<int> &vec) {
   fflush(stdout);
 }
 
-SD_HOST void Logger::printv(const char *format, const std::vector<sd::LongType> &vec) {
+SD_HOST void Logger::printv(const char *format, const std::vector<LongType> &vec) {
   printf("%s: {", format);
   for (int e = 0; e < vec.size(); e++) {
     auto v = vec[e];

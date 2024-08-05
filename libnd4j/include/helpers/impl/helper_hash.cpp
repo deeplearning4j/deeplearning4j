@@ -30,12 +30,12 @@ HashHelper& HashHelper::getInstance() {
   return instance;
 }
 
-sd::LongType HashHelper::getLongHash(std::string& str) {
+LongType HashHelper::getLongHash(std::string& str) {
   _locker.lock();
   if (!_isInit) {
     sd_verbose("Building HashUtil table\n", "");
 
-    sd::LongType h = 0x544B2FBACAAF1684L;
+    unsigned long long h = 0x544B2FBACAAF1684L;
     for (int i = 0; i < 256; i++) {
       for (int j = 0; j < 31; j++) {
         h = (((unsigned long long)h) >> 7) ^ h;
@@ -50,9 +50,14 @@ sd::LongType HashHelper::getLongHash(std::string& str) {
 
   _locker.unlock();
 
-  sd::LongType h = HSTART;
-  sd::LongType hmult = HMULT;
-  sd::LongType len = str.size();
+  //note: DO NOT change this type.
+  //when something like thread sanitizer + cuda is used
+  //the offsets can get absurdly big.
+  //you get errors like: left shift of 11 places cannot be represented in type
+  unsigned long long h = HSTART;
+  unsigned long long hmult = HMULT;
+
+  LongType len = str.size();
   for (int i = 0; i < len; i++) {
     char ch = str.at(i);
     auto uch = (unsigned char)ch;

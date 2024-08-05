@@ -27,7 +27,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void _where(sd::LaunchContext *context, NDArray &condition, NDArray &output,
+SD_LIB_HIDDEN void _where(LaunchContext *context, NDArray &condition, NDArray &output,
                           memory::Workspace *workspace);
 }
 }  // namespace ops

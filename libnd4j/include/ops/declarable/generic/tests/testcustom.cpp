@@ -32,21 +32,21 @@ CUSTOM_OP_IMPL(testcustom, 1, 1, false, 0, -1) {
   auto z = this->getZ(block);
 
   STORE_RESULT(*z);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SHAPE_FN(testcustom) {
   // this test op will just return back original shape doubled
-  sd::LongType *shapeOf;
+  LongType *shapeOf;
   ALLOCATE(shapeOf, block.getWorkspace(), shape::rank(inputShape->at(0)), sd::LongType);
   for (int e = 0; e < shape::rank(inputShape->at(0)); e++) shapeOf[e] = inputShape->at(0)[e + 1] * 2;
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c',
-                                                                     shape::rank(inputShape->at(0)), shapeOf);
+                                                                     shape::rank(inputShape->at(0)), shapeOf, -1);
   RELEASE(shapeOf, block.getWorkspace());
   return SHAPELIST(newShape);
 }
 
-DECLARE_TYPES(testcustom) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(testcustom) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

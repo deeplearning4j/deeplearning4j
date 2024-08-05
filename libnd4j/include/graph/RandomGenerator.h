@@ -70,7 +70,7 @@ class SD_LIB_EXPORT RandomGenerator {
    * Utility method, returns number of milliseconds since 1970
    * Leave this static if possible to avoid problems in constructor
    */
-  static SD_INLINE sd::LongType currentMilliseconds();
+  static SD_INLINE LongType currentMilliseconds();
 
  public:
   SD_INLINE SD_HOST_DEVICE uint32_t xoroshiro32(uint64_t index);
@@ -82,33 +82,33 @@ class SD_LIB_EXPORT RandomGenerator {
   // uint32_t relativeUInt32(sd::LongType index);
 
  public:
-  SD_INLINE RandomGenerator(sd::LongType rootSeed = 0, sd::LongType nodeSeed = 0);
+  SD_INLINE RandomGenerator(LongType rootSeed = 0, LongType nodeSeed = 0);
 
   /**
    * This method allows to change graph-level state in runtime.
    * PLEASE NOTE: this method will change state of node as well.
    */
-  SD_INLINE SD_HOST void setStates(sd::LongType rootSeed, sd::LongType nodeState = 0);
+  SD_INLINE SD_HOST void setStates(LongType rootSeed, LongType nodeState = 0);
 
   /**
    * This method returns T value between from and to
    */
   template <typename T>
-  SD_INLINE SD_HOST_DEVICE T relativeT(sd::LongType index, T from, T to);
+  SD_INLINE SD_HOST_DEVICE T relativeT(LongType index, T from, T to);
 
   /**
    * This method returns T value between 0 and MAX_T
    */
   template <typename T>
-  SD_INLINE SD_HOST_DEVICE T relativeT(sd::LongType index);
+  SD_INLINE SD_HOST_DEVICE T relativeT(LongType index);
 
   /**
    * These two methods are made for JVM
    * @param index
    * @return
    */
-  SD_INLINE SD_HOST_DEVICE int relativeInt(sd::LongType index);
-  SD_INLINE SD_HOST_DEVICE sd::LongType relativeLong(sd::LongType index);
+  SD_INLINE SD_HOST_DEVICE int relativeInt(LongType index);
+  SD_INLINE SD_HOST_DEVICE LongType relativeLong(LongType index);
 
   SD_INLINE SD_HOST_DEVICE void rewindH(uint64_t steps);
 
@@ -119,12 +119,12 @@ class SD_LIB_EXPORT RandomGenerator {
 
   SD_INLINE SD_HOST void setSeed(uint64_t seed) { _nodeState._ulong = seed; }
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType rootState() { return _rootState._long; }
+  SD_INLINE SD_HOST_DEVICE LongType rootState() { return _rootState._long; }
 
-  SD_INLINE SD_HOST_DEVICE sd::LongType nodeState() { return _nodeState._long; }
+  SD_INLINE SD_HOST_DEVICE LongType nodeState() { return _nodeState._long; }
 };
 
-SD_INLINE RandomGenerator::RandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
+SD_INLINE RandomGenerator::RandomGenerator(LongType rootSeed, LongType nodeSeed) {
   // this seed is used graph-level state
   if (rootSeed == 0) rootSeed = currentMilliseconds();
 
@@ -135,7 +135,7 @@ SD_INLINE RandomGenerator::RandomGenerator(sd::LongType rootSeed, sd::LongType n
   _nodeState._long = (nodeSeed != 0 ? nodeSeed : 1298567341LL);
 }
 
-SD_INLINE void RandomGenerator::setStates(sd::LongType rootSeed, sd::LongType nodeSeed) {
+SD_INLINE void RandomGenerator::setStates(LongType rootSeed, LongType nodeSeed) {
   // this seed is used graph-level state
   if (rootSeed == 0) rootSeed = currentMilliseconds();
 
@@ -146,21 +146,21 @@ SD_INLINE void RandomGenerator::setStates(sd::LongType rootSeed, sd::LongType no
   _nodeState._long = (nodeSeed != 0 ? nodeSeed : 1298567341LL);
 }
 
-SD_INLINE sd::LongType RandomGenerator::currentMilliseconds() {
+SD_INLINE LongType RandomGenerator::currentMilliseconds() {
   auto s = std::chrono::system_clock::now().time_since_epoch();
   auto v = std::chrono::duration_cast<std::chrono::milliseconds>(s).count();
   return v;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE float RandomGenerator::relativeT<float>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE float RandomGenerator::relativeT<float>(LongType index) {
   u32 u;
   u._u32 = (0x3f800000 | (this->xoroshiro32(index) >> 9));
   return u._f32 - 1.0f;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE double RandomGenerator::relativeT<double>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE double RandomGenerator::relativeT<double>(LongType index) {
 #ifdef __DOUBLE_RNG__
   u64 u;
   u._ulong = ((UINT64_C(0x3FF) << 52) | (this->xoroshiro64(index) >> 12));
@@ -171,63 +171,62 @@ SD_INLINE SD_HOST_DEVICE double RandomGenerator::relativeT<double>(sd::LongType 
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE uint64_t RandomGenerator::relativeT<uint64_t>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE uint64_t RandomGenerator::relativeT<uint64_t>(LongType index) {
   return this->xoroshiro64(index);
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::relativeT<uint32_t>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::relativeT<uint32_t>(LongType index) {
   return this->xoroshiro32(index);
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT<int>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT<int>(LongType index) {
   auto r = relativeT<uint32_t>(index);
   return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType RandomGenerator::relativeT<sd::LongType>(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeT<LongType>(LongType index) {
   auto r = relativeT<uint64_t>(index);
-  return r <= DataTypeUtils::max<sd::LongType>() ? r : r % DataTypeUtils::max<sd::LongType>();
+  return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
 }
 
 template <typename T>
-SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(sd::LongType index, T from, T to) {
+SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(LongType index, T from, T to) {
   auto t = this->relativeT<T>(index);
   auto z = from + T(t * (to - from));
   return z;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType RandomGenerator::relativeT(sd::LongType index, sd::LongType from,
-                                                                 sd::LongType to) {
+SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeT(LongType index, LongType from, LongType to) {
   auto t = this->relativeT<double>(index);
-  auto z = from + sd::LongType(t * (to - from));
+  auto z = from + LongType(t * (to - from));
   return z;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT(sd::LongType index, int from, int to) {
+SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT(LongType index, int from, int to) {
   auto t = this->relativeT<float>(index);
   auto z = from + float(t * (to - from));
   return z;
 }
 
 template <typename T>
-SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(LongType index) {
   // This is default implementation for floating point types
   return static_cast<T>(relativeT<float>(index));
 }
 
-SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeInt(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeInt(LongType index) {
   auto r = relativeT<uint32_t>(index);
   return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
 }
 
-SD_INLINE SD_HOST_DEVICE sd::LongType RandomGenerator::relativeLong(sd::LongType index) {
+SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeLong(LongType index) {
   auto r = relativeT<uint64_t>(index);
-  return r <= DataTypeUtils::max<sd::LongType>() ? r : r % DataTypeUtils::max<sd::LongType>();
+  return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
 }
 
 //////

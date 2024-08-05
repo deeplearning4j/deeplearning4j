@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(knn_mindistance, 3, 1, false, 0, 0) {
 
   helpers::knn_mindistance(*input, *lowest, *highest, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(knn_mindistance) {

@@ -34,11 +34,11 @@ CUSTOM_OP_IMPL(test_scalar, 1, 1, false, 0, 0) {
   double val = input->e<double>(0) + 2.0;
   output->p(0, val);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(test_scalar) {
-  sd::LongType *newShape;
+  LongType *newShape;
   ALLOCATE(newShape, block.workspace(), shape::shapeInfoLength(2), sd::LongType);
 
   newShape[0] = 2;
@@ -54,11 +54,11 @@ DECLARE_SHAPE_FN(test_scalar) {
   auto desc = new ShapeDescriptor(newShape);
   auto shape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(newShape, block.getWorkspace());
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return SHAPELIST(shape);
 }
 
-DECLARE_TYPES(test_scalar) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(test_scalar) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 
