@@ -28,38 +28,38 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(T value);
+SD_INLINE SD_HOST_DEVICE LongType longBytes(T value);
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(float value) {
+SD_INLINE SD_HOST_DEVICE LongType longBytes(float value) {
   int intie = *(int *)&value;
-  return static_cast<sd::LongType>(intie);
+  return static_cast<LongType>(intie);
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(double value) {
-  sd::LongType longie = *(sd::LongType *)&value;
+SD_INLINE SD_HOST_DEVICE LongType longBytes(double value) {
+  LongType longie = *(LongType *)&value;
   return longie;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(float16 value) {
+SD_INLINE SD_HOST_DEVICE LongType longBytes(float16 value) {
   return longBytes<float>((float)value);
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(sd::LongType value) {
+SD_INLINE SD_HOST_DEVICE LongType longBytes(LongType value) {
   return value;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(bfloat16 value) {
+SD_INLINE SD_HOST_DEVICE LongType longBytes(bfloat16 value) {
   return longBytes<float>((float)value);
 }
 
 template <typename T>
-SD_INLINE SD_HOST_DEVICE sd::LongType longBytes(T value) {
-  return longBytes<sd::LongType>((sd::LongType)value);
+SD_INLINE SD_HOST_DEVICE LongType longBytes(T value) {
+  return longBytes<LongType>((LongType)value);
 }
 
 SD_LIB_HIDDEN void hashCode(LaunchContext *context, NDArray &array, NDArray &result);

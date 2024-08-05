@@ -31,9 +31,9 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT GraphHolder {
  private:
-  SD_MAP_IMPL<sd::LongType, Graph*> _graphF;
+  SD_MAP_IMPL<LongType, Graph*> _graphF;
 
-  SD_MAP_IMPL<sd::LongType, SimpleReadWriteLock> _locks;
+  SD_MAP_IMPL<LongType, SimpleReadWriteLock> _locks;
 
   GraphHolder() = default;
   ~GraphHolder() = default;
@@ -41,48 +41,48 @@ class SD_LIB_EXPORT GraphHolder {
  public:
   static GraphHolder& getInstance();
 
-  void registerGraph(sd::LongType graphId, Graph* graph);
+  void registerGraph(LongType graphId, Graph* graph);
 
-  Graph* cloneGraph(sd::LongType graphId);
+  Graph* cloneGraph(LongType graphId);
 
-  Graph* pullGraph(sd::LongType graphId);
+  Graph* pullGraph(LongType graphId);
 
-  void forgetGraph(sd::LongType graphId);
+  void forgetGraph(LongType graphId);
 
-  void dropGraph(sd::LongType graphId);
+  void dropGraph(LongType graphId);
 
-  void dropGraphAny(sd::LongType graphId);
+  void dropGraphAny(LongType graphId);
 
-  bool hasGraph(sd::LongType graphId);
+  bool hasGraph(LongType graphId);
 
-  bool hasGraphAny(sd::LongType graphId);
+  bool hasGraphAny(LongType graphId);
 
-  flatbuffers::Offset<FlatResult> execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
+  flatbuffers::Offset<FlatResult> execute(LongType graphId, flatbuffers::FlatBufferBuilder& builder,
                                           const FlatInferenceRequest* request);
 
-  void replaceGraph(sd::LongType graphId, Graph* graph);
+  void replaceGraph(LongType graphId, Graph* graph);
 
   /////////////////////////////
 
-  SD_INLINE void lockWrite(sd::LongType graphId) {
+  SD_INLINE void lockWrite(LongType graphId) {
     if (_locks.count(graphId) == 0) return;
 
     _locks[graphId].lockWrite();
   }
 
-  SD_INLINE void unlockWrite(sd::LongType graphId) {
+  SD_INLINE void unlockWrite(LongType graphId) {
     if (_locks.count(graphId) == 0) return;
 
     _locks[graphId].unlockWrite();
   }
 
-  SD_INLINE void lockRead(sd::LongType graphId) {
+  SD_INLINE void lockRead(LongType graphId) {
     if (_locks.count(graphId) == 0) return;
 
     _locks[graphId].lockRead();
   }
 
-  SD_INLINE void unlockRead(sd::LongType graphId) {
+  SD_INLINE void unlockRead(LongType graphId) {
     if (_locks.count(graphId) == 0) return;
 
     _locks[graphId].unlockRead();

@@ -31,14 +31,14 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                        NDArray* output, const int kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
-                        const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode, const bool isNCHW,
+                        NDArray* output, const int kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
+                        const LongType pW, const LongType dH, const LongType dW, const int paddingMode, const bool isNCHW,
                         const int wFormat) {
   // cudnn support only two formats for weights {oC,iC,kH,kW} and {oC,kH,kW,iC}
 
-  sd::LongType bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -82,7 +82,7 @@ static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, cons
   CHECK_CUDNN_FAILURE_MSG(STRINGIZE(cudnnFindConvolutionForwardAlgorithm),
                           cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf));
   if (count == 0)
-    throw sd::cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0", 0);
+    throw cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed as the count is 0", 0);
   algo = algoPerf.algo;
 
   PointersManager manager(context, __func__);
@@ -124,12 +124,12 @@ static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, cons
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const sd::LongType kH,
-                          const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH,
-                          const sd::LongType dW, const sd::LongType paddingMode, const bool isNCHW, const int wFormat) {
-  sd::LongType bS, iC, iH, iW, oC, oH,
+                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH,
+                          const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
+                          const LongType dW, const LongType paddingMode, const bool isNCHW, const int wFormat) {
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -176,7 +176,7 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
       STRINGIZE(cudnnFindConvolutionBackwardFilterAlgorithm),
       cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf));
   if (count == 0)
-    throw sd::cuda_exception::build(
+    throw cuda_exception::build(
         "conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed as the count is 0", 0);
   algoGradW = algoGradWPerf.algo;
 
@@ -187,7 +187,7 @@ static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, co
       STRINGIZE(cudnnFindConvolutionBackwardDataAlgorithm),
       cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf));
   if (count == 0)
-    throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0",
+    throw cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed as the count is 0",
                                     0);
   algoGradI = algoGradIPerf.algo;
 
@@ -249,20 +249,20 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
 
   auto output = OUTPUT_VARIABLE(0);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
-  sd::LongType sH = INT_ARG(2);                                                // strides height
-  sd::LongType sW = INT_ARG(3);                                                // strides width
-  sd::LongType pH = INT_ARG(4);                                                // paddings height
-  sd::LongType pW = INT_ARG(5);                                                // paddings width
-  sd::LongType dH = INT_ARG(6);                                                // dilations height
-  sd::LongType dW = INT_ARG(7);                                                // dilations width
+  LongType sH = INT_ARG(2);                                                // strides height
+  LongType sW = INT_ARG(3);                                                // strides width
+  LongType pH = INT_ARG(4);                                                // paddings height
+  LongType pW = INT_ARG(5);                                                // paddings width
+  LongType dH = INT_ARG(6);                                                // dilations height
+  LongType dW = INT_ARG(7);                                                // dilations width
   int paddingMode = INT_ARG(8);                                       // 0-VALID, 1-SAME
   bool isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
                     ? INT_ARG(10)
                     : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
-  sd::LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<sd::LongType>(weights->sizeAt(0));  // filter(kernel) height
-  sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
 
   REQUIRE_TRUE(input->rankOf() == 4, 0,
                "CUSTOM CONV2D CUDNN OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -270,15 +270,15 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
                "CUSTOM CONV2D CUDNN OP: rank of weights array must be equal to 4, but got %i instead !",
                weights->rankOf());
 
-  sd::LongType bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM CONV2D CUDNN OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -297,12 +297,12 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
   if (0 == wFormat) {
     tmpWeight.reset(
         new NDArray(weights->ordering(),
-                    isNCHW ? std::vector<sd::LongType>({oC, iC, kH, kW}) : std::vector<sd::LongType>({oC, kH, kW, iC}),
+                    isNCHW ? std::vector<LongType>({oC, iC, kH, kW}) : std::vector<LongType>({oC, kH, kW, iC}),
                     weights->dataType(), weights->getContext()));
     newWeights = tmpWeight.get();
     newWeights->assign(weights->permute(
-        isNCHW ? std::vector<sd::LongType>({3, 2, 0, 1})
-               : std::vector<sd::LongType>(
+        isNCHW ? std::vector<LongType>({3, 2, 0, 1})
+               : std::vector<LongType>(
                      {3, 0, 1, 2})));  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
   }
 
@@ -314,7 +314,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
   conv2dCUDNN(block.launchContext(), input, newWeights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode,
               isNCHW, wFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -325,25 +325,25 @@ PLATFORM_CHECK(conv2d, ENGINE_CUDA) {
 
   const int paddingMode = INT_ARG(8);  // 0-VALID, 1-SAME, 2-CAUSAL
 
-  const bool badInputType = input->dataType() != DataType::DOUBLE && input->dataType() != DataType::FLOAT32 &&
-                            input->dataType() != DataType::HALF;
-  const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 &&
-                              weights->dataType() != DataType::HALF;
+  const bool badInputType = input->dataType() != DOUBLE && input->dataType() != FLOAT32 &&
+                            input->dataType() != HALF;
+  const bool badWeightsType = weights->dataType() != DOUBLE && weights->dataType() != FLOAT32 &&
+                              weights->dataType() != HALF;
   const bool badBiasType = bias == nullptr
                                ? false
-                               : (bias->dataType() != DataType::DOUBLE && bias->dataType() != DataType::FLOAT32 &&
-                                  bias->dataType() != DataType::HALF);
+                               : (bias->dataType() != DOUBLE && bias->dataType() != FLOAT32 &&
+                                  bias->dataType() != HALF);
 
   return paddingMode != 2 && !badInputType && !badWeightsType && !badBiasType;
   Requirements req("CUDNN CONV2d OP");
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"), 2) &&
       req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+                   {HALF, FLOAT32, DOUBLE}) &&
       req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                   {HALF, FLOAT32, DOUBLE});
   if (bias) {
     req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"),
-                 {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                 {HALF, FLOAT32, DOUBLE});
   }
   req.logTheSuccess();
   return req;
@@ -362,14 +362,14 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;  // [oC]
 
-  sd::LongType kH = INT_ARG(0);                                               // filter(kernel) height
-  sd::LongType kW = INT_ARG(1);                                               // filter(kernel) width
-  sd::LongType sH = INT_ARG(2);                                               // strides height
-  sd::LongType sW = INT_ARG(3);                                               // strides width
-  sd::LongType pH = INT_ARG(4);                                               // paddings height
-  sd::LongType pW = INT_ARG(5);                                               // paddings width
-  sd::LongType dH = INT_ARG(6);                                               // dilations height
-  sd::LongType dW = INT_ARG(7);                                               // dilations width
+  LongType kH = INT_ARG(0);                                               // filter(kernel) height
+  LongType kW = INT_ARG(1);                                               // filter(kernel) width
+  LongType sH = INT_ARG(2);                                               // strides height
+  LongType sW = INT_ARG(3);                                               // strides width
+  LongType pH = INT_ARG(4);                                               // paddings height
+  LongType pW = INT_ARG(5);                                               // paddings width
+  LongType dH = INT_ARG(6);                                               // dilations height
+  LongType dW = INT_ARG(7);                                               // dilations width
   int paddingMode = INT_ARG(8);                                      // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   int wFormat = block.getIArguments()->size() > 10
@@ -387,20 +387,20 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
                "%i instead !",
                gradO->rankOf());
 
-  sd::LongType bS, iC, iH, iW, oC, oH,
+  LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
-  sd::LongType trueoH, trueoW;  // true output height, width
+  LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "CUSTOM CONV2D_BP CUDNN OP: wrong shape of output gradients (next epsilon) array, expected is %s, but "
                "got %s instead !",
@@ -419,17 +419,17 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
   if (0 == wFormat) {
     tmpGradW.reset(
         new NDArray(gradW->ordering(),
-                    isNCHW ? std::vector<sd::LongType>({oC, iC, kH, kW}) : std::vector<sd::LongType>({oC, kH, kW, iC}),
+                    isNCHW ? std::vector<LongType>({oC, iC, kH, kW}) : std::vector<LongType>({oC, kH, kW, iC}),
                     gradW->dataType(), gradW->getContext()));
     tmpWeights.reset(
         new NDArray(weights->ordering(),
-                    isNCHW ? std::vector<sd::LongType>({oC, iC, kH, kW}) : std::vector<sd::LongType>({oC, kH, kW, iC}),
+                    isNCHW ? std::vector<LongType>({oC, iC, kH, kW}) : std::vector<LongType>({oC, kH, kW, iC}),
                     weights->dataType(), weights->getContext()));
     newGradW = tmpGradW.get();
     newWeights = tmpWeights.get();
     newWeights->assign(weights->permute(
-        isNCHW ? std::vector<sd::LongType>({3, 2, 0, 1})
-               : std::vector<sd::LongType>(
+        isNCHW ? std::vector<LongType>({3, 2, 0, 1})
+               : std::vector<LongType>(
                      {3, 0, 1, 2})));  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
   }
 
@@ -448,8 +448,8 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
 
   if (0 == wFormat) {
     newGradW->permutei(
-        isNCHW ? std::vector<sd::LongType>({2, 3, 1, 0})
-               : std::vector<sd::LongType>(
+        isNCHW ? std::vector<LongType>({2, 3, 1, 0})
+               : std::vector<LongType>(
                      {1, 2, 3, 0}));  // (oC, iC, kH, kW --> kH, kW, iC, oC) or (oC, kH, kW, iC --> kH, kW, iC, oC)
     gradW->assign(newGradW);
   }
@@ -461,7 +461,7 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
       gradI->assign((*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0}));
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
@@ -479,17 +479,17 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"), 2) &&
       req.expectTrue(makeInfoVariable(isNCHW, "isNCHW")) &&
       req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+                   {HALF, FLOAT32, DOUBLE}) &&
       req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                   {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                   {HALF, FLOAT32, DOUBLE});
   if (bias) {
     req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"),
-                 {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+                 {HALF, FLOAT32, DOUBLE}) &&
         req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3),
-                     {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                     {HALF, FLOAT32, DOUBLE});
   } else {
     req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2),
-                 {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE});
+                 {HALF, FLOAT32, DOUBLE});
   }
   req.logTheSuccess();
   return req;

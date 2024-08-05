@@ -42,7 +42,7 @@ ExecutionResult::~ExecutionResult() {
     for (auto v : _variables) delete v;
 }
 
-sd::LongType ExecutionResult::size() { return _variables.size(); }
+LongType ExecutionResult::size() { return _variables.size(); }
 
 ExecutionResult::ExecutionResult(std::initializer_list<Variable*> variables) {
   for (auto v : variables) this->emplace_back(v);

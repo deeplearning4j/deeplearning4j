@@ -34,16 +34,16 @@ namespace sd {
 namespace ops {
 class SD_LIB_EXPORT HashHelper {
  private:
-  sd::LongType _byteTable[256];
-  const sd::LongType HSTART = 0xBB40E64DA205B064L;
-  const sd::LongType HMULT = 7664345821815920749L;
+  LongType _byteTable[256];
+  const LongType HSTART = 0xBB40E64DA205B064L;
+  const LongType HMULT = 7664345821815920749L;
 
   bool _isInit = false;
   std::mutex _locker;
 
  public:
   static HashHelper& getInstance();
-  sd::LongType getLongHash(std::string& str);
+  LongType getLongHash(std::string& str);
 };
 }  // namespace ops
 }  // namespace sd

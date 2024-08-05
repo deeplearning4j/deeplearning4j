@@ -44,7 +44,7 @@ CONFIGURABLE_OP_IMPL(ams_grad_updater, 4, 4, true, 0, 0) {
 
   // todo maybe we need an error like on Java side
   if (gradient->isEmpty() || initStateV->isEmpty() || initStateM->isEmpty() || initStateH->isEmpty())
-    return sd::Status::OK;
+    return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initStateV), 0,
                "AMSGRAD UPDATER OP: input state Msg must have the same shape as gradient,"
@@ -98,7 +98,7 @@ CONFIGURABLE_OP_IMPL(ams_grad_updater, 4, 4, true, 0, 0) {
 
   helpers::updaterAmsGrad(block.launchContext(), *gradient, *initStateV, *initStateM, *initStateH, *update, *stateV,
                           *stateM, *stateH, dLr, dBeta1, dBeta2, dEpsilon, iteration);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(ams_grad_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

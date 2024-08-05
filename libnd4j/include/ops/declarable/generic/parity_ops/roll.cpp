@@ -36,8 +36,8 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
   int inputLen = input->lengthOf();
 
   bool shiftIsLinear = block.width() == 1;
-  std::vector<sd::LongType> axes;
-  std::vector<sd::LongType> shifts;
+  std::vector<LongType> axes;
+  std::vector<LongType> shifts;
   if (block.width() > 1) {
     REQUIRE_TRUE(block.width() == 3, 0, "roll: 3 arguments required for roll - input, shifts and axes. But %i given.",
                  block.width());
@@ -51,7 +51,7 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
                  (int)axesI->lengthOf());
     helpers::adjustAxis(axesI->lengthOf(), axesI, axes);
     shifts.resize(shiftsI->lengthOf());
-    for (sd::LongType i = 0; i < shiftsI->lengthOf(); i++) {
+    for (LongType i = 0; i < shiftsI->lengthOf(); i++) {
       auto shift = shiftsI->e<int>(i);
       if (shift < 0) {
         shift -= input->sizeAt(i) * (shift / inputLen - 1);
@@ -104,7 +104,7 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
     if (!block.isInplace()) {
       output->assign(input);
     }
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   if (shiftIsLinear) {
@@ -113,15 +113,15 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
     helpers::rollFunctorFull(block.launchContext(), input, output, shifts, axes, block.isInplace());
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(roll) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
-      ->setAllowedInputTypes(1, sd::DataType::INT32)  // TODO: all ints in future
-      ->setAllowedInputTypes(2, sd::DataType::INT32)
-      ->setAllowedOutputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, INT32)  // TODO: all ints in future
+      ->setAllowedInputTypes(2, INT32)
+      ->setAllowedOutputTypes(ANY)
       ->setSameMode(true);
 }
 }  // namespace ops

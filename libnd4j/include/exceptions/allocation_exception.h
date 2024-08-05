@@ -33,8 +33,8 @@ class SD_LIB_EXPORT allocation_exception : public std::runtime_error {
   allocation_exception(std::string message);
   ~allocation_exception() = default;
 
-  static allocation_exception build(std::string message, sd::LongType bytes);
-  static allocation_exception build(std::string message, sd::LongType limit, sd::LongType bytes);
+  static allocation_exception build(std::string message, LongType bytes);
+  static allocation_exception build(std::string message, LongType limit, LongType bytes);
 };
 }  // namespace sd
 

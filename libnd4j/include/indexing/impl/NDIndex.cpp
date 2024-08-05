@@ -25,11 +25,11 @@ namespace sd {
 
 bool NDIndex::isInterval() { return false; }
 
-sd::LongType NDIndex::stride() { return _stride; }
+LongType NDIndex::stride() { return _stride; }
 
-sd::NDIndexAll::NDIndexAll() : sd::NDIndex() { _indices.push_back(-1); }
+NDIndexAll::NDIndexAll() : NDIndex() { _indices.push_back(-1); }
 
-sd::NDIndexPoint::NDIndexPoint(sd::LongType point) : sd::NDIndex() { this->_indices.push_back(point); }
+NDIndexPoint::NDIndexPoint(LongType point) : NDIndex() { this->_indices.push_back(point); }
 
 bool NDIndexAll::isInterval() { return false; }
 
@@ -37,22 +37,22 @@ bool NDIndexPoint::isInterval() { return false; }
 
 bool NDIndexInterval::isInterval() { return true; }
 
-sd::NDIndexInterval::NDIndexInterval(sd::LongType start, sd::LongType end, sd::LongType stride) : sd::NDIndex() {
+NDIndexInterval::NDIndexInterval(LongType start, LongType end, LongType stride) : NDIndex() {
   this->_stride = stride;
   for (int e = start; e < end; e += stride) this->_indices.push_back(e);
 }
 
-bool sd::NDIndex::isAll() { return _indices.size() == 1 && _indices.at(0) == -1; }
+bool NDIndex::isAll() { return _indices.size() == 1 && _indices.at(0) == -1; }
 
-bool sd::NDIndex::isPoint() { return _indices.size() == 1 && _indices.at(0) >= 0; }
+bool NDIndex::isPoint() { return _indices.size() == 1 && _indices.at(0) >= 0; }
 
-std::vector<sd::LongType> &sd::NDIndex::getIndices() { return _indices; }
+std::vector<LongType> &NDIndex::getIndices() { return _indices; }
 
-sd::NDIndex *sd::NDIndex::all() { return new NDIndexAll(); }
+NDIndex *NDIndex::all() { return new NDIndexAll(); }
 
-sd::NDIndex *sd::NDIndex::point(sd::LongType pt) { return new NDIndexPoint(pt); }
+NDIndex *NDIndex::point(LongType pt) { return new NDIndexPoint(pt); }
 
-sd::NDIndex *sd::NDIndex::interval(sd::LongType start, sd::LongType end, sd::LongType stride) {
+NDIndex *NDIndex::interval(LongType start, LongType end, LongType stride) {
   return new NDIndexInterval(start, end, stride);
 }
 }  // namespace sd

@@ -37,11 +37,11 @@ OP_IMPL(identity, 1, 1, true) {
     z->assign(first);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(linear, identity);
 
-DECLARE_TYPES(identity) { getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(identity) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
 
 OP_IMPL(identity_bp, 2, 1, true) {
   auto first = INPUT_VARIABLE(0);
@@ -50,13 +50,13 @@ OP_IMPL(identity_bp, 2, 1, true) {
 
   z->assign(epsilon);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(LinearGrad, identity_bp);
 
 DECLARE_TYPES(identity_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }

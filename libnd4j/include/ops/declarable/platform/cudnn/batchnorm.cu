@@ -38,7 +38,7 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
 
   const cudnnDataType_t dataType = cudnnDataType(input->dataType());
 
-  const sd::LongType xRank = input->rankOf();
+  const LongType xRank = input->rankOf();
 
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
@@ -66,8 +66,8 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
   std::vector<int> zStrides = {static_cast<int>(output->strideAt(0)), static_cast<int>(output->strideAt(1)), static_cast<int>(output->strideAt(2)),
                                static_cast<int>(output->strideAt(3))};
   if (xRank > 4) {  // 5D
-    xStrides.push_back((sd::LongType)input->strideAt(4));
-    zStrides.push_back((sd::LongType)output->strideAt(4));
+    xStrides.push_back((LongType)input->strideAt(4));
+    zStrides.push_back((LongType)output->strideAt(4));
   }
 
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
@@ -257,12 +257,12 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
   // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
   // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes =
   // {3}, then expected shape would be {5}
-  std::vector<sd::LongType> expShape;
+  std::vector<LongType> expShape;
   if (numOfAxes == 1)
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
-    expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    expShape = std::vector<LongType>(inRank, 1);
+    for (LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -290,8 +290,8 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
 
   std::unique_ptr<NDArray> tmpGamma = {}, tmpBeta = {}, tmpInput = {}, tmpOutput = {};
   if (needPermut) {  // if NHWC
-    std::vector<sd::LongType> perm =
-        inRank == 4 ? std::vector<sd::LongType>({0, 3, 1, 2}) : std::vector<sd::LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
+    std::vector<LongType> perm =
+        inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
     tmpInput.reset(new NDArray(input->permute(perm)));
     tmpOutput.reset(new NDArray(output->permute(perm)));
     input = tmpInput.get();
@@ -313,7 +313,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
   // calculations
   batchnormCUDNN(block.launchContext(), input, mean, variance, gamma, beta, output, epsilon, axes.size() == 1);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -341,7 +341,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
   Requirements req("CUDNN BATCHNORM OP");
   req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
   req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-               {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+               {HALF, FLOAT32, DOUBLE}) &&
   req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
   req.expect(
       makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),
@@ -427,12 +427,12 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
   // for example if input shape is {2,3,4,5,6} and axes = {1,3}, then expected shape would be {1,3,1,5,1}, and if axes =
   // {3}, then expected shape would be {5}
-  std::vector<sd::LongType> expShape;
+  std::vector<LongType> expShape;
   if (numOfAxes == 1)
     expShape.push_back(input->sizeAt(axes[0]));
   else {  // get, for example, something like {1, inputDim1, 1, inputDim3, 1} if axes = {1, 3}
-    expShape = std::vector<sd::LongType>(inRank, 1);
-    for (sd::LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
+    expShape = std::vector<LongType>(inRank, 1);
+    for (LongType i = 0; i < numOfAxes; ++i) expShape[axes[i]] = input->sizeAt(axes[i]);
   }
 
   REQUIRE_TRUE(mean->isSameShape(expShape), 0,
@@ -463,8 +463,8 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   const bool needPermut = axes.size() == 1 && mean->lengthOf() != input->sizeAt(1);
   std::unique_ptr<NDArray> tmpGamma = {}, tmpGradG = {}, tmpGradB = {}, tmpInput = {}, tmpGradI = {}, tmpGradO = {};
   if (needPermut) {  // if NHWC
-    std::vector<sd::LongType> perm =
-        inRank == 4 ? std::vector<sd::LongType>({0, 3, 1, 2}) : std::vector<sd::LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
+    std::vector<LongType> perm =
+        inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
     tmpInput.reset(new NDArray(input->permute(perm)));
     tmpGradO.reset(new NDArray(gradO->permute(perm)));
     tmpGradI.reset(new NDArray(gradI->permute(perm)));
@@ -493,7 +493,7 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   *gradM = 0;  // put zeros so far
   *gradV = 0;  // put zeros so far
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
@@ -524,7 +524,7 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
   Requirements req("CUDNN BATCHNORM_BP OP");
   req.expectIn(makeInfoVariable(xRank, RANK_MSG_INPUT0), {4, 5}) &&
   req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-               {DataType::HALF, DataType::FLOAT32, DataType::DOUBLE}) &&
+               {HALF, FLOAT32, DOUBLE}) &&
   req.expectIn(makeInfoVariable(axes.size(), "axes.size()"), {1, 3, 4}) &&
   req.expect(
       makeShapeInfoVariable(mean, SHAPE_MSG_INPUT1), makeShapeInfoVariable(variance, SHAPE_MSG_INPUT2),

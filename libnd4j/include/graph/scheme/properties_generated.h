@@ -167,7 +167,7 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
   auto b__ = b ? _fbb.CreateVector<uint8_t>(*b) : 0;
   auto s__ = s ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*s) : 0;
   auto shape__ = shape ? _fbb.CreateVector<int32_t>(*shape) : 0;
-  return sd::graph::CreateFlatProperties(
+  return CreateFlatProperties(
       _fbb,
       name__,
       i__,
@@ -179,33 +179,33 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
       shape__);
 }
 
-inline const sd::graph::FlatProperties *GetFlatProperties(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatProperties>(buf);
+inline const FlatProperties *GetFlatProperties(const void *buf) {
+  return flatbuffers::GetRoot<FlatProperties>(buf);
 }
 
-inline const sd::graph::FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatProperties>(buf);
+inline const FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatProperties>(buf);
 }
 
 inline bool VerifyFlatPropertiesBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatProperties>(nullptr);
+  return verifier.VerifyBuffer<FlatProperties>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatPropertiesBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatProperties>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatProperties>(nullptr);
 }
 
 inline void FinishFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatProperties> root) {
+    flatbuffers::Offset<FlatProperties> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatProperties> root) {
+    flatbuffers::Offset<FlatProperties> root) {
   fbb.FinishSizePrefixed(root);
 }
 

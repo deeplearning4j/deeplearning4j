@@ -23,11 +23,11 @@
 
 namespace sd {
 namespace ops {
-LegacyOp::LegacyOp(int numInputs) : DeclarableOp::DeclarableOp(numInputs, 1, "LegacyOp", false) {
+LegacyOp::LegacyOp(int numInputs) : DeclarableOp(numInputs, 1, "LegacyOp", false) {
   _numInputs = numInputs;
 }
 
-LegacyOp::LegacyOp(int numInputs, int opNum) : DeclarableOp::DeclarableOp(numInputs, 1, "LegacyOp", false) {
+LegacyOp::LegacyOp(int numInputs, int opNum) : DeclarableOp(numInputs, 1, "LegacyOp", false) {
   _opNum = opNum;
   _numInputs = numInputs;
 }

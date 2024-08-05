@@ -297,41 +297,57 @@ SD_INLINE SD_HOST_DEVICE T p_remainder(T value, T power) {
 
 template <>
 SD_INLINE SD_HOST_DEVICE float p_log(float value) {
+  if(value == 0.0f)
+    return logf(SD_EPSILON);
   return logf(value);
 }
 
 template <>
 SD_INLINE SD_HOST_DEVICE float16 p_log(float16 val) {
 #ifdef SD_NATIVE_HALFS
+  if((float) value == 0.0f)
+    return hlog(SD_EPSILON);
   return hlog(val.data);
 #else
+  if(val == 0.0f)
+    return static_cast<float16>(logf((float)SD_EPSILON));
   return static_cast<float16>(logf((float)val));
 #endif
 }
 
 template <>
 SD_INLINE SD_HOST_DEVICE double p_log(double value) {
+  if(value == 0.0f)
+    return log(SD_EPSILON);
   return log(value);
 }
 
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_log(T value) {
+  if(value == 0.0f)
+    return log(static_cast<float>(SD_EPSILON));
   return static_cast<T>(logf(static_cast<float>(value)));
 }
 
 
 template <>
 SD_INLINE SD_HOST_DEVICE float p_log2(float value) {
+  if(value == 0.0f)
+    return log2f(static_cast<float>(SD_EPSILON));
   return log2f(value);
 }
 
 template <>
 SD_INLINE SD_HOST_DEVICE double p_log2(double value) {
+  if(value == 0.0)
+    return log2(static_cast<double>(SD_EPSILON));
   return log2(value);
 }
 
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T p_log2(T value) {
+  if(value == 0.0f)
+    return log2(static_cast<float>(SD_EPSILON));
   return static_cast<T>(log2f(static_cast<float>(value)));
 }
 

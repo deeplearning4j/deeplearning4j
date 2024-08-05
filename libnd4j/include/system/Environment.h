@@ -30,12 +30,6 @@
 #include <vector>
 #include <config.h>
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-#include <string>
-#include <mutex>
-#endif
-#endif
 
 namespace sd {
 class SD_LIB_EXPORT Environment {
@@ -50,27 +44,32 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _precBoost;
   std::atomic<bool> _useONEDNN{true};
   std::atomic<bool> _allowHelpers{true};
-
+  std::atomic<bool> funcTracePrintDeallocate;
+  std::atomic<bool> funcTracePrintAllocate;
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
-
+  std::atomic<bool> deleteSpecial{true};
+  std::atomic<bool> deletePrimary{true};
+  std::atomic<bool> deleteShapeInfo{true};
+  std::atomic<bool> _checkInputChange{false};
+  std::atomic<bool> _checkOutputChange{false};
+  std::atomic<bool> _logNDArrayEvenuts{false};
+  std::atomic<bool> _logNativeNDArrayCreation{false};
   // these fields hold defaults
   std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
   std::atomic<int64_t> _maxTotalSpecialMemory{-1};
   std::atomic<int64_t> _maxDeviceMemory{-1};
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  std::mutex path_mutex;
-  std::string veda_device_dir;
-#endif
-#endif
   bool _blasFallback = false;
+  std::atomic<bool> _enableBlasFall{true};
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   const bool _experimental = true;
 #else
   const bool _experimental = false;
 #endif
+
+
+
 
   // device compute capability for CUDA
   std::vector<Pair> _capabilities;
@@ -87,6 +86,71 @@ class SD_LIB_EXPORT Environment {
   int _blasPatchVersion = 0;
 
   static Environment& getInstance();
+
+  bool isEnableBlas() {
+    return _enableBlasFall.load();
+  }
+
+  void setEnableBlas(bool reallyEnable) {
+    _enableBlasFall.store(reallyEnable);
+    printf("Called set enabled blas %d\n",reallyEnable);
+    fflush(stdout);
+  }
+
+  /**
+   * When log ndarray evens is true in c++
+   * certain features of ndarray logging will trigger such as what ndarray constructors are being called.
+   *  A great use case for this is for detecting subtle changes in ndarrays like move constructor calls
+   *  which  can cause the underlying data to change.
+   * @return
+   */
+  bool isLogNativeNDArrayCreation();
+  void setLogNativeNDArrayCreation(bool logNativeNDArrayCreation);
+
+  /**
+   * This is mostly a java feature. We can use this to build a framework
+   * for logging ndarray events from c++ later.
+   * @return
+   */
+  bool isLogNDArrayEvents();
+
+  void setLogNDArrayEvents(bool logNDArrayEvents);
+
+  /**
+   * This is mainly for debugging. This toggles
+   * deletion of shape info descriptors.
+   * This can be used to isolate potential issues with shape info
+   * memory management.
+   * The next concern is why have this at all?
+   * Historically, we had issues with shape descriptors and shape info
+   * buffers being deallocated when they shouldn't be due to stack based deallocation.
+   * By controlling everything with normal heap allocation, manual deletes and configurable behavior
+   * we can keep memory management consistent and predictable.
+   */
+
+  bool isDeleteSpecial();
+  void setDeleteSpecial(bool reallyDelete);
+  bool isDeletePrimary();
+  void setDeletePrimary(bool reallyDelete);
+
+
+  /**
+   * Checks whether the outputs of the op have changed
+   * by duplicating them before and after the op runs
+   * if it doesn't change it throws an exception.
+   * @return
+   */
+  bool isCheckOutputChange();
+
+  void setCheckOutputChange(bool reallyCheck);
+
+  /**
+   * Checks whether immutable ops changed their inputs by
+   * duplicating each input and ensuring they're still equal after the op runs.
+   * @return
+   */
+  bool isCheckInputChange();
+  void setCheckInputChange(bool reallyCheck);
 
   bool isVerbose();
   void setVerbose(bool reallyVerbose);
@@ -157,9 +221,14 @@ class SD_LIB_EXPORT Environment {
 
   std::vector<Pair>& capabilities();
 
-  const char* getVedaDeviceDir();
 
-  void setVedaDeviceDir(const std::string &dir);
+  bool isFuncTracePrintDeallocate();
+  void setFuncTracePrintDeallocate(bool reallyPrint);
+  bool isFuncTracePrintAllocate();
+  void setFuncTracePrintAllocate(bool reallyPrint);
+
+  bool isDeleteShapeInfo();
+  void setDeleteShapeInfo(bool deleteShapeInfo);
 };
 }  // namespace sd
 

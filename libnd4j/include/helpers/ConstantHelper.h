@@ -40,12 +40,12 @@ class SD_LIB_EXPORT ConstantHelper {
   std::vector<SD_MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
 
   // tracking of per-device constant memory buffers (CUDA only atm)
-  std::vector<sd::Pointer> _devicePointers;
-  std::vector<sd::LongType> _deviceOffsets;
+  std::vector<Pointer> _devicePointers;
+  std::vector<LongType> _deviceOffsets;
   std::mutex _mutex;
   std::mutex _mutexHolder;
 
-  std::vector<sd::LongType> _counters;
+  std::vector<LongType> _counters;
 
  public:
   ~ConstantHelper();
@@ -55,9 +55,9 @@ class SD_LIB_EXPORT ConstantHelper {
   static int getNumberOfDevices();
   void* replicatePointer(void* src, size_t numBytes, memory::Workspace* workspace = nullptr);
 
-  ConstantDataBuffer* constantBuffer(const ConstantDescriptor& descriptor, sd::DataType dataType);
+  ConstantDataBuffer* constantBuffer(const ConstantDescriptor& descriptor, DataType dataType);
 
-  sd::LongType getCachedAmount(int deviceId);
+  LongType getCachedAmount(int deviceId);
 };
 }  // namespace sd
 

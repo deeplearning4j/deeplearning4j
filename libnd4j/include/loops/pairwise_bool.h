@@ -27,7 +27,6 @@
 #define PAIRWISE_BOOL_H_
 
 #include <helpers/DebugHelper.h>
-#include <helpers/shape.h>
 #include <loops/legacy_ops.h>
 #include <math/templatemath.h>
 #include <ops/ops.h>

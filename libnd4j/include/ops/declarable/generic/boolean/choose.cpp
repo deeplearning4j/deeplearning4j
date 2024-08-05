@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(choose, -1, 2, false, -2, -1) {
     helpers::chooseFunctorScalar(block.launchContext(), arg, scalar, mode, result, numResults);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(choose) {
@@ -59,10 +59,10 @@ DECLARE_TYPES(choose) {
 }
 
 DECLARE_SHAPE_FN(choose) {
-  sd::LongType const* shape;
+  LongType const* shape;
   int rank;
   int mode = INT_ARG(0);
-  auto numResults = NDArrayFactory::create<sd::LongType>(0L);
+  auto numResults = NDArrayFactory::create<LongType>(0L);
   if (block.width() > 1) {
     auto first = INPUT_VARIABLE(0);
     auto second = INPUT_VARIABLE(1);
@@ -84,10 +84,10 @@ DECLARE_SHAPE_FN(choose) {
     helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, &numResults);
   }
 
-  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults.e<sd::LongType>(0),
+  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults.e<LongType>(0),
                                                                      ArrayOptions::dataType(inputShape->at(0)));
 
-  auto shapeScalar = ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64);
+  auto shapeScalar = ConstantShapeHelper::getInstance().scalarShapeInfo(INT64);
   return SHAPELIST(newShape, shapeScalar);
 }
 

@@ -179,5 +179,6 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, sd::LongType xEws, void
   }
 }
 
+
 }  // namespace scalar
 }  // namespace functions

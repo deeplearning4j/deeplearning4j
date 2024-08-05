@@ -80,14 +80,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
                  "%i instead !",
                  oC, bias->rankOf(), bias->lengthOf());
 
-    // conv2dMKLDNN(input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
-#if 0
-        sd_printf("conv2d  bS = %d,  iH =%d, iW = %d,  oH=%d, oW=%d  kH=%d, kW=%d wformat=%d, iC =%d, , oC=%d\n",
-       bS, iH, iW, oH, oW, kH, kW, wFormat, iC, oC
-     );
-        sd_printf("conv2d kH = %d, kW = %d, sH = %d, sW = %d  , pH = %d  , pW = %d, dH = %d, dW = %d, paddingMode = %d , isNCHW %d \n" , kH , kW , sH , sW  , pH 
-     , pW , dH , dW , paddingMode,isNCHW?1:0 );
-#endif
+
 
   auto dataLayout = isNCHW ? arm_compute::DataLayout::NCHW : arm_compute::DataLayout::NHWC;
   // check weight input datalayout match

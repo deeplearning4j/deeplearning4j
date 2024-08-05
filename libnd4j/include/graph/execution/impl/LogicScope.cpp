@@ -23,10 +23,10 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicScope::processNode(Graph *graph, Node *node) {
+Status LogicScope::processNode(Graph *graph, Node *node) {
   // this op is basically no-op
   // we just know it exists
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

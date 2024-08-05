@@ -35,21 +35,21 @@ CUSTOM_OP_IMPL(zero_fraction, 1, 1, false, 0, 0) {
 
   if (input->isEmpty()) {
     output->p<double>(0, std::numeric_limits<double>::quiet_NaN());
-    return sd::Status::OK;
+    return Status::OK;
   }
 
 
   auto countZero = input->reduceNumber(reduce::CountZero);
-  output->p<double>(0, countZero.e<sd::LongType>(0) / double(input->lengthOf()));
+  output->p<double>(0, countZero.e<LongType>(0) / double(input->lengthOf()));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SHAPE_FN(zero_fraction) {
   return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::DOUBLE));
 }
 
 DECLARE_TYPES(zero_fraction) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

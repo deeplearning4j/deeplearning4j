@@ -132,7 +132,7 @@ else()
 
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         message("Release build for tests")
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
 
 
         if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")

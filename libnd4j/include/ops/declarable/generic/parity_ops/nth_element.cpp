@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
   if (block.getIArguments()->size() > 0) reverse = (bool)INT_ARG(0);
 
   auto output = OUTPUT_VARIABLE(0);
-  sd::LongType lastDim = input->sizeAt(-1);
+  LongType lastDim = input->sizeAt(-1);
   int nVal = n->e<int>(0);
   REQUIRE_TRUE(nVal < lastDim && nVal >= 0, 0,
                "nth_element: n should be non-negative and less than last dimension size (%lld), but %i was given.",
@@ -46,23 +46,23 @@ CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
     //                    n->assign(lastDim - n->e<sd::LongType>(0) - 1);
     helpers::nthElementFunctor(block.launchContext(), input, nVal, output, reverse);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(nth_element) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in) - 1;
-  sd::LongType const* outShape = nullptr;
+  LongType const* outShape = nullptr;
   if (outRank > 1) {
-    sd::LongType* outputShape = nullptr;
+    LongType* outputShape = nullptr;
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     outputShape[0] = outRank;
-    for (sd::LongType e = 0; e < outRank; e++) outputShape[e + 1] = in[e + 1];
+    for (LongType e = 0; e < outRank; e++) outputShape[e + 1] = in[e + 1];
 
     ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
     outShape = CONSTANT(outputShape);
   } else if (outRank == 1) {
-    outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, static_cast<sd::LongType>(0)), ArrayOptions::dataType(in));
+    outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, static_cast<LongType>(0)), ArrayOptions::dataType(in));
   } else {
     // outputShape = shape::createScalarShapeInfo();
     outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));
@@ -70,7 +70,7 @@ DECLARE_SHAPE_FN(nth_element) {
   return SHAPELIST(outShape);
 }
 DECLARE_TYPES(nth_element) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 
 }  // namespace ops

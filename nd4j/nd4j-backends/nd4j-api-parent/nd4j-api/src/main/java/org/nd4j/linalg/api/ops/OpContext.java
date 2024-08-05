@@ -37,6 +37,12 @@ public interface OpContext extends AutoCloseable {
 
 
     /**
+     * Copies arguments from the given CustomOp
+     * @param customOp CustomOp to copy arguments from
+     */
+    void setArgsFrom(CustomOp customOp);
+
+    /**
      * This method sets integer arguments required for operation
      *
      * @param arguments
@@ -49,6 +55,8 @@ public interface OpContext extends AutoCloseable {
      */
     void setIArguments(long... arguments);
 
+    void setIArguments(List<Long> iArguments);
+
     List<Long> getIArguments();
 
     int numIArguments();
@@ -58,6 +66,9 @@ public interface OpContext extends AutoCloseable {
      * @param arguments
      */
     void setTArguments(double... arguments);
+
+
+    void setTArguments(List<Double> tArguments);
 
     /**
      * This method sets floating point arguments required for operation
@@ -76,6 +87,7 @@ public interface OpContext extends AutoCloseable {
      */
     void setDArguments(DataType... arguments);
 
+    void setDArguments(List<DataType> arguments);
 
     /**
      * This method sets data type arguments required for operation
@@ -89,6 +101,31 @@ public interface OpContext extends AutoCloseable {
     int numDArguments();
 
 
+    /**
+     * This method returns number of intermediate results
+     * @return
+     */
+    int numIntermediateResults();
+
+    /**
+     * This method sets intermediate result for future op call
+     * @param index
+     * @param arr
+     */
+    void setIntermediateResult(int index,INDArray arr);
+
+    /**
+     * This method returns intermediate result by index
+     * @param index
+     * @return
+     */
+    INDArray getIntermediateResult(int index);
+
+    /**
+     * This method adds intermediate result for future op call
+     * @param arr
+     */
+    void addIntermediateResult(INDArray arr);
 
     /**
      * This method sets data type arguments required for operation
@@ -97,6 +134,9 @@ public interface OpContext extends AutoCloseable {
      * @param length
      */
     void setBArguments(Pointer arguments, int length);
+
+
+    void setBAArguments(List<Boolean> arguments);
 
     /**
      * This method sets boolean arguments required for operation

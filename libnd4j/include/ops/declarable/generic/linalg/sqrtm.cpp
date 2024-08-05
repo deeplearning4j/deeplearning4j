@@ -41,12 +41,12 @@ CONFIGURABLE_OP_IMPL(sqrtm, 1, 1, false, 0, 0) {
 
   helpers::sqrtm(block.launchContext(), input, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(sqrtm) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 }  // namespace ops

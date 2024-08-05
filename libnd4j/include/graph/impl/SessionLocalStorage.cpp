@@ -32,7 +32,7 @@ SessionLocalStorage::SessionLocalStorage(VariableSpace* variableSpace, Stash* st
   _stash = stash;
 }
 
-VariableSpace* SessionLocalStorage::localVariableSpace(sd::LongType sessionId) {
+VariableSpace* SessionLocalStorage::localVariableSpace(LongType sessionId) {
   _mutex.lock();
   auto varSpace = _threadVariableSpace.at(sessionId);
   _mutex.unlock();
@@ -48,7 +48,7 @@ SessionLocalStorage::~SessionLocalStorage() {
   }
 }
 
-sd::LongType SessionLocalStorage::getThreadId() {
+LongType SessionLocalStorage::getThreadId() {
 #ifdef __APPLE__
   // syscall?
 #elif _WIN32
@@ -68,7 +68,7 @@ int SessionLocalStorage::numberOfSessions() {
   return size;
 }
 
-void SessionLocalStorage::endSession(sd::LongType sessionId) {
+void SessionLocalStorage::endSession(LongType sessionId) {
   // we should delete specific holders here
   _mutex.lock();
   auto vs = _threadVariableSpace[sessionId];
@@ -91,7 +91,7 @@ void SessionLocalStorage::endSession() {
   endSession(ntid);
 }
 
-sd::LongType SessionLocalStorage::getSessionId() {
+LongType SessionLocalStorage::getSessionId() {
   auto tid = getThreadId();
 
   _mutex.lock();
@@ -102,11 +102,11 @@ sd::LongType SessionLocalStorage::getSessionId() {
   return ntid;
 }
 
-sd::LongType sd::graph::SessionLocalStorage::startSession() {
+LongType SessionLocalStorage::startSession() {
   auto tid = getThreadId();
 
   sd_debug("Adding ThreadId: %i;\n", (int)tid);
-  sd::LongType ntid = _sessionCounter++;
+  LongType ntid = _sessionCounter++;
   _mutex.lock();
 
   _threadSession[tid] = ntid;

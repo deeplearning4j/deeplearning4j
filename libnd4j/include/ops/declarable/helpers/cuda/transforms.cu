@@ -35,18 +35,19 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void invertPermutationCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                            const sd::LongType* zShapeInfo) {
+SD_KERNEL static void invertPermutationCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                            const LongType* zShapeInfo) {
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ sd::LongType len, totalThreads;
+  __shared__ LongType len, totalThreads;
 
   if (threadIdx.x == 0) {
     len = shape::length(xShapeInfo);
@@ -57,9 +58,9 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const sd::LongType* 
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < len; i += totalThreads) {
+  for (LongType i = tid; i < len; i += totalThreads) {
     const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-    const sd::LongType index = x[xOffset];
+    const LongType index = x[xOffset];
     const auto zOffset = shape::getIndexOffset(index, zShapeInfo);
     z[zOffset] = i;
   }
@@ -69,13 +70,15 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const sd::LongType* 
 template <typename T>
 SD_HOST static void invertPermutationCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
                                                   const int sharedMemory, const cudaStream_t* stream, const void* vx,
-                                                  const sd::LongType* xShapeInfo, void* vz,
-                                                  const sd::LongType* zShapeInfo) {
+                                                  const LongType* xShapeInfo, void* vz,
+                                                  const LongType* zShapeInfo) {
   invertPermutationCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "invertPermutationCuda failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void invertPermutation(LaunchContext* context, const NDArray& input, NDArray& output) {
   dim3 invertPermuteDims = invertPermutationDims(input.lengthOf());
   PointersManager manager(context, "invertPermutation");
 
@@ -91,14 +94,14 @@ void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                const sd::LongType* zShapeInfo, const sd::LongType diagLen) {
+SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                const LongType* zShapeInfo, const LongType diagLen) {
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
   __shared__ T sharedMem[SD_CUDA_BLOCK_SIZE];
   __shared__ int xRank, zRank;  // xRank = zRank + 2
-  __shared__ sd::LongType xLen, zLen;
+  __shared__ LongType xLen, zLen;
 
   if (threadIdx.x == 0) {
     xRank = shape::rank(xShapeInfo);
@@ -108,9 +111,9 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
   }
   __syncthreads();
 
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
-  for (sd::LongType m = blockIdx.x; m < zLen;
+  for (LongType m = blockIdx.x; m < zLen;
        m += gridDim.x) {  // one block per each element of z, that is per each matrix
 
     shape::index2coords(m, zShapeInfo, coords);
@@ -118,7 +121,7 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
 
     sharedMem[threadIdx.x] = 0;
 
-    for (sd::LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
+    for (LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
       coords[zRank] = coords[zRank + 1] = i;
       const auto xOffset = shape::getOffset(xShapeInfo, coords);
       sharedMem[threadIdx.x] += x[xOffset];
@@ -127,7 +130,7 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
     __syncthreads();
 
     // aggregate sum
-    for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+    for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
       if (threadIdx.x < activeThreads) sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
       __syncthreads();
     }
@@ -140,16 +143,18 @@ SD_KERNEL static void traceCuda(const void* vx, const sd::LongType* xShapeInfo, 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                              const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                              const sd::LongType* zShapeInfo, const sd::LongType diagLen) {
+                              const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, void* vz,
+                              const LongType* zShapeInfo, const LongType diagLen) {
   traceCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, diagLen);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "traceCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void trace(LaunchContext* context, const NDArray& input, NDArray& output) {
   PointersManager manager(context, "trace");
 
-  const sd::LongType diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
+  const LongType diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
   const int threadsPerBlock = SD_CUDA_BLOCK_SIZE;
   const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = 1024;
@@ -167,14 +172,14 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void triuBPCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                 const sd::LongType* zShapeInfo, const int diag) {
+SD_KERNEL static void triuBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                 const LongType* zShapeInfo, const int diag) {
   // x and z have same shapes
   const auto x = reinterpret_cast<const T*>(vx);  // gradO
   auto z = reinterpret_cast<T*>(vz);              // gradI
 
   __shared__ int rank, areSameOffsets;
-  __shared__ sd::LongType len, totalThreads;  // xLen = zLen
+  __shared__ LongType len, totalThreads;  // xLen = zLen
 
   if (threadIdx.x == 0) {
     areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
@@ -185,11 +190,11 @@ SD_KERNEL static void triuBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 
   __syncthreads();
 
-  sd::LongType coords[SD_MAX_RANK];
+  LongType coords[SD_MAX_RANK];
 
-  const sd::LongType  tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < len; i += totalThreads) {
+  for (LongType i = tid; i < len; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, coords);
 
     const auto zOffset = shape::getOffset(zShapeInfo, coords);
@@ -204,17 +209,19 @@ SD_KERNEL static void triuBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                               const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                               const sd::LongType* zShapeInfo, const int diag) {
+                               const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, void* vz,
+                               const LongType* zShapeInfo, const int diag) {
   triuBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, diag);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "triuBP failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+void triuBP(LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
             const int diagonal) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-  const int sharedMem = threadsPerBlock * sizeof(sd::LongType) * gradO.rankOf() + 128;
+  const int sharedMem = threadsPerBlock * sizeof(LongType) * gradO.rankOf() + 128;
   dim3 triuDims2 = triuDims(gradO.lengthOf(),gradO.rankOf());
   PointersManager manager(context, "triuBP");
 
@@ -230,14 +237,15 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void tileBPCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                 const sd::LongType* zShapeInfo, sd::LongType* globMem) {
+SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                 const LongType* zShapeInfo,
+                                 LongType* globMem) {
   // x and z have same shapes
   const auto x = reinterpret_cast<const T*>(vx);  // gradO
   auto z = reinterpret_cast<T*>(vz);              // gradI
 
   __shared__ int xRank, zRank;                                // xRank >= zRank
-  __shared__ sd::LongType numOfXOffsets, zLen, totalThreads;  // xLen >= zLen
+  __shared__ LongType numOfXOffsets, zLen, totalThreads;  // xLen >= zLen
 
   if (threadIdx.x == 0) {
     xRank = shape::rank(zShapeInfo);
@@ -251,16 +259,16 @@ SD_KERNEL static void tileBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  sd::LongType memBuff[SD_MAX_RANK * 2];
+  LongType memBuff[SD_MAX_RANK * 2];
   auto xOffsets = globMem + tid * numOfXOffsets;
 
-  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+  for (LongType i = tid; i < zLen; i += totalThreads) {
     const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
     shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff);
 
     z[zOffset] = x[xOffsets[0]];                      // first offset
-    for (sd::LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets
+    for (LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets
       z[zOffset] += x[xOffsets[j]];
   }
 }
@@ -268,16 +276,18 @@ SD_KERNEL static void tileBPCuda(const void* vx, const sd::LongType* xShapeInfo,
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                               const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                               const sd::LongType* zShapeInfo, sd::LongType* globMem) {
+                               const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, void* vz,
+                               const LongType* zShapeInfo, LongType* globMem) {
   tileBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, globMem);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "tileBPCudaLauncher failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
-            const std::vector<sd::LongType> reps) {
+void tileBP(LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
+            const std::vector<LongType> reps) {
   NDArray memBuff(
-      'c', gradO.getShapeAsVector(), sd::DataType::INT64,
+      'c', gradO.getShapeAsVector(), INT64,
       context);  // empty auxiliary array for storing device memory which will be used in kernel calculations
 
   dim3 tileDims2 = tileDims(gradI.lengthOf(),gradI.rankOf());
@@ -295,7 +305,7 @@ void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray&
 }
 
 //////////////////////////////////////////////////////////////////////////
-void eye(sd::LaunchContext* context, NDArray& output) { output.setIdentity(); }
+void eye(LaunchContext* context, NDArray& output) { output.setIdentity(); }
 
 }  // namespace helpers
 }  // namespace ops

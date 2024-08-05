@@ -126,11 +126,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else {
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
       }
 
       if (numOfNonZeroWeights == 0)
@@ -148,7 +148,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
   delete cLabels;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -173,7 +173,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
                ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
-  sd::LongType const* outShapeInfo = nullptr;
+  LongType const* outShapeInfo = nullptr;
 
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
@@ -282,8 +282,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         *dLdp *= *weights;
         *dLdl *= *weights;
       } else {
-        dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
-        dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
+        dLdp->applyBroadcast(broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
+        dLdl->applyBroadcast(broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
 
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
@@ -315,8 +315,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
           *dLdw = 0.;
         } else {
           NDArray temp = *weightsBroad / sum;
-          dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdp);
-          dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
+          dLdp->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdp);
+          dLdl->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
@@ -331,11 +331,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
       // array divided by number of non-zero weights
-      sd::LongType numOfNonZeroWeights = 0;
+      LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
         if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
       } else
-        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<sd::LongType>(0);
+        numOfNonZeroWeights = weightsBroad->reduceNumber(reduce::CountNonZero).e<LongType>(0);
 
       if (numOfNonZeroWeights == 0) {
         *dLdp = 0.;
@@ -349,8 +349,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
           dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
         } else {
           NDArray temp = *weightsBroad / numOfNonZeroWeights;
-          dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdp);
-          dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
+          dLdp->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdp);
+          dLdl->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
@@ -371,7 +371,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
   delete cLabels;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -424,9 +424,11 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
   auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
   auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
   auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
-  delete desc1;
-  delete desc2;
-  delete desc3;
+  if (Environment::getInstance().isDeleteShapeInfo()) {
+    delete desc1;
+    delete desc2;
+    delete desc3;
+  }
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }
 

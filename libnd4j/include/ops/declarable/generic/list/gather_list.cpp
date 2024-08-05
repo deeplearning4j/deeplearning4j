@@ -38,7 +38,7 @@ LIST_OP_IMPL(gather_list, 2, 1, 0, -2) {
                indices->lengthOf());
 
   // first of all we need to get shapes
-  std::vector<sd::LongType> shape({0});
+  std::vector<LongType> shape({0});
   shape[0] = indices->lengthOf();
   for (int e = 0; e < list->height(); e++) {
     auto array = list->readRaw(e);
@@ -50,7 +50,7 @@ LIST_OP_IMPL(gather_list, 2, 1, 0, -2) {
   }
 
   auto result = NDArrayFactory::create_('c', shape, list->dataType());
-  std::vector<sd::LongType> indicesList((list->readRaw(0)->rankOf() + 1) * 2, 0);
+  std::vector<LongType> indicesList((list->readRaw(0)->rankOf() + 1) * 2, 0);
   int skipPosition = 0;
   for (int e = 0; e < indices->lengthOf(); e++) {
     auto idx = indices->e<int>(e);
@@ -66,7 +66,7 @@ LIST_OP_IMPL(gather_list, 2, 1, 0, -2) {
 
   // OVERWRITE_RESULT(result);
   setupResult(result, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArrayGatherV3, gather_list);
 DECLARE_SYN(tensorarraygatherv3, gather_list);

@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow,
+SD_LIB_HIDDEN void extractPatches(LaunchContext* context, NDArray* images, NDArray* output, int sizeRow,
                                   int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame);
 
 }

@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status VariablesSet::status() { return _status; }
+Status VariablesSet::status() { return _status; }
 
 int VariablesSet::size() { return _holder.size(); }
 
@@ -31,7 +31,7 @@ void VariablesSet::push_back(Variable *variable) { _holder.push_back(variable); 
 
 Variable *VariablesSet::at(int index) { return _holder.at(index); }
 
-VariablesSet::VariablesSet(sd::Status status) { _status = status; }
+VariablesSet::VariablesSet(Status status) { _status = status; }
 
 VariablesSet::~VariablesSet() {
   for (auto v : _holder) delete v;
