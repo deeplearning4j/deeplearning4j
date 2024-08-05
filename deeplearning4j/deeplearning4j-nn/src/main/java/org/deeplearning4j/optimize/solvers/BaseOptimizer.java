@@ -24,20 +24,15 @@ import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
-import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -86,7 +81,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public BaseOptimizer(NeuralNetConfiguration conf, StepFunction stepFunction,
                          Collection<TrainingListener> trainingListeners, Model model) {
         this.conf = conf;
-        this.stepFunction = (stepFunction != null ? stepFunction : getDefaultStepFunctionForOptimizer(this.getClass()));
+        this.stepFunction = (stepFunction != null ? stepFunction : NetworkUtils.getDefaultStepFunctionForOptimizer(this.getClass()));
         this.trainingListeners = trainingListeners != null ? trainingListeners : new ArrayList<TrainingListener>();
         this.model = model;
     }
@@ -106,7 +101,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public Updater getUpdater(boolean initializeIfReq) {
         if (updater == null && initializeIfReq) {
-            updater = UpdaterCreator.getUpdater(model);
+            updater = model.createUpdater();
         }
         return updater;
     }
@@ -116,25 +111,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         this.updater = updater;
     }
 
-
-
-    @Override
-    public ComputationGraphUpdater getComputationGraphUpdater() {
-        return getComputationGraphUpdater(true);
-    }
-
-    @Override
-    public ComputationGraphUpdater getComputationGraphUpdater(boolean initializIfReq) {
-        if (computationGraphUpdater == null && model instanceof ComputationGraph && initializIfReq) {
-            computationGraphUpdater = new ComputationGraphUpdater((ComputationGraph) model);
-        }
-        return computationGraphUpdater;
-    }
-
-    @Override
-    public void setUpdaterComputationGraph(ComputationGraphUpdater updater) {
-        this.computationGraphUpdater = updater;
-    }
 
     @Override
     public void setListeners(Collection<TrainingListener> listeners) {
@@ -219,16 +195,16 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
                     computationGraphUpdater = new ComputationGraphUpdater(graph);
                 }
             }
-            computationGraphUpdater.update(gradient, getIterationCount(model), getEpochCount(model), batchSize, workspaceMgr);
+            computationGraphUpdater.update(gradient, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model), batchSize, workspaceMgr);
         } else {
             if (updater == null) {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    updater = UpdaterCreator.getUpdater(model);
+                    updater = model.createUpdater();
                 }
             }
             Layer layer = (Layer) model;
 
-            updater.update(layer, gradient, getIterationCount(model), getEpochCount(model), batchSize, workspaceMgr);
+            updater.update(layer, gradient, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model), batchSize, workspaceMgr);
         }
     }
 
@@ -245,51 +221,5 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         searchState.put(PARAMS_KEY, params);
     }
 
-
-    public static StepFunction getDefaultStepFunctionForOptimizer(Class<? extends ConvexOptimizer> optimizerClass) {
-        if (optimizerClass == StochasticGradientDescent.class) {
-            return new NegativeGradientStepFunction();
-        } else {
-            return new NegativeDefaultStepFunction();
-        }
-    }
-
-    public static int getIterationCount(Model model) {
-        if (model instanceof MultiLayerNetwork) {
-            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getIterationCount();
-        } else if (model instanceof ComputationGraph) {
-            return ((ComputationGraph) model).getConfiguration().getIterationCount();
-        } else {
-            return model.conf().getIterationCount();
-        }
-    }
-
-    public static void incrementIterationCount(Model model, int incrementBy) {
-        if (model instanceof MultiLayerNetwork) {
-            MultiLayerConfiguration conf = ((MultiLayerNetwork) model).getLayerWiseConfigurations();
-            conf.setIterationCount(conf.getIterationCount() + incrementBy);
-        } else if (model instanceof ComputationGraph) {
-            ComputationGraphConfiguration conf = ((ComputationGraph) model).getConfiguration();
-            conf.setIterationCount(conf.getIterationCount() + incrementBy);
-        } else {
-            model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);
-        }
-    }
-
-    public static int getEpochCount(Model model){
-        if (model instanceof MultiLayerNetwork) {
-            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getEpochCount();
-        } else if (model instanceof ComputationGraph) {
-            return ((ComputationGraph) model).getConfiguration().getEpochCount();
-        } else {
-            return model.conf().getEpochCount();
-        }
-    }
-
-    public static void applyConstraints(Model model){
-        int iter = getIterationCount(model);
-        int epoch = getEpochCount(model);
-        model.applyConstraints(iter, epoch);
-    }
 
 }

@@ -543,15 +543,16 @@ public class TransferLearning {
                 }
             }
 
-            MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
+            MultiLayerConfiguration.Builder conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
                     .setInputType(this.inputType).confs(allConfs)
                     .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig)
-                    .dataType(origConf.getDataType())
-                    .build();
+                    .dataType(origConf.getDataType());
+
+            MultiLayerConfiguration build = conf.build();
             if (finetuneConfiguration != null) {
-                finetuneConfiguration.applyToMultiLayerConfiguration(conf);
+                finetuneConfiguration.applyToMultiLayerConfiguration(build);
             }
-            return conf;
+            return build;
         }
     }
 

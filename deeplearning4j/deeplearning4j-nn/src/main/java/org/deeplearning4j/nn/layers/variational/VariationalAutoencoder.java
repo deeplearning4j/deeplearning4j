@@ -32,7 +32,6 @@ import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -51,6 +50,7 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.workspace.WorkspacesCloseable;
 
 import java.util.*;
 
@@ -96,18 +96,18 @@ public class VariationalAutoencoder implements Layer {
         this.dataType = dataType;
 
         this.encoderLayerSizes =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getEncoderLayerSizes();
+                ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
+                        .getEncoderLayerSizes();
         this.decoderLayerSizes =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getDecoderLayerSizes();
+                ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
+                        .getDecoderLayerSizes();
         this.reconstructionDistribution =
-                        ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                                        .getOutputDistribution();
+                ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
+                        .getOutputDistribution();
         this.pzxActivationFn = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                        .getPzxActivationFn();
+                .getPzxActivationFn();
         this.numSamples = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
-                        .getNumSamples();
+                .getNumSamples();
     }
 
     protected org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder layerConf() {
@@ -185,7 +185,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray pzxLogStd2b = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B, true, workspaceMgr);
 
         INDArray pzxLogStd2Pre = fwd.encoderActivations[fwd.encoderActivations.length - 1].mmul(pzxLogStd2W)
-                        .addiRowVector(pzxLogStd2b);
+                .addiRowVector(pzxLogStd2b);
 
         INDArray meanZ = fwd.pzxMeanPreOut.dup();
         INDArray logStdev2Z = pzxLogStd2Pre.dup();
@@ -258,7 +258,7 @@ public class VariationalAutoencoder implements Layer {
                     activations.put("d" + i, decoderActivations[i]);
                 }
                 activations.put(VariationalAutoencoderParamInitializer.PXZ_PREFIX,
-                                reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
+                        reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
                 if (!trainingListeners.isEmpty()) {
                     try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         for (TrainingListener tl : trainingListeners) {
@@ -356,7 +356,7 @@ public class VariationalAutoencoder implements Layer {
             //If we were maximizing the equation in Kinga and Welling, this would be a .sub(meanZ). Here: we are minimizing the negative instead
             if (l == 0) {
                 dLdZXMeanb.assign(pzxActivationFn.backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst()
-                                .sum(0));
+                        .sum(0));
 
                 dLdPreLogSigma2.sum(dLdZXLogStdev2b, 0);
                 if (numSamples > 1) {
@@ -365,7 +365,7 @@ public class VariationalAutoencoder implements Layer {
                 }
             } else {
                 blasL1.axpy(dLdZXMeanb.length(), scaleFactor, pzxActivationFn
-                                .backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst().sum(0), dLdZXMeanb);
+                        .backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst().sum(0), dLdZXMeanb);
 
                 blasL1.axpy(dLdZXLogStdev2b.length(), scaleFactor, dLdPreLogSigma2.sum(0), dLdZXLogStdev2b);
             }
@@ -400,8 +400,8 @@ public class VariationalAutoencoder implements Layer {
                     if (l == 0) {
                         //Not the most elegent implementation (with the ND4j.ones()), but it works...
                         encoderActivationDerivs[i] =
-                                        afn.backprop(fwd.encoderPreOuts[i], Nd4j.ones(fwd.encoderPreOuts[i].shape()))
-                                                        .getFirst();
+                                afn.backprop(fwd.encoderPreOuts[i], Nd4j.ones(fwd.encoderPreOuts[i].shape()))
+                                        .getFirst();
                     }
                     currentDelta = epsilon.muli(encoderActivationDerivs[i]);
                 } else {
@@ -442,13 +442,13 @@ public class VariationalAutoencoder implements Layer {
             g.put(b, gradientMap.get(b));
         }
         g.put(VariationalAutoencoderParamInitializer.PZX_MEAN_W,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W));
         g.put(VariationalAutoencoderParamInitializer.PZX_MEAN_B,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B));
         g.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W));
         g.put(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_B));
         for (int i = 0; i < decoderLayerSizes.length; i++) {
             String w = "d" + i + VariationalAutoencoderParamInitializer.WEIGHT_KEY_SUFFIX;
             g.put(w, gradientMap.get(w));
@@ -456,9 +456,9 @@ public class VariationalAutoencoder implements Layer {
             g.put(b, gradientMap.get(b));
         }
         g.put(VariationalAutoencoderParamInitializer.PXZ_W,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_W));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_W));
         g.put(VariationalAutoencoderParamInitializer.PXZ_B,
-                        gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_B));
+                gradientMap.get(VariationalAutoencoderParamInitializer.PXZ_B));
 
         weightNoiseParams.clear();
 
@@ -495,8 +495,8 @@ public class VariationalAutoencoder implements Layer {
     public void setParams(INDArray params) {
         if (params.length() != this.paramsFlattened.length()) {
             throw new IllegalArgumentException("Cannot set parameters: expected parameters vector of length "
-                            + this.paramsFlattened.length() + " but got parameters array of length " + params.length()
-                            + " " + layerId());
+                    + this.paramsFlattened.length() + " but got parameters array of length " + params.length()
+                    + " " + layerId());
         }
         this.paramsFlattened.assign(params);
     }
@@ -505,7 +505,7 @@ public class VariationalAutoencoder implements Layer {
     public void setParamsViewArray(INDArray params) {
         if (this.params != null && params.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
-                            + ", got params of length " + params.length() + " " + layerId());
+                    + ", got params of length " + params.length() + " " + layerId());
         this.paramsFlattened = params;
     }
 
@@ -518,7 +518,7 @@ public class VariationalAutoencoder implements Layer {
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams()) {
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams()
-                            + ", got gradient array of length of length " + gradients.length() + " " + layerId());
+                    + ", got gradient array of length of length " + gradients.length() + " " + layerId());
         }
 
         this.gradientsFlattened = gradients;
@@ -763,12 +763,15 @@ public class VariationalAutoencoder implements Layer {
         //Finally, calculate mean value:
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training, workspaceMgr);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training, workspaceMgr);
+        try(MemoryWorkspace closeable = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            INDArray pzxMean = Nd4j.createUninitialized(mW.dataType(), new long[]{current.size(0), mW.size(1)}, 'f');
+            pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
+            return new VAEFwdHelper(encoderPreOuts, pzxMean, encoderActivations);
 
-        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, mW.dataType(), new long[]{current.size(0), mW.size(1)}, 'f');
-        pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
+
+        }
 
 
-        return new VAEFwdHelper(encoderPreOuts, pzxMean, encoderActivations);
     }
 
     @Override
@@ -886,15 +889,10 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                          int minibatchSize) {
 
 
         throw new UnsupportedOperationException("Not yet implemented " + layerId());
-    }
-
-    @Override
-    public LayerHelper getHelper() {
-        return null;
     }
 
 
@@ -949,13 +947,13 @@ public class VariationalAutoencoder implements Layer {
     public INDArray reconstructionLogProbability(INDArray data, int numSamples) {
         if (numSamples <= 0) {
             throw new IllegalArgumentException(
-                            "Invalid input: numSamples must be > 0. Got: " + numSamples + " " + layerId());
+                    "Invalid input: numSamples must be > 0. Got: " + numSamples + " " + layerId());
         }
         if (reconstructionDistribution instanceof LossFunctionWrapper) {
             throw new UnsupportedOperationException("Cannot calculate reconstruction log probability when using "
-                            + "a LossFunction (via LossFunctionWrapper) instead of a ReconstructionDistribution: ILossFunction "
-                            + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability "
-                            + layerId());
+                    + "a LossFunction (via LossFunctionWrapper) instead of a ReconstructionDistribution: ILossFunction "
+                    + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability "
+                    + layerId());
         }
 
         data = data.castTo(dataType);
@@ -972,7 +970,7 @@ public class VariationalAutoencoder implements Layer {
 
         INDArray meanZ = fwd.pzxMeanPreOut;
         INDArray logStdev2Z = fwd.encoderActivations[fwd.encoderActivations.length - 1].mmul(pzxLogStd2W)
-                        .addiRowVector(pzxLogStd2b);
+                .addiRowVector(pzxLogStd2b);
         pzxActivationFn.getActivation(meanZ, false);
         pzxActivationFn.getActivation(logStdev2Z, false);
 
@@ -1013,10 +1011,10 @@ public class VariationalAutoencoder implements Layer {
 
             if (i == 0) {
                 sumReconstructionNegLogProbability =
-                                reconstructionDistribution.exampleNegLogProbability(data, pxzDistributionPreOut);
+                        reconstructionDistribution.exampleNegLogProbability(data, pxzDistributionPreOut);
             } else {
                 sumReconstructionNegLogProbability
-                                .addi(reconstructionDistribution.exampleNegLogProbability(data, pxzDistributionPreOut));
+                        .addi(reconstructionDistribution.exampleNegLogProbability(data, pxzDistributionPreOut));
             }
         }
 
@@ -1052,8 +1050,8 @@ public class VariationalAutoencoder implements Layer {
     private INDArray decodeGivenLatentSpaceValues(INDArray latentSpaceValues, LayerWorkspaceMgr workspaceMgr) {
         if (latentSpaceValues.size(1) != getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, false, workspaceMgr).size(1)) {
             throw new IllegalArgumentException("Invalid latent space values: expected size "
-                            + getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, false, workspaceMgr).size(1)
-                            + ", got size (dimension 1) = " + latentSpaceValues.size(1) + " " + layerId());
+                    + getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, false, workspaceMgr).size(1)
+                    + ", got size (dimension 1) = " + latentSpaceValues.size(1) + " " + layerId());
         }
 
         //Do forward pass through decoder
@@ -1100,10 +1098,10 @@ public class VariationalAutoencoder implements Layer {
     public INDArray reconstructionError(INDArray data) {
         if (!hasLossFunction()) {
             throw new IllegalStateException(
-                            "Cannot use reconstructionError method unless the variational autoencoder is "
-                                            + "configured with a standard loss function (via LossFunctionWrapper). For VAEs utilizing a reconstruction "
-                                            + "distribution, use the reconstructionProbability or reconstructionLogProbability methods "
-                                            + layerId());
+                    "Cannot use reconstructionError method unless the variational autoencoder is "
+                            + "configured with a standard loss function (via LossFunctionWrapper). For VAEs utilizing a reconstruction "
+                            + "distribution, use the reconstructionProbability or reconstructionLogProbability methods "
+                            + layerId());
         }
 
         INDArray pZXMean = activate(data, false, LayerWorkspaceMgr.noWorkspaces());

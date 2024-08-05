@@ -18,14 +18,20 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.nn.conf.layers;
+package org.nd4j.interceptor.advice;
 
-import org.deeplearning4j.nn.conf.RNNFormat;
+import org.nd4j.common.primitives.CounterMap;
 
-/**
- * Interface to implement by the layers that provide RNN layer format information.
- */
-public interface IRnnLayerFormatInfo {
+public class NDArrayIndexCounter {
 
-    RNNFormat getRnnDataFormat();
+    private static CounterMap<String,String> counterMap = new CounterMap<>();
+
+
+    public static int getCount(String className,String methodName) {
+        return (int) counterMap.getCount(className,methodName);
+    }
+    public static void increment(String className,String methodName) {
+        counterMap.incrementCount(className,methodName,1.0);
+    }
+
 }

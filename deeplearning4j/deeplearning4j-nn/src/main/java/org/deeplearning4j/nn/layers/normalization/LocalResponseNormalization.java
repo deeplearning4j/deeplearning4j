@@ -28,8 +28,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.HelperUtils;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
@@ -49,7 +47,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 public class LocalResponseNormalization
         extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
 
-    protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
     @Override
     public Layer clone() {
@@ -58,16 +55,9 @@ public class LocalResponseNormalization
 
     public LocalResponseNormalization(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
-        initializeHelper();
     }
 
-    void initializeHelper() {
-        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if (helper != null && !helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
-            log.debug("Removed helper {} as not supported (k={}, n={}, alpha={}, beta={})", helper.getClass(), layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta());
-            helper = null;
-        }
-    }
+
 
     @Override
     public double calcRegularizationScore(boolean backpropParamsOnly){
@@ -94,28 +84,6 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
-            Pair<Gradient, INDArray> ret = null;
-            try {
-                ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Throwable t){
-                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw t;
-                }
-                if(layerConf().isCudnnAllowFallback()){
-                    helperCountFail++;
-                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
-                } else {
-                    throw new RuntimeException("Error during LocalResponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
-                }
-            }
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
         int chDim = nchw ? 1 : 3;
@@ -176,29 +144,6 @@ public class LocalResponseNormalization
         double beta = layerConf().getBeta();
         int halfN = (int) n / 2;
 
-        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())){
-            INDArray activations = null;
-            try {
-                activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
-            } catch (ND4JOpProfilerException e){
-                throw e;    //NaN panic etc for debugging
-            } catch (Throwable t){
-                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
-                    //This is a memory exception - don't fallback to built-in implementation
-                    throw t;
-                }
-
-                if(layerConf().isCudnnAllowFallback()){
-                    helperCountFail++;
-                    log.warn("CuDNN LocalResponseNormalization backprop execution failed - falling back on built-in implementation",t);
-                } else {
-                    throw new RuntimeException("Error during LocalRsponseNormalization CuDNN helper backprop - isCudnnAllowFallback() is set to false", t);
-                }
-            }
-            if (activations != null) {
-                return new Triple<>(activations, null, null);
-            }
-        }
 
         boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
         int chDim = nchw ? 1 : 3;
@@ -266,10 +211,6 @@ public class LocalResponseNormalization
         //No op
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return helper;
-    }
 
     @Override
     public INDArray params() {

@@ -77,14 +77,14 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         int kH = (int) depthWiseWeights.size(0);
         int kW = (int) depthWiseWeights.size(1);
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
-        int[] pad;
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
+        long[] pad;
         if (convolutionMode == ConvolutionMode.Same) {
-            int[] outSize = ConvolutionUtils.getOutputSize(
+            long[] outSize = ConvolutionUtils.getOutputSize(
                     input, kernel, strides, null, convolutionMode, dilation, format);
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[]{inH, inW}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new long[]{inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format);
@@ -98,7 +98,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[]{
+        long[] args = {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1],
                 sameMode, (nchw ? 0 : 1)
@@ -192,12 +192,12 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         int kH = (int) depthWiseWeights.size(0);
         int kW = (int) depthWiseWeights.size(1);
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
 
-        int[] pad;
-        int[] outSize;
+        long[] pad;
+        long[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format);
 
@@ -205,7 +205,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
                 throw new ND4JArraySizeException();
             }
             pad = ConvolutionUtils.getSameModeTopLeftPadding(
-                    outSize, new int[]{(int) input.size(nchw ? 2 : 1), (int) input.size(nchw ? 3 : 2)}, kernel, strides, dilation);
+                    outSize, new long[]{(int) input.size(nchw ? 2 : 1), (int) input.size(nchw ? 3 : 2)}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format);
@@ -220,7 +220,7 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[]{
+        long[] args = {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode, (nchw ? 0 : 1)
         };

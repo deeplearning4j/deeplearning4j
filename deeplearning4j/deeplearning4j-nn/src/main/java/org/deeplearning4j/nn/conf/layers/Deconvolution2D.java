@@ -106,7 +106,7 @@ public class Deconvolution2D extends ConvolutionLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeDeconvLayer(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeDeconvLayerLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         nOut, layerIndex, getLayerName(), Deconvolution2DLayer.class);
     }
 
@@ -155,38 +155,38 @@ public class Deconvolution2D extends ConvolutionLayer {
          *
          * @param kernelSize the height and width of the kernel
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
 
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
 
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
 
         @Override
-        public void setKernelSize(int... kernelSize) {
+        public void setKernelSize(long... kernelSize) {
             this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
         }
 
         @Override
-        public void setStride(int... stride) {
+        public void setStride(long... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, false,"stride");
         }
 
         @Override
-        public void setPadding(int... padding) {
+        public void setPadding(long... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         @Override
-        public void setDilation(int... dilation) {
+        public void setDilation(long... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false,"dilation");
         }
 

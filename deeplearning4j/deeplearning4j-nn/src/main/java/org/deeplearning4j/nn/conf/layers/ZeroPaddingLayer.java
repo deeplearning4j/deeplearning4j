@@ -43,7 +43,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class ZeroPaddingLayer extends NoParamLayer {
 
-    private int[] padding;
+    private long[] padding;
     private CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
     public ZeroPaddingLayer(int padTopBottom, int padLeftRight) {
@@ -83,8 +83,8 @@ public class ZeroPaddingLayer extends NoParamLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         int[] hwd = ConvolutionUtils.getHWDFromInputType(inputType);
-        int outH = hwd[0] + padding[0] + padding[1];
-        int outW = hwd[1] + padding[2] + padding[3];
+        long outH = hwd[0] + padding[0] + padding[1];
+        long outW = hwd[1] + padding[2] + padding[3];
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
 
@@ -124,7 +124,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
          * Padding value for top, bottom, left, and right. Must be length 4 array
          */
         @Setter(AccessLevel.NONE)
-        private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
+        private long[] padding = {0, 0, 0, 0}; //Padding: top, bottom, left, right
 
         private CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
 
@@ -142,8 +142,8 @@ public class ZeroPaddingLayer extends NoParamLayer {
         /**
          * @param padding Padding value for top, bottom, left, and right. Must be length 4 array
          */
-        public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate4NonNegative(padding, "padding");
+        public void setPadding(long... padding) {
+            this.padding = ValidationUtils.validate4NonNegativeLong(padding, "padding");
         }
 
         /**
@@ -161,7 +161,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
          * @param padRight Right padding value
          */
         public Builder(int padTop, int padBottom, int padLeft, int padRight) {
-            this(new int[] {padTop, padBottom, padLeft, padRight});
+            this(new long[] {padTop, padBottom, padLeft, padRight});
         }
 
         /**
@@ -169,14 +169,14 @@ public class ZeroPaddingLayer extends NoParamLayer {
          * [padTopBottom, padLeftRight], or a length 4 array with
          * values [padTop, padBottom, padLeft, padRight]
          */
-        public Builder(int[] padding) {
+        public Builder(long[] padding) {
             this.setPadding(padding);
         }
 
         @Override
         @SuppressWarnings("unchecked")
         public ZeroPaddingLayer build() {
-            for (int p : padding) {
+            for (long p : padding) {
                 if (p < 0) {
                     throw new IllegalStateException(
                                     "Invalid zero padding layer config: padding [top, bottom, left, right]"

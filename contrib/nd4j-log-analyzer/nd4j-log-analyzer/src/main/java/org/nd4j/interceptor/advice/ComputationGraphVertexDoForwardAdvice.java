@@ -18,19 +18,21 @@
  *  *****************************************************************************
  */
 
-package org.deeplearning4j.nn.layers.normalization;
+package org.nd4j.interceptor.advice;
 
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.LayerHelper;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.common.primitives.Pair;
+import net.bytebuddy.asm.Advice;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.interceptor.data.InterceptorPersistence;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-public interface LocalResponseNormalizationHelper extends LayerHelper {
-    boolean checkSupported(double k, double n, double alpha, double beta);
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
-                    double beta, LayerWorkspaceMgr workspaceMgr);
 
-    INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr);
+public  class ComputationGraphVertexDoForwardAdvice {
+
+
+    @Advice.OnMethodExit
+    public static void exit( @Advice.Return INDArray[] output) {
+        InterceptorPersistence.addToForwardPass(output);
+    }
 }

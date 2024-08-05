@@ -71,7 +71,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
      * @return number of parameters of the channels-wise convolution operation
      */
     private long numDepthWiseParams(DepthwiseConvolution2D layerConf) {
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
 
@@ -148,7 +148,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
         DepthwiseConvolution2D layerConf = (DepthwiseConvolution2D) conf.getLayer();
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
         val nOut = layerConf.getNOut();
@@ -188,8 +188,8 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
-            int[] kernel = layerConf.getKernelSize();
-            int[] stride = layerConf.getStride();
+            long[] kernel = layerConf.getKernelSize();
+            long[] stride = layerConf.getStride();
 
             val inputDepth = layerConf.getNIn();
 
@@ -201,7 +201,7 @@ public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);
         } else {
-            int[] kernel = layerConf.getKernelSize();
+            long[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
                     new long[] {kernel[0], kernel[1], layerConf.getNIn(), depthMultiplier}, weightView, 'c');
         }

@@ -43,13 +43,7 @@ public interface ConvexOptimizer extends Serializable {
 
     Updater getUpdater(boolean initializeIfReq);
 
-    ComputationGraphUpdater getComputationGraphUpdater();
-
-    ComputationGraphUpdater getComputationGraphUpdater(boolean initializeIfReq);
-
     void setUpdater(Updater updater);
-
-    void setUpdaterComputationGraph(ComputationGraphUpdater updater);
 
     void setListeners(Collection<TrainingListener> listeners);
 

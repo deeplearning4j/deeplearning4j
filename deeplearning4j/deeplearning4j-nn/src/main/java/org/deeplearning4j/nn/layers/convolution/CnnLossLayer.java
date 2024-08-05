@@ -64,7 +64,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         if (labels == null)
             throw new IllegalStateException("Labels are not set (null)");
 
-        Preconditions.checkState(input.equalShapes(labels), "Input and label arrays do not have same shape: %ndShape vs. %ndShape",input, labels);
+        Preconditions.checkState(input.equalShapes(labels), "Input and label arrays do not have same shape: %ndShape vs. %ndShape", input, labels);
 
         CNN2DFormat format = layerConf().getFormat();
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, format, workspaceMgr, ArrayType.FF_WORKING_MEM);
@@ -84,13 +84,13 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public double calcRegularizationScore(boolean backpropParamsOnly){
+    public double calcRegularizationScore(boolean backpropParamsOnly) {
         return 0;
     }
 
     @Override
     public double f1Score(DataSet data) {
-        return 0;
+        return f1Score(data.getFeatures(), data.getLabels());
     }
 
     /**
@@ -157,6 +157,15 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray in = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering());
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, format, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
+        //just  print all inputs and outputs + method name
+        System.out.println("CnnLossLayer activation - forward pass input ("
+                + layerId() + " - " + this.layerConf().getLayerName() + " )");
+        System.out.println("input: " + input.toStringFull());
+        System.out.println("CnnLossLayer activation - forward pass result ("
+                + layerId() + " - " + this.layerConf().getLayerName() + " )");
+        System.out.println("Output shape: " + Arrays.toString(out2d.shape()));
+        System.out.println("Output: " + out2d.toStringFull());
+
 
         return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), format, workspaceMgr, ArrayType.ACTIVATIONS);
     }
@@ -227,7 +236,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         newShape[1] = 1;
 
         INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, format, workspaceMgr, ArrayType.FF_WORKING_MEM);
-        INDArray summedScores = scoreArrayTs.sum(1,2,3).reshape(scoreArrayTs.size(0), 1);
+        INDArray summedScores = scoreArrayTs.sum(1, 2, 3).reshape(scoreArrayTs.size(0), 1);
 
         if (fullNetRegTerm != 0.0) {
             summedScores.addi(fullNetRegTerm);

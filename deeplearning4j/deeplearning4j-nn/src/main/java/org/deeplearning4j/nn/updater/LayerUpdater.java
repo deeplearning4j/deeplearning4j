@@ -37,10 +37,6 @@ public class LayerUpdater extends BaseMultiLayerUpdater<Layer> {
 
     public LayerUpdater(Layer layer, INDArray updaterState) {
         super(layer, updaterState);
-        if (layer instanceof MultiLayerNetwork) {
-            throw new UnsupportedOperationException("Cannot use LayerUpdater for a MultiLayerNetwork");
-        }
-
         layersByName = new HashMap<>();
         layersByName.put(layer.conf().getLayer().getLayerName(), layer);
     }
