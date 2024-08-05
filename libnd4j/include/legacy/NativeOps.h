@@ -45,17 +45,16 @@
 #include <helpers/DebugInfo.h>
 #include <memory/MemoryCounter.h>
 #include <ops/declarable/OpRegistrator.h>
-
-typedef sd::InteropDataBuffer OpaqueDataBuffer;
+typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
-
+typedef sd::ShapeList OpaqueShapeList;
+typedef Context OpaqueContext;
 
 
 
 #if defined(SD_GCC_FUNCTRACE)
 
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
-
 SD_LIB_EXPORT std::vector<bool> * bArgs(void *execTrace);
 SD_LIB_EXPORT std::vector<std::string> * sArgs(void *execTrace);
 SD_LIB_EXPORT std::vector<double> * tArgs(void *execTrace);
@@ -94,13 +93,10 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_en
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,void *call_site);
 }
 
-
-//sets the file to be written to.
-SD_LIB_EXPORT void setInstrumentOut(char * instrumentOutPath);
-//closes the file
-SD_LIB_EXPORT void closeInstrumentOut();
-
 #endif
+
+SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *buff);
+
 
 SD_LIB_EXPORT int contextNumInputs(void *contextPointer);
 
@@ -156,7 +152,20 @@ SD_LIB_EXPORT int lastErrorCode();
 SD_LIB_EXPORT const char* lastErrorMessage();
 
 
-/**
+SD_LIB_EXPORT std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT std::vector<const sd::LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT void setIntermediateResult(OpaqueContext *contextPointer, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo);
+
+SD_LIB_EXPORT int numIntermediateResults(OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT void pushIntermediateResult(OpaqueContext *contextPointer, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo);
+
+SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer);
+
+SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
+    /**
  *
  * @param p
  * @param len
@@ -794,7 +803,8 @@ typedef sd::TadPack OpaqueTadPack;
  * @param targetBuffer
  * @param offsetsBuffer
  */
-SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(const sd::LongType* hXShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength);
+SD_LIB_EXPORT OpaqueTadPack* tadOnlyShapeInfo(OpaqueDataBuffer* hXShapeInfo, sd::LongType* dimension,
+                                              sd::LongType dimensionLength);
 
 SD_LIB_EXPORT sd::LongType const* getPrimaryShapeInfo(OpaqueTadPack* pack);
 SD_LIB_EXPORT sd::LongType const* getPrimaryOffsets(OpaqueTadPack* pack);
@@ -1212,7 +1222,7 @@ static sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray) {
   }
 
   auto shapeBuffer = shape::shapeBufferOfNpy(arr.shape.size(), shape, arr.fortranOrder);
-  delete[] shape;
+ // delete[] shape;
   return reinterpret_cast<sd::Pointer>(shapeBuffer);
 }
 
@@ -1468,7 +1478,7 @@ SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fil
 
 SD_LIB_EXPORT void munmapFile(sd::Pointer* extraPointers, sd::LongType* ptrMap, sd::LongType length);
 
-typedef sd::graph::ResultWrapper OpaqueResultWrapper;
+typedef ResultWrapper OpaqueResultWrapper;
 
 // flatbuffers execution
 SD_LIB_EXPORT OpaqueResultWrapper* executeFlatGraph(sd::Pointer* extraPointers, sd::Pointer flatBufferPointer);
@@ -1487,8 +1497,7 @@ SD_LIB_EXPORT sd::Status execCustomOp(sd::Pointer* extraPointers, sd::LongType h
                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
 SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer* extraPointers, sd::LongType hash, sd::Pointer opContext);
 
-typedef sd::ShapeList OpaqueShapeList;
-typedef sd::graph::Context OpaqueContext;
+
 
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
@@ -1498,18 +1507,6 @@ SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers
                                                       int numInputShapes, double* tArgs, int numTArgs,
                                                       sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                       int* dArgs, int numDArgs);
-
-SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs);
-
-
-SD_LIB_EXPORT OpaqueShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op,
-                                                            OpaqueDataBuffer **inputBuffers,
-                                            sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                            sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                            int numDArgs);
 
 #ifdef __NEC__
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapesFromContext(OpaqueContext* ctx, sd::LongType hash);
@@ -1524,8 +1521,8 @@ SD_LIB_EXPORT void deleteShapeList(sd::Pointer shapeList);
 
 SD_LIB_EXPORT sd::Status registerGraph(sd::Pointer* extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer);
 
-typedef sd::graph::VariablesSet OpaqueVariablesSet;
-typedef sd::graph::Variable OpaqueVariable;
+typedef VariablesSet OpaqueVariablesSet;
+typedef Variable OpaqueVariable;
 
 SD_LIB_EXPORT OpaqueVariablesSet* executeStoredGraph(sd::Pointer* extraPointers, sd::LongType graphId,
                                                      sd::Pointer* inputBuffers, sd::Pointer* inputShapes,
@@ -1605,7 +1602,7 @@ SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffe
 SD_LIB_EXPORT void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer* ptr);
 SD_LIB_EXPORT void deleteConstantDataBuffer(OpaqueConstantDataBuffer* ptr);
 
-typedef sd::graph::RandomGenerator OpaqueRandomGenerator;
+typedef RandomGenerator OpaqueRandomGenerator;
 
 SD_LIB_EXPORT OpaqueContext* createGraphContext(int nodeId);
 SD_LIB_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext* ptr);
@@ -1637,7 +1634,7 @@ SD_LIB_EXPORT void setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays
 SD_LIB_EXPORT void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
                                                 void** shapeInfo, void** specialShapeInfo);
 
-SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1,bool isEmpty = false);
+SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order = 'c',int elementWiseStride = 1,bool isEmpty = false,bool isView = false);
 
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext* ptr, int* arguments, int numberOfArguments);
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double* arguments, int numberOfArguments);
@@ -1675,6 +1672,7 @@ SD_LIB_EXPORT OpaqueDataBuffer* allocateDataBuffer(sd::LongType elements, int da
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
                                                            sd::Pointer special);
+SD_LIB_EXPORT sd::LongType dbBufferLength(OpaqueDataBuffer *dataBuffer);
 SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer);
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length, sd::LongType offset);
 SD_LIB_EXPORT sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer* dataBuffer);
@@ -1703,7 +1701,6 @@ SD_LIB_EXPORT int optimalLevel();
 SD_LIB_EXPORT bool isMinimalRequirementsMet();
 SD_LIB_EXPORT bool isOptimalRequirementsMet();
 
-SD_LIB_EXPORT void setVedaDeviceLibFolder(std::string path);
 
 }
 
