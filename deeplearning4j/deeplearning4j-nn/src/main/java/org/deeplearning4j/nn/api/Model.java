@@ -33,6 +33,9 @@ import java.util.Map;
 
 public interface Model {
 
+
+    org.deeplearning4j.nn.api.Updater createUpdater();
+
     /**
      * Init the model
      */
@@ -234,4 +237,25 @@ public interface Model {
 
 
     void close();
+
+    default void setInput(int inputIndex, INDArray indArray) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void computeGradientAndScore() {
+        throw new UnsupportedOperationException();
+    }
+
+
+
+    //note we do this mostly because layers won't need this most of the time.
+    default void setLabels(int index, INDArray indArray)  {
+        throw new UnsupportedOperationException();
+    }
+
+    default INDArray[] output(INDArray[] input) {
+        throw new UnsupportedOperationException();
+    }
+
+
 }

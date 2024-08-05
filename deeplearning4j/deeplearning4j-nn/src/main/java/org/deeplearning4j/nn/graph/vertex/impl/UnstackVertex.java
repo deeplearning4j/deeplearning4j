@@ -92,7 +92,7 @@ public class UnstackVertex extends BaseGraphVertex {
                                 "Cannot get subset for activations of rank " + inputs[0].rank());
         }
 
-        return workspaceMgr.dup(ArrayType.ACTIVATIONS, ret);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override

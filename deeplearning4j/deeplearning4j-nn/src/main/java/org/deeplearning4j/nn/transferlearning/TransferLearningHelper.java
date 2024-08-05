@@ -21,6 +21,7 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.nn.conf.BaseBuilder;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -287,12 +288,13 @@ public class TransferLearningHelper {
 
         MultiLayerConfiguration c = origMLN.getLayerWiseConfigurations();
 
-        unFrozenSubsetMLN = new MultiLayerNetwork(new MultiLayerConfiguration.Builder()
-                        .inputPreProcessors(c.getInputPreProcessors())
-                        .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
-                        .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs)
-                        .dataType(origMLN.getLayerWiseConfigurations().getDataType())
-                .build());
+        MultiLayerConfiguration.Builder baseBuilder = new MultiLayerConfiguration.Builder()
+                .inputPreProcessors(c.getInputPreProcessors())
+                .backpropType(c.getBackpropType()).tBPTTForwardLength(c.getTbpttFwdLength())
+                .tBPTTBackwardLength(c.getTbpttBackLength()).confs(allConfs)
+                .dataType(origMLN.getLayerWiseConfigurations().getDataType());
+
+        unFrozenSubsetMLN = new MultiLayerNetwork(baseBuilder.build());
         unFrozenSubsetMLN.init();
         //copy over params
         for (int i = frozenInputLayer + 1; i < origMLN.getnLayers(); i++) {

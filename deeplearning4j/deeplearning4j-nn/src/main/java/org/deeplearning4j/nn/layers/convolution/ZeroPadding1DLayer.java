@@ -66,7 +66,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2]));
 
-        return new Pair<>((Gradient) new DefaultGradient(), workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsNext));
+        return new Pair<>(new DefaultGradient(), workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsNext));
     }
 
 
@@ -81,7 +81,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                 NDArrayIndex.interval(padding[0], padding[0] + inShape[2])}, input);
 
-        return out;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
     }
 
     @Override

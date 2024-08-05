@@ -215,8 +215,8 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray maskReshaped;
-        if(this.maskArray != null){
-            if(this.maskArray.rank() == 3){
+        if(this.maskArray != null) {
+            if(this.maskArray.rank() == 3) {
                 maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);
             } else {
                 maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);

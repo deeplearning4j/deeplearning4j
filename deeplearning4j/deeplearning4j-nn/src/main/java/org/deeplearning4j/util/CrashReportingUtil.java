@@ -53,12 +53,10 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.util.GraphIndices;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.BaseMultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -305,8 +303,8 @@ public class CrashReportingUtil {
         }
         sb.append(fBytes("Params + Gradient + Updater Memory", sumMem));
             //Iter/epoch
-        sb.append(f("Iteration Count", BaseOptimizer.getIterationCount(net)));
-        sb.append(f("Epoch Count", BaseOptimizer.getEpochCount(net)));
+        sb.append(f("Iteration Count", NetworkUtils.getIterationCount(net)));
+        sb.append(f("Epoch Count", NetworkUtils.getEpochCount(net)));
 
             //Workspaces, backprop type, layer info, activation info, helper info
         if(isMLN) {
@@ -317,7 +315,6 @@ public class CrashReportingUtil {
             sb.append(f("Workspace Mode: Training", mln.getLayerWiseConfigurations().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", mln.getLayerWiseConfigurations().getInferenceWorkspaceMode()));
             appendLayerInformation(sb, mln.getLayers(), bytesPerElement);
-            appendHelperInformation(sb, mln.getLayers());
             appendActivationShapes(mln, (inputTypes == null || inputTypes.length == 0 ? null : inputTypes[0]), minibatch, sb, bytesPerElement);
         } else {
             sb.append(f("Backprop Type", cg.getConfiguration().getBackpropType()));
@@ -327,7 +324,6 @@ public class CrashReportingUtil {
             sb.append(f("Workspace Mode: Training", cg.getConfiguration().getTrainingWorkspaceMode()));
             sb.append(f("Workspace Mode: Inference", cg.getConfiguration().getInferenceWorkspaceMode()));
             appendLayerInformation(sb, cg.getLayers(), bytesPerElement);
-            appendHelperInformation(sb, cg.getLayers());
             appendActivationShapes(cg, sb, bytesPerElement);
         }
 
@@ -476,54 +472,7 @@ public class CrashReportingUtil {
 
     }
 
-    private static void appendHelperInformation(StringBuilder sb, Layer[] layers){
-        sb.append("\n----- Layer Helpers - Memory Use -----\n");
 
-        int helperCount = 0;
-        long helperWithMemCount = 0L;
-        long totalHelperMem = 0L;
-
-        //Layer index, layer name, layer class, helper class, total memory, breakdown
-        String format = "%-3s %-20s %-25s %-30s %-12s %s";
-        boolean header = false;
-        for(Layer l : layers){
-            LayerHelper h = l.getHelper();
-            if(h == null)
-                continue;
-
-            helperCount++;
-            Map<String,Long> mem = h.helperMemoryUse();
-            if(mem == null || mem.isEmpty())
-                continue;
-            helperWithMemCount++;
-
-            long layerTotal = 0;
-            for(Long m : mem.values()){
-                layerTotal += m;
-            }
-
-            int idx = l.getIndex();
-            String layerName = l.conf().getLayer().getLayerName();
-            if(layerName == null)
-                layerName = String.valueOf(idx);
-
-
-            if(!header){
-                sb.append(String.format(format, "#", "Layer Name", "Layer Class", "Helper Class", "Total Memory", "Memory Breakdown"))
-                        .append("\n");
-                header = true;
-            }
-
-            sb.append(String.format(format, idx, layerName, l.getClass().getSimpleName(), h.getClass().getSimpleName(),
-                    fBytes(layerTotal), mem.toString())).append("\n");
-
-            totalHelperMem += layerTotal;
-        }
-
-        sb.append(f("Total Helper Count", helperCount));
-        sb.append(f("Helper Count w/ Memory", helperWithMemCount));
-        sb.append(fBytes("Total Helper Persistent Memory Use", totalHelperMem));
-    }
 
     private static void appendActivationShapes(MultiLayerNetwork net, InputType inputType, int minibatch, StringBuilder sb, int bytesPerElement){
         INDArray input = net.getInput();

@@ -85,7 +85,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, epsOut);
     }
 
-    protected int[] getSize(){
+    protected long[] getSize(){
         return layerConf().getSize();
     }
 
@@ -117,14 +117,14 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long inH = (int) input.size(nchw ? 2 : 1);
         long inW = (int) input.size(nchw ? 3 : 2);
 
-        int[] size = getSize();
-        int outH = (int)inH * size[0];
-        int outW = (int)inW * size[1];
+        long[] size = getSize();
+        long outH = inH * size[0];
+        long outW = inW * size[1];
 
         long[] outShape = nchw ? new long[]{miniBatch, inDepth, outH, outW} : new long[]{miniBatch, outH, outW, inDepth};
         INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
-        int[] intArgs = new int[] {size[0], size[1], nchw ? 1 : 0}; // 1 = NCHW, 0 = NHWC
+        long[] intArgs = {(int) size[0], (int) size[1], nchw ? 1 : 0}; // 1 = NCHW, 0 = NHWC
 
         CustomOp upsampling = DynamicCustomOp.builder("upsampling2d")
                 .addIntegerArguments(intArgs)

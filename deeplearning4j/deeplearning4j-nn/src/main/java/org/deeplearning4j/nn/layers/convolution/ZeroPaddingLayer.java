@@ -66,7 +66,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int wIdx = nchw ? 3 : 2;
 
         INDArray epsNext;
-        int[] padding = layerConf().getPadding();
+        long[] padding = layerConf().getPadding();
         if(layerConf().getDataFormat() == CNN2DFormat.NCHW){
             epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
                     NDArrayIndex.interval(padding[0], padding[0] + inShape[hIdx]),
@@ -80,7 +80,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         epsNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsNext);
-        return new Pair<>((Gradient) new DefaultGradient(), epsNext);
+        return new Pair<>(new DefaultGradient(), epsNext);
     }
 
 
@@ -91,7 +91,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int hIdx = nchw ? 2 : 1;
         int wIdx = nchw ? 3 : 2;
 
-        int[] padding = layerConf().getPadding();
+        long[] padding = layerConf().getPadding();
         val inShape = input.shape();
         val outH = inShape[hIdx] + padding[0] + padding[1];
         val outW = inShape[wIdx] + padding[2] + padding[3];
@@ -110,7 +110,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                     NDArrayIndex.all()}, input);
         }
 
-        return out;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
     }
 
     @Override

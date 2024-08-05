@@ -118,7 +118,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
         try {
             Layer ret = (Layer) super.clone();
             //Let's check for any INDArray fields and dup them (in case cloned layer will be used in different threads on CUDA...
-            // we don't want it being relocated contantly between devices)
+            // we don't want it being relocated constantly between devices)
             Class<?> c = getClass();
             while (c != Object.class) {
                 Field[] fields = c.getDeclaredFields();
