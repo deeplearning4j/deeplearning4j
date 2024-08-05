@@ -88,15 +88,15 @@ public class LossMCXENT implements ILossFunction {
     }
 
     protected INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        if(!labels.equalShapes(preOutput)){
+        if(!labels.equalShapes(preOutput)) {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
-        if(activationFn instanceof ActivationSoftmax && softmaxClipEps > 0.0){
+        if(activationFn instanceof ActivationSoftmax && softmaxClipEps > 0.0) {
             BooleanIndexing.replaceWhere(output, softmaxClipEps, Conditions.lessThan(softmaxClipEps));
-            BooleanIndexing.replaceWhere(output, 1.0-softmaxClipEps, Conditions.greaterThan(1.0-softmaxClipEps));
+            BooleanIndexing.replaceWhere(output, 1.0 - softmaxClipEps, Conditions.greaterThan(1.0 - softmaxClipEps));
         }
         INDArray scoreArr = Transforms.log(output, false).muli(labels);
 
@@ -137,12 +137,13 @@ public class LossMCXENT implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        if(!labels.equalShapes(preOutput)){
+        if(!labels.equalShapes(preOutput)) {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         INDArray grad;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
-        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
+        INDArray labelsCasted = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
+        labels = labelsCasted;   //No-op if already correct dtype
 
         if (activationFn instanceof ActivationSoftmax) {
 
@@ -158,7 +159,7 @@ public class LossMCXENT implements ILossFunction {
                 }
                 INDArray temp = labels.mulRowVector(weights.castTo(labels.dataType()));
                 INDArray col = temp.sum(true,1);
-                grad = output.mulColumnVector(col).sub(temp);
+                grad = output.mulColumnVector(col).subi(temp);
             } else {
                 grad = output.subi(labels);
             }

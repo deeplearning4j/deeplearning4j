@@ -851,7 +851,8 @@ namespace samediff {
 #ifdef _OPENMP
 		int adjusted_numThreads = max_thread_count;
 #else
-		int adjusted_numThreads =  samediff::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
+		int adjusted_numThreads =
+                    ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
 #endif
 
 		if (adjusted_numThreads > delta)
@@ -925,7 +926,7 @@ namespace samediff {
 			return 1;
 		}
 #else
-		auto ticket = samediff::ThreadPool::getInstance().tryAcquire(numThreads);
+		auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
 		if (ticket != nullptr) {
 
 			for (size_t j = 0; j < numThreads; j++) {

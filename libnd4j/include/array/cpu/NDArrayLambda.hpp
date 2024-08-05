@@ -31,8 +31,13 @@ SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& thir
 
   if (this->lengthOf() != second.lengthOf() || this->lengthOf() != third.lengthOf() || !this->isSameShape(second) ||
       !this->isSameShape(third)) {
-    sd_printf("applyTriplewiseLambda requires all operands to have the same shape\n", "");
-    THROW_EXCEPTION("Shapes mismatch");
+    std::string errorMessage;
+    errorMessage += "applyTriplewiseLambda requires all operands to have the same shape\n";
+    errorMessage += "this shape: " + ShapeUtils::shapeAsString(this->shapeInfo()) + "\n";
+    errorMessage += "second shape: " + ShapeUtils::shapeAsString(second.shapeInfo()) + "\n";
+    errorMessage += "third shape: " + ShapeUtils::shapeAsString(third.shapeInfo()) + "\n";
+    errorMessage += "target shape: " + ShapeUtils::shapeAsString(target.shapeInfo()) + "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto f = this->bufferAsT<T>();
@@ -128,14 +133,13 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
 
   // scalar is broadcastable
   if (this->lengthOf() != other.lengthOf() && !this->isScalar() && !other.isScalar()) {
-    sd_printf("applyPairwiseLambda requires both operands to have the same shape\n", "");
-    THROW_EXCEPTION("Shapes mismatch");
+    THROW_EXCEPTION("applyPairwiseLambda requires both operands to have the same shape");
   }
 
   auto f = this->bufferAsT<T>();
   auto s = other.bufferAsT<T>();
   auto z = target.bufferAsT<T>();
-  auto isTargetOrderEws = this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1);
+  auto isTargetOrderEws = !isView() && !target.isView() && this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1);
   if (other.isScalar()) {
     auto otherVal = s[other.getOffset(0)];
     if (isTargetOrderEws) {
@@ -167,14 +171,19 @@ SD_LIB_HIDDEN void NDArray::applyPairwiseLambda(const NDArray& other, const std:
         samediff::Threads::parallel_for(loop, 0, _length);
       }
     }
-  } else if (isTargetOrderEws && this->ordering() == other.ordering() && this->ews() == other.ews()) {
+  } else if (isTargetOrderEws &&
+             !this->isView() &&
+             !other.isView()
+             && this->ordering() == other.ordering()
+             && this->ews() == other.ews()) {
     auto loop = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) z[e] = func(f[e], s[e]);
     };
 
     samediff::Threads::parallel_for(loop, 0, _length);
   } else {
-    if (f == z) {
+    if (f == z && !this->isView() && !other.isView() && this->ordering() == other.ordering() &&
+        this->ews() == other.ews()) {
       auto loop = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
           auto xOffset = this->getOffset(e);

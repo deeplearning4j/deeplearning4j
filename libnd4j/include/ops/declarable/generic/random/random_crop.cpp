@@ -56,16 +56,16 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(random_crop) {
   auto in = INPUT_VARIABLE(1);
   auto typeShape = inputShape->at(0);
-  std::vector<sd::LongType> shape(in->lengthOf());
+  std::vector<LongType> shape(in->lengthOf());
 
-  for (int e = 0; e < shape.size(); e++) shape[e] = (*in).e<sd::LongType>(e);
+  for (int e = 0; e < shape.size(); e++) shape[e] = (*in).e<LongType>(e);
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(typeShape), 'c', shape);
   return SHAPELIST(newShape);
 }
 
 DECLARE_TYPES(random_crop) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

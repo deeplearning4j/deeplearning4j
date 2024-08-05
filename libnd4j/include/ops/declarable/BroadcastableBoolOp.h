@@ -32,12 +32,12 @@ namespace sd {
 namespace ops {
 class SD_LIB_EXPORT BroadcastableBoolOp : public DeclarableCustomOp {
  protected:
-  sd::Status validateAndExecute(Context &block) override = 0;
+  Status validateAndExecute(Context &block) override = 0;
 
  public:
   BroadcastableBoolOp(const char *name, int numTArgs, int numIArgs);
 
-  ShapeList *calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) override;
+  ShapeList *calculateOutputShape(ShapeList *inputShape, Context &block) override;
 };
 }  // namespace ops
 }  // namespace sd

@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-ExecutorConfiguration::ExecutorConfiguration(const sd::graph::FlatConfiguration *conf) {
+ExecutorConfiguration::ExecutorConfiguration(const FlatConfiguration *conf) {
   if (conf != nullptr) {
     _profilingMode = conf->profilingMode();
     _executionMode = conf->executionMode();

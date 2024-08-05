@@ -41,7 +41,7 @@ CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
   auto stateM = OUTPUT_VARIABLE(2);
 
   // todo maybe we need an error like on Java side
-  if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty()) return sd::Status::OK;
+  if (gradient->isEmpty() || initStateU->isEmpty() || initStateM->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initStateU), 0,
                "ADABELIEF UPDATER OP: input state V must have the same shape as gradient,"
@@ -90,7 +90,7 @@ CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
 
   helpers::updaterAdaBelief(block.launchContext(), *gradient, *initStateU, *initStateM, *update, *stateU, *stateM, dLr,
                             dBeta1, dBeta2, dEpsilon, iteration);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(adabelief_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

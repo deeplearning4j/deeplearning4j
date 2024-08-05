@@ -66,18 +66,18 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT Stash {
  protected:
-  std::map<sd::graph::KeyPair, sd::NDArray *> _stash;
-  std::vector<sd::NDArray *> _handles;
+  std::map<KeyPair, NDArray *> _stash;
+  std::vector<NDArray *> _handles;
 
  public:
   Stash();
   ~Stash();
 
-  void storeArray(int nodeId, const char *name, sd::NDArray *array);
+  void storeArray(int nodeId, const char *name, NDArray *array);
 
   bool checkStash(int nodeId, const char *name);
 
-  sd::NDArray *extractArray(int nodeId, const char *name);
+  NDArray *extractArray(int nodeId, const char *name);
 
   void clear();
 };

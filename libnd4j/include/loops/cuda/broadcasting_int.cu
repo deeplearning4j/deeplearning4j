@@ -31,6 +31,7 @@
 #include <stdexcept>
 #include <string>
 
+
 using namespace simdOps;
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,6 +82,8 @@ SD_HOST void BroadcastInt<X>::intermediateBroadcast(
   broadcastIntSimple<X, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
       tadOnlyShapeInfoZ, tadOffsetsZ);
+  sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcast(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,6 +95,8 @@ SD_HOST void BroadcastInt<X>::intermediateBroadcast(dim3 launchDims, cudaStream_
                                                     const sd::LongType* zShapeInfo) {
   broadcastIntSimple<X, OpClass>
   <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+  sd::DebugHelper::checkGlobalErrorCode("broadcastIntSimple failed(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -130,6 +135,8 @@ SD_HOST void BroadcastInt<X>::intermediateInverseBroadcast(
   broadcastBoolInverseSimple<X, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
       tadOnlyShapeInfoZ, tadOffsetsZ);
+  sd::DebugHelper::checkGlobalErrorCode("broadcastBoolInverseSimple failed(...) failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -42,7 +42,7 @@ BROADCASTABLE_OP_IMPL(bitwise_and, 0, 0) {
       BroadcastIntOpsTuple::custom(scalar::IntOps::IntAnd, pairwise::IntOps::IntAnd, broadcast::IntOps::IntAnd), *y, *z,
       false);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(bitwise_and) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setSameMode(true); }

@@ -25,7 +25,7 @@
 using namespace sd::graph;
 
 namespace sd {
-const char* EnumUtils::_VariableTypeToString(sd::graph::VariableType variableType) {
+const char* EnumUtils::_VariableTypeToString(VariableType variableType) {
   switch (variableType) {
     case NDARRAY:
       return "NDARRAY";
@@ -38,7 +38,7 @@ const char* EnumUtils::_VariableTypeToString(sd::graph::VariableType variableTyp
   }
 }
 
-const char* EnumUtils::_OpTypeToString(sd::graph::OpType opType) {
+const char* EnumUtils::_OpTypeToString(OpType opType) {
   switch (opType) {
     case OpType_REDUCE_SAME:
       return "REDUCE_SAME";

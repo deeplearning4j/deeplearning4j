@@ -46,28 +46,28 @@ CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
     helpers::extractPatches(block.launchContext(), input, output, ksizeRows, ksizeCols, kstrideRows, kstrideCols,
                             krateRows, krateCols, isSame);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(extract_image_patches) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(extract_image_patches) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(extract_image_patches) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
-  sd::LongType *outputShape = nullptr;
+  LongType *outputShape = nullptr;
 
   int ksizeRowsEffective = INT_ARG(0) + (INT_ARG(0) - 1) * (INT_ARG(4) - 1);
   int ksizeColsEffective = INT_ARG(1) + (INT_ARG(1) - 1) * (INT_ARG(5) - 1);
 
-  auto batchSizeDim = shape::sizeAt(in, static_cast<sd::LongType>(0));
-  auto inputRowsDim = shape::sizeAt(in, static_cast<sd::LongType>(1));
-  auto inputColsDim = shape::sizeAt(in, static_cast<sd::LongType>(2));
-  auto outputDepthDim = shape::sizeAt(in, static_cast<sd::LongType>(3)) * INT_ARG(0) * INT_ARG(1);  // last dim * ksizeRows * ksizeCols
+  auto batchSizeDim = shape::sizeAt(in, static_cast<LongType>(0));
+  auto inputRowsDim = shape::sizeAt(in, static_cast<LongType>(1));
+  auto inputColsDim = shape::sizeAt(in, static_cast<LongType>(2));
+  auto outputDepthDim = shape::sizeAt(in, static_cast<LongType>(3)) * INT_ARG(0) * INT_ARG(1);  // last dim * ksizeRows * ksizeCols
 
   auto inputRowSize = inputRowsDim;
   auto inputColSize = inputColsDim;
-  sd::LongType outRowSize;
-  sd::LongType outColSize;
+  LongType outRowSize;
+  LongType outColSize;
   if (INT_ARG(6) == 0) {
     // Padding is "VALID":
     outRowSize = (inputRowSize - ksizeRowsEffective + INT_ARG(2)) / INT_ARG(2);

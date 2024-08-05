@@ -20,13 +20,24 @@
 
 package org.nd4j.linalg.api.shape.options;
 
-import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JUnknownDataTypeException;
 
+/**
+ * This is a mirror of the C++ ArrayOptionsHelper class.
+ * It contains the bit mask options for the shape information buffer.
+ * These options are used to determine the data type, array type, and other
+ * properties of the array.
+ *
+ * The ArrayOptions implementation and header for c++ can be found at
+ * this link:
+ * https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/array/ArrayOptions.h
+ *
+ *
+ *
+ */
 public class ArrayOptionsHelper {
     public static final long ATYPE_SPARSE_BIT = 2;
     public static final long ATYPE_COMPRESSED_BIT = 4;
@@ -47,6 +58,83 @@ public class ArrayOptionsHelper {
 
     public static final long HAS_PADDED_BUFFER = (1<<25);
 
+    public static final long IS_VIEW = 33554432;
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #IS_VIEW}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isView(long shapeInfo) {
+        return hasBitSet(shapeInfo, IS_VIEW);
+    }
+
+
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #IS_VIEW}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isView(long[] shapeInfo) {
+        return hasBitSet(shapeInfo, IS_VIEW);
+    }
+
+
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #ATYPE_EMPTY_BIT}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isEmpty(long shapeInfo) {
+        return hasBitSet(shapeInfo, ATYPE_EMPTY_BIT);
+    }
+
+
+
+    /**
+     * Returns true if the given shape info has the
+     * {@link #hasBitSet(long, long)} with the property
+     * {@link #ATYPE_EMPTY_BIT}
+     * @param shapeInfo the shape info to check
+     * @return
+     */
+    public static boolean isEmpty(long[] shapeInfo) {
+        return hasBitSet(shapeInfo, ATYPE_EMPTY_BIT);
+    }
+
+
+    /**
+     * Toggle whether the the given bit is set
+     * @param flagStorage the storage to toggle
+     * @param property the property to toggle
+     * @return the new property value
+     */
+    public static long toggleBitSet(long flagStorage,long property) {
+        return flagStorage ^= property;
+    }
+
+    /**
+     * Toggle whether the array is a view or not
+     * @param property the property to toggle
+     * @return the new property value
+     */
+    public static long toggleHasView(long property) {
+        return toggleBitSet(property, IS_VIEW);
+    }
+
+    /**
+     * Toggle whether the array has a padded buffer or not
+     * @param bit the property to toggle
+     * @return
+     */
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
         val opt = Shape.options(shapeInfo);
 
@@ -66,9 +154,8 @@ public class ArrayOptionsHelper {
         return ((storage & bit) == bit);
     }
 
-    public static ArrayType arrayType(long[] shapeInfo) {
-        val opt = Shape.options(shapeInfo);
 
+    public static ArrayType arrayType(long opt) {
         if (hasBitSet(opt, ATYPE_SPARSE_BIT))
             return ArrayType.SPARSE;
         else if (hasBitSet(opt, ATYPE_COMPRESSED_BIT))
@@ -79,6 +166,20 @@ public class ArrayOptionsHelper {
             return ArrayType.DENSE;
     }
 
+    /**
+     * Return the {@link ArrayType} for the given shape info buffer
+     * @param shapeInfo the shape info buffer to get the array type for
+     * @return the array type for the given shape info buffer
+     */
+    public static ArrayType arrayType(long[] shapeInfo) {
+        return arrayType(Shape.options(shapeInfo));
+    }
+
+    /**
+     * Return the {@link DataType} for the given shape info buffer
+     * @param opt the long storage to get the data type for
+     * @return the data type for the given shape info buffer
+     */
     public static DataType dataType(long opt) {
         if (hasBitSet(opt, DTYPE_COMPRESSED_BIT))
             return DataType.COMPRESSED;
@@ -106,11 +207,22 @@ public class ArrayOptionsHelper {
             throw new ND4JUnknownDataTypeException("Unknown extras set: [" + opt + "]");
     }
 
+    /**
+     * Return the data type for the given shape info buffer
+     * @param shapeInfo the shape info buffer to get the data type for
+     * @return the data type for the given shape info buffer
+     */
     public static DataType dataType(long[] shapeInfo) {
         val opt = Shape.options(shapeInfo);
         return dataType(opt);
     }
 
+    /**
+     * Return the data type for the given shape info buffer
+     * @param storage the storage value to set the bit for
+     * @param type the data type to set the bit for
+     * @return the data type for the given shape info buffer
+     */
     public static long setOptionBit(long storage, DataType type) {
         long bit = 0;
         switch (type) {
@@ -165,6 +277,12 @@ public class ArrayOptionsHelper {
         return storage;
     }
 
+    /**
+     * Set the option bit for the array type.
+     * @param storage the storage value to set the bit for
+     * @param type the array type to set the bit for
+     * @return the new storage value with the bit set
+     */
     public static long setOptionBit(long storage, ArrayType type) {
         long bit = 0;
         switch (type) {
@@ -184,79 +302,6 @@ public class ArrayOptionsHelper {
 
         storage |= bit;
         return storage;
-    }
-
-    public static DataType convertToDataType(org.tensorflow.framework.DataType dataType) {
-        switch (dataType) {
-            case DT_UINT16:
-                return DataType.UINT16;
-            case DT_UINT32:
-                return DataType.UINT32;
-            case DT_UINT64:
-                return DataType.UINT64;
-            case DT_BOOL:
-                return DataType.BOOL;
-            case DT_BFLOAT16:
-                return DataType.BFLOAT16;
-            case DT_FLOAT:
-                return DataType.FLOAT;
-            case DT_INT32:
-                return DataType.INT32;
-            case DT_INT64:
-                return DataType.INT64;
-            case DT_INT8:
-                return DataType.INT8;
-            case DT_INT16:
-                return DataType.INT16;
-            case DT_DOUBLE:
-                return DataType.DOUBLE;
-            case DT_UINT8:
-                return DataType.UINT8;
-            case DT_HALF:
-                return DataType.FLOAT16;
-            case DT_STRING:
-                return DataType.UTF8;
-            default:
-                throw new UnsupportedOperationException("Unknown TF data type: [" + dataType.name() + "]");
-        }
-    }
-
-    public static DataType dataType(@NonNull String dataType) {
-        switch (dataType) {
-            case "uint64":
-                return DataType.UINT64;
-            case "uint32":
-                return DataType.UINT32;
-            case "uint16":
-                return DataType.UINT16;
-            case "int64":
-                return DataType.INT64;
-            case "int32":
-                return DataType.INT32;
-            case "int16":
-                return DataType.INT16;
-            case "int8":
-                return DataType.INT8;
-            case "bool":
-                return DataType.BOOL;
-            case "resource": //special case, nodes like Enter
-            case "float32":
-                return DataType.FLOAT;
-            case "float64":
-            case "double":
-                return DataType.DOUBLE;
-            case "string":
-                return DataType.UTF8;
-            case "uint8":
-            case "ubyte":
-                return DataType.UINT8;
-            case "bfloat16":
-                return DataType.BFLOAT16;
-            case "float16":
-                return DataType.FLOAT16;
-            default:
-                throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
-        }
     }
 
 }

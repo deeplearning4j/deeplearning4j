@@ -28,7 +28,7 @@
 namespace sd {
 namespace ops {
 DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs)
-    : DeclarableOp::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
+    : DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
   // This kind of operations work with sets: NDArrayList
   this->getOpDescriptor()->setInputType(InputType_NUMERIC_SET);
 }
@@ -41,14 +41,14 @@ DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* op
  * @param block
  * @return
  */
-ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
+ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
   // TODO: ensure this method isn't ever called
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', {1, 1});
   return SHAPELIST(newShape);
 }
 
-sd::NDArray* sd::ops::DeclarableListOp::getZ(Context& block, int inputId) {
+NDArray* DeclarableListOp::getZ(sd::graph::Context& block, int inputId) {
   return nullptr;
 }
 
@@ -68,7 +68,7 @@ ResultSet DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDA
   return this->execute(list, ins, tas, ias);
 }
 
-sd::Status DeclarableListOp::execute(Context* block) {
+Status DeclarableListOp::execute(Context* block) {
   if (block == nullptr) THROW_EXCEPTION("Block is NULL");
 
   sd_debug("Executing list op: [%s]\n", this->getOpName()->c_str());
@@ -81,7 +81,7 @@ sd::Status DeclarableListOp::execute(Context* block) {
 
   auto timeStart = std::chrono::system_clock::now();
 
-  sd::Status status = this->validateAndExecute(*block);
+  Status status = this->validateAndExecute(*block);
 
   auto timeEnd = std::chrono::system_clock::now();
   auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
@@ -123,7 +123,7 @@ ResultSet DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& in
 
   for (int e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
-  sd::Status result = this->validateAndExecute(block);
+  Status result = this->validateAndExecute(block);
   ResultSet res;
   res.setStatus(result);
 

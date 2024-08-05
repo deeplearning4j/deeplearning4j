@@ -230,11 +230,9 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int8_t> *buffer() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_BUFFER);
   }
-  sd::graph::DType dtype() const {
-    return static_cast<sd::graph::DType>(GetField<int8_t>(VT_DTYPE, 0));
-  }
-  sd::graph::ByteOrder byteOrder() const {
-    return static_cast<sd::graph::ByteOrder>(GetField<int8_t>(VT_BYTEORDER, 0));
+  DType dtype() const { return static_cast<DType>(GetField<int8_t>(VT_DTYPE, 0)); }
+  ByteOrder byteOrder() const {
+    return static_cast<ByteOrder>(GetField<int8_t>(VT_BYTEORDER, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -258,10 +256,10 @@ struct FlatArrayBuilder {
   void add_buffer(flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer) {
     fbb_.AddOffset(FlatArray::VT_BUFFER, buffer);
   }
-  void add_dtype(sd::graph::DType dtype) {
+  void add_dtype(DType dtype) {
     fbb_.AddElement<int8_t>(FlatArray::VT_DTYPE, static_cast<int8_t>(dtype), 0);
   }
-  void add_byteOrder(sd::graph::ByteOrder byteOrder) {
+  void add_byteOrder(ByteOrder byteOrder) {
     fbb_.AddElement<int8_t>(FlatArray::VT_BYTEORDER, static_cast<int8_t>(byteOrder), 0);
   }
   explicit FlatArrayBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -280,8 +278,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArray(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer = 0,
-    sd::graph::DType dtype = sd::graph::DType_INHERIT,
-    sd::graph::ByteOrder byteOrder = sd::graph::ByteOrder_LE) {
+                                                      DType dtype = DType_INHERIT, ByteOrder byteOrder = ByteOrder_LE) {
   FlatArrayBuilder builder_(_fbb);
   builder_.add_buffer(buffer);
   builder_.add_shape(shape);
@@ -294,11 +291,11 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *shape = nullptr,
     const std::vector<int8_t> *buffer = nullptr,
-    sd::graph::DType dtype = sd::graph::DType_INHERIT,
-    sd::graph::ByteOrder byteOrder = sd::graph::ByteOrder_LE) {
+                                                            DType dtype = DType_INHERIT,
+                                                            ByteOrder byteOrder = ByteOrder_LE) {
   auto shape__ = shape ? _fbb.CreateVector<int64_t>(*shape) : 0;
   auto buffer__ = buffer ? _fbb.CreateVector<int8_t>(*buffer) : 0;
-  return sd::graph::CreateFlatArray(
+  return CreateFlatArray(
       _fbb,
       shape__,
       buffer__,
@@ -306,33 +303,33 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
       byteOrder);
 }
 
-inline const sd::graph::FlatArray *GetFlatArray(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatArray>(buf);
+inline const FlatArray *GetFlatArray(const void *buf) {
+  return flatbuffers::GetRoot<FlatArray>(buf);
 }
 
-inline const sd::graph::FlatArray *GetSizePrefixedFlatArray(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatArray>(buf);
+inline const FlatArray *GetSizePrefixedFlatArray(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatArray>(buf);
 }
 
 inline bool VerifyFlatArrayBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatArray>(nullptr);
+  return verifier.VerifyBuffer<FlatArray>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatArrayBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatArray>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatArray>(nullptr);
 }
 
 inline void FinishFlatArrayBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatArray> root) {
+    flatbuffers::Offset<FlatArray> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatArrayBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatArray> root) {
+    flatbuffers::Offset<FlatArray> root) {
   fbb.FinishSizePrefixed(root);
 }
 

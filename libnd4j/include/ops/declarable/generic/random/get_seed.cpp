@@ -28,22 +28,21 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(get_seed, -2, 1, false, 0, 0) {
-  //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
   auto rng = block.getRng();
   auto z = OUTPUT_VARIABLE(0);
 
-  z->p(sd::LongType(0), rng.rootState());
+  z->p(LongType(0), rng.rootState());
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(get_seed) {
-  auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64);
+  auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(INT64);
   return SHAPELIST(newshape);
 }
 
 DECLARE_TYPES(get_seed) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(DataType::INT64);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(INT64);
 }
 }  // namespace ops
 }  // namespace sd

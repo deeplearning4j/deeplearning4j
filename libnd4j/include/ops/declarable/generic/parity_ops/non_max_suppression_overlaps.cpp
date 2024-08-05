@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
   int maxOutputSize;  // = INT_ARG(0);
   if (block.width() > 2)
-    maxOutputSize = INPUT_VARIABLE(2)->e<sd::LongType>(0);
+    maxOutputSize = INPUT_VARIABLE(2)->e<LongType>(0);
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
@@ -57,14 +57,15 @@ CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
   // TODO: refactor helpers to multithreaded facility
   helpers::nonMaxSuppressionGeneric(block.launchContext(), boxes, scales, maxOutputSize, overlapThreshold,
                                     scoreThreshold, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
+  auto in = inputShape->at(0);
 
   int maxOutputSize;
   if (block.width() > 2)
-    maxOutputSize = INPUT_VARIABLE(2)->e<sd::LongType>(0);
+    maxOutputSize = INPUT_VARIABLE(2)->e<LongType>(0);
   else if (block.getIArguments()->size() == 1)
     maxOutputSize = INT_ARG(0);
   else
@@ -73,14 +74,19 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
   double overlapThreshold = 0.5;
   double scoreThreshold = 0.;
 
-  sd::LongType boxSize =
+  LongType boxSize =
       helpers::nonMaxSuppressionGeneric(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), maxOutputSize,
                                         overlapThreshold, scoreThreshold, nullptr);
   if (boxSize < maxOutputSize) {
     maxOutputSize = boxSize;
   }
 
-  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT64);
+  if(shape::isEmptyConst(in)) {
+    std::vector<LongType> shape = {maxOutputSize};
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(DataType::INT32,shape));
+  }
+
+  auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, INT64);
 
   return SHAPELIST(outputShape);
 }

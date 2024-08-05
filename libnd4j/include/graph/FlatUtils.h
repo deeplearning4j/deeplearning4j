@@ -34,9 +34,9 @@ class SD_LIB_EXPORT FlatUtils {
  public:
   static std::pair<int, int> fromIntPair(IntPair* pair);
 
-  static std::pair<sd::LongType, sd::LongType> fromLongPair(LongPair* pair);
+  static std::pair<LongType, LongType> fromLongPair(LongPair* pair);
 
-  static NDArray* fromFlatArray(const sd::graph::FlatArray* flatArray);
+  static NDArray* fromFlatArray(const FlatArray* flatArray);
 
   static flatbuffers::Offset<FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder& builder, NDArray& array);
 };

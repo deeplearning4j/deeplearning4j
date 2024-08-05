@@ -35,15 +35,15 @@ ConstantOffsetsBuffer::ConstantOffsetsBuffer(const std::shared_ptr<PointerWrappe
   _specialOffsets = special;
 }
 
-const sd::LongType *ConstantOffsetsBuffer::primary() const {
-  return reinterpret_cast<sd::LongType *>(_primaryOffsets->pointer());
+const LongType *ConstantOffsetsBuffer::primary() const {
+  return reinterpret_cast<LongType *>(_primaryOffsets->pointer());
 }
 
-const sd::LongType *ConstantOffsetsBuffer::special() const {
-  return _specialOffsets ? reinterpret_cast<sd::LongType *>(_specialOffsets->pointer()) : nullptr;
+const LongType *ConstantOffsetsBuffer::special() const {
+  return _specialOffsets ? reinterpret_cast<LongType *>(_specialOffsets->pointer()) : nullptr;
 }
 
-const sd::LongType *ConstantOffsetsBuffer::platform() const {
+const LongType *ConstantOffsetsBuffer::platform() const {
 #ifdef __CUDABLAS__
   return special();
 #else

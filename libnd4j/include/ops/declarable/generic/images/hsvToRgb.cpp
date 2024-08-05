@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(hsv_to_rgb, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if (input->isEmpty()) return sd::Status::OK;
+  if (input->isEmpty()) return Status::OK;
 
   const int rank = input->rankOf();
   const int argSize = block.getIArguments()->size();
@@ -49,7 +49,7 @@ CONFIGURABLE_OP_IMPL(hsv_to_rgb, 1, 1, true, 0, 0) {
 
   helpers::transformHsvRgb(block.launchContext(), input, output, dimC);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(hsv_to_rgb) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

@@ -33,7 +33,7 @@ namespace ops {
 CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
   auto xt = INPUT_VARIABLE(0);    // input [bS x inSize]
   auto ht_1 = INPUT_VARIABLE(1);  // previous cell output [bS x numProj],  that is at previous time step t-1, in case of
-                                  // projection=false -> numProj=numUnits!!!
+  // projection=false -> numProj=numUnits!!!
   auto ct_1 = INPUT_VARIABLE(2);  // previous cell state  [bS x numUnits], that is at previous time step t-1
 
   auto Wx = INPUT_VARIABLE(3);  // input-to-hidden  weights, [inSize  x 4*numUnits]
@@ -51,9 +51,9 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
 
   // FIXME: double?
   const double clippingCellValue = T_ARG(0);
-   // clipping value for ct, if it is not equal to zero, then cell state is clipped
+  // clipping value for ct, if it is not equal to zero, then cell state is clipped
   const double clippingProjValue = T_ARG(1);
-   // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
+  // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
   const double forgetBias = T_ARG(2);
 
   const int rank = xt->rankOf();
@@ -63,13 +63,13 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
   const int numUnits = ct_1->sizeAt(1);
 
   // input shapes validation
-  const std::vector<sd::LongType> correctHt_1Shape = {bS, numProj};
-  const std::vector<sd::LongType> correctCt_1Shape = {bS, numUnits};
-  const std::vector<sd::LongType> correctWxShape = {inSize, 4 * numUnits};
-  const std::vector<sd::LongType> correctWhShape = {numProj, 4 * numUnits};
-  const std::vector<sd::LongType> correctWcShape = {3 * numUnits};
-  const std::vector<sd::LongType> correctWpShape = {numUnits, numProj};
-  const std::vector<sd::LongType> correctBShape = {4 * numUnits};
+  const std::vector<LongType> correctHt_1Shape = {bS, numProj};
+  const std::vector<LongType> correctCt_1Shape = {bS, numUnits};
+  const std::vector<LongType> correctWxShape = {inSize, 4 * numUnits};
+  const std::vector<LongType> correctWhShape = {numProj, 4 * numUnits};
+  const std::vector<LongType> correctWcShape = {3 * numUnits};
+  const std::vector<LongType> correctWpShape = {numUnits, numProj};
+  const std::vector<LongType> correctBShape = {4 * numUnits};
 
   REQUIRE_TRUE(ht_1->isSameShape(correctHt_1Shape), 0,
                "LSTMCELL operation: wrong shape of initial cell output, expected is %s, but got %s instead !",
@@ -101,17 +101,17 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
   helpers::lstmCell(block.launchContext(), xt, ht_1, ct_1, Wx, Wh, Wc, Wp, b, ht, ct,
                     {(double)peephole, (double)projection, clippingCellValue, clippingProjValue, forgetBias});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lstmCell) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(lstmCell) {
   auto xtShapeInfo = inputShape->at(0);    // input [bS x inSize]
   auto ht_1ShapeInfo = inputShape->at(1);  // previous cell output [bS x numProj],  that is at previous time step t-1,
-                                           // in case of projection=false -> numProj=numUnits!!!
+  // in case of projection=false -> numProj=numUnits!!!
   auto ct_1ShapeInfo = inputShape->at(2);  // previous cell state  [bS x numUnits], that is at previous time step t-1
 
   auto WxShapeInfo = inputShape->at(3);  // input-to-hidden  weights, [inSize  x 4*numUnits]
@@ -127,13 +127,13 @@ DECLARE_SHAPE_FN(lstmCell) {
   const auto numUnits = ct_1ShapeInfo[2];
 
   // input shapes validation
-  const std::vector<sd::LongType> correctHt_1Shape = {bS, numProj};
-  const std::vector<sd::LongType> correctCt_1Shape = {bS, numUnits};
-  const std::vector<sd::LongType> correctWxShape = {inSize, 4 * numUnits};
-  const std::vector<sd::LongType> correctWhShape = {numProj, 4 * numUnits};
-  const std::vector<sd::LongType> correctWcShape = {3 * numUnits};
-  const std::vector<sd::LongType> correctWpShape = {numUnits, numProj};
-  const std::vector<sd::LongType> correctBShape = {4 * numUnits};
+  const std::vector<LongType> correctHt_1Shape = {bS, numProj};
+  const std::vector<LongType> correctCt_1Shape = {bS, numUnits};
+  const std::vector<LongType> correctWxShape = {inSize, 4 * numUnits};
+  const std::vector<LongType> correctWhShape = {numProj, 4 * numUnits};
+  const std::vector<LongType> correctWcShape = {3 * numUnits};
+  const std::vector<LongType> correctWpShape = {numUnits, numProj};
+  const std::vector<LongType> correctBShape = {4 * numUnits};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(ht_1ShapeInfo, correctHt_1Shape), 0,
                "LSTMCELL operation: wrong shape of initial cell output, expected is %s, but got %s instead !",
@@ -159,7 +159,7 @@ DECLARE_SHAPE_FN(lstmCell) {
                ShapeUtils::shapeAsString(correctBShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
 
   // evaluate output shapeInfos
-  sd::LongType *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+  LongType *hShapeInfo(nullptr), *cShapeInfo(nullptr);
   ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);  // [bS x numProj]
   ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);  // [bS x numUnits]
 
@@ -177,8 +177,10 @@ DECLARE_SHAPE_FN(lstmCell) {
                           ConstantShapeHelper::getInstance().createShapeInfo(desc2));
   RELEASE(hShapeInfo, block.workspace());
   RELEASE(cShapeInfo, block.workspace());
+    if (Environment::getInstance().isDeleteShapeInfo()) {
   delete desc;
   delete desc2;
+}
   return result;
 }
 

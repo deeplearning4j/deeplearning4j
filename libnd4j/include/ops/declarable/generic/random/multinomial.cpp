@@ -53,9 +53,9 @@ CUSTOM_OP_IMPL(random_multinomial, 2, 1, false, 0, 0) {
                "RANDOM_MULTINOMIAL OP: Have to be specified at least one sample,"
                " but got no argumets instead.");
 
-  sd::LongType numOfSamples = static_cast<sd::LongType>(inputSamples->e<int>(0));
+  LongType numOfSamples = static_cast<LongType>(inputSamples->e<int>(0));
   // do nothing if number of samples = 0
-  if (0 == numOfSamples) return sd::Status::OK;
+  if (0 == numOfSamples) return Status::OK;
 
   REQUIRE_TRUE(numOfSamples > 0, 0, "RANDOM_MULTINOMIAL OP: Number of samples should be greater then 0, got %i. ",
                numOfSamples);
@@ -70,12 +70,12 @@ CUSTOM_OP_IMPL(random_multinomial, 2, 1, false, 0, 0) {
   auto dimA = (0 == dimC) ? 1 : 0;
   if (1 == input->sizeAt(dimA)) {
     *output = 0;
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   auto rng = block.randomGenerator();
   helpers::fillRandomMultiNomial(block.launchContext(), rng, *input, *output, numOfSamples, dimC);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(random_multinomial) {
@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(random_multinomial) {
                "RANDOM_MULTINOMIAL OP: Have to be specified at least one sample,"
                " but got no argumets instead.");
 
-  sd::LongType numOfSamples = static_cast<sd::LongType>(inputSamples->e<int>(0));
+  LongType numOfSamples = static_cast<LongType>(inputSamples->e<int>(0));
 
   REQUIRE_TRUE(numOfSamples > 0, 0, "RANDOM_MULTINOMIAL OP: Number of samples should be greater then 0, got %i. ",
                numOfSamples);
@@ -103,14 +103,14 @@ DECLARE_SHAPE_FN(random_multinomial) {
   nShape[dimA] = numOfSamples;
 
   DataType nType =
-      (argSize > 1) ? (INT_ARG(1) >= 0 ? static_cast<DataType>(INT_ARG(1)) : sd::DataType::INT64) : sd::DataType::INT64;
+      (argSize > 1) ? (INT_ARG(1) >= 0 ? static_cast<DataType>(INT_ARG(1)) : INT64) : INT64;
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(nType, input->ordering(), nShape));
 }
 
 DECLARE_TYPES(random_multinomial) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
-      ->setAllowedInputTypes(1, {sd::DataType::INT32})
+      ->setAllowedInputTypes(1, {INT32})
       ->setAllowedOutputTypes(0, {ALL_INDICES});
 }
 }  // namespace ops

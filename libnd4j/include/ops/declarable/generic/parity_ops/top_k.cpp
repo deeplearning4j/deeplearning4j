@@ -68,17 +68,18 @@ DECLARE_SHAPE_FN(top_k) {
     k = INT_ARG(0);
   }
 
+
   REQUIRE_TRUE(k > 0, 0, "top_k: k should be positive, but %i given.", k);
 
   for (int e = 0; e < 2; e++) {  // 2 element tuple at output
-    sd::LongType* aShape;
+    LongType* aShape;
     ALLOCATE(aShape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), sd::LongType);
     aShape[0] = shapeRank;
-    for (sd::LongType i = 1; i < shapeRank; ++i) aShape[i] = shape::sizeAt(in, i - 1);
+    for (LongType i = 1; i < shapeRank; ++i) aShape[i] = shape::sizeAt(in, i - 1);
     aShape[shapeRank] = k;
 
     shape::updateStrides(aShape, shape::order(in));
-    auto desc = new  ShapeDescriptor(aShape, (e == 0 ? ArrayOptions::dataType(in) : sd::DataType::INT64));
+    auto desc = new  ShapeDescriptor(aShape, (e == 0 ? ArrayOptions::dataType(in) : INT64));
     shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 
     RELEASE(aShape, block.getWorkspace());
@@ -88,8 +89,8 @@ DECLARE_SHAPE_FN(top_k) {
 
 DECLARE_TYPES(top_k) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
-      ->setAllowedOutputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
+      ->setAllowedOutputTypes(0, ANY)
       ->setAllowedOutputTypes(1, {ALL_INDICES});
 }
 }  // namespace ops

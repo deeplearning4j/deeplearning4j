@@ -172,11 +172,11 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 
 #define GRID_SIZE_ACCUMULATE getEnvVariable("GRID_SIZE_ACCUMULATE", 256)
 #define BLOCK_SIZE_ACCUMULATE getEnvVariable("BLOCK_SIZE_ACCUMULATE", 256)
-#define SHARED_MEM_SIZE_ACCUMULATE getEnvVariable("SHARED_MEM_SIZE_ACCUMULATE", 16384)
+#define SHARED_MEM_SIZE_ACCUMULATE getEnvVariable("SHARED_MEM_SIZE_ACCUMULATE", 8192)
 
-#define GRID_SIZE_TRANSFORM_SCAN getEnvVariable("GRID_SIZE_TRANSFORM_SCAN", 512)
-#define BLOCK_SIZE_TRANSFORM_SCAN getEnvVariable("BLOCK_SIZE_TRANSFORM_SCAN", 512)
-#define SHARED_MEM_SIZE_TRANSFORM_SCAN getEnvVariable("SHARED_MEM_SIZE_TRANSFORM_SCAN", 16384)
+#define GRID_SIZE_TRANSFORM_SCAN getEnvVariable("GRID_SIZE_TRANSFORM_SCAN", 256)
+#define BLOCK_SIZE_TRANSFORM_SCAN getEnvVariable("BLOCK_SIZE_TRANSFORM_SCAN", 256)
+#define SHARED_MEM_SIZE_TRANSFORM_SCAN getEnvVariable("SHARED_MEM_SIZE_TRANSFORM_SCAN", 1024)
 
 #define GRID_SIZE_SUMMARY_STATS getEnvVariable("GRID_SIZE_SUMMARY_STATS", 256)
 #define BLOCK_SIZE_SUMMARY_STATS getEnvVariable("BLOCK_SIZE_SUMMARY_STATS", SD_CUDA_BLOCK_SIZE)
@@ -707,6 +707,49 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define GRID_SIZE_DIGAMMA getEnvVariable("GRID_SIZE_DIGAMMA", 256)
 #define BLOCK_SIZE_DIGAMMA getEnvVariable("BLOCK_SIZE_DIGAMMA", 512)
 #define SHARED_MEM_SIZE_DIGAMMA getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", 1024)
+
+
+#define GRID_SIZE_FILL_TRI getEnvVariable("GRID_SIZE_FILL_TRI", 256)
+#define BLOCK_SIZE_FILL_TRI getEnvVariable("BLOCK_SIZE_FILL_TRI", 512)
+#define SHARED_MEM_SIZE_FILL_TRI getEnvVariable("SHARED_MEM_SIZE_FILL_TRI", 1024)
+
+#define GRID_SIZE_IDENTITY getEnvVariable("GRID_SIZE_IDENTITY", 256)
+#define BLOCK_SIZE_IDENTITY getEnvVariable("GRID_SIZE_IDENTITY", 512)
+#define SHARED_MEM_SIZE_IDENTITY getEnvVariable("SHARED_MEM_SIZE_IDENTITY", 1024)
+
+
+#define GRID_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("GRID_SIZE_DYNAMIC_STITCH_TAD", 512)
+#define BLOCK_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("BLOCK_SIZE_DYNAMIC_STITCH_TAD", 512)
+#define SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_STITCH_TAD", 1024)
+
+#define GRID_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("GRID_SIZE_DYNAMIC_PARTITION_TAD", 256)
+#define BLOCK_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("BLOCK_SIZE_DYNAMIC_PARTITION_TAD", 256)
+#define SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD getEnvVariable("SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD", 1024)
+
+
+#define GRID_SIZE_SOLVE getEnvVariable("GRID_SIZE_SOLVE", 100)
+#define BLOCK_SIZE_SOLVE getEnvVariable("BLOCK_SIZE_SOLVE", 1)
+#define SHARED_MEM_SIZE_SOLVE getEnvVariable("SHARED_MEM_SIZE_SOLVE", 256)
+
+#define GRID_SIZE_LUP getEnvVariable("GRID_SIZE_LUP", 128)
+#define BLOCK_SIZE_LUP getEnvVariable("BLOCK_SIZE_LUP", 256)
+#define SHARED_MEM_SIZE_LUP getEnvVariable("SHARED_MEM_SIZE_LUP", 1024)
+
+#define GRID_SIZE_SOFTMAX getEnvVariable("GRID_SIZE_SOFTMAX", 128)
+#define BLOCK_SIZE_SOFTMAX getEnvVariable("BLOCK_SIZE_SOFTMAX", 256)
+#define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 1024)
+
+
+dim3 getSoftmaxDims(int numTads);
+
+dim3 getLupDims(int batchSize);
+
+dim3 getDynamicPartitionDims(int numThreads,int yDTypeSize);
+
+dim3 getIdentityLaunchDims(int len,int rank);
+dim3 getRepeatLaunchDims(int len,int rank);
+
+dim3 getFillTriLaunchDims(int len,int rank);
 
 dim3 getGemVDims(int m);
 dim3 getAddBiasDims(int len,int rank) ;

@@ -40,7 +40,7 @@ CONFIGURABLE_OP_IMPL(ada_delta_updater, 3, 3, true, 0, 0) {
   auto stateMsg = OUTPUT_VARIABLE(1);
   auto stateMsdx = OUTPUT_VARIABLE(2);
 
-  if (gradient->isEmpty() || initStateMsg->isEmpty() || initStateMsdx->isEmpty()) return sd::Status::OK;
+  if (gradient->isEmpty() || initStateMsg->isEmpty() || initStateMsdx->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initStateMsg), 0,
                "ADA_DELTA UPDATER OP: input state Msg must have the same shape as gradient,"
@@ -77,7 +77,7 @@ CONFIGURABLE_OP_IMPL(ada_delta_updater, 3, 3, true, 0, 0) {
 
   helpers::updaterAdaDelta(block.launchContext(), *gradient, *initStateMsg, *initStateMsdx, *update, *stateMsg,
                            *stateMsdx, dRho, dEpsilon);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(ada_delta_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

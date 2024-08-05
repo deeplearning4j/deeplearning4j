@@ -214,12 +214,15 @@ public class Reshape extends DynamicCustomOp {
     public void configureFromArguments() {
         if(iArguments.size() > 1) {
             //ordering comes first followed by the actual shape
+
             this.shape = new long[iArguments.size() - 1];
             for(int i = 0; i < shape.length; i++) {
                 this.shape[i] = iArguments.get(i + 1);
             }
 
             this.reshapeWithViewPossible = org.nd4j.linalg.api.shape.Shape.ableToReshapeWithView(getInputArgument(0), iArguments.get(0) == F_ORDER, Longs.toArray(iArguments.subList(1,iArguments.size())));
+        } else if(iArguments.isEmpty()) {
+            iArguments.add((long) C_ORDER);
         }
     }
 

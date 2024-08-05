@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(segment_max, 2, 1, false, 0, 0) {
   segmentedOutput->nullify();
   helpers::segmentMaxFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(segment_max) {
@@ -53,9 +53,9 @@ DECLARE_SHAPE_FN(segment_max) {
 
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
-  sd::LongType* outputShape = nullptr;
+  LongType* outputShape = nullptr;
   idxVector->syncToHost();
-  int val = (*idxVector).e<sd::LongType>(idxVector->lengthOf() - 1);
+  int val = (*idxVector).e<LongType>(idxVector->lengthOf() - 1);
 
   int numOfClasses = val + 1;
 
@@ -63,7 +63,7 @@ DECLARE_SHAPE_FN(segment_max) {
 
   outputShape[0] = outRank;
   outputShape[1] = numOfClasses;
-  for (sd::LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
+  for (LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
 
   ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
@@ -90,15 +90,15 @@ DECLARE_SHAPE_FN(segment_max_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
 
-  sd::LongType* outShape;
-  sd::LongType* outIndex;
+  LongType* outShape;
+  LongType* outIndex;
   COPY_SHAPE(in, outShape);
   COPY_SHAPE(inIdx, outIndex);
   return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
 }
 DECLARE_TYPES(segment_max_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})
       ->setSameMode(true);

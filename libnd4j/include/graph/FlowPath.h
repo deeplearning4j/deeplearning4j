@@ -35,7 +35,7 @@ namespace graph {
 class SD_LIB_EXPORT FlowPath {
  private:
   SD_MAP_IMPL<int, NodeState> _states;
-  SD_MAP_IMPL<sd::LongType, FrameState> _frames;
+  SD_MAP_IMPL<LongType, FrameState> _frames;
 
   void ensureNode(int nodeId);
   void ensureFrame(int nodeId);
@@ -46,11 +46,11 @@ class SD_LIB_EXPORT FlowPath {
   FlowPath() = default;
   ~FlowPath() = default;
 
-  void setInnerTime(int nodeId, sd::LongType time);
-  void setOuterTime(int nodeId, sd::LongType time);
+  void setInnerTime(int nodeId, LongType time);
+  void setOuterTime(int nodeId, LongType time);
 
-  sd::LongType innerTime(int nodeId);
-  sd::LongType outerTime(int nodeId);
+  LongType innerTime(int nodeId);
+  LongType outerTime(int nodeId);
 
   bool isNodeActive(int nodeId);
   void markNodeActive(int nodeId, bool isActive);
@@ -63,21 +63,21 @@ class SD_LIB_EXPORT FlowPath {
 
   // Frame-related methods
 
-  void registerFrame(sd::LongType frameId);
-  void forgetFrame(sd::LongType frameId);
+  void registerFrame(LongType frameId);
+  void forgetFrame(LongType frameId);
 
-  bool isFrameActive(sd::LongType frameId);
-  void markFrameActive(sd::LongType frameId, bool isActive);
+  bool isFrameActive(LongType frameId);
+  void markFrameActive(LongType frameId, bool isActive);
 
-  bool isRewindPlanned(sd::LongType frameId);
-  void planRewind(sd::LongType frameId, bool reallyRewind);
+  bool isRewindPlanned(LongType frameId);
+  void planRewind(LongType frameId, bool reallyRewind);
 
-  int getRewindPosition(sd::LongType frameId);
-  void setRewindPosition(sd::LongType frameId, int position);
-  void setRewindPositionOnce(sd::LongType frameId, int position);
+  int getRewindPosition(LongType frameId);
+  void setRewindPosition(LongType frameId, int position);
+  void setRewindPositionOnce(LongType frameId, int position);
 
-  void incrementNumberOfCycles(sd::LongType frameId);
-  sd::LongType getNumberOfCycles(sd::LongType frameId);
+  void incrementNumberOfCycles(LongType frameId);
+  LongType getNumberOfCycles(LongType frameId);
 
   GraphProfile* profile();
 };

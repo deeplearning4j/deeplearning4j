@@ -39,14 +39,14 @@ CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
       block.nodeId(), input->isActualOnHostSide() ? "true" : "false", input->isActualOnDeviceSide() ? "true" : "false",
       input->dataBuffer()->deviceId(), input->buffer(), input->specialBuffer(), input->dataBuffer()->getLenInBytes());
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(print_affinity) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_STRINGS})
-      ->setAllowedOutputTypes(0, sd::DataType::INT32);
+      ->setAllowedOutputTypes(0, INT32);
 }
 
 DECLARE_SHAPE_FN(print_affinity) {

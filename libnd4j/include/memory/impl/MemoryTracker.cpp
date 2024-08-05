@@ -91,11 +91,11 @@ std::string demangle(char *message) {
 
 #endif
 
-void MemoryTracker::countIn(MemoryType type, sd::Pointer ptr, sd::LongType numBytes) {
+void MemoryTracker::countIn(MemoryType type, Pointer ptr, LongType numBytes) {
 #if defined(__GNUC__) && !defined(__MINGW64__) && !defined(__CYGWIN__) && !defined(SD_ANDROID_BUILD) && \
     !defined(SD_WINDOWS) && !defined(SD_IOS_BUILD) && !defined(SD_APPLE_BUILD)
   if (Environment::getInstance().isDetectingLeaks()) {
-    auto lptr = reinterpret_cast<sd::LongType>(ptr);
+    auto lptr = reinterpret_cast<LongType>(ptr);
 
     _locker.lock();
 
@@ -117,7 +117,7 @@ void MemoryTracker::countIn(MemoryType type, sd::Pointer ptr, sd::LongType numBy
       return;
     }
 
-    std::pair<sd::LongType, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
+    std::pair<LongType, AllocationEntry> pair(lptr, AllocationEntry(type, lptr, numBytes, stack));
     _allocations.insert(pair);
 
     _locker.unlock();
@@ -125,11 +125,11 @@ void MemoryTracker::countIn(MemoryType type, sd::Pointer ptr, sd::LongType numBy
 #endif
 }
 
-void MemoryTracker::countOut(sd::Pointer ptr) {
+void MemoryTracker::countOut(Pointer ptr) {
 #if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD) && \
     !defined(SD_APPLE_BUILD)
   if (Environment::getInstance().isDetectingLeaks()) {
-    auto lptr = reinterpret_cast<sd::LongType>(ptr);
+    auto lptr = reinterpret_cast<LongType>(ptr);
 
     _locker.lock();
     if (_released.count(lptr) > 0) {

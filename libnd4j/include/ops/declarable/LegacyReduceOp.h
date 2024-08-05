@@ -23,23 +23,7 @@
 #ifndef LIBND4J_LEGACYREDUCEOP_H
 #define LIBND4J_LEGACYREDUCEOP_H
 
-//#include <ops/declarable/LegacyOp.h>
-/*
-namespace sd {
-    namespace ops {
-        class SD_LIB_EXPORT LegacyReduceOp : public LegacyOp {
-        protected:
-            sd::Status validateAndExecute(Context& block);
-        public:
-            LegacyReduceOp();
-            LegacyReduceOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block);
-            virtual LegacyOp* clone();
-        };
-    }
-}
-*/
 #include <ops/declarable/LegacyReduceBoolOp.h>
 #include <ops/declarable/LegacyReduceFloatOp.h>
 #include <ops/declarable/LegacyReduceLongOp.h>

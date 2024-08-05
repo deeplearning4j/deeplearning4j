@@ -33,13 +33,13 @@ namespace helpers {
 template <typename T>
 static void sqrtm_(const NDArray* x, NDArray* z) {
   if (x->rankOf() == 2) {
-    ops::helpers::Sqrtm<T>::calc(*x, *z);
+    Sqrtm<T>::calc(*x, *z);
   } else {
     auto listX = x->allTensorsAlongDimension({-2, -1});
     auto listZ = z->allTensorsAlongDimension({-2, -1});
 
     auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) ops::helpers::Sqrtm<T>::calc(*listX.at(i), *listZ.at(i));
+      for (auto i = start; i < stop; i++) Sqrtm<T>::calc(*listX.at(i), *listZ.at(i));
     };
 
     samediff::Threads::parallel_tad(func, 0, listX.size());
@@ -47,7 +47,7 @@ static void sqrtm_(const NDArray* x, NDArray* z) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sqrtm(sd::LaunchContext* context, const NDArray* x, NDArray* z) {
+void sqrtm(LaunchContext* context, const NDArray* x, NDArray* z) {
   x->syncToHost();
   BUILD_SINGLE_SELECTOR(z->dataType(), sqrtm_, (x, z), SD_FLOAT_TYPES);
   z->syncToDevice();

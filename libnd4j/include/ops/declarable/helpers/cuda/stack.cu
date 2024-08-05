@@ -29,16 +29,17 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const sd::LongType* zShapeInfo) {
+static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ sd::LongType zLen, totalThreads;
+  __shared__ LongType zLen, totalThreads;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
@@ -48,7 +49,7 @@ static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const sd::LongType* 
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+  for (LongType i = tid; i < zLen; i += totalThreads) {
     const T* x = reinterpret_cast<const T*>(reinterpret_cast<void**>(pVx)[i]);
     z[shape::getIndexOffset(i, zShapeInfo)] = *x;
   }
@@ -58,19 +59,21 @@ static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const sd::LongType* 
 template <typename T>
 SD_HOST static void stackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                              const cudaStream_t* stream, void* pVx, void* vz,
-                                             const sd::LongType* zShapeInfo) {
+                                             const LongType* zShapeInfo) {
   stackScalarsCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, vz, zShapeInfo);
+  DebugHelper::checkGlobalErrorCode("stackScalar failed(...) failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
+static void stack_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
                    const int dim) {
   const int numOfSubArrs = inArrs.size();
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  if (inArrs[0]->rankOf() == 0) {
+  if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
     std::vector<void const*> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();
@@ -84,13 +87,13 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
                                 output.specialBuffer(), output.specialShapeInfo());
 
     manager.synchronize();
-  } else {
-    std::vector<sd::LongType> dims = {dim};
+  } else if (!inArrs[0]->isEmpty()) {
+    std::vector<LongType> dims = {dim};
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(),1, dims.data()));
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
-    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
+    for (LongType i = 0; i < numOfSubArrs; ++i) {
       void* zBuff = output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
@@ -104,7 +107,7 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 }
 
 ////////////////////////////////////////////////////////////////////////
-void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+void stack(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
   BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (context, inArrs, output, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void stack_,
@@ -114,10 +117,10 @@ BUILD_SINGLE_TEMPLATE(template void stack_,
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void unstackScalarsCuda(const void* vx, const sd::LongType* xShapeInfo, void* pVz) {
+static SD_KERNEL void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
   const T* x = reinterpret_cast<const T*>(vx);
 
-  __shared__ sd::LongType xLen, totalThreads;
+  __shared__ LongType xLen, totalThreads;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
@@ -127,7 +130,7 @@ static SD_KERNEL void unstackScalarsCuda(const void* vx, const sd::LongType* xSh
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < xLen; i += totalThreads) {
+  for (LongType i = tid; i < xLen; i += totalThreads) {
     T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[i]);
     *z = x[shape::getIndexOffset(i, xShapeInfo)];
   }
@@ -137,13 +140,15 @@ static SD_KERNEL void unstackScalarsCuda(const void* vx, const sd::LongType* xSh
 template <typename T>
 SD_HOST static void unstackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
                                                const cudaStream_t* stream, const void* vx,
-                                               const sd::LongType* xShapeInfo, void* pVz) {
+                                               const LongType* xShapeInfo, void* pVz) {
   unstackScalarsCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, pVz);
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "unstackScalarsCudaLauncher failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void unstack_(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs,
+static void unstack_(LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs,
                      const int dim) {
   const int numOfSubArrs = outArrs.size();
 
@@ -167,12 +172,12 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
 
     manager.synchronize();
   } else {
-    std::vector<sd::LongType> dims = {dim};
+    std::vector<LongType> dims = {dim};
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
         input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), 1,dims.data()));
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
 
-    for (sd::LongType i = 0; i < numOfSubArrs; ++i) {
+    for (LongType i = 0; i < numOfSubArrs; ++i) {
       auto xBuff = input.specialBufferWithOffset(xTadPack->primaryOffsets()[i]);
 
       NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign, nullptr, xTadShapeInfo, xBuff,
@@ -188,7 +193,7 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
 }
 
 ////////////////////////////////////////////////////////////////////////
-void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+void unstack(LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
   BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (context, input, outArrs, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void unstack_,

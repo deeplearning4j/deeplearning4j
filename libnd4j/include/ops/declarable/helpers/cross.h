@@ -26,9 +26,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o);
+SD_LIB_HIDDEN void crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o);
 
-void SD_INLINE cross(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
+void SD_INLINE cross(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
   if (a->isR()) {
     auto a0 = a->e<double>(0);
     auto a1 = a->e<double>(1);
@@ -38,25 +38,25 @@ void SD_INLINE cross(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray
     auto b1 = b->e<double>(1);
     auto b2 = b->e<double>(2);
 
-    o->p(sd::LongType(0L), a1 * b2 - a2 * b1);
+    o->p(LongType(0L), a1 * b2 - a2 * b1);
     o->p(1L, a2 * b0 - a0 * b2);
     o->p(2L, a0 * b1 - a1 * b0);
   } else {
-    auto a0 = a->e<sd::LongType>(0);
-    auto a1 = a->e<sd::LongType>(1);
-    auto a2 = a->e<sd::LongType>(2);
+    auto a0 = a->e<LongType>(0);
+    auto a1 = a->e<LongType>(1);
+    auto a2 = a->e<LongType>(2);
 
-    auto b0 = b->e<sd::LongType>(0);
-    auto b1 = b->e<sd::LongType>(1);
-    auto b2 = b->e<sd::LongType>(2);
+    auto b0 = b->e<LongType>(0);
+    auto b1 = b->e<LongType>(1);
+    auto b2 = b->e<LongType>(2);
 
-    o->p(sd::LongType(0L), a1 * b2 - a2 * b1);
+    o->p(LongType(0L), a1 * b2 - a2 * b1);
     o->p(1L, a2 * b0 - a0 * b2);
     o->p(2L, a0 * b1 - a1 * b0);
   }
 }
 
-void SD_INLINE _crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
+void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
   auto a_ = a->reshape(a->ordering(), {-1, 3});
   auto b_ = b->reshape(b->ordering(), {-1, 3});
   auto o_ = o->reshape(o->ordering(), {-1, 3}, false);
@@ -73,14 +73,14 @@ void SD_INLINE _crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b,
       auto b_ = tadsB.at(e);
       auto o_ = tadsO.at(e);
 
-      helpers::cross(context, a_, b_, o_);
+      cross(context, a_, b_, o_);
     }
   };
 
   samediff::Threads::parallel_tad(func, 0, tads);
 }
 
-void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext *context, NDArray const *targets, NDArray const *input,
+void weightedCrossEntropyWithLogitsFunctor(LaunchContext *context, NDArray const *targets, NDArray const *input,
                                            NDArray const *weights, NDArray *output);
 }  // namespace helpers
 }  // namespace ops

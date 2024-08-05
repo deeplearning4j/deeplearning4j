@@ -35,6 +35,8 @@ OP_IMPL(scatter_mul, 3, 1, true) {
   auto updates = INPUT_VARIABLE(2);
 
   auto output = OUTPUT_VARIABLE(0);
+  if(indices->isEmpty())
+    return Status::OK;
 
   const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
   const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
@@ -53,9 +55,9 @@ OP_IMPL(scatter_mul, 3, 1, true) {
                  "but got %s and %s correspondingly !",
                  ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
   } else if (inRank == updRank && indices->isVector()) {
-    std::vector<sd::LongType> updShape = updates->getShapeAsVector();
-    std::vector<sd::LongType> inShape = input->getShapeAsVector();
-    std::vector<sd::LongType> expectedUpdShape = {indices->lengthOf()};
+    std::vector<LongType> updShape = updates->getShapeAsVector();
+    std::vector<LongType> inShape = input->getShapeAsVector();
+    std::vector<LongType> expectedUpdShape = {indices->lengthOf()};
     expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + 1, inShape.end());
 
     REQUIRE_TRUE(expectedUpdShape == updShape, 0,
@@ -66,9 +68,9 @@ OP_IMPL(scatter_mul, 3, 1, true) {
                  "SCATTER_MUL OP: wrong rank of updates array, expected is %i, but got %i instead !",
                  indRank + inRank - 1, updRank);
 
-    std::vector<sd::LongType> updShape = updates->getShapeAsVector();
-    std::vector<sd::LongType> inShape = input->getShapeAsVector();
-    std::vector<sd::LongType> expectedUpdShape = indices->getShapeAsVector();
+    std::vector<LongType> updShape = updates->getShapeAsVector();
+    std::vector<LongType> inShape = input->getShapeAsVector();
+    std::vector<LongType> expectedUpdShape = indices->getShapeAsVector();
     expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + 1, inShape.end());
 
     REQUIRE_TRUE(expectedUpdShape == updShape, 0,
@@ -78,7 +80,7 @@ OP_IMPL(scatter_mul, 3, 1, true) {
 
   if (!indices->isEmpty()) {
     if (checkIndices) {
-      const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
+      const LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
       REQUIRE_TRUE(numOfBadIndx == 0, 0,
                    "SCATTER_MUL OP: please check elements of indices-array, total number of wrong elements is %lld!",
                    numOfBadIndx);
@@ -87,7 +89,7 @@ OP_IMPL(scatter_mul, 3, 1, true) {
     helpers::scatter(block.launchContext(), pairwise::Multiply, *indices, *updates, *output, lock);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(ScatterMul, scatter_mul);
 

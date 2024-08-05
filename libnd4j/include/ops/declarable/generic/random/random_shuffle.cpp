@@ -35,15 +35,15 @@ OP_IMPL(random_shuffle, 1, 1, true) {
   auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
 
   //    sd::random::RandomBuffer* rng = block.getRNG();
-  sd::graph::RandomGenerator rng = block.randomGenerator();
+  RandomGenerator rng = block.randomGenerator();
   //    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
   helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(random_shuffle) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(random_shuffle) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

@@ -35,25 +35,36 @@ namespace sd {
  */
 class SD_LIB_EXPORT InteropDataBuffer {
  private:
-  std::shared_ptr<DataBuffer> _dataBuffer;
+  DataBuffer *_dataBuffer = nullptr;
   uint64_t _offset = 0;
-
+  bool owner;
+  DataType _dataType = DataType::UNKNOWN;
  public:
-  InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
-  InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer);
-  InteropDataBuffer(size_t elements, sd::DataType dtype, bool allocateBoth);
-  ~InteropDataBuffer() = default;
+  bool isConstant = false;
 
+  InteropDataBuffer(InteropDataBuffer *dataBuffer, uint64_t length, uint64_t offset);
+  InteropDataBuffer(DataBuffer * databuffer);
+  InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
+  ~InteropDataBuffer() {
+    if(!isConstant && _offset < 1)
+      dataBuffer()->close();
+  }
 #ifndef __JAVACPP_HACK__
-  std::shared_ptr<DataBuffer> getDataBuffer() const;
-  std::shared_ptr<DataBuffer> dataBuffer();
+  DataBuffer * getDataBuffer() const;
+  DataBuffer * dataBuffer();
 #endif
+
+  void printDbAllocationTrace();
 
   void *primary() const;
   void *special() const;
 
-  uint64_t offset() const;
-  void setOffset(uint64_t offset);
+  void markConstant(bool reallyConstant) {
+    isConstant = reallyConstant;
+    dataBuffer()->markConstant(reallyConstant);
+  }
+  uint64_t byteOffset() const;
+  void setByteOffset(uint64_t offset);
 
   void setPrimary(void *ptr, size_t length);
   void setSpecial(void *ptr, size_t length);
@@ -62,6 +73,9 @@ class SD_LIB_EXPORT InteropDataBuffer {
 
   int deviceId() const;
   void setDeviceId(int deviceId);
+
+  //updates whether the buffer is the owner of its associated buffers or not.
+  void markOwner(bool owner);
 
   int useCount() const;
 
@@ -76,6 +90,7 @@ class SD_LIB_EXPORT InteropDataBuffer {
   static void preparePrimaryUse(const std::vector<const InteropDataBuffer *> &writeList,
                                 const std::vector<const InteropDataBuffer *> &readList,
                                 bool synchronizeWritables = false);
+  uint64_t offset() const;
 };
 }  // namespace sd
 

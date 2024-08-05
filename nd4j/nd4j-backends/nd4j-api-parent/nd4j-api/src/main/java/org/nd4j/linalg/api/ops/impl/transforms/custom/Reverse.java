@@ -60,7 +60,7 @@ public class Reverse extends DynamicCustomOp {
      * @param x
      * @param axis
      */
-    public Reverse(INDArray x, long... axis){
+    public Reverse(INDArray x, long... axis) {
         super(new INDArray[]{x}, new INDArray[0]);
         this.inPlace = false;
         this.dimensions = axis;
@@ -72,7 +72,7 @@ public class Reverse extends DynamicCustomOp {
      * @param x
      * @param axis
      */
-    public Reverse(INDArray x, INDArray z, long... axis){
+    public Reverse(INDArray x, INDArray z, long... axis) {
         super(new INDArray[]{x}, new INDArray[] {z});
         this.inPlace = false;
         this.dimensions = axis;

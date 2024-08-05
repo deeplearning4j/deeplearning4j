@@ -1200,9 +1200,9 @@ public class TrainModule implements UIModule {
                     }
 
                     if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer) {
-                        int[] kernel;
-                        int[] stride;
-                        int[] padding;
+                        long[] kernel;
+                        long[] stride;
+                        long[] padding;
                         if (layer instanceof ConvolutionLayer) {
                             ConvolutionLayer cl = (ConvolutionLayer) layer;
                             kernel = cl.getKernelSize();

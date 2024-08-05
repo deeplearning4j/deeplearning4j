@@ -28,9 +28,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void chooseFunctorArray(sd::LaunchContext* context, NDArray* arg, NDArray* comp, int mode,
+SD_LIB_HIDDEN void chooseFunctorArray(LaunchContext* context, NDArray* arg, NDArray* comp, int mode,
                                       NDArray* result, NDArray* numResults);
-SD_LIB_HIDDEN void chooseFunctorScalar(sd::LaunchContext* context, NDArray* arg, double scalar, int mode,
+SD_LIB_HIDDEN void chooseFunctorScalar(LaunchContext* context, NDArray* arg, double scalar, int mode,
                                        NDArray* result, NDArray* numResults);
 
 }  // namespace helpers

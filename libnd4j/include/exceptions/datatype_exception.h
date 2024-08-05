@@ -35,10 +35,9 @@ class SD_LIB_EXPORT datatype_exception : public std::runtime_error {
   datatype_exception(std::string message);
   ~datatype_exception() = default;
 
-  static datatype_exception build(std::string message, sd::DataType actual);
-  static datatype_exception build(std::string message, sd::DataType expected, sd::DataType actual);
-  static datatype_exception build(std::string message, sd::DataType expected, sd::DataType actualX,
-                                  sd::DataType actualY);
+  static datatype_exception build(std::string message, DataType actual);
+  static datatype_exception build(std::string message, DataType expected, DataType actual);
+  static datatype_exception build(std::string message, DataType expected, DataType actualX, DataType actualY);
 };
 }  // namespace sd
 

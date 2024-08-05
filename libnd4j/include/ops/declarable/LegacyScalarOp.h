@@ -32,14 +32,14 @@ namespace ops {
  */
 class SD_LIB_EXPORT LegacyScalarOp : public LegacyOp {
  protected:
-  sd::Status validateAndExecute(Context& block) override;
+  Status validateAndExecute(sd::graph::Context& block) override;
 
  public:
   LegacyScalarOp();
   LegacyScalarOp(int opNum);
   LegacyScalarOp(int opNum, NDArray& scalar);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
 }  // namespace ops
